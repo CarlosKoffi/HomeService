@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Api;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Services;
 using HomeService.Infrastructure;
@@ -19,6 +20,8 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+await DatabaseInitializer.InitializeAsync(app.Services);
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
