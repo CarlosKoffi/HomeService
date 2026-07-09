@@ -205,28 +205,74 @@ app.MapPost("/api/company-applications", async (
 
 var admin = app.MapGroup("/api/admin");
 
-admin.MapGet("/company-applications", async (IAppDbContext db, CancellationToken cancellationToken) =>
+admin.MapGet("/company-applications", async (IAppDbContext db, ILogger<Program> logger, CancellationToken cancellationToken) =>
 {
-    var applications = await db.CompanyApplications
-        .AsNoTracking()
-        .Select(application => new CompanyApplicationSummaryResponse(
-            application.Id,
-            application.CompanyName,
-            application.City,
-            application.ContactName,
-            application.Email,
-            application.PhoneNumber,
-            application.Status.ToString(),
-            application.SubmittedAt,
-            application.LastReminderSentAt,
-            application.ActivationEmailSentAt,
-            application.Documents.Count,
-            application.Documents.Count(document => document.ReviewStatus == HomeService.Domain.Enums.DocumentReviewStatus.Pending)))
-        .OrderBy(application => application.Status == "Approved" || application.Status == "ActivationSent" || application.Status == "Activated")
-        .ThenByDescending(application => application.SubmittedAt)
-        .ToListAsync(cancellationToken);
+    try
+    {
+        var applications = await db.CompanyApplications
+            .AsNoTracking()
+            .OrderBy(application => application.Status == HomeService.Domain.Enums.CompanyApplicationStatus.Approved
+                || application.Status == HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent
+                || application.Status == HomeService.Domain.Enums.CompanyApplicationStatus.Activated)
+            .ThenByDescending(application => application.SubmittedAt)
+            .Select(application => new
+            {
+                application.Id,
+                application.CompanyName,
+                application.City,
+                application.ContactName,
+                application.Email,
+                application.PhoneNumber,
+                Status = application.Status.ToString(),
+                application.SubmittedAt,
+                application.LastReminderSentAt,
+                application.ActivationEmailSentAt
+            })
+            .ToListAsync(cancellationToken);
 
-    return Results.Ok(applications);
+        var applicationIds = applications.Select(application => application.Id).ToList();
+        var documentCounts = await db.CompanyApplicationDocuments
+            .AsNoTracking()
+            .Where(document => applicationIds.Contains(document.CompanyApplicationId))
+            .GroupBy(document => document.CompanyApplicationId)
+            .Select(group => new
+            {
+                CompanyApplicationId = group.Key,
+                DocumentCount = group.Count(),
+                PendingDocumentCount = group.Count(document => document.ReviewStatus == HomeService.Domain.Enums.DocumentReviewStatus.Pending)
+            })
+            .ToDictionaryAsync(item => item.CompanyApplicationId, cancellationToken);
+
+        var response = applications
+            .Select(application =>
+            {
+                documentCounts.TryGetValue(application.Id, out var counts);
+                return new CompanyApplicationSummaryResponse(
+                    application.Id,
+                    application.CompanyName,
+                    application.City,
+                    application.ContactName,
+                    application.Email,
+                    application.PhoneNumber,
+                    application.Status,
+                    application.SubmittedAt,
+                    application.LastReminderSentAt,
+                    application.ActivationEmailSentAt,
+                    counts?.DocumentCount ?? 0,
+                    counts?.PendingDocumentCount ?? 0);
+            })
+            .ToList();
+
+        return Results.Ok(response);
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Unable to list company applications.");
+        return Results.Problem(
+            title: "Unable to list company applications",
+            detail: exception.Message,
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
 })
 .WithName("ListCompanyApplications");
 
