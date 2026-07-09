@@ -1,0 +1,266 @@
+@page "/register"
+@using Microsoft.AspNetCore.Components.Web
+
+<PageTitle>Inscription entreprise</PageTitle>
+
+<h1>Demande d'inscription</h1>
+<p class="lead">
+    Ce formulaire permet a votre entreprise de demander son acces ProxiPro. Notre equipe verifiera les informations
+    et les pieces fournies. Si le dossier est valide, vous recevrez un lien par email pour creer votre mot de passe.
+</p>
+
+<form class="registration-form">
+    <section>
+        <h2>Entreprise</h2>
+        <label>
+            Nom legal de l'entreprise
+            <input name="companyName" type="text" autocomplete="organization" />
+        </label>
+        <label>
+            Numero RCCM ou identifiant legal
+            <input name="registrationNumber" type="text" />
+        </label>
+        <label>
+            Ville
+            <input name="city" type="text" autocomplete="address-level2" />
+        </label>
+        <label>
+            Adresse
+            <input name="address" type="text" autocomplete="street-address" />
+        </label>
+    </section>
+
+    <section>
+        <h2>Contact responsable</h2>
+        <label>
+            Nom complet
+            <input name="ownerName" type="text" autocomplete="name" />
+        </label>
+        <label>
+            Email professionnel
+            <input name="email" type="email" autocomplete="email" />
+        </label>
+        <label>
+            Telephone
+            <input name="phone" type="tel" autocomplete="tel" />
+        </label>
+    </section>
+
+    <section class="documents-section">
+        <div class="section-intro">
+            <h2>Pieces justificatives</h2>
+            <p>Formats acceptes: PDF, JPG ou PNG. Privilegiez des fichiers lisibles et legers pour faciliter la verification.</p>
+        </div>
+
+        <div class="upload-grid">
+            <label class="upload-card required">
+                <span class="upload-icon">DFE</span>
+                <span class="upload-content">
+                    <strong>DFE</strong>
+                    <small>Declaration Fiscale d'Existence</small>
+                    <em>Document obligatoire</em>
+                </span>
+                <span class="upload-action">Choisir</span>
+                <input name="fiscalExistenceDeclaration" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+            </label>
+
+            <label class="upload-card required">
+                <span class="upload-icon">RC</span>
+                <span class="upload-content">
+                    <strong>Registre de commerce</strong>
+                    <small>RCCM ou document legal equivalent</small>
+                    <em>Document obligatoire</em>
+                </span>
+                <span class="upload-action">Choisir</span>
+                <input name="companyDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+            </label>
+
+            <label class="upload-card required">
+                <span class="upload-icon">ID</span>
+                <span class="upload-content">
+                    <strong>Identite du responsable</strong>
+                    <small>CNI, passeport ou document officiel</small>
+                    <em>Document obligatoire</em>
+                </span>
+                <span class="upload-action">Choisir</span>
+                <input name="ownerIdentityDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+            </label>
+
+            <label class="upload-card">
+                <span class="upload-icon">ADR</span>
+                <span class="upload-content">
+                    <strong>Justificatif d'adresse</strong>
+                    <small>Facture, bail ou attestation</small>
+                    <em>Recommande</em>
+                </span>
+                <span class="upload-action">Choisir</span>
+                <input name="addressProof" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+            </label>
+
+            <label class="upload-card">
+                <span class="upload-icon">+</span>
+                <span class="upload-content">
+                    <strong>Document complementaire</strong>
+                    <small>Licence, agrement ou preuve utile</small>
+                    <em>Optionnel</em>
+                </span>
+                <span class="upload-action">Choisir</span>
+                <input name="supportingDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+            </label>
+        </div>
+    </section>
+
+    <section class="services-section">
+        <div class="section-intro">
+            <h2>Services envisages</h2>
+            <p>Selectionnez les services que votre entreprise souhaite proposer. Vous pouvez aussi en ajouter un nouveau.</p>
+        </div>
+
+        <div class="suggested-tags" aria-label="Services existants">
+            @foreach (var service in ExistingServices)
+            {
+                <button type="button"
+                        class="service-tag @(IsSelected(service) ? "selected" : null)"
+                        @onclick="() => ToggleExistingService(service)">
+                    @service
+                </button>
+            }
+        </div>
+
+        <label class="tag-entry">
+            Ajouter un service
+            <input name="serviceEntry"
+                   type="text"
+                   placeholder="Ex: nettoyage de bureaux"
+                   @bind="ServiceEntry"
+                   @bind:event="oninput"
+                   @onkeyup="HandleServiceEntryKeyUp" />
+            <small>Appuyez sur Entree ou ajoutez une virgule pour creer un tag.</small>
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(ServiceMessage))
+        {
+            <p class="field-message">@ServiceMessage</p>
+        }
+
+        <div class="selected-service-tags" aria-label="Services selectionnes">
+            @foreach (var service in SelectedServices)
+            {
+                <span class="@(service.IsProposed ? "proposed" : null)">
+                    @service.Name
+                    @if (service.IsProposed)
+                    {
+                        <em>propose</em>
+                    }
+                    <button type="button" aria-label="Retirer @service.Name" @onclick="() => RemoveService(service.Name)">x</button>
+                </span>
+            }
+        </div>
+
+        <p class="field-hint">Les nouveaux services seront verifies avant publication. Les services proches seront regroupes par notre equipe.</p>
+
+        <label>
+            Nombre approximatif de prestataires
+            <input name="providerCount" type="number" min="1" />
+        </label>
+    </section>
+
+    <button type="button" class="primary-action">Envoyer la demande</button>
+</form>
+
+@code {
+    private static readonly IReadOnlyList<string> ExistingServices =
+    [
+        "Menage a domicile",
+        "Nounou",
+        "Jardinage",
+        "Nettoyage apres travaux"
+    ];
+
+    private readonly List<ServiceTag> SelectedServices =
+    [
+        new("Menage a domicile", false),
+        new("Nounou", false)
+    ];
+
+    private string ServiceEntry { get; set; } = string.Empty;
+    private string? ServiceMessage { get; set; }
+
+    private bool IsSelected(string service)
+    {
+        return SelectedServices.Any(item => IsSameService(item.Name, service));
+    }
+
+    private void ToggleExistingService(string service)
+    {
+        ServiceMessage = null;
+
+        if (IsSelected(service))
+        {
+            RemoveService(service);
+            return;
+        }
+
+        SelectedServices.Add(new ServiceTag(service, false));
+    }
+
+    private void RemoveService(string service)
+    {
+        var item = SelectedServices.FirstOrDefault(candidate => IsSameService(candidate.Name, service));
+        if (item is not null)
+        {
+            SelectedServices.Remove(item);
+        }
+    }
+
+    private void HandleServiceEntryKeyUp(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" || ServiceEntry.EndsWith(",", StringComparison.Ordinal))
+        {
+            AddTypedService();
+        }
+    }
+
+    private void AddTypedService()
+    {
+        var service = ServiceEntry.Trim().Trim(',');
+        ServiceMessage = null;
+
+        if (service.Length < 3)
+        {
+            ServiceMessage = "Entrez au moins 3 caracteres.";
+            return;
+        }
+
+        if (SelectedServices.Count >= 10)
+        {
+            ServiceMessage = "Vous pouvez ajouter jusqu'a 10 services.";
+            return;
+        }
+
+        var existingMatch = ExistingServices.FirstOrDefault(existing => IsSameService(existing, service));
+        var serviceName = existingMatch ?? service;
+
+        if (SelectedServices.Any(item => IsSameService(item.Name, serviceName)))
+        {
+            ServiceMessage = "Service deja ajoute.";
+            ServiceEntry = string.Empty;
+            return;
+        }
+
+        SelectedServices.Add(new ServiceTag(serviceName, existingMatch is null));
+        ServiceEntry = string.Empty;
+    }
+
+    private static bool IsSameService(string left, string right)
+    {
+        return Normalize(left) == Normalize(right);
+    }
+
+    private static string Normalize(string value)
+    {
+        return value.Trim().ToLowerInvariant();
+    }
+
+    private sealed record ServiceTag(string Name, bool IsProposed);
+}

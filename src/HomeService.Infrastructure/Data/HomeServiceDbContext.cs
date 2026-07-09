@@ -1,0 +1,33 @@
+using HomeService.Application.Abstractions;
+using HomeService.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace HomeService.Infrastructure.Data;
+
+public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> options)
+    : DbContext(options), IAppDbContext
+{
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<CompanyApplication> CompanyApplications => Set<CompanyApplication>();
+    public DbSet<CompanyApplicationDocument> CompanyApplicationDocuments => Set<CompanyApplicationDocument>();
+    public DbSet<CompanyApplicationService> CompanyApplicationServices => Set<CompanyApplicationService>();
+    public DbSet<Service> Services => Set<Service>();
+    public DbSet<ProviderProfile> Providers => Set<ProviderProfile>();
+    public DbSet<ProviderService> ProviderServices => Set<ProviderService>();
+    public DbSet<CustomerProfile> Customers => Set<CustomerProfile>();
+    public DbSet<Mission> Missions => Set<Mission>();
+    public DbSet<Country> Countries => Set<Country>();
+    public DbSet<Language> Languages => Set<Language>();
+    public DbSet<TranslationKey> TranslationKeys => Set<TranslationKey>();
+    public DbSet<TranslationValue> TranslationValues => Set<TranslationValue>();
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+    public DbSet<AdminRole> AdminRoles => Set<AdminRole>();
+    public DbSet<AdminModule> AdminModules => Set<AdminModule>();
+    public DbSet<AdminRolePermission> AdminRolePermissions => Set<AdminRolePermission>();
+    public DbSet<AdminUserRole> AdminUserRoles => Set<AdminUserRole>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(HomeServiceDbContext).Assembly);
+    }
+}

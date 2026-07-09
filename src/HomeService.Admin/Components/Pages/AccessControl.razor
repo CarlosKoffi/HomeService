@@ -1,0 +1,143 @@
+@page "/access-control"
+
+<PageTitle>Acces et roles</PageTitle>
+
+<h1>Acces & roles</h1>
+<p class="lead">
+    Le super admin cree les roles, choisit les modules accessibles et affecte les administrateurs.
+    Chaque action sensible doit etre limitee: voir, editer, valider, rejeter, suspendre, relancer ou exporter.
+</p>
+
+<section class="info-panel">
+    <div>
+        <h2>Principe de securite</h2>
+        <p>
+            Dans cette phase, l'admin contient surtout les dossiers entreprise: pieces fiscales,
+            informations legales, contacts responsables, services proposes et decisions de validation.
+            On doit deja separer les responsabilites: une personne peut consulter une liste sans
+            pouvoir valider, exporter ou rejeter un dossier.
+        </p>
+    </div>
+    <div class="check-list">
+        <span>Minimum d'acces necessaire</span>
+        <span>Actions sensibles separees</span>
+        <span>Super admin limite</span>
+        <span>Audit futur de chaque decision</span>
+    </div>
+</section>
+
+<section class="dashboard-grid">
+    <article>
+        <h2>Super admin</h2>
+        <p>Acces total. Peut creer les roles, configurer les modules et inviter les autres admins.</p>
+        <p class="section-help">A reserver a tres peu de personnes. Toute action critique devra etre auditee.</p>
+    </article>
+    <article>
+        <h2>Roles modulaires</h2>
+        <p>Un role donne acces a des modules precis: traductions, validations entreprises, services proposes.</p>
+        <p class="section-help">Un admin peut avoir plusieurs roles si ses responsabilites traversent plusieurs equipes.</p>
+    </article>
+    <article>
+        <h2>Actions controlees</h2>
+        <p>Un admin peut voir une liste sans forcement pouvoir valider, rejeter ou relancer une entreprise.</p>
+        <p class="section-help">Les boutons doivent apparaitre seulement si le role autorise l'action.</p>
+    </article>
+</section>
+
+<section class="access-layout">
+    <article>
+        <div class="section-heading">
+            <div>
+                <h2>Roles</h2>
+                <p class="section-help">Un role est un paquet de permissions metier, facile a attribuer a un admin.</p>
+            </div>
+            <button type="button">Creer un role</button>
+        </div>
+
+        <div class="role-list">
+            @foreach (var role in Roles)
+            {
+                <div>
+                    <strong>@role.Name</strong>
+                    <p>@role.Description</p>
+                    <span>@role.Modules</span>
+                </div>
+            }
+        </div>
+    </article>
+
+    <article>
+        <div class="section-heading">
+            <div>
+                <h2>Modules</h2>
+                <p class="section-help">Chaque module peut exposer des droits differents selon les equipes.</p>
+            </div>
+            <button type="button">Configurer</button>
+        </div>
+
+        <div class="permission-matrix">
+            <div class="matrix-head">Module</div>
+            <div class="matrix-head">Voir</div>
+            <div class="matrix-head">Editer</div>
+            <div class="matrix-head">Valider</div>
+            @foreach (var module in Modules)
+            {
+                <div>@module</div>
+                <label><input type="checkbox" checked /> Voir</label>
+                <label><input type="checkbox" /> Editer</label>
+                <label><input type="checkbox" /> Valider</label>
+            }
+        </div>
+    </article>
+</section>
+
+<section class="translation-list">
+    <div class="section-heading">
+        <div>
+            <h2>Administrateurs</h2>
+            <p class="section-help">Liste des comptes internes. Plus tard, invitation par email et activation avec mot de passe.</p>
+        </div>
+        <button type="button">Inviter un admin</button>
+    </div>
+    @foreach (var admin in Admins)
+    {
+        <article>
+            <div>
+                <strong>@admin.Name</strong>
+                <p>@admin.Email</p>
+            </div>
+            <span>@admin.Role</span>
+            <button type="button">Modifier les acces</button>
+        </article>
+    }
+</section>
+
+@code {
+    private static readonly IReadOnlyList<RoleRow> Roles =
+    [
+        new("Super admin", "Controle complet de la plateforme.", "Tous les modules"),
+        new("Validation entreprises", "Traite les dossiers et pieces des entreprises.", "Demandes entreprises"),
+        new("Localisation", "Gere les pays, langues et textes traduits.", "Pays & traductions"),
+        new("Preparation prestataires", "Module reserve pour la prochaine phase, quand les entreprises ajouteront leurs employes.", "Employes")
+    ];
+
+    private static readonly IReadOnlyList<string> Modules =
+    [
+        "Demandes entreprises",
+        "Preparation prestataires",
+        "Pays & traductions",
+        "Services",
+        "Activation entreprises",
+        "Documents entreprise"
+    ];
+
+    private static readonly IReadOnlyList<AdminRow> Admins =
+    [
+        new("Bruce", "superadmin@homeservice.local", "Super admin"),
+        new("Equipe validation", "validation@homeservice.local", "Validation entreprises"),
+        new("Equipe contenu", "content@homeservice.local", "Localisation")
+    ];
+
+    private sealed record RoleRow(string Name, string Description, string Modules);
+    private sealed record AdminRow(string Name, string Email, string Role);
+}

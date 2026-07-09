@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "WjvJYc6fVB9aUF1ZE1Wmq9UgWItcedOYxLJD3j0u9Pk=",
+  "Source": "HomeService.Api",
+  "BasePath": "_content/HomeService.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

@@ -1,0 +1,44 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        PROJECT: src/HomeService.Api/HomeService.Api.csproj
+        APP_DLL: HomeService.Api.dll
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=homeservice;Username=homeservice;Password=homeservice
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  company:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        PROJECT: src/HomeService.Company/HomeService.Company.csproj
+        APP_DLL: HomeService.Company.dll
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      - api
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: homeservice
+      POSTGRES_USER: homeservice
+      POSTGRES_PASSWORD: homeservice
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

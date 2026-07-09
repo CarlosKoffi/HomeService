@@ -1,0 +1,28 @@
+using HomeService.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace HomeService.Application.Abstractions;
+
+public interface IAppDbContext
+{
+    DbSet<Company> Companies { get; }
+    DbSet<CompanyApplication> CompanyApplications { get; }
+    DbSet<CompanyApplicationDocument> CompanyApplicationDocuments { get; }
+    DbSet<CompanyApplicationService> CompanyApplicationServices { get; }
+    DbSet<Service> Services { get; }
+    DbSet<ProviderProfile> Providers { get; }
+    DbSet<ProviderService> ProviderServices { get; }
+    DbSet<CustomerProfile> Customers { get; }
+    DbSet<Mission> Missions { get; }
+    DbSet<Country> Countries { get; }
+    DbSet<Language> Languages { get; }
+    DbSet<TranslationKey> TranslationKeys { get; }
+    DbSet<TranslationValue> TranslationValues { get; }
+    DbSet<AdminUser> AdminUsers { get; }
+    DbSet<AdminRole> AdminRoles { get; }
+    DbSet<AdminModule> AdminModules { get; }
+    DbSet<AdminRolePermission> AdminRolePermissions { get; }
+    DbSet<AdminUserRole> AdminUserRoles { get; }
+
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+}

@@ -1,0 +1,104 @@
+@page "/service-proposals"
+
+<PageTitle>Services proposes</PageTitle>
+
+<h1>Services proposes</h1>
+<p class="lead">
+    Les entreprises peuvent proposer des services pendant leur inscription. L'admin regroupe les variantes,
+    associe aux services existants ou cree un nouveau service officiel.
+</p>
+
+<section class="info-panel">
+    <div>
+        <h2>Regle produit</h2>
+        <p>
+            Les services restent dans une liste plate: pas de categorie imposee au depart. Si une entreprise
+            tape "netoyage bureau", l'admin doit pouvoir le rapprocher de "Nettoyage de bureaux" avec une
+            tolerance aux fautes. Si le besoin est vraiment nouveau, on cree un service inactif ou actif selon
+            decision operationnelle.
+        </p>
+    </div>
+    <div class="check-list">
+        <span>Eviter les doublons</span>
+        <span>Corriger les fautes courantes</span>
+        <span>Creer seulement si besoin reel</span>
+        <span>Activer quand l'offre est prete</span>
+    </div>
+</section>
+
+<section class="toolbar">
+    <label>
+        Statut
+        <select>
+            <option>A traiter</option>
+            <option>Correspondance probable</option>
+            <option>Nouveau service</option>
+            <option>Rejete</option>
+        </select>
+    </label>
+    <label>
+        Recherche
+        <input type="search" placeholder="Service, entreprise, ville" />
+    </label>
+    <button type="button">Regrouper les similaires</button>
+</section>
+
+<section class="status-guide">
+    <article>
+        <strong>Associer</strong>
+        <p>Utiliser quand la proposition est une faute, une variante ou un synonyme d'un service existant.</p>
+    </article>
+    <article>
+        <strong>Creer service</strong>
+        <p>Utiliser quand plusieurs entreprises demandent un service absent du catalogue et exploitable.</p>
+    </article>
+    <article>
+        <strong>Fusionner</strong>
+        <p>Regrouper plusieurs libelles proches avant de prendre une decision propre.</p>
+    </article>
+    <article>
+        <strong>Rejeter</strong>
+        <p>Utiliser pour les libelles trop vagues, hors scope ou impossibles a operer proprement.</p>
+    </article>
+</section>
+
+<section class="proposal-list">
+    @foreach (var proposal in Proposals)
+    {
+        <article>
+            <div>
+                <strong>@proposal.RawName</strong>
+                <p>@proposal.CompanyName - @proposal.City - @proposal.Count entreprises</p>
+                <p class="section-help">@proposal.Recommendation</p>
+            </div>
+            <div>
+                <span>@proposal.MatchLabel</span>
+                <small>@proposal.Score</small>
+            </div>
+            <div class="easy-actions">
+                <button type="button">Associer</button>
+                <button type="button">Creer service</button>
+                <button type="button">Fusionner</button>
+                <button type="button">Rejeter</button>
+            </div>
+        </article>
+    }
+</section>
+
+@code {
+    private static readonly IReadOnlyList<ProposalRow> Proposals =
+    [
+        new("Netoyage bureau", "Ivoire Clean Services", "Abidjan", "Suggestion: Nettoyage de bureaux", "Score 86%", 4, "Probable faute d'orthographe. Associer au service officiel apres verification."),
+        new("Menage apres travaux", "Maison Plus", "Yopougon", "Suggestion: Menage d'apres travaux", "Score 92%", 2, "Variante tres proche. Fusionner pour garder un seul libelle public."),
+        new("Garde enfant nuit", "Nanny Pro CI", "Cocody", "Nouveau service probable", "A verifier", 1, "Nouveau besoin possible. Verifier les contraintes legales, horaires et niveau de confiance attendu.")
+    ];
+
+    private sealed record ProposalRow(
+        string RawName,
+        string CompanyName,
+        string City,
+        string MatchLabel,
+        string Score,
+        int Count,
+        string Recommendation);
+}

@@ -1,0 +1,146 @@
+@page "/localization"
+
+<PageTitle>Pays et traductions</PageTitle>
+
+<h1>Pays & traductions</h1>
+<p class="lead">
+    Preparation multi-pays et multilingue. La Cote d'Ivoire est le premier marche, mais les textes,
+    devises et variantes pays doivent etre gerables sans redeployer.
+</p>
+
+<section class="info-panel">
+    <div>
+        <h2>Pourquoi cette page est importante</h2>
+        <p>
+            Pour l'instant, cette page concerne surtout le portail entreprise et l'admin qui le valide:
+            textes d'inscription, pieces demandees, emails d'activation, messages de complement et
+            libelles de statut. Les futurs portails client et prestataire auront leurs propres blocs
+            quand on attaquera ces scopes.
+        </p>
+    </div>
+    <div class="check-list">
+        <span>Texte modifiable sans redeploiement</span>
+        <span>Base entreprise Cote d'Ivoire</span>
+        <span>Preparation multi-pays sans melanger les scopes</span>
+        <span>Validation par role contenu admin</span>
+    </div>
+</section>
+
+<section class="toolbar">
+    <label>
+        Pays
+        <select>
+            <option>Cote d'Ivoire - XOF</option>
+            <option>Senegal - XOF</option>
+            <option>Benin - XOF</option>
+        </select>
+    </label>
+    <label>
+        Langue
+        <select>
+            <option>Francais</option>
+            <option>Anglais</option>
+            <option>Langue locale a definir</option>
+        </select>
+    </label>
+    <label>
+        Recherche
+        <input type="search" placeholder="Cle, page, texte" />
+    </label>
+    <button type="button">Ajouter une cle</button>
+</section>
+
+<section class="localization-grid">
+    <article>
+        <h2>Pays actifs</h2>
+        <p class="section-help">
+            Un pays actif devient disponible dans les parcours publics. Un pays en preparation permet
+            de saisir les textes et parametres avant lancement officiel.
+        </p>
+        <div class="table-lite">
+            <div class="config-row">
+                <strong>CI</strong>
+                <span>Cote d'Ivoire - marche pilote, Abidjan en priorite</span>
+                <em>XOF</em>
+                <button>Configurer</button>
+            </div>
+            <div class="config-row">
+                <strong>SN</strong>
+                <span>Senegal - preparation future expansion</span>
+                <em>XOF</em>
+                <button>Preparer</button>
+            </div>
+            <div class="config-row">
+                <strong>BJ</strong>
+                <span>Benin - preparation future expansion</span>
+                <em>XOF</em>
+                <button>Preparer</button>
+            </div>
+        </div>
+    </article>
+
+    <article>
+        <h2>Langues</h2>
+        <p class="section-help">
+            Le francais reste la langue de depart. Les langues locales ou variantes pays seront ajoutees
+            quand les textes, supports et operations terrain seront prets.
+        </p>
+        <div class="table-lite">
+            <div class="config-row">
+                <strong>fr</strong>
+                <span>Francais - langue par defaut pour la Cote d'Ivoire</span>
+                <em>Defaut</em>
+                <button>Editer</button>
+            </div>
+            <div class="config-row">
+                <strong>en</strong>
+                <span>Anglais - option utile pour entreprises internationales</span>
+                <em>Prepare</em>
+                <button>Editer</button>
+            </div>
+        </div>
+    </article>
+</section>
+
+<section class="translation-list">
+    <div class="section-heading">
+        <div>
+            <h2>Textes produit</h2>
+            <p class="section-help">
+                Chaque cle correspond a un texte affiche dans un portail. Les descriptions expliquent
+                le contexte pour eviter les traductions hors sujet. Dans cette phase, on privilegie
+                les textes du site entreprise et du back-office de validation.
+            </p>
+        </div>
+        <button type="button">Exporter les textes manquants</button>
+    </div>
+    @foreach (var item in TranslationRows)
+    {
+        <article>
+            <div>
+                <strong>@item.Key</strong>
+                <p>@item.Scope - @item.Description</p>
+            </div>
+            <textarea rows="2">@item.Value</textarea>
+            <button type="button">Sauver</button>
+        </article>
+    }
+</section>
+
+@code {
+    private static readonly IReadOnlyList<TranslationRow> TranslationRows =
+    [
+        new("company.home.hero.title", "Company", "Titre principal du portail entreprise", "Faites intervenir vos equipes a domicile en toute confiance"),
+        new("company.home.hero.subtitle", "Company", "Texte d'introduction", "ProxiPro connecte les clients a des prestataires recommandes par des entreprises verifiees."),
+        new("company.concept.security", "Company", "Explication du modele de confiance", "Chaque prestataire est rattache a une entreprise validee, avec un suivi des missions et des encaissements."),
+        new("company.register.documents", "Company", "Introduction de la zone documents", "Ajoutez les pieces necessaires pour permettre a notre equipe de verifier votre entreprise rapidement."),
+        new("company.register.submit", "Company", "Bouton de demande inscription", "Envoyer la demande"),
+        new("admin.companyApplications.title", "Admin", "Titre de la file de validation", "Demandes entreprises"),
+        new("admin.companyApplications.help", "Admin", "Aide affichable aux admins validation", "Controlez les pieces legales, demandez les complements manquants puis envoyez le lien d'activation."),
+        new("company.activation.email.subject", "Company", "Sujet email apres validation", "Votre espace entreprise ProxiPro est pret"),
+        new("company.activation.email.body", "Company", "Email envoye avec lien de creation de mot de passe", "Votre dossier entreprise a ete valide. Creez votre mot de passe pour acceder au portail et ajouter vos prestataires."),
+        new("company.complement.email.body", "Company", "Email quand un document manque", "Nous avons besoin d'un complement pour finaliser votre inscription. Merci d'ajouter le document demande depuis votre espace.")
+    ];
+
+    private sealed record TranslationRow(string Key, string Scope, string Description, string Value);
+}

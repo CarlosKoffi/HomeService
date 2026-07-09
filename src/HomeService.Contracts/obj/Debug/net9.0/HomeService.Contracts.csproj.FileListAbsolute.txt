@@ -1,0 +1,11 @@
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\bin\Debug\net9.0\HomeService.Contracts.deps.json
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\bin\Debug\net9.0\HomeService.Contracts.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\bin\Debug\net9.0\HomeService.Contracts.pdb
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.AssemblyInfoInputs.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.AssemblyInfo.cs
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.csproj.CoreCompileInputs.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\refint\HomeService.Contracts.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.pdb
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\ref\HomeService.Contracts.dll

@@ -1,0 +1,17 @@
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\bin\Debug\net9.0\HomeService.Application.deps.json
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\bin\Debug\net9.0\HomeService.Application.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\bin\Debug\net9.0\HomeService.Application.pdb
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\bin\Debug\net9.0\HomeService.Contracts.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\bin\Debug\net9.0\HomeService.Domain.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\bin\Debug\net9.0\HomeService.Domain.pdb
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\bin\Debug\net9.0\HomeService.Contracts.pdb
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.csproj.AssemblyReference.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.AssemblyInfoInputs.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.AssemblyInfo.cs
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.csproj.CoreCompileInputs.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeServ.2C66BDB0.Up2Date
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\refint\HomeService.Application.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.pdb
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\ref\HomeService.Application.dll

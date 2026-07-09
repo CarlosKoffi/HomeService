@@ -1,0 +1,124 @@
+/* _content/HomeService.Company/Components/Layout/MainLayout.razor.rz.scp.css */
+.app-shell[b-wo4n5eax1o] {
+    min-height: 100vh;
+}
+
+main[b-wo4n5eax1o] {
+    min-height: calc(100vh - 92px);
+}
+
+.content[b-wo4n5eax1o] {
+    margin: 0 auto;
+    max-width: 1120px;
+    padding: 2rem;
+}
+
+#blazor-error-ui[b-wo4n5eax1o] {
+    color-scheme: light only;
+    background: #fff3cd;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(15, 23, 42, 0.18);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss[b-wo4n5eax1o] {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+@media (max-width: 720px) {
+    .content[b-wo4n5eax1o] {
+        padding: 1.25rem;
+    }
+}
+/* _content/HomeService.Company/Components/Layout/NavMenu.razor.rz.scp.css */
+.site-header[b-qs6xgy89ir] {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.94);
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    display: flex;
+    gap: 1.5rem;
+    justify-content: space-between;
+    min-height: 92px;
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.brand[b-qs6xgy89ir] {
+    color: #020617;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+}
+
+.site-nav[b-qs6xgy89ir] {
+    align-items: center;
+    display: flex;
+    gap: .65rem;
+}
+
+.site-nav[b-qs6xgy89ir]  a {
+    border-radius: 999px;
+    color: #334155;
+    font-weight: 800;
+    padding: .65rem .9rem;
+    text-decoration: none;
+}
+
+.site-nav[b-qs6xgy89ir]  a.active,
+.site-nav[b-qs6xgy89ir]  a:hover {
+    background: #ecfeff;
+    color: #0f766e;
+}
+
+.menu-toggle[b-qs6xgy89ir],
+.menu-button[b-qs6xgy89ir] {
+    display: none;
+}
+
+@media (max-width: 760px) {
+    .site-header[b-qs6xgy89ir] {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        min-height: 82px;
+        padding: 1.2rem 1.25rem;
+    }
+
+    .menu-button[b-qs6xgy89ir] {
+        display: grid;
+        gap: .35rem;
+        padding-top: .55rem;
+    }
+
+    .menu-button span[b-qs6xgy89ir] {
+        background: #334155;
+        border-radius: 999px;
+        display: block;
+        height: 4px;
+        width: 34px;
+    }
+
+    .site-nav[b-qs6xgy89ir] {
+        display: none;
+        flex-basis: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        padding-top: .75rem;
+    }
+
+    .menu-toggle:checked ~ .site-nav[b-qs6xgy89ir] {
+        display: flex;
+    }
+}

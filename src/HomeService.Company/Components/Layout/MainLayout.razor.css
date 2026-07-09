@@ -1,0 +1,40 @@
+.app-shell {
+    min-height: 100vh;
+}
+
+main {
+    min-height: calc(100vh - 92px);
+}
+
+.content {
+    margin: 0 auto;
+    max-width: 1120px;
+    padding: 2rem;
+}
+
+#blazor-error-ui {
+    color-scheme: light only;
+    background: #fff3cd;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(15, 23, 42, 0.18);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+@media (max-width: 720px) {
+    .content {
+        padding: 1.25rem;
+    }
+}
