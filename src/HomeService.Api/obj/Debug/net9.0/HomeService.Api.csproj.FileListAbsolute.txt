@@ -7,7 +7,6 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debu
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\HomeService.Api.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\HomeService.Api.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Humanizer.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Microsoft.Build.Locator.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Microsoft.CodeAnalysis.dll
@@ -127,3 +126,7 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\obj\Debu
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\obj\Debug\net9.0\HomeService.Api.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\obj\Debug\net9.0\HomeService.Api.genruntimeconfig.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\obj\Debug\net9.0\ref\HomeService.Api.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\obj\Debug\net9.0\HomeService.Api.sourcelink.json
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Api\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll

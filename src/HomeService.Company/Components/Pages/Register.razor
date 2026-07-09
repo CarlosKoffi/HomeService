@@ -1,5 +1,9 @@
 @page "/register"
+@using HomeService.Company.Services
+@using HomeService.Contracts.Companies
+@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Inscription entreprise</PageTitle>
 
@@ -14,19 +18,19 @@
         <h2>Entreprise</h2>
         <label>
             Nom legal de l'entreprise
-            <input name="companyName" type="text" autocomplete="organization" />
+            <input name="companyName" type="text" autocomplete="organization" @bind="CompanyName" />
         </label>
         <label>
             Numero RCCM ou identifiant legal
-            <input name="registrationNumber" type="text" />
+            <input name="registrationNumber" type="text" @bind="RegistrationNumber" />
         </label>
         <label>
             Ville
-            <input name="city" type="text" autocomplete="address-level2" />
+            <input name="city" type="text" autocomplete="address-level2" @bind="City" />
         </label>
         <label>
             Adresse
-            <input name="address" type="text" autocomplete="street-address" />
+            <input name="address" type="text" autocomplete="street-address" @bind="Address" />
         </label>
     </section>
 
@@ -34,15 +38,15 @@
         <h2>Contact responsable</h2>
         <label>
             Nom complet
-            <input name="ownerName" type="text" autocomplete="name" />
+            <input name="ownerName" type="text" autocomplete="name" @bind="ContactName" />
         </label>
         <label>
             Email professionnel
-            <input name="email" type="email" autocomplete="email" />
+            <input name="email" type="email" autocomplete="email" @bind="Email" />
         </label>
         <label>
             Telephone
-            <input name="phone" type="tel" autocomplete="tel" />
+            <input name="phone" type="tel" autocomplete="tel" @bind="PhoneNumber" />
         </label>
     </section>
 
@@ -58,10 +62,10 @@
                 <span class="upload-content">
                     <strong>DFE</strong>
                     <small>Declaration Fiscale d'Existence</small>
-                    <em>Document obligatoire</em>
+                    <em>@GetDocumentLabel("fiscalExistenceDeclaration", "Document obligatoire")</em>
                 </span>
                 <span class="upload-action">Choisir</span>
-                <input name="fiscalExistenceDeclaration" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                <InputFile OnChange="SetFiscalExistenceDeclaration" accept=".pdf,.jpg,.jpeg,.png" />
             </label>
 
             <label class="upload-card required">
@@ -69,10 +73,10 @@
                 <span class="upload-content">
                     <strong>Registre de commerce</strong>
                     <small>RCCM ou document legal equivalent</small>
-                    <em>Document obligatoire</em>
+                    <em>@GetDocumentLabel("companyDocument", "Document obligatoire")</em>
                 </span>
                 <span class="upload-action">Choisir</span>
-                <input name="companyDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                <InputFile OnChange="SetCompanyDocument" accept=".pdf,.jpg,.jpeg,.png" />
             </label>
 
             <label class="upload-card required">
@@ -80,10 +84,10 @@
                 <span class="upload-content">
                     <strong>Identite du responsable</strong>
                     <small>CNI, passeport ou document officiel</small>
-                    <em>Document obligatoire</em>
+                    <em>@GetDocumentLabel("ownerIdentityDocument", "Document obligatoire")</em>
                 </span>
                 <span class="upload-action">Choisir</span>
-                <input name="ownerIdentityDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                <InputFile OnChange="SetOwnerIdentityDocument" accept=".pdf,.jpg,.jpeg,.png" />
             </label>
 
             <label class="upload-card">
@@ -91,21 +95,10 @@
                 <span class="upload-content">
                     <strong>Justificatif d'adresse</strong>
                     <small>Facture, bail ou attestation</small>
-                    <em>Recommande</em>
+                    <em>@GetDocumentLabel("addressProof", "Recommande")</em>
                 </span>
                 <span class="upload-action">Choisir</span>
-                <input name="addressProof" type="file" accept=".pdf,.jpg,.jpeg,.png" />
-            </label>
-
-            <label class="upload-card">
-                <span class="upload-icon">+</span>
-                <span class="upload-content">
-                    <strong>Document complementaire</strong>
-                    <small>Licence, agrement ou preuve utile</small>
-                    <em>Optionnel</em>
-                </span>
-                <span class="upload-action">Choisir</span>
-                <input name="supportingDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                <InputFile OnChange="SetAddressProof" accept=".pdf,.jpg,.jpeg,.png" />
             </label>
         </div>
     </section>
@@ -161,30 +154,61 @@
 
         <label>
             Nombre approximatif de prestataires
-            <input name="providerCount" type="number" min="1" />
+            <input name="providerCount" type="number" min="1" @bind="EstimatedProviderCount" />
         </label>
     </section>
 
-    <button type="button" class="primary-action">Envoyer la demande</button>
+    @if (!string.IsNullOrWhiteSpace(FormMessage))
+    {
+        <p class="field-message">@FormMessage</p>
+    }
+
+    <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="SubmitAsync">
+        @(IsSubmitting ? "Envoi en cours..." : "Envoyer la demande")
+    </button>
 </form>
 
 @code {
-    private static readonly IReadOnlyList<string> ExistingServices =
-    [
-        "Menage a domicile",
-        "Nounou",
-        "Jardinage",
-        "Nettoyage apres travaux"
-    ];
-
-    private readonly List<ServiceTag> SelectedServices =
-    [
-        new("Menage a domicile", false),
-        new("Nounou", false)
-    ];
-
+    private IReadOnlyList<string> ExistingServices { get; set; } = [];
+    private readonly List<ServiceTag> SelectedServices = [];
     private string ServiceEntry { get; set; } = string.Empty;
     private string? ServiceMessage { get; set; }
+    private string? FormMessage { get; set; }
+    private bool IsSubmitting { get; set; }
+    private string CompanyName { get; set; } = string.Empty;
+    private string? RegistrationNumber { get; set; }
+    private string City { get; set; } = string.Empty;
+    private string? Address { get; set; }
+    private string ContactName { get; set; } = string.Empty;
+    private string Email { get; set; } = string.Empty;
+    private string PhoneNumber { get; set; } = string.Empty;
+    private int? EstimatedProviderCount { get; set; }
+    private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["fiscalExistenceDeclaration"] = null,
+        ["companyDocument"] = null,
+        ["ownerIdentityDocument"] = null,
+        ["addressProof"] = null
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var services = await ApiClient.GetServicesAsync();
+            ExistingServices = services.Where(service => service.IsActive).Select(service => service.Name).ToList();
+            foreach (var service in ExistingServices.Take(2))
+            {
+                SelectedServices.Add(new ServiceTag(service, false));
+            }
+        }
+        catch
+        {
+            ExistingServices = ["Menage a domicile", "Nounou", "Jardinage"];
+            SelectedServices.AddRange(ExistingServices.Take(2).Select(service => new ServiceTag(service, false)));
+            FormMessage = "Connexion API indisponible: liste locale chargee temporairement.";
+        }
+    }
 
     private bool IsSelected(string service)
     {
@@ -250,6 +274,80 @@
 
         SelectedServices.Add(new ServiceTag(serviceName, existingMatch is null));
         ServiceEntry = string.Empty;
+    }
+
+    private async Task SubmitAsync()
+    {
+        FormMessage = null;
+
+        if (string.IsNullOrWhiteSpace(CompanyName)
+            || string.IsNullOrWhiteSpace(City)
+            || string.IsNullOrWhiteSpace(ContactName)
+            || string.IsNullOrWhiteSpace(Email)
+            || string.IsNullOrWhiteSpace(PhoneNumber))
+        {
+            FormMessage = "Merci de remplir les informations obligatoires avant d'envoyer la demande.";
+            return;
+        }
+
+        if (Documents["fiscalExistenceDeclaration"] is null
+            || Documents["companyDocument"] is null
+            || Documents["ownerIdentityDocument"] is null)
+        {
+            FormMessage = "Merci d'ajouter le DFE, le registre de commerce et l'identite du responsable.";
+            return;
+        }
+
+        IsSubmitting = true;
+        var request = new RegisterCompanyRequest(
+            CompanyName,
+            RegistrationNumber,
+            City,
+            Address,
+            ContactName,
+            Email,
+            PhoneNumber,
+            SelectedServices.Select(service => service.Name).ToList(),
+            EstimatedProviderCount);
+
+        var success = await ApiClient.RegisterCompanyAsync(request, Documents);
+        FormMessage = success
+            ? "Demande envoyee. Notre equipe va verifier votre dossier."
+            : "Impossible d'envoyer la demande pour le moment. Reessayez dans quelques instants.";
+        IsSubmitting = false;
+    }
+
+    private void SetFiscalExistenceDeclaration(InputFileChangeEventArgs args)
+    {
+        SetDocument("fiscalExistenceDeclaration", args);
+    }
+
+    private void SetCompanyDocument(InputFileChangeEventArgs args)
+    {
+        SetDocument("companyDocument", args);
+    }
+
+    private void SetOwnerIdentityDocument(InputFileChangeEventArgs args)
+    {
+        SetDocument("ownerIdentityDocument", args);
+    }
+
+    private void SetAddressProof(InputFileChangeEventArgs args)
+    {
+        SetDocument("addressProof", args);
+    }
+
+    private void SetDocument(string key, InputFileChangeEventArgs args)
+    {
+        Documents[key] = args.File;
+        FormMessage = null;
+    }
+
+    private string GetDocumentLabel(string key, string fallback)
+    {
+        return Documents.TryGetValue(key, out var file) && file is not null
+            ? file.Name
+            : fallback;
     }
 
     private static bool IsSameService(string left, string right)

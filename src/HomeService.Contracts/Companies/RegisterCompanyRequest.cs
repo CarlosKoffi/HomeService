@@ -1,6 +1,12 @@
 namespace HomeService.Contracts.Companies;
 
 public sealed record RegisterCompanyRequest(
-    string Name,
+    string CompanyName,
+    string? RegistrationNumber,
+    string City,
+    string? Address,
+    string ContactName,
+    string Email,
     string PhoneNumber,
-    string? Email);
+    IReadOnlyList<string> Services,
+    int? EstimatedProviderCount);

@@ -9,3 +9,4 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\ob
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\refint\HomeService.Contracts.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\ref\HomeService.Contracts.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Contracts\obj\Debug\net9.0\HomeService.Contracts.sourcelink.json

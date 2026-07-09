@@ -1,4 +1,5 @@
 using HomeService.Provider.Components;
+using HomeService.Provider;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseSiteAccessGate();
 
 app.UseAntiforgery();
 

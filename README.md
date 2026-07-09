@@ -59,8 +59,13 @@ Dockerfiles disponibles, un par projet deployable:
 Le `Dockerfile` racine a ete retire pour eviter les confusions: Coolify doit pointer vers le
 Dockerfile du projet a deployer.
 
-Le script SQL complet de creation/migration de schema est conserve dans
-`src/HomeService.Admin/Sql/001_create_homeservice_schema.sql`.
+Les scripts SQL de reference sont conserves dans le projet admin:
+
+- `src/HomeService.Admin/Sql/001_create_homeservice_schema.sql`
+- `src/HomeService.Admin/Sql/002_seed_admin_modules_roles.sql`
+- `src/HomeService.Admin/Sql/003_seed_initial_translations.sql`
+
+L'API applique les migrations au demarrage et seed les donnees minimales pour le staging.
 
 ## Qualite Afrique
 

@@ -114,3 +114,4 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.genruntimeconfig.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\ref\HomeService.Tests.Unit.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.sourcelink.json

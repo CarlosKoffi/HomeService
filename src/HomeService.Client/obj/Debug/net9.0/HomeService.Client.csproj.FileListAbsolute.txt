@@ -81,3 +81,4 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Client\obj\D
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Client\obj\Debug\net9.0\HomeService.Client.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Client\obj\Debug\net9.0\HomeService.Client.genruntimeconfig.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Client\obj\Debug\net9.0\ref\HomeService.Client.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Client\obj\Debug\net9.0\HomeService.Client.sourcelink.json

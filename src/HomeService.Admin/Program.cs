@@ -1,10 +1,16 @@
 using HomeService.Admin.Components;
+using HomeService.Admin;
+using HomeService.Admin.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddHttpClient<PlatformApiClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");
+});
 
 var app = builder.Build();
 
@@ -18,6 +24,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseSiteAccessGate();
 
 app.UseAntiforgery();
 

@@ -17,3 +17,4 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Infrastructu
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Infrastructure\obj\Debug\net9.0\refint\HomeService.Infrastructure.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Infrastructure\obj\Debug\net9.0\HomeService.Infrastructure.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Infrastructure\obj\Debug\net9.0\ref\HomeService.Infrastructure.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Infrastructure\obj\Debug\net9.0\HomeService.Infrastructure.sourcelink.json

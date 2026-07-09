@@ -15,3 +15,4 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\refint\HomeService.Application.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\ref\HomeService.Application.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.sourcelink.json

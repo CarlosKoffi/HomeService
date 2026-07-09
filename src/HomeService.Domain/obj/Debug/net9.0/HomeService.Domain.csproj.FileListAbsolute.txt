@@ -9,3 +9,4 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Domain\obj\D
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Domain\obj\Debug\net9.0\refint\HomeService.Domain.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Domain\obj\Debug\net9.0\HomeService.Domain.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Domain\obj\Debug\net9.0\ref\HomeService.Domain.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Domain\obj\Debug\net9.0\HomeService.Domain.sourcelink.json
