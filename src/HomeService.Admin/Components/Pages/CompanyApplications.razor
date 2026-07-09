@@ -1,6 +1,7 @@
 @page "/company-applications"
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Companies
+@using System.Net.Http
 @inject PlatformApiClient ApiClient
 
 <PageTitle>Demandes entreprises</PageTitle>
@@ -101,9 +102,17 @@
             var rows = await ApiClient.GetCompanyApplicationsAsync();
             Applications = rows.Select(MapRow).ToList();
         }
-        catch
+        catch (PlatformApiException exception)
         {
-            ErrorMessage = "Impossible de charger les demandes depuis l'API. Verifiez ApiBaseUrl et les variables SITE_AUTH.";
+            ErrorMessage = exception.Message;
+        }
+        catch (HttpRequestException exception)
+        {
+            ErrorMessage = $"Impossible de joindre l'API a l'adresse {ApiClient.BaseAddress}. Detail reseau: {exception.Message}";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les demandes depuis l'API a l'adresse {ApiClient.BaseAddress}. Detail: {exception.Message}";
         }
         finally
         {

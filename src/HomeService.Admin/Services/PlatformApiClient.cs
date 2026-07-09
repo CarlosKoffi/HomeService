@@ -9,28 +9,43 @@ namespace HomeService.Admin.Services;
 
 public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration configuration)
 {
+    public Uri? BaseAddress => httpClient.BaseAddress;
+
     public async Task<IReadOnlyList<CompanyApplicationSummaryResponse>> GetCompanyApplicationsAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
-        return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyApplicationSummaryResponse>>("/api/admin/company-applications", cancellationToken) ?? [];
+        return await GetJsonAsync<IReadOnlyList<CompanyApplicationSummaryResponse>>("/api/admin/company-applications", cancellationToken) ?? [];
     }
 
     public async Task<CompanyApplicationDetailResponse?> GetCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
-        return await httpClient.GetFromJsonAsync<CompanyApplicationDetailResponse>($"/api/admin/company-applications/{id}", cancellationToken);
+        return await GetJsonAsync<CompanyApplicationDetailResponse>($"/api/admin/company-applications/{id}", cancellationToken);
     }
 
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
-        return await httpClient.GetFromJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
+        return await GetJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
     }
 
     public async Task<IReadOnlyList<TranslationValueResponse>> GetTranslationsAsync(string scope, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
-        return await httpClient.GetFromJsonAsync<IReadOnlyList<TranslationValueResponse>>($"/api/translations?scope={Uri.EscapeDataString(scope)}", cancellationToken) ?? [];
+        return await GetJsonAsync<IReadOnlyList<TranslationValueResponse>>($"/api/translations?scope={Uri.EscapeDataString(scope)}", cancellationToken) ?? [];
+    }
+
+    private async Task<T?> GetJsonAsync<T>(string path, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new PlatformApiException(
+            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
     }
 
     private void AddBasicAuthIfConfigured()
@@ -58,3 +73,5 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
     }
 }
+
+public sealed class PlatformApiException(string message) : Exception(message);
