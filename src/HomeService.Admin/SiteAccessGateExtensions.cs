@@ -10,6 +10,12 @@ public static class SiteAccessGateExtensions
         return app.Use(async (context, next) =>
         {
             var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
+            if (!IsEnabled(configuration))
+            {
+                await next(context);
+                return;
+            }
+
             var expectedPassword = configuration["SITE_AUTH_PASSWORD"]?.Trim();
 
             if (string.IsNullOrWhiteSpace(expectedPassword))
@@ -59,6 +65,13 @@ public static class SiteAccessGateExtensions
         {
             return false;
         }
+    }
+
+    private static bool IsEnabled(IConfiguration configuration)
+    {
+        var value = configuration["SITE_AUTH_ENABLED"];
+        return !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool SecureEquals(string value, string expected)

@@ -63,6 +63,11 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
     private void AddBasicAuthIfConfigured()
     {
+        if (!IsAuthEnabled())
+        {
+            return;
+        }
+
         var password = configuration["SITE_AUTH_PASSWORD"]?.Trim();
         if (string.IsNullOrWhiteSpace(password))
         {
@@ -80,5 +85,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         {
             content.Add(new StringContent(value, Encoding.UTF8), name);
         }
+    }
+
+    private bool IsAuthEnabled()
+    {
+        var value = configuration["SITE_AUTH_ENABLED"];
+        return !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
     }
 }
