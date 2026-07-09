@@ -7,6 +7,17 @@ Ce dossier contient la base Docker Compose pour lancer la premiere phase du proj
 - back-office admin entreprise
 - PostgreSQL
 
+Chaque application deployable possede son propre `Dockerfile`:
+
+- `src/HomeService.Api/Dockerfile`
+- `src/HomeService.Company/Dockerfile`
+- `src/HomeService.Admin/Dockerfile`
+- `src/HomeService.Client/Dockerfile`
+- `src/HomeService.Provider/Dockerfile`
+
+Le compose Coolify utilise pour l'instant `Api`, `Company` et `Admin`. Les projets `Client` et `Provider`
+ont deja leur Dockerfile pour la suite, mais ils ne sont pas encore exposes dans cette premiere phase.
+
 ## Variables a creer dans Coolify
 
 Copier les valeurs de `deploy/.env.example` dans les variables d'environnement Coolify, puis remplacer au minimum:
@@ -15,6 +26,62 @@ Copier les valeurs de `deploy/.env.example` dans les variables d'environnement C
 - `POSTGRES_USER` si besoin
 - `POSTGRES_DB` si besoin
 - `API_PORT`, `COMPANY_PORT`, `ADMIN_PORT` selon les ports exposes par Coolify
+
+## Option recommandee: creer les apps une par une
+
+Dans Coolify, tu peux creer chaque application separement avec son propre Dockerfile:
+
+### API
+
+- Type: Dockerfile
+- Repository: `CarlosKoffi/HomeService`
+- Branch: `main`
+- Base directory: racine du repo
+- Dockerfile: `src/HomeService.Api/Dockerfile`
+- Port interne: `8080`
+
+Variables:
+
+- `ASPNETCORE_ENVIRONMENT=Production`
+- `ASPNETCORE_URLS=http://+:8080`
+- `ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homeservice;Username=homeservice;Password=...`
+
+### Portail entreprise
+
+- Type: Dockerfile
+- Dockerfile: `src/HomeService.Company/Dockerfile`
+- Port interne: `8080`
+
+Variables:
+
+- `ASPNETCORE_ENVIRONMENT=Production`
+- `ASPNETCORE_URLS=http://+:8080`
+- `ApiBaseUrl=https://api.votre-domaine.com`
+
+### Admin
+
+- Type: Dockerfile
+- Dockerfile: `src/HomeService.Admin/Dockerfile`
+- Port interne: `8080`
+
+Variables:
+
+- `ASPNETCORE_ENVIRONMENT=Production`
+- `ASPNETCORE_URLS=http://+:8080`
+- `ApiBaseUrl=https://api.votre-domaine.com`
+
+### Client et prestataire
+
+Les Dockerfiles existent deja pour la suite:
+
+- `src/HomeService.Client/Dockerfile`
+- `src/HomeService.Provider/Dockerfile`
+
+On ne les expose pas encore tant que le scope client/prestataire n'est pas avance.
+
+## Option alternative: Docker Compose
+
+Le fichier `deploy/docker-compose.yml` permet de lancer la stack en une seule ressource.
 
 ## Services exposes
 
@@ -38,3 +105,12 @@ Dans Coolify, l'ideal est d'attacher un domaine ou sous-domaine par interface:
 - Appliquer les migrations EF Core au deploiement.
 - Creer un premier compte super admin.
 - Ajouter les secrets email/SMS quand les integrations seront choisies.
+
+## SQL
+
+Le script SQL complet genere depuis les migrations EF Core est conserve dans:
+
+`src/HomeService.Admin/Sql/001_create_homeservice_schema.sql`
+
+Il sert de reference pour inspecter la structure de base depuis le projet admin. En production,
+la strategie definitive sera soit migrations EF automatisees, soit job de migration controle.

@@ -2,10 +2,7 @@ services:
   api:
     build:
       context: ..
-      dockerfile: Dockerfile
-      args:
-        PROJECT: src/HomeService.Api/HomeService.Api.csproj
-        APP_DLL: HomeService.Api.dll
+      dockerfile: src/HomeService.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
@@ -19,10 +16,7 @@ services:
   company:
     build:
       context: ..
-      dockerfile: Dockerfile
-      args:
-        PROJECT: src/HomeService.Company/HomeService.Company.csproj
-        APP_DLL: HomeService.Company.dll
+      dockerfile: src/HomeService.Company/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
@@ -36,10 +30,7 @@ services:
   admin:
     build:
       context: ..
-      dockerfile: Dockerfile
-      args:
-        PROJECT: src/HomeService.Admin/HomeService.Admin.csproj
-        APP_DLL: HomeService.Admin.dll
+      dockerfile: src/HomeService.Admin/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080

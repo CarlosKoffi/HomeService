@@ -41,11 +41,26 @@ Le premier focus est le portail entreprise:
 
 ## Docker
 
-La racine contient un `Dockerfile` parametrable par projet. Le compose local lance:
+Chaque application deployable possede son propre `Dockerfile`. Le compose local/Coolify lance:
 
 - PostgreSQL
 - API
 - portail entreprise
+- back-office admin
+
+Dockerfiles disponibles, un par projet deployable:
+
+- `src/HomeService.Api/Dockerfile`
+- `src/HomeService.Company/Dockerfile`
+- `src/HomeService.Admin/Dockerfile`
+- `src/HomeService.Client/Dockerfile`
+- `src/HomeService.Provider/Dockerfile`
+
+Le `Dockerfile` racine a ete retire pour eviter les confusions: Coolify doit pointer vers le
+Dockerfile du projet a deployer.
+
+Le script SQL complet de creation/migration de schema est conserve dans
+`src/HomeService.Admin/Sql/001_create_homeservice_schema.sql`.
 
 ## Qualite Afrique
 
