@@ -4,5 +4,7 @@
 .agents/
 .vs/
 .vscode/
-Dockerfile
-README.md
+docs/
+tests/
+*.user
+*.suo

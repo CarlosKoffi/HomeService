@@ -1,0 +1,36 @@
+# Build output
+bin/
+obj/
+**/bin/
+**/obj/
+
+# User and IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.rsuser
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Local environment files
+.env
+*.local
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Test output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# OS files
+Thumbs.db
+.DS_Store
