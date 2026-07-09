@@ -80,5 +80,5 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\ref\HomeService.Company.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\jddhup17t4-s500zi2wg0.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\gfg39cg1u5-s500zi2wg0.gz
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\39kvto9uka-stknrray7i.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\HomeService.Company.sourcelink.json
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\39kvto9uka-p4je2h5qr1.gz

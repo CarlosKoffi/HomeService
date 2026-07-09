@@ -3,6 +3,7 @@
 @using HomeService.Contracts.Companies
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
+@using System.Text.RegularExpressions
 @inject PlatformApiClient ApiClient
 
 <PageTitle>Inscription entreprise</PageTitle>
@@ -163,6 +164,17 @@
         <p class="field-message">@FormMessage</p>
     }
 
+    @if (ValidationErrors.Count > 0)
+    {
+        <div class="validation-summary">
+            <strong>Avant d'envoyer, corrigez ces points :</strong>
+            @foreach (var error in ValidationErrors)
+            {
+                <span>@error</span>
+            }
+        </div>
+    }
+
     <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="SubmitAsync">
         @(IsSubmitting ? "Envoi en cours..." : "Envoyer la demande")
     </button>
@@ -183,6 +195,7 @@
     private string Email { get; set; } = string.Empty;
     private string PhoneNumber { get; set; } = string.Empty;
     private int? EstimatedProviderCount { get; set; }
+    private List<string> ValidationErrors { get; set; } = [];
     private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase)
     {
         ["fiscalExistenceDeclaration"] = null,
@@ -279,22 +292,10 @@
     private async Task SubmitAsync()
     {
         FormMessage = null;
+        ValidationErrors = ValidateForm();
 
-        if (string.IsNullOrWhiteSpace(CompanyName)
-            || string.IsNullOrWhiteSpace(City)
-            || string.IsNullOrWhiteSpace(ContactName)
-            || string.IsNullOrWhiteSpace(Email)
-            || string.IsNullOrWhiteSpace(PhoneNumber))
+        if (ValidationErrors.Count > 0)
         {
-            FormMessage = "Merci de remplir les informations obligatoires avant d'envoyer la demande.";
-            return;
-        }
-
-        if (Documents["fiscalExistenceDeclaration"] is null
-            || Documents["companyDocument"] is null
-            || Documents["ownerIdentityDocument"] is null)
-        {
-            FormMessage = "Merci d'ajouter le DFE, le registre de commerce et l'identite du responsable.";
             return;
         }
 
@@ -315,6 +316,96 @@
             ? "Demande envoyee. Notre equipe va verifier votre dossier."
             : "Impossible d'envoyer la demande pour le moment. Reessayez dans quelques instants.";
         IsSubmitting = false;
+    }
+
+    private List<string> ValidateForm()
+    {
+        var errors = new List<string>();
+
+        if (CompanyName.Trim().Length < 3)
+        {
+            errors.Add("Le nom legal de l'entreprise doit contenir au moins 3 caracteres.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(RegistrationNumber) && RegistrationNumber.Trim().Length < 4)
+        {
+            errors.Add("Le numero RCCM ou identifiant legal semble trop court.");
+        }
+
+        if (City.Trim().Length < 2)
+        {
+            errors.Add("La ville est obligatoire.");
+        }
+
+        if (ContactName.Trim().Length < 3)
+        {
+            errors.Add("Le nom complet du responsable est obligatoire.");
+        }
+
+        if (!IsValidEmail(Email))
+        {
+            errors.Add("L'email professionnel n'est pas valide.");
+        }
+
+        if (!IsValidPhoneNumber(PhoneNumber))
+        {
+            errors.Add("Le telephone doit contenir entre 8 et 15 chiffres. Exemple: +2250700000000.");
+        }
+
+        if (EstimatedProviderCount is not null and (< 1 or > 10000))
+        {
+            errors.Add("Le nombre de prestataires doit etre compris entre 1 et 10000.");
+        }
+
+        if (SelectedServices.Count == 0)
+        {
+            errors.Add("Selectionnez au moins un service envisage.");
+        }
+
+        if (Documents["fiscalExistenceDeclaration"] is null)
+        {
+            errors.Add("Le DFE est obligatoire.");
+        }
+
+        if (Documents["companyDocument"] is null)
+        {
+            errors.Add("Le registre de commerce est obligatoire.");
+        }
+
+        if (Documents["ownerIdentityDocument"] is null)
+        {
+            errors.Add("L'identite du responsable est obligatoire.");
+        }
+
+        foreach (var file in Documents.Values.Where(file => file is not null).Cast<IBrowserFile>())
+        {
+            if (!IsAllowedFile(file))
+            {
+                errors.Add($"Le fichier {file.Name} doit etre un PDF, JPG ou PNG de 10 Mo maximum.");
+            }
+        }
+
+        return errors;
+    }
+
+    private static bool IsValidEmail(string value)
+    {
+        return Regex.IsMatch(value.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase);
+    }
+
+    private static bool IsValidPhoneNumber(string value)
+    {
+        var digits = Regex.Replace(value, @"\D", string.Empty);
+        return digits.Length is >= 8 and <= 15;
+    }
+
+    private static bool IsAllowedFile(IBrowserFile file)
+    {
+        var allowedTypes = new[] { "application/pdf", "image/jpeg", "image/png" };
+        var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
+        return file.Size <= 10 * 1024 * 1024
+            && allowedTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase)
+            && allowedExtensions.Contains(Path.GetExtension(file.Name), StringComparer.OrdinalIgnoreCase);
     }
 
     private void SetFiscalExistenceDeclaration(InputFileChangeEventArgs args)
@@ -341,6 +432,7 @@
     {
         Documents[key] = args.File;
         FormMessage = null;
+        ValidationErrors = [];
     }
 
     private string GetDocumentLabel(string key, string fallback)

@@ -443,6 +443,26 @@ h2 {
     padding: .65rem .8rem;
 }
 
+.validation-summary {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 18px;
+    color: #9a3412;
+    display: grid;
+    gap: .45rem;
+    line-height: 1.4;
+    padding: .85rem 1rem;
+}
+
+.validation-summary strong {
+    color: #7c2d12;
+}
+
+.validation-summary span {
+    display: block;
+    font-weight: 700;
+}
+
 .selected-service-tags span {
     background: #ecfeff;
     border: 1px solid rgba(8, 191, 168, .25);

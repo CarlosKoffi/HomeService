@@ -1,139 +1,187 @@
 @page "/company-applications/{Id:guid}"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Companies
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Detail demande entreprise</PageTitle>
 
 <a href="company-applications">Retour a la liste</a>
 
-<section class="detail-header">
-    <div>
-        <h1>@Application.CompanyName</h1>
-        <p class="lead">@Application.City - @Application.ContactName - @Application.Email</p>
-        <p class="section-help">
-            Cette vue doit permettre a un admin de prendre une decision sans ouvrir dix ecrans:
-            informations legales, documents, services proposes, notes internes et action finale.
-        </p>
-    </div>
-    <span class="detail-status">@Application.Status</span>
-</section>
+@if (IsLoading)
+{
+    <section class="info-panel">
+        <p>Chargement du dossier entreprise...</p>
+    </section>
+}
+else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <section class="info-panel">
+        <p>@ErrorMessage</p>
+    </section>
+}
+else if (Application is not null)
+{
+    <section class="detail-header">
+        <div>
+            <h1>@Application.CompanyName</h1>
+            <p class="lead">@Application.City - @Application.ContactName - @Application.Email</p>
+            <p class="section-help">
+                Dossier depose @FormatDate(Application.SubmittedAt). Verifiez les informations legales, les pieces,
+                les services demandes et la coherence globale avant validation.
+            </p>
+        </div>
+        <span class="detail-status">@Application.Status</span>
+    </section>
 
-<section class="info-panel">
-    <div>
-        <h2>Decision attendue</h2>
-        <p>
-            Valider seulement si l'entreprise existe officiellement, si le responsable est identifiable
-            et si les services annonces correspondent a l'activite declaree. En cas de doute, demander
-            un complement plutot que rejeter trop vite.
-        </p>
-    </div>
-    <div class="check-list">
-        <span>Nom legal coherent</span>
-        <span>DFE lisible</span>
-        <span>Contact responsable joignable</span>
-        <span>Services sans doublon evident</span>
-    </div>
-</section>
+    <section class="info-panel">
+        <div>
+            <h2>Decision attendue</h2>
+            <p>
+                Valider seulement si l'entreprise existe officiellement, si le responsable est identifiable
+                et si les services annonces correspondent a l'activite declaree.
+            </p>
+        </div>
+        <div class="check-list">
+            <span>Nom legal coherent</span>
+            <span>DFE lisible</span>
+            <span>Contact responsable joignable</span>
+            <span>Services sans doublon evident</span>
+        </div>
+    </section>
 
-<section class="detail-grid">
-    <article>
-        <h2>Entreprise</h2>
-        <dl>
-            <dt>Numero legal</dt>
-            <dd>@Application.RegistrationNumber</dd>
-            <dt>Adresse</dt>
-            <dd>@Application.Address</dd>
-            <dt>Telephone</dt>
-            <dd>@Application.PhoneNumber</dd>
-            <dt>Prestataires estimes</dt>
-            <dd>@Application.EstimatedProviderCount</dd>
-        </dl>
-    </article>
-
-    <article>
-        <h2>Services envisages</h2>
-        <p>@Application.PlannedServices</p>
-        <p class="section-help">
-            Les services seront convertis en tags. Si un service ressemble a un service existant,
-            il doit etre associe plutot que cree en doublon.
-        </p>
-    </article>
-</section>
-
-<section class="document-list">
-    <h2>Pieces a verifier</h2>
-    @foreach (var document in Application.Documents)
-    {
+    <section class="detail-grid">
         <article>
-            <div>
-                <strong>@document.DocumentType</strong>
-                <p>@document.OriginalFileName - @document.ContentType</p>
-                <p class="section-help">@document.ReviewHelp</p>
-            </div>
-            <span>@document.ReviewStatus</span>
-            <div class="easy-actions">
-                <button type="button">Ouvrir</button>
-                <button type="button">Valider piece</button>
-                <button type="button">Remplacement</button>
-            </div>
+            <h2>Entreprise</h2>
+            <dl>
+                <dt>Numero legal</dt>
+                <dd>@Display(Application.RegistrationNumber)</dd>
+                <dt>Adresse</dt>
+                <dd>@Display(Application.Address)</dd>
+                <dt>Telephone</dt>
+                <dd>@Application.PhoneNumber</dd>
+                <dt>Prestataires estimes</dt>
+                <dd>@(Application.EstimatedProviderCount?.ToString() ?? "Non renseigne")</dd>
+                <dt>Note revue</dt>
+                <dd>@Display(Application.ReviewNote)</dd>
+            </dl>
         </article>
-    }
-</section>
 
-<section class="review-panel">
-    <h2>Actions dossier</h2>
-    <p class="section-help">
-        La note interne reste visible par l'equipe admin. Le message de complement doit etre simple,
-        poli et precis: document attendu, raison, format accepte et delai souhaite.
-    </p>
-    <textarea rows="4" placeholder="Note interne ou message de complement"></textarea>
-    <div class="easy-actions">
-        <button type="button">Demander complement</button>
-        <button type="button">Valider et envoyer lien</button>
-        <button type="button">Relancer email</button>
-        <button type="button">Rejeter</button>
-    </div>
-</section>
+        <article>
+            <h2>Services envisages</h2>
+            <p>@Display(Application.PlannedServices)</p>
+            <p class="section-help">
+                Les services doivent etre associes au catalogue existant quand ils sont proches d'un service actif.
+            </p>
+        </article>
+    </section>
+
+    <section class="document-list">
+        <h2>Pieces a verifier</h2>
+        @if (Application.Documents.Count == 0)
+        {
+            <article>
+                <p>Aucune piece rattachee a ce dossier.</p>
+            </article>
+        }
+        else
+        {
+            @foreach (var document in Application.Documents)
+            {
+                <article>
+                    <div>
+                        <strong>@GetDocumentLabel(document.DocumentType)</strong>
+                        <p>@document.OriginalFileName - @document.ContentType</p>
+                        <p class="section-help">@GetDocumentHelp(document.DocumentType)</p>
+                    </div>
+                    <span>@document.ReviewStatus</span>
+                    <div class="easy-actions">
+                        <a href="@ApiClient.GetCompanyApplicationDocumentUrl(document.Id)" target="_blank">Ouvrir</a>
+                        <button type="button">Valider piece</button>
+                        <button type="button">Remplacement</button>
+                    </div>
+                </article>
+            }
+        }
+    </section>
+
+    <section class="review-panel">
+        <h2>Actions dossier</h2>
+        <p class="section-help">
+            Les actions seront branchees ensuite: demander un complement, valider, envoyer le lien d'activation,
+            relancer ou rejeter avec note.
+        </p>
+        <textarea rows="4" placeholder="Note interne ou message de complement"></textarea>
+        <div class="easy-actions">
+            <button type="button">Demander complement</button>
+            <button type="button">Valider et envoyer lien</button>
+            <button type="button">Relancer email</button>
+            <button type="button">Rejeter</button>
+        </div>
+    </section>
+}
 
 @code {
     [Parameter]
     public Guid Id { get; set; }
 
-    private ApplicationDetail Application => new(
-        Id,
-        "Ivoire Clean Services",
-        "CI-ABJ-2026-001",
-        "Abidjan",
-        "Cocody Angre",
-        "Awa Kouame",
-        "contact@ivoireclean.ci",
-        "+225 07 00 00 00 00",
-        "Menage a domicile, nounou, jardinage",
-        18,
-        "Soumis",
-        [
-            new("DFE - Declaration Fiscale d'Existence", "dfe.pdf", "application/pdf", "Pending", "Verifier le nom legal, le numero fiscal, la lisibilite et la coherence avec le registre."),
-            new("Registre de commerce", "registre-commerce.pdf", "application/pdf", "Pending", "Comparer la raison sociale, l'adresse et l'activite declaree avec le formulaire."),
-            new("Identite responsable", "cni-responsable.jpg", "image/jpeg", "Pending", "Le nom doit correspondre au contact responsable ou a une personne autorisee."),
-            new("Justificatif adresse", "justificatif-adresse.pdf", "application/pdf", "Approved", "Document recommande pour securiser les futures relations et relances.")
-        ]);
+    private CompanyApplicationDetailResponse? Application { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
 
-    private sealed record ApplicationDetail(
-        Guid Id,
-        string CompanyName,
-        string? RegistrationNumber,
-        string City,
-        string? Address,
-        string ContactName,
-        string Email,
-        string PhoneNumber,
-        string? PlannedServices,
-        int? EstimatedProviderCount,
-        string Status,
-        IReadOnlyList<DocumentRow> Documents);
+    protected override async Task OnParametersSetAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
 
-    private sealed record DocumentRow(
-        string DocumentType,
-        string OriginalFileName,
-        string ContentType,
-        string ReviewStatus,
-        string ReviewHelp);
+        try
+        {
+            Application = await ApiClient.GetCompanyApplicationAsync(Id);
+            if (Application is null)
+            {
+                ErrorMessage = "Dossier introuvable.";
+            }
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger ce dossier depuis l'API. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static string Display(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "Non renseigne" : value;
+    }
+
+    private static string FormatDate(DateTimeOffset? value)
+    {
+        return value is null ? "a une date inconnue" : $"le {value.Value.ToLocalTime():dd/MM/yyyy HH:mm}";
+    }
+
+    private static string GetDocumentLabel(string documentType)
+    {
+        return documentType switch
+        {
+            "FiscalExistenceDeclaration" => "DFE - Declaration Fiscale d'Existence",
+            "BusinessRegistration" => "Registre de commerce",
+            "OwnerIdentity" => "Identite responsable",
+            "AddressProof" => "Justificatif d'adresse",
+            _ => "Document complementaire"
+        };
+    }
+
+    private static string GetDocumentHelp(string documentType)
+    {
+        return documentType switch
+        {
+            "FiscalExistenceDeclaration" => "Verifier le nom legal, le numero fiscal, la lisibilite et la coherence avec le registre.",
+            "BusinessRegistration" => "Comparer la raison sociale, l'adresse et l'activite declaree avec le formulaire.",
+            "OwnerIdentity" => "Le nom doit correspondre au contact responsable ou a une personne autorisee.",
+            "AddressProof" => "Document recommande pour securiser les futures relations et relances.",
+            _ => "Verifier la pertinence du document pour le dossier."
+        };
+    }
 }

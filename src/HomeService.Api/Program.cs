@@ -6,6 +6,7 @@ using HomeService.Contracts.Services;
 using HomeService.Domain.Entities;
 using HomeService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -140,13 +141,10 @@ app.MapPost("/api/company-applications", async (
         GetServices(form),
         GetOptionalInt(form, "estimatedProviderCount"));
 
-    if (string.IsNullOrWhiteSpace(request.CompanyName)
-        || string.IsNullOrWhiteSpace(request.City)
-        || string.IsNullOrWhiteSpace(request.ContactName)
-        || string.IsNullOrWhiteSpace(request.Email)
-        || string.IsNullOrWhiteSpace(request.PhoneNumber))
+    var validationErrors = ValidateCompanyApplication(request);
+    if (validationErrors.Count > 0)
     {
-        return Results.BadRequest(new { message = "Les champs entreprise, ville, contact, email et telephone sont obligatoires." });
+        return Results.BadRequest(new { message = "Le formulaire contient des erreurs.", errors = validationErrors });
     }
 
     var requiredDocumentFields = new[] { "fiscalExistenceDeclaration", "companyDocument", "ownerIdentityDocument" };
@@ -387,6 +385,54 @@ static IReadOnlyList<string> GetServices(IFormCollection form)
         .Where(value => !string.IsNullOrWhiteSpace(value))
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToList();
+}
+
+static IReadOnlyList<string> ValidateCompanyApplication(RegisterCompanyRequest request)
+{
+    var errors = new List<string>();
+
+    if (request.CompanyName.Trim().Length < 3)
+    {
+        errors.Add("Le nom legal de l'entreprise doit contenir au moins 3 caracteres.");
+    }
+
+    if (!string.IsNullOrWhiteSpace(request.RegistrationNumber) && request.RegistrationNumber.Trim().Length < 4)
+    {
+        errors.Add("Le numero legal semble trop court.");
+    }
+
+    if (request.City.Trim().Length < 2)
+    {
+        errors.Add("La ville est obligatoire.");
+    }
+
+    if (request.ContactName.Trim().Length < 3)
+    {
+        errors.Add("Le nom du responsable est obligatoire.");
+    }
+
+    if (!Regex.IsMatch(request.Email.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase))
+    {
+        errors.Add("L'email professionnel n'est pas valide.");
+    }
+
+    var phoneDigits = Regex.Replace(request.PhoneNumber, @"\D", string.Empty);
+    if (phoneDigits.Length is < 8 or > 15)
+    {
+        errors.Add("Le telephone doit contenir entre 8 et 15 chiffres.");
+    }
+
+    if (request.EstimatedProviderCount is not null and (< 1 or > 10000))
+    {
+        errors.Add("Le nombre de prestataires doit etre compris entre 1 et 10000.");
+    }
+
+    if (request.Services.Count == 0)
+    {
+        errors.Add("Au moins un service est requis.");
+    }
+
+    return errors;
 }
 
 public partial class Program;
