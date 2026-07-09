@@ -10,7 +10,7 @@ public static class SiteAccessGateExtensions
         return app.Use(async (context, next) =>
         {
             var configuration = context.RequestServices.GetRequiredService<IConfiguration>();
-            var expectedPassword = configuration["SITE_AUTH_PASSWORD"];
+            var expectedPassword = configuration["SITE_AUTH_PASSWORD"]?.Trim();
 
             if (string.IsNullOrWhiteSpace(expectedPassword))
             {
@@ -18,7 +18,7 @@ public static class SiteAccessGateExtensions
                 return;
             }
 
-            var expectedUsername = configuration["SITE_AUTH_USERNAME"] ?? "admin";
+            var expectedUsername = (configuration["SITE_AUTH_USERNAME"] ?? "admin").Trim();
 
             if (IsAuthorized(context.Request.Headers.Authorization, expectedUsername, expectedPassword))
             {

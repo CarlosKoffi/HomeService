@@ -35,13 +35,13 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
     private void AddBasicAuthIfConfigured()
     {
-        var password = configuration["SITE_AUTH_PASSWORD"];
+        var password = configuration["SITE_AUTH_PASSWORD"]?.Trim();
         if (string.IsNullOrWhiteSpace(password))
         {
             return;
         }
 
-        var username = configuration["SITE_AUTH_USERNAME"] ?? "admin";
+        var username = (configuration["SITE_AUTH_USERNAME"] ?? "admin").Trim();
         var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
     }
