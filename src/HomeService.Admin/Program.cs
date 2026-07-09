@@ -9,7 +9,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpClient<PlatformApiClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");
+    client.BaseAddress = new Uri(builder.Configuration["API_BASE_URL"] ?? builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");
 });
 
 var app = builder.Build();

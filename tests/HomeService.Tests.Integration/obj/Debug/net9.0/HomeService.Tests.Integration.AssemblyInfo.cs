@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HomeService.Tests.Integration")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+376c53ae2876f1d8b67cc5639706ca83754b4079")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+68ea17b8267d3bb3b21a306a457d4ed2895786de")]
 [assembly: System.Reflection.AssemblyProductAttribute("HomeService.Tests.Integration")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HomeService.Tests.Integration")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
