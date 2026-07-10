@@ -198,6 +198,31 @@ a, .btn-link {
     justify-content: end;
 }
 
+.assignment-mode-panel {
+    align-items: center;
+}
+
+.assignment-mode-actions {
+    align-content: start;
+    display: grid;
+    gap: .6rem;
+}
+
+.assignment-mode-actions select,
+.assignment-mode-actions button {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+    padding: .65rem .75rem;
+}
+
+.assignment-mode-actions button {
+    background: #0f172a;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 800;
+}
+
 .status-new .queue-heading span {
     background: #dbeafe;
     color: #1e40af;
@@ -400,6 +425,39 @@ a, .btn-link {
     font: inherit;
     padding: .55rem .7rem;
     resize: vertical;
+}
+
+.document-preview {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin-top: .75rem;
+    overflow: hidden;
+}
+
+.document-preview summary {
+    color: #0f766e;
+    cursor: pointer;
+    font-weight: 900;
+    padding: .7rem .85rem;
+}
+
+.document-preview img,
+.document-preview iframe {
+    background: #fff;
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    display: block;
+    width: 100%;
+}
+
+.document-preview img {
+    max-height: 520px;
+    object-fit: contain;
+}
+
+.document-preview iframe {
+    height: min(68vh, 620px);
 }
 
 .localization-grid {

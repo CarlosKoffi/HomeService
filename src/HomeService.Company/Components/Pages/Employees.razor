@@ -1,21 +1,354 @@
 @page "/employees"
+@using System.Text.Json
+@inject IJSRuntime Js
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Employes</PageTitle>
 
-<h1>Employes</h1>
-<p>Invitation, services autorises, experience, tarif horaire et statut de validation plateforme.</p>
-
-<section class="dashboard-grid">
-    <article>
-        <h2>Invitation SMS</h2>
-        <p>L'entreprise saisit les informations essentielles, puis l'employe complete son dossier.</p>
-    </article>
-    <article>
-        <h2>Experience</h2>
-        <p>Junior, confirme, senior ou expert, avec tarif horaire en XOF par service.</p>
-    </article>
-    <article>
-        <h2>Controle</h2>
-        <p>Suspension possible si l'employe quitte l'entreprise ou n'est plus fiable.</p>
-    </article>
+<section class="workspace-header">
+    <div>
+        <p class="eyebrow">Portail entreprise</p>
+        <h1>Employes</h1>
+        <p class="lead">Ajoutez, controlez et suivez les prestataires que votre entreprise autorise sur la plateforme.</p>
+    </div>
+    <a class="secondary-action" href="dashboard">Retour portail</a>
 </section>
+
+@if (Session is null)
+{
+    <section class="empty-state">
+        <h2>Connexion requise</h2>
+        <p>Connectez-vous avec le compte entreprise active pour gerer vos employes.</p>
+        <a class="primary-action" href="dashboard">Se connecter</a>
+    </section>
+}
+else
+{
+    <section class="portal-session-banner">
+        <div>
+            <span>Entreprise active</span>
+            <strong>@Session.CompanyName</strong>
+            <p>@EmployeeRows.Count employe(s) suivi(s)</p>
+        </div>
+        <button type="button" class="primary-action" @onclick="ToggleForm">
+            @(ShowForm ? "Masquer l'ajout" : "Ajouter un employe")
+        </button>
+    </section>
+
+    @if (ShowForm)
+    {
+        <EditForm Model="Form" OnSubmit="CreateEmployeeAsync" class="employee-form">
+            <div class="form-section-title">
+                <h2>Nouvel employe</h2>
+                <p>Les champs obligatoires permettent deja de creer une fiche exploitable.</p>
+            </div>
+
+            <div class="form-grid">
+                <label>
+                    Prenom
+                    <InputText @bind-Value="Form.FirstName" placeholder="Awa" />
+                </label>
+                <label>
+                    Nom
+                    <InputText @bind-Value="Form.LastName" placeholder="Kone" />
+                </label>
+                <label>
+                    Telephone
+                    <InputText @bind-Value="Form.PhoneNumber" placeholder="+225 07 00 00 00 00" />
+                </label>
+                <label>
+                    Date de naissance
+                    <InputDate @bind-Value="BirthDate" />
+                </label>
+                <label class="wide-field">
+                    Adresse
+                    <InputText @bind-Value="Form.Address" placeholder="Cocody, Abidjan" />
+                </label>
+                <label>
+                    Type
+                    <InputSelect @bind-Value="Form.EmploymentType">
+                        <option value="CompanyEmployee">Employe de l'entreprise</option>
+                        <option value="TemporaryWorker">Interimaire</option>
+                    </InputSelect>
+                </label>
+                <label>
+                    Annees d'experience
+                    <InputNumber @bind-Value="Form.YearsOfExperience" />
+                </label>
+                <label>
+                    Rayon mission (km)
+                    <InputNumber @bind-Value="Form.MissionRadiusKm" />
+                </label>
+                <label>
+                    Tarif horaire XOF
+                    <InputNumber @bind-Value="Form.HourlyRateAmount" />
+                </label>
+                <label>
+                    Niveau
+                    <InputSelect @bind-Value="Form.ExperienceLevel">
+                        <option value="Junior">Junior</option>
+                        <option value="Confirmed">Confirme</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Expert">Expert</option>
+                    </InputSelect>
+                </label>
+                <label>
+                    Latitude mission
+                    <InputNumber @bind-Value="Form.MissionLatitude" />
+                </label>
+                <label>
+                    Longitude mission
+                    <InputNumber @bind-Value="Form.MissionLongitude" />
+                </label>
+            </div>
+
+            <div class="service-picker">
+                <strong>Services maitrises</strong>
+                <div>
+                    @foreach (var service in Services)
+                    {
+                        <label class="service-check">
+                            <input type="checkbox" checked="@Form.ServiceIds.Contains(service.Id)" @onchange="eventArgs => ToggleService(service.Id, eventArgs)" />
+                            <span>@service.Name</span>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div class="employee-upload-grid">
+                <label class="upload-mini">
+                    <span>Photo</span>
+                    <InputFile OnChange="OnPhotoSelected" accept=".jpg,.jpeg,.png,.webp" />
+                </label>
+                <label class="upload-mini">
+                    <span>Piece d'identite</span>
+                    <InputFile OnChange="OnIdentitySelected" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                </label>
+                <label class="upload-mini optional">
+                    <span>Diplome optionnel</span>
+                    <InputFile OnChange="OnDiplomaSelected" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                </label>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <p class="field-message">@Message</p>
+            }
+
+            <button type="submit" class="primary-action" disabled="@IsSaving">
+                @(IsSaving ? "Enregistrement..." : "Enregistrer l'employe")
+            </button>
+        </EditForm>
+    }
+
+    <section class="employee-board">
+        @foreach (var employee in EmployeeRows)
+        {
+            <article class="employee-card @(employee.Status == "SuspendedByCompany" ? "is-suspended" : null)">
+                <div class="employee-card-top">
+                    @if (!string.IsNullOrWhiteSpace(employee.PhotoUrl))
+                    {
+                        <img src="@ApiClient.ToApiUrl(employee.PhotoUrl)" alt="Photo de @employee.FirstName @employee.LastName" />
+                    }
+                    else
+                    {
+                        <div class="employee-avatar">@GetInitials(employee)</div>
+                    }
+
+                    <div>
+                        <h2>@employee.FirstName @employee.LastName</h2>
+                        <p>@employee.PhoneNumber</p>
+                        <div class="status-row">
+                            <span class="employment-pill">@GetEmploymentTypeLabel(employee.EmploymentType)</span>
+                            <span class="assignment-pill @(employee.ReceivesDirectRequests ? "direct" : "assigned")">
+                                @GetAssignmentLabel(employee.ReceivesDirectRequests)
+                            </span>
+                            <span class="status-pill @GetStatusClass(employee.Status)">@GetStatusLabel(employee.Status)</span>
+                            @if (employee.HasDiploma)
+                            {
+                                <span class="diploma-badge" title="Diplome fourni">Diplome</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <dl class="employee-metrics">
+                    <div><dt>Experience</dt><dd>@employee.YearsOfExperience an(s)</dd></div>
+                    <div><dt>Rayon</dt><dd>@employee.ServiceRadiusKm km</dd></div>
+                    <div><dt>Adresse</dt><dd>@employee.Address</dd></div>
+                </dl>
+
+                <div class="employee-services">
+                    @foreach (var service in employee.Services)
+                    {
+                        <span>@service.ServiceName - @service.HourlyRateAmount @service.Currency/h</span>
+                    }
+                </div>
+
+                <div class="employee-actions">
+                    @if (!string.IsNullOrWhiteSpace(employee.IdentityDocumentUrl))
+                    {
+                        <a href="@ApiClient.ToApiUrl(employee.IdentityDocumentUrl)" target="_blank">Piece</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(employee.DiplomaDocumentUrl))
+                    {
+                        <a href="@ApiClient.ToApiUrl(employee.DiplomaDocumentUrl)" target="_blank">Diplome</a>
+                    }
+                    <button type="button" @onclick="() => SuspendEmployeeAsync(employee.Id)">Suspendre</button>
+                    <button type="button" class="danger-action" @onclick="() => DeleteEmployeeAsync(employee.Id)">Supprimer</button>
+                </div>
+            </article>
+        }
+    </section>
+}
+
+@code {
+    private CompanyPortalSessionResponse? Session { get; set; }
+    private IReadOnlyList<CompanyEmployeeResponse> EmployeeRows { get; set; } = [];
+    private IReadOnlyList<ServiceSummaryResponse> Services { get; set; } = [];
+    private CompanyEmployeeFormModel Form { get; set; } = new();
+    private DateTime? BirthDate { get; set; }
+    private bool ShowForm { get; set; }
+    private bool IsSaving { get; set; }
+    private string? Message { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+        if (!string.IsNullOrWhiteSpace(sessionJson))
+        {
+            Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            await LoadAsync();
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadAsync()
+    {
+        Services = await ApiClient.GetServicesAsync();
+        if (Session is not null)
+        {
+            EmployeeRows = await ApiClient.GetCompanyEmployeesAsync(Session.CompanyId);
+        }
+    }
+
+    private void ToggleForm()
+    {
+        ShowForm = !ShowForm;
+        Message = null;
+    }
+
+    private void ToggleService(Guid serviceId, ChangeEventArgs eventArgs)
+    {
+        var isChecked = eventArgs.Value is bool value && value;
+        if (isChecked && !Form.ServiceIds.Contains(serviceId))
+        {
+            Form.ServiceIds.Add(serviceId);
+        }
+        else if (!isChecked)
+        {
+            Form.ServiceIds.Remove(serviceId);
+        }
+    }
+
+    private void OnPhotoSelected(InputFileChangeEventArgs eventArgs) => Form.Photo = eventArgs.File;
+
+    private void OnIdentitySelected(InputFileChangeEventArgs eventArgs) => Form.IdentityDocument = eventArgs.File;
+
+    private void OnDiplomaSelected(InputFileChangeEventArgs eventArgs) => Form.DiplomaDocument = eventArgs.File;
+
+    private async Task CreateEmployeeAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        Message = null;
+        Form.DateOfBirth = BirthDate is null ? null : DateOnly.FromDateTime(BirthDate.Value);
+        IsSaving = true;
+
+        var result = await ApiClient.CreateCompanyEmployeeAsync(Session.CompanyId, Form);
+        IsSaving = false;
+
+        if (!result.IsSuccess)
+        {
+            Message = result.ErrorMessage;
+            return;
+        }
+
+        Form = new();
+        BirthDate = null;
+        ShowForm = false;
+        await LoadAsync();
+    }
+
+    private async Task SuspendEmployeeAsync(Guid employeeId)
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        await ApiClient.SuspendCompanyEmployeeAsync(Session.CompanyId, employeeId);
+        await LoadAsync();
+    }
+
+    private async Task DeleteEmployeeAsync(Guid employeeId)
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        await ApiClient.DeleteCompanyEmployeeAsync(Session.CompanyId, employeeId);
+        await LoadAsync();
+    }
+
+    private static string GetInitials(CompanyEmployeeResponse employee)
+    {
+        return string.Concat(employee.FirstName.FirstOrDefault(), employee.LastName.FirstOrDefault()).ToUpperInvariant();
+    }
+
+    private static string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Approved" => "status-ok",
+            "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-rejected",
+            _ => "status-pending"
+        };
+    }
+
+    private static string GetEmploymentTypeLabel(string employmentType)
+    {
+        return employmentType switch
+        {
+            "TemporaryWorker" => "Interimaire",
+            _ => "Employe"
+        };
+    }
+
+    private static string GetAssignmentLabel(bool receivesDirectRequests)
+    {
+        return receivesDirectRequests ? "Demandes directes" : "Affectation portail";
+    }
+
+    private static string GetStatusLabel(string status)
+    {
+        return status switch
+        {
+            "Approved" => "Valide",
+            "SuspendedByCompany" => "Suspendu",
+            "PendingPlatformReview" => "A verifier",
+            "ProfileIncomplete" => "Incomplet",
+            _ => "Invite"
+        };
+    }
+}

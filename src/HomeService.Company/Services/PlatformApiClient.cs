@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
+using HomeService.Contracts.CompanyPortal;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Services;
 using Microsoft.AspNetCore.Components.Forms;
@@ -13,6 +14,21 @@ namespace HomeService.Company.Services;
 public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration configuration)
 {
     private const long MaxUploadSize = 10 * 1024 * 1024;
+
+    public string ToApiUrl(string? relativeUrl)
+    {
+        if (string.IsNullOrWhiteSpace(relativeUrl))
+        {
+            return string.Empty;
+        }
+
+        if (Uri.TryCreate(relativeUrl, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        return new Uri(httpClient.BaseAddress!, relativeUrl.TrimStart('/')).ToString();
+    }
 
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
     {
@@ -112,6 +128,133 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return new CompanyActivationResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
     }
 
+    public async Task<CompanyPortalLoginResult> LoginCompanyPortalAsync(
+        CompanyPortalLoginRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync("/api/company-portal/login", request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var payload = await response.Content.ReadFromJsonAsync<CompanyPortalLoginResponse>(cancellationToken);
+            return payload is null
+                ? new CompanyPortalLoginResult(false, null, "Connexion impossible pour le moment.")
+                : new CompanyPortalLoginResult(true, new CompanyPortalSessionResponse(
+                    payload.CompanyId,
+                    payload.CompanyName,
+                    payload.UserName,
+                    payload.Email,
+                    DateTimeOffset.UtcNow,
+                    payload.Token), null);
+        }
+
+        return new CompanyPortalLoginResult(false, null, ExtractErrorMessage(body) ?? "Identifiants incorrects ou entreprise inactive.");
+    }
+
+    public async Task<IReadOnlyList<CompanyEmployeeResponse>> GetCompanyEmployeesAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyEmployeeResponse>>($"/api/company-portal/{companyId:D}/employees", cancellationToken) ?? [];
+    }
+
+    public async Task<EmployeeSaveResult> CreateCompanyEmployeeAsync(
+        Guid companyId,
+        CompanyEmployeeFormModel employee,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            AddBasicAuthIfConfigured();
+            using var content = new MultipartFormDataContent();
+            AddString(content, "firstName", employee.FirstName);
+            AddString(content, "lastName", employee.LastName);
+            AddString(content, "phoneNumber", employee.PhoneNumber);
+            AddString(content, "dateOfBirth", employee.DateOfBirth?.ToString("yyyy-MM-dd"));
+            AddString(content, "address", employee.Address);
+            AddString(content, "employmentType", employee.EmploymentType);
+            AddString(content, "yearsOfExperience", employee.YearsOfExperience.ToString());
+            AddString(content, "missionLatitude", employee.MissionLatitude?.ToString());
+            AddString(content, "missionLongitude", employee.MissionLongitude?.ToString());
+            AddString(content, "missionRadiusKm", employee.MissionRadiusKm.ToString());
+            AddString(content, "experienceLevel", employee.ExperienceLevel);
+            AddString(content, "hourlyRateAmount", employee.HourlyRateAmount.ToString());
+
+            foreach (var serviceId in employee.ServiceIds)
+            {
+                AddString(content, "serviceIds", serviceId.ToString("D"));
+            }
+
+            await AddFileAsync(content, "photo", employee.Photo, cancellationToken);
+            await AddFileAsync(content, "identityDocument", employee.IdentityDocument, cancellationToken);
+            await AddFileAsync(content, "diplomaDocument", employee.DiplomaDocument, cancellationToken);
+
+            var response = await httpClient.PostAsync($"/api/company-portal/{companyId:D}/employees", content, cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            return response.IsSuccessStatusCode
+                ? new EmployeeSaveResult(true, null)
+                : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
+        }
+        catch (TaskCanceledException)
+        {
+            return new EmployeeSaveResult(false, "L'envoi a pris trop de temps. Verifiez la connexion puis relancez.");
+        }
+        catch (IOException)
+        {
+            return new EmployeeSaveResult(false, "Un fichier employe n'a pas pu etre lu correctement.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            return new EmployeeSaveResult(false, exception.Message);
+        }
+    }
+
+    public async Task<EmployeeSaveResult> SuspendCompanyEmployeeAsync(Guid companyId, Guid employeeId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}/suspend", null, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
+    }
+
+    public async Task<EmployeeSaveResult> DeleteCompanyEmployeeAsync(Guid companyId, Guid employeeId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.DeleteAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}", cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
+    }
+
+    public async Task<IReadOnlyList<CompanyPortalMissionResponse>> GetCompanyMissionsAsync(
+        Guid companyId,
+        string view,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyPortalMissionResponse>>(
+            $"/api/company-portal/{companyId:D}/missions?view={Uri.EscapeDataString(view)}",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<CompanyPortalPaymentSummaryResponse?> GetCompanyPaymentsAsync(
+        Guid companyId,
+        string period,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<CompanyPortalPaymentSummaryResponse>(
+            $"/api/company-portal/{companyId:D}/payments?period={Uri.EscapeDataString(period)}",
+            cancellationToken);
+    }
+
     private void AddBasicAuthIfConfigured()
     {
         if (!IsAuthEnabled())
@@ -136,6 +279,23 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         {
             content.Add(new StringContent(value, Encoding.UTF8), name);
         }
+    }
+
+    private static async Task AddFileAsync(MultipartFormDataContent content, string name, IBrowserFile? file, CancellationToken cancellationToken)
+    {
+        if (file is null)
+        {
+            return;
+        }
+
+        await using var sourceStream = file.OpenReadStream(MaxUploadSize, cancellationToken);
+        using var memoryStream = new MemoryStream();
+        await sourceStream.CopyToAsync(memoryStream, cancellationToken);
+
+        var fileContent = new ByteArrayContent(memoryStream.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, name, file.Name);
     }
 
     private bool IsAuthEnabled()
@@ -182,3 +342,27 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 public sealed record RegisterCompanyResult(bool IsSuccess, string? ErrorMessage);
 
 public sealed record CompanyActivationResult(bool IsSuccess, string Message);
+
+public sealed record CompanyPortalLoginResult(bool IsSuccess, CompanyPortalSessionResponse? Session, string? ErrorMessage);
+
+public sealed record EmployeeSaveResult(bool IsSuccess, string? ErrorMessage);
+
+public sealed class CompanyEmployeeFormModel
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public DateOnly? DateOfBirth { get; set; }
+    public string Address { get; set; } = string.Empty;
+    public string EmploymentType { get; set; } = "CompanyEmployee";
+    public int YearsOfExperience { get; set; }
+    public decimal? MissionLatitude { get; set; }
+    public decimal? MissionLongitude { get; set; }
+    public int MissionRadiusKm { get; set; } = 5;
+    public string ExperienceLevel { get; set; } = "Confirmed";
+    public int HourlyRateAmount { get; set; } = 1500;
+    public List<Guid> ServiceIds { get; } = [];
+    public IBrowserFile? Photo { get; set; }
+    public IBrowserFile? IdentityDocument { get; set; }
+    public IBrowserFile? DiplomaDocument { get; set; }
+}

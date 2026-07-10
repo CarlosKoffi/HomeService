@@ -23,6 +23,7 @@ public sealed class Company : AuditableEntity
     public string PhoneNumber { get; private set; } = string.Empty;
     public string? Email { get; private set; }
     public CompanyStatus Status { get; private set; } = CompanyStatus.PendingReview;
+    public CompanyAssignmentMode AssignmentMode { get; private set; } = CompanyAssignmentMode.SelfManaged;
     public IReadOnlyCollection<ProviderProfile> Providers => _providers;
     public IReadOnlyCollection<CompanyApplication> Applications => _applications;
 
@@ -35,6 +36,12 @@ public sealed class Company : AuditableEntity
     public void Suspend()
     {
         Status = CompanyStatus.Suspended;
+        Touch();
+    }
+
+    public void ChangeAssignmentMode(CompanyAssignmentMode assignmentMode)
+    {
+        AssignmentMode = assignmentMode;
         Touch();
     }
 }

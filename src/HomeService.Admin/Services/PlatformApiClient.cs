@@ -109,9 +109,45 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await PutJsonAsync<CountryBrandingResponse>($"/api/admin/country-brandings/{Uri.EscapeDataString(countryCode)}", request, cancellationToken);
     }
 
+    public async Task<CompanyAssignmentModeResponse?> UpdateCompanyAssignmentModeAsync(Guid companyId, string assignmentMode, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<CompanyAssignmentModeResponse>(
+            $"/api/admin/companies/{companyId}/assignment-mode",
+            new UpdateCompanyAssignmentModeRequest(assignmentMode),
+            cancellationToken);
+    }
+
     public string GetCompanyApplicationDocumentUrl(Guid documentId)
     {
         return new Uri(httpClient.BaseAddress!, $"/api/admin/company-application-documents/{documentId}/download").ToString();
+    }
+
+    public string GetCompanyApplicationDocumentPreviewUrl(Guid documentId)
+    {
+        return $"/admin-documents/{documentId}/preview";
+    }
+
+    public async Task<CompanyApplicationDocumentFile> GetCompanyApplicationDocumentFileAsync(Guid documentId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/admin/company-application-documents/{documentId}/download";
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new PlatformApiException(
+                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName
+            ?? "document";
+
+        return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
     }
 
     private async Task<T?> GetJsonAsync<T>(string path, CancellationToken cancellationToken)
@@ -184,3 +220,5 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 }
 
 public sealed class PlatformApiException(string message) : Exception(message);
+
+public sealed record CompanyApplicationDocumentFile(byte[] Content, string ContentType, string FileName);

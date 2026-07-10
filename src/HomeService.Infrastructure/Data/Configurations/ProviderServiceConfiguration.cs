@@ -13,5 +13,8 @@ public sealed class ProviderServiceConfiguration : IEntityTypeConfiguration<Prov
         builder.Property(providerService => providerService.PricingUnit).HasConversion<string>().HasMaxLength(32);
         builder.Property(providerService => providerService.Currency).HasMaxLength(3).IsRequired();
         builder.HasIndex(providerService => new { providerService.ProviderId, providerService.ServiceId }).IsUnique();
+        builder.HasOne(providerService => providerService.Service)
+            .WithMany()
+            .HasForeignKey(providerService => providerService.ServiceId);
     }
 }

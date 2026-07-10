@@ -2,6 +2,7 @@ using HomeService.Application.Abstractions;
 using HomeService.Api;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
+using HomeService.Contracts.CompanyPortal;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
@@ -27,6 +28,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<CompanyApplicationUploadService>();
+builder.Services.AddSingleton<CompanyProviderUploadService>();
 
 var app = builder.Build();
 
@@ -294,6 +296,356 @@ app.MapGet("/api/company-activation/{applicationId:guid}", async (
 })
 .WithName("PreviewCompanyActivation");
 
+app.MapPost("/api/company-portal/login", async (
+    CompanyPortalLoginRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+    {
+        return Results.BadRequest(new { message = "Email et mot de passe sont obligatoires." });
+    }
+
+    var email = request.Email.Trim().ToLowerInvariant();
+    var user = await db.CompanyPortalUsers
+        .Include(user => user.Company)
+        .FirstOrDefaultAsync(user => user.Email == email && user.IsActive, cancellationToken);
+
+    if (user is null || user.Company is null || !VerifyPassword(request.Password, user.PasswordHash))
+    {
+        return Results.Unauthorized();
+    }
+
+    if (user.Company.Status != CompanyStatus.Approved)
+    {
+        return Results.BadRequest(new { message = "Cette entreprise n'est pas encore active sur le portail." });
+    }
+
+    var token = GenerateSessionToken();
+    var expiresAt = DateTimeOffset.UtcNow.AddDays(request.RememberMe ? 30 : 1);
+    db.CompanyPortalSessions.Add(new CompanyPortalSession(user.Id, HashPortalToken(token), expiresAt));
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(new CompanyPortalLoginResponse(
+        token,
+        expiresAt,
+        user.CompanyId,
+        user.Company.Name,
+        user.FullName,
+        user.Email));
+})
+.WithName("LoginCompanyPortal");
+
+app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
+    Guid companyId,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    if (!exists)
+    {
+        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+    }
+
+    var employees = await db.Providers
+        .AsNoTracking()
+        .Where(provider => provider.CompanyId == companyId && provider.Status != ProviderStatus.Inactive)
+        .OrderBy(provider => provider.LastName)
+        .ThenBy(provider => provider.FirstName)
+        .Select(provider => new CompanyEmployeeResponse(
+            provider.Id,
+            provider.FirstName,
+            provider.LastName,
+            provider.PhoneNumber,
+            provider.DateOfBirth,
+            provider.Address,
+            provider.EmploymentType.ToString(),
+            provider.EmploymentType == ProviderEmploymentType.TemporaryWorker,
+            provider.YearsOfExperience,
+            provider.Status.ToString(),
+            provider.IsAvailable,
+            provider.MissionLatitude ?? provider.CurrentLatitude,
+            provider.MissionLongitude ?? provider.CurrentLongitude,
+            provider.MissionRadiusKm,
+            provider.Documents
+                .Where(document => document.DocumentType == ProviderDocumentType.Photo)
+                .OrderByDescending(document => document.CreatedAt)
+                .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                .FirstOrDefault(),
+            provider.Documents
+                .Where(document => document.DocumentType == ProviderDocumentType.IdentityDocument)
+                .OrderByDescending(document => document.CreatedAt)
+                .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                .FirstOrDefault(),
+            provider.Documents
+                .Where(document => document.DocumentType == ProviderDocumentType.Diploma)
+                .OrderByDescending(document => document.CreatedAt)
+                .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                .FirstOrDefault(),
+            provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.Diploma),
+            provider.Services
+                .Where(providerService => providerService.IsActive)
+                .OrderBy(providerService => providerService.Service!.Name)
+                .Select(providerService => new CompanyEmployeeServiceResponse(
+                    providerService.ServiceId,
+                    providerService.Service!.Name,
+                    providerService.ExperienceLevel.ToString(),
+                    providerService.YearsOfExperience,
+                    providerService.HourlyRateAmount,
+                    providerService.Currency,
+                    providerService.IsActive))
+                .ToList(),
+            provider.CreatedAt))
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(employees);
+})
+.WithName("ListCompanyPortalEmployees");
+
+app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
+    Guid companyId,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    CompanyProviderUploadService uploadService,
+    CancellationToken cancellationToken) =>
+{
+    if (!httpRequest.HasFormContentType)
+    {
+        return Results.BadRequest(new { message = "Le formulaire employe doit etre envoye au format multipart/form-data." });
+    }
+
+    var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    if (company is null)
+    {
+        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+    }
+
+    var form = await httpRequest.ReadFormAsync(cancellationToken);
+    var errors = ValidateProviderForm(form);
+    if (errors.Count > 0)
+    {
+        return Results.BadRequest(new { message = "Le formulaire employe contient des erreurs.", errors });
+    }
+
+    var provider = new ProviderProfile(
+        companyId,
+        GetFormValue(form, "firstName"),
+        GetFormValue(form, "lastName"),
+        GetFormValue(form, "phoneNumber"),
+        DateOnly.Parse(GetFormValue(form, "dateOfBirth")),
+        GetFormValue(form, "address"),
+        ParseProviderEmploymentType(GetOptionalFormValue(form, "employmentType")),
+        GetOptionalInt(form, "yearsOfExperience") ?? 0,
+        GetOptionalDecimal(form, "missionLatitude"),
+        GetOptionalDecimal(form, "missionLongitude"),
+        GetOptionalInt(form, "missionRadiusKm") ?? 5);
+
+    var requestedServiceIds = GetGuidValues(form, "serviceIds");
+    var services = await db.Services
+        .Where(service => requestedServiceIds.Contains(service.Id) && service.IsActive)
+        .Select(service => service.Id)
+        .ToListAsync(cancellationToken);
+
+    foreach (var serviceId in services)
+    {
+        provider.AddService(
+            serviceId,
+            ParseExperienceLevel(GetOptionalFormValue(form, "experienceLevel")),
+            GetOptionalInt(form, "hourlyRateAmount") ?? 1500,
+            "XOF");
+    }
+
+    db.Providers.Add(provider);
+
+    var documents = await uploadService.SaveAsync(companyId, provider.Id, form.Files, cancellationToken);
+    foreach (var document in documents)
+    {
+        provider.AttachDocument(new ProviderDocument(
+            provider.Id,
+            document.DocumentType,
+            document.OriginalFileName,
+            document.StoragePath,
+            document.ContentType));
+    }
+
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Created($"/api/company-portal/{companyId}/employees/{provider.Id}", new CreateCompanyEmployeeResult(provider.Id));
+})
+.WithName("CreateCompanyPortalEmployee");
+
+app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/suspend", async (
+    Guid companyId,
+    Guid employeeId,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+    if (provider is null)
+    {
+        return Results.NotFound();
+    }
+
+    provider.SuspendByCompany();
+    await db.SaveChangesAsync(cancellationToken);
+    return Results.NoContent();
+})
+.WithName("SuspendCompanyPortalEmployee");
+
+app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}", async (
+    Guid companyId,
+    Guid employeeId,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+    if (provider is null)
+    {
+        return Results.NotFound();
+    }
+
+    provider.Deactivate();
+    await db.SaveChangesAsync(cancellationToken);
+    return Results.NoContent();
+})
+.WithName("DeactivateCompanyPortalEmployee");
+
+app.MapGet("/api/company-portal/provider-documents/{id:guid}/preview", async (
+    Guid id,
+    IAppDbContext db,
+    CompanyProviderUploadService uploadService,
+    CancellationToken cancellationToken) =>
+{
+    var document = await db.ProviderDocuments
+        .AsNoTracking()
+        .Where(document => document.Id == id)
+        .Select(document => new
+        {
+            document.OriginalFileName,
+            document.StoragePath,
+            document.ContentType
+        })
+        .FirstOrDefaultAsync(cancellationToken);
+
+    if (document is null)
+    {
+        return Results.NotFound();
+    }
+
+    var absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+    if (!File.Exists(absolutePath))
+    {
+        return Results.NotFound(new { message = "Le fichier employe n'existe plus sur le serveur." });
+    }
+
+    return Results.File(absolutePath, document.ContentType, document.OriginalFileName, enableRangeProcessing: true);
+})
+.WithName("PreviewCompanyPortalProviderDocument");
+
+app.MapGet("/api/company-portal/{companyId:guid}/missions", async (
+    Guid companyId,
+    string? view,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    if (!exists)
+    {
+        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+    }
+
+    var now = DateTimeOffset.UtcNow;
+    var query = from mission in db.Missions.AsNoTracking()
+                where mission.CompanyId == companyId
+                join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+                join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
+                join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
+                from provider in providerJoin.DefaultIfEmpty()
+                select new { mission, service, customer, provider };
+
+    query = view?.Trim().ToLowerInvariant() switch
+    {
+        "upcoming" => query.Where(row => row.mission.ScheduledFor >= now && row.mission.Status != MissionStatus.Completed && row.mission.Status != MissionStatus.Cancelled),
+        "past" => query.Where(row => row.mission.Status == MissionStatus.Completed || row.mission.Status == MissionStatus.Cancelled),
+        "live" => query.Where(row => row.mission.Status == MissionStatus.SearchingProvider || row.mission.Status == MissionStatus.Offered || row.mission.Status == MissionStatus.Accepted || row.mission.Status == MissionStatus.OnTheWay || row.mission.Status == MissionStatus.Started),
+        _ => query
+    };
+
+    var missions = await query
+        .OrderBy(row => row.mission.ScheduledFor ?? row.mission.CreatedAt)
+        .Select(row => new CompanyPortalMissionResponse(
+            row.mission.Id,
+            row.service.Name,
+            row.customer.FirstName + " " + row.customer.LastName,
+            row.customer.PhoneNumber,
+            row.mission.Mode.ToString(),
+            row.mission.Status.ToString(),
+            row.mission.PaymentMethod.ToString(),
+            row.mission.PaymentStatus.ToString(),
+            row.mission.ScheduledFor,
+            row.mission.EstimatedDurationMinutes,
+            row.mission.FinalTotalAmount ?? row.mission.EstimatedTotalAmount,
+            row.mission.Currency,
+            row.mission.ProviderId,
+            row.provider == null ? null : row.provider.FirstName + " " + row.provider.LastName))
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(missions);
+})
+.WithName("ListCompanyPortalMissions");
+
+app.MapGet("/api/company-portal/{companyId:guid}/payments", async (
+    Guid companyId,
+    string? period,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    if (!exists)
+    {
+        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+    }
+
+    var normalizedPeriod = period?.Trim().ToLowerInvariant() ?? "month";
+    var start = GetPaymentPeriodStart(normalizedPeriod);
+    var missions = await (from mission in db.Missions.AsNoTracking()
+                          where mission.CompanyId == companyId
+                              && mission.Status == MissionStatus.Completed
+                              && (mission.ScheduledFor == null || mission.ScheduledFor >= start)
+                          join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+                          join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
+                          join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
+                          from provider in providerJoin.DefaultIfEmpty()
+                          orderby mission.ScheduledFor descending
+                          select new CompanyPortalMissionResponse(
+                              mission.Id,
+                              service.Name,
+                              customer.FirstName + " " + customer.LastName,
+                              customer.PhoneNumber,
+                              mission.Mode.ToString(),
+                              mission.Status.ToString(),
+                              mission.PaymentMethod.ToString(),
+                              mission.PaymentStatus.ToString(),
+                              mission.ScheduledFor,
+                              mission.EstimatedDurationMinutes,
+                              mission.FinalTotalAmount ?? mission.EstimatedTotalAmount,
+                              mission.Currency,
+                              mission.ProviderId,
+                              provider == null ? null : provider.FirstName + " " + provider.LastName))
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(new CompanyPortalPaymentSummaryResponse(
+        normalizedPeriod,
+        missions.Sum(mission => mission.FinalTotalAmount ?? 0),
+        missions.Where(mission => mission.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+        missions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+        missions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+        missions.Count,
+        "XOF",
+        missions));
+})
+.WithName("GetCompanyPortalPayments");
+
 var admin = app.MapGroup("/api/admin");
 
 admin.MapGet("/company-applications", async (IAppDbContext db, ILogger<Program> logger, CancellationToken cancellationToken) =>
@@ -518,6 +870,7 @@ admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db
             application.LastReminderSentAt,
             application.ActivationEmailSentAt,
             application.ActivatedAt,
+            application.Company == null ? null : application.Company.AssignmentMode.ToString(),
             application.ActivationTokens
                 .OrderByDescending(token => token.CreatedAt)
                 .Select(token => token.ActivationLink)
@@ -553,6 +906,30 @@ admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db
     return application is null ? Results.NotFound() : Results.Ok(application);
 })
 .WithName("GetCompanyApplication");
+
+admin.MapPut("/companies/{id:guid}/assignment-mode", async (
+    Guid id,
+    UpdateCompanyAssignmentModeRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == id, cancellationToken);
+    if (company is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (!TryParseCompanyAssignmentMode(request.AssignmentMode, out var assignmentMode))
+    {
+        return Results.BadRequest(new { message = "Mode d'affectation invalide." });
+    }
+
+    company.ChangeAssignmentMode(assignmentMode);
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyAssignmentModeResponse(company));
+})
+.WithName("UpdateCompanyAssignmentMode");
 
 admin.MapPost("/company-applications/{id:guid}/approve", async (
     Guid id,
@@ -967,6 +1344,152 @@ app.MapPost("/api/company-activation/password", async (
 
 app.Run();
 
+static async Task<CompanyPortalSession?> GetCompanyPortalSessionAsync(
+    HttpRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken)
+{
+    var authorization = request.Headers.Authorization.ToString();
+    const string bearerPrefix = "Bearer ";
+    if (string.IsNullOrWhiteSpace(authorization) || !authorization.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+    {
+        return null;
+    }
+
+    var token = authorization[bearerPrefix.Length..].Trim();
+    if (string.IsNullOrWhiteSpace(token))
+    {
+        return null;
+    }
+
+    var tokenHash = HashPortalToken(token);
+    return await db.CompanyPortalSessions
+        .Include(session => session.CompanyPortalUser)
+        .ThenInclude(user => user!.Company)
+        .FirstOrDefaultAsync(session => session.TokenHash == tokenHash && session.RevokedAt == null && session.ExpiresAt > DateTimeOffset.UtcNow, cancellationToken);
+}
+
+static async Task<IReadOnlyList<CompanyPortalEmployeeResponse>> GetCompanyEmployeesAsync(
+    Guid companyId,
+    IAppDbContext db,
+    CancellationToken cancellationToken)
+{
+    var providers = await db.Providers
+        .AsNoTracking()
+        .Include(provider => provider.Documents)
+        .Include(provider => provider.Services)
+        .Where(provider => provider.CompanyId == companyId)
+        .OrderBy(provider => provider.LastName)
+        .ThenBy(provider => provider.FirstName)
+        .ToListAsync(cancellationToken);
+
+    var serviceIds = providers
+        .SelectMany(provider => provider.Services)
+        .Select(service => service.ServiceId)
+        .Distinct()
+        .ToList();
+
+    var serviceNames = await db.Services
+        .AsNoTracking()
+        .Where(service => serviceIds.Contains(service.Id))
+        .ToDictionaryAsync(service => service.Id, service => service.Name, cancellationToken);
+
+    return providers.Select(provider => MapCompanyPortalEmployee(provider, serviceNames)).ToList();
+}
+
+static CompanyPortalEmployeeResponse MapCompanyPortalEmployee(ProviderProfile provider, IReadOnlyDictionary<Guid, string> serviceNames)
+{
+    var photo = provider.Documents.FirstOrDefault(document => document.DocumentType == ProviderDocumentType.Photo);
+    var identityDocument = provider.Documents.FirstOrDefault(document => document.DocumentType == ProviderDocumentType.IdentityDocument);
+    var diploma = provider.Documents.FirstOrDefault(document => document.DocumentType == ProviderDocumentType.Diploma);
+
+    return new CompanyPortalEmployeeResponse(
+        Id: provider.Id,
+        FirstName: provider.FirstName,
+        LastName: provider.LastName,
+        FullName: provider.FullName,
+        PhoneNumber: provider.PhoneNumber,
+        DateOfBirth: provider.DateOfBirth,
+        Address: provider.Address,
+        EmploymentType: provider.EmploymentType.ToString(),
+        ReceivesDirectRequests: provider.EmploymentType == ProviderEmploymentType.TemporaryWorker,
+        YearsOfExperience: provider.YearsOfExperience,
+        Status: provider.Status.ToString(),
+        IsAvailable: provider.IsAvailable,
+        MissionLatitude: provider.MissionLatitude,
+        MissionLongitude: provider.MissionLongitude,
+        MissionRadiusKm: provider.MissionRadiusKm,
+        PhotoUrl: photo is null ? null : $"/api/company-portal/provider-documents/{photo.Id}/download",
+        IdentityDocumentName: identityDocument?.OriginalFileName,
+        DiplomaDocumentName: diploma?.OriginalFileName,
+        HasDiploma: diploma is not null,
+        Services: provider.Services
+            .OrderBy(service => serviceNames.TryGetValue(service.ServiceId, out var name) ? name : string.Empty)
+            .Select(service => new CompanyPortalEmployeeServiceResponse(
+                service.ServiceId,
+                serviceNames.TryGetValue(service.ServiceId, out var name) ? name : "Service",
+                service.ExperienceLevel.ToString(),
+                service.YearsOfExperience,
+                service.HourlyRateAmount,
+                service.Currency,
+                service.IsActive))
+            .ToList());
+}
+
+static async Task<IReadOnlyList<CompanyPortalMissionResponse>> GetCompanyMissionRowsAsync(
+    Guid companyId,
+    string? view,
+    IAppDbContext db,
+    CancellationToken cancellationToken)
+{
+    var now = DateTimeOffset.UtcNow;
+    var query = from mission in db.Missions.AsNoTracking()
+                where mission.CompanyId == companyId
+                join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+                join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
+                join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
+                from provider in providerJoin.DefaultIfEmpty()
+                select new { mission, service, customer, provider };
+
+    query = view?.Trim().ToLowerInvariant() switch
+    {
+        "upcoming" => query.Where(row => row.mission.ScheduledFor >= now && row.mission.Status != MissionStatus.Completed && row.mission.Status != MissionStatus.Cancelled),
+        "past" => query.Where(row => row.mission.Status == MissionStatus.Completed || row.mission.Status == MissionStatus.Cancelled),
+        "live" => query.Where(row => row.mission.Status == MissionStatus.SearchingProvider || row.mission.Status == MissionStatus.Offered || row.mission.Status == MissionStatus.Accepted || row.mission.Status == MissionStatus.OnTheWay || row.mission.Status == MissionStatus.Started),
+        _ => query
+    };
+
+    return await query
+        .OrderBy(row => row.mission.ScheduledFor ?? row.mission.CreatedAt)
+        .Select(row => new CompanyPortalMissionResponse(
+            row.mission.Id,
+            row.service.Name,
+            row.customer.FirstName + " " + row.customer.LastName,
+            row.customer.PhoneNumber,
+            row.mission.Mode.ToString(),
+            row.mission.Status.ToString(),
+            row.mission.PaymentMethod.ToString(),
+            row.mission.PaymentStatus.ToString(),
+            row.mission.ScheduledFor,
+            row.mission.EstimatedDurationMinutes,
+            row.mission.FinalTotalAmount ?? row.mission.EstimatedTotalAmount,
+            row.mission.Currency,
+            row.mission.ProviderId,
+            row.provider == null ? null : row.provider.FirstName + " " + row.provider.LastName))
+        .ToListAsync(cancellationToken);
+}
+
+static DateTimeOffset GetPaymentPeriodStart(string period)
+{
+    var now = DateTimeOffset.UtcNow;
+    return period switch
+    {
+        "year" => new DateTimeOffset(now.Year, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        "week" => now.AddDays(-7),
+        _ => new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero)
+    };
+}
+
 static string GetFormValue(IFormCollection form, string key)
 {
     return form.TryGetValue(key, out var value) ? value.ToString() : string.Empty;
@@ -996,6 +1519,135 @@ static IReadOnlyList<string> GetServices(IFormCollection form)
         .Where(value => !string.IsNullOrWhiteSpace(value))
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToList();
+}
+
+static IReadOnlyList<Guid> GetGuidValues(IFormCollection form, string key)
+{
+    if (!form.TryGetValue(key, out var values))
+    {
+        return [];
+    }
+
+    return values
+        .Where(value => !string.IsNullOrWhiteSpace(value))
+        .SelectMany(value => value!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        .Select(value => Guid.TryParse(value, out var parsed) ? parsed : Guid.Empty)
+        .Where(value => value != Guid.Empty)
+        .Distinct()
+        .ToList();
+}
+
+static IReadOnlyList<Guid> GetServiceIds(IFormCollection form)
+{
+    return GetGuidValues(form, "serviceIds");
+}
+
+static decimal? GetOptionalDecimal(IFormCollection form, string key)
+{
+    return decimal.TryParse(GetFormValue(form, key), out var value) ? value : null;
+}
+
+static ExperienceLevel ParseExperienceLevel(string? value)
+{
+    return Enum.TryParse<ExperienceLevel>(value, true, out var level)
+        ? level
+        : ExperienceLevel.Confirmed;
+}
+
+static ProviderEmploymentType ParseProviderEmploymentType(string? value)
+{
+    return Enum.TryParse<ProviderEmploymentType>(value, true, out var employmentType)
+        ? employmentType
+        : ProviderEmploymentType.CompanyEmployee;
+}
+
+static bool TryParseCompanyAssignmentMode(string? value, out CompanyAssignmentMode assignmentMode)
+{
+    return Enum.TryParse(value?.Trim(), true, out assignmentMode);
+}
+
+static CompanyAssignmentModeResponse ToCompanyAssignmentModeResponse(Company company)
+{
+    var additionalCommissionRate = company.AssignmentMode == CompanyAssignmentMode.PlatformManaged ? 0.05m : 0m;
+    var message = company.AssignmentMode == CompanyAssignmentMode.PlatformManaged
+        ? "La plateforme affecte les missions. Une commission additionnelle pourra etre appliquee."
+        : "L'entreprise affecte elle-meme les missions depuis son portail.";
+
+    return new CompanyAssignmentModeResponse(
+        company.Id,
+        company.AssignmentMode.ToString(),
+        additionalCommissionRate,
+        message);
+}
+
+static IReadOnlyList<string> ValidateProviderForm(IFormCollection form)
+{
+    var errors = new List<string>();
+
+    if (GetFormValue(form, "firstName").Trim().Length < 2)
+    {
+        errors.Add("Le prenom de l'employe est obligatoire.");
+    }
+
+    if (GetFormValue(form, "lastName").Trim().Length < 2)
+    {
+        errors.Add("Le nom de l'employe est obligatoire.");
+    }
+
+    var phoneDigits = Regex.Replace(GetFormValue(form, "phoneNumber"), @"\D", string.Empty);
+    if (phoneDigits.Length is < 8 or > 15)
+    {
+        errors.Add("Le telephone de l'employe doit contenir entre 8 et 15 chiffres.");
+    }
+
+    if (!DateOnly.TryParse(GetFormValue(form, "dateOfBirth"), out var birthDate))
+    {
+        errors.Add("La date de naissance est obligatoire.");
+    }
+    else if (birthDate > DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-16)))
+    {
+        errors.Add("L'employe doit avoir au moins 16 ans.");
+    }
+
+    if (GetFormValue(form, "address").Trim().Length < 4)
+    {
+        errors.Add("L'adresse de l'employe est obligatoire.");
+    }
+
+    var yearsOfExperience = GetOptionalInt(form, "yearsOfExperience") ?? -1;
+    if (yearsOfExperience is < 0 or > 60)
+    {
+        errors.Add("Le nombre d'annees d'experience doit etre compris entre 0 et 60.");
+    }
+
+    var radius = GetOptionalInt(form, "missionRadiusKm") ?? 0;
+    if (radius is < 1 or > 100)
+    {
+        errors.Add("Le perimetre de mission doit etre compris entre 1 et 100 km.");
+    }
+
+    if (GetGuidValues(form, "serviceIds").Count == 0)
+    {
+        errors.Add("Au moins un service maitrise est obligatoire.");
+    }
+
+    if (form.Files.GetFile("photo") is null)
+    {
+        errors.Add("La photo de l'employe est obligatoire.");
+    }
+
+    if (form.Files.GetFile("identityDocument") is null)
+    {
+        errors.Add("La piece d'identite de l'employe est obligatoire.");
+    }
+
+    return errors;
+}
+
+static string? ValidateEmployeeForm(IFormCollection form)
+{
+    var errors = ValidateProviderForm(form);
+    return errors.Count == 0 ? null : string.Join(" ", errors);
 }
 
 static void AddCompanyApplicationStatusHistory(
@@ -1174,9 +1826,19 @@ static string GenerateActivationToken()
         .Replace('/', '_');
 }
 
+static string GenerateSessionToken()
+{
+    return GenerateActivationToken();
+}
+
 static string HashActivationToken(string token)
 {
     return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+}
+
+static string HashPortalToken(string token)
+{
+    return HashActivationToken(token);
 }
 
 static int GetActivationTokenDurationHours(IConfiguration configuration)
@@ -1259,6 +1921,20 @@ static string HashPassword(string password)
     var salt = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
     var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{salt}:{password}")));
     return $"sha256:{salt}:{hash}";
+}
+
+static bool VerifyPassword(string password, string passwordHash)
+{
+    var parts = passwordHash.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    if (parts.Length != 3 || !string.Equals(parts[0], "sha256", StringComparison.OrdinalIgnoreCase))
+    {
+        return false;
+    }
+
+    var expectedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{parts[1]}:{password}")));
+    return CryptographicOperations.FixedTimeEquals(
+        Encoding.UTF8.GetBytes(expectedHash),
+        Encoding.UTF8.GetBytes(parts[2]));
 }
 
 public partial class Program;

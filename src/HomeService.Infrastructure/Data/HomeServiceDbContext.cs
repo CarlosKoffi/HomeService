@@ -9,6 +9,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
 {
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyPortalUser> CompanyPortalUsers => Set<CompanyPortalUser>();
+    public DbSet<CompanyPortalSession> CompanyPortalSessions => Set<CompanyPortalSession>();
     public DbSet<CompanyApplication> CompanyApplications => Set<CompanyApplication>();
     public DbSet<CompanyApplicationDocument> CompanyApplicationDocuments => Set<CompanyApplicationDocument>();
     public DbSet<CompanyApplicationService> CompanyApplicationServices => Set<CompanyApplicationService>();
@@ -16,6 +17,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<CompanyActivationToken> CompanyActivationTokens => Set<CompanyActivationToken>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ProviderProfile> Providers => Set<ProviderProfile>();
+    public DbSet<ProviderDocument> ProviderDocuments => Set<ProviderDocument>();
     public DbSet<ProviderService> ProviderServices => Set<ProviderService>();
     public DbSet<CustomerProfile> Customers => Set<CustomerProfile>();
     public DbSet<Mission> Missions => Set<Mission>();

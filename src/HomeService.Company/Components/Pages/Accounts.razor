@@ -1,21 +1,121 @@
 @page "/accounts"
+@using System.Text.Json
+@inject IJSRuntime Js
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Encaissements</PageTitle>
 
-<h1>Encaissements</h1>
-<p>Suivi Mobile Money, cash remis aux prestataires, commissions et rapprochement entreprise.</p>
-
-<section class="dashboard-grid">
-    <article>
-        <h2>Mobile Money</h2>
-        <p>Paiement envoye a l'entreprise, avec commission plateforme rattachee a la mission.</p>
-    </article>
-    <article>
-        <h2>Cash terrain</h2>
-        <p>Montants recus par les prestataires et a reverser a l'entreprise.</p>
-    </article>
-    <article>
-        <h2>Ecarts</h2>
-        <p>Signalement des missions terminees, impayees, contestees ou non rapprochees.</p>
-    </article>
+<section class="workspace-header">
+    <div>
+        <p class="eyebrow">Portail entreprise</p>
+        <h1>Encaissements</h1>
+        <p class="lead">Controlez Mobile Money, cash terrain, commissions et rapprochements par periode.</p>
+    </div>
+    <a class="secondary-action" href="dashboard">Retour portail</a>
 </section>
+
+@if (Session is null)
+{
+    <section class="empty-state">
+        <h2>Connexion requise</h2>
+        <p>Connectez-vous pour voir les encaissements.</p>
+        <a class="primary-action" href="dashboard">Se connecter</a>
+    </section>
+}
+else
+{
+    <section class="portal-tabs" aria-label="Periode encaissements">
+        <button class="@GetTabClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
+        <button class="@GetTabClass("month")" type="button" @onclick='() => LoadPaymentsAsync("month")'>Mois</button>
+        <button class="@GetTabClass("year")" type="button" @onclick='() => LoadPaymentsAsync("year")'>Annee</button>
+    </section>
+
+    @if (Summary is not null)
+    {
+        <section class="metric-strip">
+            <article><span>Total</span><strong>@Summary.TotalAmount.ToString("N0") @Summary.Currency</strong></article>
+            <article><span>Mobile Money</span><strong>@Summary.MobileMoneyAmount.ToString("N0")</strong></article>
+            <article><span>Cash a recuperer</span><strong>@Summary.CashToCollectAmount.ToString("N0")</strong></article>
+        </section>
+
+        @if (Summary.Missions.Count == 0)
+        {
+            <section class="empty-state">
+                <h2>Aucun encaissement</h2>
+                <p>Les paiements apparaitront ici quand des missions seront terminees.</p>
+            </section>
+        }
+        else
+        {
+            <section class="mission-list">
+                @foreach (var mission in Summary.Missions)
+                {
+                    <article class="mission-row">
+                        <div>
+                            <span class="status-pill @GetPaymentStatusClass(mission.PaymentStatus)">@GetPaymentStatusLabel(mission.PaymentStatus)</span>
+                            <h2>@mission.ServiceName</h2>
+                            <p>@mission.CustomerName - @(mission.ProviderName ?? "Prestataire")</p>
+                        </div>
+                        <div>
+                            <strong>@GetPaymentLabel(mission.PaymentMethod)</strong>
+                            <span>@(mission.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")</span>
+                        </div>
+                        <div>
+                            <strong>@(mission.FinalTotalAmount?.ToString("N0") ?? "0") @mission.Currency</strong>
+                            <span>@mission.CustomerPhoneNumber</span>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+    }
+}
+
+@code {
+    private CompanyPortalSessionResponse? Session { get; set; }
+    private CompanyPortalPaymentSummaryResponse? Summary { get; set; }
+    private string ActivePeriod { get; set; } = "month";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+        if (!string.IsNullOrWhiteSpace(sessionJson))
+        {
+            Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            await LoadPaymentsAsync("month");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadPaymentsAsync(string period)
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        ActivePeriod = period;
+        Summary = await ApiClient.GetCompanyPaymentsAsync(Session.CompanyId, period);
+        StateHasChanged();
+    }
+
+    private string GetTabClass(string period) => ActivePeriod == period ? "active" : string.Empty;
+
+    private static string GetPaymentLabel(string method) => method == "MobileMoney" ? "Mobile Money" : "Cash";
+
+    private static string GetPaymentStatusClass(string status) => status == "Paid" ? "status-ok" : "status-pending";
+
+    private static string GetPaymentStatusLabel(string status) => status switch
+    {
+        "Paid" => "Paye",
+        "Authorized" => "Autorise",
+        "Failed" => "Echec",
+        _ => "A suivre"
+    };
+}

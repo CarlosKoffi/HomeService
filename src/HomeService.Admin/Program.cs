@@ -32,6 +32,18 @@ app.UseSiteAccessGate();
 
 app.UseAntiforgery();
 
+app.MapGet("/admin-documents/{documentId:guid}/preview", async (
+    Guid documentId,
+    PlatformApiClient apiClient,
+    HttpContext context,
+    CancellationToken cancellationToken) =>
+{
+    var document = await apiClient.GetCompanyApplicationDocumentFileAsync(documentId, cancellationToken);
+    context.Response.Headers.ContentDisposition = $"inline; filename=\"{document.FileName.Replace("\"", string.Empty)}\"";
+
+    return Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
+});
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -7,6 +7,7 @@ public interface IAppDbContext
 {
     DbSet<Company> Companies { get; }
     DbSet<CompanyPortalUser> CompanyPortalUsers { get; }
+    DbSet<CompanyPortalSession> CompanyPortalSessions { get; }
     DbSet<CompanyApplication> CompanyApplications { get; }
     DbSet<CompanyApplicationDocument> CompanyApplicationDocuments { get; }
     DbSet<CompanyApplicationService> CompanyApplicationServices { get; }
@@ -14,6 +15,7 @@ public interface IAppDbContext
     DbSet<CompanyActivationToken> CompanyActivationTokens { get; }
     DbSet<Service> Services { get; }
     DbSet<ProviderProfile> Providers { get; }
+    DbSet<ProviderDocument> ProviderDocuments { get; }
     DbSet<ProviderService> ProviderServices { get; }
     DbSet<CustomerProfile> Customers { get; }
     DbSet<Mission> Missions { get; }

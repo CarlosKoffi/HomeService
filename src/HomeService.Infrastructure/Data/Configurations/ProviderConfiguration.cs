@@ -12,11 +12,22 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<ProviderPro
         builder.Property(provider => provider.FirstName).HasMaxLength(120).IsRequired();
         builder.Property(provider => provider.LastName).HasMaxLength(120).IsRequired();
         builder.Property(provider => provider.PhoneNumber).HasMaxLength(32).IsRequired();
+        builder.Property(provider => provider.Address).HasMaxLength(320).IsRequired();
         builder.Property(provider => provider.Status).HasConversion<string>().HasMaxLength(32);
+        builder.Property(provider => provider.MissionLatitude).HasPrecision(9, 6);
+        builder.Property(provider => provider.MissionLongitude).HasPrecision(9, 6);
         builder.Property(provider => provider.CurrentLatitude).HasPrecision(9, 6);
         builder.Property(provider => provider.CurrentLongitude).HasPrecision(9, 6);
+        builder.Property(provider => provider.EmploymentType).HasConversion<string>().HasMaxLength(32);
         builder.HasOne(provider => provider.Company)
             .WithMany(company => company.Providers)
             .HasForeignKey(provider => provider.CompanyId);
+        builder.HasMany(provider => provider.Documents)
+            .WithOne(document => document.Provider)
+            .HasForeignKey(document => document.ProviderId);
+        builder.HasMany(provider => provider.Services)
+            .WithOne()
+            .HasForeignKey(service => service.ProviderId);
+        builder.HasIndex(provider => new { provider.CompanyId, provider.Status });
     }
 }

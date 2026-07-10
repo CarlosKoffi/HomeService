@@ -1,5 +1,8 @@
 @page "/dashboard"
+@using System.Text.Json
 @inject IJSRuntime Js
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Espace entreprise</PageTitle>
 
@@ -25,7 +28,7 @@
         </div>
     </div>
 
-    <form class="portal-login" @onsubmit="SubmitLoginPreviewAsync" @onsubmit:preventDefault>
+    <form class="portal-login" @onsubmit="SubmitLoginAsync" @onsubmit:preventDefault>
         <div class="login-accent" aria-hidden="true"></div>
         <div class="section-intro">
             <h2>Connexion</h2>
@@ -57,10 +60,24 @@
             <p class="field-message">@LoginMessage</p>
         }
 
-        <button type="submit" class="primary-action">Se connecter</button>
+        <button type="submit" class="primary-action" disabled="@IsSubmitting">
+            @(IsSubmitting ? "Connexion..." : "Se connecter")
+        </button>
         <a class="create-account-link" href="register">Nouvelle entreprise ? Creer un compte</a>
     </form>
 </section>
+
+@if (Session is not null)
+{
+    <section class="portal-session-banner">
+        <div>
+            <span>Connecte</span>
+            <strong>@Session.CompanyName</strong>
+            <p>@Session.UserName - @Session.Email</p>
+        </div>
+        <button type="button" class="secondary-action" @onclick="LogoutAsync">Se deconnecter</button>
+    </section>
+}
 
 <section class="dashboard-grid">
     <article>
@@ -85,6 +102,8 @@
     private string Password { get; set; } = string.Empty;
     private bool RememberMe { get; set; }
     private string? LoginMessage { get; set; }
+    private bool IsSubmitting { get; set; }
+    private CompanyPortalSessionResponse? Session { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -99,11 +118,20 @@
             Email = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.email") ?? string.Empty;
         }
 
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+        if (!string.IsNullOrWhiteSpace(sessionJson))
+        {
+            Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+        }
+
         StateHasChanged();
     }
 
-    private async Task SubmitLoginPreviewAsync()
+    private async Task SubmitLoginAsync()
     {
+        LoginMessage = null;
+        IsSubmitting = true;
+
         if (RememberMe)
         {
             await Js.InvokeVoidAsync("localStorage.setItem", "homeservice.company.rememberMe", "true");
@@ -115,8 +143,33 @@
             await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.email");
         }
 
-        LoginMessage = RememberMe
-            ? "Votre email sera retenu sur cet appareil. La session longue sera activee quand le vrai login sera branche."
-            : "La connexion sera active apres validation du dossier et creation du mot de passe via le lien recu par email.";
+        try
+        {
+            var result = await ApiClient.LoginCompanyPortalAsync(new(Email, Password, RememberMe));
+            if (!result.IsSuccess || result.Session is null)
+            {
+                LoginMessage = result.ErrorMessage ?? "Connexion impossible.";
+                return;
+            }
+
+            Session = result.Session;
+            await Js.InvokeVoidAsync("localStorage.setItem", "homeservice.company.session", JsonSerializer.Serialize(Session));
+            Password = string.Empty;
+            Navigation.NavigateTo("employees");
+        }
+        catch (Exception exception)
+        {
+            LoginMessage = $"Connexion impossible pour le moment. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        Session = null;
+        await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
     }
 }

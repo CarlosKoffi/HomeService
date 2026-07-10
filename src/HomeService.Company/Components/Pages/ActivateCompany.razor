@@ -33,6 +33,10 @@
         <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="SubmitAsync">
             @(IsSubmitting ? "Activation en cours..." : "Creer le mot de passe")
         </button>
+        @if (IsActivated)
+        {
+            <a class="secondary-action" href="dashboard">Aller a l'espace entreprise</a>
+        }
     </form>
 </section>
 
@@ -47,6 +51,7 @@
     private string ConfirmPassword { get; set; } = string.Empty;
     private string? Message { get; set; }
     private bool IsSubmitting { get; set; }
+    private bool IsActivated { get; set; }
 
     private async Task SubmitAsync()
     {
@@ -79,6 +84,7 @@
             {
                 Password = string.Empty;
                 ConfirmPassword = string.Empty;
+                IsActivated = true;
             }
         }
         catch (Exception exception)

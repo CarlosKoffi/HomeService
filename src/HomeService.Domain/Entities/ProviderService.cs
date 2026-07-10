@@ -31,6 +31,7 @@ public sealed class ProviderService : AuditableEntity
     public Guid ProviderId { get; private set; }
     public Guid CompanyId { get; private set; }
     public Guid ServiceId { get; private set; }
+    public Service? Service { get; private set; }
     public ExperienceLevel ExperienceLevel { get; private set; }
     public int YearsOfExperience { get; private set; }
     public int HourlyRateAmount { get; private set; }
@@ -38,4 +39,10 @@ public sealed class ProviderService : AuditableEntity
     public PricingUnit PricingUnit { get; private set; } = PricingUnit.Hourly;
     public DateTimeOffset CompanyValidatedAt { get; private set; }
     public bool IsActive { get; private set; } = true;
+
+    public void Deactivate()
+    {
+        IsActive = false;
+        Touch();
+    }
 }

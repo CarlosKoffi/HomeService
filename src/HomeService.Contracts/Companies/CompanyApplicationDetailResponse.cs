@@ -18,6 +18,7 @@ public sealed record CompanyApplicationDetailResponse(
     DateTimeOffset? LastReminderSentAt,
     DateTimeOffset? ActivationEmailSentAt,
     DateTimeOffset? ActivatedAt,
+    string? CompanyAssignmentMode,
     string? LastActivationLink,
     DateTimeOffset? LastActivationLinkExpiresAt,
     string? ReviewNote,

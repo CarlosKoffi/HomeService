@@ -31,6 +31,13 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
         ["supportingDocument"] = CompanyDocumentType.SupportingDocument
     };
 
+    private static readonly Dictionary<string, ProviderDocumentType> ProviderDocumentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["photo"] = ProviderDocumentType.Photo,
+        ["identityDocument"] = ProviderDocumentType.IdentityDocument,
+        ["diploma"] = ProviderDocumentType.Diploma
+    };
+
     public async Task<IReadOnlyList<StoredCompanyApplicationDocument>> SaveAsync(
         Guid companyApplicationId,
         IFormFileCollection files,
@@ -83,6 +90,48 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
         return storedDocuments;
     }
 
+    public async Task<StoredProviderDocument> SaveProviderDocumentAsync(
+        Guid providerId,
+        string formFieldName,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (!ProviderDocumentTypes.TryGetValue(formFieldName, out var documentType) || file.Length == 0)
+        {
+            throw new InvalidOperationException("Type de document employe invalide.");
+        }
+
+        if (file.Length > MaxFileSize)
+        {
+            throw new InvalidOperationException($"Le fichier {file.FileName} depasse la limite de 10 Mo.");
+        }
+
+        var originalFileName = Path.GetFileName(file.FileName);
+        var extension = Path.GetExtension(originalFileName);
+        if (!AllowedContentTypes.Contains(file.ContentType) || !AllowedExtensions.Contains(extension))
+        {
+            throw new InvalidOperationException($"Le format du fichier {file.FileName} n'est pas accepte.");
+        }
+
+        var root = GetDocumentsRoot();
+        var relativeDirectory = Path.Combine(
+            "providers",
+            DateTime.UtcNow.ToString("yyyy"),
+            DateTime.UtcNow.ToString("MM"),
+            providerId.ToString("N"),
+            ToProviderFolderName(documentType));
+        var absoluteDirectory = Path.Combine(root, relativeDirectory);
+        Directory.CreateDirectory(absoluteDirectory);
+
+        var safeFileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}_{SanitizeFileName(originalFileName)}";
+        var absolutePath = Path.Combine(absoluteDirectory, safeFileName);
+        await using var stream = File.Create(absolutePath);
+        await file.CopyToAsync(stream, cancellationToken);
+
+        var relativePath = Path.Combine(relativeDirectory, safeFileName).Replace('\\', '/');
+        return new StoredProviderDocument(documentType, originalFileName, relativePath, file.ContentType);
+    }
+
     public string GetAbsolutePath(string storagePath)
     {
         var root = Path.GetFullPath(GetDocumentsRoot());
@@ -122,6 +171,17 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
         };
     }
 
+    private static string ToProviderFolderName(ProviderDocumentType documentType)
+    {
+        return documentType switch
+        {
+            ProviderDocumentType.Photo => "photo",
+            ProviderDocumentType.IdentityDocument => "piece-identite",
+            ProviderDocumentType.Diploma => "diplome",
+            _ => "documents"
+        };
+    }
+
     private static string SanitizeFileName(string fileName)
     {
         var invalidChars = Path.GetInvalidFileNameChars();
@@ -135,6 +195,12 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
 
 public sealed record StoredCompanyApplicationDocument(
     CompanyDocumentType DocumentType,
+    string OriginalFileName,
+    string StoragePath,
+    string ContentType);
+
+public sealed record StoredProviderDocument(
+    ProviderDocumentType DocumentType,
     string OriginalFileName,
     string StoragePath,
     string ContentType);

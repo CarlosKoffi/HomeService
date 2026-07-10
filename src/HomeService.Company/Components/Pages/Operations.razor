@@ -1,21 +1,148 @@
 @page "/operations"
+@using System.Text.Json
+@inject IJSRuntime Js
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Missions</PageTitle>
 
-<h1>Missions</h1>
-<p>Suivi des demandes directes, rendez-vous planifies, refus, assignations et ponctualite.</p>
-
-<section class="dashboard-grid">
-    <article>
-        <h2>Direct</h2>
-        <p>Les prestataires disponibles acceptent librement les demandes autour d'eux.</p>
-    </article>
-    <article>
-        <h2>Rendez-vous</h2>
-        <p>L'entreprise peut assigner un employe quand une mission est planifiee.</p>
-    </article>
-    <article>
-        <h2>Qualite</h2>
-        <p>Historique des refus, retards, annulations et notes clients.</p>
-    </article>
+<section class="workspace-header">
+    <div>
+        <p class="eyebrow">Portail entreprise</p>
+        <h1>Missions</h1>
+        <p class="lead">Suivez les demandes live, les rendez-vous a venir et l'historique de vos interventions.</p>
+    </div>
+    <a class="secondary-action" href="dashboard">Retour portail</a>
 </section>
+
+@if (Session is null)
+{
+    <section class="empty-state">
+        <h2>Connexion requise</h2>
+        <p>Connectez-vous pour voir les missions de votre entreprise.</p>
+        <a class="primary-action" href="dashboard">Se connecter</a>
+    </section>
+}
+else
+{
+    <section class="portal-tabs" aria-label="Vues missions">
+        <button class="@GetTabClass("live")" type="button" @onclick='() => LoadMissionsAsync("live")'>Live</button>
+        <button class="@GetTabClass("upcoming")" type="button" @onclick='() => LoadMissionsAsync("upcoming")'>A venir</button>
+        <button class="@GetTabClass("past")" type="button" @onclick='() => LoadMissionsAsync("past")'>Passees</button>
+    </section>
+
+    <section class="metric-strip">
+        <article><span>Live</span><strong>@LiveCount</strong></article>
+        <article><span>A venir</span><strong>@UpcomingCount</strong></article>
+        <article><span>Passees</span><strong>@PastCount</strong></article>
+    </section>
+
+    @if (IsLoading)
+    {
+        <section class="empty-state"><h2>Chargement...</h2><p>Recuperation des missions.</p></section>
+    }
+    else if (Missions.Count == 0)
+    {
+        <section class="empty-state">
+            <h2>Aucune mission pour cette vue</h2>
+            <p>Les demandes apparaitront ici quand la partie client commencera a creer des missions.</p>
+        </section>
+    }
+    else
+    {
+        <section class="mission-list">
+            @foreach (var mission in Missions)
+            {
+                <article class="mission-row">
+                    <div>
+                        <span class="status-pill @GetStatusClass(mission.Status)">@GetStatusLabel(mission.Status)</span>
+                        <h2>@mission.ServiceName</h2>
+                        <p>@mission.CustomerName - @mission.CustomerPhoneNumber</p>
+                    </div>
+                    <div>
+                        <strong>@(mission.ProviderName ?? "A assigner")</strong>
+                        <span>@(mission.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Demande directe")</span>
+                    </div>
+                    <div>
+                        <strong>@(mission.FinalTotalAmount?.ToString("N0") ?? "-") @mission.Currency</strong>
+                        <span>@GetPaymentLabel(mission.PaymentMethod)</span>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+}
+
+@code {
+    private CompanyPortalSessionResponse? Session { get; set; }
+    private IReadOnlyList<CompanyPortalMissionResponse> Missions { get; set; } = [];
+    private string ActiveView { get; set; } = "live";
+    private bool IsLoading { get; set; }
+    private int LiveCount { get; set; }
+    private int UpcomingCount { get; set; }
+    private int PastCount { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+        if (!string.IsNullOrWhiteSpace(sessionJson))
+        {
+            Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            await RefreshCountsAsync();
+            await LoadMissionsAsync("live");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task RefreshCountsAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        LiveCount = (await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "live")).Count;
+        UpcomingCount = (await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "upcoming")).Count;
+        PastCount = (await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "past")).Count;
+    }
+
+    private async Task LoadMissionsAsync(string view)
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        ActiveView = view;
+        IsLoading = true;
+        Missions = await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, view);
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private string GetTabClass(string view) => ActiveView == view ? "active" : string.Empty;
+
+    private static string GetStatusClass(string status) => status switch
+    {
+        "Completed" => "status-ok",
+        "Cancelled" or "Disputed" => "status-rejected",
+        _ => "status-pending"
+    };
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "SearchingProvider" => "Recherche",
+        "OnTheWay" => "En route",
+        "Started" => "Demarree",
+        "Completed" => "Terminee",
+        "Cancelled" => "Annulee",
+        _ => status
+    };
+
+    private static string GetPaymentLabel(string method) => method == "MobileMoney" ? "Mobile Money" : "Cash";
+}

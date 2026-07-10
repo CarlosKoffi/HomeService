@@ -72,6 +72,31 @@ else if (Application is not null)
         </section>
     }
 
+    <section class="info-panel assignment-mode-panel">
+        <div>
+            <h2>Affectation des missions</h2>
+            <p class="section-help">
+                Choisissez qui affecte les demandes aux prestataires de cette entreprise. Si ProxiPro gere
+                l'affectation, une commission additionnelle pourra etre appliquee plus tard.
+            </p>
+        </div>
+        @if (Application.CompanyId is null)
+        {
+            <p class="section-help">Disponible apres validation de l'entreprise.</p>
+        }
+        else
+        {
+            <div class="assignment-mode-actions">
+                <select @bind="SelectedAssignmentMode" disabled="@IsBusy">
+                    <option value="SelfManaged">Entreprise affecte elle-meme</option>
+                    <option value="PlatformManaged">ProxiPro affecte pour l'entreprise</option>
+                </select>
+                <button type="button" disabled="@IsBusy" @onclick="SaveAssignmentModeAsync">Enregistrer</button>
+            </div>
+            <p class="section-help">@GetAssignmentModeHelp(SelectedAssignmentMode)</p>
+        }
+    </section>
+
     <section class="detail-grid">
         <article>
             <h2>Entreprise</h2>
@@ -118,6 +143,28 @@ else if (Application is not null)
                         @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
                         {
                             <p class="section-help">Note piece: @document.ReviewNote</p>
+                        }
+                        @if (CanPreviewDocument(document.ContentType))
+                        {
+                            <details class="document-preview">
+                                <summary>Previsualiser</summary>
+                                @if (IsImageDocument(document.ContentType))
+                                {
+                                    <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                         loading="lazy"
+                                         alt="Previsualisation de @GetDocumentLabel(document.DocumentType)" />
+                                }
+                                else
+                                {
+                                    <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                            loading="lazy"
+                                            title="Previsualisation de @GetDocumentLabel(document.DocumentType)"></iframe>
+                                }
+                            </details>
+                        }
+                        else
+                        {
+                            <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
                         }
                     </div>
                     <span class="document-status @GetDocumentStatusClass(document.ReviewStatus)">@document.ReviewStatus</span>
@@ -171,6 +218,7 @@ else if (Application is not null)
     private string? ErrorMessage { get; set; }
     private string? ActionMessage { get; set; }
     private string ReviewNote { get; set; } = string.Empty;
+    private string SelectedAssignmentMode { get; set; } = "SelfManaged";
     private Dictionary<Guid, string> DocumentNotes { get; set; } = [];
 
     protected override async Task OnParametersSetAsync()
@@ -193,6 +241,9 @@ else if (Application is not null)
             }
 
             DocumentNotes = Application.Documents.ToDictionary(document => document.Id, _ => string.Empty);
+            SelectedAssignmentMode = string.IsNullOrWhiteSpace(Application.CompanyAssignmentMode)
+                ? "SelfManaged"
+                : Application.CompanyAssignmentMode;
         }
         catch (Exception exception)
         {
@@ -201,6 +252,33 @@ else if (Application is not null)
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private async Task SaveAssignmentModeAsync()
+    {
+        if (Application?.CompanyId is null)
+        {
+            ActionMessage = "Validez d'abord l'entreprise avant de choisir le mode d'affectation.";
+            return;
+        }
+
+        IsBusy = true;
+        ActionMessage = null;
+
+        try
+        {
+            var response = await ApiClient.UpdateCompanyAssignmentModeAsync(Application.CompanyId.Value, SelectedAssignmentMode);
+            ActionMessage = response?.Message ?? "Mode d'affectation mis a jour.";
+            await LoadApplicationAsync();
+        }
+        catch (Exception exception)
+        {
+            ActionMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
@@ -401,6 +479,13 @@ else if (Application is not null)
         };
     }
 
+    private static string GetAssignmentModeHelp(string assignmentMode)
+    {
+        return assignmentMode == "PlatformManaged"
+            ? "ProxiPro choisira le meilleur prestataire disponible. Ce mode servira de base a une commission plus elevee."
+            : "L'entreprise recoit les demandes et affecte elle-meme ses employes depuis son portail.";
+    }
+
     private static string GetStatusClass(string status)
     {
         return status switch
@@ -422,5 +507,20 @@ else if (Application is not null)
             "Approved" => "status-done",
             _ => "status-new"
         };
+    }
+
+    private static bool CanPreviewDocument(string? contentType)
+    {
+        return IsImageDocument(contentType) || IsPdfDocument(contentType);
+    }
+
+    private static bool IsImageDocument(string? contentType)
+    {
+        return contentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private static bool IsPdfDocument(string? contentType)
+    {
+        return string.Equals(contentType, "application/pdf", StringComparison.OrdinalIgnoreCase);
     }
 }
