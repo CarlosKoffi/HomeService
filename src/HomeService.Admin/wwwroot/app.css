@@ -1,5 +1,5 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 :root {
@@ -47,7 +47,7 @@ h3 {
 }
 
 .lead {
-    color: #475569;
+    color: #000000;
     font-size: var(--text-lead);
     max-width: 780px;
 }
@@ -99,7 +99,7 @@ h3 {
 
 .dashboard-grid ul,
 .operations-board ol {
-    color: #475569;
+    color: #000000;
     margin-bottom: 0;
     padding-left: 1.1rem;
 }
@@ -135,7 +135,7 @@ h3 {
 
 .section-help,
 .queue-note {
-    color: #64748b;
+    color: #000000;
     font-size: .92rem;
 }
 
@@ -147,7 +147,7 @@ h3 {
 }
 
 .status-guide p {
-    color: #64748b;
+    color: #000000;
     margin-bottom: 0;
     margin-top: .35rem;
 }
@@ -161,7 +161,7 @@ h3 {
 }
 
 .toolbar label {
-    color: #334155;
+    color: #000000;
     display: grid;
     font-weight: 700;
     gap: .3rem;
@@ -367,7 +367,7 @@ h3 {
 }
 
 .detail-grid dt {
-    color: #64748b;
+    color: #000000;
     font-weight: 700;
 }
 
@@ -519,7 +519,7 @@ h3 {
 }
 
 .branding-grid label {
-    color: #334155;
+    color: #000000;
     display: grid;
     font-weight: 800;
     gap: .35rem;
@@ -602,7 +602,7 @@ h3 {
 }
 
 .table-lite .config-row em {
-    color: #64748b;
+    color: #000000;
     font-style: normal;
     font-weight: 800;
 }
@@ -647,7 +647,7 @@ h3 {
 }
 
 .proposal-list small {
-    color: #64748b;
+    color: #000000;
 }
 
 .notification-list {
@@ -668,12 +668,12 @@ h3 {
 }
 
 .notification-list p {
-    color: #475569;
+    color: #000000;
     margin: .35rem 0;
 }
 
 .notification-list small {
-    color: #64748b;
+    color: #000000;
 }
 
 .notification-list span {
@@ -747,7 +747,7 @@ h3 {
 }
 
 .matrix-head {
-    color: #64748b;
+    color: #000000;
     font-weight: 800;
 }
 
