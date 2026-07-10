@@ -19,19 +19,19 @@
         <h2>Entreprise</h2>
         <label>
             Nom legal de l'entreprise
-            <input name="companyName" type="text" autocomplete="organization" @bind="CompanyName" />
+            <input name="companyName" type="text" autocomplete="organization" placeholder="Ex: CI Home Services SARL" @bind="CompanyName" />
         </label>
         <label>
             Numero RCCM ou identifiant legal
-            <input name="registrationNumber" type="text" @bind="RegistrationNumber" />
+            <input name="registrationNumber" type="text" placeholder="Ex: CI-ABJ-2026-B-12345" @bind="RegistrationNumber" />
         </label>
         <label>
             Ville
-            <input name="city" type="text" autocomplete="address-level2" @bind="City" />
+            <input name="city" type="text" autocomplete="address-level2" placeholder="Ex: Abidjan" @bind="City" />
         </label>
         <label>
             Adresse
-            <input name="address" type="text" autocomplete="street-address" @bind="Address" />
+            <input name="address" type="text" autocomplete="street-address" placeholder="Ex: Cocody Angre, 7e tranche" @bind="Address" />
         </label>
     </section>
 
@@ -39,15 +39,15 @@
         <h2>Contact responsable</h2>
         <label>
             Nom complet
-            <input name="ownerName" type="text" autocomplete="name" @bind="ContactName" />
+            <input name="ownerName" type="text" autocomplete="name" placeholder="Ex: David Gnahoua" @bind="ContactName" />
         </label>
         <label>
             Email professionnel
-            <input name="email" type="email" autocomplete="email" @bind="Email" />
+            <input name="email" type="email" autocomplete="email" placeholder="Ex: dg@cibank.ci" @bind="Email" />
         </label>
         <label>
             Telephone
-            <input name="phone" type="tel" autocomplete="tel" @bind="PhoneNumber" />
+            <input name="phone" type="tel" autocomplete="tel" placeholder="Ex: +2250700000000" @bind="PhoneNumber" />
         </label>
     </section>
 
@@ -155,7 +155,7 @@
 
         <label>
             Nombre approximatif de prestataires
-            <input name="providerCount" type="number" min="1" @bind="EstimatedProviderCount" />
+            <input name="providerCount" type="number" min="1" placeholder="Ex: 25" @bind="EstimatedProviderCount" />
         </label>
     </section>
 
@@ -311,10 +311,10 @@
             SelectedServices.Select(service => service.Name).ToList(),
             EstimatedProviderCount);
 
-        var success = await ApiClient.RegisterCompanyAsync(request, Documents);
-        FormMessage = success
+        var result = await ApiClient.RegisterCompanyAsync(request, Documents);
+        FormMessage = result.IsSuccess
             ? "Demande envoyee. Notre equipe va verifier votre dossier."
-            : "Impossible d'envoyer la demande pour le moment. Reessayez dans quelques instants.";
+            : $"Impossible d'envoyer la demande: {result.ErrorMessage}";
         IsSubmitting = false;
     }
 

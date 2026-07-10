@@ -18,7 +18,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await httpClient.GetFromJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
     }
 
-    public async Task<bool> RegisterCompanyAsync(
+    public async Task<RegisterCompanyResult> RegisterCompanyAsync(
         RegisterCompanyRequest request,
         IReadOnlyDictionary<string, IBrowserFile?> documents,
         CancellationToken cancellationToken = default)
@@ -52,7 +52,13 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
 
         var response = await httpClient.PostAsync("/api/company-applications", content, cancellationToken);
-        return response.IsSuccessStatusCode;
+        if (response.IsSuccessStatusCode)
+        {
+            return new RegisterCompanyResult(true, null);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return new RegisterCompanyResult(false, string.IsNullOrWhiteSpace(body) ? response.ReasonPhrase : body);
     }
 
     public async Task<IReadOnlyList<TranslationValueResponse>> GetTranslationsAsync(string scope, CancellationToken cancellationToken = default)
@@ -94,3 +100,5 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
     }
 }
+
+public sealed record RegisterCompanyResult(bool IsSuccess, string? ErrorMessage);

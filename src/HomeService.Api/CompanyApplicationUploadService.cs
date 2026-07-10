@@ -10,7 +10,16 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
     {
         "application/pdf",
         "image/jpeg",
-        "image/png"
+        "image/png",
+        "application/octet-stream"
+    };
+
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf",
+        ".jpg",
+        ".jpeg",
+        ".png"
     };
 
     private static readonly Dictionary<string, CompanyDocumentType> DocumentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -41,7 +50,9 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
                 throw new InvalidOperationException($"Le fichier {file.FileName} depasse la limite de 10 Mo.");
             }
 
-            if (!AllowedContentTypes.Contains(file.ContentType))
+            var originalFileName = Path.GetFileName(file.FileName);
+            var extension = Path.GetExtension(originalFileName);
+            if (!AllowedContentTypes.Contains(file.ContentType) || !AllowedExtensions.Contains(extension))
             {
                 throw new InvalidOperationException($"Le format du fichier {file.FileName} n'est pas accepte.");
             }
@@ -56,7 +67,6 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
             var absoluteDirectory = Path.Combine(root, relativeDirectory);
             Directory.CreateDirectory(absoluteDirectory);
 
-            var originalFileName = Path.GetFileName(file.FileName);
             var safeFileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}_{SanitizeFileName(originalFileName)}";
             var absolutePath = Path.Combine(absoluteDirectory, safeFileName);
             await using var stream = File.Create(absolutePath);
