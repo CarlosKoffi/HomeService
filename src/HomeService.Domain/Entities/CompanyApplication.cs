@@ -7,6 +7,8 @@ public sealed class CompanyApplication : AuditableEntity
 {
     private readonly List<CompanyApplicationDocument> _documents = [];
     private readonly List<CompanyApplicationService> _requestedServices = [];
+    private readonly List<CompanyApplicationStatusHistory> _statusHistory = [];
+    private readonly List<CompanyActivationToken> _activationTokens = [];
 
     private CompanyApplication()
     {
@@ -32,8 +34,11 @@ public sealed class CompanyApplication : AuditableEntity
         PhoneNumber = phoneNumber.Trim();
         PlannedServices = plannedServices?.Trim();
         EstimatedProviderCount = estimatedProviderCount;
+        AddStatusHistory(null, CompanyApplicationStatus.Submitted, "Demande soumise.", null);
     }
 
+    public Guid? CompanyId { get; private set; }
+    public Company? Company { get; private set; }
     public string CompanyName { get; private set; } = string.Empty;
     public string? RegistrationNumber { get; private set; }
     public string City { get; private set; } = string.Empty;
@@ -52,33 +57,52 @@ public sealed class CompanyApplication : AuditableEntity
     public string? ReviewNote { get; private set; }
     public IReadOnlyCollection<CompanyApplicationDocument> Documents => _documents;
     public IReadOnlyCollection<CompanyApplicationService> RequestedServices => _requestedServices;
+    public IReadOnlyCollection<CompanyApplicationStatusHistory> StatusHistory => _statusHistory;
+    public IReadOnlyCollection<CompanyActivationToken> ActivationTokens => _activationTokens;
 
-    public void MarkUnderReview()
+    public void MarkUnderReview(string? changedBy = null)
     {
-        Status = CompanyApplicationStatus.UnderReview;
+        SetStatus(CompanyApplicationStatus.UnderReview, null, changedBy);
         Touch();
     }
 
-    public void RequestMoreInformation(string note)
+    public void RequestMoreInformation(string note, string? changedBy = null)
     {
-        Status = CompanyApplicationStatus.MoreInformationRequested;
         ReviewNote = note.Trim();
         ReviewedAt = DateTimeOffset.UtcNow;
+        SetStatus(CompanyApplicationStatus.MoreInformationRequested, ReviewNote, changedBy);
         Touch();
     }
 
-    public void Approve()
+    public void Approve(string? changedBy = null)
     {
-        Status = CompanyApplicationStatus.Approved;
         ReviewedAt = DateTimeOffset.UtcNow;
+        SetStatus(CompanyApplicationStatus.Approved, null, changedBy);
         Touch();
     }
 
-    public void MarkActivationSent()
+    public CompanyActivationToken CreateActivationToken(
+        string tokenHash,
+        DateTimeOffset expiresAt,
+        string? changedBy = null)
     {
-        Status = CompanyApplicationStatus.ActivationSent;
+        if (Status != CompanyApplicationStatus.Approved && Status != CompanyApplicationStatus.ActivationSent)
+        {
+            throw new InvalidOperationException("Seule une demande approuvee peut recevoir un token d'activation.");
+        }
+
+        foreach (var existingToken in _activationTokens.Where(token => token.IsActive))
+        {
+            existingToken.Revoke("Remplace par un nouveau token d'activation.");
+        }
+
+        var activationToken = new CompanyActivationToken(Id, tokenHash, expiresAt);
+        _activationTokens.Add(activationToken);
         ActivationEmailSentAt = DateTimeOffset.UtcNow;
+        SetStatus(CompanyApplicationStatus.ActivationSent, "Lien d'activation envoye.", changedBy);
         Touch();
+
+        return activationToken;
     }
 
     public void MarkReminderSent()
@@ -87,11 +111,59 @@ public sealed class CompanyApplication : AuditableEntity
         Touch();
     }
 
-    public void Reject(string note)
+    public void Reject(string note, string? changedBy = null)
     {
-        Status = CompanyApplicationStatus.Rejected;
         ReviewNote = note.Trim();
         ReviewedAt = DateTimeOffset.UtcNow;
+        SetStatus(CompanyApplicationStatus.Rejected, ReviewNote, changedBy);
+        Touch();
+    }
+
+    public void LinkApprovedCompany(Guid companyId, string? changedBy = null)
+    {
+        if (Status is not (CompanyApplicationStatus.Approved or CompanyApplicationStatus.ActivationSent or CompanyApplicationStatus.Activated))
+        {
+            throw new InvalidOperationException("La demande doit etre approuvee avant de lier une entreprise.");
+        }
+
+        CompanyId = companyId;
+        Touch();
+    }
+
+    public void MarkActivated(string? changedBy = null)
+    {
+        if (Status != CompanyApplicationStatus.Activated)
+        {
+            ActivatedAt = DateTimeOffset.UtcNow;
+            SetStatus(CompanyApplicationStatus.Activated, "Compte entreprise active.", changedBy);
+            Touch();
+        }
+    }
+
+    private void SetStatus(CompanyApplicationStatus newStatus, string? note, string? changedBy)
+    {
+        if (Status == newStatus)
+        {
+            return;
+        }
+
+        var previousStatus = Status;
+        Status = newStatus;
+        AddStatusHistory(previousStatus, newStatus, note, changedBy);
+    }
+
+    private void AddStatusHistory(
+        CompanyApplicationStatus? previousStatus,
+        CompanyApplicationStatus newStatus,
+        string? note,
+        string? changedBy)
+    {
+        _statusHistory.Add(new CompanyApplicationStatusHistory(
+            Id,
+            previousStatus,
+            newStatus,
+            note,
+            changedBy));
         Touch();
     }
 }

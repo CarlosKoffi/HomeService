@@ -235,6 +235,49 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.ToTable("Companies");
                 });
 
+            modelBuilder.Entity("HomeService.Domain.Entities.CompanyActivationToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RevocationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("CompanyApplicationId", "ExpiresAt");
+
+                    b.ToTable("CompanyActivationTokens");
+                });
+
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplication", b =>
                 {
                     b.Property<Guid>("Id")
@@ -255,6 +298,9 @@ namespace HomeService.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("CompanyName")
                         .IsRequired()
@@ -312,6 +358,8 @@ namespace HomeService.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
 
                     b.HasIndex("Status", "SubmittedAt");
 
@@ -417,6 +465,94 @@ namespace HomeService.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("CompanyApplicationServices");
+                });
+
+            modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplicationStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ChangedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid>("CompanyApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("PreviousStatus")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyApplicationId", "ChangedAt");
+
+                    b.ToTable("CompanyApplicationStatusHistories");
+                });
+
+            modelBuilder.Entity("HomeService.Domain.Entities.CompanyPortalUser", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsOwner")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("CompanyPortalUsers");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.Country", b =>
@@ -877,6 +1013,27 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("HomeService.Domain.Entities.CompanyActivationToken", b =>
+                {
+                    b.HasOne("HomeService.Domain.Entities.CompanyApplication", "CompanyApplication")
+                        .WithMany("ActivationTokens")
+                        .HasForeignKey("CompanyApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompanyApplication");
+                });
+
+            modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplication", b =>
+                {
+                    b.HasOne("HomeService.Domain.Entities.Company", "Company")
+                        .WithMany("Applications")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Company");
+                });
+
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplicationDocument", b =>
                 {
                     b.HasOne("HomeService.Domain.Entities.CompanyApplication", "CompanyApplication")
@@ -903,6 +1060,28 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.Navigation("CompanyApplication");
 
                     b.Navigation("MatchedService");
+                });
+
+            modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplicationStatusHistory", b =>
+                {
+                    b.HasOne("HomeService.Domain.Entities.CompanyApplication", "CompanyApplication")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("CompanyApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CompanyApplication");
+                });
+
+            modelBuilder.Entity("HomeService.Domain.Entities.CompanyPortalUser", b =>
+                {
+                    b.HasOne("HomeService.Domain.Entities.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderProfile", b =>
@@ -960,14 +1139,20 @@ namespace HomeService.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("HomeService.Domain.Entities.Company", b =>
                 {
+                    b.Navigation("Applications");
+
                     b.Navigation("Providers");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplication", b =>
                 {
+                    b.Navigation("ActivationTokens");
+
                     b.Navigation("Documents");
 
                     b.Navigation("RequestedServices");
+
+                    b.Navigation("StatusHistory");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderProfile", b =>

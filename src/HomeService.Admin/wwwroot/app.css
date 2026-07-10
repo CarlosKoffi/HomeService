@@ -283,6 +283,24 @@ a, .btn-link {
     margin-top: 1.5rem;
 }
 
+.action-feedback {
+    border-left: 4px solid #14b8a6;
+}
+
+.document-actions {
+    display: grid;
+    gap: .55rem;
+    min-width: 260px;
+}
+
+.document-actions textarea {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+    padding: .55rem .7rem;
+    resize: vertical;
+}
+
 .localization-grid {
     display: grid;
     gap: 1rem;

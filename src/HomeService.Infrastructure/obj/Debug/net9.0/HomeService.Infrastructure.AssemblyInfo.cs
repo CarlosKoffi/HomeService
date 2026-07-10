@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HomeService.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2c728627462ece1f28e824828c641db02e27050f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+32e9220e2dcbd97d96d5b0f1601104f0fee84ab4")]
 [assembly: System.Reflection.AssemblyProductAttribute("HomeService.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HomeService.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -23,6 +23,48 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<CompanyApplicationDetailResponse>($"/api/admin/company-applications/{id}", cancellationToken);
     }
 
+    public async Task<CompanyApplicationActionResponse?> ApproveCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationActionResponse>($"/api/admin/company-applications/{id}/approve", null, cancellationToken);
+    }
+
+    public async Task<CompanyApplicationActionResponse?> RejectCompanyApplicationAsync(Guid id, string note, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationActionResponse>($"/api/admin/company-applications/{id}/reject", new CompanyApplicationReviewRequest(note), cancellationToken);
+    }
+
+    public async Task<CompanyApplicationActionResponse?> RequestCompanyApplicationMoreInformationAsync(Guid id, string note, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationActionResponse>($"/api/admin/company-applications/{id}/request-more-information", new CompanyApplicationReviewRequest(note), cancellationToken);
+    }
+
+    public async Task<CompanyApplicationActivationLinkResponse?> SendCompanyApplicationActivationLinkAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationActivationLinkResponse>($"/api/admin/company-applications/{id}/activation-link", null, cancellationToken);
+    }
+
+    public async Task<CompanyApplicationDocumentReviewResponse?> ApproveCompanyApplicationDocumentAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationDocumentReviewResponse>($"/api/admin/company-application-documents/{id}/approve", null, cancellationToken);
+    }
+
+    public async Task<CompanyApplicationDocumentReviewResponse?> RejectCompanyApplicationDocumentAsync(Guid id, string comment, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationDocumentReviewResponse>($"/api/admin/company-application-documents/{id}/reject", new CompanyApplicationDocumentReviewRequest(comment), cancellationToken);
+    }
+
+    public async Task<CompanyApplicationDocumentReviewResponse?> RequestCompanyApplicationDocumentReplacementAsync(Guid id, string comment, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationDocumentReviewResponse>($"/api/admin/company-application-documents/{id}/request-replacement", new CompanyApplicationDocumentReviewRequest(comment), cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -43,6 +85,22 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     private async Task<T?> GetJsonAsync<T>(string path, CancellationToken cancellationToken)
     {
         using var response = await httpClient.GetAsync(path, cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new PlatformApiException(
+            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+    }
+
+    private async Task<T?> PostJsonAsync<T>(string path, object? payload, CancellationToken cancellationToken)
+    {
+        using var response = payload is null
+            ? await httpClient.PostAsync(path, null, cancellationToken)
+            : await httpClient.PostAsJsonAsync(path, payload, cancellationToken);
+
         if (response.IsSuccessStatusCode)
         {
             return await response.Content.ReadFromJsonAsync<T>(cancellationToken);

@@ -68,6 +68,23 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await httpClient.GetFromJsonAsync<IReadOnlyList<TranslationValueResponse>>($"/api/translations?scope={Uri.EscapeDataString(scope)}", cancellationToken) ?? [];
     }
 
+    public async Task<CompanyActivationResult> CreateCompanyPasswordAsync(
+        CompanyActivationPasswordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync("/api/company-activation/password", request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var payload = await response.Content.ReadFromJsonAsync<CompanyActivationPasswordResponse>(cancellationToken);
+            return new CompanyActivationResult(true, payload?.Message ?? "Mot de passe cree.");
+        }
+
+        return new CompanyActivationResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
+    }
+
     private void AddBasicAuthIfConfigured()
     {
         if (!IsAuthEnabled())
@@ -136,3 +153,5 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 }
 
 public sealed record RegisterCompanyResult(bool IsSuccess, string? ErrorMessage);
+
+public sealed record CompanyActivationResult(bool IsSuccess, string Message);

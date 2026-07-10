@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "vgjc7oOqt9hAeGSwokrvlfjp9tr1IfxmbDSYIOfURzc=",
+  "Hash": "dBAbvpIj+BjgNpleHjiEkBn907AIEdxV26S4XM7VwOw=",
   "Source": "HomeService.Admin",
   "BasePath": "_content/HomeService.Admin",
   "Mode": "Default",
@@ -857,12 +857,12 @@
       "OriginalItemSpec": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\wwwroot\\lib\\bootstrap\\dist\\css\\bootstrap-utilities.css"
     },
     {
-      "Identity": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-58npnlrfvx.gz",
+      "Identity": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-61c017lxv9.gz",
       "SourceId": "HomeService.Admin",
       "SourceType": "Discovered",
       "ContentRoot": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\",
       "BasePath": "_content/HomeService.Admin",
-      "RelativePath": "app#[.{fingerprint=58npnlrfvx}]?.css.gz",
+      "RelativePath": "app#[.{fingerprint=61c017lxv9}]?.css.gz",
       "AssetKind": "All",
       "AssetMode": "All",
       "AssetRole": "Alternative",
@@ -871,8 +871,8 @@
       "RelatedAsset": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\wwwroot\\app.css",
       "AssetTraitName": "Content-Encoding",
       "AssetTraitValue": "gzip",
-      "Fingerprint": "e2j6johi1s",
-      "Integrity": "+najwIvS/8rGyPJ+HOvu6J4+d7sLJHSuEEIrj0uZHQY=",
+      "Fingerprint": "8llx7xlpkw",
+      "Integrity": "dPmwjKRguVK6l05Bk42nmUdXAv5HnzIJoAijaVMla+U=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\wwwroot\\app.css"
@@ -1060,8 +1060,8 @@
       "RelatedAsset": "",
       "AssetTraitName": "",
       "AssetTraitValue": "",
-      "Fingerprint": "58npnlrfvx",
-      "Integrity": "1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8=",
+      "Fingerprint": "61c017lxv9",
+      "Integrity": "FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk=",
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\app.css"
@@ -2014,13 +2014,13 @@
   ],
   "Endpoints": [
     {
-      "Route": "app.58npnlrfvx.css",
-      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-58npnlrfvx.gz",
+      "Route": "app.61c017lxv9.css",
+      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-61c017lxv9.gz",
       "Selectors": [
         {
           "Name": "Content-Encoding",
           "Value": "gzip",
-          "Quality": "0.000324149109"
+          "Quality": "0.000319590924"
         }
       ],
       "ResponseHeaders": [
@@ -2030,15 +2030,15 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "3084"
+          "Value": "3128"
         },
         {
           "Name": "ETag",
-          "Value": "\"+najwIvS/8rGyPJ+HOvu6J4+d7sLJHSuEEIrj0uZHQY=\""
+          "Value": "\"dPmwjKRguVK6l05Bk42nmUdXAv5HnzIJoAijaVMla+U=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Thu, 09 Jul 2026 13:53:37 GMT"
+          "Value": "Fri, 10 Jul 2026 09:27:45 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2058,13 +2058,13 @@
         },
         {
           "Name": "ETag",
-          "Value": "W/\"1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8=\""
+          "Value": "W/\"FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk=\""
         }
       ],
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "58npnlrfvx"
+          "Value": "61c017lxv9"
         },
         {
           "Name": "label",
@@ -2072,12 +2072,12 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8="
+          "Value": "sha256-FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk="
         }
       ]
     },
     {
-      "Route": "app.58npnlrfvx.css",
+      "Route": "app.61c017lxv9.css",
       "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\wwwroot\\app.css",
       "Selectors": [],
       "ResponseHeaders": [
@@ -2087,7 +2087,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "10661"
+          "Value": "10955"
         },
         {
           "Name": "Content-Type",
@@ -2095,11 +2095,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8=\""
+          "Value": "\"FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Thu, 09 Jul 2026 13:53:37 GMT"
+          "Value": "Fri, 10 Jul 2026 09:27:45 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2109,7 +2109,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "58npnlrfvx"
+          "Value": "61c017lxv9"
         },
         {
           "Name": "label",
@@ -2117,13 +2117,13 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8="
+          "Value": "sha256-FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk="
         }
       ]
     },
     {
-      "Route": "app.58npnlrfvx.css.gz",
-      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-58npnlrfvx.gz",
+      "Route": "app.61c017lxv9.css.gz",
+      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-61c017lxv9.gz",
       "Selectors": [],
       "ResponseHeaders": [
         {
@@ -2132,7 +2132,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "3084"
+          "Value": "3128"
         },
         {
           "Name": "Content-Type",
@@ -2140,11 +2140,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"+najwIvS/8rGyPJ+HOvu6J4+d7sLJHSuEEIrj0uZHQY=\""
+          "Value": "\"dPmwjKRguVK6l05Bk42nmUdXAv5HnzIJoAijaVMla+U=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Thu, 09 Jul 2026 13:53:37 GMT"
+          "Value": "Fri, 10 Jul 2026 09:27:45 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2162,7 +2162,7 @@
       "EndpointProperties": [
         {
           "Name": "fingerprint",
-          "Value": "58npnlrfvx"
+          "Value": "61c017lxv9"
         },
         {
           "Name": "label",
@@ -2170,18 +2170,18 @@
         },
         {
           "Name": "integrity",
-          "Value": "sha256-+najwIvS/8rGyPJ+HOvu6J4+d7sLJHSuEEIrj0uZHQY="
+          "Value": "sha256-dPmwjKRguVK6l05Bk42nmUdXAv5HnzIJoAijaVMla+U="
         }
       ]
     },
     {
       "Route": "app.css",
-      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-58npnlrfvx.gz",
+      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-61c017lxv9.gz",
       "Selectors": [
         {
           "Name": "Content-Encoding",
           "Value": "gzip",
-          "Quality": "0.000324149109"
+          "Quality": "0.000319590924"
         }
       ],
       "ResponseHeaders": [
@@ -2191,15 +2191,15 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "3084"
+          "Value": "3128"
         },
         {
           "Name": "ETag",
-          "Value": "\"+najwIvS/8rGyPJ+HOvu6J4+d7sLJHSuEEIrj0uZHQY=\""
+          "Value": "\"dPmwjKRguVK6l05Bk42nmUdXAv5HnzIJoAijaVMla+U=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Thu, 09 Jul 2026 13:53:37 GMT"
+          "Value": "Fri, 10 Jul 2026 09:27:45 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2219,13 +2219,13 @@
         },
         {
           "Name": "ETag",
-          "Value": "W/\"1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8=\""
+          "Value": "W/\"FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk=\""
         }
       ],
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8="
+          "Value": "sha256-FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk="
         }
       ]
     },
@@ -2240,7 +2240,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "10661"
+          "Value": "10955"
         },
         {
           "Name": "Content-Type",
@@ -2248,11 +2248,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8=\""
+          "Value": "\"FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Thu, 09 Jul 2026 13:53:37 GMT"
+          "Value": "Fri, 10 Jul 2026 09:27:45 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2262,13 +2262,13 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-1Zx+PSHWC3wDYYaBzmpARRrfNEXJus7nVjCJz30xvh8="
+          "Value": "sha256-FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk="
         }
       ]
     },
     {
       "Route": "app.css.gz",
-      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-58npnlrfvx.gz",
+      "AssetFile": "C:\\Users\\bruce\\source\\repos\\CarlosKoffi\\HomeService\\src\\HomeService.Admin\\obj\\Debug\\net9.0\\compressed\\x0359a1f5v-61c017lxv9.gz",
       "Selectors": [],
       "ResponseHeaders": [
         {
@@ -2277,7 +2277,7 @@
         },
         {
           "Name": "Content-Length",
-          "Value": "3084"
+          "Value": "3128"
         },
         {
           "Name": "Content-Type",
@@ -2285,11 +2285,11 @@
         },
         {
           "Name": "ETag",
-          "Value": "\"+najwIvS/8rGyPJ+HOvu6J4+d7sLJHSuEEIrj0uZHQY=\""
+          "Value": "\"dPmwjKRguVK6l05Bk42nmUdXAv5HnzIJoAijaVMla+U=\""
         },
         {
           "Name": "Last-Modified",
-          "Value": "Thu, 09 Jul 2026 13:53:37 GMT"
+          "Value": "Fri, 10 Jul 2026 09:27:45 GMT"
         },
         {
           "Name": "Cache-Control",
@@ -2307,7 +2307,7 @@
       "EndpointProperties": [
         {
           "Name": "integrity",
-          "Value": "sha256-+najwIvS/8rGyPJ+HOvu6J4+d7sLJHSuEEIrj0uZHQY="
+          "Value": "sha256-dPmwjKRguVK6l05Bk42nmUdXAv5HnzIJoAijaVMla+U="
         }
       ]
     },

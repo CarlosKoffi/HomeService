@@ -6,6 +6,7 @@ namespace HomeService.Domain.Entities;
 public sealed class Company : AuditableEntity
 {
     private readonly List<ProviderProfile> _providers = [];
+    private readonly List<CompanyApplication> _applications = [];
 
     private Company()
     {
@@ -23,6 +24,7 @@ public sealed class Company : AuditableEntity
     public string? Email { get; private set; }
     public CompanyStatus Status { get; private set; } = CompanyStatus.PendingReview;
     public IReadOnlyCollection<ProviderProfile> Providers => _providers;
+    public IReadOnlyCollection<CompanyApplication> Applications => _applications;
 
     public void Approve()
     {

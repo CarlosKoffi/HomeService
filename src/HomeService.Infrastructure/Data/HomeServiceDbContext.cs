@@ -8,9 +8,12 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     : DbContext(options), IAppDbContext
 {
     public DbSet<Company> Companies => Set<Company>();
+    public DbSet<CompanyPortalUser> CompanyPortalUsers => Set<CompanyPortalUser>();
     public DbSet<CompanyApplication> CompanyApplications => Set<CompanyApplication>();
     public DbSet<CompanyApplicationDocument> CompanyApplicationDocuments => Set<CompanyApplicationDocument>();
     public DbSet<CompanyApplicationService> CompanyApplicationServices => Set<CompanyApplicationService>();
+    public DbSet<CompanyApplicationStatusHistory> CompanyApplicationStatusHistories => Set<CompanyApplicationStatusHistory>();
+    public DbSet<CompanyActivationToken> CompanyActivationTokens => Set<CompanyActivationToken>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ProviderProfile> Providers => Set<ProviderProfile>();
     public DbSet<ProviderService> ProviderServices => Set<ProviderService>();

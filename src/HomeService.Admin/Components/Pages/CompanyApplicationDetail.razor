@@ -33,6 +33,13 @@ else if (Application is not null)
         <span class="detail-status">@Application.Status</span>
     </section>
 
+    @if (!string.IsNullOrWhiteSpace(ActionMessage))
+    {
+        <section class="info-panel action-feedback">
+            <p>@ActionMessage</p>
+        </section>
+    }
+
     <section class="info-panel">
         <div>
             <h2>Decision attendue</h2>
@@ -92,12 +99,22 @@ else if (Application is not null)
                         <strong>@GetDocumentLabel(document.DocumentType)</strong>
                         <p>@document.OriginalFileName - @document.ContentType</p>
                         <p class="section-help">@GetDocumentHelp(document.DocumentType)</p>
+                        @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                        {
+                            <p class="section-help">Note piece: @document.ReviewNote</p>
+                        }
                     </div>
                     <span>@document.ReviewStatus</span>
-                    <div class="easy-actions">
-                        <a href="@ApiClient.GetCompanyApplicationDocumentUrl(document.Id)" target="_blank">Ouvrir</a>
-                        <button type="button">Valider piece</button>
-                        <button type="button">Remplacement</button>
+                    <div class="document-actions">
+                        <textarea rows="2"
+                                  placeholder="Commentaire obligatoire pour refus ou remplacement"
+                                  @bind="DocumentNotes[document.Id]"></textarea>
+                        <div class="easy-actions">
+                            <a href="@ApiClient.GetCompanyApplicationDocumentUrl(document.Id)" target="_blank" rel="noopener">Ouvrir</a>
+                            <button type="button" disabled="@IsBusy" @onclick="() => ApproveDocumentAsync(document.Id)">Valider piece</button>
+                            <button type="button" disabled="@IsBusy" @onclick="() => RequestDocumentReplacementAsync(document.Id)">Complement piece</button>
+                            <button type="button" disabled="@IsBusy" @onclick="() => RejectDocumentAsync(document.Id)">Refuser piece</button>
+                        </div>
                     </div>
                 </article>
             }
@@ -107,15 +124,15 @@ else if (Application is not null)
     <section class="review-panel">
         <h2>Actions dossier</h2>
         <p class="section-help">
-            Les actions seront branchees ensuite: demander un complement, valider, envoyer le lien d'activation,
-            relancer ou rejeter avec note.
+            La note est obligatoire pour demander un complement ou refuser le dossier.
+            La validation envoie ou regenere un lien d'activation pour creation du mot de passe.
         </p>
-        <textarea rows="4" placeholder="Note interne ou message de complement"></textarea>
+        <textarea rows="4" placeholder="Note interne ou message de complement" @bind="ReviewNote"></textarea>
         <div class="easy-actions">
-            <button type="button">Demander complement</button>
-            <button type="button">Valider et envoyer lien</button>
-            <button type="button">Relancer email</button>
-            <button type="button">Rejeter</button>
+            <button type="button" disabled="@IsBusy" @onclick="RequestMoreInformationAsync">Demander complement</button>
+            <button type="button" disabled="@IsBusy" @onclick="ApproveAndSendActivationLinkAsync">Valider et envoyer lien</button>
+            <button type="button" disabled="@IsBusy" @onclick="SendActivationLinkAsync">Renvoyer lien</button>
+            <button type="button" disabled="@IsBusy" @onclick="RejectApplicationAsync">Rejeter</button>
         </div>
     </section>
 }
@@ -126,9 +143,18 @@ else if (Application is not null)
 
     private CompanyApplicationDetailResponse? Application { get; set; }
     private bool IsLoading { get; set; } = true;
+    private bool IsBusy { get; set; }
     private string? ErrorMessage { get; set; }
+    private string? ActionMessage { get; set; }
+    private string ReviewNote { get; set; } = string.Empty;
+    private Dictionary<Guid, string> DocumentNotes { get; set; } = [];
 
     protected override async Task OnParametersSetAsync()
+    {
+        await LoadApplicationAsync();
+    }
+
+    private async Task LoadApplicationAsync()
     {
         IsLoading = true;
         ErrorMessage = null;
@@ -139,7 +165,10 @@ else if (Application is not null)
             if (Application is null)
             {
                 ErrorMessage = "Dossier introuvable.";
+                return;
             }
+
+            DocumentNotes = Application.Documents.ToDictionary(document => document.Id, _ => string.Empty);
         }
         catch (Exception exception)
         {
@@ -149,6 +178,145 @@ else if (Application is not null)
         {
             IsLoading = false;
         }
+    }
+
+    private async Task RequestMoreInformationAsync()
+    {
+        if (!TryRequireReviewNote("Ajoutez une note avant de demander un complement."))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            () => ApiClient.RequestCompanyApplicationMoreInformationAsync(Id, ReviewNote),
+            "Complement demande a l'entreprise.");
+    }
+
+    private async Task RejectApplicationAsync()
+    {
+        if (!TryRequireReviewNote("Ajoutez une note avant de refuser le dossier."))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            () => ApiClient.RejectCompanyApplicationAsync(Id, ReviewNote),
+            "Dossier refuse avec note.");
+    }
+
+    private async Task ApproveAndSendActivationLinkAsync()
+    {
+        await RunActivationLinkActionAsync(async () =>
+        {
+            await ApiClient.ApproveCompanyApplicationAsync(Id);
+            return await ApiClient.SendCompanyApplicationActivationLinkAsync(Id);
+        });
+    }
+
+    private async Task SendActivationLinkAsync()
+    {
+        await RunActivationLinkActionAsync(() => ApiClient.SendCompanyApplicationActivationLinkAsync(Id));
+    }
+
+    private async Task ApproveDocumentAsync(Guid documentId)
+    {
+        await RunActionAsync(
+            () => ApiClient.ApproveCompanyApplicationDocumentAsync(documentId),
+            "Piece validee.");
+    }
+
+    private async Task RequestDocumentReplacementAsync(Guid documentId)
+    {
+        if (!TryGetDocumentNote(documentId, "Ajoutez un commentaire avant de demander un complement de piece.", out var note))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            () => ApiClient.RequestCompanyApplicationDocumentReplacementAsync(documentId, note),
+            "Complement de piece demande.");
+    }
+
+    private async Task RejectDocumentAsync(Guid documentId)
+    {
+        if (!TryGetDocumentNote(documentId, "Ajoutez un commentaire avant de refuser la piece.", out var note))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            () => ApiClient.RejectCompanyApplicationDocumentAsync(documentId, note),
+            "Piece refusee.");
+    }
+
+    private async Task RunActionAsync<T>(Func<Task<T?>> action, string successMessage)
+    {
+        IsBusy = true;
+        ActionMessage = null;
+
+        try
+        {
+            await action();
+            ActionMessage = successMessage;
+            await LoadApplicationAsync();
+        }
+        catch (Exception exception)
+        {
+            ActionMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+            IsLoading = false;
+        }
+    }
+
+    private async Task RunActivationLinkActionAsync(Func<Task<CompanyApplicationActivationLinkResponse?>> action)
+    {
+        IsBusy = true;
+        ActionMessage = null;
+
+        try
+        {
+            var response = await action();
+            ActionMessage = response is null
+                ? "Lien d'activation genere."
+                : $"Lien d'activation valable jusqu'au {response.ExpiresAt.ToLocalTime():dd/MM/yyyy HH:mm}: {response.ActivationLink}";
+            await LoadApplicationAsync();
+        }
+        catch (Exception exception)
+        {
+            ActionMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+            IsLoading = false;
+        }
+    }
+
+    private bool TryRequireReviewNote(string message)
+    {
+        if (!string.IsNullOrWhiteSpace(ReviewNote))
+        {
+            return true;
+        }
+
+        ActionMessage = message;
+        return false;
+    }
+
+    private bool TryGetDocumentNote(Guid documentId, string message, out string note)
+    {
+        DocumentNotes.TryGetValue(documentId, out var value);
+        note = value?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(note))
+        {
+            return true;
+        }
+
+        ActionMessage = message;
+        return false;
     }
 
     private static string Display(string? value)

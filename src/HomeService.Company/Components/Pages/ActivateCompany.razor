@@ -1,0 +1,93 @@
+@page "/activate-company/{ApplicationId:guid}"
+@using HomeService.Company.Services
+@using HomeService.Contracts.Companies
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Activation entreprise</PageTitle>
+
+<section class="activation-shell">
+    <div class="section-intro">
+        <p class="eyebrow">Activation entreprise</p>
+        <h1>Creation du mot de passe</h1>
+        <p>
+            Choisissez le mot de passe du compte responsable. Ce compte permettra d'acceder au portail entreprise
+            apres validation du dossier.
+        </p>
+    </div>
+
+    <form class="activation-form">
+        <label>
+            Mot de passe
+            <input type="password" autocomplete="new-password" @bind="Password" />
+        </label>
+        <label>
+            Confirmer le mot de passe
+            <input type="password" autocomplete="new-password" @bind="ConfirmPassword" />
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <p class="field-message">@Message</p>
+        }
+
+        <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="SubmitAsync">
+            @(IsSubmitting ? "Activation en cours..." : "Creer le mot de passe")
+        </button>
+    </form>
+</section>
+
+@code {
+    [Parameter]
+    public Guid ApplicationId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "token")]
+    public string? Token { get; set; }
+
+    private string Password { get; set; } = string.Empty;
+    private string ConfirmPassword { get; set; } = string.Empty;
+    private string? Message { get; set; }
+    private bool IsSubmitting { get; set; }
+
+    private async Task SubmitAsync()
+    {
+        Message = null;
+
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            Message = "Le lien d'activation est incomplet.";
+            return;
+        }
+
+        if (Password.Length < 10)
+        {
+            Message = "Le mot de passe doit contenir au moins 10 caracteres.";
+            return;
+        }
+
+        if (Password != ConfirmPassword)
+        {
+            Message = "Les deux mots de passe ne correspondent pas.";
+            return;
+        }
+
+        IsSubmitting = true;
+        try
+        {
+            var result = await ApiClient.CreateCompanyPasswordAsync(new CompanyActivationPasswordRequest(Token, Password, ConfirmPassword));
+            Message = result.Message;
+            if (result.IsSuccess)
+            {
+                Password = string.Empty;
+                ConfirmPassword = string.Empty;
+            }
+        }
+        catch (Exception exception)
+        {
+            Message = $"Activation impossible pour le moment. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+}

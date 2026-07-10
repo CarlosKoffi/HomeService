@@ -6,6 +6,8 @@ using HomeService.Contracts.Services;
 using HomeService.Domain.Entities;
 using HomeService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -207,6 +209,11 @@ app.MapPost("/api/company-applications", async (
         logger.LogWarning(exception, "Company application submission rejected.");
         return Results.BadRequest(new { message = exception.Message });
     }
+    catch (OperationCanceledException exception)
+    {
+        logger.LogWarning(exception, "Company application submission was cancelled while reading the form.");
+        return Results.StatusCode(StatusCodes.Status499ClientClosedRequest);
+    }
     catch (Exception exception)
     {
         logger.LogError(exception, "Company application submission failed.");
@@ -217,6 +224,37 @@ app.MapPost("/api/company-applications", async (
     }
 })
 .WithName("RegisterCompanyApplication");
+
+app.MapGet("/api/company-activation/{applicationId:guid}", async (
+    Guid applicationId,
+    string token,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var tokenHash = HashActivationToken(token);
+    var activationToken = await db.CompanyActivationTokens
+        .AsNoTracking()
+        .Where(item => item.CompanyApplicationId == applicationId && item.TokenHash == tokenHash)
+        .Select(item => new
+        {
+            Token = item,
+            item.CompanyApplication!.CompanyName,
+            item.CompanyApplication.Email
+        })
+        .FirstOrDefaultAsync(cancellationToken);
+
+    if (activationToken is null || !activationToken.Token.IsActive)
+    {
+        return Results.BadRequest(new { message = "Ce lien d'activation est invalide ou expire." });
+    }
+
+    return Results.Ok(new CompanyActivationPreviewResponse(
+        applicationId,
+        activationToken.CompanyName,
+        activationToken.Email,
+        activationToken.Token.ExpiresAt));
+})
+.WithName("PreviewCompanyActivation");
 
 var admin = app.MapGroup("/api/admin");
 
@@ -298,6 +336,7 @@ admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db
         .Where(application => application.Id == id)
         .Select(application => new CompanyApplicationDetailResponse(
             application.Id,
+            application.CompanyId,
             application.CompanyName,
             application.RegistrationNumber,
             application.City,
@@ -312,6 +351,7 @@ admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db
             application.ReviewedAt,
             application.LastReminderSentAt,
             application.ActivationEmailSentAt,
+            application.ActivatedAt,
             application.ReviewNote,
             application.Documents
                 .OrderBy(document => document.DocumentType)
@@ -323,12 +363,226 @@ admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db
                     document.ReviewStatus.ToString(),
                     document.ReviewNote,
                     document.CreatedAt))
+                .ToList(),
+            application.StatusHistory
+                .OrderBy(history => history.ChangedAt)
+                .Select(history => new CompanyApplicationStatusHistoryResponse(
+                    history.Id,
+                    history.PreviousStatus == null ? null : history.PreviousStatus.ToString(),
+                    history.NewStatus.ToString(),
+                    history.Note,
+                    history.ChangedBy,
+                    history.ChangedAt))
                 .ToList()))
         .FirstOrDefaultAsync(cancellationToken);
 
     return application is null ? Results.NotFound() : Results.Ok(application);
 })
 .WithName("GetCompanyApplication");
+
+admin.MapPost("/company-applications/{id:guid}/approve", async (
+    Guid id,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var application = await db.CompanyApplications
+        .Include(application => application.Documents)
+        .FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
+    if (application is null)
+    {
+        return Results.NotFound();
+    }
+
+    var requiredDocumentTypes = new[]
+    {
+        HomeService.Domain.Enums.CompanyDocumentType.FiscalExistenceDeclaration,
+        HomeService.Domain.Enums.CompanyDocumentType.BusinessRegistration,
+        HomeService.Domain.Enums.CompanyDocumentType.OwnerIdentity
+    };
+    var missingApprovedDocument = requiredDocumentTypes.Any(documentType =>
+        !application.Documents.Any(document =>
+            document.DocumentType == documentType
+            && document.ReviewStatus == HomeService.Domain.Enums.DocumentReviewStatus.Approved));
+    if (missingApprovedDocument)
+    {
+        return Results.BadRequest(new { message = "Les pieces obligatoires doivent etre validees avant validation du dossier." });
+    }
+
+    application.Approve();
+    if (application.CompanyId is null)
+    {
+        var company = new Company(application.CompanyName, application.PhoneNumber, application.Email);
+        company.Approve();
+        db.Companies.Add(company);
+        application.LinkApprovedCompany(company.Id, "admin");
+    }
+
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationActionResponse(application));
+})
+.WithName("ApproveCompanyApplication");
+
+admin.MapPost("/company-applications/{id:guid}/reject", async (
+    Guid id,
+    CompanyApplicationReviewRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var note = GetRequiredReviewNote(request.Note, "Une note est obligatoire pour refuser une demande entreprise.");
+    if (note.ErrorMessage is not null)
+    {
+        return Results.BadRequest(new { message = note.ErrorMessage });
+    }
+
+    var application = await db.CompanyApplications.FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
+    if (application is null)
+    {
+        return Results.NotFound();
+    }
+
+    application.Reject(note.Value!);
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationActionResponse(application));
+})
+.WithName("RejectCompanyApplication");
+
+admin.MapPost("/company-applications/{id:guid}/request-more-information", async (
+    Guid id,
+    CompanyApplicationReviewRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var note = GetRequiredReviewNote(request.Note, "Une note est obligatoire pour demander un complement.");
+    if (note.ErrorMessage is not null)
+    {
+        return Results.BadRequest(new { message = note.ErrorMessage });
+    }
+
+    var application = await db.CompanyApplications.FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
+    if (application is null)
+    {
+        return Results.NotFound();
+    }
+
+    application.RequestMoreInformation(note.Value!);
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationActionResponse(application));
+})
+.WithName("RequestCompanyApplicationMoreInformation");
+
+admin.MapPost("/company-applications/{id:guid}/activation-link", async (
+    Guid id,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    var application = await db.CompanyApplications
+        .Include(application => application.ActivationTokens)
+        .FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
+    if (application is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (application.Status is not HomeService.Domain.Enums.CompanyApplicationStatus.Approved
+        and not HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent)
+    {
+        return Results.BadRequest(new { message = "Le lien d'activation ne peut etre genere qu'apres validation du dossier." });
+    }
+
+    if (application.ActivationEmailSentAt is not null)
+    {
+        application.MarkReminderSent();
+    }
+
+    var rawToken = GenerateActivationToken();
+    var tokenHash = HashActivationToken(rawToken);
+    var expiresAt = DateTimeOffset.UtcNow.AddHours(GetActivationTokenDurationHours(configuration));
+    application.CreateActivationToken(tokenHash, expiresAt);
+    await db.SaveChangesAsync(cancellationToken);
+
+    var activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
+    return Results.Ok(new CompanyApplicationActivationLinkResponse(
+        application.Id,
+        application.Status.ToString(),
+        application.ActivationEmailSentAt,
+        application.LastReminderSentAt,
+        expiresAt,
+        activationLink));
+})
+.WithName("GenerateCompanyApplicationActivationLink");
+
+admin.MapPost("/company-application-documents/{id:guid}/approve", async (
+    Guid id,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
+    if (document is null)
+    {
+        return Results.NotFound();
+    }
+
+    document.Approve();
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
+})
+.WithName("ApproveCompanyApplicationDocument");
+
+admin.MapPost("/company-application-documents/{id:guid}/reject", async (
+    Guid id,
+    CompanyApplicationDocumentReviewRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var comment = GetRequiredReviewNote(request.Comment, "Un commentaire est obligatoire pour refuser une piece.");
+    if (comment.ErrorMessage is not null)
+    {
+        return Results.BadRequest(new { message = comment.ErrorMessage });
+    }
+
+    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
+    if (document is null)
+    {
+        return Results.NotFound();
+    }
+
+    document.Reject(comment.Value!);
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
+})
+.WithName("RejectCompanyApplicationDocument");
+
+admin.MapPost("/company-application-documents/{id:guid}/request-replacement", async (
+    Guid id,
+    CompanyApplicationDocumentReviewRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var comment = GetRequiredReviewNote(request.Comment, "Un commentaire est obligatoire pour demander le remplacement d'une piece.");
+    if (comment.ErrorMessage is not null)
+    {
+        return Results.BadRequest(new { message = comment.ErrorMessage });
+    }
+
+    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
+    if (document is null)
+    {
+        return Results.NotFound();
+    }
+
+    document.RequestReplacement(comment.Value!);
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
+})
+.WithName("RequestCompanyApplicationDocumentReplacement");
 
 admin.MapGet("/company-application-documents/{id:guid}/download", async (
     Guid id,
@@ -370,6 +624,57 @@ admin.MapGet("/company-application-documents/{id:guid}/download", async (
     return Results.File(absolutePath, document.ContentType, document.OriginalFileName);
 })
 .WithName("DownloadCompanyApplicationDocument");
+
+app.MapPost("/api/company-activation/password", async (
+    CompanyActivationPasswordRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var validationError = ValidateActivationPasswordRequest(request);
+    if (validationError is not null)
+    {
+        return Results.BadRequest(new { message = validationError });
+    }
+
+    var tokenHash = HashActivationToken(request.Token);
+    var activationToken = await db.CompanyActivationTokens
+        .Include(token => token.CompanyApplication)
+        .FirstOrDefaultAsync(token => token.TokenHash == tokenHash, cancellationToken);
+
+    if (activationToken is null || !activationToken.IsActive || activationToken.CompanyApplication is null)
+    {
+        return Results.BadRequest(new { message = "Le lien d'activation est invalide ou expire." });
+    }
+
+    var application = activationToken.CompanyApplication;
+    var email = application.Email.ToLowerInvariant();
+    var existingUser = await db.CompanyPortalUsers.AnyAsync(user => user.Email == email, cancellationToken);
+    if (existingUser)
+    {
+        return Results.BadRequest(new { message = "Un compte portail existe deja pour cet email." });
+    }
+
+    Company company;
+    if (application.CompanyId is { } companyId)
+    {
+        company = await db.Companies.FirstAsync(company => company.Id == companyId, cancellationToken);
+    }
+    else
+    {
+        company = new Company(application.CompanyName, application.PhoneNumber, application.Email);
+        company.Approve();
+        db.Companies.Add(company);
+        application.LinkApprovedCompany(company.Id);
+    }
+
+    db.CompanyPortalUsers.Add(new CompanyPortalUser(company.Id, application.ContactName, email, HashPassword(request.Password), true));
+    activationToken.MarkUsed();
+    application.MarkActivated("activation");
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(new CompanyActivationPasswordResponse(true, "Mot de passe cree. Votre portail entreprise est pret."));
+})
+.WithName("CreateCompanyPasswordFromActivationToken");
 
 app.Run();
 
@@ -450,6 +755,107 @@ static IReadOnlyList<string> ValidateCompanyApplication(RegisterCompanyRequest r
     }
 
     return errors;
+}
+
+static CompanyApplicationActionResponse ToCompanyApplicationActionResponse(HomeService.Domain.Entities.CompanyApplication application)
+{
+    return new CompanyApplicationActionResponse(
+        application.Id,
+        application.Status.ToString(),
+        application.ReviewedAt,
+        application.ReviewNote);
+}
+
+static CompanyApplicationDocumentReviewResponse ToCompanyApplicationDocumentReviewResponse(CompanyApplicationDocument document)
+{
+    return new CompanyApplicationDocumentReviewResponse(
+        document.Id,
+        document.CompanyApplicationId,
+        document.ReviewStatus.ToString(),
+        document.ReviewNote);
+}
+
+static (string? Value, string? ErrorMessage) GetRequiredReviewNote(string? value, string requiredMessage)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return (null, requiredMessage);
+    }
+
+    var trimmed = value.Trim();
+    if (trimmed.Length > 1000)
+    {
+        return (null, "La note ne peut pas depasser 1000 caracteres.");
+    }
+
+    return (trimmed, null);
+}
+
+static string BuildCompanyActivationLink(HttpRequest request, IConfiguration configuration, Guid applicationId, string token)
+{
+    var configuredBaseUrl =
+        configuration["CompanyPortal:BaseUrl"]
+        ?? configuration["COMPANY_PORTAL_BASE_URL"]
+        ?? configuration["CompanyPortalBaseUrl"];
+
+    var baseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
+        ? $"{request.Scheme}://{request.Host}"
+        : configuredBaseUrl.Trim();
+
+    return $"{baseUrl.TrimEnd('/')}/activate-company/{applicationId:D}?token={Uri.EscapeDataString(token)}";
+}
+
+static string GenerateActivationToken()
+{
+    return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+        .TrimEnd('=')
+        .Replace('+', '-')
+        .Replace('/', '_');
+}
+
+static string HashActivationToken(string token)
+{
+    return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+}
+
+static int GetActivationTokenDurationHours(IConfiguration configuration)
+{
+    var configuredValue = configuration["CompanyPortal:ActivationTokenHours"] ?? configuration["COMPANY_ACTIVATION_TOKEN_HOURS"];
+    return int.TryParse(configuredValue, out var hours) && hours is >= 1 and <= 720
+        ? hours
+        : 72;
+}
+
+static string? ValidateActivationPasswordRequest(CompanyActivationPasswordRequest request)
+{
+    if (string.IsNullOrWhiteSpace(request.Token))
+    {
+        return "Le token d'activation est obligatoire.";
+    }
+
+    if (request.Password.Length < 10)
+    {
+        return "Le mot de passe doit contenir au moins 10 caracteres.";
+    }
+
+    if (!request.Password.Any(char.IsUpper) || !request.Password.Any(char.IsLower) || !request.Password.Any(char.IsDigit))
+    {
+        return "Le mot de passe doit contenir une majuscule, une minuscule et un chiffre.";
+    }
+
+    if (request.Password != request.ConfirmPassword)
+    {
+        return "Les deux mots de passe ne correspondent pas.";
+    }
+
+    return null;
+}
+
+static string HashPassword(string password)
+{
+    var salt = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
+    var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{salt}:{password}")));
+    return $"sha256:{salt}:{hash}";
 }
 
 public partial class Program;

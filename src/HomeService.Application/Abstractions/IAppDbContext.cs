@@ -6,9 +6,12 @@ namespace HomeService.Application.Abstractions;
 public interface IAppDbContext
 {
     DbSet<Company> Companies { get; }
+    DbSet<CompanyPortalUser> CompanyPortalUsers { get; }
     DbSet<CompanyApplication> CompanyApplications { get; }
     DbSet<CompanyApplicationDocument> CompanyApplicationDocuments { get; }
     DbSet<CompanyApplicationService> CompanyApplicationServices { get; }
+    DbSet<CompanyApplicationStatusHistory> CompanyApplicationStatusHistories { get; }
+    DbSet<CompanyActivationToken> CompanyActivationTokens { get; }
     DbSet<Service> Services { get; }
     DbSet<ProviderProfile> Providers { get; }
     DbSet<ProviderService> ProviderServices { get; }

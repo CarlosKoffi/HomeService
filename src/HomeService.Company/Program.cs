@@ -11,7 +11,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddHttpClient<PlatformApiClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["API_BASE_URL"] ?? builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");
-    client.Timeout = TimeSpan.FromMinutes(2);
+    client.Timeout = TimeSpan.FromMinutes(10);
 });
 
 var app = builder.Build();

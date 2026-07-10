@@ -44,4 +44,11 @@ public sealed class CompanyApplicationDocument : AuditableEntity
         ReviewNote = note.Trim();
         Touch();
     }
+
+    public void Reject(string note)
+    {
+        ReviewStatus = DocumentReviewStatus.Rejected;
+        ReviewNote = note.Trim();
+        Touch();
+    }
 }

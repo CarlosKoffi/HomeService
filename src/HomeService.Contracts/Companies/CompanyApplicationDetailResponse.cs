@@ -2,6 +2,7 @@ namespace HomeService.Contracts.Companies;
 
 public sealed record CompanyApplicationDetailResponse(
     Guid Id,
+    Guid? CompanyId,
     string CompanyName,
     string? RegistrationNumber,
     string City,
@@ -16,5 +17,7 @@ public sealed record CompanyApplicationDetailResponse(
     DateTimeOffset? ReviewedAt,
     DateTimeOffset? LastReminderSentAt,
     DateTimeOffset? ActivationEmailSentAt,
+    DateTimeOffset? ActivatedAt,
     string? ReviewNote,
-    IReadOnlyList<CompanyApplicationDocumentResponse> Documents);
+    IReadOnlyList<CompanyApplicationDocumentResponse> Documents,
+    IReadOnlyList<CompanyApplicationStatusHistoryResponse> StatusHistory);
