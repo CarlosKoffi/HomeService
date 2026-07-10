@@ -2,6 +2,8 @@
 @using System.Text.Json
 @inject IJSRuntime Js
 @inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
 
 <PageTitle>Employes</PageTitle>
 
@@ -11,7 +13,7 @@
         <h1>Employes</h1>
         <p class="lead">Ajoutez, controlez et suivez les prestataires que votre entreprise autorise sur la plateforme.</p>
     </div>
-    <a class="secondary-action" href="dashboard">Retour portail</a>
+    <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
 </section>
 
 @if (Session is null)
@@ -19,7 +21,7 @@
     <section class="empty-state">
         <h2>Connexion requise</h2>
         <p>Connectez-vous avec le compte entreprise active pour gerer vos employes.</p>
-        <a class="primary-action" href="dashboard">Se connecter</a>
+        <a class="primary-action" href="@PortalLink("dashboard")">Se connecter</a>
     </section>
 }
 else
@@ -39,8 +41,8 @@ else
     {
         <EditForm Model="Form" OnSubmit="CreateEmployeeAsync" class="employee-form">
             <div class="form-section-title">
-                <h2>Nouvel employe</h2>
-                <p>Les champs obligatoires permettent deja de creer une fiche exploitable.</p>
+                <h2>@T("company.employees.form.title", "Nouvel employe")</h2>
+                <p>@T("company.employees.form.description", "Renseignez les informations essentielles. Les services et tarifs seront visibles dans le suivi entreprise.")</p>
             </div>
 
             <div class="form-grid">
@@ -72,15 +74,15 @@ else
                     </InputSelect>
                 </label>
                 <label>
-                    Annees d'experience
+                    Experience
                     <InputNumber @bind-Value="Form.YearsOfExperience" />
                 </label>
                 <label>
-                    Rayon mission (km)
+                    Perimetre km
                     <InputNumber @bind-Value="Form.MissionRadiusKm" />
                 </label>
                 <label>
-                    Tarif horaire XOF
+                    Tarif horaire
                     <InputNumber @bind-Value="Form.HourlyRateAmount" />
                 </label>
                 <label>
@@ -103,7 +105,8 @@ else
             </div>
 
             <div class="service-picker">
-                <strong>Services maitrises</strong>
+                <strong>@T("company.employees.services.title", "Services maitrises")</strong>
+                <p>@T("company.employees.services.description", "Selectionnez les services que ce prestataire peut realiser. Le tarif horaire saisi plus haut servira de reference.")</p>
                 <div>
                     @foreach (var service in Services)
                     {
@@ -117,15 +120,21 @@ else
 
             <div class="employee-upload-grid">
                 <label class="upload-mini">
-                    <span>Photo</span>
+                    <strong>@T("company.employees.upload.photo", "Photo du prestataire")</strong>
+                    <small>@DisplayFileName(PhotoFileName, "JPG, PNG ou WEBP")</small>
+                    <em>@T("company.employees.upload.choose", "Selectionner")</em>
                     <InputFile OnChange="OnPhotoSelected" accept=".jpg,.jpeg,.png,.webp" />
                 </label>
-                <label class="upload-mini">
-                    <span>Piece d'identite</span>
+                <label class="upload-mini required">
+                    <strong>@T("company.employees.upload.identity", "Piece d'identite")</strong>
+                    <small>@DisplayFileName(IdentityFileName, "PDF, JPG ou PNG")</small>
+                    <em>@T("company.employees.upload.choose", "Selectionner")</em>
                     <InputFile OnChange="OnIdentitySelected" accept=".pdf,.jpg,.jpeg,.png,.webp" />
                 </label>
                 <label class="upload-mini optional">
-                    <span>Diplome optionnel</span>
+                    <strong>@T("company.employees.upload.diploma", "Diplome ou certificat")</strong>
+                    <small>@DisplayFileName(DiplomaFileName, "Optionnel")</small>
+                    <em>@T("company.employees.upload.choose", "Selectionner")</em>
                     <InputFile OnChange="OnDiplomaSelected" accept=".pdf,.jpg,.jpeg,.png,.webp" />
                 </label>
             </div>
@@ -141,63 +150,125 @@ else
         </EditForm>
     }
 
-    <section class="employee-board">
-        @foreach (var employee in EmployeeRows)
-        {
-            <article class="employee-card @(employee.Status == "SuspendedByCompany" ? "is-suspended" : null)">
-                <div class="employee-card-top">
-                    @if (!string.IsNullOrWhiteSpace(employee.PhotoUrl))
-                    {
-                        <img src="@ApiClient.ToApiUrl(employee.PhotoUrl)" alt="Photo de @employee.FirstName @employee.LastName" />
-                    }
-                    else
-                    {
-                        <div class="employee-avatar">@GetInitials(employee)</div>
-                    }
+    <section class="employee-directory">
+        <div class="directory-header">
+            <div>
+                <h2>Liste des employes</h2>
+                <p>Vue de pilotage pour verifier rapidement disponibilite, services, tarifs et pieces.</p>
+            </div>
+            <span>@EmployeeRows.Count profil(s)</span>
+        </div>
 
-                    <div>
-                        <h2>@employee.FirstName @employee.LastName</h2>
-                        <p>@employee.PhoneNumber</p>
-                        <div class="status-row">
-                            <span class="employment-pill">@GetEmploymentTypeLabel(employee.EmploymentType)</span>
-                            <span class="assignment-pill @(employee.ReceivesDirectRequests ? "direct" : "assigned")">
-                                @GetAssignmentLabel(employee.ReceivesDirectRequests)
-                            </span>
-                            <span class="status-pill @GetStatusClass(employee.Status)">@GetStatusLabel(employee.Status)</span>
-                            @if (employee.HasDiploma)
-                            {
-                                <span class="diploma-badge" title="Diplome fourni">Diplome</span>
-                            }
+        <div class="employee-table-wrap">
+            <table class="employee-table">
+                <thead>
+                    <tr>
+                        <th>Employe</th>
+                        <th>Type</th>
+                        <th>Services</th>
+                        <th>Tarif</th>
+                        <th>Experience</th>
+                        <th>Zone</th>
+                        <th>Statut</th>
+                        <th>Pieces</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var employee in EmployeeRows)
+                    {
+                        <tr class="@GetRowClass(employee)" @onclick="() => SelectEmployee(employee)">
+                            <td data-label="Employe">
+                                <div class="employee-identity">
+                                    <div class="employee-avatar compact">@GetInitials(employee)</div>
+                                    <div>
+                                        <strong>@employee.FirstName @employee.LastName</strong>
+                                        <span>@employee.PhoneNumber</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="Type">
+                                <span class="employment-pill">@GetEmploymentTypeLabel(employee.EmploymentType)</span>
+                                <span class="assignment-note">@GetAssignmentLabel(employee.ReceivesDirectRequests)</span>
+                            </td>
+                            <td data-label="Services">@GetServicesText(employee)</td>
+                            <td data-label="Tarif">@GetHourlyRateText(employee)</td>
+                            <td data-label="Experience">
+                                <strong>@employee.YearsOfExperience an(s)</strong>
+                                <span>@GetExperienceLevelText(employee)</span>
+                            </td>
+                            <td data-label="Zone">
+                                <strong>@(employee.ServiceRadiusKm?.ToString("N0") ?? "-") km</strong>
+                                <span>@Display(employee.Address)</span>
+                            </td>
+                            <td data-label="Statut">
+                                <span class="status-pill @GetStatusClass(employee.Status)">@GetStatusLabel(employee.Status)</span>
+                            </td>
+                            <td data-label="Pieces">@GetDocumentsText(employee)</td>
+                            <td data-label="Actions">
+                                <div class="row-actions" @onclick:stopPropagation>
+                                    <button type="button" @onclick="() => SuspendEmployeeAsync(employee.Id)">Suspendre</button>
+                                    <button type="button" class="danger-action" @onclick="() => DeleteEmployeeAsync(employee.Id)">Supprimer</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (SelectedEmployee is not null)
+        {
+            <section class="employee-detail-panel">
+                <div class="employee-detail-heading">
+                    <div class="employee-identity">
+                        <div class="employee-avatar compact">@GetInitials(SelectedEmployee)</div>
+                        <div>
+                            <h2>@SelectedEmployee.FirstName @SelectedEmployee.LastName</h2>
+                            <span>@SelectedEmployee.PhoneNumber</span>
                         </div>
+                    </div>
+                    <button type="button" @onclick="ClearSelectedEmployee">Fermer</button>
+                </div>
+
+                <div class="employee-detail-grid">
+                    <article>
+                        <span>Type</span>
+                        <strong>@GetEmploymentTypeLabel(SelectedEmployee.EmploymentType)</strong>
+                        <p>@GetAssignmentLabel(SelectedEmployee.ReceivesDirectRequests)</p>
+                    </article>
+                    <article>
+                        <span>Experience</span>
+                        <strong>@SelectedEmployee.YearsOfExperience an(s)</strong>
+                        <p>@GetExperienceLevelText(SelectedEmployee)</p>
+                    </article>
+                    <article>
+                        <span>Zone mission</span>
+                        <strong>@(SelectedEmployee.ServiceRadiusKm?.ToString("N0") ?? "-") km</strong>
+                        <p>@Display(SelectedEmployee.Address)</p>
+                    </article>
+                    <article>
+                        <span>Statut</span>
+                        <strong>@GetStatusLabel(SelectedEmployee.Status)</strong>
+                        <p>@(SelectedEmployee.IsAvailable ? "Disponible" : "Non disponible")</p>
+                    </article>
+                </div>
+
+                <div class="employee-detail-section">
+                    <h3>Services et tarifs</h3>
+                    <div class="detail-tags">
+                        @foreach (var service in SelectedEmployee.Services)
+                        {
+                            <span>@service.ServiceName - @service.HourlyRateAmount.ToString("N0") @service.Currency/h</span>
+                        }
                     </div>
                 </div>
 
-                <dl class="employee-metrics">
-                    <div><dt>Experience</dt><dd>@employee.YearsOfExperience an(s)</dd></div>
-                    <div><dt>Rayon</dt><dd>@employee.ServiceRadiusKm km</dd></div>
-                    <div><dt>Adresse</dt><dd>@employee.Address</dd></div>
-                </dl>
-
-                <div class="employee-services">
-                    @foreach (var service in employee.Services)
-                    {
-                        <span>@service.ServiceName - @service.HourlyRateAmount @service.Currency/h</span>
-                    }
+                <div class="employee-detail-section">
+                    <h3>Pieces</h3>
+                    <p>@GetDocumentsText(SelectedEmployee)</p>
                 </div>
-
-                <div class="employee-actions">
-                    @if (!string.IsNullOrWhiteSpace(employee.IdentityDocumentUrl))
-                    {
-                        <a href="@ApiClient.ToApiUrl(employee.IdentityDocumentUrl)" target="_blank">Piece</a>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(employee.DiplomaDocumentUrl))
-                    {
-                        <a href="@ApiClient.ToApiUrl(employee.DiplomaDocumentUrl)" target="_blank">Diplome</a>
-                    }
-                    <button type="button" @onclick="() => SuspendEmployeeAsync(employee.Id)">Suspendre</button>
-                    <button type="button" class="danger-action" @onclick="() => DeleteEmployeeAsync(employee.Id)">Supprimer</button>
-                </div>
-            </article>
+            </section>
         }
     </section>
 }
@@ -211,11 +282,25 @@ else
     private bool ShowForm { get; set; }
     private bool IsSaving { get; set; }
     private string? Message { get; set; }
+    private string? PhotoFileName { get; set; }
+    private string? IdentityFileName { get; set; }
+    private string? DiplomaFileName { get; set; }
+    private CompanyEmployeeResponse? SelectedEmployee { get; set; }
+    private IReadOnlyDictionary<string, string> Texts { get; set; } = new Dictionary<string, string>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
         {
+            return;
+        }
+
+        if (IsPreviewMode())
+        {
+            Session = DemoSession();
+            LoadPreviewData();
+            ShowForm = Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("form=1", StringComparison.OrdinalIgnoreCase);
+            StateHasChanged();
             return;
         }
 
@@ -231,10 +316,19 @@ else
 
     private async Task LoadAsync()
     {
+        if (IsPreviewMode())
+        {
+            LoadPreviewData();
+            SelectedEmployee = EmployeeRows.FirstOrDefault();
+            return;
+        }
+
+        await LoadTextsAsync();
         Services = await ApiClient.GetServicesAsync();
         if (Session is not null)
         {
             EmployeeRows = await ApiClient.GetCompanyEmployeesAsync(Session.CompanyId);
+            SelectedEmployee ??= EmployeeRows.FirstOrDefault();
         }
     }
 
@@ -242,6 +336,16 @@ else
     {
         ShowForm = !ShowForm;
         Message = null;
+    }
+
+    private void SelectEmployee(CompanyEmployeeResponse employee)
+    {
+        SelectedEmployee = employee;
+    }
+
+    private void ClearSelectedEmployee()
+    {
+        SelectedEmployee = null;
     }
 
     private void ToggleService(Guid serviceId, ChangeEventArgs eventArgs)
@@ -257,16 +361,35 @@ else
         }
     }
 
-    private void OnPhotoSelected(InputFileChangeEventArgs eventArgs) => Form.Photo = eventArgs.File;
+    private void OnPhotoSelected(InputFileChangeEventArgs eventArgs)
+    {
+        Form.Photo = eventArgs.File;
+        PhotoFileName = eventArgs.File.Name;
+    }
 
-    private void OnIdentitySelected(InputFileChangeEventArgs eventArgs) => Form.IdentityDocument = eventArgs.File;
+    private void OnIdentitySelected(InputFileChangeEventArgs eventArgs)
+    {
+        Form.IdentityDocument = eventArgs.File;
+        IdentityFileName = eventArgs.File.Name;
+    }
 
-    private void OnDiplomaSelected(InputFileChangeEventArgs eventArgs) => Form.DiplomaDocument = eventArgs.File;
+    private void OnDiplomaSelected(InputFileChangeEventArgs eventArgs)
+    {
+        Form.DiplomaDocument = eventArgs.File;
+        DiplomaFileName = eventArgs.File.Name;
+    }
 
     private async Task CreateEmployeeAsync()
     {
         if (Session is null)
         {
+            return;
+        }
+
+        if (IsPreviewMode())
+        {
+            Message = "Mode demo local: la fiche serait enregistree en base en production.";
+            ShowForm = false;
             return;
         }
 
@@ -285,6 +408,9 @@ else
 
         Form = new();
         BirthDate = null;
+        PhotoFileName = null;
+        IdentityFileName = null;
+        DiplomaFileName = null;
         ShowForm = false;
         await LoadAsync();
     }
@@ -296,6 +422,14 @@ else
             return;
         }
 
+        if (IsPreviewMode())
+        {
+            EmployeeRows = EmployeeRows.Select(employee => employee.Id == employeeId
+                ? employee with { Status = "SuspendedByCompany", IsAvailable = false }
+                : employee).ToList();
+            return;
+        }
+
         await ApiClient.SuspendCompanyEmployeeAsync(Session.CompanyId, employeeId);
         await LoadAsync();
     }
@@ -304,6 +438,16 @@ else
     {
         if (Session is null)
         {
+            return;
+        }
+
+        if (IsPreviewMode())
+        {
+            EmployeeRows = EmployeeRows.Where(employee => employee.Id != employeeId).ToList();
+            if (SelectedEmployee?.Id == employeeId)
+            {
+                SelectedEmployee = EmployeeRows.FirstOrDefault();
+            }
             return;
         }
 
@@ -349,6 +493,229 @@ else
             "PendingPlatformReview" => "A verifier",
             "ProfileIncomplete" => "Incomplet",
             _ => "Invite"
+        };
+    }
+
+    private static string GetServicesText(CompanyEmployeeResponse employee)
+    {
+        return employee.Services.Count == 0
+            ? "Aucun service"
+            : string.Join(", ", employee.Services.Select(service => service.ServiceName));
+    }
+
+    private static string GetHourlyRateText(CompanyEmployeeResponse employee)
+    {
+        if (employee.Services.Count == 0)
+        {
+            return "Non defini";
+        }
+
+        var minRate = employee.Services.Min(service => service.HourlyRateAmount);
+        var maxRate = employee.Services.Max(service => service.HourlyRateAmount);
+        var currency = employee.Services.First().Currency;
+        return minRate == maxRate
+            ? $"{minRate:N0} {currency}/h"
+            : $"{minRate:N0} - {maxRate:N0} {currency}/h";
+    }
+
+    private static string GetDocumentsText(CompanyEmployeeResponse employee)
+    {
+        var documents = new List<string>();
+        if (!string.IsNullOrWhiteSpace(employee.IdentityDocumentUrl))
+        {
+            documents.Add("Piece ID");
+        }
+
+        if (employee.HasDiploma)
+        {
+            documents.Add("Diplome");
+        }
+
+        return documents.Count == 0 ? "A verifier" : string.Join(", ", documents);
+    }
+
+    private static string GetExperienceLevelText(CompanyEmployeeResponse employee)
+    {
+        var level = employee.Services.FirstOrDefault()?.ExperienceLevel;
+        return level switch
+        {
+            "Confirmed" => "Confirme",
+            "Senior" => "Senior",
+            "Expert" => "Expert",
+            "Junior" => "Junior",
+            _ => "Niveau a verifier"
+        };
+    }
+
+    private static string Display(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "Non renseigne" : value;
+    }
+
+    private string GetRowClass(CompanyEmployeeResponse employee)
+    {
+        var classes = new List<string>();
+        if (employee.Status == "SuspendedByCompany")
+        {
+            classes.Add("is-suspended");
+        }
+
+        if (SelectedEmployee?.Id == employee.Id)
+        {
+            classes.Add("is-selected");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private bool IsPreviewMode()
+    {
+        return Environment.IsDevelopment()
+            && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string PortalLink(string path) => IsPreviewMode() ? $"{path}?preview=1" : path;
+
+    private static CompanyPortalSessionResponse DemoSession()
+    {
+        return new CompanyPortalSessionResponse(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Entreprise Demo CI",
+            "Direction Demo",
+            "direction@entreprise.ci",
+            DateTimeOffset.UtcNow,
+            "demo-preview-token");
+    }
+
+    private void LoadPreviewData()
+    {
+        Texts = PreviewTexts();
+        var menageId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1");
+        var nounouId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2");
+        var jardinageId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3");
+
+        Services = new List<ServiceSummaryResponse>
+        {
+            new(menageId, "Menage a domicile", "Entretien courant du domicile.", "Active", true),
+            new(nounouId, "Nounou", "Garde d'enfant a domicile.", "Active", true),
+            new(jardinageId, "Jardinage", "Entretien jardin et exterieur.", "Active", true)
+        };
+
+        EmployeeRows = new List<CompanyEmployeeResponse>
+        {
+            new(
+                Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"),
+                "Awa",
+                "Kone",
+                "+225 07 11 22 33 44",
+                new DateOnly(1994, 5, 12),
+                "Cocody, Abidjan",
+                "CompanyEmployee",
+                false,
+                6,
+                "Approved",
+                true,
+                5.348m,
+                -4.002m,
+                8,
+                null,
+                "#",
+                "#",
+                true,
+                new List<CompanyEmployeeServiceResponse>
+                {
+                    new(menageId, "Menage a domicile", "Senior", 6, 3500, "XOF", true),
+                    new(nounouId, "Nounou", "Confirmed", 4, 4000, "XOF", true)
+                },
+                DateTimeOffset.UtcNow.AddDays(-14)),
+            new(
+                Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"),
+                "Yao",
+                "N'Dri",
+                "+225 05 45 67 89 10",
+                new DateOnly(1989, 9, 3),
+                "Marcory, Abidjan",
+                "TemporaryWorker",
+                true,
+                9,
+                "Approved",
+                true,
+                5.316m,
+                -4.016m,
+                12,
+                null,
+                "#",
+                null,
+                false,
+                new List<CompanyEmployeeServiceResponse>
+                {
+                    new(jardinageId, "Jardinage", "Expert", 9, 4500, "XOF", true)
+                },
+                DateTimeOffset.UtcNow.AddDays(-8)),
+            new(
+                Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"),
+                "Mariam",
+                "Coulibaly",
+                "+225 01 98 76 54 32",
+                new DateOnly(1998, 2, 21),
+                "Yopougon, Abidjan",
+                "CompanyEmployee",
+                false,
+                2,
+                "PendingPlatformReview",
+                false,
+                null,
+                null,
+                6,
+                null,
+                "#",
+                null,
+                false,
+                new List<CompanyEmployeeServiceResponse>
+                {
+                    new(menageId, "Menage a domicile", "Junior", 2, 2500, "XOF", true)
+                },
+                DateTimeOffset.UtcNow.AddDays(-2))
+        };
+    }
+
+    private async Task LoadTextsAsync()
+    {
+        try
+        {
+            Texts = (await ApiClient.GetTranslationsAsync("Company"))
+                .ToDictionary(item => item.Key, item => item.Value);
+        }
+        catch
+        {
+            Texts = PreviewTexts();
+        }
+    }
+
+    private string T(string key, string fallback)
+    {
+        return Texts.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : fallback;
+    }
+
+    private static string DisplayFileName(string? fileName, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(fileName) ? fallback : fileName;
+    }
+
+    private static IReadOnlyDictionary<string, string> PreviewTexts()
+    {
+        return new Dictionary<string, string>
+        {
+            ["company.employees.form.title"] = "Nouvel employe",
+            ["company.employees.form.description"] = "Renseignez les informations essentielles. Les services et tarifs seront visibles dans le suivi entreprise.",
+            ["company.employees.services.title"] = "Services maitrises",
+            ["company.employees.services.description"] = "Selectionnez les services que ce prestataire peut realiser. Le tarif horaire saisi plus haut servira de reference.",
+            ["company.employees.upload.photo"] = "Photo du prestataire",
+            ["company.employees.upload.identity"] = "Piece d'identite",
+            ["company.employees.upload.diploma"] = "Diplome ou certificat",
+            ["company.employees.upload.choose"] = "Selectionner"
         };
     }
 }
