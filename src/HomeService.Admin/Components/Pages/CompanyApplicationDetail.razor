@@ -57,22 +57,34 @@ else if (Application is not null)
         </div>
     </section>
 
-    @if (!string.IsNullOrWhiteSpace(Application.LastActivationLink))
-    {
-        <section class="activation-link-panel">
-            <div>
-                <h2>Lien d'activation entreprise</h2>
+    <section class="activation-link-panel">
+        <div>
+            <h2>Lien d'activation entreprise</h2>
+            @if (!string.IsNullOrWhiteSpace(Application.LastActivationLink))
+            {
                 <p class="section-help">
                     Dernier lien genere, valable jusqu'au @FormatDate(Application.LastActivationLinkExpiresAt).
                 </p>
                 <input class="readonly-link" value="@Application.LastActivationLink" readonly />
-            </div>
-            <div class="easy-actions">
+            }
+            else
+            {
+                <p class="section-help">
+                    Aucun lien d'activation n'a encore ete genere pour ce dossier.
+                    Validez le dossier puis genere le lien a transmettre au responsable entreprise.
+                </p>
+                <input class="readonly-link" value="Aucun lien disponible" readonly disabled />
+            }
+        </div>
+        <div class="easy-actions">
+            @if (!string.IsNullOrWhiteSpace(Application.LastActivationLink))
+            {
                 <button type="button" @onclick="CopyActivationLinkAsync">Copier lien</button>
                 <a href="@Application.LastActivationLink" target="_blank" rel="noopener">Ouvrir lien</a>
-            </div>
-        </section>
-    }
+            }
+            <button type="button" disabled="@IsBusy" @onclick="SendActivationLinkAsync">Generer / renvoyer lien</button>
+        </div>
+    </section>
 
     <section class="info-panel assignment-mode-panel">
         <div>
