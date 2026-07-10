@@ -51,4 +51,16 @@ public sealed class CompanyApplicationDocument : AuditableEntity
         ReviewNote = note.Trim();
         Touch();
     }
+
+    public void Reopen(string note)
+    {
+        if (ReviewStatus != DocumentReviewStatus.Rejected)
+        {
+            throw new InvalidOperationException("Seule une piece refusee peut etre reouverte.");
+        }
+
+        ReviewStatus = DocumentReviewStatus.Pending;
+        ReviewNote = note.Trim();
+        Touch();
+    }
 }

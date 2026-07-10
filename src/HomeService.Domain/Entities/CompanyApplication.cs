@@ -118,6 +118,19 @@ public sealed class CompanyApplication : AuditableEntity
         Touch();
     }
 
+    public void Reopen(string note, string? changedBy = null)
+    {
+        if (Status != CompanyApplicationStatus.Rejected)
+        {
+            throw new InvalidOperationException("Seule une demande refusee peut etre reouverte.");
+        }
+
+        ReviewNote = note.Trim();
+        ReviewedAt = DateTimeOffset.UtcNow;
+        SetStatus(CompanyApplicationStatus.UnderReview, ReviewNote, changedBy);
+        Touch();
+    }
+
     public void LinkApprovedCompany(Guid companyId, string? changedBy = null)
     {
         if (Status is not (CompanyApplicationStatus.Approved or CompanyApplicationStatus.ActivationSent or CompanyApplicationStatus.Activated))
