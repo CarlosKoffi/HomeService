@@ -7,7 +7,14 @@
 
 <PageTitle>Espace entreprise</PageTitle>
 
-@if (Session is null)
+@if (IsSessionLoading)
+{
+    <section class="empty-state">
+        <h2>Chargement...</h2>
+        <p>Ouverture de votre espace entreprise.</p>
+    </section>
+}
+else if (Session is null)
 {
     <section class="portal-entry country-branded">
         <div class="portal-copy">
@@ -146,6 +153,7 @@ else
     private bool RememberMe { get; set; }
     private string? LoginMessage { get; set; }
     private bool IsSubmitting { get; set; }
+    private bool IsSessionLoading { get; set; } = true;
     private CompanyPortalSessionResponse? Session { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -168,6 +176,7 @@ else
                 false);
             RememberMe = true;
             Email = Session.Email;
+            IsSessionLoading = false;
             StateHasChanged();
             return;
         }
@@ -192,6 +201,7 @@ else
             Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
         }
 
+        IsSessionLoading = false;
         StateHasChanged();
     }
 

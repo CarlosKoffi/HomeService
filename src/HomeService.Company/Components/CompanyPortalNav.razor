@@ -1,17 +1,44 @@
 @inject NavigationManager Navigation
 @inject IWebHostEnvironment Environment
+@inject IJSRuntime Js
 
 <nav class="portal-subnav" aria-label="Navigation espace entreprise">
-    <a class="@GetClass("dashboard")" href="@PortalLink("dashboard")">Tableau de bord</a>
-    <a class="@GetClass("company-profile")" href="@PortalLink("company-profile")">Informations</a>
-    <a class="@GetClass("employees")" href="@PortalLink("employees")">Employes</a>
-    <a class="@GetClass("operations")" href="@PortalLink("operations")">Missions</a>
-    <a class="@GetClass("accounts")" href="@PortalLink("accounts")">Encaissements</a>
+    <div class="portal-subnav-links">
+        <a class="@GetClass("dashboard")" href="@PortalLink("dashboard")">Tableau de bord</a>
+        <a class="@GetClass("company-profile")" href="@PortalLink("company-profile")">Informations</a>
+        <a class="@GetClass("employees")" href="@PortalLink("employees")">Employes</a>
+        <a class="@GetClass("operations")" href="@PortalLink("operations")">Missions</a>
+        <a class="@GetClass("accounts")" href="@PortalLink("accounts")">Encaissements</a>
+    </div>
+    @if (Session is not null)
+    {
+        <div class="portal-subnav-identity">
+            <strong>@Session.CompanyName</strong>
+            <span>@Session.Email</span>
+        </div>
+    }
 </nav>
 
 @code {
     [Parameter]
     public string Active { get; set; } = "dashboard";
+
+    private CompanyPortalSessionResponse? Session { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+        if (!string.IsNullOrWhiteSpace(sessionJson))
+        {
+            Session = System.Text.Json.JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            StateHasChanged();
+        }
+    }
 
     private string GetClass(string key) => string.Equals(Active, key, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
 

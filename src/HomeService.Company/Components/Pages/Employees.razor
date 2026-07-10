@@ -16,7 +16,14 @@
     <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
 </section>
 
-@if (Session is null)
+@if (IsSessionLoading)
+{
+    <section class="empty-state">
+        <h2>Chargement...</h2>
+        <p>Ouverture de votre espace entreprise.</p>
+    </section>
+}
+else if (Session is null)
 {
     <section class="empty-state">
         <h2>Connexion requise</h2>
@@ -387,6 +394,7 @@ else
     private string? IdentityFileName { get; set; }
     private string? DiplomaFileName { get; set; }
     private CompanyEmployeeResponse? SelectedEmployee { get; set; }
+    private bool IsSessionLoading { get; set; } = true;
     private CompanyEmployeeEditModel EditModel { get; set; } = new();
     private DateTime? EditBirthDate { get; set; }
     private List<CompanyEmployeeServiceEditModel> EditableServices { get; set; } = [];
@@ -405,6 +413,7 @@ else
             Session = DemoSession();
             LoadPreviewData();
             ShowForm = Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("form=1", StringComparison.OrdinalIgnoreCase);
+            IsSessionLoading = false;
             StateHasChanged();
             return;
         }
@@ -416,6 +425,7 @@ else
             await LoadAsync();
         }
 
+        IsSessionLoading = false;
         StateHasChanged();
     }
 
@@ -424,7 +434,6 @@ else
         if (IsPreviewMode())
         {
             LoadPreviewData();
-            SelectedEmployee = EmployeeRows.FirstOrDefault();
             return;
         }
 
@@ -433,7 +442,6 @@ else
         if (Session is not null)
         {
             EmployeeRows = await ApiClient.GetCompanyEmployeesAsync(Session.CompanyId);
-            SelectedEmployee ??= EmployeeRows.FirstOrDefault();
         }
     }
 

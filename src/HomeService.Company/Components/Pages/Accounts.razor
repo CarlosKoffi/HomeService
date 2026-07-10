@@ -16,7 +16,14 @@
     <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
 </section>
 
-@if (Session is null)
+@if (IsSessionLoading)
+{
+    <section class="empty-state">
+        <h2>Chargement...</h2>
+        <p>Ouverture des encaissements.</p>
+    </section>
+}
+else if (Session is null)
 {
     <section class="empty-state">
         <h2>Connexion requise</h2>
@@ -79,6 +86,7 @@ else
     private CompanyPortalSessionResponse? Session { get; set; }
     private CompanyPortalPaymentSummaryResponse? Summary { get; set; }
     private string ActivePeriod { get; set; } = "month";
+    private bool IsSessionLoading { get; set; } = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -91,6 +99,7 @@ else
         {
             Session = DemoSession();
             await LoadPaymentsAsync("month");
+            IsSessionLoading = false;
             StateHasChanged();
             return;
         }
@@ -102,6 +111,7 @@ else
             await LoadPaymentsAsync("month");
         }
 
+        IsSessionLoading = false;
         StateHasChanged();
     }
 

@@ -10,7 +10,14 @@
 
 <PageTitle>Informations entreprise</PageTitle>
 
-@if (Session is null)
+@if (IsSessionLoading)
+{
+    <section class="empty-state">
+        <h2>Chargement...</h2>
+        <p>Ouverture de votre fiche entreprise.</p>
+    </section>
+}
+else if (Session is null)
 {
     <section class="activation-card">
         <h1>Connexion requise</h1>
@@ -182,6 +189,7 @@ else
     private CompanyPortalProfileResponse? Profile { get; set; }
     private bool IsLoading { get; set; }
     private bool IsUploading { get; set; }
+    private bool IsSessionLoading { get; set; } = true;
     private string? Message { get; set; }
     private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase);
 
@@ -196,6 +204,7 @@ else
         {
             Session = DemoSession();
             Profile = DemoProfile(Session);
+            IsSessionLoading = false;
             StateHasChanged();
             return;
         }
@@ -205,8 +214,10 @@ else
         {
             Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
             await LoadProfileAsync();
-            StateHasChanged();
         }
+
+        IsSessionLoading = false;
+        StateHasChanged();
     }
 
     private async Task LoadProfileAsync()

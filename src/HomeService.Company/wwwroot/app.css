@@ -1650,6 +1650,14 @@ h2 {
     z-index: 5;
 }
 
+.portal-subnav-links {
+    display: flex;
+    flex: 1;
+    gap: .35rem;
+    min-width: 0;
+    overflow-x: auto;
+}
+
 .portal-subnav a {
     border-radius: 14px;
     color: #475569;
@@ -1660,6 +1668,33 @@ h2 {
     text-align: center;
     text-decoration: none;
     transition: background .18s ease, color .18s ease;
+}
+
+.portal-subnav-identity {
+    border-left: 1px solid var(--line);
+    display: grid;
+    flex: 0 0 auto;
+    line-height: 1.15;
+    max-width: 260px;
+    padding: .35rem .75rem .35rem 1rem;
+}
+
+.portal-subnav-identity strong {
+    color: var(--ink);
+    font-size: .9rem;
+    font-weight: 950;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.portal-subnav-identity span {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .portal-subnav a:hover,
@@ -2482,11 +2517,24 @@ h2 {
     }
 
     .portal-subnav {
+        align-items: stretch;
+        flex-direction: column;
         justify-content: flex-start;
+    }
+
+    .portal-subnav-links {
+        width: 100%;
     }
 
     .portal-subnav a {
         flex: 0 0 auto;
+    }
+
+    .portal-subnav-identity {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        max-width: none;
+        padding: .7rem .85rem;
     }
 
     .profile-overview-strip {

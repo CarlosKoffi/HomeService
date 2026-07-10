@@ -16,7 +16,14 @@
     <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
 </section>
 
-@if (Session is null)
+@if (IsSessionLoading)
+{
+    <section class="empty-state">
+        <h2>Chargement...</h2>
+        <p>Ouverture de vos missions.</p>
+    </section>
+}
+else if (Session is null)
 {
     <section class="empty-state">
         <h2>Connexion requise</h2>
@@ -153,6 +160,7 @@ else
     private IReadOnlyList<CompanyPortalMissionResponse> Missions { get; set; } = [];
     private string ActiveView { get; set; } = "live";
     private bool IsLoading { get; set; }
+    private bool IsSessionLoading { get; set; } = true;
     private int LiveCount { get; set; }
     private int UpcomingCount { get; set; }
     private int PastCount { get; set; }
@@ -170,6 +178,7 @@ else
             Session = DemoSession();
             await RefreshCountsAsync();
             await LoadMissionsAsync("live");
+            IsSessionLoading = false;
             StateHasChanged();
             return;
         }
@@ -182,6 +191,7 @@ else
             await LoadMissionsAsync("live");
         }
 
+        IsSessionLoading = false;
         StateHasChanged();
     }
 
