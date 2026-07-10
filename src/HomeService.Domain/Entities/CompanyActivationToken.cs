@@ -21,6 +21,9 @@ public sealed class CompanyActivationToken : AuditableEntity
         ActivationLink = activationLink.Trim();
     }
 
+    public static CompanyActivationToken Create(Guid companyApplicationId, string tokenHash, DateTimeOffset expiresAt, string activationLink)
+        => new(companyApplicationId, tokenHash, expiresAt, activationLink);
+
     public Guid CompanyApplicationId { get; private set; }
     public CompanyApplication? CompanyApplication { get; private set; }
     public string TokenHash { get; private set; } = string.Empty;

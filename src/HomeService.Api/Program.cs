@@ -1246,16 +1246,13 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
         return Results.BadRequest(new { message = "Le lien d'activation ne peut etre genere qu'apres validation du dossier." });
     }
 
-    if (application.ActivationEmailSentAt is not null)
-    {
-        application.MarkReminderSent();
-    }
-
     string activationLink;
     DateTimeOffset expiresAt;
+    DateTimeOffset? reminderSentAt;
     try
     {
         var now = DateTimeOffset.UtcNow;
+        reminderSentAt = application.ActivationEmailSentAt is null ? application.LastReminderSentAt : now;
         await db.CompanyActivationTokens
             .Where(token => token.CompanyApplicationId == application.Id
                 && token.UsedAt == null
@@ -1271,8 +1268,21 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
         expiresAt = now.AddHours(GetActivationTokenDurationHours(configuration));
         activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
         var previousStatus = application.Status;
-        application.CreateActivationToken(tokenHash, expiresAt, activationLink, "admin");
-        AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Lien d'activation envoye.", "admin");
+        db.CompanyActivationTokens.Add(CompanyActivationToken.Create(application.Id, tokenHash, expiresAt, activationLink));
+
+        var updatedRows = await db.CompanyApplications
+            .Where(item => item.Id == application.Id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(item => item.Status, HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent)
+                .SetProperty(item => item.ActivationEmailSentAt, now)
+                .SetProperty(item => item.LastReminderSentAt, reminderSentAt),
+                cancellationToken);
+        if (updatedRows == 0)
+        {
+            return Results.NotFound(new { message = "La demande entreprise n'existe plus." });
+        }
+
+        AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent, "Lien d'activation envoye.", "admin");
         await db.SaveChangesAsync(cancellationToken);
     }
     catch (Exception exception)
@@ -1302,9 +1312,9 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
 
     return Results.Ok(new CompanyApplicationActivationLinkResponse(
         application.Id,
-        application.Status.ToString(),
-        application.ActivationEmailSentAt,
-        application.LastReminderSentAt,
+        HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent.ToString(),
+        DateTimeOffset.UtcNow,
+        reminderSentAt,
         expiresAt,
         activationLink));
 })
