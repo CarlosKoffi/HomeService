@@ -408,6 +408,14 @@ admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db
             application.LastReminderSentAt,
             application.ActivationEmailSentAt,
             application.ActivatedAt,
+            application.ActivationTokens
+                .OrderByDescending(token => token.CreatedAt)
+                .Select(token => token.ActivationLink)
+                .FirstOrDefault(),
+            application.ActivationTokens
+                .OrderByDescending(token => token.CreatedAt)
+                .Select(token => (DateTimeOffset?)token.ExpiresAt)
+                .FirstOrDefault(),
             application.ReviewNote,
             application.Documents
                 .OrderBy(document => document.DocumentType)
@@ -585,6 +593,7 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
     HttpRequest httpRequest,
     IAppDbContext db,
     IConfiguration configuration,
+    ILogger<Program> logger,
     CancellationToken cancellationToken) =>
 {
     var application = await db.CompanyApplications
@@ -611,16 +620,25 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
     var expiresAt = DateTimeOffset.UtcNow.AddHours(GetActivationTokenDurationHours(configuration));
     var activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
     var previousStatus = application.Status;
-    application.CreateActivationToken(tokenHash, expiresAt, "admin");
+    application.CreateActivationToken(tokenHash, expiresAt, activationLink, "admin");
     AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Lien d'activation envoye.", "admin");
-    QueueCompanyApplicantNotifications(
-        db,
-        application,
-        "Votre portail entreprise est pret",
-        $"Votre dossier est valide. Creez votre mot de passe avec ce lien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.",
-        includeWhatsApp: true,
-        metadataJson: $$"""{"activationLink":"{{activationLink}}"}""");
     await db.SaveChangesAsync(cancellationToken);
+
+    try
+    {
+        QueueCompanyApplicantNotifications(
+            db,
+            application,
+            "Votre portail entreprise est pret",
+            $"Votre dossier est valide. Creez votre mot de passe avec ce lien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.",
+            includeWhatsApp: true,
+            metadataJson: $$"""{"activationLink":"{{activationLink}}"}""");
+        await db.SaveChangesAsync(cancellationToken);
+    }
+    catch (Exception exception)
+    {
+        logger.LogWarning(exception, "Activation link was generated but notification outbox could not be queued for company application {ApplicationId}.", application.Id);
+    }
 
     return Results.Ok(new CompanyApplicationActivationLinkResponse(
         application.Id,

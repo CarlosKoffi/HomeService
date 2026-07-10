@@ -83,6 +83,7 @@ public sealed class CompanyApplication : AuditableEntity
     public CompanyActivationToken CreateActivationToken(
         string tokenHash,
         DateTimeOffset expiresAt,
+        string activationLink,
         string? changedBy = null)
     {
         if (Status != CompanyApplicationStatus.Approved && Status != CompanyApplicationStatus.ActivationSent)
@@ -95,7 +96,7 @@ public sealed class CompanyApplication : AuditableEntity
             existingToken.Revoke("Remplace par un nouveau token d'activation.");
         }
 
-        var activationToken = new CompanyActivationToken(Id, tokenHash, expiresAt);
+        var activationToken = new CompanyActivationToken(Id, tokenHash, expiresAt, activationLink);
         _activationTokens.Add(activationToken);
         ActivationEmailSentAt = DateTimeOffset.UtcNow;
         SetStatus(CompanyApplicationStatus.ActivationSent, "Lien d'activation envoye.", changedBy);

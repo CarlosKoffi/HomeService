@@ -10,6 +10,7 @@ public sealed class CompanyActivationTokenConfiguration : IEntityTypeConfigurati
     {
         builder.HasKey(token => token.Id);
         builder.Property(token => token.TokenHash).HasMaxLength(256).IsRequired();
+        builder.Property(token => token.ActivationLink).HasMaxLength(1200).IsRequired();
         builder.Property(token => token.RevocationReason).HasMaxLength(500);
         builder.Ignore(token => token.IsActive);
         builder.HasIndex(token => token.TokenHash).IsUnique();

@@ -275,11 +275,29 @@ a, .btn-link {
 
 .detail-grid article,
 .document-list article,
-.review-panel {
+.review-panel,
+.activation-link-panel {
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     padding: 1rem;
+}
+
+.activation-link-panel {
+    align-items: start;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-top: 1.5rem;
+}
+
+.activation-link-panel code {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: block;
+    overflow-wrap: anywhere;
+    padding: .7rem;
 }
 
 .detail-grid dl {
@@ -586,6 +604,10 @@ a, .btn-link {
     }
 
     .document-list article {
+        grid-template-columns: 1fr;
+    }
+
+    .activation-link-panel {
         grid-template-columns: 1fr;
     }
 

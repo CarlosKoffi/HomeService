@@ -8,7 +8,7 @@ public sealed class CompanyActivationToken : AuditableEntity
     {
     }
 
-    internal CompanyActivationToken(Guid companyApplicationId, string tokenHash, DateTimeOffset expiresAt)
+    internal CompanyActivationToken(Guid companyApplicationId, string tokenHash, DateTimeOffset expiresAt, string activationLink)
     {
         if (string.IsNullOrWhiteSpace(tokenHash))
         {
@@ -18,11 +18,13 @@ public sealed class CompanyActivationToken : AuditableEntity
         CompanyApplicationId = companyApplicationId;
         TokenHash = tokenHash.Trim();
         ExpiresAt = expiresAt;
+        ActivationLink = activationLink.Trim();
     }
 
     public Guid CompanyApplicationId { get; private set; }
     public CompanyApplication? CompanyApplication { get; private set; }
     public string TokenHash { get; private set; } = string.Empty;
+    public string ActivationLink { get; private set; } = string.Empty;
     public DateTimeOffset ExpiresAt { get; private set; }
     public DateTimeOffset? UsedAt { get; private set; }
     public DateTimeOffset? RevokedAt { get; private set; }

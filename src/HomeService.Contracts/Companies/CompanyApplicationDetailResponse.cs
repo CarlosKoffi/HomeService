@@ -18,6 +18,8 @@ public sealed record CompanyApplicationDetailResponse(
     DateTimeOffset? LastReminderSentAt,
     DateTimeOffset? ActivationEmailSentAt,
     DateTimeOffset? ActivatedAt,
+    string? LastActivationLink,
+    DateTimeOffset? LastActivationLinkExpiresAt,
     string? ReviewNote,
     IReadOnlyList<CompanyApplicationDocumentResponse> Documents,
     IReadOnlyList<CompanyApplicationStatusHistoryResponse> StatusHistory);

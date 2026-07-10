@@ -56,6 +56,22 @@ else if (Application is not null)
         </div>
     </section>
 
+    @if (!string.IsNullOrWhiteSpace(Application.LastActivationLink))
+    {
+        <section class="activation-link-panel">
+            <div>
+                <h2>Lien d'activation entreprise</h2>
+                <p class="section-help">
+                    Dernier lien genere, valable jusqu'au @FormatDate(Application.LastActivationLinkExpiresAt).
+                </p>
+                <code>@Application.LastActivationLink</code>
+            </div>
+            <div class="easy-actions">
+                <a href="@Application.LastActivationLink" target="_blank" rel="noopener">Ouvrir lien</a>
+            </div>
+        </section>
+    }
+
     <section class="detail-grid">
         <article>
             <h2>Entreprise</h2>
