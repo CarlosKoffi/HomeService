@@ -12,4 +12,5 @@ public sealed record CompanyApplicationSummaryResponse(
     DateTimeOffset? LastReminderSentAt,
     DateTimeOffset? ActivationEmailSentAt,
     int DocumentCount,
-    int PendingDocumentCount);
+    int PendingDocumentCount,
+    IReadOnlyList<CompanyApplicationDocumentSummaryResponse> Documents);

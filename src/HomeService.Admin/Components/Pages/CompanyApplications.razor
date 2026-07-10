@@ -76,7 +76,13 @@
                         <span>@item.Status</span>
                     </div>
                     <p>@item.City - @item.ContactName - @item.Email</p>
-                    <p>@item.DocumentsReady/@item.DocumentsExpected documents OK - depose @item.SubmittedLabel</p>
+                    <div class="document-summary" aria-label="Etat des pieces du dossier">
+                        @foreach (var document in item.Documents)
+                        {
+                            <span class="@document.StatusClass" title="@document.Title">@document.Label</span>
+                        }
+                    </div>
+                    <p class="queue-note">Depose @item.SubmittedLabel</p>
                     <p class="queue-note">@item.NextAction</p>
                 </div>
                 <div class="easy-actions">
@@ -128,6 +134,7 @@
             "UnderReview" => "status-review",
             "MoreInformationRequested" => "status-info",
             "Approved" or "ActivationSent" or "Activated" => "status-done",
+            "Rejected" => "status-rejected",
             _ => "status-new"
         };
 
@@ -138,6 +145,7 @@
             "MoreInformationRequested" => "Attendre le complement ou relancer l'entreprise.",
             "Approved" => "Envoyer le lien d'activation entreprise.",
             "ActivationSent" => "Surveiller la creation du mot de passe.",
+            "Rejected" => "Dossier refuse. Peut etre reouvert si l'entreprise apporte un element solide.",
             _ => "Analyser le dossier."
         };
 
@@ -152,7 +160,70 @@
             Math.Max(0, item.DocumentCount - item.PendingDocumentCount),
             item.DocumentCount,
             item.SubmittedAt is null ? "date inconnue" : item.SubmittedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
-            nextAction);
+            nextAction,
+            BuildDocumentRows(item.Documents));
+    }
+
+    private static IReadOnlyList<DocumentRow> BuildDocumentRows(IReadOnlyList<CompanyApplicationDocumentSummaryResponse> documents)
+    {
+        var documentsByType = documents
+            .GroupBy(document => document.DocumentType)
+            .ToDictionary(group => group.Key, group => group.First());
+
+        var expectedDocumentTypes = new[]
+        {
+            "FiscalExistenceDeclaration",
+            "BusinessRegistration",
+            "OwnerIdentity",
+            "AddressProof"
+        };
+
+        return expectedDocumentTypes
+            .Select(documentType =>
+            {
+                documentsByType.TryGetValue(documentType, out var document);
+                var reviewStatus = document?.ReviewStatus ?? "Missing";
+
+                return new DocumentRow(
+                    GetDocumentLabel(documentType),
+                    GetDocumentStatusClass(reviewStatus),
+                    $"{GetDocumentLabel(documentType)} - {GetDocumentStatusLabel(reviewStatus)}");
+            })
+            .ToList();
+    }
+
+    private static string GetDocumentLabel(string documentType)
+    {
+        return documentType switch
+        {
+            "FiscalExistenceDeclaration" => "DFE",
+            "BusinessRegistration" => "Registre",
+            "OwnerIdentity" => "Identite",
+            "AddressProof" => "Adresse",
+            _ => "Piece"
+        };
+    }
+
+    private static string GetDocumentStatusClass(string status)
+    {
+        return status switch
+        {
+            "Approved" => "status-chip status-accepted",
+            "Rejected" => "status-chip status-refused",
+            _ => "status-chip status-pending"
+        };
+    }
+
+    private static string GetDocumentStatusLabel(string status)
+    {
+        return status switch
+        {
+            "Approved" => "accepte",
+            "Rejected" => "refuse",
+            "NeedsReplacement" => "complement demande",
+            "Missing" => "non depose",
+            _ => "en attente"
+        };
     }
 
     private sealed record ApplicationRow(
@@ -166,5 +237,11 @@
         int DocumentsReady,
         int DocumentsExpected,
         string SubmittedLabel,
-        string NextAction);
+        string NextAction,
+        IReadOnlyList<DocumentRow> Documents);
+
+    private sealed record DocumentRow(
+        string Label,
+        string StatusClass,
+        string Title);
 }

@@ -2,6 +2,7 @@ using HomeService.Application.Abstractions;
 using HomeService.Api;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
+using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -297,22 +298,38 @@ admin.MapGet("/company-applications", async (IAppDbContext db, ILogger<Program> 
             .ToListAsync(cancellationToken);
 
         var applicationIds = applications.Select(application => application.Id).ToList();
-        var documentCounts = await db.CompanyApplicationDocuments
+        var documents = await db.CompanyApplicationDocuments
             .AsNoTracking()
             .Where(document => applicationIds.Contains(document.CompanyApplicationId))
-            .GroupBy(document => document.CompanyApplicationId)
-            .Select(group => new
+            .OrderBy(document => document.DocumentType)
+            .Select(document => new
             {
-                CompanyApplicationId = group.Key,
-                DocumentCount = group.Count(),
-                PendingDocumentCount = group.Count(document => document.ReviewStatus == HomeService.Domain.Enums.DocumentReviewStatus.Pending)
+                document.CompanyApplicationId,
+                document.Id,
+                DocumentType = document.DocumentType.ToString(),
+                ReviewStatus = document.ReviewStatus.ToString(),
+                document.ReviewNote
             })
-            .ToDictionaryAsync(item => item.CompanyApplicationId, cancellationToken);
+            .ToListAsync(cancellationToken);
+
+        var documentsByApplication = documents
+            .GroupBy(document => document.CompanyApplicationId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(document => new CompanyApplicationDocumentSummaryResponse(
+                        document.Id,
+                        document.DocumentType,
+                        document.ReviewStatus,
+                        document.ReviewNote))
+                    .ToList());
 
         var response = applications
             .Select(application =>
             {
-                documentCounts.TryGetValue(application.Id, out var counts);
+                documentsByApplication.TryGetValue(application.Id, out var applicationDocuments);
+                applicationDocuments ??= [];
+
                 return new CompanyApplicationSummaryResponse(
                     application.Id,
                     application.CompanyName,
@@ -324,8 +341,9 @@ admin.MapGet("/company-applications", async (IAppDbContext db, ILogger<Program> 
                     application.SubmittedAt,
                     application.LastReminderSentAt,
                     application.ActivationEmailSentAt,
-                    counts?.DocumentCount ?? 0,
-                    counts?.PendingDocumentCount ?? 0);
+                    applicationDocuments.Count,
+                    applicationDocuments.Count(document => document.ReviewStatus == HomeService.Domain.Enums.DocumentReviewStatus.Pending.ToString()),
+                    applicationDocuments);
             })
             .ToList();
 
@@ -341,6 +359,31 @@ admin.MapGet("/company-applications", async (IAppDbContext db, ILogger<Program> 
     }
 })
 .WithName("ListCompanyApplications");
+
+admin.MapGet("/notifications", async (IAppDbContext db, CancellationToken cancellationToken) =>
+{
+    var notifications = await db.NotificationOutboxMessages
+        .AsNoTracking()
+        .OrderBy(notification => notification.Status)
+        .ThenByDescending(notification => notification.ScheduledAt)
+        .Take(100)
+        .Select(notification => new NotificationOutboxMessageResponse(
+            notification.Id,
+            notification.Channel.ToString(),
+            notification.Status.ToString(),
+            notification.Recipient,
+            notification.Subject,
+            notification.Body,
+            notification.RelatedEntityType,
+            notification.RelatedEntityId,
+            notification.ScheduledAt,
+            notification.SentAt,
+            notification.FailureReason))
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(notifications);
+})
+.WithName("ListNotificationOutboxMessages");
 
 admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db, CancellationToken cancellationToken) =>
 {
@@ -459,11 +502,50 @@ admin.MapPost("/company-applications/{id:guid}/reject", async (
     var previousStatus = application.Status;
     application.Reject(note.Value!, "admin");
     AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
+    QueueCompanyApplicantNotifications(
+        db,
+        application,
+        "Votre dossier entreprise a ete refuse",
+        $"Votre demande d'inscription entreprise a ete refusee. Motif: {note.Value}",
+        includeWhatsApp: true);
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
 })
 .WithName("RejectCompanyApplication");
+
+admin.MapPost("/company-applications/{id:guid}/reopen", async (
+    Guid id,
+    CompanyApplicationReviewRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var note = GetRequiredReviewNote(request.Note, "Une note est obligatoire pour reouvrir une demande refusee.");
+    if (note.ErrorMessage is not null)
+    {
+        return Results.BadRequest(new { message = note.ErrorMessage });
+    }
+
+    var application = await db.CompanyApplications.FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
+    if (application is null)
+    {
+        return Results.NotFound();
+    }
+
+    var previousStatus = application.Status;
+    application.Reopen(note.Value!, "admin");
+    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
+    QueueCompanyApplicantNotifications(
+        db,
+        application,
+        "Votre dossier entreprise est reouvert",
+        $"Votre dossier entreprise a ete reouvert pour une nouvelle verification. Note: {note.Value}",
+        includeWhatsApp: true);
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationActionResponse(application));
+})
+.WithName("ReopenCompanyApplication");
 
 admin.MapPost("/company-applications/{id:guid}/request-more-information", async (
     Guid id,
@@ -486,6 +568,12 @@ admin.MapPost("/company-applications/{id:guid}/request-more-information", async 
     var previousStatus = application.Status;
     application.RequestMoreInformation(note.Value!, "admin");
     AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
+    QueueCompanyApplicantNotifications(
+        db,
+        application,
+        "Complement requis pour votre dossier entreprise",
+        $"Nous avons besoin d'un complement pour finaliser votre dossier entreprise. Detail: {note.Value}",
+        includeWhatsApp: true);
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
@@ -521,12 +609,19 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
     var rawToken = GenerateActivationToken();
     var tokenHash = HashActivationToken(rawToken);
     var expiresAt = DateTimeOffset.UtcNow.AddHours(GetActivationTokenDurationHours(configuration));
+    var activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
     var previousStatus = application.Status;
     application.CreateActivationToken(tokenHash, expiresAt, "admin");
     AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Lien d'activation envoye.", "admin");
+    QueueCompanyApplicantNotifications(
+        db,
+        application,
+        "Votre portail entreprise est pret",
+        $"Votre dossier est valide. Creez votre mot de passe avec ce lien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.",
+        includeWhatsApp: true,
+        metadataJson: $$"""{"activationLink":"{{activationLink}}"}""");
     await db.SaveChangesAsync(cancellationToken);
 
-    var activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
     return Results.Ok(new CompanyApplicationActivationLinkResponse(
         application.Id,
         application.Status.ToString(),
@@ -574,6 +669,12 @@ admin.MapPost("/company-application-documents/{id:guid}/reject", async (
     }
 
     document.Reject(comment.Value!);
+    await QueueDocumentNotificationAsync(
+        db,
+        document.CompanyApplicationId,
+        "Une piece de votre dossier a ete refusee",
+        $"Une piece de votre dossier entreprise a ete refusee. Commentaire: {comment.Value}",
+        cancellationToken);
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
@@ -599,11 +700,48 @@ admin.MapPost("/company-application-documents/{id:guid}/request-replacement", as
     }
 
     document.RequestReplacement(comment.Value!);
+    await QueueDocumentNotificationAsync(
+        db,
+        document.CompanyApplicationId,
+        "Complement de piece requis",
+        $"Une piece de votre dossier entreprise doit etre remplacee ou completee. Commentaire: {comment.Value}",
+        cancellationToken);
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
 })
 .WithName("RequestCompanyApplicationDocumentReplacement");
+
+admin.MapPost("/company-application-documents/{id:guid}/reopen", async (
+    Guid id,
+    CompanyApplicationDocumentReviewRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var comment = GetRequiredReviewNote(request.Comment, "Un commentaire est obligatoire pour reouvrir une piece refusee.");
+    if (comment.ErrorMessage is not null)
+    {
+        return Results.BadRequest(new { message = comment.ErrorMessage });
+    }
+
+    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
+    if (document is null)
+    {
+        return Results.NotFound();
+    }
+
+    document.Reopen(comment.Value!);
+    await QueueDocumentNotificationAsync(
+        db,
+        document.CompanyApplicationId,
+        "Une piece refusee est reouverte",
+        $"Une piece de votre dossier a ete reouverte pour verification. Commentaire: {comment.Value}",
+        cancellationToken);
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
+})
+.WithName("ReopenCompanyApplicationDocument");
 
 admin.MapGet("/company-application-documents/{id:guid}/download", async (
     Guid id,
@@ -751,6 +889,57 @@ static void AddCompanyApplicationStatusHistory(
         newStatus,
         note,
         changedBy));
+}
+
+static void QueueCompanyApplicantNotifications(
+    IAppDbContext db,
+    HomeService.Domain.Entities.CompanyApplication application,
+    string subject,
+    string body,
+    bool includeWhatsApp,
+    string? metadataJson = null)
+{
+    if (!string.IsNullOrWhiteSpace(application.Email))
+    {
+        db.NotificationOutboxMessages.Add(new NotificationOutboxMessage(
+            NotificationChannel.Email,
+            application.Email,
+            subject,
+            body,
+            nameof(HomeService.Domain.Entities.CompanyApplication),
+            application.Id,
+            metadataJson));
+    }
+
+    if (includeWhatsApp && !string.IsNullOrWhiteSpace(application.PhoneNumber))
+    {
+        db.NotificationOutboxMessages.Add(new NotificationOutboxMessage(
+            NotificationChannel.WhatsApp,
+            application.PhoneNumber,
+            subject,
+            body,
+            nameof(HomeService.Domain.Entities.CompanyApplication),
+            application.Id,
+            metadataJson));
+    }
+}
+
+static async Task QueueDocumentNotificationAsync(
+    IAppDbContext db,
+    Guid companyApplicationId,
+    string subject,
+    string body,
+    CancellationToken cancellationToken)
+{
+    var application = await db.CompanyApplications
+        .FirstOrDefaultAsync(application => application.Id == companyApplicationId, cancellationToken);
+
+    if (application is null)
+    {
+        return;
+    }
+
+    QueueCompanyApplicantNotifications(db, application, subject, body, includeWhatsApp: true);
 }
 
 static IReadOnlyList<string> ValidateCompanyApplication(RegisterCompanyRequest request)
