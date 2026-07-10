@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Services;
@@ -17,6 +18,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await httpClient.GetFromJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
+    }
+
+    public async Task<CountryBrandingResponse?> GetCountryBrandingAsync(string countryCode = "CI", CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<CountryBrandingResponse>($"/api/country-branding?country={Uri.EscapeDataString(countryCode)}", cancellationToken);
     }
 
     public async Task<RegisterCompanyResult> RegisterCompanyAsync(

@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Notifications;
@@ -96,6 +97,18 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<NotificationOutboxMessageResponse>>("/api/admin/notifications", cancellationToken) ?? [];
     }
 
+    public async Task<CountryBrandingResponse?> GetCountryBrandingAsync(string countryCode, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<CountryBrandingResponse>($"/api/admin/country-brandings/{Uri.EscapeDataString(countryCode)}", cancellationToken);
+    }
+
+    public async Task<CountryBrandingResponse?> UpdateCountryBrandingAsync(string countryCode, UpdateCountryBrandingRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<CountryBrandingResponse>($"/api/admin/country-brandings/{Uri.EscapeDataString(countryCode)}", request, cancellationToken);
+    }
+
     public string GetCompanyApplicationDocumentUrl(Guid documentId)
     {
         return new Uri(httpClient.BaseAddress!, $"/api/admin/company-application-documents/{documentId}/download").ToString();
@@ -119,6 +132,20 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         using var response = payload is null
             ? await httpClient.PostAsync(path, null, cancellationToken)
             : await httpClient.PostAsJsonAsync(path, payload, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new PlatformApiException(
+            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+    }
+
+    private async Task<T?> PutJsonAsync<T>(string path, object payload, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.PutAsJsonAsync(path, payload, cancellationToken);
 
         if (response.IsSuccessStatusCode)
         {

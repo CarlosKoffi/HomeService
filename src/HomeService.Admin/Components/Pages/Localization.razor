@@ -1,4 +1,7 @@
 @page "/localization"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Branding
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Pays et traductions</PageTitle>
 
@@ -48,6 +51,69 @@
         <input type="search" placeholder="Cle, page, texte" />
     </label>
     <button type="button">Ajouter une cle</button>
+</section>
+
+<section class="country-branding-editor">
+    <div class="section-heading">
+        <div>
+            <h2>Identite pays</h2>
+            <p class="section-help">
+                Ces elements pilotent le rendu public par pays. Pour la Cote d'Ivoire, on garde une base legere:
+                orange pour l'action, blanc pour la clarte, vert pour la confiance.
+            </p>
+        </div>
+        <button type="button" @onclick="SaveBrandingAsync">Sauver l'identite CI</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(BrandingMessage))
+    {
+        <p class="field-message">@BrandingMessage</p>
+    }
+
+    <div class="branding-grid">
+        <label>
+            Marque affichee
+            <input type="text" @bind="BrandName" />
+        </label>
+        <label>
+            Couleur confiance
+            <input type="text" @bind="PrimaryColor" />
+        </label>
+        <label>
+            Couleur fond
+            <input type="text" @bind="SecondaryColor" />
+        </label>
+        <label>
+            Couleur action
+            <input type="text" @bind="AccentColor" />
+        </label>
+        <label>
+            Titre accueil entreprise
+            <input type="text" @bind="HeroTitle" />
+        </label>
+        <label>
+            Image hero optionnelle
+            <input type="url" @bind="HeroImageUrl" placeholder="https://..." />
+        </label>
+        <label class="wide-field">
+            Sous-titre accueil entreprise
+            <textarea rows="3" @bind="HeroSubtitle"></textarea>
+        </label>
+        <label>
+            Motif
+            <select @bind="MotifStyle">
+                <option value="flag-ribbon">Ruban CI</option>
+                <option value="minimal">Minimal</option>
+            </select>
+        </label>
+    </div>
+
+    <article class="branding-preview"
+             style="@BrandPreviewStyle">
+        <span>Cote d'Ivoire - entreprises verifiees</span>
+        <h3>@BrandName</h3>
+        <p>@HeroTitle</p>
+    </article>
 </section>
 
 <section class="localization-grid">
@@ -128,6 +194,66 @@
 </section>
 
 @code {
+    private string BrandName { get; set; } = "ProxiPro CI";
+    private string PrimaryColor { get; set; } = "#0f9f7a";
+    private string SecondaryColor { get; set; } = "#ffffff";
+    private string AccentColor { get; set; } = "#f97316";
+    private string HeroTitle { get; set; } = "Le service a domicile en toute confiance";
+    private string HeroSubtitle { get; set; } = "Une plateforme pensee pour la Cote d'Ivoire: entreprises verifiees, prestataires suivis et services a domicile plus fiables.";
+    private string? HeroImageUrl { get; set; }
+    private string MotifStyle { get; set; } = "flag-ribbon";
+    private string? BrandingMessage { get; set; }
+
+    private string BrandPreviewStyle =>
+        $"--country-primary:{PrimaryColor}; --country-secondary:{SecondaryColor}; --country-accent:{AccentColor};";
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var branding = await ApiClient.GetCountryBrandingAsync("CI");
+            if (branding is not null)
+            {
+                BrandName = branding.BrandName;
+                PrimaryColor = branding.PrimaryColor;
+                SecondaryColor = branding.SecondaryColor;
+                AccentColor = branding.AccentColor;
+                HeroTitle = branding.HeroTitle;
+                HeroSubtitle = branding.HeroSubtitle;
+                HeroImageUrl = branding.HeroImageUrl;
+                MotifStyle = branding.MotifStyle;
+            }
+        }
+        catch (Exception exception)
+        {
+            BrandingMessage = $"Impossible de charger l'identite pays: {exception.Message}";
+        }
+    }
+
+    private async Task SaveBrandingAsync()
+    {
+        BrandingMessage = null;
+
+        try
+        {
+            await ApiClient.UpdateCountryBrandingAsync("CI", new UpdateCountryBrandingRequest(
+                BrandName,
+                PrimaryColor,
+                SecondaryColor,
+                AccentColor,
+                HeroTitle,
+                HeroSubtitle,
+                HeroImageUrl,
+                MotifStyle));
+
+            BrandingMessage = "Identite Cote d'Ivoire sauvegardee.";
+        }
+        catch (Exception exception)
+        {
+            BrandingMessage = $"Sauvegarde impossible: {exception.Message}";
+        }
+    }
+
     private static readonly IReadOnlyList<TranslationRow> TranslationRows =
     [
         new("company.home.hero.title", "Company", "Titre principal du portail entreprise", "Faites intervenir vos equipes a domicile en toute confiance"),

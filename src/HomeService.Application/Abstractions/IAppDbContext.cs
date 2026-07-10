@@ -18,6 +18,7 @@ public interface IAppDbContext
     DbSet<CustomerProfile> Customers { get; }
     DbSet<Mission> Missions { get; }
     DbSet<Country> Countries { get; }
+    DbSet<CountryBranding> CountryBrandings { get; }
     DbSet<Language> Languages { get; }
     DbSet<TranslationKey> TranslationKeys { get; }
     DbSet<TranslationValue> TranslationValues { get; }

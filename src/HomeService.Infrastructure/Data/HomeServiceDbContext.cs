@@ -20,6 +20,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<CustomerProfile> Customers => Set<CustomerProfile>();
     public DbSet<Mission> Missions => Set<Mission>();
     public DbSet<Country> Countries => Set<Country>();
+    public DbSet<CountryBranding> CountryBrandings => Set<CountryBranding>();
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<TranslationKey> TranslationKeys => Set<TranslationKey>();
     public DbSet<TranslationValue> TranslationValues => Set<TranslationValue>();

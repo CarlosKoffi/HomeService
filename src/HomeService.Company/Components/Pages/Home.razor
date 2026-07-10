@@ -1,4 +1,7 @@
 @page "/"
+@using HomeService.Company.Services
+@using HomeService.Contracts.Branding
+@inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
 
 <PageTitle>HomeService Entreprises</PageTitle>
@@ -11,16 +14,13 @@
     </section>
 }
 
-<section class="hero hero-company">
+<section class="hero hero-company country-branded @MotifClass" style="@BrandStyle">
     <div class="hero-copy">
-        <div class="soft-shape shape-one"></div>
-        <div class="soft-shape shape-two"></div>
-        <p class="eyebrow">Entreprises partenaires - Cote d'Ivoire</p>
-        <h1>Faites intervenir vos equipes a domicile en toute <span>CONFIANCE</span></h1>
+        <div class="country-ribbon" aria-hidden="true"></div>
+        <p class="eyebrow"><span class="country-badge">@Branding.CountryIsoCode</span> @Branding.CountryName - entreprises verifiees</p>
+        <h1>@Branding.BrandName <span>@Branding.HeroTitle</span></h1>
         <p class="lead">
-            ProxiPro connecte les clients a des prestataires recommandes par des entreprises verifiees.
-            Votre structure garde le controle: validation des employes, services proposes, tarifs horaires,
-            missions realisees, satisfaction client et encaissements.
+            @Branding.HeroSubtitle
         </p>
         <div class="actions">
             <a class="primary-action" href="register">Inscrire mon entreprise</a>
@@ -40,14 +40,41 @@
 </section>
 
 @code {
+    private CountryBrandingResponse Branding { get; set; } = DefaultBranding;
     private bool IsSubmittedConfirmationVisible { get; set; }
 
-    protected override void OnInitialized()
+    private string BrandStyle =>
+        $"--country-primary:{Branding.PrimaryColor}; --country-secondary:{Branding.SecondaryColor}; --country-accent:{Branding.AccentColor};";
+
+    private string MotifClass => Branding.MotifStyle == "minimal" ? "motif-minimal" : "motif-flag-ribbon";
+
+    protected override async Task OnInitializedAsync()
     {
         IsSubmittedConfirmationVisible = new Uri(Navigation.Uri)
             .Query
             .Contains("submitted=1", StringComparison.OrdinalIgnoreCase);
+
+        try
+        {
+            Branding = await ApiClient.GetCountryBrandingAsync("CI") ?? DefaultBranding;
+        }
+        catch
+        {
+            Branding = DefaultBranding;
+        }
     }
+
+    private static readonly CountryBrandingResponse DefaultBranding = new(
+        "CI",
+        "Cote d'Ivoire",
+        "ProxiPro CI",
+        "#0f9f7a",
+        "#ffffff",
+        "#f97316",
+        "Le service a domicile en toute confiance",
+        "Une plateforme pensee pour la Cote d'Ivoire: entreprises verifiees, prestataires suivis et services a domicile plus fiables.",
+        null,
+        "flag-ribbon");
 }
 
 <section class="service-strip" aria-label="Services de depart">

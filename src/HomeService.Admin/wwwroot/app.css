@@ -409,6 +409,75 @@ a, .btn-link {
     margin-top: 1rem;
 }
 
+.country-branding-editor {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    padding: 1rem;
+}
+
+.branding-grid {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-top: 1rem;
+}
+
+.branding-grid label {
+    color: #334155;
+    display: grid;
+    font-weight: 800;
+    gap: .35rem;
+}
+
+.branding-grid input,
+.branding-grid select,
+.branding-grid textarea {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+    padding: .55rem .7rem;
+}
+
+.wide-field {
+    grid-column: 1 / -1;
+}
+
+.field-message {
+    background: #ffedd5;
+    border: 1px solid #fdba74;
+    border-radius: 8px;
+    color: #9a3412;
+    font-weight: 800;
+    margin-top: .75rem;
+    padding: .65rem .75rem;
+}
+
+.branding-preview {
+    --country-primary: #12824c;
+    --country-secondary: #fff;
+    --country-accent: #f97316;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--country-accent) 18%, #fff), var(--country-secondary), color-mix(in srgb, var(--country-primary) 14%, #fff));
+    border: 1px solid #e5e7eb;
+    border-left: 6px solid var(--country-accent);
+    border-radius: 8px;
+    margin-top: 1rem;
+    padding: 1rem;
+}
+
+.branding-preview span {
+    color: var(--country-primary);
+    font-size: .8rem;
+    font-weight: 950;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.branding-preview h3 {
+    margin: .25rem 0;
+}
+
 .localization-grid article,
 .translation-list article {
     background: #fff;

@@ -1,5 +1,6 @@
 using HomeService.Application.Abstractions;
 using HomeService.Api;
+using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Notifications;
@@ -124,6 +125,29 @@ app.MapGet("/api/translations/dictionary", async (string? scope, string? languag
     return Results.Ok(translations);
 })
 .WithName("GetTranslationsDictionary");
+
+app.MapGet("/api/country-branding", async (string? country, IAppDbContext db, CancellationToken cancellationToken) =>
+{
+    var countryCode = string.IsNullOrWhiteSpace(country) ? "CI" : country.Trim().ToUpperInvariant();
+    var branding = await db.CountryBrandings
+        .AsNoTracking()
+        .Where(branding => branding.Country!.IsoCode == countryCode)
+        .Select(branding => new CountryBrandingResponse(
+            branding.Country!.IsoCode,
+            branding.Country.Name,
+            branding.BrandName,
+            branding.PrimaryColor,
+            branding.SecondaryColor,
+            branding.AccentColor,
+            branding.HeroTitle,
+            branding.HeroSubtitle,
+            branding.HeroImageUrl,
+            branding.MotifStyle))
+        .FirstOrDefaultAsync(cancellationToken);
+
+    return branding is null ? Results.NotFound() : Results.Ok(branding);
+})
+.WithName("GetCountryBranding");
 
 app.MapPost("/api/company-applications", async (
     HttpRequest httpRequest,
@@ -384,6 +408,92 @@ admin.MapGet("/notifications", async (IAppDbContext db, CancellationToken cancel
     return Results.Ok(notifications);
 })
 .WithName("ListNotificationOutboxMessages");
+
+admin.MapGet("/country-brandings/{countryCode}", async (string countryCode, IAppDbContext db, CancellationToken cancellationToken) =>
+{
+    var normalizedCountryCode = countryCode.Trim().ToUpperInvariant();
+    var branding = await db.CountryBrandings
+        .AsNoTracking()
+        .Where(branding => branding.Country!.IsoCode == normalizedCountryCode)
+        .Select(branding => new CountryBrandingResponse(
+            branding.Country!.IsoCode,
+            branding.Country.Name,
+            branding.BrandName,
+            branding.PrimaryColor,
+            branding.SecondaryColor,
+            branding.AccentColor,
+            branding.HeroTitle,
+            branding.HeroSubtitle,
+            branding.HeroImageUrl,
+            branding.MotifStyle))
+        .FirstOrDefaultAsync(cancellationToken);
+
+    return branding is null ? Results.NotFound() : Results.Ok(branding);
+})
+.WithName("GetAdminCountryBranding");
+
+admin.MapPut("/country-brandings/{countryCode}", async (
+    string countryCode,
+    UpdateCountryBrandingRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var validationError = ValidateCountryBrandingRequest(request);
+    if (validationError is not null)
+    {
+        return Results.BadRequest(new { message = validationError });
+    }
+
+    var normalizedCountryCode = countryCode.Trim().ToUpperInvariant();
+    var country = await db.Countries.FirstOrDefaultAsync(country => country.IsoCode == normalizedCountryCode, cancellationToken);
+    if (country is null)
+    {
+        return Results.NotFound(new { message = "Pays introuvable." });
+    }
+
+    var branding = await db.CountryBrandings.FirstOrDefaultAsync(branding => branding.CountryId == country.Id, cancellationToken);
+    if (branding is null)
+    {
+        branding = new CountryBranding(
+            country.Id,
+            request.BrandName,
+            request.PrimaryColor,
+            request.SecondaryColor,
+            request.AccentColor,
+            request.HeroTitle,
+            request.HeroSubtitle,
+            request.HeroImageUrl,
+            request.MotifStyle);
+        db.CountryBrandings.Add(branding);
+    }
+    else
+    {
+        branding.Update(
+            request.BrandName,
+            request.PrimaryColor,
+            request.SecondaryColor,
+            request.AccentColor,
+            request.HeroTitle,
+            request.HeroSubtitle,
+            request.HeroImageUrl,
+            request.MotifStyle);
+    }
+
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(new CountryBrandingResponse(
+        country.IsoCode,
+        country.Name,
+        branding.BrandName,
+        branding.PrimaryColor,
+        branding.SecondaryColor,
+        branding.AccentColor,
+        branding.HeroTitle,
+        branding.HeroSubtitle,
+        branding.HeroImageUrl,
+        branding.MotifStyle));
+})
+.WithName("UpdateAdminCountryBranding");
 
 admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db, CancellationToken cancellationToken) =>
 {
@@ -1100,6 +1210,48 @@ static string? ValidateActivationPasswordRequest(CompanyActivationPasswordReques
     }
 
     return null;
+}
+
+static string? ValidateCountryBrandingRequest(UpdateCountryBrandingRequest request)
+{
+    if (string.IsNullOrWhiteSpace(request.BrandName) || request.BrandName.Trim().Length > 120)
+    {
+        return "Le nom de marque est obligatoire et limite a 120 caracteres.";
+    }
+
+    if (!IsHexColor(request.PrimaryColor) || !IsHexColor(request.SecondaryColor) || !IsHexColor(request.AccentColor))
+    {
+        return "Les couleurs doivent etre au format hexadecimal, par exemple #f97316.";
+    }
+
+    if (string.IsNullOrWhiteSpace(request.HeroTitle) || request.HeroTitle.Trim().Length > 220)
+    {
+        return "Le titre hero est obligatoire et limite a 220 caracteres.";
+    }
+
+    if (string.IsNullOrWhiteSpace(request.HeroSubtitle) || request.HeroSubtitle.Trim().Length > 600)
+    {
+        return "Le sous-titre hero est obligatoire et limite a 600 caracteres.";
+    }
+
+    if (!string.IsNullOrWhiteSpace(request.HeroImageUrl)
+        && (!Uri.TryCreate(request.HeroImageUrl, UriKind.Absolute, out var heroUri)
+            || heroUri.Scheme is not ("http" or "https")))
+    {
+        return "L'image hero doit etre une URL http ou https valide.";
+    }
+
+    if (string.IsNullOrWhiteSpace(request.MotifStyle) || request.MotifStyle.Trim().Length > 80)
+    {
+        return "Le motif visuel est obligatoire et limite a 80 caracteres.";
+    }
+
+    return null;
+}
+
+static bool IsHexColor(string value)
+{
+    return Regex.IsMatch(value.Trim(), "^#[0-9a-fA-F]{6}$");
 }
 
 static string HashPassword(string password)

@@ -14,6 +14,7 @@ public static class DatabaseInitializer
 
         await db.Database.MigrateAsync(cancellationToken);
         await SeedCountriesAsync(db, cancellationToken);
+        await SeedCountryBrandingAsync(db, cancellationToken);
         await SeedLanguagesAsync(db, cancellationToken);
         await SeedServicesAsync(db, cancellationToken);
         await SeedAdminAccessAsync(db, cancellationToken);
@@ -46,6 +47,29 @@ public static class DatabaseInitializer
         db.Languages.AddRange(
             new Language("fr", "Francais", isDefault: true),
             new Language("en", "Anglais"));
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task SeedCountryBrandingAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var coteDIvoire = await db.Countries.FirstAsync(country => country.IsoCode == "CI", cancellationToken);
+        var hasBranding = await db.CountryBrandings.AnyAsync(branding => branding.CountryId == coteDIvoire.Id, cancellationToken);
+        if (hasBranding)
+        {
+            return;
+        }
+
+        db.CountryBrandings.Add(new CountryBranding(
+            coteDIvoire.Id,
+            "ProxiPro CI",
+            "#0f9f7a",
+            "#ffffff",
+            "#f97316",
+            "Le service a domicile en toute confiance",
+            "Une plateforme pensee pour la Cote d'Ivoire: entreprises verifiees, prestataires suivis et services a domicile plus fiables.",
+            null,
+            "flag-ribbon"));
 
         await db.SaveChangesAsync(cancellationToken);
     }
