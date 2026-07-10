@@ -72,6 +72,17 @@
 }
 else
 {
+    @if (!Session.IsCompanyApproved)
+    {
+        <section class="compliance-banner">
+            <div>
+                <strong>Compte en attente de conformite</strong>
+                <span>Votre entreprise est creee. Ajoutez vos documents depuis la page Informations pour activer les affectations et les fonctions sensibles.</span>
+            </div>
+            <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
+        </section>
+    }
+
     <section class="company-dashboard-hero">
         <div>
             <p class="eyebrow">Portail connecte</p>
@@ -102,18 +113,24 @@ else
     <section class="company-dashboard-actions">
         <article>
             <span class="action-icon">01</span>
+            <h2>Informations</h2>
+            <p>Suivez le statut de conformite, les pieces a fournir et les options de depot au bureau.</p>
+            <a href="@PortalLink("company-profile")">Voir les informations</a>
+        </article>
+        <article>
+            <span class="action-icon">02</span>
             <h2>Employes</h2>
             <p>Ajoutez les salaries et interimaires, leurs pieces, photos, services et experience.</p>
             <a href="@PortalLink("employees")">Gerer les employes</a>
         </article>
         <article>
-            <span class="action-icon">02</span>
+            <span class="action-icon">03</span>
             <h2>Missions</h2>
             <p>Suivez les demandes directes, les rendez-vous, les missions live et les affectations.</p>
             <a href="@PortalLink("operations")">Ouvrir les missions</a>
         </article>
         <article>
-            <span class="action-icon">03</span>
+            <span class="action-icon">04</span>
             <h2>Encaissements</h2>
             <p>Controlez Mobile Money, cash a reverser, commissions, ecarts et vues semaine/mois/annee.</p>
             <a href="@PortalLink("accounts")">Voir les comptes</a>
@@ -144,11 +161,21 @@ else
                 "Direction Demo",
                 "direction@entreprise.ci",
                 DateTimeOffset.UtcNow,
-                "demo-preview-token");
+                "demo-preview-token",
+                "PendingReview",
+                false);
             RememberMe = true;
             Email = Session.Email;
             StateHasChanged();
             return;
+        }
+
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("email", out var registeredEmail))
+        {
+            Email = registeredEmail.ToString();
+            LoginMessage = "Compte cree. Connectez-vous pour ajouter vos documents de conformite.";
         }
 
         RememberMe = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.rememberMe") == "true";

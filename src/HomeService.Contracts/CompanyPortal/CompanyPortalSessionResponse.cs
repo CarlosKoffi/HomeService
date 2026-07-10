@@ -6,4 +6,6 @@ public sealed record CompanyPortalSessionResponse(
     string UserName,
     string Email,
     DateTimeOffset AuthenticatedAt,
-    string Token);
+    string Token,
+    string CompanyStatus,
+    bool IsCompanyApproved);

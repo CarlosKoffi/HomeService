@@ -26,6 +26,17 @@
 }
 else
 {
+    @if (!Session.IsCompanyApproved)
+    {
+        <section class="compliance-banner">
+            <div>
+                <strong>Compte en attente de conformite</strong>
+                <span>Vous pouvez consulter les missions et preparer votre equipe. L'affectation et l'envoi en mission seront disponibles apres validation.</span>
+            </div>
+            <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
+        </section>
+    }
+
     <section class="portal-tabs" aria-label="Vues missions">
         <button class="@GetTabClass("live")" type="button" @onclick='() => LoadMissionsAsync("live")'>Live</button>
         <button class="@GetTabClass("upcoming")" type="button" @onclick='() => LoadMissionsAsync("upcoming")'>A venir</button>
@@ -112,7 +123,7 @@ else
                 <aside class="assignment-panel">
                     <div>
                         <h3>Affecter un prestataire</h3>
-                        <p>Liste filtree sur le service demande.</p>
+                        <p>@(Session.IsCompanyApproved ? "Liste filtree sur le service demande." : "Disponible apres validation de votre entreprise.")</p>
                     </div>
 
                     @foreach (var candidate in GetCandidateProviders(SelectedMission))
@@ -125,7 +136,7 @@ else
                             <div>
                                 <strong>@candidate.NormalPriceAmount.ToString("N0") / @candidate.PremiumPriceAmount.ToString("N0") XOF</strong>
                                 <span>Normal / premium</span>
-                                <button type="button" @onclick="() => AssignMission(candidate)">Affecter</button>
+                                <button type="button" disabled="@(!Session.IsCompanyApproved)" @onclick="() => AssignMission(candidate)">Affecter</button>
                             </div>
                         </article>
                     }
@@ -228,7 +239,7 @@ else
 
     private void AssignMission(PreviewProviderCandidate candidate)
     {
-        if (SelectedMission is null)
+        if (SelectedMission is null || Session?.IsCompanyApproved != true)
         {
             return;
         }
@@ -311,7 +322,9 @@ else
             "Direction Demo",
             "direction@entreprise.ci",
             DateTimeOffset.UtcNow,
-            "demo-preview-token");
+            "demo-preview-token",
+            "PendingReview",
+            false);
     }
 
     private static IReadOnlyList<CompanyPortalMissionResponse> GetPreviewMissions(string view)

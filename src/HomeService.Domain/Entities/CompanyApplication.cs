@@ -143,6 +143,17 @@ public sealed class CompanyApplication : AuditableEntity
         Touch();
     }
 
+    public void LinkPendingCompany(Guid companyId)
+    {
+        if (CompanyId is not null && CompanyId != companyId)
+        {
+            throw new InvalidOperationException("Cette demande est deja liee a une autre entreprise.");
+        }
+
+        CompanyId = companyId;
+        Touch();
+    }
+
     public void MarkActivated(string? changedBy = null)
     {
         if (Status != CompanyApplicationStatus.Activated)

@@ -44,7 +44,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
     public async Task<RegisterCompanyResult> RegisterCompanyAsync(
         RegisterCompanyRequest request,
-        IReadOnlyDictionary<string, IBrowserFile?> documents,
+        IReadOnlyDictionary<string, IBrowserFile?>? documents = null,
         CancellationToken cancellationToken = default)
     {
         try
@@ -58,6 +58,8 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             AddString(content, "contactName", request.ContactName);
             AddString(content, "email", request.Email);
             AddString(content, "phoneNumber", request.PhoneNumber);
+            AddString(content, "password", request.Password);
+            AddString(content, "confirmPassword", request.ConfirmPassword);
             AddString(content, "estimatedProviderCount", request.EstimatedProviderCount?.ToString());
 
             foreach (var service in request.Services)
@@ -65,7 +67,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
                 AddString(content, "services", service);
             }
 
-            foreach (var (fieldName, file) in documents)
+            foreach (var (fieldName, file) in documents ?? new Dictionary<string, IBrowserFile?>())
             {
                 if (file is null)
                 {
@@ -167,10 +169,55 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
                     payload.UserName,
                     payload.Email,
                     DateTimeOffset.UtcNow,
-                    payload.Token), null);
+                    payload.Token,
+                    payload.CompanyStatus,
+                    payload.IsCompanyApproved), null);
         }
 
         return new CompanyPortalLoginResult(false, null, ExtractErrorMessage(body) ?? "Identifiants incorrects ou entreprise inactive.");
+    }
+
+    public async Task<RegisterCompanyResult> UploadCompanyComplianceDocumentsAsync(
+        Guid companyId,
+        IReadOnlyDictionary<string, IBrowserFile?> documents,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            AddBasicAuthIfConfigured();
+            using var content = new MultipartFormDataContent();
+            foreach (var (fieldName, file) in documents)
+            {
+                if (file is null)
+                {
+                    continue;
+                }
+
+                await using var sourceStream = file.OpenReadStream(MaxUploadSize, cancellationToken);
+                using var memoryStream = new MemoryStream();
+                await sourceStream.CopyToAsync(memoryStream, cancellationToken);
+
+                var fileContent = new ByteArrayContent(memoryStream.ToArray());
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+                    string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+                content.Add(fileContent, fieldName, file.Name);
+            }
+
+            var response = await httpClient.PostAsync($"/api/company-portal/{companyId:D}/compliance-documents", content, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return new RegisterCompanyResult(true, null);
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new RegisterCompanyResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException or TaskCanceledException)
+        {
+            return new RegisterCompanyResult(false, exception is TaskCanceledException
+                ? "L'envoi a pris trop de temps. Verifiez la connexion puis relancez."
+                : exception.Message);
+        }
     }
 
     public async Task<IReadOnlyList<CompanyEmployeeResponse>> GetCompanyEmployeesAsync(

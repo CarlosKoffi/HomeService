@@ -6,4 +6,6 @@ public sealed record CompanyPortalLoginResponse(
     Guid CompanyId,
     string CompanyName,
     string UserName,
-    string Email);
+    string Email,
+    string CompanyStatus,
+    bool IsCompanyApproved);

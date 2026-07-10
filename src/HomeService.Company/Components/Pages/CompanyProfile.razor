@@ -1,0 +1,169 @@
+@page "/company-profile"
+@using HomeService.Company.Services
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Forms
+@inject PlatformApiClient ApiClient
+@inject IJSRuntime Js
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Informations entreprise</PageTitle>
+
+@if (Session is null)
+{
+    <section class="activation-card">
+        <h1>Connexion requise</h1>
+        <p class="lead">Connectez-vous au portail entreprise pour consulter vos informations et suivre la conformite.</p>
+        <a class="primary-action" href="dashboard">Se connecter</a>
+    </section>
+}
+else
+{
+    @if (!Session.IsCompanyApproved)
+    {
+        <section class="compliance-banner">
+            <div>
+                <strong>Documents de conformite requis</strong>
+                <span>Votre compte est accessible, mais les affectations et fonctions sensibles seront ouvertes apres validation.</span>
+            </div>
+            <a href="#documents">Voir les documents</a>
+        </section>
+    }
+
+    <section class="company-dashboard-hero">
+        <div>
+            <p class="eyebrow">Informations entreprise</p>
+            <h1>@Session.CompanyName</h1>
+            <p class="lead">@Session.UserName - @Session.Email</p>
+        </div>
+        <span class="activation-status">@GetStatusLabel()</span>
+    </section>
+
+    <section id="documents" class="compliance-grid">
+        <article class="activation-card">
+            <p class="eyebrow">Conformite</p>
+            <h2>Pieces a fournir</h2>
+            <p>
+                Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Notre equipe peut les scanner et les rattacher
+                a votre dossier pour vous.
+            </p>
+            <div class="document-checklist">
+                <label><strong>DFE</strong><small>Declaration Fiscale d'Existence</small><em>@GetDocumentLabel("fiscalExistenceDeclaration", "A fournir")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("fiscalExistenceDeclaration", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
+                <label><strong>Registre de commerce</strong><small>RCCM ou document equivalent</small><em>@GetDocumentLabel("companyDocument", "A fournir")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("companyDocument", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
+                <label><strong>Identite du responsable</strong><small>CNI, passeport ou document officiel</small><em>@GetDocumentLabel("ownerIdentityDocument", "A fournir")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("ownerIdentityDocument", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
+                <label><strong>Justificatif d'adresse</strong><small>Facture, bail ou attestation</small><em>@GetDocumentLabel("addressProof", "Recommande")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("addressProof", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
+            </div>
+        </article>
+
+        <article class="activation-card">
+            <p class="eyebrow">Options</p>
+            <h2>Comment finaliser</h2>
+            <div class="compliance-options">
+                <button type="button" class="primary-action" disabled="@IsUploading" @onclick="UploadAsync">
+                    @(IsUploading ? "Envoi en cours..." : "Televerser les documents")
+                </button>
+                <button type="button" class="secondary-action">Je les deposerai au bureau</button>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <p class="field-message">@Message</p>
+            }
+            <p class="field-hint">
+                Les documents transmis resteront en attente tant que l'equipe admin ne les a pas verifies.
+            </p>
+        </article>
+    </section>
+}
+
+@code {
+    private CompanyPortalSessionResponse? Session { get; set; }
+    private bool IsUploading { get; set; }
+    private string? Message { get; set; }
+    private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["fiscalExistenceDeclaration"] = null,
+        ["companyDocument"] = null,
+        ["ownerIdentityDocument"] = null,
+        ["addressProof"] = null
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        if (Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase))
+        {
+            Session = new CompanyPortalSessionResponse(
+                Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                "Entreprise Demo CI",
+                "Direction Demo",
+                "direction@entreprise.ci",
+                DateTimeOffset.UtcNow,
+                "demo-preview-token",
+                "PendingReview",
+                false);
+            StateHasChanged();
+            return;
+        }
+
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+        if (!string.IsNullOrWhiteSpace(sessionJson))
+        {
+            Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            StateHasChanged();
+        }
+    }
+
+    private string GetStatusLabel()
+    {
+        return Session?.IsCompanyApproved == true ? "Compte valide" : "Conformite requise";
+    }
+
+    private void SetDocument(string key, InputFileChangeEventArgs args)
+    {
+        Documents[key] = args.File;
+        Message = null;
+    }
+
+    private string GetDocumentLabel(string key, string fallback)
+    {
+        return Documents.TryGetValue(key, out var file) && file is not null ? file.Name : fallback;
+    }
+
+    private async Task UploadAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        if (Documents.Values.All(file => file is null))
+        {
+            Message = "Ajoutez au moins un document avant l'envoi.";
+            return;
+        }
+
+        IsUploading = true;
+        try
+        {
+            var result = await ApiClient.UploadCompanyComplianceDocumentsAsync(Session.CompanyId, Documents);
+            Message = result.IsSuccess
+                ? "Documents recus. Notre equipe va les verifier."
+                : $"Envoi impossible: {result.ErrorMessage}";
+            if (result.IsSuccess)
+            {
+                foreach (var key in Documents.Keys.ToList())
+                {
+                    Documents[key] = null;
+                }
+            }
+        }
+        finally
+        {
+            IsUploading = false;
+        }
+    }
+}

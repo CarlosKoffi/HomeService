@@ -8,5 +8,7 @@ public sealed record RegisterCompanyRequest(
     string ContactName,
     string Email,
     string PhoneNumber,
+    string Password,
+    string ConfirmPassword,
     IReadOnlyList<string> Services,
     int? EstimatedProviderCount);

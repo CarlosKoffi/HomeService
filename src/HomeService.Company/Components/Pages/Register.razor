@@ -9,107 +9,37 @@
 
 <PageTitle>Inscription entreprise</PageTitle>
 
-<h1>Demande d'inscription</h1>
+<h1>Creer votre compte entreprise</h1>
 <p class="lead">
-    Ce formulaire permet a votre entreprise de demander son acces ProxiPro. Notre equipe verifiera les informations
-    et les pieces fournies. Si le dossier est valide, vous recevrez un lien par email pour creer votre mot de passe.
+    Commencez en quelques minutes. Les documents de conformite seront ajoutes ensuite depuis votre espace entreprise
+    ou deposes directement dans nos bureaux.
 </p>
 
 <form class="registration-form">
-    <section>
-        <h2>Entreprise</h2>
-        <label>
-            Nom legal de l'entreprise
-            <input name="companyName" type="text" autocomplete="organization" placeholder="Ex: CI Home Services SARL" @bind="CompanyName" />
-        </label>
-        <label>
-            Numero RCCM ou identifiant legal
-            <input name="registrationNumber" type="text" placeholder="Ex: CI-ABJ-2026-B-12345" @bind="RegistrationNumber" />
-        </label>
-        <label>
-            Ville
-            <input name="city" type="text" autocomplete="address-level2" placeholder="Ex: Abidjan" @bind="City" />
-        </label>
-        <label>
-            Adresse
-            <input name="address" type="text" autocomplete="street-address" placeholder="Ex: Cocody Angre, 7e tranche" @bind="Address" />
-        </label>
-    </section>
+    <div class="registration-steps" aria-label="Progression inscription">
+        <span class="@(Step == 1 ? "active" : "done")">1. Entreprise</span>
+        <span class="@(Step == 2 ? "active" : null)">2. Responsable</span>
+    </div>
 
-    <section>
-        <h2>Contact responsable</h2>
-        <label>
-            Nom complet
-            <input name="ownerName" type="text" autocomplete="name" placeholder="Ex: David Gnahoua" @bind="ContactName" />
-        </label>
-        <label>
-            Email professionnel
-            <input name="email" type="email" autocomplete="email" placeholder="Ex: dg@cibank.ci" @bind="Email" />
-        </label>
-        <label>
-            Telephone
-            <input name="phone" type="tel" autocomplete="tel" placeholder="Ex: +2250700000000" @bind="PhoneNumber" />
-        </label>
-    </section>
-
-    <section class="documents-section">
-        <div class="section-intro">
-            <h2>Pieces justificatives</h2>
-            <p>Formats acceptes: PDF, JPG ou PNG. Privilegiez des fichiers lisibles et legers pour faciliter la verification.</p>
-        </div>
-
-        <div class="upload-grid">
-            <label class="upload-card required">
-                <span class="upload-icon">DFE</span>
-                <span class="upload-content">
-                    <strong>DFE</strong>
-                    <small>Declaration Fiscale d'Existence</small>
-                    <em>@GetDocumentLabel("fiscalExistenceDeclaration", "Document obligatoire")</em>
-                </span>
-                <span class="upload-action">Choisir</span>
-                <InputFile OnChange="SetFiscalExistenceDeclaration" accept=".pdf,.jpg,.jpeg,.png" />
+    @if (Step == 1)
+    {
+        <section>
+            <div class="section-intro">
+                <h2>Entreprise et services envisages</h2>
+                <p>Aucun document n'est requis a cette etape. Vous pourrez les ajouter apres creation du compte.</p>
+            </div>
+            <label>
+                Nom de l'entreprise
+                <input name="companyName" type="text" autocomplete="organization" placeholder="Ex: CI Home Services SARL" @bind="CompanyName" />
             </label>
-
-            <label class="upload-card required">
-                <span class="upload-icon">RC</span>
-                <span class="upload-content">
-                    <strong>Registre de commerce</strong>
-                    <small>RCCM ou document legal equivalent</small>
-                    <em>@GetDocumentLabel("companyDocument", "Document obligatoire")</em>
-                </span>
-                <span class="upload-action">Choisir</span>
-                <InputFile OnChange="SetCompanyDocument" accept=".pdf,.jpg,.jpeg,.png" />
+            <label>
+                Ville
+                <input name="city" type="text" autocomplete="address-level2" placeholder="Ex: Abidjan" @bind="City" />
             </label>
-
-            <label class="upload-card required">
-                <span class="upload-icon">ID</span>
-                <span class="upload-content">
-                    <strong>Identite du responsable</strong>
-                    <small>CNI, passeport ou document officiel</small>
-                    <em>@GetDocumentLabel("ownerIdentityDocument", "Document obligatoire")</em>
-                </span>
-                <span class="upload-action">Choisir</span>
-                <InputFile OnChange="SetOwnerIdentityDocument" accept=".pdf,.jpg,.jpeg,.png" />
+            <label>
+                Adresse ou zone principale
+                <input name="address" type="text" autocomplete="street-address" placeholder="Ex: Cocody Angre, 7e tranche" @bind="Address" />
             </label>
-
-            <label class="upload-card">
-                <span class="upload-icon">ADR</span>
-                <span class="upload-content">
-                    <strong>Justificatif d'adresse</strong>
-                    <small>Facture, bail ou attestation</small>
-                    <em>@GetDocumentLabel("addressProof", "Recommande")</em>
-                </span>
-                <span class="upload-action">Choisir</span>
-                <InputFile OnChange="SetAddressProof" accept=".pdf,.jpg,.jpeg,.png" />
-            </label>
-        </div>
-    </section>
-
-    <section class="services-section">
-        <div class="section-intro">
-            <h2>Services envisages</h2>
-            <p>Selectionnez les services que votre entreprise souhaite proposer. Vous pouvez aussi en ajouter un nouveau.</p>
-        </div>
 
         <div class="suggested-tags" aria-label="Services existants">
             @foreach (var service in ExistingServices)
@@ -158,7 +88,41 @@
             Nombre approximatif de prestataires
             <input name="providerCount" type="number" min="1" placeholder="Ex: 25" @bind="EstimatedProviderCount" />
         </label>
-    </section>
+        </section>
+    }
+    else
+    {
+        <section>
+            <div class="section-intro">
+                <h2>Contact responsable et acces</h2>
+                <p>Cette personne gerera le compte entreprise et suivra la validation des documents.</p>
+            </div>
+            <label>
+                Nom complet
+                <input name="ownerName" type="text" autocomplete="name" placeholder="Ex: David Gnahoua" @bind="ContactName" />
+            </label>
+            <label>
+                Email professionnel
+                <input name="email" type="email" autocomplete="email" placeholder="Ex: dg@cibank.ci" @bind="Email" />
+            </label>
+            <label>
+                Telephone
+                <input name="phone" type="tel" autocomplete="tel" placeholder="Ex: +2250700000000" @bind="PhoneNumber" />
+            </label>
+            <label>
+                Mot de passe
+                <input name="password" type="password" autocomplete="new-password" placeholder="Au moins 10 caracteres" @bind="Password" />
+            </label>
+            <label>
+                Confirmer le mot de passe
+                <input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Retapez le meme mot de passe" @bind="ConfirmPassword" />
+            </label>
+            <div class="compliance-note">
+                <strong>Apres creation</strong>
+                <span>Votre compte sera accessible en mode limite. Les affectations et fonctions sensibles seront activees apres validation des pieces.</span>
+            </div>
+        </section>
+    }
 
     @if (!string.IsNullOrWhiteSpace(FormMessage))
     {
@@ -176,9 +140,17 @@
         </div>
     }
 
-    <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="SubmitAsync">
-        @(IsSubmitting ? "Envoi en cours..." : "Envoyer la demande")
-    </button>
+    <div class="form-actions">
+        @if (Step == 2)
+        {
+            <button type="button" class="secondary-action" disabled="@IsSubmitting" @onclick="Back">
+                Retour
+            </button>
+        }
+        <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="PrimaryActionAsync">
+            @(Step == 1 ? "Continuer" : IsSubmitting ? "Creation en cours..." : "Creer le compte entreprise")
+        </button>
+    </div>
 </form>
 
 @code {
@@ -188,22 +160,17 @@
     private string? ServiceMessage { get; set; }
     private string? FormMessage { get; set; }
     private bool IsSubmitting { get; set; }
+    private int Step { get; set; } = 1;
     private string CompanyName { get; set; } = string.Empty;
-    private string? RegistrationNumber { get; set; }
     private string City { get; set; } = string.Empty;
     private string? Address { get; set; }
     private string ContactName { get; set; } = string.Empty;
     private string Email { get; set; } = string.Empty;
     private string PhoneNumber { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string ConfirmPassword { get; set; } = string.Empty;
     private int? EstimatedProviderCount { get; set; }
     private List<string> ValidationErrors { get; set; } = [];
-    private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["fiscalExistenceDeclaration"] = null,
-        ["companyDocument"] = null,
-        ["ownerIdentityDocument"] = null,
-        ["addressProof"] = null
-    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -290,10 +257,36 @@
         ServiceEntry = string.Empty;
     }
 
+    private async Task PrimaryActionAsync()
+    {
+        FormMessage = null;
+        ValidationErrors = Step == 1 ? ValidateCompanyStep() : ValidateContactStep();
+
+        if (ValidationErrors.Count > 0)
+        {
+            return;
+        }
+
+        if (Step == 1)
+        {
+            Step = 2;
+            return;
+        }
+
+        await SubmitAsync();
+    }
+
+    private void Back()
+    {
+        FormMessage = null;
+        ValidationErrors = [];
+        Step = 1;
+    }
+
     private async Task SubmitAsync()
     {
         FormMessage = null;
-        ValidationErrors = ValidateForm();
+        ValidationErrors = ValidateCompanyStep().Concat(ValidateContactStep()).ToList();
 
         if (ValidationErrors.Count > 0)
         {
@@ -305,19 +298,21 @@
         {
             var request = new RegisterCompanyRequest(
                 CompanyName,
-                RegistrationNumber,
+                null,
                 City,
                 Address,
                 ContactName,
                 Email,
                 PhoneNumber,
+                Password,
+                ConfirmPassword,
                 SelectedServices.Select(service => service.Name).ToList(),
                 EstimatedProviderCount);
 
-            var result = await ApiClient.RegisterCompanyAsync(request, Documents);
+            var result = await ApiClient.RegisterCompanyAsync(request);
             if (result.IsSuccess)
             {
-                Navigation.NavigateTo("/?submitted=1");
+                Navigation.NavigateTo($"/dashboard?registered=1&email={Uri.EscapeDataString(Email.Trim())}");
                 return;
             }
 
@@ -333,7 +328,7 @@
         }
     }
 
-    private List<string> ValidateForm()
+    private List<string> ValidateCompanyStep()
     {
         var errors = new List<string>();
 
@@ -342,15 +337,27 @@
             errors.Add("Le nom legal de l'entreprise doit contenir au moins 3 caracteres.");
         }
 
-        if (!string.IsNullOrWhiteSpace(RegistrationNumber) && RegistrationNumber.Trim().Length < 4)
-        {
-            errors.Add("Le numero RCCM ou identifiant legal semble trop court.");
-        }
-
         if (City.Trim().Length < 2)
         {
             errors.Add("La ville est obligatoire.");
         }
+
+        if (EstimatedProviderCount is not null and (< 1 or > 10000))
+        {
+            errors.Add("Le nombre de prestataires doit etre compris entre 1 et 10000.");
+        }
+
+        if (SelectedServices.Count == 0)
+        {
+            errors.Add("Selectionnez au moins un service envisage.");
+        }
+
+        return errors;
+    }
+
+    private List<string> ValidateContactStep()
+    {
+        var errors = new List<string>();
 
         if (ContactName.Trim().Length < 3)
         {
@@ -367,37 +374,14 @@
             errors.Add("Le telephone doit contenir entre 8 et 15 chiffres. Exemple: +2250700000000.");
         }
 
-        if (EstimatedProviderCount is not null and (< 1 or > 10000))
+        if (Password.Length < 10)
         {
-            errors.Add("Le nombre de prestataires doit etre compris entre 1 et 10000.");
+            errors.Add("Le mot de passe doit contenir au moins 10 caracteres.");
         }
 
-        if (SelectedServices.Count == 0)
+        if (Password != ConfirmPassword)
         {
-            errors.Add("Selectionnez au moins un service envisage.");
-        }
-
-        if (Documents["fiscalExistenceDeclaration"] is null)
-        {
-            errors.Add("Le DFE est obligatoire.");
-        }
-
-        if (Documents["companyDocument"] is null)
-        {
-            errors.Add("Le registre de commerce est obligatoire.");
-        }
-
-        if (Documents["ownerIdentityDocument"] is null)
-        {
-            errors.Add("L'identite du responsable est obligatoire.");
-        }
-
-        foreach (var file in Documents.Values.Where(file => file is not null).Cast<IBrowserFile>())
-        {
-            if (!IsAllowedFile(file))
-            {
-                errors.Add($"Le fichier {file.Name} doit etre un PDF, JPG ou PNG de 10 Mo maximum.");
-            }
+            errors.Add("Les deux mots de passe ne correspondent pas.");
         }
 
         return errors;
@@ -412,49 +396,6 @@
     {
         var digits = Regex.Replace(value, @"\D", string.Empty);
         return digits.Length is >= 8 and <= 15;
-    }
-
-    private static bool IsAllowedFile(IBrowserFile file)
-    {
-        var allowedTypes = new[] { "application/pdf", "image/jpeg", "image/png" };
-        var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
-        return file.Size <= 10 * 1024 * 1024
-            && allowedTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase)
-            && allowedExtensions.Contains(Path.GetExtension(file.Name), StringComparer.OrdinalIgnoreCase);
-    }
-
-    private void SetFiscalExistenceDeclaration(InputFileChangeEventArgs args)
-    {
-        SetDocument("fiscalExistenceDeclaration", args);
-    }
-
-    private void SetCompanyDocument(InputFileChangeEventArgs args)
-    {
-        SetDocument("companyDocument", args);
-    }
-
-    private void SetOwnerIdentityDocument(InputFileChangeEventArgs args)
-    {
-        SetDocument("ownerIdentityDocument", args);
-    }
-
-    private void SetAddressProof(InputFileChangeEventArgs args)
-    {
-        SetDocument("addressProof", args);
-    }
-
-    private void SetDocument(string key, InputFileChangeEventArgs args)
-    {
-        Documents[key] = args.File;
-        FormMessage = null;
-        ValidationErrors = [];
-    }
-
-    private string GetDocumentLabel(string key, string fallback)
-    {
-        return Documents.TryGetValue(key, out var file) && file is not null
-            ? file.Name
-            : fallback;
     }
 
     private static bool IsSameService(string left, string right)

@@ -178,6 +178,8 @@ app.MapPost("/api/company-applications", async (
             GetFormValue(form, "contactName"),
             GetFormValue(form, "email"),
             GetFormValue(form, "phoneNumber"),
+            GetFormValue(form, "password"),
+            GetFormValue(form, "confirmPassword"),
             GetServices(form),
             GetOptionalInt(form, "estimatedProviderCount"));
 
@@ -187,17 +189,18 @@ app.MapPost("/api/company-applications", async (
             return Results.BadRequest(new { message = "Le formulaire contient des erreurs.", errors = validationErrors });
         }
 
-        var requiredDocumentFields = new[] { "fiscalExistenceDeclaration", "companyDocument", "ownerIdentityDocument" };
-        if (requiredDocumentFields.Any(field => form.Files.GetFile(field) is null))
-        {
-            return Results.BadRequest(new { message = "Le DFE, le registre de commerce et l'identite du responsable sont obligatoires." });
-        }
-
         var serviceNames = request.Services
             .Where(service => !string.IsNullOrWhiteSpace(service))
             .Select(service => service.Trim())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        var existingUser = await db.CompanyPortalUsers.AnyAsync(user => user.Email == email, cancellationToken);
+        if (existingUser)
+        {
+            return Results.BadRequest(new { message = "Un compte entreprise existe deja avec cet email." });
+        }
 
         var application = new HomeService.Domain.Entities.CompanyApplication(
             request.CompanyName,
@@ -210,13 +213,21 @@ app.MapPost("/api/company-applications", async (
             serviceNames.Count > 0 ? string.Join(", ", serviceNames) : null,
             request.EstimatedProviderCount);
 
+        var company = new HomeService.Domain.Entities.Company(
+            request.CompanyName,
+            request.PhoneNumber,
+            email);
+
         db.CompanyApplications.Add(application);
+        db.Companies.Add(company);
+        db.CompanyPortalUsers.Add(new CompanyPortalUser(company.Id, request.ContactName, email, HashPassword(request.Password), true));
+        application.LinkPendingCompany(company.Id);
         AddCompanyApplicationStatusHistory(
             db,
             application.Id,
             null,
             CompanyApplicationStatus.Submitted,
-            "Demande soumise.",
+            "Compte entreprise cree. Documents de conformite en attente.",
             null);
 
         foreach (var serviceName in serviceNames)
@@ -319,9 +330,9 @@ app.MapPost("/api/company-portal/login", async (
         return Results.Unauthorized();
     }
 
-    if (user.Company.Status != CompanyStatus.Approved)
+    if (user.Company.Status == CompanyStatus.Suspended)
     {
-        return Results.BadRequest(new { message = "Cette entreprise n'est pas encore active sur le portail." });
+        return Results.BadRequest(new { message = "Cette entreprise est suspendue. Contactez le support." });
     }
 
     var token = GenerateSessionToken();
@@ -335,7 +346,9 @@ app.MapPost("/api/company-portal/login", async (
         user.CompanyId,
         user.Company.Name,
         user.FullName,
-        user.Email));
+        user.Email,
+        user.Company.Status.ToString(),
+        user.Company.Status == CompanyStatus.Approved));
 })
 .WithName("LoginCompanyPortal");
 
@@ -344,7 +357,7 @@ app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
     if (!exists)
     {
         return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
@@ -419,6 +432,63 @@ app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
 })
 .WithName("ListCompanyPortalEmployees");
 
+app.MapPost("/api/company-portal/{companyId:guid}/compliance-documents", async (
+    Guid companyId,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    CompanyApplicationUploadService uploadService,
+    CancellationToken cancellationToken) =>
+{
+    if (!httpRequest.HasFormContentType)
+    {
+        return Results.BadRequest(new { message = "Les documents doivent etre envoyes au format multipart/form-data." });
+    }
+
+    var companyExists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
+    if (!companyExists)
+    {
+        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+    }
+
+    var application = await db.CompanyApplications
+        .Where(application => application.CompanyId == companyId)
+        .OrderByDescending(application => application.CreatedAt)
+        .FirstOrDefaultAsync(cancellationToken);
+    if (application is null)
+    {
+        return Results.NotFound(new { message = "Dossier entreprise introuvable." });
+    }
+
+    var form = await httpRequest.ReadFormAsync(cancellationToken);
+    var documents = await uploadService.SaveAsync(application.Id, form.Files, cancellationToken);
+    if (documents.Count == 0)
+    {
+        return Results.BadRequest(new { message = "Aucun document valide n'a ete transmis." });
+    }
+
+    foreach (var document in documents)
+    {
+        db.CompanyApplicationDocuments.Add(new CompanyApplicationDocument(
+            application.Id,
+            document.DocumentType,
+            document.OriginalFileName,
+            document.StoragePath,
+            document.ContentType));
+    }
+
+    AddCompanyApplicationStatusHistory(
+        db,
+        application.Id,
+        application.Status,
+        application.Status,
+        "Documents de conformite ajoutes depuis le portail entreprise.",
+        "company-portal");
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(new { message = "Documents recus. Notre equipe va les verifier.", count = documents.Count });
+})
+.WithName("UploadCompanyPortalComplianceDocuments");
+
 app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
     Guid companyId,
     HttpRequest httpRequest,
@@ -431,7 +501,7 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
         return Results.BadRequest(new { message = "Le formulaire employe doit etre envoye au format multipart/form-data." });
     }
 
-    var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
     if (company is null)
     {
         return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
@@ -698,7 +768,7 @@ app.MapGet("/api/company-portal/{companyId:guid}/missions", async (
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
     if (!exists)
     {
         return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
@@ -750,7 +820,7 @@ app.MapGet("/api/company-portal/{companyId:guid}/payments", async (
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status == CompanyStatus.Approved, cancellationToken);
+    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
     if (!exists)
     {
         return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
@@ -1118,6 +1188,11 @@ admin.MapPost("/company-applications/{id:guid}/approve", async (
         company.Approve();
         db.Companies.Add(company);
         application.LinkApprovedCompany(company.Id, "admin");
+    }
+    else
+    {
+        var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == application.CompanyId, cancellationToken);
+        company?.Approve();
     }
 
     await db.SaveChangesAsync(cancellationToken);
@@ -1989,6 +2064,16 @@ static IReadOnlyList<string> ValidateCompanyApplication(RegisterCompanyRequest r
     if (request.Services.Count == 0)
     {
         errors.Add("Au moins un service est requis.");
+    }
+
+    if (request.Password.Length < 10)
+    {
+        errors.Add("Le mot de passe doit contenir au moins 10 caracteres.");
+    }
+
+    if (request.Password != request.ConfirmPassword)
+    {
+        errors.Add("Les deux mots de passe ne correspondent pas.");
     }
 
     return errors;
