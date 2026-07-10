@@ -1234,7 +1234,6 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
     CancellationToken cancellationToken) =>
 {
     var application = await db.CompanyApplications
-        .Include(application => application.ActivationTokens)
         .FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
     if (application is null)
     {
@@ -1256,9 +1255,20 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
     DateTimeOffset expiresAt;
     try
     {
+        var now = DateTimeOffset.UtcNow;
+        await db.CompanyActivationTokens
+            .Where(token => token.CompanyApplicationId == application.Id
+                && token.UsedAt == null
+                && token.RevokedAt == null
+                && token.ExpiresAt > now)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(token => token.RevokedAt, now)
+                .SetProperty(token => token.RevocationReason, "Remplace par un nouveau token d'activation."),
+                cancellationToken);
+
         var rawToken = GenerateActivationToken();
         var tokenHash = HashActivationToken(rawToken);
-        expiresAt = DateTimeOffset.UtcNow.AddHours(GetActivationTokenDurationHours(configuration));
+        expiresAt = now.AddHours(GetActivationTokenDurationHours(configuration));
         activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
         var previousStatus = application.Status;
         application.CreateActivationToken(tokenHash, expiresAt, activationLink, "admin");
