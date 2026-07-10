@@ -8,8 +8,8 @@
     display: flex;
     gap: 1.5rem;
     justify-content: space-between;
-    min-height: 92px;
-    padding: 0 2rem;
+    min-height: 76px;
+    padding: 0 1.5rem;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -17,7 +17,7 @@
 
 .brand {
     color: #102019;
-    font-size: clamp(2rem, 4vw, 3rem);
+    font-size: clamp(1.45rem, 3vw, 2.1rem);
     font-weight: 900;
     letter-spacing: -0.02em;
     text-decoration: none;
@@ -52,8 +52,8 @@
     .site-header {
         align-items: flex-start;
         flex-wrap: wrap;
-        min-height: 82px;
-        padding: 1.2rem 1.25rem;
+        min-height: 70px;
+        padding: .85rem 1rem;
     }
 
     .menu-button {

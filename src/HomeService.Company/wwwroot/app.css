@@ -17,11 +17,12 @@
     display: flex;
     gap: 1rem;
     justify-content: space-between;
-    margin: 1.5rem 0;
+    margin: .65rem 0 1rem;
 }
 
 .workspace-header h1 {
-    font-size: clamp(2.2rem, 7vw, 4.6rem);
+    font-size: clamp(1.85rem, 4vw, 3rem);
+    letter-spacing: 0;
 }
 
 .company-dashboard-hero {
@@ -33,13 +34,14 @@
     display: flex;
     gap: 1rem;
     justify-content: space-between;
-    margin: 1rem 0 1.5rem;
-    padding: clamp(1.2rem, 4vw, 2rem);
+    margin: .85rem 0 1rem;
+    padding: clamp(1rem, 3vw, 1.45rem);
 }
 
 .company-dashboard-hero h1 {
-    font-size: clamp(2rem, 6vw, 4rem);
-    margin-bottom: .45rem;
+    font-size: clamp(1.85rem, 4vw, 3rem);
+    letter-spacing: 0;
+    margin-bottom: .35rem;
 }
 
 .company-dashboard-hero .lead {
@@ -1594,30 +1596,29 @@ h2 {
 
 .compliance-grid {
     display: grid;
-    gap: 1rem;
+    gap: .85rem;
     grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
 }
 
 .company-profile-hero {
-    align-items: flex-end;
+    align-items: center;
     background:
         linear-gradient(135deg, rgba(255, 255, 255, .97), rgba(248, 253, 250, .92)),
         linear-gradient(90deg, rgba(255, 130, 0, .1), rgba(8, 145, 104, .12));
     border: 1px solid var(--line);
-    border-radius: 28px;
-    box-shadow: 0 22px 50px rgba(15, 23, 42, .08);
+    border-radius: 22px;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
     display: flex;
     gap: 1rem;
     justify-content: space-between;
-    margin-bottom: 1rem;
-    padding: 1.35rem;
+    padding: 1.15rem;
 }
 
 .company-profile-hero h1 {
-    font-size: clamp(2rem, 6vw, 4rem);
+    font-size: clamp(1.8rem, 4vw, 2.85rem);
     letter-spacing: 0;
-    line-height: 1;
-    margin: .25rem 0 .5rem;
+    line-height: 1.05;
+    margin: .15rem 0 .35rem;
 }
 
 .company-profile-hero p {
@@ -1628,9 +1629,28 @@ h2 {
 
 .company-profile-shell {
     display: grid;
-    gap: 1rem;
+    gap: .85rem;
     margin: 0 auto 2rem;
     max-width: 1180px;
+}
+
+.company-profile-shell .eyebrow,
+.workspace-header .eyebrow,
+.company-dashboard-hero .eyebrow,
+.profile-card .eyebrow {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.company-profile-shell .lead,
+.workspace-header .lead,
+.company-dashboard-hero .lead {
+    color: var(--muted);
+    font-size: .98rem;
+    line-height: 1.5;
 }
 
 .portal-subnav {
@@ -1638,16 +1658,12 @@ h2 {
     background:
         linear-gradient(180deg, rgba(255, 255, 255, .97), rgba(248, 250, 252, .94));
     border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: 0 16px 34px rgba(15, 23, 42, .07);
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .055);
     display: flex;
     gap: .35rem;
     justify-content: space-between;
-    overflow-x: auto;
-    padding: .45rem;
-    position: sticky;
-    top: .75rem;
-    z-index: 5;
+    padding: .35rem;
 }
 
 .portal-subnav-links {
@@ -1659,12 +1675,12 @@ h2 {
 }
 
 .portal-subnav a {
-    border-radius: 14px;
+    border-radius: 13px;
     color: #475569;
     flex: 1;
     font-weight: 950;
     min-width: max-content;
-    padding: .85rem 1rem;
+    padding: .7rem .85rem;
     text-align: center;
     text-decoration: none;
     transition: background .18s ease, color .18s ease;
@@ -1705,24 +1721,24 @@ h2 {
 
 .company-profile-grid {
     display: grid;
-    gap: 1rem;
+    gap: .85rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .profile-overview-strip {
     display: grid;
-    gap: .85rem;
+    gap: .75rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .profile-overview-strip article {
     background: rgba(255, 255, 255, .94);
     border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: 0 14px 30px rgba(15, 23, 42, .06);
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .055);
     display: grid;
     gap: .25rem;
-    padding: 1rem;
+    padding: .85rem;
 }
 
 .profile-overview-strip span,
@@ -1733,18 +1749,28 @@ h2 {
 
 .profile-overview-strip strong {
     color: var(--ink);
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     font-weight: 950;
 }
 
 .profile-card {
     background: rgba(255, 255, 255, .92);
     border: 1px solid var(--line);
-    border-radius: 24px;
-    box-shadow: 0 18px 38px rgba(15, 23, 42, .07);
+    border-radius: 20px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .06);
     display: grid;
-    gap: 1rem;
-    padding: 1.25rem;
+    gap: .85rem;
+    padding: 1rem;
+}
+
+.profile-card > .eyebrow,
+.profile-section-heading .eyebrow {
+    margin: 0 0 .2rem;
+}
+
+.profile-card > h2,
+.profile-section-heading h2 {
+    margin: 0;
 }
 
 .upload-panel {
@@ -1754,8 +1780,8 @@ h2 {
 }
 
 .profile-card h2 {
-    font-size: clamp(1.35rem, 3vw, 2rem);
-    line-height: 1.08;
+    font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+    line-height: 1.12;
     margin: 0;
 }
 
@@ -1767,7 +1793,7 @@ h2 {
 
 .profile-definition-list {
     display: grid;
-    gap: .7rem;
+    gap: .6rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 0;
 }
@@ -1775,8 +1801,8 @@ h2 {
 .profile-definition-list div {
     background: rgba(248, 250, 252, .9);
     border: 1px solid rgba(226, 232, 240, .9);
-    border-radius: 16px;
-    padding: .8rem;
+    border-radius: 14px;
+    padding: .7rem;
 }
 
 .profile-definition-list dt {
@@ -1796,10 +1822,15 @@ h2 {
 }
 
 .profile-section-heading {
-    align-items: center;
+    align-items: flex-start;
     display: flex;
     justify-content: space-between;
     gap: 1rem;
+}
+
+.profile-section-heading > div {
+    display: grid;
+    gap: .15rem;
 }
 
 .profile-section-heading > span {
@@ -1807,7 +1838,7 @@ h2 {
     border-radius: 999px;
     color: #057a58;
     font-weight: 950;
-    padding: .55rem .8rem;
+    padding: .45rem .7rem;
     white-space: nowrap;
 }
 
