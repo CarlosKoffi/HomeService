@@ -72,6 +72,8 @@
 }
 else
 {
+    <CompanyPortalNav Active="dashboard" />
+
     @if (!Session.IsCompanyApproved)
     {
         <section class="compliance-banner">
@@ -221,7 +223,7 @@ else
             Session = result.Session;
             await Js.InvokeVoidAsync("localStorage.setItem", "homeservice.company.session", JsonSerializer.Serialize(Session));
             Password = string.Empty;
-            Navigation.NavigateTo("employees");
+            Navigation.NavigateTo("dashboard");
         }
         catch (Exception exception)
         {

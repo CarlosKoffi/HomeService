@@ -21,7 +21,9 @@
 else
 {
     <div class="company-profile-shell">
-        @if (!Session.IsCompanyApproved)
+        <CompanyPortalNav Active="company-profile" />
+
+        @if (!IsCompanyApproved())
         {
             <section class="compliance-banner">
                 <div>
@@ -34,7 +36,7 @@ else
 
         <section class="company-profile-hero">
             <div>
-                <p class="eyebrow">Fiche entreprise</p>
+                <p class="eyebrow">Profil entreprise</p>
                 <h1>@(Profile?.CompanyName ?? Session.CompanyName)</h1>
                 <p>@GetProfileSubtitle()</p>
             </div>
@@ -55,114 +57,114 @@ else
 
             <section class="company-profile-grid">
                 <article class="profile-card">
-                <p class="eyebrow">Entreprise</p>
-                <h2>Informations principales</h2>
-                <dl class="profile-definition-list">
-                    <div><dt>Nom</dt><dd>@Display(Profile?.CompanyName, Session.CompanyName)</dd></div>
-                    <div><dt>Ville</dt><dd>@Display(Profile?.City, "A completer")</dd></div>
-                    <div><dt>Adresse / zone</dt><dd>@Display(Profile?.Address, "A completer")</dd></div>
-                    <div><dt>Prestataires prevus</dt><dd>@(Profile?.EstimatedProviderCount?.ToString() ?? "A definir")</dd></div>
-                </dl>
-            </article>
+                    <p class="eyebrow">Entreprise</p>
+                    <h2>Informations principales</h2>
+                    <dl class="profile-definition-list">
+                        <div><dt>Nom</dt><dd>@Display(Profile?.CompanyName, Session.CompanyName)</dd></div>
+                        <div><dt>Ville</dt><dd>@Display(Profile?.City, "A completer")</dd></div>
+                        <div><dt>Adresse / zone</dt><dd>@Display(Profile?.Address, "A completer")</dd></div>
+                        <div><dt>Prestataires prevus</dt><dd>@(Profile?.EstimatedProviderCount?.ToString() ?? "A definir")</dd></div>
+                    </dl>
+                </article>
 
                 <article class="profile-card">
-                <p class="eyebrow">Responsable</p>
-                <h2>Compte administrateur</h2>
-                <dl class="profile-definition-list">
-                    <div><dt>Nom</dt><dd>@Display(Profile?.ContactName, Session.UserName)</dd></div>
-                    <div><dt>Email</dt><dd>@Display(Profile?.Email, Session.Email)</dd></div>
-                    <div><dt>Telephone</dt><dd>@Display(Profile?.PhoneNumber, "A completer")</dd></div>
-                    <div><dt>Statut</dt><dd>@GetStatusLabel()</dd></div>
-                </dl>
-            </article>
-        </section>
+                    <p class="eyebrow">Responsable</p>
+                    <h2>Compte administrateur</h2>
+                    <dl class="profile-definition-list">
+                        <div><dt>Nom</dt><dd>@Display(Profile?.ContactName, Session.UserName)</dd></div>
+                        <div><dt>Email</dt><dd>@Display(Profile?.Email, Session.Email)</dd></div>
+                        <div><dt>Telephone</dt><dd>@Display(Profile?.PhoneNumber, "A completer")</dd></div>
+                        <div><dt>Statut</dt><dd>@GetStatusLabel()</dd></div>
+                    </dl>
+                </article>
+            </section>
 
             <section class="profile-card">
-            <div class="profile-section-heading">
-                <div>
-                    <p class="eyebrow">Services</p>
-                    <h2>Services envisages</h2>
+                <div class="profile-section-heading">
+                    <div>
+                        <p class="eyebrow">Services</p>
+                        <h2>Services envisages</h2>
+                    </div>
                 </div>
-            </div>
-            <div class="selected-service-tags">
-                @foreach (var service in GetPlannedServices())
-                {
-                    <span>@service</span>
-                }
-            </div>
-        </section>
+                <div class="selected-service-tags">
+                    @foreach (var service in GetPlannedServices())
+                    {
+                        <span>@service</span>
+                    }
+                </div>
+            </section>
 
             <section id="documents" class="compliance-grid">
                 <article class="profile-card">
-                <div class="profile-section-heading">
-                    <div>
-                        <p class="eyebrow">Conformite</p>
-                        <h2>Documents du dossier</h2>
+                    <div class="profile-section-heading">
+                        <div>
+                            <p class="eyebrow">Documents</p>
+                            <h2>Pieces du dossier</h2>
+                        </div>
+                        <span>@GetDocumentProgress()</span>
                     </div>
-                    <span>@GetDocumentProgress()</span>
-                </div>
 
-                <div class="document-status-list">
-                    @foreach (var slot in DocumentSlots)
-                    {
-                        var document = FindDocument(slot.Key);
-                        <article class="document-status-row">
-                            <span class="document-status-icon @GetDocumentStatusClass(document?.ReviewStatus)">@slot.ShortLabel</span>
-                            <div>
-                                <strong>@slot.Label</strong>
-                                <small>@slot.Description</small>
-                                @if (document is not null)
-                                {
-                                    <em>@document.OriginalFileName</em>
-                                    @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                    <div class="document-status-list">
+                        @foreach (var slot in DocumentSlots)
+                        {
+                            var document = FindDocument(slot.Key);
+                            <article class="document-status-row">
+                                <span class="document-status-icon @GetDocumentStatusClass(document?.ReviewStatus)">@slot.ShortLabel</span>
+                                <div>
+                                    <strong>@slot.Label</strong>
+                                    <small>@slot.Description</small>
+                                    @if (document is not null)
                                     {
-                                        <small>@document.ReviewNote</small>
+                                        <em>@document.OriginalFileName</em>
+                                        @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                                        {
+                                            <small>@document.ReviewNote</small>
+                                        }
                                     }
-                                }
-                            </div>
-                            <div>
-                                <span class="status-pill @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
-                                @if (document is not null)
-                                {
-                                    <a href="@ApiClient.ToApiUrl(document.PreviewUrl)" target="_blank">Voir</a>
-                                }
-                            </div>
-                        </article>
-                    }
-                </div>
-            </article>
+                                </div>
+                                <div>
+                                    <span class="status-pill @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
+                                    @if (document is not null)
+                                    {
+                                        <a href="@ApiClient.ToApiUrl(document.PreviewUrl)" target="_blank">Voir</a>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </article>
 
                 <article class="profile-card upload-panel">
-                <p class="eyebrow">Ajout de pieces</p>
-                <h2>Completer le dossier</h2>
-                <p>Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Si vous venez au bureau, l'admin pourra les scanner et les ajouter a votre dossier.</p>
-                <div class="compliance-upload-grid">
-                    @foreach (var slot in DocumentSlots)
+                    <p class="eyebrow">Mise a jour</p>
+                    <h2>Ajouter ou remplacer une piece</h2>
+                    <p>Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Si vous venez au bureau, l'admin pourra les scanner et les ajouter a votre dossier.</p>
+                    <div class="compliance-upload-grid">
+                        @foreach (var slot in DocumentSlots)
+                        {
+                            <label class="compliance-upload-card">
+                                <span class="compliance-upload-icon">@slot.ShortLabel</span>
+                                <span class="compliance-upload-content">
+                                    <strong>@slot.Label</strong>
+                                    <small>@slot.Description</small>
+                                    <em>@GetUploadLabel(slot.UploadKey, slot.Optional ? "Optionnel" : "A fournir")</em>
+                                </span>
+                                <span class="compliance-upload-action">@GetUploadActionLabel(slot.UploadKey)</span>
+                                <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
+                            </label>
+                        }
+                    </div>
+                    <div class="compliance-options">
+                        <button type="button" class="primary-action" disabled="@IsUploading" @onclick="UploadAsync">
+                            @(IsUploading ? "Envoi en cours..." : "Envoyer les pieces selectionnees")
+                        </button>
+                        <button type="button" class="secondary-action">Depot au bureau</button>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(Message))
                     {
-                        <label class="compliance-upload-card">
-                            <span class="compliance-upload-icon">@slot.ShortLabel</span>
-                            <span class="compliance-upload-content">
-                                <strong>@slot.Label</strong>
-                                <small>@slot.Description</small>
-                                <em>@GetUploadLabel(slot.UploadKey, slot.Optional ? "Optionnel" : "A fournir")</em>
-                            </span>
-                            <span class="compliance-upload-action">@GetUploadActionLabel(slot.UploadKey)</span>
-                            <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
-                        </label>
+                        <p class="field-message">@Message</p>
                     }
-                </div>
-                <div class="compliance-options">
-                    <button type="button" class="primary-action" disabled="@IsUploading" @onclick="UploadAsync">
-                        @(IsUploading ? "Envoi en cours..." : "Televerser les documents")
-                    </button>
-                    <button type="button" class="secondary-action">Je les deposerai au bureau</button>
-                </div>
-                @if (!string.IsNullOrWhiteSpace(Message))
-                {
-                    <p class="field-message">@Message</p>
-                }
-            </article>
-        </section>
+                </article>
+            </section>
         }
     </div>
 }
@@ -218,6 +220,16 @@ else
         try
         {
             Profile = await ApiClient.GetCompanyProfileAsync(Session.CompanyId);
+            if (Profile is not null)
+            {
+                Session = Session with
+                {
+                    CompanyName = Profile.CompanyName,
+                    CompanyStatus = Profile.CompanyStatus,
+                    IsCompanyApproved = Profile.IsCompanyApproved
+                };
+                await Js.InvokeVoidAsync("localStorage.setItem", "homeservice.company.session", JsonSerializer.Serialize(Session));
+            }
         }
         finally
         {
@@ -225,15 +237,24 @@ else
         }
     }
 
-    private string GetStatusLabel() => (Profile?.IsCompanyApproved ?? Session?.IsCompanyApproved) == true
+    private bool IsCompanyApproved() => (Profile?.IsCompanyApproved ?? Session?.IsCompanyApproved) == true;
+
+    private string GetStatusLabel() => IsCompanyApproved()
         ? "Compte valide"
         : "Conformite requise";
 
     private string GetProfileSubtitle()
     {
-        return (Profile?.IsCompanyApproved ?? Session?.IsCompanyApproved) == true
+        return IsCompanyApproved()
             ? "Votre entreprise est validee et peut affecter ses missions."
             : "Votre entreprise peut preparer son espace. Les affectations seront ouvertes apres validation.";
+    }
+
+    private string PortalLink(string path)
+    {
+        return Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase)
+            ? $"{path}?preview=1"
+            : path;
     }
 
     private IReadOnlyList<string> GetPlannedServices()

@@ -26,6 +26,8 @@
 }
 else
 {
+    <CompanyPortalNav Active="accounts" />
+
     <section class="portal-tabs" aria-label="Periode encaissements">
         <button class="@GetTabClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
         <button class="@GetTabClass("month")" type="button" @onclick='() => LoadPaymentsAsync("month")'>Mois</button>
