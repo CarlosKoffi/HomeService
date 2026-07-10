@@ -2,11 +2,46 @@
 
 <PageTitle>Espace entreprise</PageTitle>
 
-<h1>Espace entreprise</h1>
-<p class="lead">
-    Apres validation et creation du mot de passe, votre entreprise pourra ajouter ses prestataires,
-    suivre leurs missions et garder une vision claire des encaissements.
-</p>
+<section class="portal-entry">
+    <div class="portal-copy">
+        <p class="eyebrow">Portail entreprise</p>
+        <h1>Espace entreprise</h1>
+        <p class="lead">
+            Connectez-vous avec l'email utilise lors de l'inscription une fois votre dossier valide.
+            Vous pourrez ensuite ajouter vos prestataires, suivre les missions et garder une vision claire
+            des encaissements.
+        </p>
+
+        <div class="portal-actions">
+            <a class="secondary-action" href="register">Creer un compte entreprise</a>
+            <span>Dossier deja valide ? utilisez votre acces recu par email.</span>
+        </div>
+    </div>
+
+    <form class="portal-login" @onsubmit="SubmitLoginPreviewAsync">
+        <div class="section-intro">
+            <h2>Connexion</h2>
+            <p>Acces reserve aux entreprises validees par l'equipe ProxiPro.</p>
+        </div>
+
+        <label>
+            Email professionnel
+            <input type="email" autocomplete="username" placeholder="direction@entreprise.ci" @bind="Email" />
+        </label>
+        <label>
+            Mot de passe
+            <input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="Password" />
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(LoginMessage))
+        {
+            <p class="field-message">@LoginMessage</p>
+        }
+
+        <button type="submit" class="primary-action">Se connecter</button>
+        <a class="create-account-link" href="register">Nouvelle entreprise ? Creer un compte</a>
+    </form>
+</section>
 
 <section class="dashboard-grid">
     <article>
@@ -25,3 +60,15 @@
         <a href="accounts">Voir les comptes</a>
     </article>
 </section>
+
+@code {
+    private string Email { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string? LoginMessage { get; set; }
+
+    private Task SubmitLoginPreviewAsync()
+    {
+        LoginMessage = "La connexion sera active apres validation du dossier et creation du mot de passe via le lien recu par email.";
+        return Task.CompletedTask;
+    }
+}
