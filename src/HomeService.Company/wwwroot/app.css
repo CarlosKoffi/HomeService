@@ -1570,83 +1570,88 @@ h3 {
     max-width: 920px;
 }
 
-.concept-snapshot {
+.concept-journey {
     display: grid;
-    gap: .85rem;
+    gap: .9rem;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin: 1.25rem 0;
+    margin: 1.35rem 0 1rem;
 }
 
-.concept-snapshot article,
-.concept-flow article,
-.concept-rules article {
-    background: rgba(255, 255, 255, .92);
+.concept-journey article,
+.concept-takeaways div {
+    background: rgba(255, 255, 255, .94);
     border: 1px solid var(--line);
     border-radius: 20px;
     box-shadow: 0 16px 34px rgba(15, 23, 42, .065);
 }
 
-.concept-snapshot article {
+.concept-journey article {
     display: grid;
-    gap: .45rem;
-    min-height: 150px;
+    gap: .72rem;
     padding: 1rem;
 }
 
-.concept-snapshot strong,
-.concept-flow strong {
-    display: block;
-    font-size: 1.05rem;
-    font-weight: 850;
-    line-height: 1.18;
+.concept-step-head {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
 }
 
-.concept-snapshot small,
-.concept-flow small {
-    color: #000;
+.concept-step-number {
+    align-items: center;
+    background: #000000;
+    border-radius: 999px;
+    color: #ffffff;
+    display: inline-flex;
+    font-size: .9rem;
+    font-weight: 950;
+    height: 34px;
+    justify-content: center;
+    width: 34px;
+}
+
+.concept-journey h2 {
+    font-size: 1.08rem;
+    line-height: 1.18;
+    margin: 0;
+}
+
+.concept-journey p,
+.concept-takeaways p {
+    color: #000000;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.concept-journey strong,
+.concept-takeaways strong {
+    color: #000000;
     display: block;
-    font-weight: 650;
+    font-weight: 950;
+    margin-top: .15rem;
+}
+
+.concept-journey small {
+    color: #000000;
+    display: block;
+    font-weight: 700;
     line-height: 1.35;
 }
 
-.concept-flow {
-    align-items: stretch;
-    display: grid;
-    gap: .75rem;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin: 1.25rem 0;
-    position: relative;
-}
-
-.concept-flow article {
-    display: grid;
-    gap: .35rem;
-    padding: 1rem;
-    position: relative;
-}
-
-.concept-rules {
+.concept-takeaways {
     display: grid;
     gap: .85rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 1.25rem 0 2rem;
-    max-width: 920px;
+    margin: 1rem 0 2rem;
+    max-width: 980px;
 }
 
-.concept-rules article {
+.concept-takeaways div {
     align-items: start;
     display: grid;
-    gap: .85rem;
+    gap: .75rem;
     grid-template-columns: 46px minmax(0, 1fr);
     padding: 1rem;
-}
-
-.concept-rules h2 {
-    margin-bottom: .25rem;
-}
-
-.concept-rules p {
-    margin: 0;
 }
 
 .timeline article {
@@ -1780,6 +1785,18 @@ h3 {
     display: grid;
     gap: .85rem;
     grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
+}
+
+.documents-unified-card {
+    display: grid;
+    gap: .95rem;
+}
+
+.documents-helper {
+    color: #000000;
+    line-height: 1.5;
+    margin: -.25rem 0 .15rem;
+    max-width: 760px;
 }
 
 .company-profile-hero {
@@ -2124,6 +2141,12 @@ h3 {
     padding: .9rem;
 }
 
+.document-upload-row {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .98), rgba(248, 250, 252, .94));
+    min-height: 96px;
+}
+
 .document-status-row > div {
     display: grid;
     gap: .2rem;
@@ -2142,6 +2165,55 @@ h3 {
 .document-status-row a {
     color: #057a58;
     font-weight: 950;
+}
+
+.document-row-actions {
+    align-items: center;
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: .55rem;
+    justify-content: flex-end;
+}
+
+.replace-document-action {
+    align-items: center;
+    background: #081326;
+    border: 1px solid #081326;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: .84rem;
+    font-weight: 950;
+    justify-content: center;
+    min-height: 38px;
+    padding: .55rem .85rem;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+    white-space: nowrap;
+}
+
+.replace-document-action:hover {
+    background: #000000;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, .14);
+    transform: translateY(-1px);
+}
+
+.replace-document-action input[type="file"] {
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    width: 1px;
+}
+
+.documents-submit-row {
+    align-items: center;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-top: .2rem;
+    padding-top: .95rem;
 }
 
 .status-muted {
@@ -2680,19 +2752,16 @@ h3 {
         grid-template-columns: 1fr;
     }
 
-    .concept-snapshot,
-    .concept-flow,
-    .concept-rules {
+    .concept-journey,
+    .concept-takeaways {
         grid-template-columns: 1fr;
     }
 
-    .concept-snapshot article,
-    .concept-flow article {
-        min-height: auto;
+    .concept-journey article {
         padding: .9rem;
     }
 
-    .concept-rules article {
+    .concept-takeaways div {
         grid-template-columns: 52px minmax(0, 1fr);
         padding: .9rem;
     }
@@ -2800,6 +2869,14 @@ h3 {
 
     .document-status-row > div:last-child {
         grid-column: 1 / -1;
+    }
+
+    .document-row-actions {
+        justify-content: flex-start;
+    }
+
+    .replace-document-action {
+        flex: 1 1 150px;
     }
 
     .compliance-upload-card {

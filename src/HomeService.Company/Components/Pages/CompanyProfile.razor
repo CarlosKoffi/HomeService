@@ -101,8 +101,7 @@ else
                 </div>
             </section>
 
-            <section id="documents" class="compliance-grid">
-                <article class="profile-card">
+            <section id="documents" class="documents-unified-card profile-card">
                     <div class="profile-section-heading">
                         <div>
                             <p class="eyebrow">Documents</p>
@@ -110,12 +109,16 @@ else
                         </div>
                         <span>@GetDocumentProgress()</span>
                     </div>
+                    <p class="documents-helper">
+                        Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Si une piece existe deja, vous pouvez la consulter ou la remplacer.
+                    </p>
 
                     <div class="document-status-list">
                         @foreach (var slot in DocumentSlots)
                         {
                             var document = FindDocument(slot.Key);
-                            <article class="document-status-row">
+                            var selectedFileName = GetSelectedFileName(slot.UploadKey);
+                            <article class="document-status-row document-upload-row">
                                 <span class="document-status-icon @GetDocumentStatusClass(document?.ReviewStatus)">@slot.ShortLabel</span>
                                 <div>
                                     <strong>@slot.Label</strong>
@@ -128,39 +131,27 @@ else
                                             <small>@document.ReviewNote</small>
                                         }
                                     }
+                                    @if (!string.IsNullOrWhiteSpace(selectedFileName))
+                                    {
+                                        <em>Nouveau fichier selectionne: @selectedFileName</em>
+                                    }
                                 </div>
-                                <div>
+                                <div class="document-row-actions">
                                     <span class="status-pill @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
                                     @if (document is not null)
                                     {
                                         <a href="@ApiClient.ToApiUrl(document.PreviewUrl)" target="_blank">Voir</a>
                                     }
+                                    <label class="replace-document-action">
+                                        @(document is null ? "Ajouter" : "Remplacer")
+                                        <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
+                                    </label>
                                 </div>
                             </article>
                         }
                     </div>
-                </article>
 
-                <article class="profile-card upload-panel">
-                    <p class="eyebrow">Mise a jour</p>
-                    <h2>Ajouter ou remplacer une piece</h2>
-                    <p>Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Si vous venez au bureau, l'admin pourra les scanner et les ajouter a votre dossier.</p>
-                    <div class="compliance-upload-grid">
-                        @foreach (var slot in DocumentSlots)
-                        {
-                            <label class="compliance-upload-card">
-                                <span class="compliance-upload-icon">@slot.ShortLabel</span>
-                                <span class="compliance-upload-content">
-                                    <strong>@slot.Label</strong>
-                                    <small>@slot.Description</small>
-                                    <em>@GetUploadLabel(slot.UploadKey, slot.Optional ? "Optionnel" : "A fournir")</em>
-                                </span>
-                                <span class="compliance-upload-action">@GetUploadActionLabel(slot.UploadKey)</span>
-                                <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
-                            </label>
-                        }
-                    </div>
-                    <div class="compliance-options">
+                    <div class="compliance-options documents-submit-row">
                         <button type="button" class="primary-action" disabled="@IsUploading" @onclick="UploadAsync">
                             @(IsUploading ? "Envoi en cours..." : "Envoyer les pieces selectionnees")
                         </button>
@@ -170,7 +161,6 @@ else
                     {
                         <p class="field-message">@Message</p>
                     }
-                </article>
             </section>
         }
     </div>
@@ -316,14 +306,9 @@ else
         Message = null;
     }
 
-    private string GetUploadLabel(string key, string fallback)
+    private string? GetSelectedFileName(string key)
     {
-        return Documents.TryGetValue(key, out var file) && file is not null ? file.Name : fallback;
-    }
-
-    private string GetUploadActionLabel(string key)
-    {
-        return Documents.TryGetValue(key, out var file) && file is not null ? "Remplacer" : "Ajouter";
+        return Documents.TryGetValue(key, out var file) && file is not null ? file.Name : null;
     }
 
     private async Task UploadAsync()
