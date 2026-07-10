@@ -489,6 +489,83 @@ app.MapPost("/api/company-portal/{companyId:guid}/compliance-documents", async (
 })
 .WithName("UploadCompanyPortalComplianceDocuments");
 
+app.MapGet("/api/company-portal/{companyId:guid}/profile", async (
+    Guid companyId,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var company = await db.Companies
+        .AsNoTracking()
+        .FirstOrDefaultAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
+    if (company is null)
+    {
+        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+    }
+
+    var application = await db.CompanyApplications
+        .AsNoTracking()
+        .Where(application => application.CompanyId == companyId)
+        .OrderByDescending(application => application.CreatedAt)
+        .Select(application => new CompanyPortalProfileResponse(
+            company.Id,
+            application.Id,
+            application.CompanyName,
+            application.RegistrationNumber,
+            application.City,
+            application.Address,
+            application.ContactName,
+            application.Email,
+            application.PhoneNumber,
+            application.PlannedServices,
+            application.EstimatedProviderCount,
+            company.Status.ToString(),
+            application.Status.ToString(),
+            company.Status == CompanyStatus.Approved,
+            application.ReviewNote,
+            application.Documents
+                .OrderBy(document => document.DocumentType)
+                .ThenByDescending(document => document.CreatedAt)
+                .Select(document => new CompanyPortalProfileDocumentResponse(
+                    document.Id,
+                    document.DocumentType.ToString(),
+                    document.DocumentType == CompanyDocumentType.FiscalExistenceDeclaration
+                        ? "DFE"
+                        : document.DocumentType == CompanyDocumentType.BusinessRegistration
+                            ? "Registre de commerce"
+                            : document.DocumentType == CompanyDocumentType.OwnerIdentity
+                                ? "Identite du responsable"
+                                : document.DocumentType == CompanyDocumentType.AddressProof
+                                    ? "Justificatif d'adresse"
+                                    : "Document complementaire",
+                    document.OriginalFileName,
+                    document.ContentType,
+                    document.ReviewStatus.ToString(),
+                    document.ReviewNote,
+                    document.CreatedAt,
+                    $"/api/admin/company-application-documents/{document.Id}/download"))
+                .ToList()))
+        .FirstOrDefaultAsync(cancellationToken);
+
+    return Results.Ok(application ?? new CompanyPortalProfileResponse(
+        company.Id,
+        null,
+        company.Name,
+        null,
+        string.Empty,
+        null,
+        string.Empty,
+        company.Email ?? string.Empty,
+        company.PhoneNumber,
+        null,
+        null,
+        company.Status.ToString(),
+        "Submitted",
+        company.Status == CompanyStatus.Approved,
+        null,
+        []));
+})
+.WithName("GetCompanyPortalProfile");
+
 app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
     Guid companyId,
     HttpRequest httpRequest,

@@ -220,6 +220,14 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
     }
 
+    public async Task<CompanyPortalProfileResponse?> GetCompanyProfileAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<CompanyPortalProfileResponse>($"/api/company-portal/{companyId:D}/profile", cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CompanyEmployeeResponse>> GetCompanyEmployeesAsync(
         Guid companyId,
         CancellationToken cancellationToken = default)

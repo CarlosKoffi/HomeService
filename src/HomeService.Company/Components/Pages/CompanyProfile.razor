@@ -1,5 +1,6 @@
 @page "/company-profile"
 @using HomeService.Company.Services
+@using HomeService.Contracts.CompanyPortal
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Forms
 @inject PlatformApiClient ApiClient
@@ -23,69 +24,147 @@ else
     {
         <section class="compliance-banner">
             <div>
-                <strong>Documents de conformite requis</strong>
-                <span>Votre compte est accessible, mais les affectations et fonctions sensibles seront ouvertes apres validation.</span>
+                <strong>Compte en attente de conformite</strong>
+                <span>Votre profil est cree. Les affectations et fonctions sensibles seront ouvertes apres validation des pieces.</span>
             </div>
-            <a href="#documents">Voir les documents</a>
+            <a href="#documents">Finaliser</a>
         </section>
     }
 
-    <section class="company-dashboard-hero">
+    <section class="company-profile-hero">
         <div>
-            <p class="eyebrow">Informations entreprise</p>
-            <h1>@Session.CompanyName</h1>
-            <p class="lead">@Session.UserName - @Session.Email</p>
+            <p class="eyebrow">Fiche entreprise</p>
+            <h1>@(Profile?.CompanyName ?? Session.CompanyName)</h1>
+            <p>@GetProfileSubtitle()</p>
         </div>
         <span class="activation-status">@GetStatusLabel()</span>
     </section>
 
-    <section id="documents" class="compliance-grid">
-        <article class="activation-card">
-            <p class="eyebrow">Conformite</p>
-            <h2>Pieces a fournir</h2>
-            <p>
-                Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Notre equipe peut les scanner et les rattacher
-                a votre dossier pour vous.
-            </p>
-            <div class="document-checklist">
-                <label><strong>DFE</strong><small>Declaration Fiscale d'Existence</small><em>@GetDocumentLabel("fiscalExistenceDeclaration", "A fournir")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("fiscalExistenceDeclaration", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
-                <label><strong>Registre de commerce</strong><small>RCCM ou document equivalent</small><em>@GetDocumentLabel("companyDocument", "A fournir")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("companyDocument", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
-                <label><strong>Identite du responsable</strong><small>CNI, passeport ou document officiel</small><em>@GetDocumentLabel("ownerIdentityDocument", "A fournir")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("ownerIdentityDocument", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
-                <label><strong>Justificatif d'adresse</strong><small>Facture, bail ou attestation</small><em>@GetDocumentLabel("addressProof", "Recommande")</em><InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument("addressProof", args))" accept=".pdf,.jpg,.jpeg,.png" /></label>
-            </div>
-        </article>
+    @if (IsLoading)
+    {
+        <section class="empty-state"><h2>Chargement...</h2><p>Recuperation de votre fiche entreprise.</p></section>
+    }
+    else
+    {
+        <section class="company-profile-grid">
+            <article class="profile-card">
+                <p class="eyebrow">Entreprise</p>
+                <h2>Informations principales</h2>
+                <dl class="profile-definition-list">
+                    <div><dt>Nom</dt><dd>@Display(Profile?.CompanyName, Session.CompanyName)</dd></div>
+                    <div><dt>Ville</dt><dd>@Display(Profile?.City, "A completer")</dd></div>
+                    <div><dt>Adresse / zone</dt><dd>@Display(Profile?.Address, "A completer")</dd></div>
+                    <div><dt>Prestataires prevus</dt><dd>@(Profile?.EstimatedProviderCount?.ToString() ?? "A definir")</dd></div>
+                </dl>
+            </article>
 
-        <article class="activation-card">
-            <p class="eyebrow">Options</p>
-            <h2>Comment finaliser</h2>
-            <div class="compliance-options">
-                <button type="button" class="primary-action" disabled="@IsUploading" @onclick="UploadAsync">
-                    @(IsUploading ? "Envoi en cours..." : "Televerser les documents")
-                </button>
-                <button type="button" class="secondary-action">Je les deposerai au bureau</button>
+            <article class="profile-card">
+                <p class="eyebrow">Responsable</p>
+                <h2>Compte administrateur</h2>
+                <dl class="profile-definition-list">
+                    <div><dt>Nom</dt><dd>@Display(Profile?.ContactName, Session.UserName)</dd></div>
+                    <div><dt>Email</dt><dd>@Display(Profile?.Email, Session.Email)</dd></div>
+                    <div><dt>Telephone</dt><dd>@Display(Profile?.PhoneNumber, "A completer")</dd></div>
+                    <div><dt>Statut</dt><dd>@GetStatusLabel()</dd></div>
+                </dl>
+            </article>
+        </section>
+
+        <section class="profile-card">
+            <div class="profile-section-heading">
+                <div>
+                    <p class="eyebrow">Services</p>
+                    <h2>Services envisages</h2>
+                </div>
             </div>
-            @if (!string.IsNullOrWhiteSpace(Message))
-            {
-                <p class="field-message">@Message</p>
-            }
-            <p class="field-hint">
-                Les documents transmis resteront en attente tant que l'equipe admin ne les a pas verifies.
-            </p>
-        </article>
-    </section>
+            <div class="selected-service-tags">
+                @foreach (var service in GetPlannedServices())
+                {
+                    <span>@service</span>
+                }
+            </div>
+        </section>
+
+        <section id="documents" class="compliance-grid">
+            <article class="profile-card">
+                <div class="profile-section-heading">
+                    <div>
+                        <p class="eyebrow">Conformite</p>
+                        <h2>Documents du dossier</h2>
+                    </div>
+                    <span>@GetDocumentProgress()</span>
+                </div>
+
+                <div class="document-status-list">
+                    @foreach (var slot in DocumentSlots)
+                    {
+                        var document = FindDocument(slot.Key);
+                        <article class="document-status-row">
+                            <div>
+                                <strong>@slot.Label</strong>
+                                <small>@slot.Description</small>
+                                @if (document is not null)
+                                {
+                                    <em>@document.OriginalFileName</em>
+                                }
+                            </div>
+                            <div>
+                                <span class="status-pill @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
+                                @if (document is not null)
+                                {
+                                    <a href="@ApiClient.ToApiUrl(document.PreviewUrl)" target="_blank">Voir</a>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            </article>
+
+            <article class="profile-card">
+                <p class="eyebrow">Ajout de pieces</p>
+                <h2>Completer le dossier</h2>
+                <p>Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Si vous venez au bureau, l'admin pourra les scanner et les ajouter a votre dossier.</p>
+                <div class="document-checklist">
+                    @foreach (var slot in DocumentSlots)
+                    {
+                        <label>
+                            <strong>@slot.Label</strong>
+                            <small>@slot.Description</small>
+                            <em>@GetUploadLabel(slot.UploadKey, slot.Optional ? "Optionnel" : "A fournir")</em>
+                            <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
+                        </label>
+                    }
+                </div>
+                <div class="compliance-options">
+                    <button type="button" class="primary-action" disabled="@IsUploading" @onclick="UploadAsync">
+                        @(IsUploading ? "Envoi en cours..." : "Televerser les documents")
+                    </button>
+                    <button type="button" class="secondary-action">Je les deposerai au bureau</button>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <p class="field-message">@Message</p>
+                }
+            </article>
+        </section>
+    }
 }
 
 @code {
+    private static readonly IReadOnlyList<DocumentSlot> DocumentSlots =
+    [
+        new("FiscalExistenceDeclaration", "fiscalExistenceDeclaration", "DFE", "Declaration Fiscale d'Existence", false),
+        new("BusinessRegistration", "companyDocument", "Registre de commerce", "RCCM ou document legal equivalent", false),
+        new("OwnerIdentity", "ownerIdentityDocument", "Identite du responsable", "CNI, passeport ou document officiel", false),
+        new("AddressProof", "addressProof", "Justificatif d'adresse", "Facture, bail ou attestation", true)
+    ];
+
     private CompanyPortalSessionResponse? Session { get; set; }
+    private CompanyPortalProfileResponse? Profile { get; set; }
+    private bool IsLoading { get; set; }
     private bool IsUploading { get; set; }
     private string? Message { get; set; }
-    private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["fiscalExistenceDeclaration"] = null,
-        ["companyDocument"] = null,
-        ["ownerIdentityDocument"] = null,
-        ["addressProof"] = null
-    };
+    private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -96,15 +175,8 @@ else
 
         if (Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase))
         {
-            Session = new CompanyPortalSessionResponse(
-                Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                "Entreprise Demo CI",
-                "Direction Demo",
-                "direction@entreprise.ci",
-                DateTimeOffset.UtcNow,
-                "demo-preview-token",
-                "PendingReview",
-                false);
+            Session = DemoSession();
+            Profile = DemoProfile(Session);
             StateHasChanged();
             return;
         }
@@ -113,14 +185,81 @@ else
         if (!string.IsNullOrWhiteSpace(sessionJson))
         {
             Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            await LoadProfileAsync();
             StateHasChanged();
         }
     }
 
-    private string GetStatusLabel()
+    private async Task LoadProfileAsync()
     {
-        return Session?.IsCompanyApproved == true ? "Compte valide" : "Conformite requise";
+        if (Session is null)
+        {
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            Profile = await ApiClient.GetCompanyProfileAsync(Session.CompanyId);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
+
+    private string GetStatusLabel() => (Profile?.IsCompanyApproved ?? Session?.IsCompanyApproved) == true
+        ? "Compte valide"
+        : "Conformite requise";
+
+    private string GetProfileSubtitle()
+    {
+        return (Profile?.IsCompanyApproved ?? Session?.IsCompanyApproved) == true
+            ? "Votre entreprise est validee et peut affecter ses missions."
+            : "Votre entreprise peut preparer son espace. Les affectations seront ouvertes apres validation.";
+    }
+
+    private IReadOnlyList<string> GetPlannedServices()
+    {
+        var services = (Profile?.PlannedServices ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(service => !string.IsNullOrWhiteSpace(service))
+            .ToList();
+
+        return services.Count == 0 ? ["A completer"] : services;
+    }
+
+    private CompanyPortalProfileDocumentResponse? FindDocument(string documentType)
+    {
+        return Profile?.Documents
+            .Where(document => string.Equals(document.DocumentType, documentType, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(document => document.CreatedAt)
+            .FirstOrDefault();
+    }
+
+    private string GetDocumentProgress()
+    {
+        var required = DocumentSlots.Where(slot => !slot.Optional).ToList();
+        var approved = required.Count(slot => FindDocument(slot.Key)?.ReviewStatus == "Approved");
+        return $"{approved}/{required.Count} obligatoires valides";
+    }
+
+    private static string GetDocumentStatusClass(string? status) => status switch
+    {
+        "Approved" => "status-ok",
+        "Rejected" or "NeedsReplacement" => "status-rejected",
+        "Pending" => "status-pending",
+        _ => "status-muted"
+    };
+
+    private static string GetDocumentStatusLabel(string? status) => status switch
+    {
+        "Approved" => "Valide",
+        "Rejected" => "Refuse",
+        "NeedsReplacement" => "A remplacer",
+        "Pending" => "En verification",
+        _ => "A fournir"
+    };
 
     private void SetDocument(string key, InputFileChangeEventArgs args)
     {
@@ -128,7 +267,7 @@ else
         Message = null;
     }
 
-    private string GetDocumentLabel(string key, string fallback)
+    private string GetUploadLabel(string key, string fallback)
     {
         return Documents.TryGetValue(key, out var file) && file is not null ? file.Name : fallback;
     }
@@ -155,10 +294,8 @@ else
                 : $"Envoi impossible: {result.ErrorMessage}";
             if (result.IsSuccess)
             {
-                foreach (var key in Documents.Keys.ToList())
-                {
-                    Documents[key] = null;
-                }
+                Documents.Clear();
+                await LoadProfileAsync();
             }
         }
         finally
@@ -166,4 +303,48 @@ else
             IsUploading = false;
         }
     }
+
+    private static string Display(string? value, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(value) ? fallback : value;
+    }
+
+    private static CompanyPortalSessionResponse DemoSession()
+    {
+        return new CompanyPortalSessionResponse(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Entreprise Demo CI",
+            "Direction Demo",
+            "direction@entreprise.ci",
+            DateTimeOffset.UtcNow,
+            "demo-preview-token",
+            "PendingReview",
+            false);
+    }
+
+    private static CompanyPortalProfileResponse DemoProfile(CompanyPortalSessionResponse session)
+    {
+        return new CompanyPortalProfileResponse(
+            session.CompanyId,
+            Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            session.CompanyName,
+            null,
+            "Abidjan",
+            "Cocody Angre, 7e tranche",
+            session.UserName,
+            session.Email,
+            "+2250700000000",
+            "Menage a domicile, Jardinage, Nounou",
+            12,
+            session.CompanyStatus,
+            "Submitted",
+            false,
+            null,
+            [
+                new CompanyPortalProfileDocumentResponse(Guid.NewGuid(), "FiscalExistenceDeclaration", "DFE", "dfe-demo.pdf", "application/pdf", "Pending", null, DateTimeOffset.UtcNow.AddDays(-1), "#"),
+                new CompanyPortalProfileDocumentResponse(Guid.NewGuid(), "BusinessRegistration", "Registre de commerce", "rccm-demo.pdf", "application/pdf", "Approved", null, DateTimeOffset.UtcNow.AddDays(-2), "#")
+            ]);
+    }
+
+    private sealed record DocumentSlot(string Key, string UploadKey, string Label, string Description, bool Optional);
 }
