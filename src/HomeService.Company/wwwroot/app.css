@@ -948,7 +948,8 @@
     border-radius: 16px;
     color: #c2410c;
     display: inline-flex;
-    font-weight: 950;
+    font-size: .72rem;
+    font-weight: 900;
     height: 42px;
     justify-content: center;
     width: 48px;
@@ -1284,11 +1285,64 @@ h3 {
 }
 
 .hero-panel li {
+    align-items: center;
     background: #f8fafc;
     border: 1px solid #edf2f7;
     border-radius: 16px;
-    font-weight: 850;
+    display: flex;
+    gap: .65rem;
     padding: .8rem .9rem;
+}
+
+.hero-panel li div {
+    display: grid;
+    gap: .12rem;
+    min-width: 0;
+}
+
+.hero-panel li strong {
+    font-size: .98rem;
+    font-weight: 850;
+    margin: 0;
+}
+
+.hero-panel li small {
+    color: #000;
+    font-size: .82rem;
+    font-weight: 650;
+    line-height: 1.25;
+}
+
+.mini-icon,
+.feature-icon,
+.action-icon {
+    letter-spacing: .02em;
+}
+
+.mini-icon,
+.feature-icon {
+    align-items: center;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    display: inline-flex;
+    font-size: .72rem;
+    font-weight: 900;
+    justify-content: center;
+}
+
+.mini-icon {
+    border-radius: 10px;
+    flex: 0 0 auto;
+    height: 30px;
+    width: 42px;
+}
+
+.feature-icon {
+    border-radius: 14px;
+    height: 38px;
+    margin-bottom: .75rem;
+    width: 48px;
 }
 
 .service-strip span {
@@ -1523,26 +1577,136 @@ h3 {
     max-width: 920px;
 }
 
+.concept-snapshot {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 1.25rem 0;
+}
+
+.concept-snapshot article,
+.concept-flow article,
+.concept-rules article {
+    background: rgba(255, 255, 255, .92);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, .065);
+}
+
+.concept-snapshot article {
+    display: grid;
+    gap: .45rem;
+    min-height: 150px;
+    padding: 1rem;
+}
+
+.concept-snapshot span,
+.concept-rules > article > span {
+    align-items: center;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    color: #9a3412;
+    display: inline-flex;
+    font-size: .72rem;
+    font-weight: 900;
+    height: 42px;
+    justify-content: center;
+    letter-spacing: .02em;
+    width: 52px;
+}
+
+.concept-snapshot strong,
+.concept-flow strong {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 850;
+    line-height: 1.18;
+}
+
+.concept-snapshot small,
+.concept-flow small {
+    color: #000;
+    display: block;
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.concept-flow {
+    align-items: stretch;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 1.25rem 0;
+    position: relative;
+}
+
+.concept-flow article {
+    display: grid;
+    gap: .35rem;
+    padding: 1rem;
+    position: relative;
+}
+
+.flow-step {
+    align-items: center;
+    background: #081326;
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    font-size: .82rem;
+    font-weight: 900;
+    height: 34px;
+    justify-content: center;
+    width: 34px;
+}
+
+.concept-rules {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 1.25rem 0 2rem;
+    max-width: 920px;
+}
+
+.concept-rules article {
+    align-items: start;
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: 56px minmax(0, 1fr);
+    padding: 1rem;
+}
+
+.concept-rules h2 {
+    margin-bottom: .25rem;
+}
+
+.concept-rules p {
+    margin: 0;
+}
+
 .timeline article {
     background: rgba(255, 255, 255, .86);
     border: 1px solid var(--line);
     border-radius: 22px;
     display: grid;
     gap: 1rem;
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 56px 1fr;
     padding: 1rem;
 }
 
 .timeline span {
     align-items: center;
-    background: var(--teal);
-    border-radius: 999px;
-    color: white;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 14px;
+    color: #9a3412;
     display: flex;
+    font-size: .72rem;
     font-weight: 900;
-    height: 40px;
+    height: 42px;
     justify-content: center;
-    width: 40px;
+    width: 48px;
 }
 
 .registration-form {
@@ -2577,6 +2741,29 @@ h3 {
 
     .portal-highlights {
         grid-template-columns: 1fr;
+    }
+
+    .concept-snapshot,
+    .concept-flow,
+    .concept-rules {
+        grid-template-columns: 1fr;
+    }
+
+    .concept-snapshot article,
+    .concept-flow article {
+        min-height: auto;
+        padding: .9rem;
+    }
+
+    .concept-rules article {
+        grid-template-columns: 52px minmax(0, 1fr);
+        padding: .9rem;
+    }
+
+    .timeline article {
+        gap: .75rem;
+        grid-template-columns: 52px minmax(0, 1fr);
+        padding: .85rem;
     }
 
     .portal-login {
