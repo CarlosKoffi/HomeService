@@ -7,15 +7,6 @@
 
 <PageTitle>Employes</PageTitle>
 
-<section class="workspace-header">
-    <div>
-        <p class="eyebrow">Portail entreprise</p>
-        <h1>Employes</h1>
-        <p class="lead">Ajoutez, controlez et suivez les prestataires que votre entreprise autorise sur la plateforme.</p>
-    </div>
-    <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
-</section>
-
 @if (IsSessionLoading)
 {
     <section class="empty-state">
@@ -34,6 +25,15 @@ else if (Session is null)
 else
 {
     <CompanyPortalNav Active="employees" />
+
+    <section class="workspace-header">
+        <div>
+            <p class="eyebrow">Portail entreprise</p>
+            <h1>Employes</h1>
+            <p class="lead">Ajoutez, controlez et suivez les prestataires que votre entreprise autorise sur la plateforme.</p>
+        </div>
+        <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
+    </section>
 
     <section class="portal-session-banner">
         <div>

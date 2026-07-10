@@ -7,15 +7,6 @@
 
 <PageTitle>Encaissements</PageTitle>
 
-<section class="workspace-header">
-    <div>
-        <p class="eyebrow">Portail entreprise</p>
-        <h1>Encaissements</h1>
-        <p class="lead">Controlez Mobile Money, cash terrain, commissions et rapprochements par periode.</p>
-    </div>
-    <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
-</section>
-
 @if (IsSessionLoading)
 {
     <section class="empty-state">
@@ -34,6 +25,15 @@ else if (Session is null)
 else
 {
     <CompanyPortalNav Active="accounts" />
+
+    <section class="workspace-header">
+        <div>
+            <p class="eyebrow">Portail entreprise</p>
+            <h1>Encaissements</h1>
+            <p class="lead">Controlez Mobile Money, cash terrain, commissions et rapprochements par periode.</p>
+        </div>
+        <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
+    </section>
 
     <section class="portal-tabs" aria-label="Periode encaissements">
         <button class="@GetTabClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>

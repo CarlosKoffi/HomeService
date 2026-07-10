@@ -10,6 +10,12 @@
     --country-accent: #f97316;
     --panel: rgba(255, 255, 255, 0.86);
     --wash: #f7fffc;
+    --title-hero: clamp(2.35rem, 6vw, 4.6rem);
+    --title-page: clamp(1.75rem, 3.4vw, 2.75rem);
+    --title-panel: clamp(1.5rem, 2.8vw, 2.2rem);
+    --title-section: clamp(1.15rem, 2vw, 1.45rem);
+    --title-card: 1.05rem;
+    --text-lead: clamp(1rem, 1.55vw, 1.15rem);
 }
 
 .workspace-header {
@@ -21,8 +27,9 @@
 }
 
 .workspace-header h1 {
-    font-size: clamp(1.85rem, 4vw, 3rem);
+    font-size: var(--title-panel);
     letter-spacing: 0;
+    line-height: 1.12;
 }
 
 .company-dashboard-hero {
@@ -39,7 +46,7 @@
 }
 
 .company-dashboard-hero h1 {
-    font-size: clamp(1.85rem, 4vw, 3rem);
+    font-size: var(--title-panel);
     letter-spacing: 0;
     margin-bottom: .35rem;
 }
@@ -782,7 +789,7 @@
 
 .ops-kpis strong {
     display: block;
-    font-size: 2rem;
+    font-size: clamp(1.25rem, 2.5vw, 1.7rem);
     margin: .35rem 0;
 }
 
@@ -890,7 +897,7 @@
 
 .metric-strip strong {
     display: block;
-    font-size: clamp(1.35rem, 4vw, 2.1rem);
+    font-size: clamp(1.25rem, 2.5vw, 1.7rem);
     margin-top: .35rem;
 }
 
@@ -919,7 +926,7 @@
 }
 
 .company-dashboard-actions h2 {
-    font-size: 1.25rem;
+    font-size: var(--title-section);
     margin: 0;
 }
 
@@ -1010,7 +1017,7 @@
 }
 
 .mission-detail-heading h2 {
-    font-size: 1.35rem;
+    font-size: var(--title-section);
     margin: .45rem 0 .2rem;
 }
 
@@ -1103,10 +1110,10 @@ a, .btn-link {
 
 h1 {
     color: var(--ink);
-    font-size: clamp(2.45rem, 7vw, 5rem);
+    font-size: var(--title-page);
     font-weight: 950;
-    letter-spacing: -0.02em;
-    line-height: 1.04;
+    letter-spacing: 0;
+    line-height: 1.12;
     margin: 0;
     max-width: 920px;
 }
@@ -1117,6 +1124,18 @@ h1:focus {
 
 h2 {
     color: var(--ink);
+    font-size: var(--title-section);
+    font-weight: 920;
+    line-height: 1.18;
+    margin: 0;
+}
+
+h3 {
+    color: var(--ink);
+    font-size: var(--title-card);
+    font-weight: 900;
+    line-height: 1.25;
+    margin: 0;
 }
 
 .hero {
@@ -1147,6 +1166,12 @@ h2 {
     position: relative;
 }
 
+.hero h1 {
+    font-size: var(--title-hero);
+    letter-spacing: -0.02em;
+    line-height: 1.04;
+}
+
 .hero h1 span {
     background: var(--country-primary);
     border-radius: 5px;
@@ -1167,7 +1192,7 @@ h2 {
 
 .lead {
     color: var(--muted);
-    font-size: clamp(1.05rem, 2vw, 1.45rem);
+    font-size: var(--text-lead);
     line-height: 1.55;
     max-width: 760px;
 }
@@ -1527,6 +1552,36 @@ h2 {
     max-width: 940px;
 }
 
+.registration-header {
+    display: grid;
+    gap: .45rem;
+    margin: .65rem 0 1.15rem;
+    max-width: 720px;
+}
+
+.registration-header .eyebrow {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 950;
+    letter-spacing: .08em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.registration-header h1 {
+    font-size: var(--title-page);
+    line-height: 1.12;
+    max-width: 650px;
+}
+
+.registration-header p {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 620px;
+}
+
 .registration-form section {
     background: rgba(255, 255, 255, .9);
     border: 1px solid var(--line);
@@ -1615,9 +1670,9 @@ h2 {
 }
 
 .company-profile-hero h1 {
-    font-size: clamp(1.8rem, 4vw, 2.85rem);
+    font-size: var(--title-panel);
     letter-spacing: 0;
-    line-height: 1.05;
+    line-height: 1.12;
     margin: .15rem 0 .35rem;
 }
 
@@ -1663,7 +1718,12 @@ h2 {
     display: flex;
     gap: .35rem;
     justify-content: space-between;
+    margin-bottom: .9rem;
     padding: .35rem;
+    position: sticky;
+    top: 84px;
+    width: 100%;
+    z-index: 8;
 }
 
 .portal-subnav-links {
@@ -1677,9 +1737,9 @@ h2 {
 .portal-subnav a {
     border-radius: 13px;
     color: #475569;
-    flex: 1;
+    flex: 1 1 0;
     font-weight: 950;
-    min-width: max-content;
+    min-width: 126px;
     padding: .7rem .85rem;
     text-align: center;
     text-decoration: none;
@@ -1780,7 +1840,7 @@ h2 {
 }
 
 .profile-card h2 {
-    font-size: clamp(1.25rem, 2.2vw, 1.65rem);
+    font-size: var(--title-section);
     line-height: 1.12;
     margin: 0;
 }
@@ -2054,9 +2114,9 @@ h2 {
 }
 
 .activation-hero h1 {
-    font-size: clamp(2.2rem, 7vw, 4.8rem);
+    font-size: var(--title-page);
     letter-spacing: 0;
-    line-height: .95;
+    line-height: 1.12;
     margin: .25rem 0 .55rem;
     max-width: 760px;
 }
@@ -2114,7 +2174,7 @@ h2 {
 
 .activation-summary h2,
 .activation-form h2 {
-    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-size: var(--title-section);
     margin: 0;
 }
 
@@ -2474,7 +2534,18 @@ h2 {
 
 @media (max-width: 720px) {
     h1 {
-        font-size: clamp(2.25rem, 13vw, 3.6rem);
+        font-size: clamp(1.65rem, 7vw, 2.15rem);
+    }
+
+    .hero h1 {
+        font-size: clamp(2.1rem, 11vw, 3.2rem);
+    }
+
+    .registration-header h1,
+    .workspace-header h1,
+    .company-dashboard-hero h1,
+    .company-profile-hero h1 {
+        font-size: clamp(1.55rem, 7vw, 2rem);
     }
 
     .hero {
@@ -2551,6 +2622,7 @@ h2 {
         align-items: stretch;
         flex-direction: column;
         justify-content: flex-start;
+        top: 76px;
     }
 
     .portal-subnav-links {

@@ -7,15 +7,6 @@
 
 <PageTitle>Missions</PageTitle>
 
-<section class="workspace-header">
-    <div>
-        <p class="eyebrow">Portail entreprise</p>
-        <h1>Missions</h1>
-        <p class="lead">Suivez les demandes live, les rendez-vous a venir et l'historique de vos interventions.</p>
-    </div>
-    <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
-</section>
-
 @if (IsSessionLoading)
 {
     <section class="empty-state">
@@ -34,6 +25,15 @@ else if (Session is null)
 else
 {
     <CompanyPortalNav Active="operations" />
+
+    <section class="workspace-header">
+        <div>
+            <p class="eyebrow">Portail entreprise</p>
+            <h1>Missions</h1>
+            <p class="lead">Suivez les demandes live, les rendez-vous a venir et l'historique de vos interventions.</p>
+        </div>
+        <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
+    </section>
 
     @if (!Session.IsCompanyApproved)
     {
