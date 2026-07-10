@@ -1,6 +1,15 @@
 @page "/"
+@inject NavigationManager Navigation
 
 <PageTitle>HomeService Entreprises</PageTitle>
+
+@if (IsSubmittedConfirmationVisible)
+{
+    <section class="submission-confirmation">
+        <strong>Demande envoyee</strong>
+        <p>Votre dossier a bien ete transmis. Notre equipe va verifier les informations et les pieces fournies.</p>
+    </section>
+}
 
 <section class="hero hero-company">
     <div class="hero-copy">
@@ -29,6 +38,17 @@
         </ol>
     </aside>
 </section>
+
+@code {
+    private bool IsSubmittedConfirmationVisible { get; set; }
+
+    protected override void OnInitialized()
+    {
+        IsSubmittedConfirmationVisible = new Uri(Navigation.Uri)
+            .Query
+            .Contains("submitted=1", StringComparison.OrdinalIgnoreCase);
+    }
+}
 
 <section class="service-strip" aria-label="Services de depart">
     <span>Menage a domicile</span>

@@ -111,6 +111,25 @@ h2 {
     margin-top: 1.5rem;
 }
 
+.submission-confirmation {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    border-radius: 18px;
+    color: #166534;
+    margin: 1.25rem 0 0;
+    padding: 1rem 1.15rem;
+}
+
+.submission-confirmation strong {
+    display: block;
+    font-size: 1.02rem;
+    margin-bottom: .25rem;
+}
+
+.submission-confirmation p {
+    margin: 0;
+}
+
 .primary-action,
 .secondary-action {
     border-radius: 999px;

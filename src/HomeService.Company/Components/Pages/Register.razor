@@ -5,6 +5,7 @@
 @using Microsoft.AspNetCore.Components.Web
 @using System.Text.RegularExpressions
 @inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Inscription entreprise</PageTitle>
 
@@ -314,9 +315,13 @@
                 EstimatedProviderCount);
 
             var result = await ApiClient.RegisterCompanyAsync(request, Documents);
-            FormMessage = result.IsSuccess
-                ? "Demande envoyee. Notre equipe va verifier votre dossier."
-                : $"Impossible d'envoyer la demande: {result.ErrorMessage}";
+            if (result.IsSuccess)
+            {
+                Navigation.NavigateTo("/?submitted=1");
+                return;
+            }
+
+            FormMessage = $"Impossible d'envoyer la demande: {result.ErrorMessage}";
         }
         catch (Exception exception)
         {
