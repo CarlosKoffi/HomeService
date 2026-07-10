@@ -128,6 +128,26 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return new CompanyActivationResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
     }
 
+    public async Task<CompanyActivationPreviewResult> GetCompanyActivationPreviewAsync(
+        Guid applicationId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.GetAsync($"/api/company-activation/{applicationId}?token={Uri.EscapeDataString(token)}", cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var payload = await response.Content.ReadFromJsonAsync<CompanyActivationPreviewResponse>(cancellationToken);
+            return payload is null
+                ? new CompanyActivationPreviewResult(false, null, "Lien d'activation introuvable.")
+                : new CompanyActivationPreviewResult(true, payload, null);
+        }
+
+        return new CompanyActivationPreviewResult(false, null, ExtractErrorMessage(body) ?? "Lien d'activation invalide ou expire.");
+    }
+
     public async Task<CompanyPortalLoginResult> LoginCompanyPortalAsync(
         CompanyPortalLoginRequest request,
         CancellationToken cancellationToken = default)
@@ -418,6 +438,8 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 public sealed record RegisterCompanyResult(bool IsSuccess, string? ErrorMessage);
 
 public sealed record CompanyActivationResult(bool IsSuccess, string Message);
+
+public sealed record CompanyActivationPreviewResult(bool IsSuccess, CompanyActivationPreviewResponse? Preview, string? ErrorMessage);
 
 public sealed record CompanyPortalLoginResult(bool IsSuccess, CompanyPortalSessionResponse? Session, string? ErrorMessage);
 

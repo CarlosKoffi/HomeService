@@ -6,38 +6,91 @@
 <PageTitle>Activation entreprise</PageTitle>
 
 <section class="activation-shell">
-    <div class="section-intro">
-        <p class="eyebrow">Activation entreprise</p>
-        <h1>Creation du mot de passe</h1>
-        <p>
-            Choisissez le mot de passe du compte responsable. Ce compte permettra d'acceder au portail entreprise
-            apres validation du dossier.
-        </p>
+    <div class="activation-hero">
+        <div>
+            <p class="eyebrow">Activation entreprise</p>
+            <h1>Creation de votre acces portail</h1>
+            <p>
+                Verifiez les informations du dossier valide, puis choisissez le mot de passe du compte responsable.
+            </p>
+        </div>
+        <span class="activation-secure-badge">Lien securise</span>
     </div>
 
-    <form class="activation-form">
-        <label>
-            Mot de passe
-            <input type="password" autocomplete="new-password" @bind="Password" />
-        </label>
-        <label>
-            Confirmer le mot de passe
-            <input type="password" autocomplete="new-password" @bind="ConfirmPassword" />
-        </label>
+    @if (IsLoading)
+    {
+        <article class="activation-card">
+            <p class="field-message">Verification du lien d'activation...</p>
+        </article>
+    }
+    else if (Preview is null)
+    {
+        <article class="activation-card activation-card-alert">
+            <p class="eyebrow">Lien indisponible</p>
+            <h2>Impossible de verifier ce lien</h2>
+            <p>@(PreviewError ?? "Ce lien est invalide ou expire. Demandez un nouveau lien a l'equipe ProxiPro.")</p>
+        </article>
+    }
+    else
+    {
+        <div class="activation-layout">
+            <article class="activation-card activation-summary">
+                <span class="activation-status">Dossier valide</span>
+                <h2>@Preview.CompanyName</h2>
+                <dl>
+                    <div>
+                        <dt>Email du compte</dt>
+                        <dd>@Preview.Email</dd>
+                    </div>
+                    <div>
+                        <dt>Reference dossier</dt>
+                        <dd>@Preview.ApplicationId</dd>
+                    </div>
+                    <div>
+                        <dt>Expiration du lien</dt>
+                        <dd>@Preview.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+                    </div>
+                </dl>
+                <p>
+                    Cet acces sera rattache a cette entreprise. Une fois le mot de passe cree, vous pourrez gerer les employes,
+                    les missions et les encaissements depuis le portail.
+                </p>
+            </article>
 
-        @if (!string.IsNullOrWhiteSpace(Message))
-        {
-            <p class="field-message">@Message</p>
-        }
+            <form class="activation-form">
+                <div>
+                    <p class="eyebrow">Mot de passe</p>
+                    <h2>Finaliser l'activation</h2>
+                </div>
+                <label>
+                    Nouveau mot de passe
+                    <input type="password" autocomplete="new-password" placeholder="Au moins 10 caracteres" @bind="Password" />
+                </label>
+                <label>
+                    Confirmer le mot de passe
+                    <input type="password" autocomplete="new-password" placeholder="Retapez le meme mot de passe" @bind="ConfirmPassword" />
+                </label>
 
-        <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="SubmitAsync">
-            @(IsSubmitting ? "Activation en cours..." : "Creer le mot de passe")
-        </button>
-        @if (IsActivated)
-        {
-            <a class="secondary-action" href="dashboard">Aller a l'espace entreprise</a>
-        }
-    </form>
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <p class="field-message">@Message</p>
+                }
+
+                <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="SubmitAsync">
+                    @(IsSubmitting ? "Activation en cours..." : "Creer mon acces")
+                </button>
+                @if (IsActivated)
+                {
+                    <a class="secondary-action" href="dashboard">Aller a l'espace entreprise</a>
+                }
+            </form>
+        </div>
+    }
+
+    @if (!IsLoading && Preview is not null && !string.IsNullOrWhiteSpace(PreviewError))
+    {
+        <p class="field-message">@PreviewError</p>
+    }
 </section>
 
 @code {
@@ -47,15 +100,60 @@
     [SupplyParameterFromQuery(Name = "token")]
     public string? Token { get; set; }
 
+    private CompanyActivationPreviewResponse? Preview { get; set; }
     private string Password { get; set; } = string.Empty;
     private string ConfirmPassword { get; set; } = string.Empty;
     private string? Message { get; set; }
+    private string? PreviewError { get; set; }
+    private bool IsLoading { get; set; } = true;
     private bool IsSubmitting { get; set; }
     private bool IsActivated { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Message = null;
+        PreviewError = null;
+        Preview = null;
+        IsLoading = true;
+
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            PreviewError = "Le lien d'activation est incomplet.";
+            IsLoading = false;
+            return;
+        }
+
+        try
+        {
+            var result = await ApiClient.GetCompanyActivationPreviewAsync(ApplicationId, Token);
+            if (result.IsSuccess)
+            {
+                Preview = result.Preview;
+            }
+            else
+            {
+                PreviewError = result.ErrorMessage;
+            }
+        }
+        catch (Exception exception)
+        {
+            PreviewError = $"Verification impossible pour le moment. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
 
     private async Task SubmitAsync()
     {
         Message = null;
+
+        if (Preview is null)
+        {
+            Message = "Le lien d'activation doit etre valide avant de creer le mot de passe.";
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(Token))
         {
