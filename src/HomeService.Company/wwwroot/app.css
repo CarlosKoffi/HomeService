@@ -1572,9 +1572,9 @@ h3 {
 
 .concept-journey {
     display: grid;
-    gap: .9rem;
+    gap: .75rem;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    margin: 1.35rem 0 1rem;
+    margin: 1.2rem 0 1rem;
 }
 
 .concept-journey article,
@@ -1587,13 +1587,14 @@ h3 {
 
 .concept-journey article {
     display: grid;
-    gap: .72rem;
+    gap: .6rem;
     padding: 1rem;
 }
 
 .concept-step-head {
     align-items: center;
     display: flex;
+    gap: .7rem;
     justify-content: space-between;
 }
 
@@ -1608,6 +1609,22 @@ h3 {
     height: 34px;
     justify-content: center;
     width: 34px;
+}
+
+.concept-step-label {
+    background: rgba(255, 130, 0, .1);
+    border: 1px solid rgba(255, 130, 0, .28);
+    border-radius: 999px;
+    color: #000000;
+    font-size: .72rem;
+    font-weight: 950;
+    padding: .35rem .55rem;
+    text-transform: uppercase;
+}
+
+.concept-journey article:nth-child(even) .concept-step-label {
+    background: rgba(0, 135, 81, .09);
+    border-color: rgba(0, 135, 81, .24);
 }
 
 .concept-journey h2 {
@@ -1650,7 +1667,6 @@ h3 {
     align-items: start;
     display: grid;
     gap: .75rem;
-    grid-template-columns: 46px minmax(0, 1fr);
     padding: 1rem;
 }
 
@@ -2762,7 +2778,6 @@ h3 {
     }
 
     .concept-takeaways div {
-        grid-template-columns: 52px minmax(0, 1fr);
         padding: .9rem;
     }
 
