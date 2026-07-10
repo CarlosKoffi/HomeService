@@ -4,6 +4,7 @@ using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Services;
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using HomeService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -180,6 +181,13 @@ app.MapPost("/api/company-applications", async (
             request.EstimatedProviderCount);
 
         db.CompanyApplications.Add(application);
+        AddCompanyApplicationStatusHistory(
+            db,
+            application.Id,
+            null,
+            CompanyApplicationStatus.Submitted,
+            "Demande soumise.",
+            null);
 
         foreach (var serviceName in serviceNames)
         {
@@ -213,6 +221,11 @@ app.MapPost("/api/company-applications", async (
     {
         logger.LogWarning(exception, "Company application submission was cancelled while reading the form.");
         return Results.StatusCode(StatusCodes.Status499ClientClosedRequest);
+    }
+    catch (Microsoft.AspNetCore.Http.BadHttpRequestException exception)
+    {
+        logger.LogWarning(exception, "Company application submission was interrupted while reading uploaded files.");
+        return Results.BadRequest(new { message = "L'envoi des pieces a ete interrompu. Verifiez la connexion puis relancez l'envoi." });
     }
     catch (Exception exception)
     {
@@ -408,7 +421,9 @@ admin.MapPost("/company-applications/{id:guid}/approve", async (
         return Results.BadRequest(new { message = "Les pieces obligatoires doivent etre validees avant validation du dossier." });
     }
 
-    application.Approve();
+    var previousStatus = application.Status;
+    application.Approve("admin");
+    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, null, "admin");
     if (application.CompanyId is null)
     {
         var company = new Company(application.CompanyName, application.PhoneNumber, application.Email);
@@ -441,7 +456,9 @@ admin.MapPost("/company-applications/{id:guid}/reject", async (
         return Results.NotFound();
     }
 
-    application.Reject(note.Value!);
+    var previousStatus = application.Status;
+    application.Reject(note.Value!, "admin");
+    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
@@ -466,7 +483,9 @@ admin.MapPost("/company-applications/{id:guid}/request-more-information", async 
         return Results.NotFound();
     }
 
-    application.RequestMoreInformation(note.Value!);
+    var previousStatus = application.Status;
+    application.RequestMoreInformation(note.Value!, "admin");
+    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
@@ -502,7 +521,9 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
     var rawToken = GenerateActivationToken();
     var tokenHash = HashActivationToken(rawToken);
     var expiresAt = DateTimeOffset.UtcNow.AddHours(GetActivationTokenDurationHours(configuration));
-    application.CreateActivationToken(tokenHash, expiresAt);
+    var previousStatus = application.Status;
+    application.CreateActivationToken(tokenHash, expiresAt, "admin");
+    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Lien d'activation envoye.", "admin");
     await db.SaveChangesAsync(cancellationToken);
 
     var activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
@@ -669,7 +690,9 @@ app.MapPost("/api/company-activation/password", async (
 
     db.CompanyPortalUsers.Add(new CompanyPortalUser(company.Id, application.ContactName, email, HashPassword(request.Password), true));
     activationToken.MarkUsed();
+    var previousStatus = application.Status;
     application.MarkActivated("activation");
+    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Compte entreprise active.", "activation");
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(new CompanyActivationPasswordResponse(true, "Mot de passe cree. Votre portail entreprise est pret."));
@@ -707,6 +730,27 @@ static IReadOnlyList<string> GetServices(IFormCollection form)
         .Where(value => !string.IsNullOrWhiteSpace(value))
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .ToList();
+}
+
+static void AddCompanyApplicationStatusHistory(
+    IAppDbContext db,
+    Guid companyApplicationId,
+    CompanyApplicationStatus? previousStatus,
+    CompanyApplicationStatus newStatus,
+    string? note,
+    string? changedBy)
+{
+    if (previousStatus.HasValue && previousStatus.Value == newStatus)
+    {
+        return;
+    }
+
+    db.CompanyApplicationStatusHistories.Add(new CompanyApplicationStatusHistory(
+        companyApplicationId,
+        previousStatus,
+        newStatus,
+        note,
+        changedBy));
 }
 
 static IReadOnlyList<string> ValidateCompanyApplication(RegisterCompanyRequest request)

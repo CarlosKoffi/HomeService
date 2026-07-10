@@ -24,42 +24,62 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         IReadOnlyDictionary<string, IBrowserFile?> documents,
         CancellationToken cancellationToken = default)
     {
-        AddBasicAuthIfConfigured();
-        using var content = new MultipartFormDataContent();
-        AddString(content, "companyName", request.CompanyName);
-        AddString(content, "registrationNumber", request.RegistrationNumber);
-        AddString(content, "city", request.City);
-        AddString(content, "address", request.Address);
-        AddString(content, "contactName", request.ContactName);
-        AddString(content, "email", request.Email);
-        AddString(content, "phoneNumber", request.PhoneNumber);
-        AddString(content, "estimatedProviderCount", request.EstimatedProviderCount?.ToString());
-
-        foreach (var service in request.Services)
+        try
         {
-            AddString(content, "services", service);
-        }
+            AddBasicAuthIfConfigured();
+            using var content = new MultipartFormDataContent();
+            AddString(content, "companyName", request.CompanyName);
+            AddString(content, "registrationNumber", request.RegistrationNumber);
+            AddString(content, "city", request.City);
+            AddString(content, "address", request.Address);
+            AddString(content, "contactName", request.ContactName);
+            AddString(content, "email", request.Email);
+            AddString(content, "phoneNumber", request.PhoneNumber);
+            AddString(content, "estimatedProviderCount", request.EstimatedProviderCount?.ToString());
 
-        foreach (var (fieldName, file) in documents)
-        {
-            if (file is null)
+            foreach (var service in request.Services)
             {
-                continue;
+                AddString(content, "services", service);
             }
 
-            var fileContent = new StreamContent(file.OpenReadStream(MaxUploadSize));
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
-            content.Add(fileContent, fieldName, file.Name);
-        }
+            foreach (var (fieldName, file) in documents)
+            {
+                if (file is null)
+                {
+                    continue;
+                }
 
-        var response = await httpClient.PostAsync("/api/company-applications", content, cancellationToken);
-        if (response.IsSuccessStatusCode)
+                await using var sourceStream = file.OpenReadStream(MaxUploadSize, cancellationToken);
+                using var memoryStream = new MemoryStream();
+                await sourceStream.CopyToAsync(memoryStream, cancellationToken);
+
+                var fileContent = new ByteArrayContent(memoryStream.ToArray());
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+                    string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+                content.Add(fileContent, fieldName, file.Name);
+            }
+
+            var response = await httpClient.PostAsync("/api/company-applications", content, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return new RegisterCompanyResult(true, null);
+            }
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            return new RegisterCompanyResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
+        }
+        catch (TaskCanceledException)
         {
-            return new RegisterCompanyResult(true, null);
+            return new RegisterCompanyResult(false, "L'envoi a pris trop de temps. Verifiez la connexion et relancez la demande.");
         }
-
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        return new RegisterCompanyResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
+        catch (IOException)
+        {
+            return new RegisterCompanyResult(false, "Une piece jointe n'a pas pu etre lue correctement. Retirez-la puis ajoutez-la a nouveau.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            return new RegisterCompanyResult(false, exception.Message);
+        }
     }
 
     public async Task<IReadOnlyList<TranslationValueResponse>> GetTranslationsAsync(string scope, CancellationToken cancellationToken = default)

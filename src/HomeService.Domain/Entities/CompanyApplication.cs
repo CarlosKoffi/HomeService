@@ -34,7 +34,6 @@ public sealed class CompanyApplication : AuditableEntity
         PhoneNumber = phoneNumber.Trim();
         PlannedServices = plannedServices?.Trim();
         EstimatedProviderCount = estimatedProviderCount;
-        AddStatusHistory(null, CompanyApplicationStatus.Submitted, "Demande soumise.", null);
     }
 
     public Guid? CompanyId { get; private set; }
@@ -149,21 +148,6 @@ public sealed class CompanyApplication : AuditableEntity
 
         var previousStatus = Status;
         Status = newStatus;
-        AddStatusHistory(previousStatus, newStatus, note, changedBy);
-    }
-
-    private void AddStatusHistory(
-        CompanyApplicationStatus? previousStatus,
-        CompanyApplicationStatus newStatus,
-        string? note,
-        string? changedBy)
-    {
-        _statusHistory.Add(new CompanyApplicationStatusHistory(
-            Id,
-            previousStatus,
-            newStatus,
-            note,
-            changedBy));
         Touch();
     }
 }

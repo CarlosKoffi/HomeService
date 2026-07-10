@@ -9,7 +9,7 @@ public sealed class CompanyApplicationStatusHistory : AuditableEntity
     {
     }
 
-    internal CompanyApplicationStatusHistory(
+    public CompanyApplicationStatusHistory(
         Guid companyApplicationId,
         CompanyApplicationStatus? previousStatus,
         CompanyApplicationStatus newStatus,
