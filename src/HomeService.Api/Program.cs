@@ -37,7 +37,10 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger";
 });
 
-app.UseHttpsRedirection();
+if (string.Equals(app.Configuration["FORCE_HTTPS_REDIRECT"], "true", StringComparison.OrdinalIgnoreCase))
+{
+    app.UseHttpsRedirection();
+}
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "HomeService.Api" }))
     .WithName("HealthCheck");
@@ -122,64 +125,68 @@ app.MapPost("/api/company-applications", async (
     HttpRequest httpRequest,
     IAppDbContext db,
     CompanyApplicationUploadService uploadService,
+    ILogger<Program> logger,
     CancellationToken cancellationToken) =>
 {
-    if (!httpRequest.HasFormContentType)
-    {
-        return Results.BadRequest(new { message = "Le formulaire doit etre envoye au format multipart/form-data." });
-    }
-
-    var form = await httpRequest.ReadFormAsync(cancellationToken);
-    var request = new RegisterCompanyRequest(
-        GetFormValue(form, "companyName"),
-        GetOptionalFormValue(form, "registrationNumber"),
-        GetFormValue(form, "city"),
-        GetOptionalFormValue(form, "address"),
-        GetFormValue(form, "contactName"),
-        GetFormValue(form, "email"),
-        GetFormValue(form, "phoneNumber"),
-        GetServices(form),
-        GetOptionalInt(form, "estimatedProviderCount"));
-
-    var validationErrors = ValidateCompanyApplication(request);
-    if (validationErrors.Count > 0)
-    {
-        return Results.BadRequest(new { message = "Le formulaire contient des erreurs.", errors = validationErrors });
-    }
-
-    var requiredDocumentFields = new[] { "fiscalExistenceDeclaration", "companyDocument", "ownerIdentityDocument" };
-    if (requiredDocumentFields.Any(field => form.Files.GetFile(field) is null))
-    {
-        return Results.BadRequest(new { message = "Le DFE, le registre de commerce et l'identite du responsable sont obligatoires." });
-    }
-
-    var serviceNames = request.Services
-        .Where(service => !string.IsNullOrWhiteSpace(service))
-        .Select(service => service.Trim())
-        .Distinct(StringComparer.OrdinalIgnoreCase)
-        .ToList();
-
-    var application = new HomeService.Domain.Entities.CompanyApplication(
-        request.CompanyName,
-        request.RegistrationNumber,
-        request.City,
-        request.Address,
-        request.ContactName,
-        request.Email,
-        request.PhoneNumber,
-        serviceNames.Count > 0 ? string.Join(", ", serviceNames) : null,
-        request.EstimatedProviderCount);
-
-    db.CompanyApplications.Add(application);
-
-    foreach (var serviceName in serviceNames)
-    {
-        db.CompanyApplicationServices.Add(new HomeService.Domain.Entities.CompanyApplicationService(application.Id, serviceName));
-    }
-
     try
     {
+        if (!httpRequest.HasFormContentType)
+        {
+            return Results.BadRequest(new { message = "Le formulaire doit etre envoye au format multipart/form-data." });
+        }
+
+        logger.LogInformation("Company application submission received.");
+        var form = await httpRequest.ReadFormAsync(cancellationToken);
+        var request = new RegisterCompanyRequest(
+            GetFormValue(form, "companyName"),
+            GetOptionalFormValue(form, "registrationNumber"),
+            GetFormValue(form, "city"),
+            GetOptionalFormValue(form, "address"),
+            GetFormValue(form, "contactName"),
+            GetFormValue(form, "email"),
+            GetFormValue(form, "phoneNumber"),
+            GetServices(form),
+            GetOptionalInt(form, "estimatedProviderCount"));
+
+        var validationErrors = ValidateCompanyApplication(request);
+        if (validationErrors.Count > 0)
+        {
+            return Results.BadRequest(new { message = "Le formulaire contient des erreurs.", errors = validationErrors });
+        }
+
+        var requiredDocumentFields = new[] { "fiscalExistenceDeclaration", "companyDocument", "ownerIdentityDocument" };
+        if (requiredDocumentFields.Any(field => form.Files.GetFile(field) is null))
+        {
+            return Results.BadRequest(new { message = "Le DFE, le registre de commerce et l'identite du responsable sont obligatoires." });
+        }
+
+        var serviceNames = request.Services
+            .Where(service => !string.IsNullOrWhiteSpace(service))
+            .Select(service => service.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var application = new HomeService.Domain.Entities.CompanyApplication(
+            request.CompanyName,
+            request.RegistrationNumber,
+            request.City,
+            request.Address,
+            request.ContactName,
+            request.Email,
+            request.PhoneNumber,
+            serviceNames.Count > 0 ? string.Join(", ", serviceNames) : null,
+            request.EstimatedProviderCount);
+
+        db.CompanyApplications.Add(application);
+
+        foreach (var serviceName in serviceNames)
+        {
+            db.CompanyApplicationServices.Add(new HomeService.Domain.Entities.CompanyApplicationService(application.Id, serviceName));
+        }
+
         var documents = await uploadService.SaveAsync(application.Id, form.Files, cancellationToken);
+        logger.LogInformation("Stored {DocumentCount} company application documents for {ApplicationId}.", documents.Count, application.Id);
+
         foreach (var document in documents)
         {
             db.CompanyApplicationDocuments.Add(new CompanyApplicationDocument(
@@ -189,15 +196,25 @@ app.MapPost("/api/company-applications", async (
                 document.StoragePath,
                 document.ContentType));
         }
+
+        await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Company application {ApplicationId} saved.", application.Id);
+
+        return Results.Created($"/api/admin/company-applications/{application.Id}", new { application.Id });
     }
     catch (InvalidOperationException exception)
     {
+        logger.LogWarning(exception, "Company application submission rejected.");
         return Results.BadRequest(new { message = exception.Message });
     }
-
-    await db.SaveChangesAsync(cancellationToken);
-
-    return Results.Created($"/api/admin/company-applications/{application.Id}", new { application.Id });
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Company application submission failed.");
+        return Results.Problem(
+            title: "Impossible d'enregistrer la demande entreprise",
+            detail: exception.Message,
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
 })
 .WithName("RegisterCompanyApplication");
 

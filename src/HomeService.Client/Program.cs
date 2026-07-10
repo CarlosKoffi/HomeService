@@ -4,6 +4,7 @@ using HomeService.Client;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddPersistentDataProtection(builder.Configuration, "HomeService.Client");
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -17,7 +18,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (string.Equals(app.Configuration["FORCE_HTTPS_REDIRECT"], "true", StringComparison.OrdinalIgnoreCase))
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseSiteAccessGate();
 

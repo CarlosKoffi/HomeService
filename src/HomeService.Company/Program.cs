@@ -5,11 +5,13 @@ using HomeService.Company.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddPersistentDataProtection(builder.Configuration, "HomeService.Company");
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpClient<PlatformApiClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["API_BASE_URL"] ?? builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");
+    client.Timeout = TimeSpan.FromMinutes(2);
 });
 
 var app = builder.Build();
@@ -22,7 +24,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (string.Equals(app.Configuration["FORCE_HTTPS_REDIRECT"], "true", StringComparison.OrdinalIgnoreCase))
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseSiteAccessGate();
 

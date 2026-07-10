@@ -300,22 +300,32 @@
         }
 
         IsSubmitting = true;
-        var request = new RegisterCompanyRequest(
-            CompanyName,
-            RegistrationNumber,
-            City,
-            Address,
-            ContactName,
-            Email,
-            PhoneNumber,
-            SelectedServices.Select(service => service.Name).ToList(),
-            EstimatedProviderCount);
+        try
+        {
+            var request = new RegisterCompanyRequest(
+                CompanyName,
+                RegistrationNumber,
+                City,
+                Address,
+                ContactName,
+                Email,
+                PhoneNumber,
+                SelectedServices.Select(service => service.Name).ToList(),
+                EstimatedProviderCount);
 
-        var result = await ApiClient.RegisterCompanyAsync(request, Documents);
-        FormMessage = result.IsSuccess
-            ? "Demande envoyee. Notre equipe va verifier votre dossier."
-            : $"Impossible d'envoyer la demande: {result.ErrorMessage}";
-        IsSubmitting = false;
+            var result = await ApiClient.RegisterCompanyAsync(request, Documents);
+            FormMessage = result.IsSuccess
+                ? "Demande envoyee. Notre equipe va verifier votre dossier."
+                : $"Impossible d'envoyer la demande: {result.ErrorMessage}";
+        }
+        catch (Exception exception)
+        {
+            FormMessage = $"Impossible d'envoyer la demande: {exception.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
     }
 
     private List<string> ValidateForm()

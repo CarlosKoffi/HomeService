@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Services;
@@ -58,7 +59,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        return new RegisterCompanyResult(false, string.IsNullOrWhiteSpace(body) ? response.ReasonPhrase : body);
+        return new RegisterCompanyResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Erreur API inconnue.");
     }
 
     public async Task<IReadOnlyList<TranslationValueResponse>> GetTranslationsAsync(string scope, CancellationToken cancellationToken = default)
@@ -98,6 +99,39 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var value = configuration["SITE_AUTH_ENABLED"];
         return !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? ExtractErrorMessage(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(body);
+            if (document.RootElement.TryGetProperty("errors", out var errors) && errors.ValueKind == JsonValueKind.Array)
+            {
+                return string.Join(" ", errors.EnumerateArray().Select(error => error.GetString()).Where(error => !string.IsNullOrWhiteSpace(error)));
+            }
+
+            if (document.RootElement.TryGetProperty("message", out var message))
+            {
+                return message.GetString();
+            }
+
+            if (document.RootElement.TryGetProperty("detail", out var detail))
+            {
+                return detail.GetString();
+            }
+        }
+        catch (JsonException)
+        {
+            return body;
+        }
+
+        return body;
     }
 }
 
