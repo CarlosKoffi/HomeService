@@ -1,0 +1,83 @@
+<span class="platform-icon @ToneClass" aria-hidden="true">
+    @switch (Name)
+    {
+        case "company":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M4 21V7l8-4 8 4v14" />
+                <path d="M9 21v-7h6v7" />
+                <path d="M8 9h.01M12 9h.01M16 9h.01" />
+            </svg>
+            break;
+        case "documents":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M7 3h7l4 4v14H7z" />
+                <path d="M14 3v5h5" />
+                <path d="M9 13h6M9 17h4" />
+            </svg>
+            break;
+        case "providers":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+                <path d="M2.5 21a5.5 5.5 0 0 1 11 0" />
+                <path d="M17 10v8M13 14h8" />
+            </svg>
+            break;
+        case "payments":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M4 7h16v10H4z" />
+                <path d="M4 10h16" />
+                <path d="M8 15h3" />
+                <path d="M17 14a2 2 0 1 0 0 .01" />
+            </svg>
+            break;
+        case "create":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M12 5v14M5 12h14" />
+                <path d="M4 4h16v16H4z" />
+            </svg>
+            break;
+        case "complete":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M5 4h14v16H5z" />
+                <path d="M8 9h8M8 13h5" />
+                <path d="m14 17 2 2 4-5" />
+            </svg>
+            break;
+        case "validate":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M12 3 4 6v6c0 5 3.4 8 8 9 4.6-1 8-4 8-9V6z" />
+                <path d="m8.5 12 2.2 2.2 4.8-5" />
+            </svg>
+            break;
+        case "pilot":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M4 19V5" />
+                <path d="M4 17h16" />
+                <path d="M8 14v-4M12 14V7M16 14v-6" />
+            </svg>
+            break;
+        case "locked":
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M7 11V8a5 5 0 0 1 10 0v3" />
+                <path d="M6 11h12v10H6z" />
+                <path d="M12 15v2" />
+            </svg>
+            break;
+        default:
+            <svg viewBox="0 0 24 24" role="img">
+                <path d="M4 12h16" />
+                <path d="M12 4v16" />
+            </svg>
+            break;
+    }
+</span>
+
+@code {
+    [Parameter]
+    public string Name { get; set; } = "company";
+
+    [Parameter]
+    public string Tone { get; set; } = "green";
+
+    private string ToneClass => Tone == "orange" ? "platform-icon-orange" : "platform-icon-green";
+}
