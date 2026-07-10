@@ -1,4 +1,5 @@
 @page "/dashboard"
+@inject IJSRuntime Js
 
 <PageTitle>Espace entreprise</PageTitle>
 
@@ -40,6 +41,17 @@
             <input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="Password" />
         </label>
 
+        <div class="login-options">
+            <label class="remember-option">
+                <input type="checkbox" @bind="RememberMe" />
+                <span>
+                    <strong>Se souvenir de moi</strong>
+                    <small>Garder mon email et rester connecte sur cet appareil.</small>
+                </span>
+            </label>
+            <a href="forgot-password">Mot de passe oublie ?</a>
+        </div>
+
         @if (!string.IsNullOrWhiteSpace(LoginMessage))
         {
             <p class="field-message">@LoginMessage</p>
@@ -71,11 +83,40 @@
 @code {
     private string Email { get; set; } = string.Empty;
     private string Password { get; set; } = string.Empty;
+    private bool RememberMe { get; set; }
     private string? LoginMessage { get; set; }
 
-    private Task SubmitLoginPreviewAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        LoginMessage = "La connexion sera active apres validation du dossier et creation du mot de passe via le lien recu par email.";
-        return Task.CompletedTask;
+        if (!firstRender)
+        {
+            return;
+        }
+
+        RememberMe = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.rememberMe") == "true";
+        if (RememberMe)
+        {
+            Email = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.email") ?? string.Empty;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SubmitLoginPreviewAsync()
+    {
+        if (RememberMe)
+        {
+            await Js.InvokeVoidAsync("localStorage.setItem", "homeservice.company.rememberMe", "true");
+            await Js.InvokeVoidAsync("localStorage.setItem", "homeservice.company.email", Email.Trim());
+        }
+        else
+        {
+            await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.rememberMe");
+            await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.email");
+        }
+
+        LoginMessage = RememberMe
+            ? "Votre email sera retenu sur cet appareil. La session longue sera activee quand le vrai login sera branche."
+            : "La connexion sera active apres validation du dossier et creation du mot de passe via le lien recu par email.";
     }
 }
