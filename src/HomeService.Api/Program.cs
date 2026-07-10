@@ -1252,14 +1252,27 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
         application.MarkReminderSent();
     }
 
-    var rawToken = GenerateActivationToken();
-    var tokenHash = HashActivationToken(rawToken);
-    var expiresAt = DateTimeOffset.UtcNow.AddHours(GetActivationTokenDurationHours(configuration));
-    var activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
-    var previousStatus = application.Status;
-    application.CreateActivationToken(tokenHash, expiresAt, activationLink, "admin");
-    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Lien d'activation envoye.", "admin");
-    await db.SaveChangesAsync(cancellationToken);
+    string activationLink;
+    DateTimeOffset expiresAt;
+    try
+    {
+        var rawToken = GenerateActivationToken();
+        var tokenHash = HashActivationToken(rawToken);
+        expiresAt = DateTimeOffset.UtcNow.AddHours(GetActivationTokenDurationHours(configuration));
+        activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
+        var previousStatus = application.Status;
+        application.CreateActivationToken(tokenHash, expiresAt, activationLink, "admin");
+        AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Lien d'activation envoye.", "admin");
+        await db.SaveChangesAsync(cancellationToken);
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Activation link generation failed for company application {ApplicationId}.", id);
+        return Results.Problem(
+            title: "Generation du lien d'activation impossible.",
+            detail: exception.Message,
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
 
     try
     {
