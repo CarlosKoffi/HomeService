@@ -5,4 +5,7 @@ public sealed record ServiceSummaryResponse(
     string Name,
     string? Description,
     string Status,
-    bool IsActive);
+    bool IsActive,
+    int NormalPriceAmount,
+    int PremiumPriceAmount,
+    string Currency);

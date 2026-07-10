@@ -175,13 +175,13 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             AddString(content, "phoneNumber", employee.PhoneNumber);
             AddString(content, "dateOfBirth", employee.DateOfBirth?.ToString("yyyy-MM-dd"));
             AddString(content, "address", employee.Address);
+            AddString(content, "gender", employee.Gender);
             AddString(content, "employmentType", employee.EmploymentType);
             AddString(content, "yearsOfExperience", employee.YearsOfExperience.ToString());
             AddString(content, "missionLatitude", employee.MissionLatitude?.ToString());
             AddString(content, "missionLongitude", employee.MissionLongitude?.ToString());
             AddString(content, "missionRadiusKm", employee.MissionRadiusKm.ToString());
             AddString(content, "experienceLevel", employee.ExperienceLevel);
-            AddString(content, "hourlyRateAmount", employee.HourlyRateAmount.ToString());
 
             foreach (var serviceId in employee.ServiceIds)
             {
@@ -211,6 +211,82 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         {
             return new EmployeeSaveResult(false, exception.Message);
         }
+    }
+
+    public async Task<EmployeeSaveResult> UpdateCompanyEmployeeAsync(
+        Guid companyId,
+        Guid employeeId,
+        UpdateCompanyEmployeeRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PutAsJsonAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}", request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Modification impossible.");
+    }
+
+    public async Task<EmployeeSaveResult> UpdateCompanyEmployeeServicesAsync(
+        Guid companyId,
+        Guid employeeId,
+        UpdateCompanyEmployeeServicesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PutAsJsonAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}/services", request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Modification des services impossible.");
+    }
+
+    public async Task<EmployeeSaveResult> UploadCompanyEmployeeDocumentAsync(
+        Guid companyId,
+        Guid employeeId,
+        string documentType,
+        IBrowserFile file,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            AddBasicAuthIfConfigured();
+            using var content = new MultipartFormDataContent();
+            AddString(content, "documentType", documentType);
+            await AddFileAsync(content, "file", file, cancellationToken);
+
+            var response = await httpClient.PostAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}/documents", content, cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            return response.IsSuccessStatusCode
+                ? new EmployeeSaveResult(true, null)
+                : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Envoi de la piece impossible.");
+        }
+        catch (TaskCanceledException)
+        {
+            return new EmployeeSaveResult(false, "L'envoi a pris trop de temps. Verifiez la connexion puis relancez.");
+        }
+        catch (IOException)
+        {
+            return new EmployeeSaveResult(false, "Le fichier n'a pas pu etre lu correctement.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            return new EmployeeSaveResult(false, exception.Message);
+        }
+    }
+
+    public async Task<EmployeeSaveResult> DeleteCompanyEmployeeDocumentAsync(
+        Guid companyId,
+        Guid employeeId,
+        Guid documentId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.DeleteAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}/documents/{documentId:D}", cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Suppression de la piece impossible.");
     }
 
     public async Task<EmployeeSaveResult> SuspendCompanyEmployeeAsync(Guid companyId, Guid employeeId, CancellationToken cancellationToken = default)
@@ -354,13 +430,13 @@ public sealed class CompanyEmployeeFormModel
     public string PhoneNumber { get; set; } = string.Empty;
     public DateOnly? DateOfBirth { get; set; }
     public string Address { get; set; } = string.Empty;
+    public string Gender { get; set; } = "Unspecified";
     public string EmploymentType { get; set; } = "CompanyEmployee";
     public int YearsOfExperience { get; set; }
     public decimal? MissionLatitude { get; set; }
     public decimal? MissionLongitude { get; set; }
     public int MissionRadiusKm { get; set; } = 5;
     public string ExperienceLevel { get; set; } = "Confirmed";
-    public int HourlyRateAmount { get; set; } = 1500;
     public List<Guid> ServiceIds { get; } = [];
     public IBrowserFile? Photo { get; set; }
     public IBrowserFile? IdentityDocument { get; set; }

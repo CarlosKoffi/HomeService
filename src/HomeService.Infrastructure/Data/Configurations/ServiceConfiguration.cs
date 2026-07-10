@@ -12,6 +12,7 @@ public sealed class ServiceConfiguration : IEntityTypeConfiguration<Service>
         builder.Property(service => service.Name).HasMaxLength(120).IsRequired();
         builder.Property(service => service.NormalizedName).HasMaxLength(120).IsRequired();
         builder.Property(service => service.Description).HasMaxLength(800);
+        builder.Property(service => service.Currency).HasMaxLength(3).IsRequired();
         builder.Property(service => service.Status).HasConversion<string>().HasMaxLength(32);
         builder.HasIndex(service => service.Name);
         builder.HasIndex(service => service.NormalizedName).IsUnique();

@@ -3,99 +3,123 @@
 @inject IJSRuntime Js
 @inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
 
 <PageTitle>Espace entreprise</PageTitle>
 
-<section class="portal-entry country-branded">
-    <div class="portal-copy">
-        <p class="eyebrow">Portail entreprise</p>
-        <h1>Espace entreprise</h1>
-        <p class="lead">
-            Connectez-vous avec l'email utilise lors de l'inscription une fois votre dossier valide.
-            Vous pourrez ensuite ajouter vos prestataires, suivre les missions et garder une vision claire
-            des encaissements.
-        </p>
-
-        <div class="portal-highlights" aria-label="Points forts du portail">
-            <span><strong>Validation</strong>Dossier controle</span>
-            <span><strong>Suivi</strong>Missions et cash</span>
-            <span><strong>Equipe</strong>Prestataires encadres</span>
-        </div>
-
-        <div class="portal-actions">
-            <a class="secondary-action" href="register">Creer un compte entreprise</a>
-            <span>Dossier deja valide ? utilisez votre acces recu par email.</span>
-        </div>
-    </div>
-
-    <form class="portal-login" @onsubmit="SubmitLoginAsync" @onsubmit:preventDefault>
-        <div class="login-accent" aria-hidden="true"></div>
-        <div class="section-intro">
-            <h2>Connexion</h2>
-            <p>Acces reserve aux entreprises validees par l'equipe ProxiPro.</p>
-        </div>
-
-        <label>
-            Email professionnel
-            <input type="email" autocomplete="username" placeholder="direction@entreprise.ci" @bind="Email" />
-        </label>
-        <label>
-            Mot de passe
-            <input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="Password" />
-        </label>
-
-        <div class="login-options">
-            <label class="remember-option">
-                <input type="checkbox" @bind="RememberMe" />
-                <span>
-                    <strong>Se souvenir de moi</strong>
-                    <small>Garder mon email et rester connecte sur cet appareil.</small>
-                </span>
-            </label>
-            <a href="forgot-password">Mot de passe oublie ?</a>
-        </div>
-
-        @if (!string.IsNullOrWhiteSpace(LoginMessage))
-        {
-            <p class="field-message">@LoginMessage</p>
-        }
-
-        <button type="submit" class="primary-action" disabled="@IsSubmitting">
-            @(IsSubmitting ? "Connexion..." : "Se connecter")
-        </button>
-        <a class="create-account-link" href="register">Nouvelle entreprise ? Creer un compte</a>
-    </form>
-</section>
-
-@if (Session is not null)
+@if (Session is null)
 {
-    <section class="portal-session-banner">
+    <section class="portal-entry country-branded">
+        <div class="portal-copy">
+            <p class="eyebrow">Portail entreprise</p>
+            <h1>Espace entreprise</h1>
+            <p class="lead">
+                Connectez-vous avec l'email utilise lors de l'inscription une fois votre dossier valide.
+                Vous pourrez ensuite ajouter vos prestataires, suivre les missions et garder une vision claire
+                des encaissements.
+            </p>
+
+            <div class="portal-highlights" aria-label="Points forts du portail">
+                <span><strong>Validation</strong>Dossier controle</span>
+                <span><strong>Suivi</strong>Missions et cash</span>
+                <span><strong>Equipe</strong>Prestataires encadres</span>
+            </div>
+
+            <div class="portal-actions">
+                <a class="secondary-action" href="register">Creer un compte entreprise</a>
+                <span>Dossier deja valide ? utilisez votre acces recu par email.</span>
+            </div>
+        </div>
+
+        <form class="portal-login" @onsubmit="SubmitLoginAsync" @onsubmit:preventDefault>
+            <div class="login-accent" aria-hidden="true"></div>
+            <div class="section-intro">
+                <h2>Connexion</h2>
+                <p>Acces reserve aux entreprises validees par l'equipe ProxiPro.</p>
+            </div>
+
+            <label>
+                Email professionnel
+                <input type="email" autocomplete="username" placeholder="direction@entreprise.ci" @bind="Email" />
+            </label>
+            <label>
+                Mot de passe
+                <input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="Password" />
+            </label>
+
+            <div class="login-options">
+                <label class="remember-option">
+                    <input type="checkbox" @bind="RememberMe" />
+                    <span>
+                        <strong>Se souvenir de moi</strong>
+                        <small>Garder mon email et rester connecte sur cet appareil.</small>
+                    </span>
+                </label>
+                <a href="forgot-password">Mot de passe oublie ?</a>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(LoginMessage))
+            {
+                <p class="field-message">@LoginMessage</p>
+            }
+
+            <button type="submit" class="primary-action" disabled="@IsSubmitting">
+                @(IsSubmitting ? "Connexion..." : "Se connecter")
+            </button>
+            <a class="create-account-link" href="register">Nouvelle entreprise ? Creer un compte</a>
+        </form>
+    </section>
+}
+else
+{
+    <section class="company-dashboard-hero">
         <div>
-            <span>Connecte</span>
-            <strong>@Session.CompanyName</strong>
-            <p>@Session.UserName - @Session.Email</p>
+            <p class="eyebrow">Portail connecte</p>
+            <h1>@Session.CompanyName</h1>
+            <p class="lead">@Session.UserName - @Session.Email</p>
         </div>
         <button type="button" class="secondary-action" @onclick="LogoutAsync">Se deconnecter</button>
     </section>
-}
 
-<section class="dashboard-grid">
-    <article>
-        <h2>Employes</h2>
-        <p>Invitation par SMS, services autorises, experience et tarif horaire.</p>
-        <a href="employees">Voir les employes</a>
-    </article>
-    <article>
-        <h2>Missions</h2>
-        <p>Suivi des demandes directes, rendez-vous, refus et assignations.</p>
-        <a href="operations">Voir les missions</a>
-    </article>
-    <article>
-        <h2>Encaissements</h2>
-        <p>Mobile Money recu, cash a recuperer, commissions et ecarts.</p>
-        <a href="accounts">Voir les comptes</a>
-    </article>
-</section>
+    <section class="metric-strip">
+        <article>
+            <span>Employes actifs</span>
+            <strong>0</strong>
+            <small>Ajoutez vos premiers prestataires</small>
+        </article>
+        <article>
+            <span>Missions a venir</span>
+            <strong>0</strong>
+            <small>Rendez-vous a assigner</small>
+        </article>
+        <article>
+            <span>Encaissements mois</span>
+            <strong>0 XOF</strong>
+            <small>Mobile Money et cash suivis</small>
+        </article>
+    </section>
+
+    <section class="company-dashboard-actions">
+        <article>
+            <span class="action-icon">01</span>
+            <h2>Employes</h2>
+            <p>Ajoutez les salaries et interimaires, leurs pieces, photos, services et experience.</p>
+            <a href="@PortalLink("employees")">Gerer les employes</a>
+        </article>
+        <article>
+            <span class="action-icon">02</span>
+            <h2>Missions</h2>
+            <p>Suivez les demandes directes, les rendez-vous, les missions live et les affectations.</p>
+            <a href="@PortalLink("operations")">Ouvrir les missions</a>
+        </article>
+        <article>
+            <span class="action-icon">03</span>
+            <h2>Encaissements</h2>
+            <p>Controlez Mobile Money, cash a reverser, commissions, ecarts et vues semaine/mois/annee.</p>
+            <a href="@PortalLink("accounts")">Voir les comptes</a>
+        </article>
+    </section>
+}
 
 @code {
     private string Email { get; set; } = string.Empty;
@@ -109,6 +133,21 @@
     {
         if (!firstRender)
         {
+            return;
+        }
+
+        if (Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase))
+        {
+            Session = new CompanyPortalSessionResponse(
+                Guid.Parse("11111111-1111-1111-1111-111111111111"),
+                "Entreprise Demo CI",
+                "Direction Demo",
+                "direction@entreprise.ci",
+                DateTimeOffset.UtcNow,
+                "demo-preview-token");
+            RememberMe = true;
+            Email = Session.Email;
+            StateHasChanged();
             return;
         }
 
@@ -171,5 +210,12 @@
     {
         Session = null;
         await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
+    }
+
+    private string PortalLink(string path)
+    {
+        return Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase)
+            ? $"{path}?preview=1"
+            : path;
     }
 }

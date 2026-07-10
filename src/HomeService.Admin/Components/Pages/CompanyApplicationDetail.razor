@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Companies
 @inject PlatformApiClient ApiClient
+@inject IJSRuntime Js
 
 <PageTitle>Detail demande entreprise</PageTitle>
 
@@ -64,9 +65,10 @@ else if (Application is not null)
                 <p class="section-help">
                     Dernier lien genere, valable jusqu'au @FormatDate(Application.LastActivationLinkExpiresAt).
                 </p>
-                <code>@Application.LastActivationLink</code>
+                <input class="readonly-link" value="@Application.LastActivationLink" readonly />
             </div>
             <div class="easy-actions">
+                <button type="button" @onclick="CopyActivationLinkAsync">Copier lien</button>
                 <a href="@Application.LastActivationLink" target="_blank" rel="noopener">Ouvrir lien</a>
             </div>
         </section>
@@ -330,6 +332,18 @@ else if (Application is not null)
     private async Task SendActivationLinkAsync()
     {
         await RunActivationLinkActionAsync(() => ApiClient.SendCompanyApplicationActivationLinkAsync(Id));
+    }
+
+    private async Task CopyActivationLinkAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Application?.LastActivationLink))
+        {
+            ActionMessage = "Aucun lien d'activation disponible.";
+            return;
+        }
+
+        await Js.InvokeVoidAsync("navigator.clipboard.writeText", Application.LastActivationLink);
+        ActionMessage = "Lien d'activation copie.";
     }
 
     private async Task ApproveDocumentAsync(Guid documentId)

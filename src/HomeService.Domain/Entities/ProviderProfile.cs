@@ -19,6 +19,7 @@ public sealed class ProviderProfile : AuditableEntity
         string phoneNumber,
         DateOnly dateOfBirth,
         string address,
+        ProviderGender gender,
         ProviderEmploymentType employmentType,
         int yearsOfExperience,
         decimal? missionLatitude,
@@ -31,6 +32,7 @@ public sealed class ProviderProfile : AuditableEntity
         PhoneNumber = phoneNumber.Trim();
         DateOfBirth = dateOfBirth;
         Address = address.Trim();
+        Gender = gender;
         EmploymentType = employmentType;
         YearsOfExperience = yearsOfExperience;
         MissionLatitude = missionLatitude;
@@ -45,6 +47,7 @@ public sealed class ProviderProfile : AuditableEntity
     public string PhoneNumber { get; private set; } = string.Empty;
     public DateOnly? DateOfBirth { get; private set; }
     public string Address { get; private set; } = string.Empty;
+    public ProviderGender Gender { get; private set; } = ProviderGender.Unspecified;
     public ProviderEmploymentType EmploymentType { get; private set; } = ProviderEmploymentType.CompanyEmployee;
     public int YearsOfExperience { get; private set; }
     public decimal? MissionLatitude { get; private set; }
@@ -64,20 +67,80 @@ public sealed class ProviderProfile : AuditableEntity
         Touch();
     }
 
+    public void UpdateCompanyProfile(
+        string firstName,
+        string lastName,
+        string phoneNumber,
+        DateOnly dateOfBirth,
+        string address,
+        ProviderGender gender,
+        ProviderEmploymentType employmentType,
+        int yearsOfExperience,
+        int missionRadiusKm)
+    {
+        FirstName = firstName.Trim();
+        LastName = lastName.Trim();
+        PhoneNumber = phoneNumber.Trim();
+        DateOfBirth = dateOfBirth;
+        Address = address.Trim();
+        Gender = gender;
+        EmploymentType = employmentType;
+        YearsOfExperience = yearsOfExperience;
+        MissionRadiusKm = missionRadiusKm;
+        Touch();
+    }
+
     public void AttachDocument(ProviderDocument document)
     {
         _documents.Add(document);
         Touch();
     }
 
-    public void AddService(Guid serviceId, ExperienceLevel experienceLevel, int hourlyRateAmount, string currency)
+    public void AddService(Guid serviceId, ExperienceLevel experienceLevel, ProviderServicePriceTier priceTier = ProviderServicePriceTier.Normal)
     {
         if (_services.Any(service => service.ServiceId == serviceId && service.IsActive))
         {
             return;
         }
 
-        _services.Add(new ProviderService(Id, CompanyId, serviceId, experienceLevel, YearsOfExperience, hourlyRateAmount, currency));
+        _services.Add(new ProviderService(Id, CompanyId, serviceId, experienceLevel, YearsOfExperience, priceTier));
+        Touch();
+    }
+
+    public void SyncCompanyServices(IEnumerable<(Guid ServiceId, ExperienceLevel ExperienceLevel, int YearsOfExperience, ProviderServicePriceTier PriceTier)> services)
+    {
+        var requestedServices = services
+            .GroupBy(service => service.ServiceId)
+            .Select(group => group.Last())
+            .ToList();
+        var requestedIds = requestedServices.Select(service => service.ServiceId).ToHashSet();
+
+        foreach (var existingService in _services.Where(service => service.IsActive && !requestedIds.Contains(service.ServiceId)))
+        {
+            existingService.Deactivate();
+        }
+
+        foreach (var requestedService in requestedServices)
+        {
+            var existingService = _services.FirstOrDefault(service => service.ServiceId == requestedService.ServiceId);
+            if (existingService is null)
+            {
+                _services.Add(new ProviderService(
+                    Id,
+                    CompanyId,
+                    requestedService.ServiceId,
+                    requestedService.ExperienceLevel,
+                    requestedService.YearsOfExperience,
+                    requestedService.PriceTier));
+                continue;
+            }
+
+            existingService.UpdateCompanyExperience(
+                requestedService.ExperienceLevel,
+                requestedService.YearsOfExperience,
+                requestedService.PriceTier);
+        }
+
         Touch();
     }
 

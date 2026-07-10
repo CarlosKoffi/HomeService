@@ -42,7 +42,7 @@ else
         <EditForm Model="Form" OnSubmit="CreateEmployeeAsync" class="employee-form">
             <div class="form-section-title">
                 <h2>@T("company.employees.form.title", "Nouvel employe")</h2>
-                <p>@T("company.employees.form.description", "Renseignez les informations essentielles. Les services et tarifs seront visibles dans le suivi entreprise.")</p>
+                <p>@T("company.employees.form.description", "Renseignez les informations essentielles. Les prix des services sont fixes par la plateforme.")</p>
             </div>
 
             <div class="form-grid">
@@ -67,6 +67,14 @@ else
                     <InputText @bind-Value="Form.Address" placeholder="Cocody, Abidjan" />
                 </label>
                 <label>
+                    Sexe
+                    <InputSelect @bind-Value="Form.Gender">
+                        <option value="Unspecified">Non renseigne</option>
+                        <option value="Female">Femme</option>
+                        <option value="Male">Homme</option>
+                    </InputSelect>
+                </label>
+                <label>
                     Type
                     <InputSelect @bind-Value="Form.EmploymentType">
                         <option value="CompanyEmployee">Employe de l'entreprise</option>
@@ -80,10 +88,6 @@ else
                 <label>
                     Perimetre km
                     <InputNumber @bind-Value="Form.MissionRadiusKm" />
-                </label>
-                <label>
-                    Tarif horaire
-                    <InputNumber @bind-Value="Form.HourlyRateAmount" />
                 </label>
                 <label>
                     Niveau
@@ -106,7 +110,7 @@ else
 
             <div class="service-picker">
                 <strong>@T("company.employees.services.title", "Services maitrises")</strong>
-                <p>@T("company.employees.services.description", "Selectionnez les services que ce prestataire peut realiser. Le tarif horaire saisi plus haut servira de reference.")</p>
+                <p>@T("company.employees.services.description", "Selectionnez les services que ce prestataire peut realiser. Les tarifs normal et premium sont fixes dans l'administration.")</p>
                 <div>
                     @foreach (var service in Services)
                     {
@@ -165,8 +169,9 @@ else
                     <tr>
                         <th>Employe</th>
                         <th>Type</th>
+                        <th>Sexe</th>
                         <th>Services</th>
-                        <th>Tarif</th>
+                        <th>Prix service</th>
                         <th>Experience</th>
                         <th>Zone</th>
                         <th>Statut</th>
@@ -191,8 +196,9 @@ else
                                 <span class="employment-pill">@GetEmploymentTypeLabel(employee.EmploymentType)</span>
                                 <span class="assignment-note">@GetAssignmentLabel(employee.ReceivesDirectRequests)</span>
                             </td>
+                            <td data-label="Sexe">@GetGenderLabel(employee.Gender)</td>
                             <td data-label="Services">@GetServicesText(employee)</td>
-                            <td data-label="Tarif">@GetHourlyRateText(employee)</td>
+                            <td data-label="Prix service">@GetServicePriceText(employee)</td>
                             <td data-label="Experience">
                                 <strong>@employee.YearsOfExperience an(s)</strong>
                                 <span>@GetExperienceLevelText(employee)</span>
@@ -217,9 +223,12 @@ else
             </table>
         </div>
 
-        @if (SelectedEmployee is not null)
-        {
-            <section class="employee-detail-panel">
+    </section>
+
+    @if (SelectedEmployee is not null)
+    {
+        <div class="modal-backdrop" @onclick="ClearSelectedEmployee">
+            <section class="employee-modal" @onclick:stopPropagation>
                 <div class="employee-detail-heading">
                     <div class="employee-identity">
                         <div class="employee-avatar compact">@GetInitials(SelectedEmployee)</div>
@@ -231,21 +240,34 @@ else
                     <button type="button" @onclick="ClearSelectedEmployee">Fermer</button>
                 </div>
 
+                <div class="form-grid compact-form">
+                    <label>Prenom<InputText @bind-Value="EditModel.FirstName" /></label>
+                    <label>Nom<InputText @bind-Value="EditModel.LastName" /></label>
+                    <label>Telephone<InputText @bind-Value="EditModel.PhoneNumber" /></label>
+                    <label>Date de naissance<InputDate @bind-Value="EditBirthDate" /></label>
+                    <label>Sexe
+                        <InputSelect @bind-Value="EditModel.Gender">
+                            <option value="Unspecified">Non renseigne</option>
+                            <option value="Female">Femme</option>
+                            <option value="Male">Homme</option>
+                        </InputSelect>
+                    </label>
+                    <label>Type
+                        <InputSelect @bind-Value="EditModel.EmploymentType">
+                            <option value="CompanyEmployee">Employe de l'entreprise</option>
+                            <option value="TemporaryWorker">Interimaire</option>
+                        </InputSelect>
+                    </label>
+                    <label>Experience<InputNumber @bind-Value="EditModel.YearsOfExperience" /></label>
+                    <label>Perimetre km<InputNumber @bind-Value="EditModel.MissionRadiusKm" /></label>
+                    <label class="wide-field">Adresse<InputText @bind-Value="EditModel.Address" /></label>
+                </div>
+
                 <div class="employee-detail-grid">
                     <article>
-                        <span>Type</span>
-                        <strong>@GetEmploymentTypeLabel(SelectedEmployee.EmploymentType)</strong>
-                        <p>@GetAssignmentLabel(SelectedEmployee.ReceivesDirectRequests)</p>
-                    </article>
-                    <article>
-                        <span>Experience</span>
-                        <strong>@SelectedEmployee.YearsOfExperience an(s)</strong>
-                        <p>@GetExperienceLevelText(SelectedEmployee)</p>
-                    </article>
-                    <article>
-                        <span>Zone mission</span>
-                        <strong>@(SelectedEmployee.ServiceRadiusKm?.ToString("N0") ?? "-") km</strong>
-                        <p>@Display(SelectedEmployee.Address)</p>
+                        <span>Affectation</span>
+                        <strong>@GetAssignmentLabel(EditModel.EmploymentType == "TemporaryWorker")</strong>
+                        <p>@(EditModel.EmploymentType == "TemporaryWorker" ? "Eligible aux demandes directes." : "Affectation depuis le portail entreprise.")</p>
                     </article>
                     <article>
                         <span>Statut</span>
@@ -255,22 +277,99 @@ else
                 </div>
 
                 <div class="employee-detail-section">
-                    <h3>Services et tarifs</h3>
-                    <div class="detail-tags">
-                        @foreach (var service in SelectedEmployee.Services)
+                    <h3>Services et prix plateforme</h3>
+                    <div class="service-editor-toolbar">
+                        <select @bind="ServiceToAddId">
+                            <option value="">Ajouter un service</option>
+                            @foreach (var service in Services.Where(service => EditableServices.All(item => item.ServiceId != service.Id)))
+                            {
+                                <option value="@service.Id">@service.Name</option>
+                            }
+                        </select>
+                        <button type="button" @onclick="AddEditableService">Ajouter</button>
+                    </div>
+                    @if (EditableServices.Count == 0)
+                    {
+                        <p>Aucun service rattache. Ajoutez au moins un service avant de rendre le profil exploitable.</p>
+                    }
+                    else
+                    {
+                        <div class="service-edit-list">
+                            @foreach (var service in EditableServices)
+                            {
+                                <div class="service-edit-row">
+                                    <strong>@service.ServiceName</strong>
+                                    <label>Niveau
+                                        <select @bind="service.ExperienceLevel">
+                                            <option value="Junior">Junior</option>
+                                            <option value="Confirmed">Confirme</option>
+                                            <option value="Senior">Senior</option>
+                                            <option value="Expert">Expert</option>
+                                        </select>
+                                    </label>
+                                    <label>Experience
+                                        <InputNumber @bind-Value="service.YearsOfExperience" />
+                                    </label>
+                                    <label>Mode tarif
+                                        <select @bind="service.PriceTier">
+                                            <option value="Normal">Normal</option>
+                                            <option value="Premium">Premium</option>
+                                        </select>
+                                    </label>
+                                    <div class="service-price-readonly">
+                                        <span>Prix normal</span>
+                                        <strong>@service.NormalPriceAmount.ToString("N0") @service.Currency</strong>
+                                    </div>
+                                    <div class="service-price-readonly premium">
+                                        <span>Prix premium</span>
+                                        <strong>@service.PremiumPriceAmount.ToString("N0") @service.Currency</strong>
+                                    </div>
+                                    <button type="button" class="danger-action" @onclick="() => RemoveEditableService(service.ServiceId)">Retirer</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="employee-detail-section">
+                    <h3>Pieces du dossier</h3>
+                    <div class="document-manager">
+                        @foreach (var slot in GetDocumentSlots(SelectedEmployee))
                         {
-                            <span>@service.ServiceName - @service.HourlyRateAmount.ToString("N0") @service.Currency/h</span>
+                            <article class="@($"document-slot {slot.StatusClass}")">
+                                <div>
+                                    <span>@slot.ShortCode</span>
+                                    <strong>@slot.Label</strong>
+                                    <small>@slot.FileName</small>
+                                </div>
+                                <div class="document-actions">
+                                    @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
+                                    {
+                                        <a href="@ApiClient.ToApiUrl(slot.PreviewUrl)" target="_blank">Ouvrir</a>
+                                        <button type="button" class="danger-action" @onclick="() => DeleteEmployeeDocumentAsync(slot.DocumentId!.Value)">Supprimer</button>
+                                    }
+                                    <label class="replace-document">
+                                        @(slot.DocumentId is null ? "Ajouter" : "Remplacer")
+                                        <InputFile OnChange="eventArgs => UploadEmployeeDocumentAsync(slot.DocumentType, eventArgs)" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                                    </label>
+                                </div>
+                            </article>
                         }
                     </div>
                 </div>
 
-                <div class="employee-detail-section">
-                    <h3>Pieces</h3>
-                    <p>@GetDocumentsText(SelectedEmployee)</p>
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <p class="field-message">@Message</p>
+                }
+
+                <div class="modal-actions">
+                    <button type="button" class="secondary-action" @onclick="ClearSelectedEmployee">Annuler</button>
+                    <button type="button" class="primary-action" @onclick="SaveEmployeeEditAsync">Enregistrer</button>
                 </div>
             </section>
-        }
-    </section>
+        </div>
+    }
 }
 
 @code {
@@ -286,6 +385,10 @@ else
     private string? IdentityFileName { get; set; }
     private string? DiplomaFileName { get; set; }
     private CompanyEmployeeResponse? SelectedEmployee { get; set; }
+    private CompanyEmployeeEditModel EditModel { get; set; } = new();
+    private DateTime? EditBirthDate { get; set; }
+    private List<CompanyEmployeeServiceEditModel> EditableServices { get; set; } = [];
+    private string? ServiceToAddId { get; set; }
     private IReadOnlyDictionary<string, string> Texts { get; set; } = new Dictionary<string, string>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -341,11 +444,248 @@ else
     private void SelectEmployee(CompanyEmployeeResponse employee)
     {
         SelectedEmployee = employee;
+        EditModel = new CompanyEmployeeEditModel
+        {
+            FirstName = employee.FirstName,
+            LastName = employee.LastName,
+            PhoneNumber = employee.PhoneNumber,
+            Address = employee.Address ?? string.Empty,
+            Gender = employee.Gender,
+            EmploymentType = employee.EmploymentType,
+            YearsOfExperience = employee.YearsOfExperience,
+            MissionRadiusKm = (int)(employee.ServiceRadiusKm ?? 5)
+        };
+        EditableServices = employee.Services
+            .Where(service => service.IsActive)
+            .Select(service => new CompanyEmployeeServiceEditModel
+            {
+                ServiceId = service.ServiceId,
+                ServiceName = service.ServiceName,
+                ExperienceLevel = service.ExperienceLevel,
+                YearsOfExperience = service.YearsOfExperience,
+                PriceTier = service.PriceTier,
+                NormalPriceAmount = service.NormalPriceAmount,
+                PremiumPriceAmount = service.PremiumPriceAmount,
+                Currency = service.Currency
+            })
+            .ToList();
+        ServiceToAddId = null;
+        EditBirthDate = employee.BirthDate?.ToDateTime(TimeOnly.MinValue);
     }
 
     private void ClearSelectedEmployee()
     {
         SelectedEmployee = null;
+        EditableServices = [];
+        ServiceToAddId = null;
+    }
+
+    private async Task SaveEmployeeEditAsync()
+    {
+        if (SelectedEmployee is null || Session is null || EditBirthDate is null)
+        {
+            return;
+        }
+
+        var updated = SelectedEmployee with
+        {
+            FirstName = EditModel.FirstName,
+            LastName = EditModel.LastName,
+            PhoneNumber = EditModel.PhoneNumber,
+            Address = EditModel.Address,
+            Gender = EditModel.Gender,
+            EmploymentType = EditModel.EmploymentType,
+            ReceivesDirectRequests = EditModel.EmploymentType == "TemporaryWorker",
+            YearsOfExperience = EditModel.YearsOfExperience,
+            ServiceRadiusKm = EditModel.MissionRadiusKm,
+            BirthDate = DateOnly.FromDateTime(EditBirthDate.Value),
+            Services = EditableServices
+                .Select(service => new CompanyEmployeeServiceResponse(
+                    service.ServiceId,
+                    service.ServiceName,
+                    service.ExperienceLevel,
+                    service.YearsOfExperience,
+                    service.PriceTier,
+                    service.NormalPriceAmount,
+                    service.PremiumPriceAmount,
+                    service.Currency,
+                    true))
+                .ToList()
+        };
+
+        if (IsPreviewMode())
+        {
+            EmployeeRows = EmployeeRows.Select(employee => employee.Id == updated.Id ? updated : employee).ToList();
+            SelectedEmployee = updated;
+            return;
+        }
+
+        var profileResult = await ApiClient.UpdateCompanyEmployeeAsync(
+            Session.CompanyId,
+            SelectedEmployee.Id,
+            new UpdateCompanyEmployeeRequest(
+                EditModel.FirstName,
+                EditModel.LastName,
+                EditModel.PhoneNumber,
+                DateOnly.FromDateTime(EditBirthDate.Value),
+                EditModel.Address,
+                EditModel.Gender,
+                EditModel.EmploymentType,
+                EditModel.YearsOfExperience,
+                EditModel.MissionRadiusKm));
+
+        if (!profileResult.IsSuccess)
+        {
+            Message = profileResult.ErrorMessage;
+            return;
+        }
+
+        var servicesResult = await ApiClient.UpdateCompanyEmployeeServicesAsync(
+            Session.CompanyId,
+            SelectedEmployee.Id,
+            new UpdateCompanyEmployeeServicesRequest(EditableServices
+                .Select(service => new UpsertCompanyEmployeeServiceRequest(
+                    service.ServiceId,
+                    service.ExperienceLevel,
+                    service.YearsOfExperience,
+                    service.PriceTier))
+                .ToList()));
+
+        if (!servicesResult.IsSuccess)
+        {
+            Message = servicesResult.ErrorMessage;
+            return;
+        }
+
+        await LoadAsync();
+        SelectedEmployee = EmployeeRows.FirstOrDefault(employee => employee.Id == updated.Id);
+    }
+
+    private void AddEditableService()
+    {
+        if (!Guid.TryParse(ServiceToAddId, out var serviceId) || EditableServices.Any(service => service.ServiceId == serviceId))
+        {
+            return;
+        }
+
+        var service = Services.FirstOrDefault(service => service.Id == serviceId);
+        if (service is null)
+        {
+            return;
+        }
+
+        EditableServices.Add(new CompanyEmployeeServiceEditModel
+        {
+            ServiceId = service.Id,
+            ServiceName = service.Name,
+            ExperienceLevel = "Confirmed",
+            YearsOfExperience = EditModel.YearsOfExperience,
+            PriceTier = "Normal",
+            NormalPriceAmount = service.NormalPriceAmount,
+            PremiumPriceAmount = service.PremiumPriceAmount,
+            Currency = service.Currency
+        });
+        ServiceToAddId = null;
+    }
+
+    private void RemoveEditableService(Guid serviceId)
+    {
+        EditableServices.RemoveAll(service => service.ServiceId == serviceId);
+    }
+
+    private async Task UploadEmployeeDocumentAsync(string documentType, InputFileChangeEventArgs eventArgs)
+    {
+        if (SelectedEmployee is null || Session is null || eventArgs.File is null)
+        {
+            return;
+        }
+
+        if (IsPreviewMode())
+        {
+            var document = new CompanyEmployeeDocumentResponse(
+                Guid.NewGuid(),
+                documentType,
+                eventArgs.File.Name,
+                string.IsNullOrWhiteSpace(eventArgs.File.ContentType) ? "application/octet-stream" : eventArgs.File.ContentType,
+                "#",
+                DateTimeOffset.UtcNow);
+            var documents = SelectedEmployee.Documents
+                .Where(item => item.DocumentType != documentType)
+                .Append(document)
+                .ToList();
+            ApplySelectedEmployeeUpdate(SelectedEmployee with
+            {
+                Documents = documents,
+                PhotoUrl = documentType == "Photo" ? "#" : SelectedEmployee.PhotoUrl,
+                IdentityDocumentUrl = documentType == "IdentityDocument" ? "#" : SelectedEmployee.IdentityDocumentUrl,
+                DiplomaDocumentUrl = documentType == "Diploma" ? "#" : SelectedEmployee.DiplomaDocumentUrl,
+                HasDiploma = documentType == "Diploma" || SelectedEmployee.HasDiploma
+            });
+            return;
+        }
+
+        var result = await ApiClient.UploadCompanyEmployeeDocumentAsync(Session.CompanyId, SelectedEmployee.Id, documentType, eventArgs.File);
+        if (!result.IsSuccess)
+        {
+            Message = result.ErrorMessage;
+            return;
+        }
+
+        await RefreshSelectedEmployeeAsync();
+    }
+
+    private async Task DeleteEmployeeDocumentAsync(Guid documentId)
+    {
+        if (SelectedEmployee is null || Session is null)
+        {
+            return;
+        }
+
+        if (IsPreviewMode())
+        {
+            var removed = SelectedEmployee.Documents.FirstOrDefault(document => document.Id == documentId);
+            var documents = SelectedEmployee.Documents.Where(document => document.Id != documentId).ToList();
+            ApplySelectedEmployeeUpdate(SelectedEmployee with
+            {
+                Documents = documents,
+                PhotoUrl = removed?.DocumentType == "Photo" ? null : SelectedEmployee.PhotoUrl,
+                IdentityDocumentUrl = removed?.DocumentType == "IdentityDocument" ? null : SelectedEmployee.IdentityDocumentUrl,
+                DiplomaDocumentUrl = removed?.DocumentType == "Diploma" ? null : SelectedEmployee.DiplomaDocumentUrl,
+                HasDiploma = removed?.DocumentType == "Diploma" ? false : SelectedEmployee.HasDiploma
+            });
+            return;
+        }
+
+        var result = await ApiClient.DeleteCompanyEmployeeDocumentAsync(Session.CompanyId, SelectedEmployee.Id, documentId);
+        if (!result.IsSuccess)
+        {
+            Message = result.ErrorMessage;
+            return;
+        }
+
+        await RefreshSelectedEmployeeAsync();
+    }
+
+    private async Task RefreshSelectedEmployeeAsync()
+    {
+        if (SelectedEmployee is null)
+        {
+            return;
+        }
+
+        var selectedId = SelectedEmployee.Id;
+        await LoadAsync();
+        var refreshed = EmployeeRows.FirstOrDefault(employee => employee.Id == selectedId);
+        if (refreshed is not null)
+        {
+            SelectEmployee(refreshed);
+        }
+    }
+
+    private void ApplySelectedEmployeeUpdate(CompanyEmployeeResponse updated)
+    {
+        EmployeeRows = EmployeeRows.Select(employee => employee.Id == updated.Id ? updated : employee).ToList();
+        SelectEmployee(updated);
     }
 
     private void ToggleService(Guid serviceId, ChangeEventArgs eventArgs)
@@ -496,6 +836,16 @@ else
         };
     }
 
+    private static string GetGenderLabel(string gender)
+    {
+        return gender switch
+        {
+            "Female" => "Femme",
+            "Male" => "Homme",
+            _ => "Non renseigne"
+        };
+    }
+
     private static string GetServicesText(CompanyEmployeeResponse employee)
     {
         return employee.Services.Count == 0
@@ -503,35 +853,70 @@ else
             : string.Join(", ", employee.Services.Select(service => service.ServiceName));
     }
 
-    private static string GetHourlyRateText(CompanyEmployeeResponse employee)
+    private static string GetServicePriceText(CompanyEmployeeResponse employee)
     {
         if (employee.Services.Count == 0)
         {
             return "Non defini";
         }
 
-        var minRate = employee.Services.Min(service => service.HourlyRateAmount);
-        var maxRate = employee.Services.Max(service => service.HourlyRateAmount);
+        var minRate = employee.Services.Min(service => service.NormalPriceAmount);
+        var maxRate = employee.Services.Max(service => service.PremiumPriceAmount);
         var currency = employee.Services.First().Currency;
         return minRate == maxRate
-            ? $"{minRate:N0} {currency}/h"
-            : $"{minRate:N0} - {maxRate:N0} {currency}/h";
+            ? $"{minRate:N0} {currency}"
+            : $"{minRate:N0} - {maxRate:N0} {currency}";
     }
 
     private static string GetDocumentsText(CompanyEmployeeResponse employee)
     {
         var documents = new List<string>();
-        if (!string.IsNullOrWhiteSpace(employee.IdentityDocumentUrl))
+        if (employee.Documents.Any(document => document.DocumentType == "IdentityDocument") || !string.IsNullOrWhiteSpace(employee.IdentityDocumentUrl))
         {
             documents.Add("Piece ID");
         }
 
-        if (employee.HasDiploma)
+        if (employee.HasDiploma || employee.Documents.Any(document => document.DocumentType == "Diploma"))
         {
             documents.Add("Diplome");
         }
 
         return documents.Count == 0 ? "A verifier" : string.Join(", ", documents);
+    }
+
+    private IReadOnlyList<EmployeeDocumentSlot> GetDocumentSlots(CompanyEmployeeResponse employee)
+    {
+        return
+        [
+            ToDocumentSlot(employee, "Photo", "Photo", "Photo", false),
+            ToDocumentSlot(employee, "IdentityDocument", "ID", "Piece d'identite", true),
+            ToDocumentSlot(employee, "Diploma", "DIP", "Diplome ou certificat", false)
+        ];
+    }
+
+    private EmployeeDocumentSlot ToDocumentSlot(CompanyEmployeeResponse employee, string documentType, string shortCode, string label, bool isRequired)
+    {
+        var document = employee.Documents
+            .Where(document => document.DocumentType == documentType)
+            .OrderByDescending(document => document.CreatedAt)
+            .FirstOrDefault();
+
+        var previewUrl = document?.PreviewUrl ?? documentType switch
+        {
+            "Photo" => employee.PhotoUrl,
+            "IdentityDocument" => employee.IdentityDocumentUrl,
+            "Diploma" => employee.DiplomaDocumentUrl,
+            _ => null
+        };
+
+        return new EmployeeDocumentSlot(
+            documentType,
+            shortCode,
+            label,
+            document?.Id,
+            document?.OriginalFileName ?? (string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "Manquant" : "Optionnel") : "Piece deposee"),
+            previewUrl,
+            string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "missing" : "optional") : "ready");
     }
 
     private static string GetExperienceLevelText(CompanyEmployeeResponse employee)
@@ -596,9 +981,9 @@ else
 
         Services = new List<ServiceSummaryResponse>
         {
-            new(menageId, "Menage a domicile", "Entretien courant du domicile.", "Active", true),
-            new(nounouId, "Nounou", "Garde d'enfant a domicile.", "Active", true),
-            new(jardinageId, "Jardinage", "Entretien jardin et exterieur.", "Active", true)
+            new(menageId, "Menage a domicile", "Entretien courant du domicile.", "Active", true, 3500, 5000, "XOF"),
+            new(nounouId, "Nounou", "Garde d'enfant a domicile.", "Active", true, 4000, 6500, "XOF"),
+            new(jardinageId, "Jardinage", "Entretien jardin et exterieur.", "Active", true, 4500, 6500, "XOF")
         };
 
         EmployeeRows = new List<CompanyEmployeeResponse>
@@ -610,6 +995,7 @@ else
                 "+225 07 11 22 33 44",
                 new DateOnly(1994, 5, 12),
                 "Cocody, Abidjan",
+                "Female",
                 "CompanyEmployee",
                 false,
                 6,
@@ -624,8 +1010,14 @@ else
                 true,
                 new List<CompanyEmployeeServiceResponse>
                 {
-                    new(menageId, "Menage a domicile", "Senior", 6, 3500, "XOF", true),
-                    new(nounouId, "Nounou", "Confirmed", 4, 4000, "XOF", true)
+                    new(menageId, "Menage a domicile", "Senior", 6, "Premium", 3500, 5000, "XOF", true),
+                    new(nounouId, "Nounou", "Confirmed", 4, "Normal", 4000, 6500, "XOF", true)
+                },
+                new List<CompanyEmployeeDocumentResponse>
+                {
+                    new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc1"), "Photo", "awa-kone-photo.jpg", "image/jpeg", "#", DateTimeOffset.UtcNow.AddDays(-14)),
+                    new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), "IdentityDocument", "piece-identite-awa.pdf", "application/pdf", "#", DateTimeOffset.UtcNow.AddDays(-14)),
+                    new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), "Diploma", "certificat-menage-awa.pdf", "application/pdf", "#", DateTimeOffset.UtcNow.AddDays(-12))
                 },
                 DateTimeOffset.UtcNow.AddDays(-14)),
             new(
@@ -635,6 +1027,7 @@ else
                 "+225 05 45 67 89 10",
                 new DateOnly(1989, 9, 3),
                 "Marcory, Abidjan",
+                "Male",
                 "TemporaryWorker",
                 true,
                 9,
@@ -649,7 +1042,12 @@ else
                 false,
                 new List<CompanyEmployeeServiceResponse>
                 {
-                    new(jardinageId, "Jardinage", "Expert", 9, 4500, "XOF", true)
+                    new(jardinageId, "Jardinage", "Expert", 9, "Premium", 4500, 6500, "XOF", true)
+                },
+                new List<CompanyEmployeeDocumentResponse>
+                {
+                    new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc4"), "Photo", "yao-ndri-photo.jpg", "image/jpeg", "#", DateTimeOffset.UtcNow.AddDays(-8)),
+                    new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc5"), "IdentityDocument", "cni-yao.pdf", "application/pdf", "#", DateTimeOffset.UtcNow.AddDays(-8))
                 },
                 DateTimeOffset.UtcNow.AddDays(-8)),
             new(
@@ -659,6 +1057,7 @@ else
                 "+225 01 98 76 54 32",
                 new DateOnly(1998, 2, 21),
                 "Yopougon, Abidjan",
+                "Female",
                 "CompanyEmployee",
                 false,
                 2,
@@ -673,7 +1072,11 @@ else
                 false,
                 new List<CompanyEmployeeServiceResponse>
                 {
-                    new(menageId, "Menage a domicile", "Junior", 2, 2500, "XOF", true)
+                    new(menageId, "Menage a domicile", "Junior", 2, "Normal", 3500, 5000, "XOF", true)
+                },
+                new List<CompanyEmployeeDocumentResponse>
+                {
+                    new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc6"), "IdentityDocument", "piece-mariam.png", "image/png", "#", DateTimeOffset.UtcNow.AddDays(-2))
                 },
                 DateTimeOffset.UtcNow.AddDays(-2))
         };
@@ -709,13 +1112,46 @@ else
         return new Dictionary<string, string>
         {
             ["company.employees.form.title"] = "Nouvel employe",
-            ["company.employees.form.description"] = "Renseignez les informations essentielles. Les services et tarifs seront visibles dans le suivi entreprise.",
+            ["company.employees.form.description"] = "Renseignez les informations essentielles. Les prix des services sont fixes par la plateforme.",
             ["company.employees.services.title"] = "Services maitrises",
-            ["company.employees.services.description"] = "Selectionnez les services que ce prestataire peut realiser. Le tarif horaire saisi plus haut servira de reference.",
+            ["company.employees.services.description"] = "Selectionnez les services que ce prestataire peut realiser. Les tarifs normal et premium sont fixes dans l'administration.",
             ["company.employees.upload.photo"] = "Photo du prestataire",
             ["company.employees.upload.identity"] = "Piece d'identite",
             ["company.employees.upload.diploma"] = "Diplome ou certificat",
             ["company.employees.upload.choose"] = "Selectionner"
         };
     }
+
+    private sealed class CompanyEmployeeEditModel
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string Gender { get; set; } = "Unspecified";
+        public string EmploymentType { get; set; } = "CompanyEmployee";
+        public int YearsOfExperience { get; set; }
+        public int MissionRadiusKm { get; set; } = 5;
+    }
+
+    private sealed class CompanyEmployeeServiceEditModel
+    {
+        public Guid ServiceId { get; set; }
+        public string ServiceName { get; set; } = string.Empty;
+        public string ExperienceLevel { get; set; } = "Confirmed";
+        public int YearsOfExperience { get; set; }
+        public string PriceTier { get; set; } = "Normal";
+        public int NormalPriceAmount { get; set; }
+        public int PremiumPriceAmount { get; set; }
+        public string Currency { get; set; } = "XOF";
+    }
+
+    private sealed record EmployeeDocumentSlot(
+        string DocumentType,
+        string ShortCode,
+        string Label,
+        Guid? DocumentId,
+        string FileName,
+        string? PreviewUrl,
+        string StatusClass);
 }

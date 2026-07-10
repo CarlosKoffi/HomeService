@@ -7,6 +7,7 @@ public sealed record CompanyEmployeeResponse(
     string PhoneNumber,
     DateOnly? BirthDate,
     string? Address,
+    string Gender,
     string EmploymentType,
     bool ReceivesDirectRequests,
     int YearsOfExperience,
@@ -20,4 +21,5 @@ public sealed record CompanyEmployeeResponse(
     string? DiplomaDocumentUrl,
     bool HasDiploma,
     IReadOnlyList<CompanyEmployeeServiceResponse> Services,
+    IReadOnlyList<CompanyEmployeeDocumentResponse> Documents,
     DateTimeOffset CreatedAt);

@@ -81,10 +81,14 @@ public static class DatabaseInitializer
             return;
         }
 
-        db.Services.AddRange(
-            new Service("Menage a domicile", "Entretien courant du domicile, nettoyage, rangement et aide ponctuelle.", createdByCompanyId: null),
-            new Service("Nounou", "Garde d'enfant a domicile par un prestataire recommande et rattache a une entreprise validee.", createdByCompanyId: null),
-            new Service("Jardinage", "Entretien jardin, taille simple, arrosage et travaux exterieurs legers.", createdByCompanyId: null));
+        var menage = new Service("Menage a domicile", "Entretien courant du domicile, nettoyage, rangement et aide ponctuelle.", createdByCompanyId: null);
+        menage.UpdatePricing(3500, 5000, "XOF");
+        var nounou = new Service("Nounou", "Garde d'enfant a domicile par un prestataire recommande et rattache a une entreprise validee.", createdByCompanyId: null);
+        nounou.UpdatePricing(4000, 6500, "XOF");
+        var jardinage = new Service("Jardinage", "Entretien jardin, taille simple, arrosage et travaux exterieurs legers.", createdByCompanyId: null);
+        jardinage.UpdatePricing(4500, 6500, "XOF");
+
+        db.Services.AddRange(menage, nounou, jardinage);
 
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -127,6 +131,14 @@ public static class DatabaseInitializer
             new TranslationSeed("company.register.description", "Company", "Introduction formulaire inscription", "Ce formulaire permet a votre entreprise de demander son acces ProxiPro. Notre equipe verifiera les informations et les pieces fournies."),
             new TranslationSeed("company.register.submit", "Company", "Bouton envoyer demande", "Envoyer la demande"),
             new TranslationSeed("company.register.success", "Company", "Confirmation demande envoyee", "Demande envoyee. Notre equipe va verifier votre dossier."),
+            new TranslationSeed("company.employees.form.title", "Company", "Titre formulaire ajout employe", "Nouvel employe"),
+            new TranslationSeed("company.employees.form.description", "Company", "Aide formulaire ajout employe", "Renseignez les informations essentielles. Les prix des services sont fixes par la plateforme."),
+            new TranslationSeed("company.employees.services.title", "Company", "Titre selection services employe", "Services maitrises"),
+            new TranslationSeed("company.employees.services.description", "Company", "Aide selection services employe", "Selectionnez les services que ce prestataire peut realiser. Les tarifs normal et premium sont fixes dans l'administration."),
+            new TranslationSeed("company.employees.upload.photo", "Company", "Upload photo employe", "Photo du prestataire"),
+            new TranslationSeed("company.employees.upload.identity", "Company", "Upload piece identite employe", "Piece d'identite"),
+            new TranslationSeed("company.employees.upload.diploma", "Company", "Upload diplome employe", "Diplome ou certificat"),
+            new TranslationSeed("company.employees.upload.choose", "Company", "Bouton selection fichier employe", "Selectionner"),
             new TranslationSeed("admin.dashboard.title", "Admin", "Titre dashboard admin", "Centre de controle entreprise"),
             new TranslationSeed("admin.companyApplications.title", "Admin", "Titre file demandes entreprise", "Demandes entreprises"),
             new TranslationSeed("admin.companyApplications.empty", "Admin", "Message liste vide", "Aucune demande entreprise pour le moment."),

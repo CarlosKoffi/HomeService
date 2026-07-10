@@ -67,6 +67,49 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
         return documents;
     }
 
+    public async Task<StoredCompanyProviderDocument> SaveOneAsync(
+        Guid companyId,
+        Guid providerId,
+        ProviderDocumentType documentType,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file.Length == 0)
+        {
+            throw new InvalidOperationException("Le fichier employe est vide.");
+        }
+
+        if (file.Length > MaxFileSize)
+        {
+            throw new InvalidOperationException("Chaque fichier employe doit faire moins de 10 Mo.");
+        }
+
+        if (!AllowedContentTypes.Contains(file.ContentType))
+        {
+            throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG ou WEBP.");
+        }
+
+        var extension = Path.GetExtension(file.FileName);
+        var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".bin" : extension.ToLowerInvariant();
+        var relativePath = Path.Combine(
+            "providers",
+            companyId.ToString("D"),
+            providerId.ToString("D"),
+            $"{documentType.ToString().ToLowerInvariant()}-{Guid.NewGuid():N}{safeExtension}");
+
+        var absolutePath = GetAbsolutePath(relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
+
+        await using var stream = File.Create(absolutePath);
+        await file.CopyToAsync(stream, cancellationToken);
+
+        return new StoredCompanyProviderDocument(
+            documentType,
+            file.FileName,
+            relativePath.Replace('\\', '/'),
+            file.ContentType);
+    }
+
     public string GetAbsolutePath(string relativePath)
     {
         var normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);

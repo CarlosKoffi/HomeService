@@ -3,6 +3,7 @@ using System;
 using HomeService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HomeService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(HomeServiceDbContext))]
-    partial class HomeServiceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710175107_MovePricingToServices")]
+    partial class MovePricingToServices
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1061,11 +1064,6 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("PriceTier")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("PricingUnit")
                         .IsRequired()

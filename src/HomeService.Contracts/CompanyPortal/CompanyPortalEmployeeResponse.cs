@@ -8,6 +8,7 @@ public sealed record CompanyPortalEmployeeResponse(
     string PhoneNumber,
     DateOnly? DateOfBirth,
     string Address,
+    string Gender,
     string EmploymentType,
     bool ReceivesDirectRequests,
     int YearsOfExperience,

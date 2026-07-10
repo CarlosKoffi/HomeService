@@ -15,16 +15,14 @@ public sealed class ProviderService : AuditableEntity
         Guid serviceId,
         ExperienceLevel experienceLevel,
         int yearsOfExperience,
-        int hourlyRateAmount,
-        string currency)
+        ProviderServicePriceTier priceTier = ProviderServicePriceTier.Normal)
     {
         ProviderId = providerId;
         CompanyId = companyId;
         ServiceId = serviceId;
         ExperienceLevel = experienceLevel;
         YearsOfExperience = yearsOfExperience;
-        HourlyRateAmount = hourlyRateAmount;
-        Currency = currency.Trim().ToUpperInvariant();
+        PriceTier = priceTier;
         CompanyValidatedAt = DateTimeOffset.UtcNow;
     }
 
@@ -34,8 +32,7 @@ public sealed class ProviderService : AuditableEntity
     public Service? Service { get; private set; }
     public ExperienceLevel ExperienceLevel { get; private set; }
     public int YearsOfExperience { get; private set; }
-    public int HourlyRateAmount { get; private set; }
-    public string Currency { get; private set; } = "XOF";
+    public ProviderServicePriceTier PriceTier { get; private set; } = ProviderServicePriceTier.Normal;
     public PricingUnit PricingUnit { get; private set; } = PricingUnit.Hourly;
     public DateTimeOffset CompanyValidatedAt { get; private set; }
     public bool IsActive { get; private set; } = true;
@@ -43,6 +40,16 @@ public sealed class ProviderService : AuditableEntity
     public void Deactivate()
     {
         IsActive = false;
+        Touch();
+    }
+
+    public void UpdateCompanyExperience(ExperienceLevel experienceLevel, int yearsOfExperience, ProviderServicePriceTier priceTier)
+    {
+        ExperienceLevel = experienceLevel;
+        YearsOfExperience = yearsOfExperience;
+        PriceTier = priceTier;
+        CompanyValidatedAt = DateTimeOffset.UtcNow;
+        IsActive = true;
         Touch();
     }
 }

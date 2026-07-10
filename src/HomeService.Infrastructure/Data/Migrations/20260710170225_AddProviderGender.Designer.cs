@@ -3,6 +3,7 @@ using System;
 using HomeService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HomeService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(HomeServiceDbContext))]
-    partial class HomeServiceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710170225_AddProviderGender")]
+    partial class AddProviderGender
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1054,18 +1057,21 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
                     b.Property<string>("ExperienceLevel")
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<int>("HourlyRateAmount")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("PriceTier")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("PricingUnit")
                         .IsRequired()
@@ -1106,11 +1112,6 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.Property<Guid?>("CreatedByCompanyId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)");
-
                     b.Property<string>("Description")
                         .HasMaxLength(800)
                         .HasColumnType("character varying(800)");
@@ -1123,16 +1124,10 @@ namespace HomeService.Infrastructure.Data.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
-                    b.Property<int>("NormalPriceAmount")
-                        .HasColumnType("integer");
-
                     b.Property<string>("NormalizedName")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
-
-                    b.Property<int>("PremiumPriceAmount")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .IsRequired()

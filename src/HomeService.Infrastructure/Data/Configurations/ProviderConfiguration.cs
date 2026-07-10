@@ -13,6 +13,7 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<ProviderPro
         builder.Property(provider => provider.LastName).HasMaxLength(120).IsRequired();
         builder.Property(provider => provider.PhoneNumber).HasMaxLength(32).IsRequired();
         builder.Property(provider => provider.Address).HasMaxLength(320).IsRequired();
+        builder.Property(provider => provider.Gender).HasConversion<string>().HasMaxLength(32);
         builder.Property(provider => provider.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(provider => provider.MissionLatitude).HasPrecision(9, 6);
         builder.Property(provider => provider.MissionLongitude).HasPrecision(9, 6);

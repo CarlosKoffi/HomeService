@@ -316,13 +316,22 @@ a, .btn-link {
     margin-top: 1.5rem;
 }
 
-.activation-link-panel code {
+.activation-link-panel .readonly-link {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
+    color: #0f172a;
     display: block;
+    font: inherit;
+    font-weight: 700;
     overflow-wrap: anywhere;
     padding: .7rem;
+    width: 100%;
+}
+
+.activation-link-panel .readonly-link:focus {
+    border-color: #94a3b8;
+    outline: 3px solid rgba(148, 163, 184, .25);
 }
 
 .detail-grid dl {

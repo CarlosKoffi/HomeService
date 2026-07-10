@@ -62,7 +62,10 @@ app.MapGet("/api/services", async (IAppDbContext db, CancellationToken cancellat
             service.Name,
             service.Description,
             service.Status.ToString(),
-            service.IsActive))
+            service.IsActive,
+            service.NormalPriceAmount,
+            service.PremiumPriceAmount,
+            service.Currency))
         .ToListAsync(cancellationToken);
 
     return Results.Ok(services);
@@ -359,6 +362,7 @@ app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
             provider.PhoneNumber,
             provider.DateOfBirth,
             provider.Address,
+            provider.Gender.ToString(),
             provider.EmploymentType.ToString(),
             provider.EmploymentType == ProviderEmploymentType.TemporaryWorker,
             provider.YearsOfExperience,
@@ -391,9 +395,22 @@ app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
                     providerService.Service!.Name,
                     providerService.ExperienceLevel.ToString(),
                     providerService.YearsOfExperience,
-                    providerService.HourlyRateAmount,
-                    providerService.Currency,
+                    providerService.PriceTier.ToString(),
+                    providerService.Service.NormalPriceAmount,
+                    providerService.Service.PremiumPriceAmount,
+                    providerService.Service.Currency,
                     providerService.IsActive))
+                .ToList(),
+            provider.Documents
+                .OrderBy(document => document.DocumentType)
+                .ThenByDescending(document => document.CreatedAt)
+                .Select(document => new CompanyEmployeeDocumentResponse(
+                    document.Id,
+                    document.DocumentType.ToString(),
+                    document.OriginalFileName,
+                    document.ContentType,
+                    $"/api/company-portal/provider-documents/{document.Id}/preview",
+                    document.CreatedAt))
                 .ToList(),
             provider.CreatedAt))
         .ToListAsync(cancellationToken);
@@ -434,6 +451,7 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
         GetFormValue(form, "phoneNumber"),
         DateOnly.Parse(GetFormValue(form, "dateOfBirth")),
         GetFormValue(form, "address"),
+        ParseProviderGender(GetOptionalFormValue(form, "gender")),
         ParseProviderEmploymentType(GetOptionalFormValue(form, "employmentType")),
         GetOptionalInt(form, "yearsOfExperience") ?? 0,
         GetOptionalDecimal(form, "missionLatitude"),
@@ -450,9 +468,7 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
     {
         provider.AddService(
             serviceId,
-            ParseExperienceLevel(GetOptionalFormValue(form, "experienceLevel")),
-            GetOptionalInt(form, "hourlyRateAmount") ?? 1500,
-            "XOF");
+            ParseExperienceLevel(GetOptionalFormValue(form, "experienceLevel")));
     }
 
     db.Providers.Add(provider);
@@ -473,6 +489,140 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
     return Results.Created($"/api/company-portal/{companyId}/employees/{provider.Id}", new CreateCompanyEmployeeResult(provider.Id));
 })
 .WithName("CreateCompanyPortalEmployee");
+
+app.MapPut("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}", async (
+    Guid companyId,
+    Guid employeeId,
+    UpdateCompanyEmployeeRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+    if (provider is null)
+    {
+        return Results.NotFound(new { message = "Employe introuvable." });
+    }
+
+    provider.UpdateCompanyProfile(
+        request.FirstName,
+        request.LastName,
+        request.PhoneNumber,
+        request.DateOfBirth,
+        request.Address,
+        ParseProviderGender(request.Gender),
+        ParseProviderEmploymentType(request.EmploymentType),
+        request.YearsOfExperience,
+        request.MissionRadiusKm);
+
+    await db.SaveChangesAsync(cancellationToken);
+    return Results.NoContent();
+})
+.WithName("UpdateCompanyPortalEmployee");
+
+app.MapPut("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/services", async (
+    Guid companyId,
+    Guid employeeId,
+    UpdateCompanyEmployeeServicesRequest request,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var provider = await db.Providers
+        .Include(provider => provider.Services)
+        .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+    if (provider is null)
+    {
+        return Results.NotFound(new { message = "Employe introuvable." });
+    }
+
+    var requestedIds = request.Services.Select(service => service.ServiceId).Distinct().ToList();
+    var activeServiceIds = await db.Services
+        .Where(service => requestedIds.Contains(service.Id) && service.IsActive)
+        .Select(service => service.Id)
+        .ToListAsync(cancellationToken);
+
+    provider.SyncCompanyServices(request.Services
+        .Where(service => activeServiceIds.Contains(service.ServiceId))
+        .Select(service => (
+            service.ServiceId,
+            ParseExperienceLevel(service.ExperienceLevel),
+            Math.Max(0, service.YearsOfExperience),
+            ParseProviderServicePriceTier(service.PriceTier))));
+
+    await db.SaveChangesAsync(cancellationToken);
+    return Results.NoContent();
+})
+.WithName("UpdateCompanyPortalEmployeeServices");
+
+app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/documents", async (
+    Guid companyId,
+    Guid employeeId,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    CompanyProviderUploadService uploadService,
+    CancellationToken cancellationToken) =>
+{
+    if (!httpRequest.HasFormContentType)
+    {
+        return Results.BadRequest(new { message = "La piece doit etre envoyee au format multipart/form-data." });
+    }
+
+    var provider = await db.Providers
+        .Include(provider => provider.Documents)
+        .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+    if (provider is null)
+    {
+        return Results.NotFound(new { message = "Employe introuvable." });
+    }
+
+    var form = await httpRequest.ReadFormAsync(cancellationToken);
+    if (!TryParseProviderDocumentType(GetOptionalFormValue(form, "documentType"), out var documentType))
+    {
+        return Results.BadRequest(new { message = "Type de piece invalide." });
+    }
+
+    var file = form.Files.GetFile("file");
+    if (file is null)
+    {
+        return Results.BadRequest(new { message = "Aucun fichier recu." });
+    }
+
+    var oldDocuments = provider.Documents.Where(document => document.DocumentType == documentType).ToList();
+    foreach (var oldDocument in oldDocuments)
+    {
+        TryDeleteProviderFile(uploadService, oldDocument.StoragePath);
+        db.ProviderDocuments.Remove(oldDocument);
+    }
+
+    var stored = await uploadService.SaveOneAsync(companyId, provider.Id, documentType, file, cancellationToken);
+    provider.AttachDocument(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.NoContent();
+})
+.WithName("UploadCompanyPortalEmployeeDocument");
+
+app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/documents/{documentId:guid}", async (
+    Guid companyId,
+    Guid employeeId,
+    Guid documentId,
+    IAppDbContext db,
+    CompanyProviderUploadService uploadService,
+    CancellationToken cancellationToken) =>
+{
+    var document = await db.ProviderDocuments
+        .Include(document => document.Provider)
+        .FirstOrDefaultAsync(document => document.Id == documentId && document.ProviderId == employeeId && document.Provider!.CompanyId == companyId, cancellationToken);
+    if (document is null)
+    {
+        return Results.NotFound(new { message = "Piece introuvable." });
+    }
+
+    TryDeleteProviderFile(uploadService, document.StoragePath);
+    db.ProviderDocuments.Remove(document);
+    await db.SaveChangesAsync(cancellationToken);
+    return Results.NoContent();
+})
+.WithName("DeleteCompanyPortalEmployeeDocument");
 
 app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/suspend", async (
     Guid companyId,
@@ -1378,6 +1528,7 @@ static async Task<IReadOnlyList<CompanyPortalEmployeeResponse>> GetCompanyEmploy
         .AsNoTracking()
         .Include(provider => provider.Documents)
         .Include(provider => provider.Services)
+        .ThenInclude(providerService => providerService.Service)
         .Where(provider => provider.CompanyId == companyId)
         .OrderBy(provider => provider.LastName)
         .ThenBy(provider => provider.FirstName)
@@ -1411,6 +1562,7 @@ static CompanyPortalEmployeeResponse MapCompanyPortalEmployee(ProviderProfile pr
         PhoneNumber: provider.PhoneNumber,
         DateOfBirth: provider.DateOfBirth,
         Address: provider.Address,
+        Gender: provider.Gender.ToString(),
         EmploymentType: provider.EmploymentType.ToString(),
         ReceivesDirectRequests: provider.EmploymentType == ProviderEmploymentType.TemporaryWorker,
         YearsOfExperience: provider.YearsOfExperience,
@@ -1430,8 +1582,10 @@ static CompanyPortalEmployeeResponse MapCompanyPortalEmployee(ProviderProfile pr
                 serviceNames.TryGetValue(service.ServiceId, out var name) ? name : "Service",
                 service.ExperienceLevel.ToString(),
                 service.YearsOfExperience,
-                service.HourlyRateAmount,
-                service.Currency,
+                service.PriceTier.ToString(),
+                service.Service?.NormalPriceAmount ?? 0,
+                service.Service?.PremiumPriceAmount ?? 0,
+                service.Service?.Currency ?? "XOF",
                 service.IsActive))
             .ToList());
 }
@@ -1559,6 +1713,43 @@ static ProviderEmploymentType ParseProviderEmploymentType(string? value)
     return Enum.TryParse<ProviderEmploymentType>(value, true, out var employmentType)
         ? employmentType
         : ProviderEmploymentType.CompanyEmployee;
+}
+
+static ProviderGender ParseProviderGender(string? value)
+{
+    return Enum.TryParse<ProviderGender>(value, true, out var gender)
+        ? gender
+        : ProviderGender.Unspecified;
+}
+
+static ProviderServicePriceTier ParseProviderServicePriceTier(string? value)
+{
+    return Enum.TryParse<ProviderServicePriceTier>(value, true, out var tier)
+        ? tier
+        : ProviderServicePriceTier.Normal;
+}
+
+static bool TryParseProviderDocumentType(string? value, out ProviderDocumentType documentType)
+{
+    return Enum.TryParse(value?.Trim(), true, out documentType);
+}
+
+static void TryDeleteProviderFile(CompanyProviderUploadService uploadService, string storagePath)
+{
+    try
+    {
+        var absolutePath = uploadService.GetAbsolutePath(storagePath);
+        if (File.Exists(absolutePath))
+        {
+            File.Delete(absolutePath);
+        }
+    }
+    catch (IOException)
+    {
+    }
+    catch (UnauthorizedAccessException)
+    {
+    }
 }
 
 static bool TryParseCompanyAssignmentMode(string? value, out CompanyAssignmentMode assignmentMode)

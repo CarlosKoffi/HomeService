@@ -5,6 +5,8 @@ public sealed record CompanyEmployeeServiceResponse(
     string ServiceName,
     string ExperienceLevel,
     int YearsOfExperience,
-    int HourlyRateAmount,
+    string PriceTier,
+    int NormalPriceAmount,
+    int PremiumPriceAmount,
     string Currency,
     bool IsActive);
