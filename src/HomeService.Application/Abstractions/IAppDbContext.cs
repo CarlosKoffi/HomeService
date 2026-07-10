@@ -26,6 +26,7 @@ public interface IAppDbContext
     DbSet<AdminModule> AdminModules { get; }
     DbSet<AdminRolePermission> AdminRolePermissions { get; }
     DbSet<AdminUserRole> AdminUserRoles { get; }
+    DbSet<NotificationOutboxMessage> NotificationOutboxMessages { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

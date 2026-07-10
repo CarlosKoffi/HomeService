@@ -28,6 +28,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<AdminModule> AdminModules => Set<AdminModule>();
     public DbSet<AdminRolePermission> AdminRolePermissions => Set<AdminRolePermission>();
     public DbSet<AdminUserRole> AdminUserRoles => Set<AdminUserRole>();
+    public DbSet<NotificationOutboxMessage> NotificationOutboxMessages => Set<NotificationOutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

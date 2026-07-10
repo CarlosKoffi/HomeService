@@ -1,0 +1,92 @@
+@page "/notifications"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Notifications
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Notifications</PageTitle>
+
+<h1>Notifications</h1>
+<p class="lead">File d'attente des messages prevus pour les entreprises: email, WhatsApp et notifications mobiles.</p>
+
+<section class="info-panel">
+    <div>
+        <h2>Canaux prevus</h2>
+        <p>
+            Les decisions admin creent des messages dans cette file. Le branchement final pourra ensuite envoyer
+            via email transactionnel, WhatsApp Business API et push mobile quand les apps seront pretes.
+        </p>
+    </div>
+    <div class="check-list">
+        <span>Email transactionnel</span>
+        <span>WhatsApp Business</span>
+        <span>Notification mobile</span>
+    </div>
+</section>
+
+<section class="notification-list">
+    @if (IsLoading)
+    {
+        <article>
+            <p>Chargement des notifications...</p>
+        </article>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <article class="status-rejected">
+            <p>@ErrorMessage</p>
+        </article>
+    }
+    else if (QueuedNotifications.Count == 0)
+    {
+        <article>
+            <p>Aucune notification en attente.</p>
+        </article>
+    }
+    else
+    {
+        @foreach (var notification in QueuedNotifications)
+        {
+            <article class="@GetNotificationClass(notification.Status)">
+                <div>
+                    <strong>@notification.Subject</strong>
+                    <p>@notification.Body</p>
+                    <small>@notification.Recipient - @notification.ScheduledAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+                <span>@notification.Channel</span>
+                <span>@notification.Status</span>
+            </article>
+        }
+    }
+</section>
+
+@code {
+    private List<NotificationOutboxMessageResponse> QueuedNotifications { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            QueuedNotifications = (await ApiClient.GetNotificationsAsync()).ToList();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les notifications. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static string GetNotificationClass(string status)
+    {
+        return status switch
+        {
+            "Failed" => "status-rejected",
+            "Sent" => "status-done",
+            _ => "status-new"
+        };
+    }
+}

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
+using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
 
 namespace HomeService.Admin.Services;
@@ -35,6 +36,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await PostJsonAsync<CompanyApplicationActionResponse>($"/api/admin/company-applications/{id}/reject", new CompanyApplicationReviewRequest(note), cancellationToken);
     }
 
+    public async Task<CompanyApplicationActionResponse?> ReopenCompanyApplicationAsync(Guid id, string note, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationActionResponse>($"/api/admin/company-applications/{id}/reopen", new CompanyApplicationReviewRequest(note), cancellationToken);
+    }
+
     public async Task<CompanyApplicationActionResponse?> RequestCompanyApplicationMoreInformationAsync(Guid id, string note, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -65,6 +72,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await PostJsonAsync<CompanyApplicationDocumentReviewResponse>($"/api/admin/company-application-documents/{id}/request-replacement", new CompanyApplicationDocumentReviewRequest(comment), cancellationToken);
     }
 
+    public async Task<CompanyApplicationDocumentReviewResponse?> ReopenCompanyApplicationDocumentAsync(Guid id, string comment, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyApplicationDocumentReviewResponse>($"/api/admin/company-application-documents/{id}/reopen", new CompanyApplicationDocumentReviewRequest(comment), cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -75,6 +88,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await GetJsonAsync<IReadOnlyList<TranslationValueResponse>>($"/api/translations?scope={Uri.EscapeDataString(scope)}", cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<NotificationOutboxMessageResponse>> GetNotificationsAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<NotificationOutboxMessageResponse>>("/api/admin/notifications", cancellationToken) ?? [];
     }
 
     public string GetCompanyApplicationDocumentUrl(Guid documentId)

@@ -30,7 +30,7 @@ else if (Application is not null)
                 les services demandes et la coherence globale avant validation.
             </p>
         </div>
-        <span class="detail-status">@Application.Status</span>
+        <span class="detail-status @GetStatusClass(Application.Status)">@Application.Status</span>
     </section>
 
     @if (!string.IsNullOrWhiteSpace(ActionMessage))
@@ -94,7 +94,7 @@ else if (Application is not null)
         {
             @foreach (var document in Application.Documents)
             {
-                <article>
+                <article class="@GetDocumentStatusClass(document.ReviewStatus)">
                     <div>
                         <strong>@GetDocumentLabel(document.DocumentType)</strong>
                         <p>@document.OriginalFileName - @document.ContentType</p>
@@ -104,7 +104,7 @@ else if (Application is not null)
                             <p class="section-help">Note piece: @document.ReviewNote</p>
                         }
                     </div>
-                    <span>@document.ReviewStatus</span>
+                    <span class="document-status @GetDocumentStatusClass(document.ReviewStatus)">@document.ReviewStatus</span>
                     <div class="document-actions">
                         <textarea rows="2"
                                   placeholder="Commentaire obligatoire pour refus ou remplacement"
@@ -114,6 +114,10 @@ else if (Application is not null)
                             <button type="button" disabled="@IsBusy" @onclick="() => ApproveDocumentAsync(document.Id)">Valider piece</button>
                             <button type="button" disabled="@IsBusy" @onclick="() => RequestDocumentReplacementAsync(document.Id)">Complement piece</button>
                             <button type="button" disabled="@IsBusy" @onclick="() => RejectDocumentAsync(document.Id)">Refuser piece</button>
+                            @if (document.ReviewStatus == "Rejected")
+                            {
+                                <button type="button" disabled="@IsBusy" @onclick="() => ReopenDocumentAsync(document.Id)">Reouvrir piece</button>
+                            }
                         </div>
                     </div>
                 </article>
@@ -133,6 +137,10 @@ else if (Application is not null)
             <button type="button" disabled="@IsBusy" @onclick="ApproveAndSendActivationLinkAsync">Valider et envoyer lien</button>
             <button type="button" disabled="@IsBusy" @onclick="SendActivationLinkAsync">Renvoyer lien</button>
             <button type="button" disabled="@IsBusy" @onclick="RejectApplicationAsync">Rejeter</button>
+            @if (Application.Status == "Rejected")
+            {
+                <button type="button" disabled="@IsBusy" @onclick="ReopenApplicationAsync">Reouvrir dossier</button>
+            }
         </div>
     </section>
 }
@@ -204,6 +212,18 @@ else if (Application is not null)
             "Dossier refuse avec note.");
     }
 
+    private async Task ReopenApplicationAsync()
+    {
+        if (!TryRequireReviewNote("Ajoutez une note avant de reouvrir le dossier."))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            () => ApiClient.ReopenCompanyApplicationAsync(Id, ReviewNote),
+            "Dossier reouvert pour verification.");
+    }
+
     private async Task ApproveAndSendActivationLinkAsync()
     {
         await RunActivationLinkActionAsync(async () =>
@@ -247,6 +267,18 @@ else if (Application is not null)
         await RunActionAsync(
             () => ApiClient.RejectCompanyApplicationDocumentAsync(documentId, note),
             "Piece refusee.");
+    }
+
+    private async Task ReopenDocumentAsync(Guid documentId)
+    {
+        if (!TryGetDocumentNote(documentId, "Ajoutez un commentaire avant de reouvrir la piece.", out var note))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            () => ApiClient.ReopenCompanyApplicationDocumentAsync(documentId, note),
+            "Piece reouverte pour verification.");
     }
 
     private async Task RunActionAsync<T>(Func<Task<T?>> action, string successMessage)
@@ -350,6 +382,29 @@ else if (Application is not null)
             "OwnerIdentity" => "Le nom doit correspondre au contact responsable ou a une personne autorisee.",
             "AddressProof" => "Document recommande pour securiser les futures relations et relances.",
             _ => "Verifier la pertinence du document pour le dossier."
+        };
+    }
+
+    private static string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Rejected" => "status-rejected",
+            "Approved" or "ActivationSent" or "Activated" => "status-done",
+            "MoreInformationRequested" => "status-info",
+            "UnderReview" => "status-review",
+            _ => "status-new"
+        };
+    }
+
+    private static string GetDocumentStatusClass(string status)
+    {
+        return status switch
+        {
+            "Rejected" => "status-rejected",
+            "NeedsReplacement" => "status-info",
+            "Approved" => "status-done",
+            _ => "status-new"
         };
     }
 }
