@@ -20,34 +20,41 @@
 }
 else
 {
-    @if (!Session.IsCompanyApproved)
-    {
-        <section class="compliance-banner">
+    <div class="company-profile-shell">
+        @if (!Session.IsCompanyApproved)
+        {
+            <section class="compliance-banner">
+                <div>
+                    <strong>Compte en attente de conformite</strong>
+                    <span>Votre profil est cree. Les affectations et fonctions sensibles seront ouvertes apres validation des pieces.</span>
+                </div>
+                <a href="#documents">Finaliser</a>
+            </section>
+        }
+
+        <section class="company-profile-hero">
             <div>
-                <strong>Compte en attente de conformite</strong>
-                <span>Votre profil est cree. Les affectations et fonctions sensibles seront ouvertes apres validation des pieces.</span>
+                <p class="eyebrow">Fiche entreprise</p>
+                <h1>@(Profile?.CompanyName ?? Session.CompanyName)</h1>
+                <p>@GetProfileSubtitle()</p>
             </div>
-            <a href="#documents">Finaliser</a>
+            <span class="activation-status">@GetStatusLabel()</span>
         </section>
-    }
 
-    <section class="company-profile-hero">
-        <div>
-            <p class="eyebrow">Fiche entreprise</p>
-            <h1>@(Profile?.CompanyName ?? Session.CompanyName)</h1>
-            <p>@GetProfileSubtitle()</p>
-        </div>
-        <span class="activation-status">@GetStatusLabel()</span>
-    </section>
+        @if (IsLoading)
+        {
+            <section class="empty-state"><h2>Chargement...</h2><p>Recuperation de votre fiche entreprise.</p></section>
+        }
+        else
+        {
+            <section class="profile-overview-strip">
+                <article><span>Statut</span><strong>@GetStatusLabel()</strong><small>@(Profile?.ApplicationStatus ?? Session.CompanyStatus)</small></article>
+                <article><span>Documents</span><strong>@GetDocumentProgress()</strong><small>DFE, RCCM, identite</small></article>
+                <article><span>Services</span><strong>@GetPlannedServices().Count</strong><small>Activites declarees</small></article>
+            </section>
 
-    @if (IsLoading)
-    {
-        <section class="empty-state"><h2>Chargement...</h2><p>Recuperation de votre fiche entreprise.</p></section>
-    }
-    else
-    {
-        <section class="company-profile-grid">
-            <article class="profile-card">
+            <section class="company-profile-grid">
+                <article class="profile-card">
                 <p class="eyebrow">Entreprise</p>
                 <h2>Informations principales</h2>
                 <dl class="profile-definition-list">
@@ -58,7 +65,7 @@ else
                 </dl>
             </article>
 
-            <article class="profile-card">
+                <article class="profile-card">
                 <p class="eyebrow">Responsable</p>
                 <h2>Compte administrateur</h2>
                 <dl class="profile-definition-list">
@@ -70,7 +77,7 @@ else
             </article>
         </section>
 
-        <section class="profile-card">
+            <section class="profile-card">
             <div class="profile-section-heading">
                 <div>
                     <p class="eyebrow">Services</p>
@@ -85,8 +92,8 @@ else
             </div>
         </section>
 
-        <section id="documents" class="compliance-grid">
-            <article class="profile-card">
+            <section id="documents" class="compliance-grid">
+                <article class="profile-card">
                 <div class="profile-section-heading">
                     <div>
                         <p class="eyebrow">Conformite</p>
@@ -100,12 +107,17 @@ else
                     {
                         var document = FindDocument(slot.Key);
                         <article class="document-status-row">
+                            <span class="document-status-icon @GetDocumentStatusClass(document?.ReviewStatus)">@slot.ShortLabel</span>
                             <div>
                                 <strong>@slot.Label</strong>
                                 <small>@slot.Description</small>
                                 @if (document is not null)
                                 {
                                     <em>@document.OriginalFileName</em>
+                                    @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                                    {
+                                        <small>@document.ReviewNote</small>
+                                    }
                                 }
                             </div>
                             <div>
@@ -120,17 +132,21 @@ else
                 </div>
             </article>
 
-            <article class="profile-card">
+                <article class="profile-card upload-panel">
                 <p class="eyebrow">Ajout de pieces</p>
                 <h2>Completer le dossier</h2>
                 <p>Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Si vous venez au bureau, l'admin pourra les scanner et les ajouter a votre dossier.</p>
-                <div class="document-checklist">
+                <div class="compliance-upload-grid">
                     @foreach (var slot in DocumentSlots)
                     {
-                        <label>
-                            <strong>@slot.Label</strong>
-                            <small>@slot.Description</small>
-                            <em>@GetUploadLabel(slot.UploadKey, slot.Optional ? "Optionnel" : "A fournir")</em>
+                        <label class="compliance-upload-card">
+                            <span class="compliance-upload-icon">@slot.ShortLabel</span>
+                            <span class="compliance-upload-content">
+                                <strong>@slot.Label</strong>
+                                <small>@slot.Description</small>
+                                <em>@GetUploadLabel(slot.UploadKey, slot.Optional ? "Optionnel" : "A fournir")</em>
+                            </span>
+                            <span class="compliance-upload-action">@GetUploadActionLabel(slot.UploadKey)</span>
                             <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
                         </label>
                     }
@@ -147,16 +163,17 @@ else
                 }
             </article>
         </section>
-    }
+        }
+    </div>
 }
 
 @code {
     private static readonly IReadOnlyList<DocumentSlot> DocumentSlots =
     [
-        new("FiscalExistenceDeclaration", "fiscalExistenceDeclaration", "DFE", "Declaration Fiscale d'Existence", false),
-        new("BusinessRegistration", "companyDocument", "Registre de commerce", "RCCM ou document legal equivalent", false),
-        new("OwnerIdentity", "ownerIdentityDocument", "Identite du responsable", "CNI, passeport ou document officiel", false),
-        new("AddressProof", "addressProof", "Justificatif d'adresse", "Facture, bail ou attestation", true)
+        new("FiscalExistenceDeclaration", "fiscalExistenceDeclaration", "DFE", "DFE", "Declaration Fiscale d'Existence", false),
+        new("BusinessRegistration", "companyDocument", "RC", "Registre de commerce", "RCCM ou document legal equivalent", false),
+        new("OwnerIdentity", "ownerIdentityDocument", "ID", "Identite du responsable", "CNI, passeport ou document officiel", false),
+        new("AddressProof", "addressProof", "ADR", "Justificatif d'adresse", "Facture, bail ou attestation", true)
     ];
 
     private CompanyPortalSessionResponse? Session { get; set; }
@@ -272,6 +289,11 @@ else
         return Documents.TryGetValue(key, out var file) && file is not null ? file.Name : fallback;
     }
 
+    private string GetUploadActionLabel(string key)
+    {
+        return Documents.TryGetValue(key, out var file) && file is not null ? "Remplacer" : "Ajouter";
+    }
+
     private async Task UploadAsync()
     {
         if (Session is null)
@@ -346,5 +368,5 @@ else
             ]);
     }
 
-    private sealed record DocumentSlot(string Key, string UploadKey, string Label, string Description, bool Optional);
+    private sealed record DocumentSlot(string Key, string UploadKey, string ShortLabel, string Label, string Description, bool Optional);
 }
