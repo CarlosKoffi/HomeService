@@ -43,6 +43,47 @@
     color: #12824c;
 }
 
+.session-chip {
+    border-left: 1px solid #e5e7eb;
+    display: grid;
+    line-height: 1.1;
+    max-width: 230px;
+    padding-left: .9rem;
+}
+
+.session-chip strong {
+    color: #000;
+    font-size: .86rem;
+    font-weight: 850;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-chip span {
+    color: #000;
+    font-size: .74rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logout-button {
+    background: #fff;
+    border: 1px solid #d8dee8;
+    border-radius: 999px;
+    color: #000;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    padding: .62rem .85rem;
+}
+
+.logout-button:hover {
+    background: #f8fafc;
+}
+
 .menu-toggle,
 .menu-button {
     display: none;
@@ -50,16 +91,16 @@
 
 @media (max-width: 760px) {
     .site-header {
-        align-items: flex-start;
+        align-items: center;
         flex-wrap: wrap;
         min-height: 70px;
-        padding: .85rem 1rem;
+        padding: .7rem 1rem;
     }
 
     .menu-button {
         display: grid;
         gap: .35rem;
-        padding-top: .55rem;
+        padding: .35rem 0;
     }
 
     .menu-button span {
@@ -75,7 +116,24 @@
         flex-basis: 100%;
         flex-direction: column;
         align-items: stretch;
-        padding-top: .75rem;
+        gap: .45rem;
+        padding-top: .55rem;
+    }
+
+    .site-nav ::deep a {
+        border-radius: 12px;
+        padding: .75rem .85rem;
+    }
+
+    .session-chip {
+        border-left: 0;
+        border-top: 1px solid #e5e7eb;
+        max-width: none;
+        padding: .65rem 0 0;
+    }
+
+    .logout-button {
+        width: 100%;
     }
 
     .menu-toggle:checked ~ .site-nav {

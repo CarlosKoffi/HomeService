@@ -1,3 +1,8 @@
+@using System.Text.Json
+@implements IDisposable
+@inject IJSRuntime Js
+@inject NavigationManager Navigation
+
 <header class="site-header">
     <a class="brand" href="">ProxiPro</a>
 
@@ -11,7 +16,69 @@
     <nav class="site-nav">
         <NavLink href="" Match="NavLinkMatch.All">Accueil</NavLink>
         <NavLink href="concept">Concept</NavLink>
-        <NavLink href="register">Inscription</NavLink>
-        <NavLink href="dashboard">Espace entreprise</NavLink>
+        @if (Session is null)
+        {
+            <NavLink href="register">Inscription</NavLink>
+            <NavLink href="dashboard">Espace entreprise</NavLink>
+        }
+        else
+        {
+            <NavLink href="dashboard">Mon portail</NavLink>
+            <div class="session-chip" title="@Session.Email">
+                <strong>@Session.CompanyName</strong>
+                <span>@Session.Email</span>
+            </div>
+            <button type="button" class="logout-button" @onclick="LogoutAsync">Sortir</button>
+        }
     </nav>
 </header>
+
+@code {
+    private CompanyPortalSessionResponse? Session { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += HandleLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RefreshSessionAsync();
+        }
+    }
+
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await RefreshSessionAsync();
+    }
+
+    private async Task RefreshSessionAsync()
+    {
+        try
+        {
+            var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+            Session = string.IsNullOrWhiteSpace(sessionJson)
+                ? null
+                : JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            StateHasChanged();
+        }
+        catch
+        {
+            Session = null;
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
+        Session = null;
+        Navigation.NavigateTo("");
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
+    }
+}

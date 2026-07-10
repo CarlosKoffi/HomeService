@@ -1139,7 +1139,7 @@ h3 {
 }
 
 .hero {
-    padding: 3rem 0 2rem;
+    padding: 1rem 0 1.5rem;
     position: relative;
 }
 
@@ -1148,7 +1148,7 @@ h3 {
     display: grid;
     gap: 2rem;
     grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-    min-height: 520px;
+    min-height: 430px;
 }
 
 .country-branded {
@@ -2549,7 +2549,7 @@ h3 {
 
     .hero {
         min-height: auto;
-        padding-top: 2rem;
+        padding: .7rem 0 1.25rem;
     }
 
     .hero-company {
@@ -2604,9 +2604,22 @@ h3 {
     }
 
     .company-profile-hero,
-    .profile-section-heading {
+    .profile-section-heading,
+    .workspace-header,
+    .portal-session-banner {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .workspace-header {
+        gap: .65rem;
+        margin: .5rem 0 .85rem;
+    }
+
+    .workspace-header .secondary-action,
+    .company-dashboard-hero .secondary-action,
+    .portal-session-banner .primary-action {
+        width: 100%;
     }
 
     .company-profile-grid {
@@ -2618,25 +2631,43 @@ h3 {
     }
 
     .portal-subnav {
-        align-items: stretch;
-        flex-direction: column;
+        align-items: center;
+        border-radius: 16px;
+        flex-direction: row;
+        gap: .45rem;
         justify-content: flex-start;
+        margin: 0 -1rem .8rem;
+        padding: .35rem 1rem;
         top: 76px;
+        width: calc(100% + 2rem);
     }
 
     .portal-subnav-links {
+        display: flex;
+        flex: 1 1 auto;
+        gap: .35rem;
+        overflow-x: auto;
+        padding-bottom: .1rem;
+        scrollbar-width: none;
         width: 100%;
     }
 
+    .portal-subnav-links::-webkit-scrollbar {
+        display: none;
+    }
+
     .portal-subnav a {
+        border-radius: 999px;
         flex: 0 0 auto;
+        font-size: .82rem;
+        min-height: 42px;
+        min-width: auto;
+        padding: .65rem .85rem;
+        white-space: nowrap;
     }
 
     .portal-subnav-identity {
-        border-left: 0;
-        border-top: 1px solid var(--line);
-        max-width: none;
-        padding: .7rem .85rem;
+        display: none;
     }
 
     .profile-overview-strip {
@@ -2680,6 +2711,9 @@ h3 {
     .company-dashboard-hero {
         align-items: stretch;
         flex-direction: column;
+        border-radius: 18px;
+        margin: .65rem 0 .85rem;
+        padding: 1rem;
     }
 
     .metric-strip,
@@ -2687,6 +2721,17 @@ h3 {
     .employee-upload-grid,
     .service-picker > div {
         grid-template-columns: 1fr;
+    }
+
+    .metric-strip {
+        gap: .65rem;
+    }
+
+    .metric-strip article,
+    .company-dashboard-actions article {
+        border-radius: 16px;
+        min-height: auto;
+        padding: .85rem;
     }
 
     .primary-action,
@@ -2734,6 +2779,7 @@ h3 {
     .directory-header {
         align-items: flex-start;
         flex-direction: column;
+        gap: .55rem;
     }
 
     .employee-detail-heading {
@@ -2751,6 +2797,18 @@ h3 {
 
     .modal-actions {
         flex-direction: column-reverse;
+    }
+
+    .modal-backdrop {
+        align-items: stretch;
+        padding: 0;
+    }
+
+    .employee-modal {
+        border-radius: 0;
+        max-height: 100vh;
+        padding: .9rem;
+        width: 100%;
     }
 
     .service-editor-toolbar,
@@ -2788,8 +2846,13 @@ h3 {
     }
 
     .employee-table tr {
+        background: #fff;
+        border-radius: 16px;
         border-top: 1px solid var(--line);
-        padding: .75rem 0;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .045);
+        margin-bottom: .75rem;
+        overflow: hidden;
+        padding: .55rem 0;
     }
 
     .employee-table td {
@@ -2797,8 +2860,8 @@ h3 {
         border-bottom: 0;
         display: grid;
         gap: .7rem;
-        grid-template-columns: 110px minmax(0, 1fr);
-        padding: .55rem .9rem;
+        grid-template-columns: 96px minmax(0, 1fr);
+        padding: .5rem .85rem;
     }
 
     .employee-table td::before {
@@ -2812,5 +2875,34 @@ h3 {
 
     .employee-identity {
         min-width: 0;
+    }
+
+    .portal-tabs {
+        flex-wrap: nowrap;
+        margin: .75rem -1rem .85rem;
+        overflow-x: auto;
+        padding: 0 1rem .15rem;
+        scrollbar-width: none;
+    }
+
+    .portal-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .portal-tabs button {
+        flex: 0 0 auto;
+        min-height: 40px;
+        padding: .55rem .85rem;
+        white-space: nowrap;
+    }
+
+    .mission-row {
+        border-radius: 16px;
+        gap: .65rem;
+        padding: .85rem;
+    }
+
+    .mission-detail-heading {
+        flex-direction: column;
     }
 }
