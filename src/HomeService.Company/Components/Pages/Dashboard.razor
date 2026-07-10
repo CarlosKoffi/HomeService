@@ -2,7 +2,7 @@
 
 <PageTitle>Espace entreprise</PageTitle>
 
-<section class="portal-entry">
+<section class="portal-entry country-branded">
     <div class="portal-copy">
         <p class="eyebrow">Portail entreprise</p>
         <h1>Espace entreprise</h1>
@@ -12,13 +12,20 @@
             des encaissements.
         </p>
 
+        <div class="portal-highlights" aria-label="Points forts du portail">
+            <span><strong>Validation</strong>Dossier controle</span>
+            <span><strong>Suivi</strong>Missions et cash</span>
+            <span><strong>Equipe</strong>Prestataires encadres</span>
+        </div>
+
         <div class="portal-actions">
             <a class="secondary-action" href="register">Creer un compte entreprise</a>
             <span>Dossier deja valide ? utilisez votre acces recu par email.</span>
         </div>
     </div>
 
-    <form class="portal-login" @onsubmit="SubmitLoginPreviewAsync">
+    <form class="portal-login" @onsubmit="SubmitLoginPreviewAsync" @onsubmit:preventDefault>
+        <div class="login-accent" aria-hidden="true"></div>
         <div class="section-intro">
             <h2>Connexion</h2>
             <p>Acces reserve aux entreprises validees par l'equipe ProxiPro.</p>
