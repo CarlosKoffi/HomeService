@@ -8,5 +8,6 @@ public enum ProviderStatus
     Approved = 3,
     SuspendedByCompany = 4,
     SuspendedByPlatform = 5,
-    Inactive = 6
+    Inactive = 6,
+    InterimCandidate = 7
 }

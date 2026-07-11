@@ -1,0 +1,65 @@
+@page "/onboarding"
+
+<PageTitle>Kaza Prestataire - Inscription</PageTitle>
+
+<main class="provider-mobile-shell">
+    <section class="screen-heading">
+        <span>Inscription prestataire</span>
+        <h1>Comment voulez-vous commencer ?</h1>
+        <p>Vous pouvez utiliser un code fourni par une entreprise, ou creer votre profil et candidater comme demandeur d'interim.</p>
+    </section>
+
+    <section class="onboarding-choice-card highlighted">
+        <div class="onboarding-icon">
+            <svg viewBox="0 0 24 24"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h10" /></svg>
+        </div>
+        <div>
+            <span>J'ai un code</span>
+            <h2>Code de preinscription</h2>
+            <p>Saisissez le code recu par SMS ou WhatsApp lorsque l'entreprise vous a cree comme prestataire.</p>
+        </div>
+        <label>
+            Code entreprise
+            <input placeholder="Ex: KAZA-4821" />
+        </label>
+        <button type="button" class="primary-action">Continuer avec le code</button>
+    </section>
+
+    <section class="onboarding-choice-card">
+        <div class="onboarding-icon orange">
+            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+        </div>
+        <div>
+            <span>Nouveau profil</span>
+            <h2>Creer mon compte</h2>
+            <p>Completez vos informations, choisissez vos services, puis postulez aux entreprises proches qui pratiquent ces services.</p>
+        </div>
+        <div class="onboarding-steps">
+            <article>
+                <strong>1</strong>
+                <span>Profil, pieces, zone et services</span>
+            </article>
+            <article>
+                <strong>2</strong>
+                <span>Entreprises proposees par proximite et services</span>
+            </article>
+            <article>
+                <strong>3</strong>
+                <span>L'entreprise vous recoit et vous evalue</span>
+            </article>
+            <article>
+                <strong>4</strong>
+                <span>Validation: vous devenez interimaire assignable</span>
+            </article>
+        </div>
+        <button type="button" class="primary-action orange-action">Creer mon profil</button>
+    </section>
+
+    <section class="profile-completion-banner">
+        <div>
+            <span>Regle importante</span>
+            <strong>Non assignable</strong>
+        </div>
+        <p>Tant qu'aucune entreprise ne vous a valide, vous restez demandeur d'interim et vous ne recevez aucune mission.</p>
+    </section>
+</main>

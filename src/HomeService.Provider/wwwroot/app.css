@@ -852,6 +852,122 @@ textarea {
     margin: 6px 0 0;
 }
 
+.onboarding-choice-card {
+    display: grid;
+    gap: 14px;
+    margin-top: 14px;
+    padding: 18px;
+    border: 1px solid var(--muted-line);
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: var(--shadow);
+}
+
+.onboarding-choice-card.highlighted {
+    border-color: rgba(0, 135, 83, .28);
+}
+
+.onboarding-icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    background: var(--green);
+    color: #fff;
+}
+
+.onboarding-icon.orange {
+    background: var(--orange);
+}
+
+.onboarding-icon svg,
+.provider-bottom-nav svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.onboarding-choice-card span {
+    color: var(--ink);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-label);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.onboarding-choice-card h2 {
+    margin: 4px 0 0;
+    color: var(--ink);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-title);
+}
+
+.onboarding-choice-card p {
+    margin: 6px 0 0;
+    color: var(--ink);
+    line-height: 1.42;
+}
+
+.onboarding-choice-card label {
+    display: grid;
+    gap: 6px;
+    color: var(--ink);
+    font-size: var(--text-sm);
+    font-weight: 850;
+}
+
+.onboarding-choice-card input {
+    min-height: 48px;
+    border: 1px solid var(--muted-line);
+    border-radius: 16px;
+    padding: 0 14px;
+}
+
+.onboarding-steps {
+    display: grid;
+    gap: 8px;
+}
+
+.onboarding-steps article {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--muted-line);
+    border-radius: 16px;
+    background: #f8fbf9;
+}
+
+.onboarding-steps strong {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.primary-action {
+    min-height: 48px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--green);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.orange-action {
+    background: var(--orange);
+}
+
 .provider-bottom-nav {
     position: fixed;
     right: 0;

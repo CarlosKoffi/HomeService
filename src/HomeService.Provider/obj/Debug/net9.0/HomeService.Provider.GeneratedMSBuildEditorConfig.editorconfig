@@ -44,6 +44,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xNaXNzaW9ucy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Provider/Components/Pages/Onboarding.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xPbmJvYXJkaW5nLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Provider/Components/Pages/Services.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xTZXJ2aWNlcy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 

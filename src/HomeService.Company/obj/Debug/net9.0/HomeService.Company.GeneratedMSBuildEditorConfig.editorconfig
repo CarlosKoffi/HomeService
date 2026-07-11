@@ -60,6 +60,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Pages/InterimCandidates.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xJbnRlcmltQ2FuZGlkYXRlcy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Pages/Operations.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xPcGVyYXRpb25zLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 

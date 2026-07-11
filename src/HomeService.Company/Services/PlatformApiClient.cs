@@ -236,6 +236,50 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyEmployeeResponse>>($"/api/company-portal/{companyId:D}/employees", cancellationToken) ?? [];
     }
 
+    public async Task<IReadOnlyList<CompanyInterimCandidateResponse>> GetInterimCandidatesAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyInterimCandidateResponse>>(
+            $"/api/company-portal/{companyId:D}/interim-candidates",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<EmployeeSaveResult> ApproveInterimCandidateAsync(
+        Guid companyId,
+        Guid requestId,
+        string? note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/company-portal/{companyId:D}/interim-candidates/{requestId:D}/approve",
+            new CompanyReviewInterimCandidateRequest(note),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Validation impossible.");
+    }
+
+    public async Task<EmployeeSaveResult> RejectInterimCandidateAsync(
+        Guid companyId,
+        Guid requestId,
+        string? note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/company-portal/{companyId:D}/interim-candidates/{requestId:D}/reject",
+            new CompanyReviewInterimCandidateRequest(note),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Refus impossible.");
+    }
+
     public async Task<EmployeeSaveResult> CreateCompanyEmployeeAsync(
         Guid companyId,
         CompanyEmployeeFormModel employee,

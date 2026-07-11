@@ -18,6 +18,8 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ProviderProfile> Providers => Set<ProviderProfile>();
     public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
+    public DbSet<ProviderAffiliationRequest> ProviderAffiliationRequests => Set<ProviderAffiliationRequest>();
+    public DbSet<ProviderCandidateService> ProviderCandidateServices => Set<ProviderCandidateService>();
     public DbSet<ProviderPortalSession> ProviderPortalSessions => Set<ProviderPortalSession>();
     public DbSet<ProviderDocument> ProviderDocuments => Set<ProviderDocument>();
     public DbSet<ProviderService> ProviderServices => Set<ProviderService>();

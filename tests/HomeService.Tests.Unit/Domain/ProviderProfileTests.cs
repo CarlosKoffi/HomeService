@@ -87,6 +87,52 @@ public sealed class ProviderProfileTests
         Assert.Equal(ProviderServicePriceTier.Premium, service.PriceTier);
     }
 
+    [Fact]
+    public void SelfRegisteredProvider_StartsAsInterimCandidateWithoutCompany()
+    {
+        var provider = CreateSelfRegisteredProvider();
+
+        Assert.Null(provider.CompanyId);
+        Assert.Equal(ProviderStatus.InterimCandidate, provider.Status);
+        Assert.Equal(ProviderEmploymentType.TemporaryWorker, provider.EmploymentType);
+        Assert.Equal(ProviderRegistrationSource.SelfRegistration, provider.RegistrationSource);
+    }
+
+    [Fact]
+    public void SyncCandidateServices_StoresDeclaredServicesWithoutMakingThemAssignable()
+    {
+        var provider = CreateSelfRegisteredProvider();
+        var serviceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+        provider.SyncCandidateServices([(serviceId, ExperienceLevel.Senior, 6)]);
+
+        var candidateService = Assert.Single(provider.CandidateServices);
+        Assert.Equal(serviceId, candidateService.ServiceId);
+        Assert.Equal(ExperienceLevel.Senior, candidateService.ExperienceLevel);
+        Assert.Empty(provider.Services);
+    }
+
+    [Fact]
+    public void AttachToCompanyAsTemporaryWorker_ApprovesProviderAndAllowsCompanyServices()
+    {
+        var provider = CreateSelfRegisteredProvider();
+        var companyId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var serviceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        provider.SyncCandidateServices([(serviceId, ExperienceLevel.Senior, 6)]);
+
+        provider.AttachToCompanyAsTemporaryWorker(companyId);
+        provider.SyncCompanyServices(provider.CandidateServices.Select(service => (
+            service.ServiceId,
+            service.ExperienceLevel,
+            service.YearsOfExperience,
+            ProviderServicePriceTier.Normal)));
+
+        Assert.Equal(companyId, provider.CompanyId);
+        Assert.Equal(ProviderStatus.Approved, provider.Status);
+        Assert.Equal(ProviderEmploymentType.TemporaryWorker, provider.EmploymentType);
+        Assert.Single(provider.Services);
+    }
+
     private static ProviderProfile CreateApprovedAvailableProvider()
     {
         var provider = CreateProvider();
@@ -106,6 +152,21 @@ public sealed class ProviderProfileTests
             "Cocody",
             ProviderGender.Female,
             ProviderEmploymentType.CompanyEmployee,
+            4,
+            5.348850m,
+            -4.003150m,
+            5);
+    }
+
+    private static ProviderProfile CreateSelfRegisteredProvider()
+    {
+        return new ProviderProfile(
+            "Awa",
+            "Kone",
+            "+2250701020304",
+            new DateOnly(1995, 1, 12),
+            "Cocody",
+            ProviderGender.Female,
             4,
             5.348850m,
             -4.003150m,

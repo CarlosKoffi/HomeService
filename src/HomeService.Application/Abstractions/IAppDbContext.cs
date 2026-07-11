@@ -16,6 +16,8 @@ public interface IAppDbContext
     DbSet<Service> Services { get; }
     DbSet<ProviderProfile> Providers { get; }
     DbSet<ProviderInvitation> ProviderInvitations { get; }
+    DbSet<ProviderAffiliationRequest> ProviderAffiliationRequests { get; }
+    DbSet<ProviderCandidateService> ProviderCandidateServices { get; }
     DbSet<ProviderPortalSession> ProviderPortalSessions { get; }
     DbSet<ProviderDocument> ProviderDocuments { get; }
     DbSet<ProviderService> ProviderServices { get; }

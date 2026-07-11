@@ -1,0 +1,253 @@
+@page "/interim-candidates"
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+@inject IJSRuntime Js
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Demandes d'interim</PageTitle>
+
+@if (Session is null)
+{
+    <section class="empty-state">
+        <h2>Connexion requise</h2>
+        <p>Connectez-vous au portail entreprise pour consulter les demandes d'interim.</p>
+        <a class="primary-action" href="@PortalLink("dashboard")">Se connecter</a>
+    </section>
+}
+else
+{
+    <CompanyPortalNav Active="interim-candidates" />
+
+    <section class="workspace-header">
+        <div>
+            <p class="eyebrow">Portail entreprise</p>
+            <h1>Demandes d'interim</h1>
+            <p class="lead">Recevez, evaluez et validez les prestataires autonomes avant de les rendre assignables aux missions.</p>
+        </div>
+        <a class="secondary-action" href="@PortalLink("employees")">Voir les prestataires</a>
+    </section>
+
+    <section class="interim-advice">
+        <div>
+            <span>Process recommande</span>
+            <strong>Recevoir le candidat avant validation</strong>
+            <p>Avant toute mission, conseillez un entretien, une verification d'identite, un test pratique et une validation des references. Tant que vous ne validez pas, le candidat reste non assignable.</p>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <p class="field-message">@Message</p>
+    }
+
+    <section class="candidate-grid">
+        @foreach (var candidate in Candidates)
+        {
+            <article class="candidate-card @GetCandidateClass(candidate.Status)">
+                <div class="candidate-card-head">
+                    <div>
+                        <span>@GetStatusLabel(candidate.Status)</span>
+                        <h2>@candidate.FirstName @candidate.LastName</h2>
+                        <p>@candidate.PhoneNumber - @Display(candidate.Address)</p>
+                    </div>
+                    <strong>@candidate.YearsOfExperience an(s)</strong>
+                </div>
+
+                <div class="candidate-services">
+                    @foreach (var service in candidate.Services)
+                    {
+                        <span>@service.ServiceName - @GetExperienceLabel(service.ExperienceLevel)</span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(candidate.Message))
+                {
+                    <p class="candidate-note">@candidate.Message</p>
+                }
+
+                <label class="candidate-review-note">
+                    Note interne
+                    <textarea @bind="ReviewNotes[candidate.RequestId]" placeholder="Ex: Recu au bureau, test menage OK, piece verifiee."></textarea>
+                </label>
+
+                <div class="candidate-actions">
+                    <button type="button" class="secondary-action" disabled="@IsClosed(candidate.Status)" @onclick="() => RejectAsync(candidate.RequestId)">Refuser</button>
+                    <button type="button" class="primary-action" disabled="@IsClosed(candidate.Status)" @onclick="() => ApproveAsync(candidate.RequestId)">Valider comme interimaire</button>
+                </div>
+            </article>
+        }
+    </section>
+}
+
+@code {
+    private CompanyPortalSessionResponse? Session { get; set; }
+    private IReadOnlyList<CompanyInterimCandidateResponse> Candidates { get; set; } = [];
+    private Dictionary<Guid, string?> ReviewNotes { get; } = [];
+    private string? Message { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsPreviewMode())
+        {
+            Session = DemoSession();
+            LoadPreviewData();
+            return;
+        }
+
+        var stored = await Js.InvokeAsync<string?>("localStorage.getItem", "companyPortalSession");
+        if (!string.IsNullOrWhiteSpace(stored))
+        {
+            Session = System.Text.Json.JsonSerializer.Deserialize<CompanyPortalSessionResponse>(stored);
+        }
+
+        if (Session is not null)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        Candidates = await ApiClient.GetInterimCandidatesAsync(Session.CompanyId);
+        foreach (var candidate in Candidates)
+        {
+            ReviewNotes.TryAdd(candidate.RequestId, null);
+        }
+    }
+
+    private async Task ApproveAsync(Guid requestId)
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        var note = ReviewNotes.GetValueOrDefault(requestId);
+        if (IsPreviewMode())
+        {
+            Candidates = Candidates.Select(candidate => candidate.RequestId == requestId ? candidate with { Status = "Approved" } : candidate).ToList();
+            return;
+        }
+
+        var result = await ApiClient.ApproveInterimCandidateAsync(Session.CompanyId, requestId, note);
+        Message = result.ErrorMessage;
+        await LoadAsync();
+    }
+
+    private async Task RejectAsync(Guid requestId)
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        var note = ReviewNotes.GetValueOrDefault(requestId);
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            Message = "Ajoutez une note avant de refuser une candidature.";
+            return;
+        }
+
+        if (IsPreviewMode())
+        {
+            Candidates = Candidates.Select(candidate => candidate.RequestId == requestId ? candidate with { Status = "Rejected" } : candidate).ToList();
+            return;
+        }
+
+        var result = await ApiClient.RejectInterimCandidateAsync(Session.CompanyId, requestId, note);
+        Message = result.ErrorMessage;
+        await LoadAsync();
+    }
+
+    private void LoadPreviewData()
+    {
+        Candidates =
+        [
+            new CompanyInterimCandidateResponse(
+                Guid.Parse("11111111-1111-1111-1111-111111111101"),
+                Guid.Parse("22222222-2222-2222-2222-222222222201"),
+                "Aminata",
+                "Traore",
+                "+225 07 40 11 22 33",
+                new DateOnly(1997, 4, 8),
+                "Abobo, Abidjan",
+                "Female",
+                5,
+                "Pending",
+                "Disponible rapidement. Je souhaite passer au bureau pour un test.",
+                DateTimeOffset.UtcNow.AddHours(-5),
+                [
+                    new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Menage a domicile", "Confirmed", 5),
+                    new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Nounou", "Junior", 2)
+                ]),
+            new CompanyInterimCandidateResponse(
+                Guid.Parse("11111111-1111-1111-1111-111111111102"),
+                Guid.Parse("22222222-2222-2222-2222-222222222202"),
+                "Serge",
+                "Kouame",
+                "+225 05 22 33 44 55",
+                new DateOnly(1991, 11, 16),
+                "Yopougon, Abidjan",
+                "Male",
+                8,
+                "Pending",
+                "Jardinier avec references disponibles.",
+                DateTimeOffset.UtcNow.AddDays(-1),
+                [
+                    new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Jardinage", "Senior", 8)
+                ])
+        ];
+    }
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "Approved" => "Valide",
+        "Rejected" => "Refuse",
+        _ => "A evaluer"
+    };
+
+    private static string GetCandidateClass(string status) => status switch
+    {
+        "Approved" => "is-approved",
+        "Rejected" => "is-rejected",
+        _ => "is-pending"
+    };
+
+    private static string GetExperienceLabel(string value) => value switch
+    {
+        "Junior" => "Junior",
+        "Senior" => "Senior",
+        "Expert" => "Expert",
+        _ => "Confirme"
+    };
+
+    private static bool IsClosed(string status) => status is "Approved" or "Rejected";
+
+    private static string Display(string? value) => string.IsNullOrWhiteSpace(value) ? "Adresse non renseignee" : value;
+
+    private bool IsPreviewMode()
+    {
+        return Environment.IsDevelopment()
+            && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string PortalLink(string path) => IsPreviewMode() ? $"{path}?preview=1" : path;
+
+    private static CompanyPortalSessionResponse DemoSession()
+    {
+        return new CompanyPortalSessionResponse(
+            Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            "Entreprise Demo CI",
+            "Direction Demo",
+            "direction@entreprise.ci",
+            DateTimeOffset.UtcNow,
+            "demo-preview-token",
+            "Approved",
+            true);
+    }
+}

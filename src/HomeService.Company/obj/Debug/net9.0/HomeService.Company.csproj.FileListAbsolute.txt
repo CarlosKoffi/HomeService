@@ -79,6 +79,6 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\HomeService.Company.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\HomeService.Company.genruntimeconfig.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\ref\HomeService.Company.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\39kvto9uka-2vjc8bhwig.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\jddhup17t4-sf995gi0x9.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\gfg39cg1u5-sf995gi0x9.gz
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Company\obj\Debug\net9.0\compressed\39kvto9uka-a48c631bvr.gz
