@@ -14,6 +14,7 @@ namespace HomeService.Company.Services;
 public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration configuration)
 {
     private const long MaxUploadSize = 10 * 1024 * 1024;
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public string ToApiUrl(string? relativeUrl)
     {
@@ -332,6 +333,23 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
     }
 
+    public async Task<EmployeeInvitationCodeResult> GenerateCompanyEmployeeInvitationCodeAsync(
+        Guid companyId,
+        Guid employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}/invitation-code", null, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return new EmployeeInvitationCodeResult(false, null, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Generation impossible.");
+        }
+
+        var invitation = JsonSerializer.Deserialize<CreateCompanyEmployeeResult>(body, JsonOptions);
+        return new EmployeeInvitationCodeResult(true, invitation, null);
+    }
+
     public async Task<EmployeeSaveResult> UpdateCompanyEmployeeAsync(
         Guid companyId,
         Guid employeeId,
@@ -543,6 +561,8 @@ public sealed record CompanyActivationPreviewResult(bool IsSuccess, CompanyActiv
 public sealed record CompanyPortalLoginResult(bool IsSuccess, CompanyPortalSessionResponse? Session, string? ErrorMessage);
 
 public sealed record EmployeeSaveResult(bool IsSuccess, string? ErrorMessage);
+
+public sealed record EmployeeInvitationCodeResult(bool IsSuccess, CreateCompanyEmployeeResult? Invitation, string? ErrorMessage);
 
 public sealed class CompanyEmployeeFormModel
 {

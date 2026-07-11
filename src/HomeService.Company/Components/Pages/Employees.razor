@@ -287,8 +287,9 @@ else
                         else
                         {
                             <strong>Compte active ou code expire</strong>
-                            <p>Si le prestataire ne peut pas se connecter, on ajoutera ensuite une action pour regenerer un code.</p>
+                            <p>Generez un nouveau code si le prestataire doit recuperer son acces.</p>
                         }
+                        <button type="button" class="secondary-action compact-action" @onclick="GenerateInvitationCodeAsync">Generer un nouveau code</button>
                     </article>
                     <article>
                         <span>Affectation</span>
@@ -586,6 +587,44 @@ else
 
         await LoadAsync();
         SelectedEmployee = EmployeeRows.FirstOrDefault(employee => employee.Id == updated.Id);
+    }
+
+    private async Task GenerateInvitationCodeAsync()
+    {
+        if (SelectedEmployee is null || Session is null)
+        {
+            return;
+        }
+
+        Message = null;
+        if (IsPreviewMode())
+        {
+            var previewInvitation = SelectedEmployee with
+            {
+                InvitationCode = "KAZA-482135",
+                InvitationLink = "/onboarding?code=KAZA-482135",
+                InvitationExpiresAt = DateTimeOffset.UtcNow.AddDays(14)
+            };
+            ApplySelectedEmployeeUpdate(previewInvitation);
+            Message = "Mode demo: nouveau code genere.";
+            return;
+        }
+
+        var result = await ApiClient.GenerateCompanyEmployeeInvitationCodeAsync(Session.CompanyId, SelectedEmployee.Id);
+        if (!result.IsSuccess || result.Invitation is null)
+        {
+            Message = result.ErrorMessage ?? "Generation du code impossible.";
+            return;
+        }
+
+        var updated = SelectedEmployee with
+        {
+            InvitationCode = result.Invitation.InvitationCode,
+            InvitationLink = result.Invitation.InvitationLink,
+            InvitationExpiresAt = result.Invitation.InvitationExpiresAt
+        };
+        ApplySelectedEmployeeUpdate(updated);
+        Message = "Nouveau code d'acces prestataire genere.";
     }
 
     private void AddEditableService()

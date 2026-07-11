@@ -586,6 +586,13 @@
     font-weight: 900;
 }
 
+.compact-action {
+    width: fit-content;
+    min-height: 38px;
+    margin-top: .7rem;
+    padding: .45rem .7rem;
+}
+
 .employee-detail-section h3 {
     font-size: 1rem;
     margin: 0 0 .65rem;

@@ -825,18 +825,7 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
 
     db.Providers.Add(provider);
 
-    var invitationCode = await GenerateUniqueProviderInvitationCodeAsync(db, cancellationToken);
-    var invitationToken = PortalTokenService.GenerateSecureToken();
-    var invitation = new ProviderInvitation(
-        provider.Id,
-        companyId,
-        invitationCode,
-        PortalTokenService.HashToken(invitationToken),
-        DateTimeOffset.UtcNow.AddDays(14));
-    if (!string.IsNullOrWhiteSpace(configuration["PROVIDER_PORTAL_BASE_URL"]))
-    {
-        invitation.SetInvitationLink($"{configuration["PROVIDER_PORTAL_BASE_URL"]!.TrimEnd('/')}/onboarding?code={Uri.EscapeDataString(invitation.Code)}");
-    }
+    var invitation = await CreateProviderInvitationAsync(db, configuration, provider.Id, companyId, cancellationToken);
     db.ProviderInvitations.Add(invitation);
 
     var documents = await uploadService.SaveAsync(companyId, provider.Id, form.Files, cancellationToken);
@@ -876,6 +865,47 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
         new CreateCompanyEmployeeResult(provider.Id, invitation.Code, invitation.InvitationLink, invitation.ExpiresAt));
 })
 .WithName("CreateCompanyPortalEmployee");
+
+app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/invitation-code", async (
+    Guid companyId,
+    Guid employeeId,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
+{
+    var provider = await db.Providers
+        .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId && provider.Status != ProviderStatus.Inactive, cancellationToken);
+    if (provider is null)
+    {
+        return Results.NotFound(new { message = "Prestataire introuvable." });
+    }
+
+    var pendingInvitations = await db.ProviderInvitations
+        .Where(invitation => invitation.ProviderId == employeeId && invitation.Status == ProviderInvitationStatus.Pending)
+        .ToListAsync(cancellationToken);
+    foreach (var pendingInvitation in pendingInvitations)
+    {
+        pendingInvitation.Revoke();
+    }
+
+    var invitation = await CreateProviderInvitationAsync(db, configuration, provider.Id, companyId, cancellationToken);
+    db.ProviderInvitations.Add(invitation);
+
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "ProviderInvitationCodeGenerated",
+        nameof(ProviderInvitation),
+        invitation.Id,
+        "Code d'acces prestataire genere depuis le portail entreprise.",
+        after: new { provider.Id, invitation.Code, invitation.ExpiresAt });
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(new CreateCompanyEmployeeResult(provider.Id, invitation.Code, invitation.InvitationLink, invitation.ExpiresAt));
+})
+.WithName("GenerateCompanyPortalEmployeeInvitationCode");
 
 app.MapPut("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}", async (
     Guid companyId,
@@ -2567,6 +2597,29 @@ static async Task<string> GenerateUniqueProviderInvitationCodeAsync(IAppDbContex
     }
 
     return $"KAZA-{Guid.NewGuid():N}"[..15].ToUpperInvariant();
+}
+
+static async Task<ProviderInvitation> CreateProviderInvitationAsync(
+    IAppDbContext db,
+    IConfiguration configuration,
+    Guid providerId,
+    Guid companyId,
+    CancellationToken cancellationToken)
+{
+    var invitationCode = await GenerateUniqueProviderInvitationCodeAsync(db, cancellationToken);
+    var invitationToken = PortalTokenService.GenerateSecureToken();
+    var invitation = new ProviderInvitation(
+        providerId,
+        companyId,
+        invitationCode,
+        PortalTokenService.HashToken(invitationToken),
+        DateTimeOffset.UtcNow.AddDays(14));
+    if (!string.IsNullOrWhiteSpace(configuration["PROVIDER_PORTAL_BASE_URL"]))
+    {
+        invitation.SetInvitationLink($"{configuration["PROVIDER_PORTAL_BASE_URL"]!.TrimEnd('/')}/onboarding?code={Uri.EscapeDataString(invitation.Code)}");
+    }
+
+    return invitation;
 }
 
 static IResult ToProviderMissionHttpResult(ProviderMissionOperationResult result)
