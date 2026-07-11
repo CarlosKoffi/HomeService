@@ -34,6 +34,15 @@ public sealed class ProviderApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
+    public async Task<ApiResult<ProviderSelfRegistrationResponse>> RegisterSelfAsync(
+        ProviderSelfRegistrationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync<ProviderSelfRegistrationResponse>(
+            () => httpClient.PostAsJsonAsync("/api/provider-onboarding/self-registration", request, JsonOptions, cancellationToken),
+            cancellationToken);
+    }
+
     public async Task<ApiResult<ProviderMobileHomeResponse>> GetHomeAsync(string token, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/provider-portal/mobile/home");

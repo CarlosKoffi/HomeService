@@ -90,6 +90,46 @@
         <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
     </section>
 
+    <section class="onboarding-choice-card">
+        <div class="onboarding-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M19 8v6" /><path d="M16 11h6" /></svg>
+        </div>
+        <div>
+            <span>Nouveau prestataire</span>
+            <h2>Creer mon compte</h2>
+            <p>Vous creez un profil demandeur d'interim. Ensuite vous pourrez completer vos services et candidater aux entreprises proches.</p>
+        </div>
+
+        <div class="two-field-grid">
+            <label>Prenom<input placeholder="Awa" @bind="RegisterFirstName" /></label>
+            <label>Nom<input placeholder="Kone" @bind="RegisterLastName" /></label>
+        </div>
+        <label>Telephone<input type="tel" placeholder="+225 07 00 00 00 00" @bind="RegisterPhoneNumber" /></label>
+        <label>Date de naissance<InputDate @bind-Value="RegisterBirthDate" /></label>
+        <label>Adresse<input placeholder="Cocody, Abidjan" @bind="RegisterAddress" /></label>
+        <div class="two-field-grid">
+            <label>Sexe
+                <select @bind="RegisterGender">
+                    <option value="Unspecified">Non renseigne</option>
+                    <option value="Female">Femme</option>
+                    <option value="Male">Homme</option>
+                </select>
+            </label>
+            <label>Experience<input type="number" min="0" @bind="RegisterYearsOfExperience" /></label>
+        </div>
+        <div class="two-field-grid">
+            <label>Mot de passe<input type="password" placeholder="Minimum 8 caracteres" @bind="RegisterPassword" /></label>
+            <label>Confirmation<input type="password" placeholder="Retapez le mot de passe" @bind="RegisterConfirmPassword" /></label>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(RegisterMessage))
+        {
+            <p class="field-message">@RegisterMessage</p>
+        }
+
+        <button type="button" class="primary-action" @onclick="RegisterAsync" disabled="@IsBusy">Creer mon compte</button>
+    </section>
+
     <section class="profile-completion-banner">
         <div>
             <span>Regle importante</span>
@@ -105,10 +145,20 @@
     private string ActivationConfirmPassword { get; set; } = string.Empty;
     private string PhoneNumber { get; set; } = string.Empty;
     private string LoginPassword { get; set; } = string.Empty;
+    private string RegisterFirstName { get; set; } = string.Empty;
+    private string RegisterLastName { get; set; } = string.Empty;
+    private string RegisterPhoneNumber { get; set; } = string.Empty;
+    private DateTime? RegisterBirthDate { get; set; }
+    private string RegisterAddress { get; set; } = string.Empty;
+    private string RegisterGender { get; set; } = "Unspecified";
+    private int RegisterYearsOfExperience { get; set; }
+    private string RegisterPassword { get; set; } = string.Empty;
+    private string RegisterConfirmPassword { get; set; } = string.Empty;
     private bool RememberMe { get; set; } = true;
     private bool IsBusy { get; set; }
     private string? ActivationMessage { get; set; }
     private string? LoginMessage { get; set; }
+    private string? RegisterMessage { get; set; }
     private ProviderInvitationPreviewResponse? Invitation { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -180,6 +230,50 @@
         }
 
         await StoreSessionAsync(result.Value);
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task RegisterAsync()
+    {
+        RegisterMessage = null;
+        if (RegisterBirthDate is null)
+        {
+            RegisterMessage = "Renseignez une date de naissance valide.";
+            return;
+        }
+
+        IsBusy = true;
+        var request = new ProviderSelfRegistrationRequest(
+            RegisterFirstName,
+            RegisterLastName,
+            RegisterPhoneNumber,
+            DateOnly.FromDateTime(RegisterBirthDate.Value),
+            RegisterAddress,
+            RegisterGender,
+            RegisterYearsOfExperience,
+            null,
+            null,
+            5,
+            RegisterPassword,
+            RegisterConfirmPassword,
+            []);
+        var result = await Api.RegisterSelfAsync(request);
+        if (!result.IsSuccess)
+        {
+            IsBusy = false;
+            RegisterMessage = result.ErrorMessage ?? "Creation impossible.";
+            return;
+        }
+
+        var login = await Api.LoginAsync(new ProviderPortalLoginRequest(RegisterPhoneNumber, RegisterPassword, true));
+        IsBusy = false;
+        if (!login.IsSuccess || login.Value is null)
+        {
+            RegisterMessage = "Profil cree. Connectez-vous avec votre telephone et mot de passe.";
+            return;
+        }
+
+        await StoreSessionAsync(login.Value);
         Navigation.NavigateTo("/");
     }
 

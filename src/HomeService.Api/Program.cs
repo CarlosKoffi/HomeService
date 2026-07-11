@@ -537,7 +537,22 @@ app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
                     $"/api/company-portal/provider-documents/{document.Id}/preview",
                     document.CreatedAt))
                 .ToList(),
-            provider.CreatedAt))
+            provider.CreatedAt,
+            db.ProviderInvitations
+                .Where(invitation => invitation.ProviderId == provider.Id && invitation.Status == ProviderInvitationStatus.Pending)
+                .OrderByDescending(invitation => invitation.CreatedAt)
+                .Select(invitation => invitation.Code)
+                .FirstOrDefault(),
+            db.ProviderInvitations
+                .Where(invitation => invitation.ProviderId == provider.Id && invitation.Status == ProviderInvitationStatus.Pending)
+                .OrderByDescending(invitation => invitation.CreatedAt)
+                .Select(invitation => invitation.InvitationLink)
+                .FirstOrDefault(),
+            db.ProviderInvitations
+                .Where(invitation => invitation.ProviderId == provider.Id && invitation.Status == ProviderInvitationStatus.Pending)
+                .OrderByDescending(invitation => invitation.CreatedAt)
+                .Select(invitation => (DateTimeOffset?)invitation.ExpiresAt)
+                .FirstOrDefault()))
         .ToListAsync(cancellationToken);
 
     return Results.Ok(employees);

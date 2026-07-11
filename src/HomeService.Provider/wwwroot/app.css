@@ -921,11 +921,14 @@ textarea {
     font-weight: 850;
 }
 
-.onboarding-choice-card input {
+.onboarding-choice-card input,
+.onboarding-choice-card select {
     min-height: 48px;
     border: 1px solid var(--muted-line);
     border-radius: 16px;
     padding: 0 14px;
+    background: #fff;
+    color: var(--ink);
 }
 
 .onboarding-steps {

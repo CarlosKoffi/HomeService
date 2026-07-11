@@ -568,6 +568,24 @@
     margin: .3rem 0 0;
 }
 
+.employee-invitation-card {
+    border-color: rgba(255, 107, 23, 0.32) !important;
+    background: #fff8f3 !important;
+}
+
+.employee-invitation-card strong {
+    font-size: 1.15rem;
+    letter-spacing: .04em;
+}
+
+.employee-invitation-card a {
+    display: inline-flex;
+    width: fit-content;
+    margin-top: .55rem;
+    color: #008751;
+    font-weight: 900;
+}
+
 .employee-detail-section h3 {
     font-size: 1rem;
     margin: 0 0 .65rem;

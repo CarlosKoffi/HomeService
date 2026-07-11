@@ -273,6 +273,23 @@ else
                 </div>
 
                 <div class="employee-detail-grid">
+                    <article class="employee-invitation-card">
+                        <span>Acces prestataire</span>
+                        @if (!string.IsNullOrWhiteSpace(SelectedEmployee.InvitationCode))
+                        {
+                            <strong>@SelectedEmployee.InvitationCode</strong>
+                            <p>Code a envoyer par SMS ou WhatsApp. Valable jusqu'au @SelectedEmployee.InvitationExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm").</p>
+                            @if (!string.IsNullOrWhiteSpace(SelectedEmployee.InvitationLink))
+                            {
+                                <a href="@SelectedEmployee.InvitationLink" target="_blank">Ouvrir le lien d'activation</a>
+                            }
+                        }
+                        else
+                        {
+                            <strong>Compte active ou code expire</strong>
+                            <p>Si le prestataire ne peut pas se connecter, on ajoutera ensuite une action pour regenerer un code.</p>
+                        }
+                    </article>
                     <article>
                         <span>Affectation</span>
                         <strong>@GetAssignmentLabel(EditModel.EmploymentType == "TemporaryWorker")</strong>

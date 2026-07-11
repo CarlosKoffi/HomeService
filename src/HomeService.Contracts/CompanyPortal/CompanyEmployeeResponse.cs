@@ -22,4 +22,7 @@ public sealed record CompanyEmployeeResponse(
     bool HasDiploma,
     IReadOnlyList<CompanyEmployeeServiceResponse> Services,
     IReadOnlyList<CompanyEmployeeDocumentResponse> Documents,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string? InvitationCode = null,
+    string? InvitationLink = null,
+    DateTimeOffset? InvitationExpiresAt = null);
