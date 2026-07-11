@@ -48,6 +48,7 @@ builder.Services.AddScoped<CompanyComplianceDocumentService>();
 builder.Services.AddScoped<CompanyEmployeeManagementService>();
 builder.Services.AddScoped<CompanyInterimCandidateService>();
 builder.Services.AddScoped<ProviderSelfRegistrationService>();
+builder.Services.AddScoped<ProviderPortalAuthService>();
 builder.Services.AddScoped<AdminCompanyApplicationReviewService>();
 builder.Services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
 
@@ -182,6 +183,11 @@ app.MapPost("/api/provider-onboarding/self-registration", async (
     CancellationToken cancellationToken) =>
 {
     var result = await registrationService.RegisterAsync(request, cancellationToken);
+    if (result.ProviderId == Guid.Empty)
+    {
+        return Results.BadRequest(new { message = result.Message });
+    }
+
     return Results.Ok(result);
 })
 .WithName("RegisterSelfProviderCandidate");
@@ -754,6 +760,7 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
     HttpRequest httpRequest,
     IAppDbContext db,
     CompanyProviderUploadService uploadService,
+    IConfiguration configuration,
     CancellationToken cancellationToken) =>
 {
     if (!httpRequest.HasFormContentType)
@@ -803,6 +810,20 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
 
     db.Providers.Add(provider);
 
+    var invitationCode = await GenerateUniqueProviderInvitationCodeAsync(db, cancellationToken);
+    var invitationToken = PortalTokenService.GenerateSecureToken();
+    var invitation = new ProviderInvitation(
+        provider.Id,
+        companyId,
+        invitationCode,
+        PortalTokenService.HashToken(invitationToken),
+        DateTimeOffset.UtcNow.AddDays(14));
+    if (!string.IsNullOrWhiteSpace(configuration["PROVIDER_PORTAL_BASE_URL"]))
+    {
+        invitation.SetInvitationLink($"{configuration["PROVIDER_PORTAL_BASE_URL"]!.TrimEnd('/')}/onboarding?code={Uri.EscapeDataString(invitation.Code)}");
+    }
+    db.ProviderInvitations.Add(invitation);
+
     var documents = await uploadService.SaveAsync(companyId, provider.Id, form.Files, cancellationToken);
     foreach (var document in documents)
     {
@@ -835,7 +856,9 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
         });
     await db.SaveChangesAsync(cancellationToken);
 
-    return Results.Created($"/api/company-portal/{companyId}/employees/{provider.Id}", new CreateCompanyEmployeeResult(provider.Id));
+    return Results.Created(
+        $"/api/company-portal/{companyId}/employees/{provider.Id}",
+        new CreateCompanyEmployeeResult(provider.Id, invitation.Code, invitation.InvitationLink, invitation.ExpiresAt));
 })
 .WithName("CreateCompanyPortalEmployee");
 
@@ -1190,6 +1213,97 @@ app.MapGet("/api/company-portal/{companyId:guid}/payments", async (
 
 var providerPortal = app.MapGroup("/api/provider-portal");
 
+providerPortal.MapGet("/invitations/{code}", async (
+    string code,
+    ProviderPortalAuthService authService,
+    CancellationToken cancellationToken) =>
+{
+    var invitation = await authService.GetInvitationAsync(code, cancellationToken);
+    return invitation is null
+        ? Results.NotFound(new { message = "Code de preinscription introuvable." })
+        : Results.Ok(invitation);
+})
+.WithName("GetProviderInvitation");
+
+providerPortal.MapPost("/activate", async (
+    ProviderInvitationActivationRequest request,
+    HttpRequest httpRequest,
+    ProviderPortalAuthService authService,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var result = await authService.ActivateInvitationAsync(request, cancellationToken);
+    if (!result.IsSuccess || result.Response is null || result.Provider is null)
+    {
+        return Results.BadRequest(new { message = result.ErrorMessage ?? "Activation impossible." });
+    }
+
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Provider(result.Provider.Id, result.Provider.FullName),
+        "ProviderPortalActivated",
+        nameof(ProviderProfile),
+        result.Provider.Id,
+        "Compte prestataire active depuis un code entreprise.",
+        after: new { result.Provider.Status, result.Provider.CompanyId });
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(result.Response);
+})
+.WithName("ActivateProviderInvitation");
+
+providerPortal.MapPost("/login", async (
+    ProviderPortalLoginRequest request,
+    HttpRequest httpRequest,
+    ProviderPortalAuthService authService,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var result = await authService.LoginAsync(request, cancellationToken);
+    if (!result.IsSuccess || result.Response is null || result.Provider is null)
+    {
+        return Results.BadRequest(new { message = result.ErrorMessage ?? "Connexion impossible." });
+    }
+
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Provider(result.Provider.Id, result.Provider.FullName),
+        "ProviderPortalLogin",
+        nameof(ProviderPortalSession),
+        result.Session?.Id,
+        "Connexion prestataire.",
+        after: new { result.Provider.Status, result.Response.ExpiresAt });
+    await db.SaveChangesAsync(cancellationToken);
+
+    return Results.Ok(result.Response);
+})
+.WithName("LoginProviderPortal");
+
+providerPortal.MapGet("/me", async (
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+    if (session?.Provider is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var provider = session.Provider;
+    return Results.Ok(new ProviderPortalMeResponse(
+        provider.Id,
+        provider.FullName,
+        provider.PhoneNumber,
+        provider.Company?.Name,
+        provider.Status.ToString(),
+        provider.Status == ProviderStatus.Approved && provider.CompanyId is not null,
+        provider.IsAvailable));
+})
+.WithName("GetProviderPortalMe");
+
 providerPortal.MapGet("/mobile/home", async (
     HttpRequest httpRequest,
     IAppDbContext db,
@@ -1209,7 +1323,7 @@ providerPortal.MapGet("/mobile/home", async (
             .ThenInclude(providerService => providerService.Service)
         .FirstOrDefaultAsync(provider => provider.Id == session.ProviderId, cancellationToken);
 
-    if (provider?.Company is null)
+    if (provider is null)
     {
         return Results.Unauthorized();
     }
@@ -1258,7 +1372,7 @@ providerPortal.MapGet("/mobile/home", async (
     return Results.Ok(new ProviderMobileHomeResponse(
         new ProviderMobileStatusResponse(
             provider.FullName,
-            provider.Company.Name,
+            provider.Company?.Name ?? "En attente d'entreprise",
             provider.IsAvailable,
             provider.IsAvailable ? "Disponible" : "Indisponible",
             provider.MissionRadiusKm),
@@ -2423,6 +2537,21 @@ static async Task<ProviderPortalSession?> GetProviderPortalSessionAsync(
         .Include(session => session.Provider)
         .ThenInclude(provider => provider!.Company)
         .FirstOrDefaultAsync(session => session.TokenHash == tokenHash && session.RevokedAt == null && session.ExpiresAt > DateTimeOffset.UtcNow, cancellationToken);
+}
+
+static async Task<string> GenerateUniqueProviderInvitationCodeAsync(IAppDbContext db, CancellationToken cancellationToken)
+{
+    for (var attempt = 0; attempt < 20; attempt++)
+    {
+        var code = $"KAZA-{RandomNumberGenerator.GetInt32(100000, 999999)}";
+        var exists = await db.ProviderInvitations.AnyAsync(invitation => invitation.Code == code, cancellationToken);
+        if (!exists)
+        {
+            return code;
+        }
+    }
+
+    return $"KAZA-{Guid.NewGuid():N}"[..15].ToUpperInvariant();
 }
 
 static IResult ToProviderMissionHttpResult(ProviderMissionOperationResult result)

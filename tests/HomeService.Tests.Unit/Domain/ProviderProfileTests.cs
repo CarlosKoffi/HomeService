@@ -133,6 +133,18 @@ public sealed class ProviderProfileTests
         Assert.Single(provider.Services);
     }
 
+    [Fact]
+    public void ActivateFromCompanyInvitation_StoresPasswordAndApprovesProvider()
+    {
+        var provider = CreateProvider();
+
+        provider.ActivateFromCompanyInvitation("hashed-password");
+
+        Assert.Equal("hashed-password", provider.PasswordHash);
+        Assert.Equal(ProviderStatus.Approved, provider.Status);
+        Assert.False(provider.IsAvailable);
+    }
+
     private static ProviderProfile CreateApprovedAvailableProvider()
     {
         var provider = CreateProvider();

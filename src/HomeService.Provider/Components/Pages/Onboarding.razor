@@ -1,12 +1,15 @@
 @page "/onboarding"
+@inject ProviderApiClient Api
+@inject NavigationManager Navigation
+@inject IJSRuntime Js
 
 <PageTitle>Kaza Prestataire - Inscription</PageTitle>
 
 <main class="provider-mobile-shell">
     <section class="screen-heading">
-        <span>Inscription prestataire</span>
-        <h1>Comment voulez-vous commencer ?</h1>
-        <p>Vous pouvez utiliser un code fourni par une entreprise, ou creer votre profil et candidater comme demandeur d'interim.</p>
+        <span>Acces prestataire</span>
+        <h1>Entrez dans votre espace Kaza</h1>
+        <p>Utilisez le code fourni par votre entreprise ou connectez-vous avec votre telephone si votre compte est deja active.</p>
     </section>
 
     <section class="onboarding-choice-card highlighted">
@@ -14,15 +17,50 @@
             <svg viewBox="0 0 24 24"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h10" /></svg>
         </div>
         <div>
-            <span>J'ai un code</span>
+            <span>Activation entreprise</span>
             <h2>Code de preinscription</h2>
-            <p>Saisissez le code recu par SMS ou WhatsApp lorsque l'entreprise vous a cree comme prestataire.</p>
+            <p>Ce code est cree par l'entreprise qui vous rattache comme prestataire.</p>
         </div>
+
         <label>
-            Code entreprise
-            <input placeholder="Ex: KAZA-4821" />
+            Code recu
+            <input placeholder="Ex: KAZA-482135" @bind="InvitationCode" @bind:event="oninput" />
         </label>
-        <button type="button" class="primary-action">Continuer avec le code</button>
+
+        @if (Invitation is not null)
+        {
+            <div class="invitation-preview">
+                <strong>@Invitation.ProviderName</strong>
+                <span>@Invitation.CompanyName</span>
+                <small>Code valable jusqu'au @Invitation.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+        }
+
+        <div class="two-field-grid">
+            <label>
+                Mot de passe
+                <input type="password" autocomplete="new-password" placeholder="Minimum 8 caracteres" @bind="ActivationPassword" />
+            </label>
+            <label>
+                Confirmation
+                <input type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" @bind="ActivationConfirmPassword" />
+            </label>
+        </div>
+
+        <label class="remember-row">
+            <input type="checkbox" @bind="RememberMe" />
+            <span>Rester connecte sur ce telephone</span>
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(ActivationMessage))
+        {
+            <p class="field-message">@ActivationMessage</p>
+        }
+
+        <div class="action-row">
+            <button type="button" class="ghost-action" @onclick="LoadInvitationAsync" disabled="@IsBusy">Verifier</button>
+            <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsBusy">Activer mon compte</button>
+        </div>
     </section>
 
     <section class="onboarding-choice-card">
@@ -30,36 +68,123 @@
             <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
         </div>
         <div>
-            <span>Nouveau profil</span>
-            <h2>Creer mon compte</h2>
-            <p>Completez vos informations, choisissez vos services, puis postulez aux entreprises proches qui pratiquent ces services.</p>
+            <span>Compte active</span>
+            <h2>Connexion</h2>
+            <p>Connectez-vous avec le numero de telephone connu par votre entreprise.</p>
         </div>
-        <div class="onboarding-steps">
-            <article>
-                <strong>1</strong>
-                <span>Profil, pieces, zone et services</span>
-            </article>
-            <article>
-                <strong>2</strong>
-                <span>Entreprises proposees par proximite et services</span>
-            </article>
-            <article>
-                <strong>3</strong>
-                <span>L'entreprise vous recoit et vous evalue</span>
-            </article>
-            <article>
-                <strong>4</strong>
-                <span>Validation: vous devenez interimaire assignable</span>
-            </article>
-        </div>
-        <button type="button" class="primary-action orange-action">Creer mon profil</button>
+
+        <label>
+            Telephone
+            <input type="tel" autocomplete="tel" placeholder="+225 07 00 00 00 00" @bind="PhoneNumber" />
+        </label>
+        <label>
+            Mot de passe
+            <input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="LoginPassword" />
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(LoginMessage))
+        {
+            <p class="field-message">@LoginMessage</p>
+        }
+
+        <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
     </section>
 
     <section class="profile-completion-banner">
         <div>
             <span>Regle importante</span>
-            <strong>Non assignable</strong>
+            <strong>Validation entreprise</strong>
         </div>
-        <p>Tant qu'aucune entreprise ne vous a valide, vous restez demandeur d'interim et vous ne recevez aucune mission.</p>
+        <p>Sans entreprise validee, vous pouvez preparer votre profil, mais vous ne recevez pas encore de missions.</p>
     </section>
 </main>
+
+@code {
+    private string InvitationCode { get; set; } = string.Empty;
+    private string ActivationPassword { get; set; } = string.Empty;
+    private string ActivationConfirmPassword { get; set; } = string.Empty;
+    private string PhoneNumber { get; set; } = string.Empty;
+    private string LoginPassword { get; set; } = string.Empty;
+    private bool RememberMe { get; set; } = true;
+    private bool IsBusy { get; set; }
+    private string? ActivationMessage { get; set; }
+    private string? LoginMessage { get; set; }
+    private ProviderInvitationPreviewResponse? Invitation { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
+        if (query.TryGetValue("code", out var code))
+        {
+            InvitationCode = code.ToString();
+            await LoadInvitationAsync();
+        }
+    }
+
+    private async Task LoadInvitationAsync()
+    {
+        ActivationMessage = null;
+        Invitation = null;
+        if (string.IsNullOrWhiteSpace(InvitationCode))
+        {
+            ActivationMessage = "Saisissez le code recu.";
+            return;
+        }
+
+        IsBusy = true;
+        var result = await Api.GetInvitationAsync(InvitationCode);
+        IsBusy = false;
+
+        if (!result.IsSuccess || result.Value is null)
+        {
+            ActivationMessage = result.ErrorMessage ?? "Code introuvable.";
+            return;
+        }
+
+        Invitation = result.Value;
+        PhoneNumber = Invitation.PhoneNumber;
+    }
+
+    private async Task ActivateAsync()
+    {
+        ActivationMessage = null;
+        IsBusy = true;
+        var result = await Api.ActivateAsync(new ProviderInvitationActivationRequest(
+            InvitationCode,
+            ActivationPassword,
+            ActivationConfirmPassword,
+            RememberMe));
+        IsBusy = false;
+
+        if (!result.IsSuccess || result.Value is null)
+        {
+            ActivationMessage = result.ErrorMessage ?? "Activation impossible.";
+            return;
+        }
+
+        await StoreSessionAsync(result.Value);
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task LoginAsync()
+    {
+        LoginMessage = null;
+        IsBusy = true;
+        var result = await Api.LoginAsync(new ProviderPortalLoginRequest(PhoneNumber, LoginPassword, RememberMe));
+        IsBusy = false;
+
+        if (!result.IsSuccess || result.Value is null)
+        {
+            LoginMessage = result.ErrorMessage ?? "Connexion impossible.";
+            return;
+        }
+
+        await StoreSessionAsync(result.Value);
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task StoreSessionAsync(ProviderPortalLoginResponse session)
+    {
+        await Js.InvokeVoidAsync("localStorage.setItem", "kaza.provider.session", System.Text.Json.JsonSerializer.Serialize(session));
+    }
+}

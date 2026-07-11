@@ -1,5 +1,6 @@
 using HomeService.Provider.Components;
 using HomeService.Provider;
+using HomeService.Provider.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddPersistentDataProtection(builder.Configuration, "HomeService.Provider");
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddHttpClient<ProviderApiClient>(client =>
+{
+    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080";
+    client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/'));
+});
 
 var app = builder.Build();
 

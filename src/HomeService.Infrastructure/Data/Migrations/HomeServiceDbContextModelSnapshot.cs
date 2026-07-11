@@ -60,7 +60,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("AdminModules", (string)null);
+                    b.ToTable("AdminModules");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.AdminRole", b =>
@@ -96,7 +96,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("AdminRoles", (string)null);
+                    b.ToTable("AdminRoles");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.AdminRolePermission", b =>
@@ -129,7 +129,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("RoleId", "ModuleId", "Action")
                         .IsUnique();
 
-                    b.ToTable("AdminRolePermissions", (string)null);
+                    b.ToTable("AdminRolePermissions");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.AdminUser", b =>
@@ -168,7 +168,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("AdminUsers", (string)null);
+                    b.ToTable("AdminUsers");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.AdminUserRole", b =>
@@ -196,7 +196,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("AdminUserId", "RoleId")
                         .IsUnique();
 
-                    b.ToTable("AdminUserRoles", (string)null);
+                    b.ToTable("AdminUserRoles");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.AuditLogEntry", b =>
@@ -271,7 +271,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("EntityType", "EntityId", "OccurredAt");
 
-                    b.ToTable("AuditLogEntries", (string)null);
+                    b.ToTable("AuditLogEntries");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.Company", b =>
@@ -312,7 +312,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Companies", (string)null);
+                    b.ToTable("Companies");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyActivationToken", b =>
@@ -360,7 +360,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("CompanyApplicationId", "ExpiresAt");
 
-                    b.ToTable("CompanyActivationTokens", (string)null);
+                    b.ToTable("CompanyActivationTokens");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplication", b =>
@@ -448,7 +448,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("Status", "SubmittedAt");
 
-                    b.ToTable("CompanyApplications", (string)null);
+                    b.ToTable("CompanyApplications");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplicationDocument", b =>
@@ -499,7 +499,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("CompanyApplicationId");
 
-                    b.ToTable("CompanyApplicationDocuments", (string)null);
+                    b.ToTable("CompanyApplicationDocuments");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplicationService", b =>
@@ -549,7 +549,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("CompanyApplicationId", "NormalizedName")
                         .IsUnique();
 
-                    b.ToTable("CompanyApplicationServices", (string)null);
+                    b.ToTable("CompanyApplicationServices");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyApplicationStatusHistory", b =>
@@ -591,7 +591,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("CompanyApplicationId", "ChangedAt");
 
-                    b.ToTable("CompanyApplicationStatusHistories", (string)null);
+                    b.ToTable("CompanyApplicationStatusHistories");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyPortalSession", b =>
@@ -627,7 +627,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("CompanyPortalUserId", "ExpiresAt");
 
-                    b.ToTable("CompanyPortalSessions", (string)null);
+                    b.ToTable("CompanyPortalSessions");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CompanyPortalUser", b =>
@@ -673,7 +673,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("CompanyPortalUsers", (string)null);
+                    b.ToTable("CompanyPortalUsers");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.Country", b =>
@@ -714,7 +714,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("IsoCode")
                         .IsUnique();
 
-                    b.ToTable("Countries", (string)null);
+                    b.ToTable("Countries");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CountryBranding", b =>
@@ -776,7 +776,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("CountryId")
                         .IsUnique();
 
-                    b.ToTable("CountryBrandings", (string)null);
+                    b.ToTable("CountryBrandings");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.CustomerProfile", b =>
@@ -808,7 +808,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Customers", (string)null);
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.Language", b =>
@@ -844,7 +844,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("Languages", (string)null);
+                    b.ToTable("Languages");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.Mission", b =>
@@ -951,7 +951,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ServiceId", "Status");
 
-                    b.ToTable("Missions", (string)null);
+                    b.ToTable("Missions");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.MissionConversation", b =>
@@ -989,7 +989,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProviderId");
 
-                    b.ToTable("MissionConversations", (string)null);
+                    b.ToTable("MissionConversations");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.MissionMessage", b =>
@@ -1035,7 +1035,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ConversationId", "CreatedAt");
 
-                    b.ToTable("MissionMessages", (string)null);
+                    b.ToTable("MissionMessages");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.NotificationOutboxMessage", b =>
@@ -1101,7 +1101,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("Status", "Channel", "ScheduledAt");
 
-                    b.ToTable("NotificationOutboxMessages", (string)null);
+                    b.ToTable("NotificationOutboxMessages");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderAffiliationRequest", b =>
@@ -1147,7 +1147,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProviderId", "CompanyId", "Status");
 
-                    b.ToTable("ProviderAffiliationRequests", (string)null);
+                    b.ToTable("ProviderAffiliationRequests");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderCandidateService", b =>
@@ -1186,7 +1186,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ServiceId", "IsActive");
 
-                    b.ToTable("ProviderCandidateServices", (string)null);
+                    b.ToTable("ProviderCandidateServices");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderDocument", b =>
@@ -1228,7 +1228,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProviderId", "DocumentType");
 
-                    b.ToTable("ProviderDocuments", (string)null);
+                    b.ToTable("ProviderDocuments");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderInvitation", b =>
@@ -1289,7 +1289,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProviderId", "Status");
 
-                    b.ToTable("ProviderInvitations", (string)null);
+                    b.ToTable("ProviderInvitations");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderMissionAssignment", b =>
@@ -1403,7 +1403,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProviderId", "Status");
 
-                    b.ToTable("ProviderMissionAssignments", (string)null);
+                    b.ToTable("ProviderMissionAssignments");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderPortalSession", b =>
@@ -1439,7 +1439,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProviderId", "ExpiresAt");
 
-                    b.ToTable("ProviderPortalSessions", (string)null);
+                    b.ToTable("ProviderPortalSessions");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderProfile", b =>
@@ -1504,6 +1504,10 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.Property<int>("MissionRadiusKm")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -1511,6 +1515,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.Property<string>("RegistrationSource")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasDefaultValue("CompanyInvitation");
@@ -1532,7 +1537,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("CompanyId", "Status");
 
-                    b.ToTable("Providers", (string)null);
+                    b.ToTable("Providers");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderService", b =>
@@ -1587,7 +1592,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("ProviderId", "ServiceId")
                         .IsUnique();
 
-                    b.ToTable("ProviderServices", (string)null);
+                    b.ToTable("ProviderServices");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.ProviderServicePortfolioItem", b =>
@@ -1641,7 +1646,7 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProviderId", "ServiceId", "DisplayOrder");
 
-                    b.ToTable("ProviderServicePortfolioItems", (string)null);
+                    b.ToTable("ProviderServicePortfolioItems");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.Service", b =>
@@ -1736,7 +1741,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("NormalizedName")
                         .IsUnique();
 
-                    b.ToTable("Services", (string)null);
+                    b.ToTable("Services");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.TranslationKey", b =>
@@ -1774,7 +1779,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("TranslationKeys", (string)null);
+                    b.ToTable("TranslationKeys");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.TranslationValue", b =>
@@ -1812,7 +1817,7 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("TranslationKeyId", "LanguageId", "CountryId")
                         .IsUnique();
 
-                    b.ToTable("TranslationValues", (string)null);
+                    b.ToTable("TranslationValues");
                 });
 
             modelBuilder.Entity("HomeService.Domain.Entities.AdminRolePermission", b =>

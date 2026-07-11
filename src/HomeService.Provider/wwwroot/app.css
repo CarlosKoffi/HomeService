@@ -968,6 +968,50 @@ textarea {
     background: var(--orange);
 }
 
+.action-row,
+.two-field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.invitation-preview {
+    display: grid;
+    gap: 3px;
+    padding: 12px;
+    border: 1px solid rgba(0, 135, 81, 0.2);
+    border-radius: 16px;
+    background: var(--green-soft);
+    color: var(--ink);
+}
+
+.invitation-preview span,
+.invitation-preview small {
+    color: var(--ink);
+}
+
+.remember-row {
+    display: flex !important;
+    grid-template-columns: none !important;
+    align-items: center;
+    gap: 10px !important;
+}
+
+.remember-row input {
+    width: 18px;
+    min-height: 18px;
+}
+
+.field-message {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 107, 23, 0.12);
+    color: var(--ink);
+    font-size: var(--text-sm);
+    font-weight: 800;
+}
+
 .provider-bottom-nav {
     position: fixed;
     right: 0;
@@ -1070,6 +1114,11 @@ textarea {
     }
 
     .mission-list article {
+        grid-template-columns: 1fr;
+    }
+
+    .action-row,
+    .two-field-grid {
         grid-template-columns: 1fr;
     }
 }

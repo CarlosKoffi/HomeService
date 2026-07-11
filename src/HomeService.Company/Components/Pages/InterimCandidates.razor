@@ -94,7 +94,7 @@ else
             return;
         }
 
-        var stored = await Js.InvokeAsync<string?>("localStorage.getItem", "companyPortalSession");
+        var stored = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
         if (!string.IsNullOrWhiteSpace(stored))
         {
             Session = System.Text.Json.JsonSerializer.Deserialize<CompanyPortalSessionResponse>(stored);

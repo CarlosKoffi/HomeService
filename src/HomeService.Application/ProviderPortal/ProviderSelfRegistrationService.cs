@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Security;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -12,6 +13,16 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
         ProviderSelfRegistrationRequest request,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+        {
+            return new ProviderSelfRegistrationResponse(Guid.Empty, "ValidationFailed", "Le mot de passe doit contenir au moins 8 caracteres.");
+        }
+
+        if (request.Password != request.ConfirmPassword)
+        {
+            return new ProviderSelfRegistrationResponse(Guid.Empty, "ValidationFailed", "Les deux mots de passe ne correspondent pas.");
+        }
+
         var provider = new ProviderProfile(
             request.FirstName,
             request.LastName,
@@ -23,6 +34,7 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
             request.Latitude,
             request.Longitude,
             Math.Clamp(request.MissionRadiusKm, 1, 100));
+        provider.SetPortalPassword(Sha256PasswordHasher.Hash(request.Password));
 
         var requestedServiceIds = request.Services.Select(service => service.ServiceId).Distinct().ToList();
         var activeServiceIds = await db.Services

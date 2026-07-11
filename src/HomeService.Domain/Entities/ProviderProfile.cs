@@ -83,6 +83,7 @@ public sealed class ProviderProfile : AuditableEntity
     public int MissionRadiusKm { get; private set; } = 5;
     public ProviderStatus Status { get; private set; } = ProviderStatus.Invited;
     public ProviderRegistrationSource RegistrationSource { get; private set; } = ProviderRegistrationSource.CompanyInvitation;
+    public string? PasswordHash { get; private set; }
     public bool IsAvailable { get; private set; }
     public decimal? CurrentLatitude { get; private set; }
     public decimal? CurrentLongitude { get; private set; }
@@ -228,6 +229,20 @@ public sealed class ProviderProfile : AuditableEntity
     public void Approve()
     {
         Status = ProviderStatus.Approved;
+        Touch();
+    }
+
+    public void SetPortalPassword(string passwordHash)
+    {
+        PasswordHash = passwordHash.Trim();
+        Touch();
+    }
+
+    public void ActivateFromCompanyInvitation(string passwordHash)
+    {
+        SetPortalPassword(passwordHash);
+        Status = ProviderStatus.Approved;
+        IsAvailable = false;
         Touch();
     }
 

@@ -11,6 +11,8 @@ public sealed record ProviderSelfRegistrationRequest(
     decimal? Latitude,
     decimal? Longitude,
     int MissionRadiusKm,
+    string Password,
+    string ConfirmPassword,
     IReadOnlyList<ProviderCandidateServiceRequest> Services);
 
 public sealed record ProviderCandidateServiceRequest(

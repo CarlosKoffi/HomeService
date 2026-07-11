@@ -19,6 +19,7 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<ProviderPro
             .HasConversion<string>()
             .HasMaxLength(32)
             .HasDefaultValue(HomeService.Domain.Enums.ProviderRegistrationSource.CompanyInvitation);
+        builder.Property(provider => provider.PasswordHash).HasMaxLength(256);
         builder.Property(provider => provider.MissionLatitude).HasPrecision(9, 6);
         builder.Property(provider => provider.MissionLongitude).HasPrecision(9, 6);
         builder.Property(provider => provider.CurrentLatitude).HasPrecision(9, 6);

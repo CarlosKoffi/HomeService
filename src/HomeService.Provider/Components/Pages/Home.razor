@@ -1,89 +1,206 @@
 @page "/"
+@inject ProviderApiClient Api
+@inject NavigationManager Navigation
+@inject IJSRuntime Js
+@inject IWebHostEnvironment Environment
 
 <PageTitle>Kaza Prestataire</PageTitle>
 
 <main class="provider-mobile-shell">
-    <section class="provider-status-panel">
-        <div>
-            <span>Statut</span>
-            <strong>Disponible</strong>
-            <small>CI Home Service peut vous affecter une mission live.</small>
-        </div>
-        <button type="button" class="availability-toggle" aria-label="Disponibilite active">
-            <span></span>
-            ON
-        </button>
-    </section>
+    @if (IsLoading)
+    {
+        <section class="provider-card">
+            <strong>Chargement...</strong>
+            <p>Ouverture de votre espace prestataire.</p>
+        </section>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <section class="provider-card">
+            <strong>Connexion requise</strong>
+            <p>@ErrorMessage</p>
+            <a class="primary-action" href="/onboarding">Se connecter</a>
+        </section>
+    }
+    else if (HomeData is not null)
+    {
+        <section class="provider-status-panel">
+            <div>
+                <span>Statut</span>
+                <strong>@HomeData.Status.AvailabilityLabel</strong>
+                <small>@HomeData.Status.CompanyName vous voit dans un rayon de @HomeData.Status.MissionRadiusKm km.</small>
+            </div>
+            <button type="button" class="availability-toggle @(HomeData.Status.IsAvailable ? "active" : string.Empty)" aria-label="Disponibilite">
+                <span></span>
+                @(HomeData.Status.IsAvailable ? "ON" : "OFF")
+            </button>
+        </section>
 
-    <section class="profile-completion-banner">
-        <div>
-            <span>Profil a finaliser</span>
-            <strong>92%</strong>
-        </div>
-        <p>Ajoutez encore 1 photo pour rendre tous vos services assignables.</p>
-    </section>
+        @if (HomeData.ProfileCompletion is not null && HomeData.ProfileCompletion.Percent < 100)
+        {
+            <section class="profile-completion-banner">
+                <div>
+                    <span>Profil a finaliser</span>
+                    <strong>@HomeData.ProfileCompletion.Percent%</strong>
+                </div>
+                <p>@HomeData.ProfileCompletion.Message</p>
+            </section>
+        }
 
-    <section class="provider-card upcoming-mission-card">
-        <div class="section-title">
-            <div>
-                <span>Mission a venir</span>
-                <h2>Nounou - 16:30</h2>
-            </div>
-            <em>Assignee</em>
-        </div>
-        <div class="upcoming-mission-body">
-            <span class="feed-icon">
-                <svg viewBox="0 0 24 24"><path d="M8 2v4" /><path d="M16 2v4" /><path d="M3 10h18" /><path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2z" /></svg>
-            </span>
-            <div>
-                <strong>Plateau - CI Home Service</strong>
-                <small>Rendez-vous confirme. La navigation et les consignes seront disponibles avant le depart.</small>
-            </div>
-        </div>
-    </section>
-
-    <section class="mission-offer-card mission-offer-card-live">
-        <div class="mission-offer-head">
-            <div>
-                <span>Mission proposee par CI Home Service</span>
-                <h1>Awa, une mission vous attend</h1>
-            </div>
-            <strong>02:41</strong>
-        </div>
-        <div class="service-line">
-            <span class="service-icon service-icon-sparkles" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" /></svg>
-            </span>
-            <div>
-                <h2>Menage a domicile</h2>
-                <small>Mission live - depart demande maintenant</small>
-            </div>
-        </div>
-        <div class="mission-context-grid">
-            <div>
-                <span>Distance</span>
-                <strong>1,8 km</strong>
-            </div>
-            <div>
-                <span>Trajet</span>
-                <strong>8 min</strong>
-            </div>
-            <div>
-                <span>Client</span>
-                <strong>Mme Akissi</strong>
-            </div>
-            <div>
-                <span>Lieu</span>
-                <strong>Cocody Angre</strong>
-            </div>
-        </div>
-        <p>Verifiez que vous pouvez partir maintenant. Une fois acceptee, cette mission bloque les autres demandes live jusqu'a la fin de la prestation.</p>
-        <div class="mission-actions">
-            <button type="button" class="ghost-action">Refuser</button>
-            <button type="button" class="primary-action">Accepter</button>
-        </div>
-        <small>Si vous refusez, l'entreprise verra la raison pour reaffecter rapidement.</small>
-    </section>
+        @if (HomeData.LiveOffer is not null)
+        {
+            <section class="mission-offer-card mission-offer-card-live">
+                <div class="mission-offer-head">
+                    <div>
+                        <span>Mission proposee par @HomeData.LiveOffer.CompanyName</span>
+                        <h1>@HomeData.Status.DisplayName, une mission vous attend</h1>
+                    </div>
+                    <strong>@FormatSeconds(HomeData.LiveOffer.SecondsToRespond)</strong>
+                </div>
+                <div class="service-line">
+                    <span class="service-icon service-icon-sparkles" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" /></svg>
+                    </span>
+                    <div>
+                        <h2>@HomeData.LiveOffer.ServiceName</h2>
+                        <small>Mission live - depart demande maintenant</small>
+                    </div>
+                </div>
+                <div class="mission-context-grid">
+                    <div>
+                        <span>Distance</span>
+                        <strong>@(HomeData.LiveOffer.DistanceKm?.ToString("0.0") ?? "-") km</strong>
+                    </div>
+                    <div>
+                        <span>Trajet</span>
+                        <strong>@(HomeData.LiveOffer.EstimatedTravelMinutes?.ToString() ?? "-") min</strong>
+                    </div>
+                    <div>
+                        <span>Client</span>
+                        <strong>@HomeData.LiveOffer.CustomerDisplayName</strong>
+                    </div>
+                    <div>
+                        <span>Lieu</span>
+                        <strong>@HomeData.LiveOffer.LocationLabel</strong>
+                    </div>
+                </div>
+                <p>@HomeData.LiveOffer.Instruction</p>
+                <div class="mission-actions">
+                    <button type="button" class="ghost-action">Refuser</button>
+                    <button type="button" class="primary-action">Accepter</button>
+                </div>
+            </section>
+        }
+        else if (HomeData.UpcomingMission is not null)
+        {
+            <section class="provider-card upcoming-mission-card">
+                <div class="section-title">
+                    <div>
+                        <span>Mission a venir</span>
+                        <h2>@HomeData.UpcomingMission.ServiceName</h2>
+                    </div>
+                    <em>@HomeData.UpcomingMission.Status</em>
+                </div>
+                <div class="upcoming-mission-body">
+                    <span class="feed-icon">
+                        <svg viewBox="0 0 24 24"><path d="M8 2v4" /><path d="M16 2v4" /><path d="M3 10h18" /><path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2z" /></svg>
+                    </span>
+                    <div>
+                        <strong>@HomeData.UpcomingMission.LocationLabel - @HomeData.UpcomingMission.CompanyName</strong>
+                        <small>@(HomeData.UpcomingMission.ScheduledFor?.ToLocalTime().ToString("dd/MM HH:mm") ?? "Horaire a confirmer")</small>
+                    </div>
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="provider-card">
+                <strong>Aucune mission active</strong>
+                <p>Votre fil du jour apparaitra ici lorsqu'une entreprise vous affecte une mission.</p>
+            </section>
+        }
+    }
 </main>
 
 <ProviderBottomNav Active="home" />
+
+@code {
+    private ProviderMobileHomeResponse? HomeData { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        if (Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase))
+        {
+            HomeData = DemoHome();
+            IsLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "kaza.provider.session");
+        if (string.IsNullOrWhiteSpace(sessionJson))
+        {
+            ErrorMessage = "Connectez-vous pour recevoir vos missions.";
+            IsLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        var session = System.Text.Json.JsonSerializer.Deserialize<ProviderPortalLoginResponse>(sessionJson);
+        if (session is null || string.IsNullOrWhiteSpace(session.AccessToken))
+        {
+            ErrorMessage = "Votre session prestataire est invalide.";
+            IsLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        var result = await Api.GetHomeAsync(session.AccessToken);
+        if (!result.IsSuccess || result.Value is null)
+        {
+            ErrorMessage = result.ErrorMessage ?? "Impossible de charger votre espace prestataire.";
+            await Js.InvokeVoidAsync("localStorage.removeItem", "kaza.provider.session");
+            IsLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        HomeData = result.Value;
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private static string FormatSeconds(int seconds)
+    {
+        var safeSeconds = Math.Max(0, seconds);
+        return $"{safeSeconds / 60:00}:{safeSeconds % 60:00}";
+    }
+
+    private static ProviderMobileHomeResponse DemoHome()
+    {
+        return new ProviderMobileHomeResponse(
+            new ProviderMobileStatusResponse("Awa", "CI HomeData Service", true, "Disponible", 5),
+            new ProviderMobileProfileCompletionResponse(92, "Ajoutez encore 1 photo pour rendre tous vos services assignables.", ["Book photo"]),
+            null,
+            new ProviderMobileMissionOfferResponse(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                "Menage a domicile",
+                "sparkles",
+                "CI HomeData Service",
+                "Mme Akissi",
+                "Cocody Angre",
+                1.8,
+                8,
+                DateTimeOffset.UtcNow.AddMinutes(3),
+                161,
+                "Verifiez que vous pouvez partir maintenant."));
+    }
+}
