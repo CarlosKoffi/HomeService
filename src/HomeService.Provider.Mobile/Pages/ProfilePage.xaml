@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.ProfilePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageWash}"
+    Title="Profil">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="16">
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Awa Kone" FontSize="26" FontAttributes="Bold" />
+                    <Label Text="Employee - Senior - Abidjan" />
+                    <Label Text="Profil valide pour Menage. Portfolio requis pour Esthetique." FontSize="13" TextColor="{StaticResource KazaOrange}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Portfolio par service" FontSize="18" FontAttributes="Bold" />
+
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Coiffure a domicile" FontSize="18" FontAttributes="Bold" />
+                    <Label Text="2/3 photos validees - non assignable pour ce service" FontSize="13" TextColor="{StaticResource KazaOrange}" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <BoxView HeightRequest="82" Color="#F97316" CornerRadius="12" />
+                        <BoxView Grid.Column="1" HeightRequest="82" Color="#12824C" CornerRadius="12" />
+                        <Border Grid.Column="2" HeightRequest="82" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12">
+                            <Label Text="Ajouter" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" />
+                        </Border>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Documents" FontSize="18" FontAttributes="Bold" />
+                    <Label Text="Photo profil : validee" />
+                    <Label Text="Piece identite : validee" />
+                    <Label Text="Diplome : optionnel" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

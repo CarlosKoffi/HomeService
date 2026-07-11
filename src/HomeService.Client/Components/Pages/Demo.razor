@@ -1,0 +1,270 @@
+@page "/demo"
+
+<PageTitle>Kaza - Demo prestataire</PageTitle>
+
+<main class="demo-page">
+    <section class="demo-intro">
+        <div>
+            <span>Demo mobile</span>
+            <h1>Portail prestataire</h1>
+            <p>Vue de demonstration pour presenter le parcours terrain: disponibilite, mission a accepter, planning du jour, services et chat.</p>
+        </div>
+        <a href="/" class="demo-link">Retour client</a>
+    </section>
+
+    <section class="phone-demo-frame" aria-label="Demo portail prestataire">
+        <div class="phone-shell">
+            <div class="phone-status">
+                <span>9:41</span>
+                <strong>Kaza</strong>
+                <span>4G</span>
+            </div>
+
+            <div class="provider-mobile-shell embedded">
+                @if (_activeTab == "home")
+                {
+                    <section class="provider-status-panel">
+                        <div>
+                            <span>Statut</span>
+                            <strong>Disponible</strong>
+                            <small>CI Home Service peut vous affecter une mission live.</small>
+                        </div>
+                        <button type="button" class="availability-toggle" aria-label="Disponibilite active">
+                            <span></span>
+                            ON
+                        </button>
+                    </section>
+
+                    <section class="profile-completion-banner">
+                        <div>
+                            <span>Profil a finaliser</span>
+                            <strong>92%</strong>
+                        </div>
+                        <p>Ajoutez encore 1 photo pour rendre tous vos services assignables.</p>
+                    </section>
+
+                    <section class="provider-card upcoming-mission-card">
+                        <div class="section-title">
+                            <div>
+                                <span>Mission a venir</span>
+                                <h2>Nounou - 16:30</h2>
+                            </div>
+                            <em>Assignee</em>
+                        </div>
+                        <div class="upcoming-mission-body">
+                            <span class="feed-icon" aria-hidden="true">@CalendarIcon</span>
+                            <div>
+                                <strong>Plateau - CI Home Service</strong>
+                                <small>Rendez-vous confirme. Les consignes seront disponibles avant le depart.</small>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="mission-offer-card mission-offer-card-live">
+                        <div class="mission-offer-head">
+                            <div>
+                                <span>Mission proposee par CI Home Service</span>
+                                <h1>Awa, une mission vous attend</h1>
+                            </div>
+                            <strong>02:41</strong>
+                        </div>
+                        <div class="service-line">
+                            <span class="service-icon" aria-hidden="true">@SparkIcon</span>
+                            <div>
+                                <h2>Menage a domicile</h2>
+                                <small>Mission live - depart demande maintenant</small>
+                            </div>
+                        </div>
+                        <div class="mission-context-grid">
+                            <div>
+                                <span>Distance</span>
+                                <strong>1,8 km</strong>
+                            </div>
+                            <div>
+                                <span>Trajet</span>
+                                <strong>8 min</strong>
+                            </div>
+                            <div>
+                                <span>Client</span>
+                                <strong>Mme Akissi</strong>
+                            </div>
+                            <div>
+                                <span>Contact</span>
+                                <strong>Masque</strong>
+                            </div>
+                        </div>
+                        <p>Le numero du client apparaitra apres acceptation prestataire et validation client.</p>
+                        <div class="mission-actions">
+                            <button type="button" class="ghost-action">Refuser</button>
+                            <button type="button" class="primary-action">Accepter</button>
+                        </div>
+                    </section>
+                }
+                else if (_activeTab == "missions")
+                {
+                    <section class="screen-panel">
+                        <span>Missions</span>
+                        <h2>Affectations</h2>
+                        <p>Live, rendez-vous et historique court.</p>
+                    </section>
+                    <section class="provider-card compact-list">
+                        <article>
+                            <span class="mini-icon">@SparkIcon</span>
+                            <div>
+                                <strong>Menage a domicile</strong>
+                                <small>Cocody Angre - 1,8 km - a accepter</small>
+                            </div>
+                            <em>Live</em>
+                        </article>
+                        <article>
+                            <span class="mini-icon">@CalendarIcon</span>
+                            <div>
+                                <strong>Nounou</strong>
+                                <small>Plateau - aujourd'hui 16:30</small>
+                            </div>
+                            <em>Rdv</em>
+                        </article>
+                        <article>
+                            <span class="mini-icon">@CheckIcon</span>
+                            <div>
+                                <strong>Jardinage</strong>
+                                <small>Riviera 3 - termine hier</small>
+                            </div>
+                            <em>OK</em>
+                        </article>
+                    </section>
+                }
+                else if (_activeTab == "services")
+                {
+                    <section class="screen-panel">
+                        <span>Services</span>
+                        <h2>Competences</h2>
+                        <p>Les services assignables et les pieces attendues.</p>
+                    </section>
+                    <section class="provider-card compact-list">
+                        <article>
+                            <span class="mini-icon">@HomeIcon</span>
+                            <div>
+                                <strong>Menage a domicile</strong>
+                                <small>Normal - profil complet</small>
+                            </div>
+                            <em>Actif</em>
+                        </article>
+                        <article>
+                            <span class="mini-icon">@LeafIcon</span>
+                            <div>
+                                <strong>Jardinage</strong>
+                                <small>Premium - 3 photos de realisations</small>
+                            </div>
+                            <em>A completer</em>
+                        </article>
+                    </section>
+                }
+                else if (_activeTab == "chat")
+                {
+                    <section class="screen-panel">
+                        <span>Chat</span>
+                        <h2>Conversations</h2>
+                        <p>Messages lies aux missions en cours ou passees.</p>
+                    </section>
+                    <section class="provider-card compact-list chat-list">
+                        <article>
+                            <span class="mini-icon">@ChatIcon</span>
+                            <div>
+                                <strong>Mme Akissi</strong>
+                                <small>Photo recue pour preciser l'entree.</small>
+                            </div>
+                            <em>2 min</em>
+                        </article>
+                        <article>
+                            <span class="mini-icon">@ChatIcon</span>
+                            <div>
+                                <strong>Support Kaza</strong>
+                                <small>Verification de position reussie.</small>
+                            </div>
+                            <em>10 min</em>
+                        </article>
+                    </section>
+                }
+                else
+                {
+                    <section class="screen-panel">
+                        <span>Parametres</span>
+                        <h2>Configuration</h2>
+                        <p>Disponibilite, rayon, GPS, notifications et securite.</p>
+                    </section>
+                    <section class="provider-card compact-list">
+                        <article>
+                            <span class="mini-icon">@LocationIcon</span>
+                            <div>
+                                <strong>Rayon mission</strong>
+                                <small>Visible jusqu'a 5 km autour de vous.</small>
+                            </div>
+                            <em>5 km</em>
+                        </article>
+                        <article>
+                            <span class="mini-icon">@BellIcon</span>
+                            <div>
+                                <strong>Alertes</strong>
+                                <small>SMS actif, WhatsApp pret a brancher.</small>
+                            </div>
+                            <em>ON</em>
+                        </article>
+                    </section>
+                }
+            </div>
+
+            <nav class="provider-bottom-nav" aria-label="Navigation demo prestataire">
+                <button type="button" class="@NavClass("home")" @onclick='() => SelectTab("home")'>
+                    @HomeIcon
+                    <span>Accueil</span>
+                </button>
+                <button type="button" class="@NavClass("missions")" @onclick='() => SelectTab("missions")'>
+                    @CalendarIcon
+                    <span>Missions</span>
+                </button>
+                <button type="button" class="@NavClass("services")" @onclick='() => SelectTab("services")'>
+                    @SparkIcon
+                    <span>Services</span>
+                </button>
+                <button type="button" class="@NavClass("chat")" @onclick='() => SelectTab("chat")'>
+                    @ChatIcon
+                    <span>Chat</span>
+                </button>
+                <button type="button" class="@NavClass("settings")" @onclick='() => SelectTab("settings")'>
+                    @SettingsIcon
+                    <span>Parametres</span>
+                </button>
+            </nav>
+        </div>
+    </section>
+</main>
+
+@code {
+    private string _activeTab = "home";
+
+    private void SelectTab(string tab)
+    {
+        _activeTab = tab;
+    }
+
+    private string NavClass(string tab)
+    {
+        return _activeTab == tab ? "active" : string.Empty;
+    }
+
+    private static MarkupString Icon(string path)
+    {
+        return new MarkupString($"""<svg viewBox="0 0 24 24" aria-hidden="true"><path d="{path}" /></svg>""");
+    }
+
+    private static readonly MarkupString HomeIcon = Icon("M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3V10.5z");
+    private static readonly MarkupString CalendarIcon = Icon("M7 2v4M17 2v4M4 9h16M5 5h14v16H5V5z");
+    private static readonly MarkupString SparkIcon = Icon("M12 2l2 7 7 3-7 2-2 8-2-8-7-2 7-3 2-7z");
+    private static readonly MarkupString ChatIcon = Icon("M4 5h16v11H8l-4 4V5z");
+    private static readonly MarkupString SettingsIcon = Icon("M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M4 12h2M18 12h2M12 4v2M12 18v2");
+    private static readonly MarkupString CheckIcon = Icon("M20 6 9 17l-5-5");
+    private static readonly MarkupString LeafIcon = Icon("M20 4C12 4 6 8 5 17c7 1 13-4 15-13z M5 17c3-4 7-7 12-9");
+    private static readonly MarkupString LocationIcon = Icon("M12 21s7-5.3 7-12a7 7 0 0 0-14 0c0 6.7 7 12 7 12z M12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z");
+    private static readonly MarkupString BellIcon = Icon("M18 16H6l2-3V9a4 4 0 0 1 8 0v4l2 3z M10 19h4");
+}

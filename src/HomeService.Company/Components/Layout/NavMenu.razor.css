@@ -18,8 +18,8 @@
 .brand {
     color: #102019;
     font-size: clamp(1.45rem, 3vw, 2.1rem);
-    font-weight: 900;
-    letter-spacing: -0.02em;
+    font-weight: 760;
+    letter-spacing: 0;
     text-decoration: none;
 }
 
@@ -32,7 +32,7 @@
 .site-nav ::deep a {
     border-radius: 999px;
     color: #334155;
-    font-weight: 800;
+    font-weight: 680;
     padding: .65rem .9rem;
     text-decoration: none;
 }
@@ -54,7 +54,7 @@
 .session-chip strong {
     color: #000;
     font-size: .86rem;
-    font-weight: 850;
+    font-weight: 720;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -76,7 +76,7 @@
     color: #000;
     cursor: pointer;
     font: inherit;
-    font-weight: 800;
+    font-weight: 680;
     padding: .62rem .85rem;
 }
 

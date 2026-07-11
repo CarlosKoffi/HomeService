@@ -30,6 +30,9 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Inte
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Newtonsoft.Json.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Npgsql.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\xunit.abstractions.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\xunit.assert.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\xunit.core.dll
@@ -114,13 +117,10 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Inte
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.AssemblyInfoInputs.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.AssemblyInfo.cs
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.csproj.CoreCompileInputs.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.sourcelink.json
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeServ.1FA073C0.Up2Date
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\refint\HomeService.Tests.Integration.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.genruntimeconfig.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\ref\HomeService.Tests.Integration.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\obj\Debug\net9.0\HomeService.Tests.Integration.sourcelink.json
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Integration\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll

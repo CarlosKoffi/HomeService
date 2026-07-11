@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.ServicesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageWash}"
+    Title="Services">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="14">
+            <Label Text="Ce que vous pouvez faire" Style="{StaticResource ScreenTitleLabel}" />
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Menage a domicile" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Pret - assignable" Style="{StaticResource BodyLabel}" TextColor="{StaticResource KazaGreen}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Coiffure a domicile" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Bloque - 2/3 photos validees" Style="{StaticResource BodyLabel}" TextColor="{StaticResource KazaOrange}" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <BoxView HeightRequest="76" Color="#F97316" CornerRadius="12" />
+                        <BoxView Grid.Column="1" HeightRequest="76" Color="#12824C" CornerRadius="12" />
+                        <Border Grid.Column="2" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12">
+                            <Label Text="Ajouter" HorizontalOptions="Center" VerticalOptions="Center" FontAttributes="Bold" />
+                        </Border>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

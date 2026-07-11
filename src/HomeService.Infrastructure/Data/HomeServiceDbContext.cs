@@ -17,10 +17,16 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<CompanyActivationToken> CompanyActivationTokens => Set<CompanyActivationToken>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ProviderProfile> Providers => Set<ProviderProfile>();
+    public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
+    public DbSet<ProviderPortalSession> ProviderPortalSessions => Set<ProviderPortalSession>();
     public DbSet<ProviderDocument> ProviderDocuments => Set<ProviderDocument>();
     public DbSet<ProviderService> ProviderServices => Set<ProviderService>();
+    public DbSet<ProviderServicePortfolioItem> ProviderServicePortfolioItems => Set<ProviderServicePortfolioItem>();
     public DbSet<CustomerProfile> Customers => Set<CustomerProfile>();
     public DbSet<Mission> Missions => Set<Mission>();
+    public DbSet<ProviderMissionAssignment> ProviderMissionAssignments => Set<ProviderMissionAssignment>();
+    public DbSet<MissionConversation> MissionConversations => Set<MissionConversation>();
+    public DbSet<MissionMessage> MissionMessages => Set<MissionMessage>();
     public DbSet<Country> Countries => Set<Country>();
     public DbSet<CountryBranding> CountryBrandings => Set<CountryBranding>();
     public DbSet<Language> Languages => Set<Language>();
@@ -32,6 +38,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<AdminRolePermission> AdminRolePermissions => Set<AdminRolePermission>();
     public DbSet<AdminUserRole> AdminUserRoles => Set<AdminUserRole>();
     public DbSet<NotificationOutboxMessage> NotificationOutboxMessages => Set<NotificationOutboxMessage>();
+    public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

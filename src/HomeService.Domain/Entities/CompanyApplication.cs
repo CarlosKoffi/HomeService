@@ -23,8 +23,14 @@ public sealed class CompanyApplication : AuditableEntity
         string email,
         string phoneNumber,
         string? plannedServices,
-        int? estimatedProviderCount)
+        int? estimatedProviderCount,
+        Guid? id = null)
     {
+        if (id.HasValue)
+        {
+            Id = id.Value;
+        }
+
         CompanyName = companyName.Trim();
         RegistrationNumber = registrationNumber?.Trim();
         City = city.Trim();

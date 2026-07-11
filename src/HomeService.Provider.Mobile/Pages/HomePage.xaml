@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.HomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageWash}"
+    Title="Accueil">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="14">
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="STATUT" Style="{StaticResource EyebrowLabel}" />
+                        <Label Text="Disponible" Style="{StaticResource CardTitleLabel}" TextColor="{StaticResource KazaGreen}" />
+                        <Label Text="CI Home Service peut vous affecter une mission live." Style="{StaticResource BodyLabel}" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1" BackgroundColor="{StaticResource KazaGreen}" StrokeShape="RoundRectangle 18" Padding="14,8">
+                        <Label Text="ON" TextColor="White" FontAttributes="Bold" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border BackgroundColor="#FFF8EF" Stroke="#FFD6AD" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="5">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="PROFIL A FINALISER" Style="{StaticResource EyebrowLabel}" />
+                        <Label Grid.Column="1" Text="92%" FontAttributes="Bold" TextColor="{StaticResource KazaOrange}" />
+                    </Grid>
+                    <Label Text="Ajoutez encore 1 photo pour rendre tous vos services assignables." Style="{StaticResource BodyLabel}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="MISSION A VENIR" Style="{StaticResource EyebrowLabel}" />
+                    <Label Text="Nounou - 16:30" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Plateau - CI Home Service. Rendez-vous confirme." Style="{StaticResource BodyLabel}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource KazaGreen}" StrokeShape="RoundRectangle 22" Padding="16">
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="MISSION PROPOSEE PAR CI HOME SERVICE" Style="{StaticResource EyebrowLabel}" />
+                            <Label Text="Awa, une mission vous attend" Style="{StaticResource ScreenTitleLabel}" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="1" BackgroundColor="{StaticResource KazaOrange}" StrokeShape="RoundRectangle 16" Padding="10">
+                            <Label Text="02:41" TextColor="White" FontAttributes="Bold" />
+                        </Border>
+                    </Grid>
+                    <Label Text="Menage a domicile - Cocody Angre - 1,8 km" Style="{StaticResource BodyLabel}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Text="Refuser" Grid.Column="0" BackgroundColor="#FFF0DF" TextColor="Black" />
+                        <Button Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource KazaGreen}" TextColor="White" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

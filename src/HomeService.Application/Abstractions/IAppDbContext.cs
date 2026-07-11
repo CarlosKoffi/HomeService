@@ -15,10 +15,16 @@ public interface IAppDbContext
     DbSet<CompanyActivationToken> CompanyActivationTokens { get; }
     DbSet<Service> Services { get; }
     DbSet<ProviderProfile> Providers { get; }
+    DbSet<ProviderInvitation> ProviderInvitations { get; }
+    DbSet<ProviderPortalSession> ProviderPortalSessions { get; }
     DbSet<ProviderDocument> ProviderDocuments { get; }
     DbSet<ProviderService> ProviderServices { get; }
+    DbSet<ProviderServicePortfolioItem> ProviderServicePortfolioItems { get; }
     DbSet<CustomerProfile> Customers { get; }
     DbSet<Mission> Missions { get; }
+    DbSet<ProviderMissionAssignment> ProviderMissionAssignments { get; }
+    DbSet<MissionConversation> MissionConversations { get; }
+    DbSet<MissionMessage> MissionMessages { get; }
     DbSet<Country> Countries { get; }
     DbSet<CountryBranding> CountryBrandings { get; }
     DbSet<Language> Languages { get; }
@@ -30,6 +36,7 @@ public interface IAppDbContext
     DbSet<AdminRolePermission> AdminRolePermissions { get; }
     DbSet<AdminUserRole> AdminUserRoles { get; }
     DbSet<NotificationOutboxMessage> NotificationOutboxMessages { get; }
+    DbSet<AuditLogEntry> AuditLogEntries { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

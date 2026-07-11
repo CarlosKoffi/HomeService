@@ -24,12 +24,20 @@ build_property.EnableCodeStyleSeverity =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/CompanyPortalNav.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xDb21wYW55UG9ydGFsTmF2LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Pages/Accounts.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY2NvdW50cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Pages/ActivateCompany.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBY3RpdmF0ZUNvbXBhbnkucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Pages/CompanyProfile.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDb21wYW55UHJvZmlsZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Pages/Concept.razor]
@@ -58,6 +66,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Pages/Register.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xSZWdpc3Rlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/PlatformIcon.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQbGF0Zm9ybUljb24ucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/bruce/source/repos/CarlosKoffi/HomeService/src/HomeService.Company/Components/Routes.razor]

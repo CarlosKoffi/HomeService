@@ -15,11 +15,10 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\HomeService.Provider.AssemblyInfo.cs
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\HomeService.Provider.csproj.CoreCompileInputs.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\HomeService.Provider.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\scopedcss\Components\Layout\MainLayout.razor.rz.scp.css
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\HomeService.Provider.sourcelink.json
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\scopedcss\Components\Layout\NavMenu.razor.rz.scp.css
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\scopedcss\bundle\HomeService.Provider.styles.css
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\scopedcss\projectbundle\HomeService.Provider.bundle.scp.css
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\votdr8sr8w-khy4lop6wu.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\y0rpiys24n-bqjiyaj88i.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\fg32tbh4q9-c2jlpeoesf.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\wmj18gws0u-erw9l3u2r3.gz
@@ -64,8 +63,6 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\tds57m5epz-h1s4sie4z3.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\g71ygbb2x4-63fj8s7r0e.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\bc5qgypph1-0j3bgjxly4.gz
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\q5gm6wzlb5-pf9co8a3ah.gz
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\77bs0zm34o-pf9co8a3ah.gz
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\staticwebassets.build.json
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\staticwebassets.development.json
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\staticwebassets.build.endpoints.json
@@ -81,4 +78,6 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\HomeService.Provider.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\HomeService.Provider.genruntimeconfig.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\ref\HomeService.Provider.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\HomeService.Provider.sourcelink.json
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\q5gm6wzlb5-ae1gquxyfu.gz
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\77bs0zm34o-ae1gquxyfu.gz
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Provider\obj\Debug\net9.0\compressed\votdr8sr8w-dsjdtphg4x.gz

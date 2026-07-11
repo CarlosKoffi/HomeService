@@ -12,8 +12,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>ojpyogag29</Fingerprint>
-      <Integrity>LFLVKbCEtU2xvPuJ4tdUj5BJMK4U4hThwE/K8dz44Eg=</Integrity>
+      <Fingerprint>2vjc8bhwig</Fingerprint>
+      <Integrity>jhMVOb7r0MREyO0K/HzQf/OvP7jLr3fjyId9v7b560o=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\app.css'))</OriginalItemSpec>
@@ -36,23 +36,23 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\favicon.png'))</OriginalItemSpec>
     </StaticWebAsset>
-    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\HomeService.Company.s500zi2wg0.bundle.scp.css'))">
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\HomeService.Company.sf995gi0x9.bundle.scp.css'))">
       <SourceType>Package</SourceType>
       <SourceId>HomeService.Company</SourceId>
       <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
       <BasePath>_content/HomeService.Company</BasePath>
-      <RelativePath>HomeService.Company.s500zi2wg0.bundle.scp.css</RelativePath>
+      <RelativePath>HomeService.Company.sf995gi0x9.bundle.scp.css</RelativePath>
       <AssetKind>All</AssetKind>
       <AssetMode>Reference</AssetMode>
       <AssetRole>Primary</AssetRole>
       <RelatedAsset></RelatedAsset>
       <AssetTraitName>ScopedCss</AssetTraitName>
       <AssetTraitValue>ProjectBundle</AssetTraitValue>
-      <Fingerprint>s500zi2wg0</Fingerprint>
-      <Integrity>MFQZQ04IYqruixHtePorD8We6r19nUmOFNhliYTWvYw=</Integrity>
+      <Fingerprint>sf995gi0x9</Fingerprint>
+      <Integrity>+OJqhJznQVHnRBc8oczxJ1I8qsF6E8fxEYmWwfHR1sg=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\HomeService.Company.s500zi2wg0.bundle.scp.css'))</OriginalItemSpec>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\HomeService.Company.sf995gi0x9.bundle.scp.css'))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\lib\bootstrap\dist\css\bootstrap.css'))">
       <SourceType>Package</SourceType>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageWash}"
+    Title="Parametres">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="14">
+            <Label Text="Configuration" Style="{StaticResource ScreenTitleLabel}" />
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Awa Kone" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Employee - CI Home Service - profil 92%" Style="{StaticResource BodyLabel}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Disponibilite" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Live : ON" Style="{StaticResource BodyLabel}" />
+                    <Label Text="Rayon maximum : 5 km" Style="{StaticResource BodyLabel}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Localisation" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Position demandee au depart et a l'arrivee." Style="{StaticResource BodyLabel}" />
+                    <Label Text="Tolerance d'arrivee geree par l'API." Style="{StaticResource BodyLabel}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Notifications" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="SMS : ON" Style="{StaticResource BodyLabel}" />
+                    <Label Text="WhatsApp : OFF" Style="{StaticResource BodyLabel}" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

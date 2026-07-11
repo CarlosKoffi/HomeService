@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.MissionsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageWash}"
+    Title="Missions">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="16">
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="MISSION A CONFIRMER" Style="{StaticResource EyebrowLabel}" TextColor="{StaticResource KazaOrange}" />
+                    <Label Text="Menage a domicile" Style="{StaticResource ScreenTitleLabel}" />
+                    <Label Text="Entreprise : CI Home Service" Style="{StaticResource BodyLabel}" />
+                    <Label Text="Cocody Angre - environ 1,8 km" Style="{StaticResource BodyLabel}" />
+                    <Label Text="Temps restant pour accepter : 02:41" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource KazaOrange}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,8,0,0">
+                        <Button Text="Refuser" Grid.Column="0" BackgroundColor="White" BorderColor="{StaticResource Line}" BorderWidth="1" TextColor="Black" />
+                        <Button Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource KazaGreen}" TextColor="White" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Mes prochaines missions" Style="{StaticResource CardTitleLabel}" />
+
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Nounou" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Aujourd'hui 16:30 - Plateau" Style="{StaticResource BodyLabel}" />
+                    <Label Text="Rendez-vous planifie par CI Home Service" FontSize="13" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Jardinage" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Demain 08:00 - Riviera 3" Style="{StaticResource BodyLabel}" />
+                    <Label Text="Creneau reserve apres confirmation" FontSize="13" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Une mission live acceptee bloque les nouvelles affectations jusqu'a la fin de prestation." FontSize="13" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

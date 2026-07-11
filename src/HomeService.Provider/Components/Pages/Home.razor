@@ -1,21 +1,89 @@
 @page "/"
 
-<PageTitle>HomeService Prestataire</PageTitle>
+<PageTitle>Kaza Prestataire</PageTitle>
 
-<h1>Espace prestataire</h1>
-<p>Interface mobile-first pour completer son dossier, se rendre disponible et gerer ses missions.</p>
+<main class="provider-mobile-shell">
+    <section class="provider-status-panel">
+        <div>
+            <span>Statut</span>
+            <strong>Disponible</strong>
+            <small>CI Home Service peut vous affecter une mission live.</small>
+        </div>
+        <button type="button" class="availability-toggle" aria-label="Disponibilite active">
+            <span></span>
+            ON
+        </button>
+    </section>
 
-<section class="dashboard-grid">
-    <article>
-        <h2>Disponibilite</h2>
-        <p>Activation autour de la position du prestataire apres validation plateforme.</p>
-    </article>
-    <article>
-        <h2>Missions</h2>
-        <p>Acceptation libre des demandes directes et suivi des rendez-vous assignes.</p>
-    </article>
-    <article>
-        <h2>Encaissements</h2>
-        <p>Suivi du cash recu pour le compte de l'entreprise.</p>
-    </article>
-</section>
+    <section class="profile-completion-banner">
+        <div>
+            <span>Profil a finaliser</span>
+            <strong>92%</strong>
+        </div>
+        <p>Ajoutez encore 1 photo pour rendre tous vos services assignables.</p>
+    </section>
+
+    <section class="provider-card upcoming-mission-card">
+        <div class="section-title">
+            <div>
+                <span>Mission a venir</span>
+                <h2>Nounou - 16:30</h2>
+            </div>
+            <em>Assignee</em>
+        </div>
+        <div class="upcoming-mission-body">
+            <span class="feed-icon">
+                <svg viewBox="0 0 24 24"><path d="M8 2v4" /><path d="M16 2v4" /><path d="M3 10h18" /><path d="M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2z" /></svg>
+            </span>
+            <div>
+                <strong>Plateau - CI Home Service</strong>
+                <small>Rendez-vous confirme. La navigation et les consignes seront disponibles avant le depart.</small>
+            </div>
+        </div>
+    </section>
+
+    <section class="mission-offer-card mission-offer-card-live">
+        <div class="mission-offer-head">
+            <div>
+                <span>Mission proposee par CI Home Service</span>
+                <h1>Awa, une mission vous attend</h1>
+            </div>
+            <strong>02:41</strong>
+        </div>
+        <div class="service-line">
+            <span class="service-icon service-icon-sparkles" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" /></svg>
+            </span>
+            <div>
+                <h2>Menage a domicile</h2>
+                <small>Mission live - depart demande maintenant</small>
+            </div>
+        </div>
+        <div class="mission-context-grid">
+            <div>
+                <span>Distance</span>
+                <strong>1,8 km</strong>
+            </div>
+            <div>
+                <span>Trajet</span>
+                <strong>8 min</strong>
+            </div>
+            <div>
+                <span>Client</span>
+                <strong>Mme Akissi</strong>
+            </div>
+            <div>
+                <span>Lieu</span>
+                <strong>Cocody Angre</strong>
+            </div>
+        </div>
+        <p>Verifiez que vous pouvez partir maintenant. Une fois acceptee, cette mission bloque les autres demandes live jusqu'a la fin de la prestation.</p>
+        <div class="mission-actions">
+            <button type="button" class="ghost-action">Refuser</button>
+            <button type="button" class="primary-action">Accepter</button>
+        </div>
+        <small>Si vous refusez, l'entreprise verra la raison pour reaffecter rapidement.</small>
+    </section>
+</main>
+
+<ProviderBottomNav Active="home" />

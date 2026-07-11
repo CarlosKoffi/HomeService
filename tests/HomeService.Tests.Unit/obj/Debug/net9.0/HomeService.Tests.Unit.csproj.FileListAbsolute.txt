@@ -108,10 +108,10 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.AssemblyInfoInputs.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.AssemblyInfo.cs
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.csproj.CoreCompileInputs.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.sourcelink.json
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeServ.10B1A450.Up2Date
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\refint\HomeService.Tests.Unit.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.genruntimeconfig.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\ref\HomeService.Tests.Unit.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\tests\HomeService.Tests.Unit\obj\Debug\net9.0\HomeService.Tests.Unit.sourcelink.json

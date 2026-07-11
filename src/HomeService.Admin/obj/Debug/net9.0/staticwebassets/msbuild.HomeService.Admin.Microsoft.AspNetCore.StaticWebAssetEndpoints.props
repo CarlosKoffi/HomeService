@@ -1,16 +1,16 @@
 ﻿<Project>
   <ItemGroup>
-    <StaticWebAssetEndpoint Include="_content/HomeService.Admin/app.61c017lxv9.css">
-      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\app.css'))</AssetFile>
-      <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"61c017lxv9"},{"Name":"integrity","Value":"sha256-FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk="},{"Name":"label","Value":"_content/HomeService.Admin/app.css"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"10955"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk=\u0022"},{"Name":"Last-Modified","Value":"Fri, 10 Jul 2026 09:27:45 GMT"}]]]></ResponseHeaders>
-    </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/HomeService.Admin/app.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\app.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
-      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"10955"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022FhaWc58EcpmlLBQDCSCEsHqfvALDH72na7drZ21Kdlk=\u0022"},{"Name":"Last-Modified","Value":"Fri, 10 Jul 2026 09:27:45 GMT"}]]]></ResponseHeaders>
+      <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-r\u002B0nd\u002B3gIZA/H2wVGz3lxQ0XPyMFe9PiMb0JN5HW0t4="}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"16633"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022r\u002B0nd\u002B3gIZA/H2wVGz3lxQ0XPyMFe9PiMb0JN5HW0t4=\u0022"},{"Name":"Last-Modified","Value":"Fri, 10 Jul 2026 21:51:52 GMT"}]]]></ResponseHeaders>
+    </StaticWebAssetEndpoint>
+    <StaticWebAssetEndpoint Include="_content/HomeService.Admin/app.nemt74q5u6.css">
+      <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\app.css'))</AssetFile>
+      <Selectors><![CDATA[[]]]></Selectors>
+      <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"nemt74q5u6"},{"Name":"integrity","Value":"sha256-r\u002B0nd\u002B3gIZA/H2wVGz3lxQ0XPyMFe9PiMb0JN5HW0t4="},{"Name":"label","Value":"_content/HomeService.Admin/app.css"}]]]></EndpointProperties>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"16633"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022r\u002B0nd\u002B3gIZA/H2wVGz3lxQ0XPyMFe9PiMb0JN5HW0t4=\u0022"},{"Name":"Last-Modified","Value":"Fri, 10 Jul 2026 21:51:52 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/HomeService.Admin/favicon.ifv42okdf2.png">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\favicon.png'))</AssetFile>
@@ -28,13 +28,13 @@
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\HomeService.Admin.2o868qc8v2.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"fingerprint","Value":"2o868qc8v2"},{"Name":"integrity","Value":"sha256-nh5c1EtZUbHVrSqrDozMriTUML/1VYmwijU6Kyo2S7E="},{"Name":"label","Value":"_content/HomeService.Admin/HomeService.Admin.bundle.scp.css"}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"5981"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nh5c1EtZUbHVrSqrDozMriTUML/1VYmwijU6Kyo2S7E=\u0022"},{"Name":"Last-Modified","Value":"Thu, 09 Jul 2026 10:12:24 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"max-age=31536000, immutable"},{"Name":"Content-Length","Value":"5981"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nh5c1EtZUbHVrSqrDozMriTUML/1VYmwijU6Kyo2S7E=\u0022"},{"Name":"Last-Modified","Value":"Fri, 10 Jul 2026 15:22:31 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/HomeService.Admin/HomeService.Admin.bundle.scp.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\HomeService.Admin.2o868qc8v2.bundle.scp.css'))</AssetFile>
       <Selectors><![CDATA[[]]]></Selectors>
       <EndpointProperties><![CDATA[[{"Name":"integrity","Value":"sha256-nh5c1EtZUbHVrSqrDozMriTUML/1VYmwijU6Kyo2S7E="}]]]></EndpointProperties>
-      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"5981"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nh5c1EtZUbHVrSqrDozMriTUML/1VYmwijU6Kyo2S7E=\u0022"},{"Name":"Last-Modified","Value":"Thu, 09 Jul 2026 10:12:24 GMT"}]]]></ResponseHeaders>
+      <ResponseHeaders><![CDATA[[{"Name":"Accept-Ranges","Value":"bytes"},{"Name":"Cache-Control","Value":"no-cache"},{"Name":"Content-Length","Value":"5981"},{"Name":"Content-Type","Value":"text/css"},{"Name":"ETag","Value":"\u0022nh5c1EtZUbHVrSqrDozMriTUML/1VYmwijU6Kyo2S7E=\u0022"},{"Name":"Last-Modified","Value":"Fri, 10 Jul 2026 15:22:31 GMT"}]]]></ResponseHeaders>
     </StaticWebAssetEndpoint>
     <StaticWebAssetEndpoint Include="_content/HomeService.Admin/lib/bootstrap/dist/css/bootstrap-grid.bqjiyaj88i.css">
       <AssetFile>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\lib\bootstrap\dist\css\bootstrap-grid.css'))</AssetFile>

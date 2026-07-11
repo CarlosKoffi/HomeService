@@ -10,9 +10,9 @@ C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.AssemblyInfoInputs.cache
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.AssemblyInfo.cs
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.csproj.CoreCompileInputs.cache
+C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.sourcelink.json
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeServ.2C66BDB0.Up2Date
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\refint\HomeService.Application.dll
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.pdb
 C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\ref\HomeService.Application.dll
-C:\Users\bruce\source\repos\CarlosKoffi\HomeService\src\HomeService.Application\obj\Debug\net9.0\HomeService.Application.sourcelink.json

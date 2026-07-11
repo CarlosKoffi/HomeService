@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Shell
+    x:Class="HomeService.Provider.Mobile.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:pages="clr-namespace:HomeService.Provider.Mobile.Pages"
+    Shell.FlyoutBehavior="Disabled"
+    Title="Kaza Prestataire">
+    <TabBar>
+        <ShellContent Title="Accueil" ContentTemplate="{DataTemplate pages:HomePage}" />
+        <ShellContent Title="Missions" ContentTemplate="{DataTemplate pages:MissionsPage}" />
+        <ShellContent Title="Services" ContentTemplate="{DataTemplate pages:ServicesPage}" />
+        <ShellContent Title="Chat" ContentTemplate="{DataTemplate pages:ChatPage}" />
+        <ShellContent Title="Parametres" ContentTemplate="{DataTemplate pages:SettingsPage}" />
+    </TabBar>
+</Shell>

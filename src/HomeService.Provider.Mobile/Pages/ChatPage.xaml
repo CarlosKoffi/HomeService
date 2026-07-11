@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.ChatPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageWash}"
+    Title="Chat">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="14">
+            <Label Text="Messages clients" Style="{StaticResource ScreenTitleLabel}" />
+            <Border BackgroundColor="White" Stroke="{StaticResource KazaGreen}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Mme Akissi" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Je vous envoie une photo du portail cote pharmacie." Style="{StaticResource BodyLabel}" />
+                    <Label Text="Mission live - il y a 1 min" Style="{StaticResource BodyLabel}" TextColor="{StaticResource KazaGreen}" />
+                </VerticalStackLayout>
+            </Border>
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="CI Home Service" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Confirmez votre depart apres acceptation." Style="{StaticResource BodyLabel}" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

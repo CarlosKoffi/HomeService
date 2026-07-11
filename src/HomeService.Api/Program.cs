@@ -5,7 +5,17 @@ using HomeService.Contracts.Companies;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Notifications;
+using HomeService.Contracts.ProviderPortal;
 using HomeService.Contracts.Services;
+using HomeService.Contracts.Monitoring;
+using HomeService.Application.ProviderPortal;
+using HomeService.Application.Branding;
+using HomeService.Application.Companies;
+using HomeService.Application.Admin;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Security;
+using HomeService.Application.Notifications;
+using HomeService.Application.Auditing;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using HomeService.Infrastructure;
@@ -29,6 +39,15 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<CompanyApplicationUploadService>();
 builder.Services.AddSingleton<CompanyProviderUploadService>();
+builder.Services.AddScoped<ProviderMissionWorkflowService>();
+builder.Services.AddScoped<CompanyApplicationRegistrationService>();
+builder.Services.AddScoped<CompanyPortalAuthService>();
+builder.Services.AddScoped<CompanyActivationLinkGenerationService>();
+builder.Services.AddScoped<CompanyActivationPasswordService>();
+builder.Services.AddScoped<CompanyComplianceDocumentService>();
+builder.Services.AddScoped<CompanyEmployeeManagementService>();
+builder.Services.AddScoped<AdminCompanyApplicationReviewService>();
+builder.Services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
 
 var app = builder.Build();
 
@@ -61,6 +80,7 @@ app.MapGet("/api/services", async (IAppDbContext db, CancellationToken cancellat
             service.Id,
             service.Name,
             service.Description,
+            service.IconName,
             service.Status.ToString(),
             service.IsActive,
             service.NormalPriceAmount,
@@ -156,8 +176,9 @@ app.MapGet("/api/country-branding", async (string? country, IAppDbContext db, Ca
 
 app.MapPost("/api/company-applications", async (
     HttpRequest httpRequest,
-    IAppDbContext db,
     CompanyApplicationUploadService uploadService,
+    CompanyApplicationRegistrationService registrationService,
+    IAppDbContext db,
     ILogger<Program> logger,
     CancellationToken cancellationToken) =>
 {
@@ -183,71 +204,49 @@ app.MapPost("/api/company-applications", async (
             GetServices(form),
             GetOptionalInt(form, "estimatedProviderCount"));
 
-        var validationErrors = ValidateCompanyApplication(request);
-        if (validationErrors.Count > 0)
+        var applicationId = Guid.NewGuid();
+        var documents = await uploadService.SaveAsync(applicationId, form.Files, cancellationToken);
+        var result = await registrationService.RegisterAsync(
+            request,
+            applicationId,
+            documents.Select(document => new CompanyApplicationUploadedDocument(
+                    document.DocumentType,
+                    document.OriginalFileName,
+                    document.StoragePath,
+                    document.ContentType))
+                .ToList(),
+            cancellationToken);
+
+        if (result.Status == CompanyApplicationRegistrationStatus.ValidationFailed)
         {
-            return Results.BadRequest(new { message = "Le formulaire contient des erreurs.", errors = validationErrors });
+            return Results.BadRequest(new { message = result.Message, errors = result.Errors });
         }
 
-        var serviceNames = request.Services
-            .Where(service => !string.IsNullOrWhiteSpace(service))
-            .Select(service => service.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        var email = request.Email.Trim().ToLowerInvariant();
-        var existingUser = await db.CompanyPortalUsers.AnyAsync(user => user.Email == email, cancellationToken);
-        if (existingUser)
+        if (result.Status == CompanyApplicationRegistrationStatus.DuplicateEmail)
         {
-            return Results.BadRequest(new { message = "Un compte entreprise existe deja avec cet email." });
+            return Results.BadRequest(new { message = result.Message });
         }
 
-        var application = new HomeService.Domain.Entities.CompanyApplication(
-            request.CompanyName,
-            request.RegistrationNumber,
-            request.City,
-            request.Address,
-            request.ContactName,
-            request.Email,
-            request.PhoneNumber,
-            serviceNames.Count > 0 ? string.Join(", ", serviceNames) : null,
-            request.EstimatedProviderCount);
-
-        var company = new HomeService.Domain.Entities.Company(
-            request.CompanyName,
-            request.PhoneNumber,
-            email);
-
-        db.CompanyApplications.Add(application);
-        db.Companies.Add(company);
-        db.CompanyPortalUsers.Add(new CompanyPortalUser(company.Id, request.ContactName, email, HashPassword(request.Password), true));
-        application.LinkPendingCompany(company.Id);
-        AddCompanyApplicationStatusHistory(
+        var application = result.Application!;
+        var company = result.Company!;
+        logger.LogInformation("Stored {DocumentCount} company application documents for {ApplicationId}.", result.DocumentCount, application.Id);
+        AddAuditLog(
             db,
+            httpRequest,
+            AuditActor.Company(company.Id, company.Name),
+            "CompanyApplicationSubmitted",
+            nameof(HomeService.Domain.Entities.CompanyApplication),
             application.Id,
-            null,
-            CompanyApplicationStatus.Submitted,
-            "Compte entreprise cree. Documents de conformite en attente.",
-            null);
-
-        foreach (var serviceName in serviceNames)
-        {
-            db.CompanyApplicationServices.Add(new HomeService.Domain.Entities.CompanyApplicationService(application.Id, serviceName));
-        }
-
-        var documents = await uploadService.SaveAsync(application.Id, form.Files, cancellationToken);
-        logger.LogInformation("Stored {DocumentCount} company application documents for {ApplicationId}.", documents.Count, application.Id);
-
-        foreach (var document in documents)
-        {
-            db.CompanyApplicationDocuments.Add(new CompanyApplicationDocument(
-                application.Id,
-                document.DocumentType,
-                document.OriginalFileName,
-                document.StoragePath,
-                document.ContentType));
-        }
-
+            "Demande entreprise creee depuis le formulaire public.",
+            after: new
+            {
+                application.CompanyName,
+                application.Email,
+                application.City,
+                result.ServiceCount,
+                result.DocumentCount,
+                application.Status
+            });
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Company application {ApplicationId} saved.", application.Id);
 
@@ -285,7 +284,7 @@ app.MapGet("/api/company-activation/{applicationId:guid}", async (
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var tokenHash = HashActivationToken(token);
+    var tokenHash = PortalTokenService.HashToken(token);
     var activationToken = await db.CompanyActivationTokens
         .AsNoTracking()
         .Where(item => item.CompanyApplicationId == applicationId && item.TokenHash == tokenHash)
@@ -312,43 +311,40 @@ app.MapGet("/api/company-activation/{applicationId:guid}", async (
 
 app.MapPost("/api/company-portal/login", async (
     CompanyPortalLoginRequest request,
+    HttpRequest httpRequest,
+    CompanyPortalAuthService authService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+    var result = await authService.LoginAsync(request, cancellationToken);
+    if (result.Status == CompanyPortalLoginStatus.MissingCredentials)
     {
-        return Results.BadRequest(new { message = "Email et mot de passe sont obligatoires." });
+        return Results.BadRequest(new { message = result.Message });
     }
 
-    var email = request.Email.Trim().ToLowerInvariant();
-    var user = await db.CompanyPortalUsers
-        .Include(user => user.Company)
-        .FirstOrDefaultAsync(user => user.Email == email && user.IsActive, cancellationToken);
-
-    if (user is null || user.Company is null || !VerifyPassword(request.Password, user.PasswordHash))
+    if (result.Status == CompanyPortalLoginStatus.InvalidCredentials)
     {
         return Results.Unauthorized();
     }
 
-    if (user.Company.Status == CompanyStatus.Suspended)
+    if (result.Status == CompanyPortalLoginStatus.CompanySuspended)
     {
-        return Results.BadRequest(new { message = "Cette entreprise est suspendue. Contactez le support." });
+        return Results.BadRequest(new { message = result.Message });
     }
 
-    var token = GenerateSessionToken();
-    var expiresAt = DateTimeOffset.UtcNow.AddDays(request.RememberMe ? 30 : 1);
-    db.CompanyPortalSessions.Add(new CompanyPortalSession(user.Id, HashPortalToken(token), expiresAt));
+    var response = result.Response!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(response.CompanyId, response.CompanyName),
+        "CompanyPortalLoginSucceeded",
+        nameof(CompanyPortalSession),
+        result.Session!.Id,
+        "Connexion au portail entreprise.",
+        after: new { response.Email, response.CompanyId, request.RememberMe, response.ExpiresAt });
     await db.SaveChangesAsync(cancellationToken);
 
-    return Results.Ok(new CompanyPortalLoginResponse(
-        token,
-        expiresAt,
-        user.CompanyId,
-        user.Company.Name,
-        user.FullName,
-        user.Email,
-        user.Company.Status.ToString(),
-        user.Company.Status == CompanyStatus.Approved));
+    return Results.Ok(response);
 })
 .WithName("LoginCompanyPortal");
 
@@ -435,6 +431,7 @@ app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
 app.MapPost("/api/company-portal/{companyId:guid}/compliance-documents", async (
     Guid companyId,
     HttpRequest httpRequest,
+    CompanyComplianceDocumentService complianceDocumentService,
     IAppDbContext db,
     CompanyApplicationUploadService uploadService,
     CancellationToken cancellationToken) =>
@@ -444,48 +441,56 @@ app.MapPost("/api/company-portal/{companyId:guid}/compliance-documents", async (
         return Results.BadRequest(new { message = "Les documents doivent etre envoyes au format multipart/form-data." });
     }
 
-    var companyExists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
-    if (!companyExists)
+    var target = await complianceDocumentService.GetUploadTargetAsync(companyId, cancellationToken);
+    if (target.Status == CompanyComplianceDocumentStatus.CompanyNotFound)
     {
-        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+        return Results.NotFound(new { message = target.Message });
     }
 
-    var application = await db.CompanyApplications
-        .Where(application => application.CompanyId == companyId)
-        .OrderByDescending(application => application.CreatedAt)
-        .FirstOrDefaultAsync(cancellationToken);
-    if (application is null)
+    if (target.Status == CompanyComplianceDocumentStatus.ApplicationNotFound || target.ApplicationId is null)
     {
-        return Results.NotFound(new { message = "Dossier entreprise introuvable." });
+        return Results.NotFound(new { message = target.Message });
     }
 
     var form = await httpRequest.ReadFormAsync(cancellationToken);
-    var documents = await uploadService.SaveAsync(application.Id, form.Files, cancellationToken);
-    if (documents.Count == 0)
+    var documents = await uploadService.SaveAsync(target.ApplicationId.Value, form.Files, cancellationToken);
+    var result = await complianceDocumentService.AttachDocumentsAsync(
+        companyId,
+        documents.Select(document => new CompanyApplicationUploadedDocument(
+                document.DocumentType,
+                document.OriginalFileName,
+                document.StoragePath,
+                document.ContentType))
+            .ToList(),
+        cancellationToken);
+
+    if (result.Status == CompanyComplianceDocumentStatus.NoValidDocument)
     {
-        return Results.BadRequest(new { message = "Aucun document valide n'a ete transmis." });
+        return Results.BadRequest(new { message = result.Message });
     }
 
-    foreach (var document in documents)
+    if (result.Status == CompanyComplianceDocumentStatus.CompanyNotFound)
     {
-        db.CompanyApplicationDocuments.Add(new CompanyApplicationDocument(
-            application.Id,
-            document.DocumentType,
-            document.OriginalFileName,
-            document.StoragePath,
-            document.ContentType));
+        return Results.NotFound(new { message = result.Message });
     }
 
-    AddCompanyApplicationStatusHistory(
+    if (result.Status == CompanyComplianceDocumentStatus.ApplicationNotFound || result.ApplicationId is null)
+    {
+        return Results.NotFound(new { message = result.Message });
+    }
+
+    AddAuditLog(
         db,
-        application.Id,
-        application.Status,
-        application.Status,
-        "Documents de conformite ajoutes depuis le portail entreprise.",
-        "company-portal");
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "CompanyComplianceDocumentsUploaded",
+        nameof(HomeService.Domain.Entities.CompanyApplication),
+        result.ApplicationId.Value,
+        "Pieces de conformite ajoutees depuis le portail entreprise.",
+        after: new { result.DocumentCount, result.DocumentTypes });
     await db.SaveChangesAsync(cancellationToken);
 
-    return Results.Ok(new { message = "Documents recus. Notre equipe va les verifier.", count = documents.Count });
+    return Results.Ok(new { message = result.Message, count = result.DocumentCount });
 })
 .WithName("UploadCompanyPortalComplianceDocuments");
 
@@ -585,7 +590,7 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
     }
 
     var form = await httpRequest.ReadFormAsync(cancellationToken);
-    var errors = ValidateProviderForm(form);
+    var errors = CompanyProviderValidator.Validate(ToCompanyProviderFormData(form));
     if (errors.Count > 0)
     {
         return Results.BadRequest(new { message = "Le formulaire employe contient des erreurs.", errors });
@@ -631,6 +636,25 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
             document.ContentType));
     }
 
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(company.Id, company.Name),
+        "CompanyEmployeeCreated",
+        nameof(ProviderProfile),
+        provider.Id,
+        "Prestataire ajoute depuis le portail entreprise.",
+        after: new
+        {
+            provider.FirstName,
+            provider.LastName,
+            provider.PhoneNumber,
+            provider.EmploymentType,
+            provider.Gender,
+            provider.YearsOfExperience,
+            ServiceCount = services.Count,
+            DocumentCount = documents.Count
+        });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Created($"/api/company-portal/{companyId}/employees/{provider.Id}", new CreateCompanyEmployeeResult(provider.Id));
@@ -641,26 +665,28 @@ app.MapPut("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}", a
     Guid companyId,
     Guid employeeId,
     UpdateCompanyEmployeeRequest request,
+    HttpRequest httpRequest,
+    CompanyEmployeeManagementService employeeManagementService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
-    if (provider is null)
+    var result = await employeeManagementService.UpdateProfileAsync(companyId, employeeId, request, cancellationToken);
+    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
     {
-        return Results.NotFound(new { message = "Employe introuvable." });
+        return Results.NotFound(new { message = result.Message });
     }
 
-    provider.UpdateCompanyProfile(
-        request.FirstName,
-        request.LastName,
-        request.PhoneNumber,
-        request.DateOfBirth,
-        request.Address,
-        ParseProviderGender(request.Gender),
-        ParseProviderEmploymentType(request.EmploymentType),
-        request.YearsOfExperience,
-        request.MissionRadiusKm);
-
+    var provider = result.Provider!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "CompanyEmployeeUpdated",
+        nameof(ProviderProfile),
+        provider.Id,
+        "Profil prestataire modifie depuis le portail entreprise.",
+        result.Before,
+        result.After);
     await db.SaveChangesAsync(cancellationToken);
     return Results.NoContent();
 })
@@ -670,31 +696,28 @@ app.MapPut("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/ser
     Guid companyId,
     Guid employeeId,
     UpdateCompanyEmployeeServicesRequest request,
+    HttpRequest httpRequest,
+    CompanyEmployeeManagementService employeeManagementService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var provider = await db.Providers
-        .Include(provider => provider.Services)
-        .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
-    if (provider is null)
+    var result = await employeeManagementService.UpdateServicesAsync(companyId, employeeId, request, cancellationToken);
+    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
     {
-        return Results.NotFound(new { message = "Employe introuvable." });
+        return Results.NotFound(new { message = result.Message });
     }
 
-    var requestedIds = request.Services.Select(service => service.ServiceId).Distinct().ToList();
-    var activeServiceIds = await db.Services
-        .Where(service => requestedIds.Contains(service.Id) && service.IsActive)
-        .Select(service => service.Id)
-        .ToListAsync(cancellationToken);
-
-    provider.SyncCompanyServices(request.Services
-        .Where(service => activeServiceIds.Contains(service.ServiceId))
-        .Select(service => (
-            service.ServiceId,
-            ParseExperienceLevel(service.ExperienceLevel),
-            Math.Max(0, service.YearsOfExperience),
-            ParseProviderServicePriceTier(service.PriceTier))));
-
+    var provider = result.Provider!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "CompanyEmployeeServicesUpdated",
+        nameof(ProviderProfile),
+        provider.Id,
+        "Services prestataire mis a jour.",
+        result.Before,
+        result.After);
     await db.SaveChangesAsync(cancellationToken);
     return Results.NoContent();
 })
@@ -742,6 +765,16 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/do
 
     var stored = await uploadService.SaveOneAsync(companyId, provider.Id, documentType, file, cancellationToken);
     provider.AttachDocument(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "CompanyEmployeeDocumentUploaded",
+        nameof(ProviderDocument),
+        null,
+        "Piece prestataire ajoutee ou remplacee.",
+        before: new { ReplacedDocumentCount = oldDocuments.Count, DocumentType = documentType },
+        after: new { stored.DocumentType, stored.OriginalFileName, stored.ContentType });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.NoContent();
@@ -752,6 +785,7 @@ app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/
     Guid companyId,
     Guid employeeId,
     Guid documentId,
+    HttpRequest httpRequest,
     IAppDbContext db,
     CompanyProviderUploadService uploadService,
     CancellationToken cancellationToken) =>
@@ -766,6 +800,15 @@ app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/
 
     TryDeleteProviderFile(uploadService, document.StoragePath);
     db.ProviderDocuments.Remove(document);
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "CompanyEmployeeDocumentDeleted",
+        nameof(ProviderDocument),
+        document.Id,
+        "Piece prestataire supprimee.",
+        before: new { document.DocumentType, document.OriginalFileName, document.ContentType });
     await db.SaveChangesAsync(cancellationToken);
     return Results.NoContent();
 })
@@ -774,16 +817,28 @@ app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/
 app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/suspend", async (
     Guid companyId,
     Guid employeeId,
+    HttpRequest httpRequest,
+    CompanyEmployeeManagementService employeeManagementService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
-    if (provider is null)
+    var result = await employeeManagementService.SuspendAsync(companyId, employeeId, cancellationToken);
+    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
     {
         return Results.NotFound();
     }
 
-    provider.SuspendByCompany();
+    var provider = result.Provider!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "CompanyEmployeeSuspended",
+        nameof(ProviderProfile),
+        provider.Id,
+        "Prestataire suspendu par l'entreprise.",
+        result.Before,
+        result.After);
     await db.SaveChangesAsync(cancellationToken);
     return Results.NoContent();
 })
@@ -792,16 +847,28 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/su
 app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}", async (
     Guid companyId,
     Guid employeeId,
+    HttpRequest httpRequest,
+    CompanyEmployeeManagementService employeeManagementService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
-    if (provider is null)
+    var result = await employeeManagementService.DeactivateAsync(companyId, employeeId, cancellationToken);
+    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
     {
         return Results.NotFound();
     }
 
-    provider.Deactivate();
+    var provider = result.Provider!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(companyId, null),
+        "CompanyEmployeeDeactivated",
+        nameof(ProviderProfile),
+        provider.Id,
+        "Prestataire desactive par l'entreprise.",
+        result.Before,
+        result.After);
     await db.SaveChangesAsync(cancellationToken);
     return Results.NoContent();
 })
@@ -904,7 +971,7 @@ app.MapGet("/api/company-portal/{companyId:guid}/payments", async (
     }
 
     var normalizedPeriod = period?.Trim().ToLowerInvariant() ?? "month";
-    var start = GetPaymentPeriodStart(normalizedPeriod);
+    var start = PaymentPeriodCalculator.GetStart(normalizedPeriod, DateTimeOffset.UtcNow);
     var missions = await (from mission in db.Missions.AsNoTracking()
                           where mission.CompanyId == companyId
                               && mission.Status == MissionStatus.Completed
@@ -943,7 +1010,357 @@ app.MapGet("/api/company-portal/{companyId:guid}/payments", async (
 })
 .WithName("GetCompanyPortalPayments");
 
+var providerPortal = app.MapGroup("/api/provider-portal");
+
+providerPortal.MapGet("/mobile/home", async (
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+    if (session?.Provider is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var provider = await db.Providers
+        .AsNoTracking()
+        .Include(provider => provider.Company)
+        .Include(provider => provider.Documents)
+        .Include(provider => provider.Services)
+            .ThenInclude(providerService => providerService.Service)
+        .FirstOrDefaultAsync(provider => provider.Id == session.ProviderId, cancellationToken);
+
+    if (provider?.Company is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var now = DateTimeOffset.UtcNow;
+    var assignments = await db.ProviderMissionAssignments
+        .AsNoTracking()
+        .Include(assignment => assignment.Company)
+        .Include(assignment => assignment.Mission)
+        .Where(assignment =>
+            assignment.ProviderId == provider.Id
+            && assignment.Status != ProviderMissionAssignmentStatus.Refused
+            && assignment.Status != ProviderMissionAssignmentStatus.Completed
+            && assignment.Status != ProviderMissionAssignmentStatus.Expired)
+        .OrderBy(assignment => assignment.Mission!.ScheduledFor ?? assignment.ExpiresAt)
+        .Take(6)
+        .ToListAsync(cancellationToken);
+
+    var missionRows = assignments
+        .Where(assignment => assignment.Mission is not null)
+        .Select(assignment => assignment.Mission!)
+        .ToList();
+    var serviceIds = missionRows.Select(mission => mission.ServiceId).Distinct().ToList();
+    var customerIds = missionRows.Select(mission => mission.CustomerId).Distinct().ToList();
+    var servicesById = await db.Services
+        .AsNoTracking()
+        .Where(service => serviceIds.Contains(service.Id))
+        .ToDictionaryAsync(service => service.Id, cancellationToken);
+    var customersById = await db.Customers
+        .AsNoTracking()
+        .Where(customer => customerIds.Contains(customer.Id))
+        .ToDictionaryAsync(customer => customer.Id, cancellationToken);
+
+    var liveOffer = assignments
+        .Where(assignment => assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > now)
+        .OrderBy(assignment => assignment.ExpiresAt)
+        .Select(assignment => ToProviderMobileMissionOffer(assignment, provider, now, servicesById, customersById))
+        .FirstOrDefault();
+
+    var upcomingMission = assignments
+        .Where(assignment => assignment.Status != ProviderMissionAssignmentStatus.Offered || assignment.ExpiresAt <= now)
+        .OrderBy(assignment => assignment.Mission!.ScheduledFor ?? assignment.ExpiresAt)
+        .Select(assignment => ToProviderMobileMissionSummary(assignment, servicesById, customersById))
+        .FirstOrDefault();
+
+    return Results.Ok(new ProviderMobileHomeResponse(
+        new ProviderMobileStatusResponse(
+            provider.FullName,
+            provider.Company.Name,
+            provider.IsAvailable,
+            provider.IsAvailable ? "Disponible" : "Indisponible",
+            provider.MissionRadiusKm),
+        BuildProviderMobileProfileCompletion(provider),
+        upcomingMission,
+        liveOffer));
+})
+.WithName("GetProviderMobileHome");
+
+providerPortal.MapPost("/mission-assignments/{assignmentId:guid}/accept", async (
+    Guid assignmentId,
+    ProviderAcceptMissionRequest request,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    ProviderMissionWorkflowService workflow,
+    CancellationToken cancellationToken) =>
+{
+    var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+    if (session?.Provider is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var assignment = await db.ProviderMissionAssignments
+        .Include(assignment => assignment.Mission)
+        .FirstOrDefaultAsync(assignment =>
+            assignment.Id == assignmentId
+            && assignment.ProviderId == session.ProviderId,
+            cancellationToken);
+
+    if (assignment?.Mission is null)
+    {
+        return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+    }
+
+    var result = workflow.AcceptMission(session.Provider, assignment, request);
+    if (result.Status != ProviderMissionOperationStatus.Ok)
+    {
+        return ToProviderMissionHttpResult(result);
+    }
+
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Provider(session.ProviderId, $"{session.Provider.FirstName} {session.Provider.LastName}"),
+        "ProviderMissionAccepted",
+        nameof(ProviderMissionAssignment),
+        assignment.Id,
+        "Mission acceptee par le prestataire. Les contacts restent masques jusqu'a validation client.",
+        after: new
+        {
+            assignment.MissionId,
+            AssignmentStatus = assignment.Status,
+            MissionStatus = assignment.Mission.Status,
+            assignment.AcceptedLatitude,
+            assignment.AcceptedLongitude,
+            assignment.AcceptedAccuracyMeters,
+            assignment.Mission.ProviderAcceptedAt,
+            assignment.Mission.ContactDetailsReleasedAt
+        });
+    await db.SaveChangesAsync(cancellationToken);
+    return ToProviderMissionHttpResult(result);
+})
+.WithName("AcceptProviderMission");
+
+providerPortal.MapPost("/mission-assignments/{assignmentId:guid}/verify-arrival", async (
+    Guid assignmentId,
+    ProviderLocationVerificationRequest request,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    ProviderMissionWorkflowService workflow,
+    CancellationToken cancellationToken) =>
+{
+    var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+    if (session?.Provider is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var assignment = await db.ProviderMissionAssignments
+        .Include(assignment => assignment.Mission)
+        .FirstOrDefaultAsync(assignment =>
+            assignment.Id == assignmentId
+            && assignment.ProviderId == session.ProviderId,
+            cancellationToken);
+
+    if (assignment?.Mission is null)
+    {
+        return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+    }
+
+    var result = workflow.VerifyArrival(session.Provider, assignment, request);
+    if (result.Status != ProviderMissionOperationStatus.Ok)
+    {
+        return ToProviderMissionHttpResult(result);
+    }
+
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Provider(session.ProviderId, $"{session.Provider.FirstName} {session.Provider.LastName}"),
+        "ProviderArrivalVerified",
+        nameof(ProviderMissionAssignment),
+        assignment.Id,
+        "Arrivee prestataire verifiee pour une mission.",
+        after: new
+        {
+            assignment.MissionId,
+            assignment.ArrivalVerificationStatus,
+            assignment.ArrivalVerifiedAt,
+            assignment.ArrivalDistanceMeters
+        });
+    await db.SaveChangesAsync(cancellationToken);
+    return ToProviderMissionHttpResult(result);
+})
+.WithName("VerifyProviderMissionArrival");
+
+providerPortal.MapPost("/mission-assignments/{assignmentId:guid}/start", async (
+    Guid assignmentId,
+    ProviderLocationVerificationRequest request,
+    HttpRequest httpRequest,
+    IAppDbContext db,
+    ProviderMissionWorkflowService workflow,
+    CancellationToken cancellationToken) =>
+{
+    var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+    if (session?.Provider is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var assignment = await db.ProviderMissionAssignments
+        .Include(assignment => assignment.Mission)
+        .FirstOrDefaultAsync(assignment =>
+            assignment.Id == assignmentId
+            && assignment.ProviderId == session.ProviderId,
+            cancellationToken);
+
+    if (assignment?.Mission is null)
+    {
+        return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+    }
+
+    var result = workflow.StartMission(session.Provider, assignment, request);
+    if (result.Status != ProviderMissionOperationStatus.Ok)
+    {
+        if (result.Response is not null)
+        {
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Provider(session.ProviderId, $"{session.Provider.FirstName} {session.Provider.LastName}"),
+                "ProviderMissionStartRejected",
+                nameof(ProviderMissionAssignment),
+                assignment.Id,
+                result.Message ?? "Demarrage mission refuse.",
+                after: new
+                {
+                    assignment.MissionId,
+                    result.Response.Status,
+                    result.Response.DistanceMeters
+                });
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return ToProviderMissionHttpResult(result);
+    }
+
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Provider(session.ProviderId, $"{session.Provider.FirstName} {session.Provider.LastName}"),
+        "ProviderMissionStarted",
+        nameof(ProviderMissionAssignment),
+        assignment.Id,
+        "Mission demarree par le prestataire.",
+        after: new
+        {
+            assignment.MissionId,
+            AssignmentStatus = assignment.Status,
+            MissionStatus = assignment.Mission.Status,
+            assignment.StartedAt
+        });
+    await db.SaveChangesAsync(cancellationToken);
+    return ToProviderMissionHttpResult(result);
+})
+.WithName("StartProviderMissionWithArrivalVerification");
+
 var admin = app.MapGroup("/api/admin");
+
+admin.MapGet("/audit-logs", async (
+    string? actorType,
+    Guid? actorId,
+    string? action,
+    string? entityType,
+    Guid? entityId,
+    string? search,
+    DateTimeOffset? from,
+    DateTimeOffset? to,
+    int? skip,
+    int? take,
+    IAppDbContext db,
+    CancellationToken cancellationToken) =>
+{
+    var pageSize = Math.Clamp(take ?? 50, 1, 200);
+    var offset = Math.Max(skip ?? 0, 0);
+    var query = db.AuditLogEntries.AsNoTracking();
+
+    if (Enum.TryParse<AuditActorType>(actorType, true, out var parsedActorType))
+    {
+        query = query.Where(entry => entry.ActorType == parsedActorType);
+    }
+
+    if (actorId.HasValue)
+    {
+        query = query.Where(entry => entry.ActorId == actorId.Value);
+    }
+
+    if (!string.IsNullOrWhiteSpace(action))
+    {
+        var normalizedAction = action.Trim();
+        query = query.Where(entry => entry.Action == normalizedAction);
+    }
+
+    if (!string.IsNullOrWhiteSpace(entityType))
+    {
+        var normalizedEntityType = entityType.Trim();
+        query = query.Where(entry => entry.EntityType == normalizedEntityType);
+    }
+
+    if (entityId.HasValue)
+    {
+        query = query.Where(entry => entry.EntityId == entityId.Value);
+    }
+
+    if (from.HasValue)
+    {
+        query = query.Where(entry => entry.OccurredAt >= from.Value);
+    }
+
+    if (to.HasValue)
+    {
+        query = query.Where(entry => entry.OccurredAt <= to.Value);
+    }
+
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        var term = search.Trim().ToLowerInvariant();
+        query = query.Where(entry =>
+            entry.Action.ToLower().Contains(term)
+            || entry.EntityType.ToLower().Contains(term)
+            || (entry.ActorDisplayName != null && entry.ActorDisplayName.ToLower().Contains(term))
+            || (entry.Summary != null && entry.Summary.ToLower().Contains(term)));
+    }
+
+    var total = await query.CountAsync(cancellationToken);
+    var items = await query
+        .OrderByDescending(entry => entry.OccurredAt)
+        .Skip(offset)
+        .Take(pageSize)
+        .Select(entry => new AuditLogEntryResponse(
+            entry.Id,
+            entry.ActorType.ToString(),
+            entry.ActorId,
+            entry.ActorDisplayName,
+            entry.Action,
+            entry.EntityType,
+            entry.EntityId,
+            entry.Summary,
+            entry.BeforeJson,
+            entry.AfterJson,
+            entry.IpAddress,
+            entry.UserAgent,
+            entry.CorrelationId,
+            entry.OccurredAt))
+        .ToListAsync(cancellationToken);
+
+    return Results.Ok(new AuditLogListResponse(total, offset, pageSize, items));
+})
+.WithName("ListAdminAuditLogs");
 
 admin.MapGet("/company-applications", async (IAppDbContext db, ILogger<Program> logger, CancellationToken cancellationToken) =>
 {
@@ -1084,10 +1501,11 @@ admin.MapGet("/country-brandings/{countryCode}", async (string countryCode, IApp
 admin.MapPut("/country-brandings/{countryCode}", async (
     string countryCode,
     UpdateCountryBrandingRequest request,
+    HttpRequest httpRequest,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var validationError = ValidateCountryBrandingRequest(request);
+    var validationError = CountryBrandingValidator.Validate(request);
     if (validationError is not null)
     {
         return Results.BadRequest(new { message = validationError });
@@ -1101,6 +1519,7 @@ admin.MapPut("/country-brandings/{countryCode}", async (
     }
 
     var branding = await db.CountryBrandings.FirstOrDefaultAsync(branding => branding.CountryId == country.Id, cancellationToken);
+    object? before = null;
     if (branding is null)
     {
         branding = new CountryBranding(
@@ -1117,6 +1536,17 @@ admin.MapPut("/country-brandings/{countryCode}", async (
     }
     else
     {
+        before = new
+        {
+            branding.BrandName,
+            branding.PrimaryColor,
+            branding.SecondaryColor,
+            branding.AccentColor,
+            branding.HeroTitle,
+            branding.HeroSubtitle,
+            branding.HeroImageUrl,
+            branding.MotifStyle
+        };
         branding.Update(
             request.BrandName,
             request.PrimaryColor,
@@ -1128,6 +1558,16 @@ admin.MapPut("/country-brandings/{countryCode}", async (
             request.MotifStyle);
     }
 
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCountryBrandingUpdated",
+        nameof(CountryBranding),
+        branding.Id,
+        $"Branding pays {country.IsoCode} mis a jour.",
+        before,
+        after: request);
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(new CountryBrandingResponse(
@@ -1207,6 +1647,7 @@ admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db
 admin.MapPut("/companies/{id:guid}/assignment-mode", async (
     Guid id,
     UpdateCompanyAssignmentModeRequest request,
+    HttpRequest httpRequest,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
@@ -1221,57 +1662,49 @@ admin.MapPut("/companies/{id:guid}/assignment-mode", async (
         return Results.BadRequest(new { message = "Mode d'affectation invalide." });
     }
 
+    var previousMode = company.AssignmentMode;
     company.ChangeAssignmentMode(assignmentMode);
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyAssignmentModeUpdated",
+        nameof(Company),
+        company.Id,
+        "Mode d'affectation entreprise modifie.",
+        before: new { AssignmentMode = previousMode },
+        after: new { company.AssignmentMode });
     await db.SaveChangesAsync(cancellationToken);
 
-    return Results.Ok(ToCompanyAssignmentModeResponse(company));
+    return Results.Ok(CompanyAssignmentModePresenter.ToResponse(company));
 })
 .WithName("UpdateCompanyAssignmentMode");
 
 admin.MapPost("/company-applications/{id:guid}/approve", async (
     Guid id,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationReviewService reviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var application = await db.CompanyApplications
-        .Include(application => application.Documents)
-        .FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
-    if (application is null)
+    var result = await reviewService.ApproveAsync(id, cancellationToken);
+    var error = ToAdminCompanyApplicationReviewError(result);
+    if (error is not null)
     {
-        return Results.NotFound();
+        return error;
     }
 
-    var requiredDocumentTypes = new[]
-    {
-        HomeService.Domain.Enums.CompanyDocumentType.FiscalExistenceDeclaration,
-        HomeService.Domain.Enums.CompanyDocumentType.BusinessRegistration,
-        HomeService.Domain.Enums.CompanyDocumentType.OwnerIdentity
-    };
-    var missingApprovedDocument = requiredDocumentTypes.Any(documentType =>
-        !application.Documents.Any(document =>
-            document.DocumentType == documentType
-            && document.ReviewStatus == HomeService.Domain.Enums.DocumentReviewStatus.Approved));
-    if (missingApprovedDocument)
-    {
-        return Results.BadRequest(new { message = "Les pieces obligatoires doivent etre validees avant validation du dossier." });
-    }
-
-    var previousStatus = application.Status;
-    application.Approve("admin");
-    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, null, "admin");
-    if (application.CompanyId is null)
-    {
-        var company = new Company(application.CompanyName, application.PhoneNumber, application.Email);
-        company.Approve();
-        db.Companies.Add(company);
-        application.LinkApprovedCompany(company.Id, "admin");
-    }
-    else
-    {
-        var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == application.CompanyId, cancellationToken);
-        company?.Approve();
-    }
-
+    var application = result.Application!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationApproved",
+        nameof(HomeService.Domain.Entities.CompanyApplication),
+        application.Id,
+        "Demande entreprise validee.",
+        before: new { Status = result.PreviousStatus },
+        after: new { application.Status, application.CompanyId });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
@@ -1281,30 +1714,29 @@ admin.MapPost("/company-applications/{id:guid}/approve", async (
 admin.MapPost("/company-applications/{id:guid}/reject", async (
     Guid id,
     CompanyApplicationReviewRequest request,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationReviewService reviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var note = GetRequiredReviewNote(request.Note, "Une note est obligatoire pour refuser une demande entreprise.");
-    if (note.ErrorMessage is not null)
+    var result = await reviewService.RejectAsync(id, request.Note, cancellationToken);
+    var error = ToAdminCompanyApplicationReviewError(result);
+    if (error is not null)
     {
-        return Results.BadRequest(new { message = note.ErrorMessage });
+        return error;
     }
 
-    var application = await db.CompanyApplications.FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
-    if (application is null)
-    {
-        return Results.NotFound();
-    }
-
-    var previousStatus = application.Status;
-    application.Reject(note.Value!, "admin");
-    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
-    QueueCompanyApplicantNotifications(
+    var application = result.Application!;
+    AddAuditLog(
         db,
-        application,
-        "Votre dossier entreprise a ete refuse",
-        $"Votre demande d'inscription entreprise a ete refusee. Motif: {note.Value}",
-        includeWhatsApp: true);
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationRejected",
+        nameof(HomeService.Domain.Entities.CompanyApplication),
+        application.Id,
+        "Demande entreprise refusee.",
+        before: new { Status = result.PreviousStatus },
+        after: new { application.Status, application.ReviewNote });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
@@ -1314,30 +1746,29 @@ admin.MapPost("/company-applications/{id:guid}/reject", async (
 admin.MapPost("/company-applications/{id:guid}/reopen", async (
     Guid id,
     CompanyApplicationReviewRequest request,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationReviewService reviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var note = GetRequiredReviewNote(request.Note, "Une note est obligatoire pour reouvrir une demande refusee.");
-    if (note.ErrorMessage is not null)
+    var result = await reviewService.ReopenAsync(id, request.Note, cancellationToken);
+    var error = ToAdminCompanyApplicationReviewError(result);
+    if (error is not null)
     {
-        return Results.BadRequest(new { message = note.ErrorMessage });
+        return error;
     }
 
-    var application = await db.CompanyApplications.FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
-    if (application is null)
-    {
-        return Results.NotFound();
-    }
-
-    var previousStatus = application.Status;
-    application.Reopen(note.Value!, "admin");
-    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
-    QueueCompanyApplicantNotifications(
+    var application = result.Application!;
+    AddAuditLog(
         db,
-        application,
-        "Votre dossier entreprise est reouvert",
-        $"Votre dossier entreprise a ete reouvert pour une nouvelle verification. Note: {note.Value}",
-        includeWhatsApp: true);
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationReopened",
+        nameof(HomeService.Domain.Entities.CompanyApplication),
+        application.Id,
+        "Demande entreprise reouverte.",
+        before: new { Status = result.PreviousStatus },
+        after: new { application.Status, application.ReviewNote });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
@@ -1347,30 +1778,29 @@ admin.MapPost("/company-applications/{id:guid}/reopen", async (
 admin.MapPost("/company-applications/{id:guid}/request-more-information", async (
     Guid id,
     CompanyApplicationReviewRequest request,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationReviewService reviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var note = GetRequiredReviewNote(request.Note, "Une note est obligatoire pour demander un complement.");
-    if (note.ErrorMessage is not null)
+    var result = await reviewService.RequestMoreInformationAsync(id, request.Note, cancellationToken);
+    var error = ToAdminCompanyApplicationReviewError(result);
+    if (error is not null)
     {
-        return Results.BadRequest(new { message = note.ErrorMessage });
+        return error;
     }
 
-    var application = await db.CompanyApplications.FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
-    if (application is null)
-    {
-        return Results.NotFound();
-    }
-
-    var previousStatus = application.Status;
-    application.RequestMoreInformation(note.Value!, "admin");
-    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, note.Value, "admin");
-    QueueCompanyApplicantNotifications(
+    var application = result.Application!;
+    AddAuditLog(
         db,
-        application,
-        "Complement requis pour votre dossier entreprise",
-        $"Nous avons besoin d'un complement pour finaliser votre dossier entreprise. Detail: {note.Value}",
-        includeWhatsApp: true);
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationMoreInformationRequested",
+        nameof(HomeService.Domain.Entities.CompanyApplication),
+        application.Id,
+        "Complement demande sur un dossier entreprise.",
+        before: new { Status = result.PreviousStatus },
+        after: new { application.Status, application.ReviewNote });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationActionResponse(application));
@@ -1380,62 +1810,44 @@ admin.MapPost("/company-applications/{id:guid}/request-more-information", async 
 admin.MapPost("/company-applications/{id:guid}/activation-link", async (
     Guid id,
     HttpRequest httpRequest,
+    CompanyActivationLinkGenerationService activationLinkService,
     IAppDbContext db,
     IConfiguration configuration,
     ILogger<Program> logger,
     CancellationToken cancellationToken) =>
 {
-    var application = await db.CompanyApplications
-        .FirstOrDefaultAsync(application => application.Id == id, cancellationToken);
-    if (application is null)
-    {
-        return Results.NotFound();
-    }
-
-    if (application.Status is not HomeService.Domain.Enums.CompanyApplicationStatus.Approved
-        and not HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent)
-    {
-        return Results.BadRequest(new { message = "Le lien d'activation ne peut etre genere qu'apres validation du dossier." });
-    }
-
-    string activationLink;
-    DateTimeOffset expiresAt;
-    DateTimeOffset? reminderSentAt;
     try
     {
-        var now = DateTimeOffset.UtcNow;
-        reminderSentAt = application.ActivationEmailSentAt is null ? application.LastReminderSentAt : now;
-        await db.CompanyActivationTokens
-            .Where(token => token.CompanyApplicationId == application.Id
-                && token.UsedAt == null
-                && token.RevokedAt == null
-                && token.ExpiresAt > now)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(token => token.RevokedAt, now)
-                .SetProperty(token => token.RevocationReason, "Remplace par un nouveau token d'activation."),
-                cancellationToken);
+        var result = await activationLinkService.GenerateAsync(
+            id,
+            GetCompanyPortalBaseUrl(httpRequest, configuration),
+            GetActivationTokenDurationHours(configuration),
+            "admin",
+            cancellationToken);
 
-        var rawToken = GenerateActivationToken();
-        var tokenHash = HashActivationToken(rawToken);
-        expiresAt = now.AddHours(GetActivationTokenDurationHours(configuration));
-        activationLink = BuildCompanyActivationLink(httpRequest, configuration, application.Id, rawToken);
-        var previousStatus = application.Status;
-        db.CompanyActivationTokens.Add(CompanyActivationToken.Create(application.Id, tokenHash, expiresAt, activationLink));
-
-        var updatedRows = await db.CompanyApplications
-            .Where(item => item.Id == application.Id)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(item => item.Status, HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent)
-                .SetProperty(item => item.ActivationEmailSentAt, now)
-                .SetProperty(item => item.LastReminderSentAt, reminderSentAt),
-                cancellationToken);
-        if (updatedRows == 0)
+        if (result.Status == CompanyActivationLinkGenerationStatus.NotFound)
         {
-            return Results.NotFound(new { message = "La demande entreprise n'existe plus." });
+            return Results.NotFound(new { message = result.Message });
         }
 
-        AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent, "Lien d'activation envoye.", "admin");
+        if (result.Status == CompanyActivationLinkGenerationStatus.InvalidStatus)
+        {
+            return Results.BadRequest(new { message = result.Message });
+        }
+
+        var response = result.Response!;
+        AddAuditLog(
+            db,
+            httpRequest,
+            AuditActor.Admin(),
+            "AdminCompanyActivationLinkGenerated",
+            nameof(HomeService.Domain.Entities.CompanyApplication),
+            response.Id,
+            "Lien d'activation entreprise genere.",
+            before: new { Status = result.PreviousStatus },
+            after: new { response.Status, response.ExpiresAt, response.ActivationLink });
         await db.SaveChangesAsync(cancellationToken);
+        return Results.Ok(response);
     }
     catch (Exception exception)
     {
@@ -1445,45 +1857,34 @@ admin.MapPost("/company-applications/{id:guid}/activation-link", async (
             detail: exception.Message,
             statusCode: StatusCodes.Status500InternalServerError);
     }
-
-    try
-    {
-        QueueCompanyApplicantNotifications(
-            db,
-            application,
-            "Votre portail entreprise est pret",
-            $"Votre dossier est valide. Creez votre mot de passe avec ce lien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.",
-            includeWhatsApp: true,
-            metadataJson: $$"""{"activationLink":"{{activationLink}}"}""");
-        await db.SaveChangesAsync(cancellationToken);
-    }
-    catch (Exception exception)
-    {
-        logger.LogWarning(exception, "Activation link was generated but notification outbox could not be queued for company application {ApplicationId}.", application.Id);
-    }
-
-    return Results.Ok(new CompanyApplicationActivationLinkResponse(
-        application.Id,
-        HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent.ToString(),
-        DateTimeOffset.UtcNow,
-        reminderSentAt,
-        expiresAt,
-        activationLink));
 })
 .WithName("GenerateCompanyApplicationActivationLink");
 
 admin.MapPost("/company-application-documents/{id:guid}/approve", async (
     Guid id,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationDocumentReviewService documentReviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
-    if (document is null)
+    var result = await documentReviewService.ApproveAsync(id, cancellationToken);
+    var error = ToAdminCompanyApplicationDocumentReviewError(result);
+    if (error is not null)
     {
-        return Results.NotFound();
+        return error;
     }
 
-    document.Approve();
+    var document = result.Document!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationDocumentApproved",
+        nameof(CompanyApplicationDocument),
+        document.Id,
+        "Piece entreprise validee.",
+        before: new { Status = result.PreviousStatus },
+        after: new { document.ReviewStatus });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
@@ -1493,28 +1894,29 @@ admin.MapPost("/company-application-documents/{id:guid}/approve", async (
 admin.MapPost("/company-application-documents/{id:guid}/reject", async (
     Guid id,
     CompanyApplicationDocumentReviewRequest request,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationDocumentReviewService documentReviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var comment = GetRequiredReviewNote(request.Comment, "Un commentaire est obligatoire pour refuser une piece.");
-    if (comment.ErrorMessage is not null)
+    var result = await documentReviewService.RejectAsync(id, request.Comment, cancellationToken);
+    var error = ToAdminCompanyApplicationDocumentReviewError(result);
+    if (error is not null)
     {
-        return Results.BadRequest(new { message = comment.ErrorMessage });
+        return error;
     }
 
-    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
-    if (document is null)
-    {
-        return Results.NotFound();
-    }
-
-    document.Reject(comment.Value!);
-    await QueueDocumentNotificationAsync(
+    var document = result.Document!;
+    AddAuditLog(
         db,
-        document.CompanyApplicationId,
-        "Une piece de votre dossier a ete refusee",
-        $"Une piece de votre dossier entreprise a ete refusee. Commentaire: {comment.Value}",
-        cancellationToken);
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationDocumentRejected",
+        nameof(CompanyApplicationDocument),
+        document.Id,
+        "Piece entreprise refusee.",
+        before: new { Status = result.PreviousStatus },
+        after: new { document.ReviewStatus, document.ReviewNote });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
@@ -1524,28 +1926,29 @@ admin.MapPost("/company-application-documents/{id:guid}/reject", async (
 admin.MapPost("/company-application-documents/{id:guid}/request-replacement", async (
     Guid id,
     CompanyApplicationDocumentReviewRequest request,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationDocumentReviewService documentReviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var comment = GetRequiredReviewNote(request.Comment, "Un commentaire est obligatoire pour demander le remplacement d'une piece.");
-    if (comment.ErrorMessage is not null)
+    var result = await documentReviewService.RequestReplacementAsync(id, request.Comment, cancellationToken);
+    var error = ToAdminCompanyApplicationDocumentReviewError(result);
+    if (error is not null)
     {
-        return Results.BadRequest(new { message = comment.ErrorMessage });
+        return error;
     }
 
-    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
-    if (document is null)
-    {
-        return Results.NotFound();
-    }
-
-    document.RequestReplacement(comment.Value!);
-    await QueueDocumentNotificationAsync(
+    var document = result.Document!;
+    AddAuditLog(
         db,
-        document.CompanyApplicationId,
-        "Complement de piece requis",
-        $"Une piece de votre dossier entreprise doit etre remplacee ou completee. Commentaire: {comment.Value}",
-        cancellationToken);
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationDocumentReplacementRequested",
+        nameof(CompanyApplicationDocument),
+        document.Id,
+        "Remplacement de piece entreprise demande.",
+        before: new { Status = result.PreviousStatus },
+        after: new { document.ReviewStatus, document.ReviewNote });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
@@ -1555,28 +1958,29 @@ admin.MapPost("/company-application-documents/{id:guid}/request-replacement", as
 admin.MapPost("/company-application-documents/{id:guid}/reopen", async (
     Guid id,
     CompanyApplicationDocumentReviewRequest request,
+    HttpRequest httpRequest,
+    AdminCompanyApplicationDocumentReviewService documentReviewService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var comment = GetRequiredReviewNote(request.Comment, "Un commentaire est obligatoire pour reouvrir une piece refusee.");
-    if (comment.ErrorMessage is not null)
+    var result = await documentReviewService.ReopenAsync(id, request.Comment, cancellationToken);
+    var error = ToAdminCompanyApplicationDocumentReviewError(result);
+    if (error is not null)
     {
-        return Results.BadRequest(new { message = comment.ErrorMessage });
+        return error;
     }
 
-    var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == id, cancellationToken);
-    if (document is null)
-    {
-        return Results.NotFound();
-    }
-
-    document.Reopen(comment.Value!);
-    await QueueDocumentNotificationAsync(
+    var document = result.Document!;
+    AddAuditLog(
         db,
-        document.CompanyApplicationId,
-        "Une piece refusee est reouverte",
-        $"Une piece de votre dossier a ete reouverte pour verification. Commentaire: {comment.Value}",
-        cancellationToken);
+        httpRequest,
+        AuditActor.Admin(),
+        "AdminCompanyApplicationDocumentReopened",
+        nameof(CompanyApplicationDocument),
+        document.Id,
+        "Piece entreprise reouverte.",
+        before: new { Status = result.PreviousStatus },
+        after: new { document.ReviewStatus, document.ReviewNote });
     await db.SaveChangesAsync(cancellationToken);
 
     return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
@@ -1626,60 +2030,184 @@ admin.MapGet("/company-application-documents/{id:guid}/download", async (
 
 app.MapPost("/api/company-activation/password", async (
     CompanyActivationPasswordRequest request,
+    HttpRequest httpRequest,
+    CompanyActivationPasswordService activationPasswordService,
     IAppDbContext db,
     CancellationToken cancellationToken) =>
 {
-    var validationError = ValidateActivationPasswordRequest(request);
-    if (validationError is not null)
+    var result = await activationPasswordService.CreatePasswordAsync(request, cancellationToken);
+    if (result.Status == CompanyActivationPasswordStatus.ValidationFailed)
     {
-        return Results.BadRequest(new { message = validationError });
+        return Results.BadRequest(new { message = result.Message });
     }
 
-    var tokenHash = HashActivationToken(request.Token);
-    var activationToken = await db.CompanyActivationTokens
-        .Include(token => token.CompanyApplication)
-        .FirstOrDefaultAsync(token => token.TokenHash == tokenHash, cancellationToken);
-
-    if (activationToken is null || !activationToken.IsActive || activationToken.CompanyApplication is null)
+    if (result.Status == CompanyActivationPasswordStatus.InvalidOrExpiredToken)
     {
-        return Results.BadRequest(new { message = "Le lien d'activation est invalide ou expire." });
+        return Results.BadRequest(new { message = result.Message });
     }
 
-    var application = activationToken.CompanyApplication;
-    var email = application.Email.ToLowerInvariant();
-    var existingUser = await db.CompanyPortalUsers.AnyAsync(user => user.Email == email, cancellationToken);
-    if (existingUser)
+    if (result.Status == CompanyActivationPasswordStatus.DuplicatePortalUser)
     {
-        return Results.BadRequest(new { message = "Un compte portail existe deja pour cet email." });
+        return Results.BadRequest(new { message = result.Message });
     }
 
-    Company company;
-    if (application.CompanyId is { } companyId)
-    {
-        company = await db.Companies.FirstAsync(company => company.Id == companyId, cancellationToken);
-    }
-    else
-    {
-        company = new Company(application.CompanyName, application.PhoneNumber, application.Email);
-        company.Approve();
-        db.Companies.Add(company);
-        application.LinkApprovedCompany(company.Id);
-    }
-
-    db.CompanyPortalUsers.Add(new CompanyPortalUser(company.Id, application.ContactName, email, HashPassword(request.Password), true));
-    activationToken.MarkUsed();
-    var previousStatus = application.Status;
-    application.MarkActivated("activation");
-    AddCompanyApplicationStatusHistory(db, application.Id, previousStatus, application.Status, "Compte entreprise active.", "activation");
+    var application = result.Application!;
+    var company = result.Company!;
+    AddAuditLog(
+        db,
+        httpRequest,
+        AuditActor.Company(company.Id, company.Name),
+        "CompanyActivationPasswordCreated",
+        nameof(HomeService.Domain.Entities.CompanyApplication),
+        application.Id,
+        "Mot de passe entreprise cree depuis le lien d'activation.",
+        before: new { Status = result.PreviousStatus },
+        after: new { application.Status, company.Id, result.Email });
     await db.SaveChangesAsync(cancellationToken);
 
-    return Results.Ok(new CompanyActivationPasswordResponse(true, "Mot de passe cree. Votre portail entreprise est pret."));
+    return Results.Ok(result.Response);
 })
 .WithName("CreateCompanyPasswordFromActivationToken");
 
 app.Run();
 
-static async Task<CompanyPortalSession?> GetCompanyPortalSessionAsync(
+static ProviderMobileProfileCompletionResponse? BuildProviderMobileProfileCompletion(ProviderProfile provider)
+{
+    var missing = new List<string>();
+    if (!provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.Photo))
+    {
+        missing.Add("Photo de profil");
+    }
+
+    if (!provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.IdentityDocument))
+    {
+        missing.Add("Piece d'identite");
+    }
+
+    if (!provider.Services.Any(service => service.IsActive))
+    {
+        missing.Add("Service actif");
+    }
+
+    if (provider.MissionLatitude is null || provider.MissionLongitude is null)
+    {
+        missing.Add("Zone de mission");
+    }
+
+    if (missing.Count == 0)
+    {
+        return null;
+    }
+
+    var percent = Math.Clamp(100 - missing.Count * 8, 0, 99);
+    var message = missing.Count == 1
+        ? $"Completez : {missing[0]}."
+        : $"Completez {missing.Count} elements pour recevoir toutes les affectations.";
+
+    return new ProviderMobileProfileCompletionResponse(percent, message, missing);
+}
+
+static ProviderMobileMissionSummaryResponse? ToProviderMobileMissionSummary(
+    ProviderMissionAssignment assignment,
+    IReadOnlyDictionary<Guid, Service> servicesById,
+    IReadOnlyDictionary<Guid, CustomerProfile> customersById)
+{
+    if (assignment.Mission is null)
+    {
+        return null;
+    }
+
+    servicesById.TryGetValue(assignment.Mission.ServiceId, out var service);
+    customersById.TryGetValue(assignment.Mission.CustomerId, out var customer);
+    var canCallCustomer = assignment.Mission.CanRevealContactDetails && customer is not null;
+    return new ProviderMobileMissionSummaryResponse(
+        assignment.Id,
+        assignment.MissionId,
+        service?.Name ?? "Service",
+        service?.IconName ?? "sparkles",
+        assignment.Company?.Name ?? "Entreprise",
+        BuildLocationLabel(assignment.Mission.ServiceAddress),
+        assignment.Mission.ScheduledFor,
+        assignment.Status.ToString(),
+        canCallCustomer,
+        canCallCustomer ? customer!.PhoneNumber : null);
+}
+
+static ProviderMobileMissionOfferResponse? ToProviderMobileMissionOffer(
+    ProviderMissionAssignment assignment,
+    ProviderProfile provider,
+    DateTimeOffset now,
+    IReadOnlyDictionary<Guid, Service> servicesById,
+    IReadOnlyDictionary<Guid, CustomerProfile> customersById)
+{
+    if (assignment.Mission is null)
+    {
+        return null;
+    }
+
+    servicesById.TryGetValue(assignment.Mission.ServiceId, out var service);
+    customersById.TryGetValue(assignment.Mission.CustomerId, out var customer);
+    var distanceKm = CalculateDistanceKm(
+        provider.CurrentLatitude ?? provider.MissionLatitude,
+        provider.CurrentLongitude ?? provider.MissionLongitude,
+        assignment.Mission.ServiceLatitude,
+        assignment.Mission.ServiceLongitude);
+
+    return new ProviderMobileMissionOfferResponse(
+        assignment.Id,
+        assignment.MissionId,
+        service?.Name ?? "Service",
+        service?.IconName ?? "sparkles",
+        assignment.Company?.Name ?? provider.Company?.Name ?? "Entreprise",
+        BuildCustomerDisplayName(customer),
+        BuildLocationLabel(assignment.Mission.ServiceAddress),
+        distanceKm,
+        distanceKm is null ? null : Math.Max(1, (int)Math.Round(distanceKm.Value / 18d * 60d)),
+        assignment.ExpiresAt,
+        Math.Max(0, (int)Math.Floor((assignment.ExpiresAt - now).TotalSeconds)),
+        "Verifiez que vous pouvez partir maintenant avant d'accepter.");
+}
+
+static string BuildLocationLabel(string? address)
+{
+    return string.IsNullOrWhiteSpace(address) ? "Adresse a confirmer" : address.Trim();
+}
+
+static string BuildCustomerDisplayName(CustomerProfile? customer)
+{
+    if (customer is null)
+    {
+        return "Client";
+    }
+
+    var displayName = $"{customer.FirstName} {customer.LastName}".Trim();
+    return string.IsNullOrWhiteSpace(displayName) ? "Client" : displayName;
+}
+
+static double? CalculateDistanceKm(decimal? fromLatitude, decimal? fromLongitude, decimal? toLatitude, decimal? toLongitude)
+{
+    if (fromLatitude is null || fromLongitude is null || toLatitude is null || toLongitude is null)
+    {
+        return null;
+    }
+
+    const double earthRadiusKm = 6371d;
+    var latA = DegreesToRadians((double)fromLatitude.Value);
+    var latB = DegreesToRadians((double)toLatitude.Value);
+    var deltaLatitude = DegreesToRadians((double)(toLatitude.Value - fromLatitude.Value));
+    var deltaLongitude = DegreesToRadians((double)(toLongitude.Value - fromLongitude.Value));
+    var haversine = Math.Sin(deltaLatitude / 2) * Math.Sin(deltaLatitude / 2)
+        + Math.Cos(latA) * Math.Cos(latB) * Math.Sin(deltaLongitude / 2) * Math.Sin(deltaLongitude / 2);
+    var centralAngle = 2 * Math.Atan2(Math.Sqrt(haversine), Math.Sqrt(1 - haversine));
+    return Math.Round(earthRadiusKm * centralAngle, 1);
+}
+
+static double DegreesToRadians(double degrees)
+{
+    return degrees * Math.PI / 180d;
+}
+
+static async Task<ProviderPortalSession?> GetProviderPortalSessionAsync(
     HttpRequest request,
     IAppDbContext db,
     CancellationToken cancellationToken)
@@ -1697,135 +2225,24 @@ static async Task<CompanyPortalSession?> GetCompanyPortalSessionAsync(
         return null;
     }
 
-    var tokenHash = HashPortalToken(token);
-    return await db.CompanyPortalSessions
-        .Include(session => session.CompanyPortalUser)
-        .ThenInclude(user => user!.Company)
+    var tokenHash = PortalTokenService.HashToken(token);
+    return await db.ProviderPortalSessions
+        .Include(session => session.Provider)
+        .ThenInclude(provider => provider!.Company)
         .FirstOrDefaultAsync(session => session.TokenHash == tokenHash && session.RevokedAt == null && session.ExpiresAt > DateTimeOffset.UtcNow, cancellationToken);
 }
 
-static async Task<IReadOnlyList<CompanyPortalEmployeeResponse>> GetCompanyEmployeesAsync(
-    Guid companyId,
-    IAppDbContext db,
-    CancellationToken cancellationToken)
+static IResult ToProviderMissionHttpResult(ProviderMissionOperationResult result)
 {
-    var providers = await db.Providers
-        .AsNoTracking()
-        .Include(provider => provider.Documents)
-        .Include(provider => provider.Services)
-        .ThenInclude(providerService => providerService.Service)
-        .Where(provider => provider.CompanyId == companyId)
-        .OrderBy(provider => provider.LastName)
-        .ThenBy(provider => provider.FirstName)
-        .ToListAsync(cancellationToken);
-
-    var serviceIds = providers
-        .SelectMany(provider => provider.Services)
-        .Select(service => service.ServiceId)
-        .Distinct()
-        .ToList();
-
-    var serviceNames = await db.Services
-        .AsNoTracking()
-        .Where(service => serviceIds.Contains(service.Id))
-        .ToDictionaryAsync(service => service.Id, service => service.Name, cancellationToken);
-
-    return providers.Select(provider => MapCompanyPortalEmployee(provider, serviceNames)).ToList();
-}
-
-static CompanyPortalEmployeeResponse MapCompanyPortalEmployee(ProviderProfile provider, IReadOnlyDictionary<Guid, string> serviceNames)
-{
-    var photo = provider.Documents.FirstOrDefault(document => document.DocumentType == ProviderDocumentType.Photo);
-    var identityDocument = provider.Documents.FirstOrDefault(document => document.DocumentType == ProviderDocumentType.IdentityDocument);
-    var diploma = provider.Documents.FirstOrDefault(document => document.DocumentType == ProviderDocumentType.Diploma);
-
-    return new CompanyPortalEmployeeResponse(
-        Id: provider.Id,
-        FirstName: provider.FirstName,
-        LastName: provider.LastName,
-        FullName: provider.FullName,
-        PhoneNumber: provider.PhoneNumber,
-        DateOfBirth: provider.DateOfBirth,
-        Address: provider.Address,
-        Gender: provider.Gender.ToString(),
-        EmploymentType: provider.EmploymentType.ToString(),
-        ReceivesDirectRequests: provider.EmploymentType == ProviderEmploymentType.TemporaryWorker,
-        YearsOfExperience: provider.YearsOfExperience,
-        Status: provider.Status.ToString(),
-        IsAvailable: provider.IsAvailable,
-        MissionLatitude: provider.MissionLatitude,
-        MissionLongitude: provider.MissionLongitude,
-        MissionRadiusKm: provider.MissionRadiusKm,
-        PhotoUrl: photo is null ? null : $"/api/company-portal/provider-documents/{photo.Id}/download",
-        IdentityDocumentName: identityDocument?.OriginalFileName,
-        DiplomaDocumentName: diploma?.OriginalFileName,
-        HasDiploma: diploma is not null,
-        Services: provider.Services
-            .OrderBy(service => serviceNames.TryGetValue(service.ServiceId, out var name) ? name : string.Empty)
-            .Select(service => new CompanyPortalEmployeeServiceResponse(
-                service.ServiceId,
-                serviceNames.TryGetValue(service.ServiceId, out var name) ? name : "Service",
-                service.ExperienceLevel.ToString(),
-                service.YearsOfExperience,
-                service.PriceTier.ToString(),
-                service.Service?.NormalPriceAmount ?? 0,
-                service.Service?.PremiumPriceAmount ?? 0,
-                service.Service?.Currency ?? "XOF",
-                service.IsActive))
-            .ToList());
-}
-
-static async Task<IReadOnlyList<CompanyPortalMissionResponse>> GetCompanyMissionRowsAsync(
-    Guid companyId,
-    string? view,
-    IAppDbContext db,
-    CancellationToken cancellationToken)
-{
-    var now = DateTimeOffset.UtcNow;
-    var query = from mission in db.Missions.AsNoTracking()
-                where mission.CompanyId == companyId
-                join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
-                join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
-                join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
-                from provider in providerJoin.DefaultIfEmpty()
-                select new { mission, service, customer, provider };
-
-    query = view?.Trim().ToLowerInvariant() switch
+    return result.Status switch
     {
-        "upcoming" => query.Where(row => row.mission.ScheduledFor >= now && row.mission.Status != MissionStatus.Completed && row.mission.Status != MissionStatus.Cancelled),
-        "past" => query.Where(row => row.mission.Status == MissionStatus.Completed || row.mission.Status == MissionStatus.Cancelled),
-        "live" => query.Where(row => row.mission.Status == MissionStatus.SearchingProvider || row.mission.Status == MissionStatus.Offered || row.mission.Status == MissionStatus.Accepted || row.mission.Status == MissionStatus.OnTheWay || row.mission.Status == MissionStatus.Started),
-        _ => query
-    };
-
-    return await query
-        .OrderBy(row => row.mission.ScheduledFor ?? row.mission.CreatedAt)
-        .Select(row => new CompanyPortalMissionResponse(
-            row.mission.Id,
-            row.service.Name,
-            row.customer.FirstName + " " + row.customer.LastName,
-            row.customer.PhoneNumber,
-            row.mission.Mode.ToString(),
-            row.mission.Status.ToString(),
-            row.mission.PaymentMethod.ToString(),
-            row.mission.PaymentStatus.ToString(),
-            row.mission.ScheduledFor,
-            row.mission.EstimatedDurationMinutes,
-            row.mission.FinalTotalAmount ?? row.mission.EstimatedTotalAmount,
-            row.mission.Currency,
-            row.mission.ProviderId,
-            row.provider == null ? null : row.provider.FirstName + " " + row.provider.LastName))
-        .ToListAsync(cancellationToken);
-}
-
-static DateTimeOffset GetPaymentPeriodStart(string period)
-{
-    var now = DateTimeOffset.UtcNow;
-    return period switch
-    {
-        "year" => new DateTimeOffset(now.Year, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        "week" => now.AddDays(-7),
-        _ => new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero)
+        ProviderMissionOperationStatus.Ok => Results.Ok(result.Response),
+        ProviderMissionOperationStatus.Forbidden => Results.Forbid(),
+        ProviderMissionOperationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+        ProviderMissionOperationStatus.BadRequest => result.Response is null
+            ? Results.BadRequest(new { message = result.Message })
+            : Results.BadRequest(result.Response),
+        _ => Results.BadRequest(new { message = result.Message ?? "Action impossible." })
     };
 }
 
@@ -1876,11 +2293,6 @@ static IReadOnlyList<Guid> GetGuidValues(IFormCollection form, string key)
         .ToList();
 }
 
-static IReadOnlyList<Guid> GetServiceIds(IFormCollection form)
-{
-    return GetGuidValues(form, "serviceIds");
-}
-
 static decimal? GetOptionalDecimal(IFormCollection form, string key)
 {
     return decimal.TryParse(GetFormValue(form, key), out var value) ? value : null;
@@ -1905,13 +2317,6 @@ static ProviderGender ParseProviderGender(string? value)
     return Enum.TryParse<ProviderGender>(value, true, out var gender)
         ? gender
         : ProviderGender.Unspecified;
-}
-
-static ProviderServicePriceTier ParseProviderServicePriceTier(string? value)
-{
-    return Enum.TryParse<ProviderServicePriceTier>(value, true, out var tier)
-        ? tier
-        : ProviderServicePriceTier.Normal;
 }
 
 static bool TryParseProviderDocumentType(string? value, out ProviderDocumentType documentType)
@@ -1942,218 +2347,19 @@ static bool TryParseCompanyAssignmentMode(string? value, out CompanyAssignmentMo
     return Enum.TryParse(value?.Trim(), true, out assignmentMode);
 }
 
-static CompanyAssignmentModeResponse ToCompanyAssignmentModeResponse(Company company)
+static CompanyProviderFormData ToCompanyProviderFormData(IFormCollection form)
 {
-    var additionalCommissionRate = company.AssignmentMode == CompanyAssignmentMode.PlatformManaged ? 0.05m : 0m;
-    var message = company.AssignmentMode == CompanyAssignmentMode.PlatformManaged
-        ? "La plateforme affecte les missions. Une commission additionnelle pourra etre appliquee."
-        : "L'entreprise affecte elle-meme les missions depuis son portail.";
-
-    return new CompanyAssignmentModeResponse(
-        company.Id,
-        company.AssignmentMode.ToString(),
-        additionalCommissionRate,
-        message);
-}
-
-static IReadOnlyList<string> ValidateProviderForm(IFormCollection form)
-{
-    var errors = new List<string>();
-
-    if (GetFormValue(form, "firstName").Trim().Length < 2)
-    {
-        errors.Add("Le prenom de l'employe est obligatoire.");
-    }
-
-    if (GetFormValue(form, "lastName").Trim().Length < 2)
-    {
-        errors.Add("Le nom de l'employe est obligatoire.");
-    }
-
-    var phoneDigits = Regex.Replace(GetFormValue(form, "phoneNumber"), @"\D", string.Empty);
-    if (phoneDigits.Length is < 8 or > 15)
-    {
-        errors.Add("Le telephone de l'employe doit contenir entre 8 et 15 chiffres.");
-    }
-
-    if (!DateOnly.TryParse(GetFormValue(form, "dateOfBirth"), out var birthDate))
-    {
-        errors.Add("La date de naissance est obligatoire.");
-    }
-    else if (birthDate > DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-16)))
-    {
-        errors.Add("L'employe doit avoir au moins 16 ans.");
-    }
-
-    if (GetFormValue(form, "address").Trim().Length < 4)
-    {
-        errors.Add("L'adresse de l'employe est obligatoire.");
-    }
-
-    var yearsOfExperience = GetOptionalInt(form, "yearsOfExperience") ?? -1;
-    if (yearsOfExperience is < 0 or > 60)
-    {
-        errors.Add("Le nombre d'annees d'experience doit etre compris entre 0 et 60.");
-    }
-
-    var radius = GetOptionalInt(form, "missionRadiusKm") ?? 0;
-    if (radius is < 1 or > 100)
-    {
-        errors.Add("Le perimetre de mission doit etre compris entre 1 et 100 km.");
-    }
-
-    if (GetGuidValues(form, "serviceIds").Count == 0)
-    {
-        errors.Add("Au moins un service maitrise est obligatoire.");
-    }
-
-    if (form.Files.GetFile("photo") is null)
-    {
-        errors.Add("La photo de l'employe est obligatoire.");
-    }
-
-    if (form.Files.GetFile("identityDocument") is null)
-    {
-        errors.Add("La piece d'identite de l'employe est obligatoire.");
-    }
-
-    return errors;
-}
-
-static string? ValidateEmployeeForm(IFormCollection form)
-{
-    var errors = ValidateProviderForm(form);
-    return errors.Count == 0 ? null : string.Join(" ", errors);
-}
-
-static void AddCompanyApplicationStatusHistory(
-    IAppDbContext db,
-    Guid companyApplicationId,
-    CompanyApplicationStatus? previousStatus,
-    CompanyApplicationStatus newStatus,
-    string? note,
-    string? changedBy)
-{
-    if (previousStatus.HasValue && previousStatus.Value == newStatus)
-    {
-        return;
-    }
-
-    db.CompanyApplicationStatusHistories.Add(new CompanyApplicationStatusHistory(
-        companyApplicationId,
-        previousStatus,
-        newStatus,
-        note,
-        changedBy));
-}
-
-static void QueueCompanyApplicantNotifications(
-    IAppDbContext db,
-    HomeService.Domain.Entities.CompanyApplication application,
-    string subject,
-    string body,
-    bool includeWhatsApp,
-    string? metadataJson = null)
-{
-    if (!string.IsNullOrWhiteSpace(application.Email))
-    {
-        db.NotificationOutboxMessages.Add(new NotificationOutboxMessage(
-            NotificationChannel.Email,
-            application.Email,
-            subject,
-            body,
-            nameof(HomeService.Domain.Entities.CompanyApplication),
-            application.Id,
-            metadataJson));
-    }
-
-    if (includeWhatsApp && !string.IsNullOrWhiteSpace(application.PhoneNumber))
-    {
-        db.NotificationOutboxMessages.Add(new NotificationOutboxMessage(
-            NotificationChannel.WhatsApp,
-            application.PhoneNumber,
-            subject,
-            body,
-            nameof(HomeService.Domain.Entities.CompanyApplication),
-            application.Id,
-            metadataJson));
-    }
-}
-
-static async Task QueueDocumentNotificationAsync(
-    IAppDbContext db,
-    Guid companyApplicationId,
-    string subject,
-    string body,
-    CancellationToken cancellationToken)
-{
-    var application = await db.CompanyApplications
-        .FirstOrDefaultAsync(application => application.Id == companyApplicationId, cancellationToken);
-
-    if (application is null)
-    {
-        return;
-    }
-
-    QueueCompanyApplicantNotifications(db, application, subject, body, includeWhatsApp: true);
-}
-
-static IReadOnlyList<string> ValidateCompanyApplication(RegisterCompanyRequest request)
-{
-    var errors = new List<string>();
-
-    if (request.CompanyName.Trim().Length < 3)
-    {
-        errors.Add("Le nom legal de l'entreprise doit contenir au moins 3 caracteres.");
-    }
-
-    if (!string.IsNullOrWhiteSpace(request.RegistrationNumber) && request.RegistrationNumber.Trim().Length < 4)
-    {
-        errors.Add("Le numero legal semble trop court.");
-    }
-
-    if (request.City.Trim().Length < 2)
-    {
-        errors.Add("La ville est obligatoire.");
-    }
-
-    if (request.ContactName.Trim().Length < 3)
-    {
-        errors.Add("Le nom du responsable est obligatoire.");
-    }
-
-    if (!Regex.IsMatch(request.Email.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase))
-    {
-        errors.Add("L'email professionnel n'est pas valide.");
-    }
-
-    var phoneDigits = Regex.Replace(request.PhoneNumber, @"\D", string.Empty);
-    if (phoneDigits.Length is < 8 or > 15)
-    {
-        errors.Add("Le telephone doit contenir entre 8 et 15 chiffres.");
-    }
-
-    if (request.EstimatedProviderCount is not null and (< 1 or > 10000))
-    {
-        errors.Add("Le nombre de prestataires doit etre compris entre 1 et 10000.");
-    }
-
-    if (request.Services.Count == 0)
-    {
-        errors.Add("Au moins un service est requis.");
-    }
-
-    if (request.Password.Length < 10)
-    {
-        errors.Add("Le mot de passe doit contenir au moins 10 caracteres.");
-    }
-
-    if (request.Password != request.ConfirmPassword)
-    {
-        errors.Add("Les deux mots de passe ne correspondent pas.");
-    }
-
-    return errors;
+    return new CompanyProviderFormData(
+        GetFormValue(form, "firstName"),
+        GetFormValue(form, "lastName"),
+        GetFormValue(form, "phoneNumber"),
+        DateOnly.TryParse(GetFormValue(form, "dateOfBirth"), out var birthDate) ? birthDate : null,
+        GetFormValue(form, "address"),
+        GetOptionalInt(form, "yearsOfExperience"),
+        GetOptionalInt(form, "missionRadiusKm"),
+        GetGuidValues(form, "serviceIds"),
+        form.Files.GetFile("photo") is not null,
+        form.Files.GetFile("identityDocument") is not null);
 }
 
 static CompanyApplicationActionResponse ToCompanyApplicationActionResponse(HomeService.Domain.Entities.CompanyApplication application)
@@ -2165,6 +2371,31 @@ static CompanyApplicationActionResponse ToCompanyApplicationActionResponse(HomeS
         application.ReviewNote);
 }
 
+static IResult? ToAdminCompanyApplicationReviewError(AdminCompanyApplicationReviewResult result)
+{
+    return result.Status switch
+    {
+        AdminCompanyApplicationReviewStatus.Ok => null,
+        AdminCompanyApplicationReviewStatus.NotFound => Results.NotFound(),
+        AdminCompanyApplicationReviewStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+        AdminCompanyApplicationReviewStatus.MissingRequiredApprovedDocuments => Results.BadRequest(new { message = result.Message }),
+        AdminCompanyApplicationReviewStatus.InvalidTransition => Results.BadRequest(new { message = result.Message }),
+        _ => Results.BadRequest(new { message = result.Message ?? "Action impossible." })
+    };
+}
+
+static IResult? ToAdminCompanyApplicationDocumentReviewError(AdminCompanyApplicationDocumentReviewResult result)
+{
+    return result.Status switch
+    {
+        AdminCompanyApplicationDocumentReviewStatus.Ok => null,
+        AdminCompanyApplicationDocumentReviewStatus.NotFound => Results.NotFound(),
+        AdminCompanyApplicationDocumentReviewStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+        AdminCompanyApplicationDocumentReviewStatus.InvalidTransition => Results.BadRequest(new { message = result.Message }),
+        _ => Results.BadRequest(new { message = result.Message ?? "Action impossible." })
+    };
+}
+
 static CompanyApplicationDocumentReviewResponse ToCompanyApplicationDocumentReviewResponse(CompanyApplicationDocument document)
 {
     return new CompanyApplicationDocumentReviewResponse(
@@ -2174,153 +2405,60 @@ static CompanyApplicationDocumentReviewResponse ToCompanyApplicationDocumentRevi
         document.ReviewNote);
 }
 
-static (string? Value, string? ErrorMessage) GetRequiredReviewNote(string? value, string requiredMessage)
-{
-    if (string.IsNullOrWhiteSpace(value))
-    {
-        return (null, requiredMessage);
-    }
-
-    var trimmed = value.Trim();
-    if (trimmed.Length > 1000)
-    {
-        return (null, "La note ne peut pas depasser 1000 caracteres.");
-    }
-
-    return (trimmed, null);
-}
-
-static string BuildCompanyActivationLink(HttpRequest request, IConfiguration configuration, Guid applicationId, string token)
+static string GetCompanyPortalBaseUrl(HttpRequest request, IConfiguration configuration)
 {
     var configuredBaseUrl =
         configuration["CompanyPortal:BaseUrl"]
         ?? configuration["COMPANY_PORTAL_BASE_URL"]
         ?? configuration["CompanyPortalBaseUrl"];
 
-    var baseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
+    return string.IsNullOrWhiteSpace(configuredBaseUrl)
         ? $"{request.Scheme}://{request.Host}"
         : configuredBaseUrl.Trim();
-
-    return $"{baseUrl.TrimEnd('/')}/activate-company/{applicationId:D}?token={Uri.EscapeDataString(token)}";
-}
-
-static string GenerateActivationToken()
-{
-    return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-        .TrimEnd('=')
-        .Replace('+', '-')
-        .Replace('/', '_');
-}
-
-static string GenerateSessionToken()
-{
-    return GenerateActivationToken();
-}
-
-static string HashActivationToken(string token)
-{
-    return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
-}
-
-static string HashPortalToken(string token)
-{
-    return HashActivationToken(token);
 }
 
 static int GetActivationTokenDurationHours(IConfiguration configuration)
 {
     var configuredValue = configuration["CompanyPortal:ActivationTokenHours"] ?? configuration["COMPANY_ACTIVATION_TOKEN_HOURS"];
-    return int.TryParse(configuredValue, out var hours) && hours is >= 1 and <= 720
-        ? hours
-        : 72;
+    return CompanyActivationTokenLifetimeResolver.ResolveHours(configuredValue);
 }
 
-static string? ValidateActivationPasswordRequest(CompanyActivationPasswordRequest request)
+static void AddAuditLog(
+    IAppDbContext db,
+    HttpRequest request,
+    AuditActor actor,
+    string action,
+    string entityType,
+    Guid? entityId,
+    string? summary,
+    object? before = null,
+    object? after = null)
 {
-    if (string.IsNullOrWhiteSpace(request.Token))
-    {
-        return "Le token d'activation est obligatoire.";
-    }
-
-    if (request.Password.Length < 10)
-    {
-        return "Le mot de passe doit contenir au moins 10 caracteres.";
-    }
-
-    if (!request.Password.Any(char.IsUpper) || !request.Password.Any(char.IsLower) || !request.Password.Any(char.IsDigit))
-    {
-        return "Le mot de passe doit contenir une majuscule, une minuscule et un chiffre.";
-    }
-
-    if (request.Password != request.ConfirmPassword)
-    {
-        return "Les deux mots de passe ne correspondent pas.";
-    }
-
-    return null;
+    db.AuditLogEntries.Add(AuditLogFactory.Create(
+        actor,
+        action,
+        entityType,
+        entityId,
+        summary,
+        GetAuditRequestContext(request),
+        before,
+        after));
 }
 
-static string? ValidateCountryBrandingRequest(UpdateCountryBrandingRequest request)
+static AuditRequestContext GetAuditRequestContext(HttpRequest request)
 {
-    if (string.IsNullOrWhiteSpace(request.BrandName) || request.BrandName.Trim().Length > 120)
-    {
-        return "Le nom de marque est obligatoire et limite a 120 caracteres.";
-    }
+    var correlationId = request.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
+        ? headerValue.ToString()
+        : request.HttpContext.TraceIdentifier;
 
-    if (!IsHexColor(request.PrimaryColor) || !IsHexColor(request.SecondaryColor) || !IsHexColor(request.AccentColor))
-    {
-        return "Les couleurs doivent etre au format hexadecimal, par exemple #f97316.";
-    }
+    var ipAddress = request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor)
+        ? forwardedFor.ToString().Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+        : request.HttpContext.Connection.RemoteIpAddress?.ToString();
 
-    if (string.IsNullOrWhiteSpace(request.HeroTitle) || request.HeroTitle.Trim().Length > 220)
-    {
-        return "Le titre hero est obligatoire et limite a 220 caracteres.";
-    }
-
-    if (string.IsNullOrWhiteSpace(request.HeroSubtitle) || request.HeroSubtitle.Trim().Length > 600)
-    {
-        return "Le sous-titre hero est obligatoire et limite a 600 caracteres.";
-    }
-
-    if (!string.IsNullOrWhiteSpace(request.HeroImageUrl)
-        && (!Uri.TryCreate(request.HeroImageUrl, UriKind.Absolute, out var heroUri)
-            || heroUri.Scheme is not ("http" or "https")))
-    {
-        return "L'image hero doit etre une URL http ou https valide.";
-    }
-
-    if (string.IsNullOrWhiteSpace(request.MotifStyle) || request.MotifStyle.Trim().Length > 80)
-    {
-        return "Le motif visuel est obligatoire et limite a 80 caracteres.";
-    }
-
-    return null;
-}
-
-static bool IsHexColor(string value)
-{
-    return Regex.IsMatch(value.Trim(), "^#[0-9a-fA-F]{6}$");
-}
-
-static string HashPassword(string password)
-{
-    var salt = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
-    var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{salt}:{password}")));
-    return $"sha256:{salt}:{hash}";
-}
-
-static bool VerifyPassword(string password, string passwordHash)
-{
-    var parts = passwordHash.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    if (parts.Length != 3 || !string.Equals(parts[0], "sha256", StringComparison.OrdinalIgnoreCase))
-    {
-        return false;
-    }
-
-    var expectedHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{parts[1]}:{password}")));
-    return CryptographicOperations.FixedTimeEquals(
-        Encoding.UTF8.GetBytes(expectedHash),
-        Encoding.UTF8.GetBytes(parts[2]));
+    return new AuditRequestContext(
+        ipAddress,
+        request.Headers.UserAgent.ToString(),
+        correlationId);
 }
 
 public partial class Program;

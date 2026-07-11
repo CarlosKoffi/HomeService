@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.PaymentsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="{StaticResource PageWash}"
+    Title="Compte">
+    <ScrollView>
+        <VerticalStackLayout Padding="18" Spacing="16">
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Encaissements terrain" FontSize="24" FontAttributes="Bold" />
+                    <Label Text="Cash a reverser a l'entreprise" />
+                    <Label Text="18 000 XOF" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource KazaGreen}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="Dernieres missions" FontSize="18" FontAttributes="Bold" />
+
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout>
+                        <Label Text="Menage a domicile" FontAttributes="Bold" />
+                        <Label Text="Cash recu - a reverser" FontSize="13" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="1" Text="15 000" FontAttributes="Bold" />
+                </Grid>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout>
+                        <Label Text="Nounou" FontAttributes="Bold" />
+                        <Label Text="Mobile Money - deja trace" FontSize="13" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="1" Text="22 000" FontAttributes="Bold" />
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

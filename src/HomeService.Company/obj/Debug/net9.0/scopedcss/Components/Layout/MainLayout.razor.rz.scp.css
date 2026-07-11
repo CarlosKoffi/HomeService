@@ -3,13 +3,13 @@
 }
 
 main[b-wo4n5eax1o] {
-    min-height: calc(100vh - 92px);
+    min-height: calc(100vh - 76px);
 }
 
 .content[b-wo4n5eax1o] {
     margin: 0 auto;
-    max-width: 1120px;
-    padding: 2rem;
+    max-width: 1180px;
+    padding: 1.1rem 1.5rem 2rem;
 }
 
 #blazor-error-ui[b-wo4n5eax1o] {
@@ -35,6 +35,6 @@ main[b-wo4n5eax1o] {
 
 @media (max-width: 720px) {
     .content[b-wo4n5eax1o] {
-        padding: 1.25rem;
+        padding: .9rem 1rem 1.5rem;
     }
 }
