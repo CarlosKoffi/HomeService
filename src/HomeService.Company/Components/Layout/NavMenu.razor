@@ -3,7 +3,7 @@
 @inject IJSRuntime Js
 @inject NavigationManager Navigation
 
-<header class="site-header">
+<header class="site-header @HeaderThemeClass">
     <a class="brand" href="">Kaza</a>
 
     <input type="checkbox" id="menu-toggle" class="menu-toggle" />
@@ -48,6 +48,19 @@
 
 @code {
     private CompanyPortalSessionResponse? Session { get; set; }
+    private string HeaderThemeClass
+    {
+        get
+        {
+            var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').ToLowerInvariant();
+            return path switch
+            {
+                "bleu" => "theme-blue",
+                "vert" => "theme-green",
+                _ => string.Empty
+            };
+        }
+    }
 
     protected override void OnInitialized()
     {

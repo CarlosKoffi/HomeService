@@ -1,4 +1,6 @@
 @page "/"
+@page "/bleu"
+@page "/vert"
 @using HomeService.Company.Services
 @using HomeService.Contracts.Branding
 @inject PlatformApiClient ApiClient
@@ -14,6 +16,7 @@
     </section>
 }
 
+<div class="@LandingThemeClass">
 <section id="home" class="hero hero-company country-branded @MotifClass" style="@BrandStyle">
     <div class="hero-copy">
         <p class="eyebrow">Partenariat entreprises</p>
@@ -327,6 +330,7 @@
         <a href="#faq">Conditions partenaires</a>
     </nav>
 </footer>
+</div>
 
 @code {
     private CountryBrandingResponse Branding { get; set; } = DefaultBranding;
@@ -339,8 +343,28 @@
     private string ContactBody { get; set; } = string.Empty;
     private string? ContactMessage { get; set; }
 
-    private string BrandStyle =>
-        $"--country-primary:{Branding.PrimaryColor}; --country-secondary:{Branding.SecondaryColor}; --country-accent:{Branding.AccentColor};";
+    private string LandingVariant
+    {
+        get
+        {
+            var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').ToLowerInvariant();
+            return path is "bleu" or "vert" ? path : string.Empty;
+        }
+    }
+
+    private string LandingThemeClass => LandingVariant switch
+    {
+        "bleu" => "company-theme company-theme-blue",
+        "vert" => "company-theme company-theme-green",
+        _ => string.Empty
+    };
+
+    private string BrandStyle => LandingVariant switch
+    {
+        "bleu" => "--country-primary:#0a66c2; --country-secondary:#ffffff; --country-accent:#0a66c2;",
+        "vert" => "--country-primary:#12824c; --country-secondary:#ffffff; --country-accent:#12824c;",
+        _ => $"--country-primary:{Branding.PrimaryColor}; --country-secondary:{Branding.SecondaryColor}; --country-accent:{Branding.AccentColor};"
+    };
 
     private string MotifClass => Branding.MotifStyle == "minimal" ? "motif-minimal" : "motif-flag-ribbon";
 

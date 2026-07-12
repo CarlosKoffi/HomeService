@@ -1662,6 +1662,187 @@ textarea {
     justify-items: start;
 }
 
+.provider-acquisition .provider-site-hero {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 360px);
+}
+
+.provider-earn-hero h1 {
+    max-width: 720px;
+}
+
+.provider-phone-illustration {
+    display: grid;
+    gap: 12px;
+    justify-self: end;
+    width: min(100%, 330px);
+    padding: 18px;
+    border: 8px solid #07121f;
+    border-radius: 34px;
+    background: linear-gradient(180deg, #f8fffb, #ffffff);
+    box-shadow: 0 28px 70px rgba(2, 8, 23, .18);
+}
+
+.provider-phone-top {
+    width: 74px;
+    height: 6px;
+    margin: 0 auto 4px;
+    border-radius: 999px;
+    background: #07121f;
+}
+
+.provider-phone-card {
+    display: grid;
+    gap: 4px;
+    padding: 14px;
+    border: 1px solid rgba(0, 135, 83, .18);
+    border-radius: 20px;
+    background: #ffffff;
+}
+
+.provider-phone-card.active {
+    background: linear-gradient(135deg, rgba(255, 130, 0, .1), #ffffff 52%);
+}
+
+.provider-phone-card span {
+    color: var(--green);
+    font-size: .68rem;
+    font-weight: 950;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.provider-phone-card strong {
+    color: var(--ink);
+    font-size: 1rem;
+    font-weight: 850;
+}
+
+.provider-phone-card small {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.provider-phone-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.provider-phone-actions span,
+.provider-phone-actions strong {
+    display: grid;
+    min-height: 42px;
+    place-items: center;
+    border-radius: 999px;
+    font-size: .88rem;
+    font-weight: 850;
+}
+
+.provider-phone-actions span {
+    background: var(--orange-soft);
+    color: var(--ink);
+}
+
+.provider-phone-actions strong {
+    background: var(--green);
+    color: #ffffff;
+}
+
+.provider-choice-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.provider-choice-row article {
+    display: grid;
+    gap: 10px;
+    padding: 20px;
+    border: 1px solid rgba(0, 135, 83, .18);
+    border-radius: 24px;
+    background: #ffffff;
+}
+
+.provider-choice-row strong {
+    color: var(--ink);
+    font-size: 1.08rem;
+}
+
+.provider-choice-row p {
+    color: var(--ink);
+    line-height: 1.45;
+}
+
+.provider-choice-row a {
+    color: var(--green);
+    font-weight: 900;
+    text-decoration: underline;
+}
+
+.provider-how-simple {
+    display: grid;
+    gap: 18px;
+}
+
+.provider-simple-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.provider-simple-steps article {
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid var(--muted-line);
+    border-radius: 22px;
+    background: #ffffff;
+}
+
+.provider-simple-steps span {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--green);
+    color: #ffffff;
+    font-weight: 950;
+}
+
+.provider-simple-steps strong,
+.provider-simple-steps p {
+    color: var(--ink);
+}
+
+.provider-detail-strip {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.provider-detail-strip details {
+    padding: 18px 20px;
+    border: 1px solid rgba(0, 135, 83, .18);
+    border-radius: 22px;
+    background: #ffffff;
+}
+
+.provider-detail-strip summary {
+    color: var(--ink);
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.provider-detail-strip p {
+    margin-top: 10px;
+    color: var(--ink);
+    line-height: 1.5;
+}
+
 .provider-mobile-preview-page {
     padding-bottom: 48px;
 }
@@ -1809,6 +1990,17 @@ textarea {
         min-height: auto;
         padding: 22px;
         border-radius: 26px;
+    }
+
+    .provider-acquisition .provider-site-hero,
+    .provider-choice-row,
+    .provider-simple-steps {
+        grid-template-columns: 1fr;
+    }
+
+    .provider-phone-illustration {
+        justify-self: stretch;
+        width: 100%;
     }
 
     .provider-step-grid,

@@ -225,3 +225,104 @@
         display: flex;
     }
 }
+
+.site-header.theme-blue,
+.site-header.theme-green {
+    border-image: none;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .045);
+    color: #000000;
+    font-family: "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
+}
+
+.site-header.theme-blue {
+    background: rgba(247, 250, 255, .96);
+    border-bottom-color: #d8e7f7;
+    border-top-color: #0a66c2;
+}
+
+.site-header.theme-green {
+    background: rgba(248, 255, 251, .96);
+    border-bottom-color: #d9efe2;
+    border-top-color: #12824c;
+}
+
+.site-header.theme-blue .brand,
+.site-header.theme-green .brand,
+.site-header.theme-blue .site-nav ::deep a,
+.site-header.theme-green .site-nav ::deep a,
+.site-header.theme-blue .site-nav a,
+.site-header.theme-green .site-nav a {
+    color: #000000;
+    font-weight: 650;
+}
+
+.site-header.theme-blue .site-nav ::deep a.active,
+.site-header.theme-blue .site-nav a.section-active,
+.site-header.theme-blue .site-nav ::deep a:hover,
+.site-header.theme-blue .site-nav a:hover {
+    background: #eef6ff;
+    color: #000000;
+}
+
+.site-header.theme-green .site-nav ::deep a.active,
+.site-header.theme-green .site-nav a.section-active,
+.site-header.theme-green .site-nav ::deep a:hover,
+.site-header.theme-green .site-nav a:hover {
+    background: #edf9f1;
+    color: #000000;
+}
+
+.site-header.theme-blue .public-nav a.section-active {
+    background: #eef6ff;
+    box-shadow: inset 0 -2px 0 #0a66c2;
+}
+
+.site-header.theme-green .public-nav a.section-active {
+    background: #edf9f1;
+    box-shadow: inset 0 -2px 0 #12824c;
+}
+
+.site-header.theme-blue .public-nav a.section-active::after {
+    background: #0a66c2;
+}
+
+.site-header.theme-green .public-nav a.section-active::after {
+    background: #12824c;
+}
+
+.site-header.theme-blue .header-primary {
+    background: #0a66c2;
+    color: #ffffff !important;
+}
+
+.site-header.theme-blue .header-primary:hover {
+    background: #004182 !important;
+}
+
+.site-header.theme-green .header-primary {
+    background: #12824c;
+    color: #ffffff !important;
+}
+
+.site-header.theme-green .header-primary:hover {
+    background: #0f6f41 !important;
+}
+
+.site-header.theme-blue .header-secondary,
+.site-header.theme-green .header-secondary,
+.site-header.theme-blue .logout-button,
+.site-header.theme-green .logout-button {
+    color: #000000 !important;
+}
+
+.site-header.theme-blue .header-secondary,
+.site-header.theme-blue .logout-button {
+    background: #eef6ff;
+    border-color: #d8e7f7;
+}
+
+.site-header.theme-green .header-secondary,
+.site-header.theme-green .logout-button {
+    background: #edf9f1;
+    border-color: #d9efe2;
+}

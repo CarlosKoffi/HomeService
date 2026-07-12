@@ -4101,3 +4101,182 @@ h3 {
         width: 100%;
     }
 }
+
+/* Preview themes available only on /bleu and /vert. */
+.company-theme {
+    color: #000000;
+    font-family: "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
+}
+
+.company-theme-blue {
+    --preview-main: #0a66c2;
+    --preview-main-dark: #004182;
+    --preview-page: #ffffff;
+    --preview-panel: #f6faff;
+    --preview-panel-strong: #eef6ff;
+    --preview-line: #d8e7f7;
+    --preview-shadow: rgba(10, 102, 194, .07);
+}
+
+.company-theme-green {
+    --preview-main: #12824c;
+    --preview-main-dark: #0f6f41;
+    --preview-page: #ffffff;
+    --preview-panel: #f8fffb;
+    --preview-panel-strong: #edf9f1;
+    --preview-line: #d9efe2;
+    --preview-shadow: rgba(18, 130, 76, .07);
+}
+
+.company-theme .hero h1,
+.company-theme .landing-section-head h2,
+.company-theme .company-dashboard-hero h1,
+.company-theme .company-profile-hero h1,
+.company-theme .workspace-header h1 {
+    font-weight: 650;
+    letter-spacing: 0;
+}
+
+.company-theme .hero-company {
+    background: linear-gradient(135deg, var(--preview-panel), #ffffff 72%);
+    border-color: var(--preview-line);
+    box-shadow: 0 18px 42px var(--preview-shadow);
+}
+
+.company-theme .hero h1 span {
+    background: var(--preview-main);
+    border-radius: 6px;
+    color: #ffffff;
+    transform: none;
+}
+
+.company-theme .primary-action,
+.company-theme .timeline-six strong {
+    background: var(--preview-main) !important;
+    box-shadow: 0 10px 24px var(--preview-shadow);
+    color: #ffffff !important;
+}
+
+.company-theme .primary-action:hover {
+    background: var(--preview-main-dark) !important;
+}
+
+.company-theme .secondary-action,
+.company-theme .hero-service-strip span,
+.company-theme .service-strip span,
+.company-theme .platform-icon,
+.company-theme .service-category-grid article span,
+.company-theme .feature-grid .platform-icon,
+.company-theme .contact-form input,
+.company-theme .contact-form select,
+.company-theme .contact-form textarea,
+.company-theme .registration-form input,
+.company-theme .registration-form textarea,
+.company-theme .activation-form input {
+    background: var(--preview-panel-strong) !important;
+    border-color: var(--preview-line) !important;
+    color: #000000 !important;
+}
+
+.company-theme .content > .landing-section,
+.company-theme .contact-form-section,
+.company-theme .dashboard-preview-section,
+.company-theme .requirements-section,
+.company-theme .commitment-section,
+.company-theme .pricing-section,
+.company-theme .faq-section {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+.company-theme .content > .landing-section .landing-section-head,
+.company-theme .content > .landing-section > .landing-section-head,
+.company-theme .contact-copy,
+.company-theme .pricing-section > div,
+.company-theme .commitment-card,
+.company-theme .verified-badge-card,
+.company-theme .control-list article,
+.company-theme .benefit-list article,
+.company-theme .timeline-six article,
+.company-theme .service-category-grid article,
+.company-theme .requirement-list,
+.company-theme .dashboard-mockup,
+.company-theme .dashboard-mockup aside,
+.company-theme .mockup-stats article,
+.company-theme .mockup-grid section,
+.company-theme .management-grid span,
+.company-theme .faq-grid details,
+.company-theme .contact-form,
+.company-theme .site-footer,
+.company-theme .contact-shortcuts span,
+.company-theme .submission-confirmation {
+    background: var(--preview-panel) !important;
+    border-color: var(--preview-line) !important;
+    box-shadow: none !important;
+}
+
+.company-theme .eyebrow,
+.company-theme .lead,
+.company-theme .landing-section-head p,
+.company-theme .control-list strong,
+.company-theme .control-list span,
+.company-theme .benefit-list h3,
+.company-theme .benefit-list p,
+.company-theme .timeline-six h3,
+.company-theme .timeline-six p,
+.company-theme .service-category-grid article span,
+.company-theme .service-category-grid strong,
+.company-theme .requirement-list li,
+.company-theme .verified-badge-card strong,
+.company-theme .dashboard-mockup p,
+.company-theme .dashboard-mockup aside strong,
+.company-theme .mockup-grid h3,
+.company-theme .mockup-grid p,
+.company-theme .management-grid span,
+.company-theme .commitment-card h2,
+.company-theme .commitment-card li,
+.company-theme .pricing-section strong,
+.company-theme .pricing-section p,
+.company-theme .faq-grid summary,
+.company-theme .faq-grid p,
+.company-theme .contact-copy p,
+.company-theme .contact-shortcuts span,
+.company-theme .site-footer strong,
+.company-theme .site-footer a,
+.company-theme .contact-form label,
+.company-theme .contact-form input,
+.company-theme .contact-form select,
+.company-theme .contact-form textarea {
+    color: #000000 !important;
+}
+
+.company-theme .platform-icon svg,
+.company-theme .service-category-grid svg {
+    color: #000000;
+    stroke: #000000;
+}
+
+.company-theme .benefit-list {
+    border-top-color: var(--preview-line);
+}
+
+.company-theme .benefit-list article {
+    border-bottom-color: var(--preview-line);
+}
+
+.company-theme .benefit-list article::before,
+.company-theme .requirement-list li::before {
+    background: var(--preview-main);
+}
+
+.company-theme .dashboard-mockup,
+.company-theme .requirements-layout,
+.company-theme .contact-form-section,
+.company-theme .commitment-section,
+.company-theme .pricing-section {
+    gap: 1.1rem;
+}
+
