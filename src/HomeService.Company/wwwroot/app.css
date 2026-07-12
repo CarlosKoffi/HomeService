@@ -1773,7 +1773,7 @@ h3 {
 }
 
 .control-list article,
-.service-category-grid span,
+.service-category-grid article,
 .management-grid span,
 .commitment-card,
 .pricing-section,
@@ -1889,20 +1889,67 @@ h3 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.service-category-grid span,
+.service-icon-defs {
+    height: 0;
+    overflow: hidden;
+    position: absolute;
+    width: 0;
+}
+
+.service-category-grid article {
+    align-items: center;
+    display: flex;
+    gap: .82rem;
+    min-height: 58px;
+    padding: .72rem .82rem;
+}
+
+.service-category-grid article span {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid rgba(18, 130, 76, .18);
+    border-radius: 12px;
+    color: var(--country-primary);
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 38px;
+    justify-content: center;
+    width: 38px;
+}
+
+.service-category-grid article:nth-child(even) span {
+    border-color: rgba(249, 115, 22, .2);
+    color: var(--country-accent);
+}
+
+.service-category-grid svg {
+    display: block;
+    fill: none;
+    height: 20px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.75;
+    width: 20px;
+}
+
+.service-category-grid strong,
 .management-grid span {
     color: #000;
     font-size: .94rem;
     font-weight: 680;
+}
+
+.management-grid span {
     padding: .78rem .9rem;
 }
 
-.service-category-grid span:nth-child(odd),
+.service-category-grid article:nth-child(odd),
 .management-grid span:nth-child(odd) {
     border-color: var(--line);
 }
 
-.service-category-grid span:nth-child(even),
+.service-category-grid article:nth-child(even),
 .management-grid span:nth-child(even) {
     border-color: var(--line);
 }
