@@ -7,107 +7,119 @@
 <PageTitle>Kaza Prestataire - Acces</PageTitle>
 
 <main class="provider-mobile-shell onboarding-shell">
-    <section class="screen-heading compact-heading">
+    <section class="screen-heading compact-heading onboarding-hero-copy">
         <span>Kaza prestataire</span>
-        <h1>Acces prestataire</h1>
-        <p>Choisissez votre mode d'entree. Une seule etape a la fois, simple et rapide.</p>
+        <h1>Bienvenue</h1>
+        <p>Connectez-vous si une entreprise vous a deja cree un acces, ou creez votre profil pour proposer vos services.</p>
     </section>
 
-    <nav class="onboarding-tabs" aria-label="Choix du parcours prestataire">
-        <button type="button" class="@TabClass("code")" @onclick='() => SetMode("code")'>
-            <span>Code</span>
-            <small>Entreprise</small>
-        </button>
+    <nav class="onboarding-tabs onboarding-primary-tabs" aria-label="Choix du parcours prestataire">
         <button type="button" class="@TabClass("login")" @onclick='() => SetMode("login")'>
             <span>Connexion</span>
-            <small>Compte actif</small>
+            <small>Code ou telephone</small>
         </button>
         <button type="button" class="@TabClass("register")" @onclick='() => SetMode("register")'>
-            <span>Creer</span>
-            <small>Interim</small>
+            <span>Creer un compte</span>
+            <small>Profil interim</small>
         </button>
     </nav>
 
-    @if (ActiveMode == "code")
+    @if (ActiveMode == "login")
     {
         <section class="onboarding-choice-card highlighted">
-            <div class="onboarding-icon">
-                <svg viewBox="0 0 24 24"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h10" /></svg>
-            </div>
-            <div>
-                <span>Activation entreprise</span>
-                <h2>Code de preinscription</h2>
-                <p>Utilisez le code cree par l'entreprise qui vous rattache comme prestataire.</p>
+            <div class="onboarding-card-head">
+                <div class="onboarding-icon">
+                    <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3" /><path d="M6 11h12v9H6z" /><path d="M12 15v2" /></svg>
+                </div>
+                <div>
+                    <span>Acces prestataire</span>
+                    <h2>Connexion</h2>
+                    <p>Activez votre acces avec le code recu ou connectez-vous avec votre telephone.</p>
+                </div>
             </div>
 
-            <label>
-                Code recu
-                <input placeholder="Ex: KAZA-482135" @bind="InvitationCode" @bind:event="oninput" />
-            </label>
+            <div class="login-method-tabs" role="tablist" aria-label="Mode de connexion">
+                <button type="button" class="@LoginMethodClass("code")" @onclick='() => SetLoginMethod("code")'>
+                    <strong>Code</strong>
+                    <span>Activation</span>
+                </button>
+                <button type="button" class="@LoginMethodClass("password")" @onclick='() => SetLoginMethod("password")'>
+                    <strong>Telephone</strong>
+                    <span>Compte actif</span>
+                </button>
+            </div>
 
-            @if (Invitation is not null)
+            @if (LoginMethod == "code")
             {
-                <div class="invitation-preview">
-                    <strong>@Invitation.ProviderName</strong>
-                    <span>@Invitation.CompanyName</span>
-                    <small>Valable jusqu'au @Invitation.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                <div class="onboarding-form-block">
+                    <label>
+                        Code recu
+                        <input placeholder="Ex: KAZA-482135" @bind="InvitationCode" @bind:event="oninput" />
+                    </label>
+
+                    @if (Invitation is not null)
+                    {
+                        <div class="invitation-preview">
+                            <strong>@Invitation.ProviderName</strong>
+                            <span>@Invitation.CompanyName</span>
+                            <small>Valable jusqu'au @Invitation.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                    }
+
+                    <div class="two-field-grid">
+                        <label>Mot de passe<input type="password" autocomplete="new-password" placeholder="Minimum 8 caracteres" @bind="ActivationPassword" /></label>
+                        <label>Confirmation<input type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" @bind="ActivationConfirmPassword" /></label>
+                    </div>
+
+                    <label class="remember-row">
+                        <input type="checkbox" @bind="RememberMe" />
+                        <span>Rester connecte sur ce telephone</span>
+                    </label>
+
+                    @if (!string.IsNullOrWhiteSpace(ActivationMessage))
+                    {
+                        <p class="field-message">@ActivationMessage</p>
+                    }
+
+                    <div class="action-row">
+                        <button type="button" class="ghost-action" @onclick="LoadInvitationAsync" disabled="@IsBusy">Verifier</button>
+                        <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsBusy">Activer</button>
+                    </div>
                 </div>
             }
-
-            <div class="two-field-grid">
-                <label>Mot de passe<input type="password" autocomplete="new-password" placeholder="Minimum 8 caracteres" @bind="ActivationPassword" /></label>
-                <label>Confirmation<input type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" @bind="ActivationConfirmPassword" /></label>
-            </div>
-
-            <label class="remember-row">
-                <input type="checkbox" @bind="RememberMe" />
-                <span>Rester connecte sur ce telephone</span>
-            </label>
-
-            @if (!string.IsNullOrWhiteSpace(ActivationMessage))
+            else
             {
-                <p class="field-message">@ActivationMessage</p>
+                <div class="onboarding-form-block">
+                    <label>Telephone<input type="tel" autocomplete="tel" placeholder="+225 07 00 00 00 00" @bind="PhoneNumber" /></label>
+                    <label>Mot de passe<input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="LoginPassword" /></label>
+
+                    <label class="remember-row">
+                        <input type="checkbox" @bind="RememberMe" />
+                        <span>Rester connecte sur ce telephone</span>
+                    </label>
+
+                    @if (!string.IsNullOrWhiteSpace(LoginMessage))
+                    {
+                        <p class="field-message">@LoginMessage</p>
+                    }
+
+                    <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
+                </div>
             }
-
-            <div class="action-row">
-                <button type="button" class="ghost-action" @onclick="LoadInvitationAsync" disabled="@IsBusy">Verifier</button>
-                <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsBusy">Activer</button>
-            </div>
-        </section>
-    }
-    else if (ActiveMode == "login")
-    {
-        <section class="onboarding-choice-card">
-            <div class="onboarding-icon orange">
-                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
-            </div>
-            <div>
-                <span>Compte actif</span>
-                <h2>Connexion</h2>
-                <p>Connectez-vous avec le numero de telephone connu par votre entreprise.</p>
-            </div>
-
-            <label>Telephone<input type="tel" autocomplete="tel" placeholder="+225 07 00 00 00 00" @bind="PhoneNumber" /></label>
-            <label>Mot de passe<input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="LoginPassword" /></label>
-
-            @if (!string.IsNullOrWhiteSpace(LoginMessage))
-            {
-                <p class="field-message">@LoginMessage</p>
-            }
-
-            <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
         </section>
     }
     else
     {
         <section class="onboarding-choice-card">
-            <div class="onboarding-icon">
-                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M19 8v6" /><path d="M16 11h6" /></svg>
-            </div>
-            <div>
-                <span>Nouveau prestataire</span>
-                <h2>Creer mon compte</h2>
-                <p>Vous creez un profil demandeur d'interim. Une entreprise devra ensuite vous valider avant les missions.</p>
+            <div class="onboarding-card-head">
+                <div class="onboarding-icon orange">
+                    <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M19 8v6" /><path d="M16 11h6" /></svg>
+                </div>
+                <div>
+                    <span>Nouveau prestataire</span>
+                    <h2>Creer mon compte</h2>
+                    <p>Preparez votre profil. Une entreprise devra vous valider avant les missions.</p>
+                </div>
             </div>
 
             <div class="register-fieldset">
@@ -203,7 +215,8 @@
 </main>
 
 @code {
-    private string ActiveMode { get; set; } = "code";
+    private string ActiveMode { get; set; } = "login";
+    private string LoginMethod { get; set; } = "code";
     private string InvitationCode { get; set; } = string.Empty;
     private string ActivationPassword { get; set; } = string.Empty;
     private string ActivationConfirmPassword { get; set; } = string.Empty;
@@ -227,7 +240,7 @@
         "Adjame - 220 logements",
         "Adjame - Williamsville",
         "Anyama - Centre",
-        "Attécoubé - Locodjro",
+        "Attecoube - Locodjro",
         "Bingerville - Centre",
         "Cocody - Angre",
         "Cocody - Deux Plateaux",
@@ -262,7 +275,8 @@
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
         if (query.TryGetValue("code", out var code))
         {
-            ActiveMode = "code";
+            ActiveMode = "login";
+            LoginMethod = "code";
             InvitationCode = code.ToString();
             await LoadInvitationAsync();
         }
@@ -277,6 +291,15 @@
     }
 
     private string TabClass(string mode) => ActiveMode == mode ? "active" : string.Empty;
+
+    private void SetLoginMethod(string method)
+    {
+        LoginMethod = method;
+        ActivationMessage = null;
+        LoginMessage = null;
+    }
+
+    private string LoginMethodClass(string method) => LoginMethod == method ? "active" : string.Empty;
 
     private async Task LoadInvitationAsync()
     {
@@ -391,6 +414,7 @@
         {
             RegisterMessage = "Profil cree. Connectez-vous avec votre telephone et mot de passe.";
             ActiveMode = "login";
+            LoginMethod = "password";
             PhoneNumber = RegisterPhoneNumber;
             return;
         }
