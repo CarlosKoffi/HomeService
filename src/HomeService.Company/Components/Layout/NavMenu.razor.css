@@ -26,21 +26,66 @@
 .site-nav {
     align-items: center;
     display: flex;
-    gap: .65rem;
+    gap: .45rem;
 }
 
-.site-nav ::deep a {
+.site-nav ::deep a,
+.site-nav a {
     border-radius: 999px;
     color: #334155;
     font-weight: 680;
-    padding: .65rem .9rem;
+    padding: .6rem .72rem;
     text-decoration: none;
 }
 
+.public-nav a {
+    font-size: .9rem;
+}
+
 .site-nav ::deep a.active,
-.site-nav ::deep a:hover {
+.site-nav ::deep a:hover,
+.site-nav a:hover {
     background: #eaf7ef;
     color: #12824c;
+}
+
+.header-actions {
+    align-items: center;
+    display: flex;
+    gap: .55rem;
+    margin-left: .4rem;
+}
+
+.header-primary,
+.header-secondary {
+    border-radius: 999px !important;
+    font-weight: 850 !important;
+    padding: .72rem 1rem !important;
+}
+
+.header-primary {
+    background: #f97316;
+    color: #fff !important;
+}
+
+.header-secondary {
+    background: #fff;
+    border: 1px solid #d8dee8;
+    color: #000 !important;
+}
+
+.header-primary:hover {
+    background: #ea580c !important;
+    color: #fff !important;
+}
+
+.portal-header-nav {
+    gap: .45rem;
+}
+
+.portal-header-nav ::deep a {
+    font-size: .9rem;
+    padding: .6rem .72rem;
 }
 
 .session-chip {
@@ -123,6 +168,17 @@
     .site-nav ::deep a {
         border-radius: 12px;
         padding: .75rem .85rem;
+    }
+
+    .site-nav a {
+        border-radius: 12px;
+        padding: .75rem .85rem;
+    }
+
+    .header-actions {
+        align-items: stretch;
+        flex-direction: column;
+        margin-left: 0;
     }
 
     .session-chip {

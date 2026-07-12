@@ -13,17 +13,30 @@
         <span></span>
     </label>
 
-    <nav class="site-nav">
-        <NavLink href="" Match="NavLinkMatch.All">Accueil</NavLink>
-        <NavLink href="concept">Concept</NavLink>
+    <nav class="site-nav @(Session is null ? "public-nav" : "portal-header-nav")">
         @if (Session is null)
         {
-            <NavLink href="register">Inscription</NavLink>
-            <NavLink href="dashboard">Espace entreprise</NavLink>
+            <a href="/#home">Accueil</a>
+            <a href="/#concept">Concept</a>
+            <a href="/#benefits">Avantages</a>
+            <a href="/#how-it-works">Fonctionnement</a>
+            <a href="/#requirements">Conditions</a>
+            <a href="/#partner-dashboard">Portail</a>
+            <a href="/#faq">FAQ</a>
+            <a href="/#contact">Contact</a>
+            <div class="header-actions">
+                <a class="header-secondary" href="dashboard">Se connecter</a>
+                <a class="header-primary" href="register">Devenir partenaire</a>
+            </div>
         }
         else
         {
-            <NavLink href="dashboard">Mon portail</NavLink>
+            <NavLink href="dashboard" Match="NavLinkMatch.All">Tableau de bord</NavLink>
+            <NavLink href="company-profile">Informations</NavLink>
+            <NavLink href="employees">Employes</NavLink>
+            <NavLink href="interim-candidates">Interim</NavLink>
+            <NavLink href="operations">Missions</NavLink>
+            <NavLink href="accounts">Encaissements</NavLink>
             <div class="session-chip" title="@Session.Email">
                 <strong>@Session.CompanyName</strong>
                 <span>@Session.Email</span>

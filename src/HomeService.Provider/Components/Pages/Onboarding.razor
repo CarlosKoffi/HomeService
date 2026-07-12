@@ -9,13 +9,13 @@
 <main class="provider-mobile-shell onboarding-shell">
     <section class="screen-heading compact-heading onboarding-hero-copy">
         <span>Kaza prestataire</span>
-        <h1>Bienvenue</h1>
-        <p>Connectez-vous si une entreprise vous a deja cree un acces, ou creez votre profil pour proposer vos services.</p>
+        <h1>Se connecter</h1>
+        <p>Accedez a vos missions ou creez votre compte prestataire.</p>
     </section>
 
     <nav class="onboarding-tabs onboarding-primary-tabs" aria-label="Choix du parcours prestataire">
         <button type="button" class="@TabClass("login")" @onclick='() => SetMode("login")'>
-            <span>Connexion</span>
+            <span>Se connecter</span>
             <small>Code ou telephone</small>
         </button>
         <button type="button" class="@TabClass("register")" @onclick='() => SetMode("register")'>
@@ -32,20 +32,18 @@
                     <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3" /><path d="M6 11h12v9H6z" /><path d="M12 15v2" /></svg>
                 </div>
                 <div>
-                    <span>Acces prestataire</span>
-                    <h2>Connexion</h2>
-                    <p>Activez votre acces avec le code recu ou connectez-vous avec votre telephone.</p>
+                    <span>Connexion</span>
+                    <h2>Se connecter</h2>
+                    <p>Avec un code d'activation ou votre numero de telephone.</p>
                 </div>
             </div>
 
             <div class="login-method-tabs" role="tablist" aria-label="Mode de connexion">
                 <button type="button" class="@LoginMethodClass("code")" @onclick='() => SetLoginMethod("code")'>
-                    <strong>Code</strong>
-                    <span>Activation</span>
+                    <strong>Code activation</strong>
                 </button>
                 <button type="button" class="@LoginMethodClass("password")" @onclick='() => SetLoginMethod("password")'>
-                    <strong>Telephone</strong>
-                    <span>Compte actif</span>
+                    <strong>Acces</strong>
                 </button>
             </div>
 
@@ -116,9 +114,9 @@
                     <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M19 8v6" /><path d="M16 11h6" /></svg>
                 </div>
                 <div>
-                    <span>Nouveau prestataire</span>
+                    <span>Candidature prestataire</span>
                     <h2>Creer mon compte</h2>
-                    <p>Preparez votre profil. Une entreprise devra vous valider avant les missions.</p>
+                    <p>Renseignez vos informations et vos services. Une entreprise devra valider votre profil avant les missions.</p>
                 </div>
             </div>
 
@@ -207,10 +205,10 @@
 
     <section class="profile-completion-banner onboarding-note">
         <div>
-            <span>Important</span>
-            <strong>Validation entreprise</strong>
+            <span>Opportunites</span>
+            <strong>Interim</strong>
         </div>
-        <p>Sans validation par une entreprise, vous pouvez preparer votre profil, mais vous ne recevez pas encore de missions.</p>
+        <p>Trouvez une entreprise dans votre secteur et realisez des missions grace a votre collaboration.</p>
     </section>
 </main>
 
