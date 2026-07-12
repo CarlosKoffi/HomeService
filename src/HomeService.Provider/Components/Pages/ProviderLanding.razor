@@ -3,13 +3,14 @@
 <PageTitle>Kaza Prestataire</PageTitle>
 
 <main class="provider-site">
-    <section class="provider-site-hero">
+    <section id="home" class="provider-site-hero">
         <div class="provider-site-copy">
             <span class="provider-eyebrow">Kaza prestataire</span>
-            <h1>Recevez des missions serieuses avec des entreprises verifiees.</h1>
+            <h1>Des opportunites de travail a portee de smartphone.</h1>
             <p>
-                Creez votre profil, rattachez-vous a une entreprise ou postulez comme interim.
-                Kaza vous aide a recevoir des missions claires, suivies et adaptees a vos services.
+                Kaza permet aux prestataires de proposer leurs services, de rejoindre une entreprise partenaire
+                ou d'activer un compte deja cree par leur employeur. Une fois valide, vous recevez des missions claires,
+                suivies et adaptees a votre metier.
             </p>
             <div class="provider-site-actions">
                 <a class="provider-primary-link" href="/onboarding">Se connecter / creer un compte</a>
@@ -18,26 +19,53 @@
         </div>
 
         <div class="provider-trust-panel" aria-label="Parcours prestataire">
-            <strong>Parcours simple</strong>
+            <strong>Deux portes d'entree</strong>
             <div>
                 <span>1</span>
-                <p>Choisissez vos services et votre zone.</p>
+                <p>Votre entreprise vous invite avec un code d'activation.</p>
             </div>
             <div>
                 <span>2</span>
-                <p>Une entreprise valide votre profil.</p>
+                <p>Vous creez un profil interim pour proposer vos services.</p>
             </div>
             <div>
                 <span>3</span>
-                <p>Recevez et suivez vos missions depuis le telephone.</p>
+                <p>Une entreprise valide votre profil avant les missions.</p>
             </div>
         </div>
     </section>
 
-    <section class="provider-site-section provider-how">
+    <section class="provider-site-section provider-entry-options">
         <div class="provider-section-head">
-            <span class="provider-eyebrow">Comment ca marche</span>
-            <h2>Un chemin clair pour commencer a travailler.</h2>
+            <span class="provider-eyebrow">Deux facons de commencer</span>
+            <h2>Vous venez par une entreprise ou vous cherchez de l'interim.</h2>
+        </div>
+        <div class="provider-option-grid">
+            <article>
+                <span>Option 1</span>
+                <h3>Votre entreprise vous invite</h3>
+                <p>
+                    L'entreprise qui vous emploie cree votre fiche et vous donne un code.
+                    Vous activez votre compte, completez votre profil et recevez les missions qu'elle vous affecte.
+                </p>
+                <a href="/onboarding">Activer avec un code</a>
+            </article>
+            <article>
+                <span>Option 2</span>
+                <h3>Vous cherchez de l'interim</h3>
+                <p>
+                    Vous creez votre profil, choisissez vos services et votre zone.
+                    Kaza vous propose aux entreprises proches qui recherchent vos competences.
+                </p>
+                <a href="/onboarding">Creer mon profil</a>
+            </article>
+        </div>
+    </section>
+
+    <section id="fonctionnement" class="provider-site-section provider-how">
+        <div class="provider-section-head">
+            <span class="provider-eyebrow">Fonctionnement</span>
+            <h2>Un parcours clair, de l'inscription a la mission.</h2>
         </div>
         <div class="provider-step-grid">
             <article>
@@ -47,13 +75,13 @@
             </article>
             <article>
                 <strong>02</strong>
-                <h3>Rattachez-vous</h3>
-                <p>Activez un code recu par une entreprise ou postulez comme demandeur d'interim.</p>
+                <h3>Choisissez votre parcours</h3>
+                <p>Activez un code entreprise ou postulez comme demandeur d'interim dans votre secteur.</p>
             </article>
             <article>
                 <strong>03</strong>
-                <h3>Faites valider</h3>
-                <p>L'entreprise controle votre profil avant de vous envoyer en mission.</p>
+                <h3>Faites-vous valider</h3>
+                <p>Une entreprise verifie votre profil avant de vous envoyer chez les clients.</p>
             </article>
             <article>
                 <strong>04</strong>
@@ -63,16 +91,18 @@
         </div>
     </section>
 
-    <section class="provider-site-section provider-benefits">
+    <section id="avantages" class="provider-site-section provider-benefits">
         <div class="provider-section-head">
-            <span class="provider-eyebrow">Pourquoi rejoindre</span>
-            <h2>Une plateforme pensee pour le terrain.</h2>
+            <span class="provider-eyebrow">Avantages</span>
+            <h2>Plus d'opportunites, moins d'incertitude.</h2>
         </div>
         <div class="provider-benefit-list">
             <article><h3>Missions organisees</h3><p>Chaque demande arrive avec le service, la zone, le client et les consignes utiles.</p></article>
             <article><h3>Entreprises responsables</h3><p>Vous travaillez avec des entreprises qui suivent leurs prestataires et leurs interventions.</p></article>
-            <article><h3>Profil valorise</h3><p>Photos, documents, experience et services maitrisés permettent de mieux vous presenter.</p></article>
+            <article><h3>Profil valorise</h3><p>Photos, documents, experience et services maitrises permettent de mieux vous presenter.</p></article>
+            <article><h3>Emploi accessible</h3><p>Vous pouvez vous faire connaitre aupres d'entreprises proches sans vous deplacer partout.</p></article>
             <article><h3>Mobile d'abord</h3><p>L'essentiel tient dans le telephone: missions, chat, statut, services et parametres.</p></article>
+            <article><h3>Plus de visibilite</h3><p>Vos services et votre experience peuvent etre reperes par les bons partenaires.</p></article>
         </div>
     </section>
 
@@ -85,11 +115,48 @@
                 vos services, vos chats et les reglages utiles.
             </p>
         </div>
-        <a class="provider-primary-link" href="/mobileappview">Voir l'aperçu mobile</a>
+        <a class="provider-primary-link" href="/mobileappview">Voir l'apercu mobile</a>
+    </section>
+
+    <section id="faq" class="provider-site-section provider-faq">
+        <div class="provider-section-head">
+            <span class="provider-eyebrow">FAQ</span>
+            <h2>Questions frequentes</h2>
+        </div>
+        <div class="provider-faq-grid">
+            <details open>
+                <summary>Est-ce que je peux creer mon compte seul ?</summary>
+                <p>Oui. Vous pouvez creer un profil interim, choisir vos services et postuler aupres d'entreprises partenaires.</p>
+            </details>
+            <details>
+                <summary>Et si mon entreprise m'a deja ajoute ?</summary>
+                <p>Vous utilisez le code d'activation recu pour creer votre acces et completer votre profil.</p>
+            </details>
+            <details>
+                <summary>Quand est-ce que je recois des missions ?</summary>
+                <p>Quand une entreprise a valide votre profil et decide de vous affecter des missions.</p>
+            </details>
+            <details>
+                <summary>Pourquoi la validation entreprise est necessaire ?</summary>
+                <p>Elle permet de proteger les clients, de garantir le suivi terrain et de travailler avec des prestataires identifies.</p>
+            </details>
+        </div>
+    </section>
+
+    <section id="contact" class="provider-site-section provider-contact">
+        <div>
+            <span class="provider-eyebrow">Contact</span>
+            <h2>Besoin d'aide pour demarrer ?</h2>
+            <p>Une entreprise vous a parle de Kaza ou vous voulez proposer vos services ? Contactez-nous ou commencez votre inscription.</p>
+        </div>
+        <div class="provider-contact-actions">
+            <a class="provider-primary-link" href="/onboarding">Commencer</a>
+            <a class="provider-secondary-link" href="mailto:support@kaza.ci">Contacter Kaza</a>
+        </div>
     </section>
 
     <section class="provider-site-section provider-final-cta">
-        <h2>Prêt a proposer vos services avec Kaza ?</h2>
+        <h2>Pret a proposer vos services avec Kaza ?</h2>
         <p>Connectez-vous avec un code entreprise ou creez votre compte interim en quelques minutes.</p>
         <a class="provider-primary-link" href="/onboarding">Commencer</a>
     </section>

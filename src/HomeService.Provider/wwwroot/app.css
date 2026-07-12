@@ -1541,22 +1541,60 @@ textarea {
 }
 
 .provider-step-grid,
-.provider-benefit-list {
+.provider-benefit-list,
+.provider-option-grid,
+.provider-faq-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 14px;
 }
 
 .provider-step-grid article,
-.provider-benefit-list article {
+.provider-benefit-list article,
+.provider-option-grid article,
+.provider-faq-grid details {
     display: grid;
     gap: 12px;
-    min-height: 220px;
     padding: 18px;
     border: 1px solid var(--muted-line);
     border-radius: 24px;
     background: #fff;
     box-shadow: 0 16px 38px rgba(2, 8, 23, .045);
+}
+
+.provider-step-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.provider-benefit-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.provider-option-grid,
+.provider-faq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.provider-step-grid article {
+    min-height: 220px;
+}
+
+.provider-option-grid article {
+    min-height: 260px;
+}
+
+.provider-option-grid article > span {
+    color: var(--green);
+    font-size: .74rem;
+    font-weight: 950;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.provider-option-grid a {
+    align-self: end;
+    color: var(--green);
+    font-weight: 900;
+    text-decoration: underline;
 }
 
 .provider-step-grid strong {
@@ -1565,6 +1603,7 @@ textarea {
 }
 
 .provider-app-callout,
+.provider-contact,
 .provider-final-cta {
     display: flex;
     align-items: center;
@@ -1579,8 +1618,26 @@ textarea {
 }
 
 .provider-app-callout div,
+.provider-contact div,
 .provider-final-cta {
     max-width: 760px;
+}
+
+.provider-faq-grid summary {
+    color: var(--ink);
+    cursor: pointer;
+    font-weight: 900;
+}
+
+.provider-faq-grid details p {
+    margin-top: 8px;
+}
+
+.provider-contact-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .provider-final-cta {
@@ -1738,16 +1795,20 @@ textarea {
     }
 
     .provider-step-grid,
-    .provider-benefit-list {
+    .provider-benefit-list,
+    .provider-option-grid,
+    .provider-faq-grid {
         grid-template-columns: 1fr;
     }
 
     .provider-step-grid article,
-    .provider-benefit-list article {
+    .provider-benefit-list article,
+    .provider-option-grid article {
         min-height: auto;
     }
 
-    .provider-app-callout {
+    .provider-app-callout,
+    .provider-contact {
         align-items: stretch;
         flex-direction: column;
     }
