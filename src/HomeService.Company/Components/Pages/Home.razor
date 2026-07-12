@@ -285,16 +285,49 @@
     </div>
 </section>
 
-<section id="contact" class="landing-section final-cta-section">
-    <div>
-        <p class="eyebrow">Demarrer</p>
-        <h2>Pret a developper votre activite ?</h2>
-        <p>Rejoignez Kaza et commencez a recevoir de nouvelles demandes clients.</p>
+<section id="contact" class="landing-section contact-form-section">
+    <div class="contact-copy">
+        <p class="eyebrow">Contact</p>
+        <h2>Parlons de votre entreprise</h2>
+        <p>Vous avez une equipe, des services a proposer ou une question avant inscription ? Laissez vos coordonnees, l'equipe Kaza vous recontacte.</p>
+        <div class="contact-shortcuts">
+            <span>Abidjan et communes proches</span>
+            <span>Entreprises de services</span>
+            <span>Partenariat Kaza</span>
+        </div>
     </div>
-    <div class="contact-actions">
-        <a class="primary-action" href="register">Devenir partenaire</a>
-        <a class="secondary-action" href="dashboard">Contacter l'equipe</a>
-    </div>
+
+    <form class="contact-form" @onsubmit="SubmitContactAsync" @onsubmit:preventDefault>
+        <div class="contact-form-grid">
+            <label>Nom complet<input placeholder="Ex: Jean Kouadio" @bind="ContactName" /></label>
+            <label>Entreprise<input placeholder="Ex: CI Home Service" @bind="ContactCompany" /></label>
+            <label>Telephone<input type="tel" placeholder="+225 07 00 00 00 00" @bind="ContactPhone" /></label>
+            <label>Email<input type="email" placeholder="direction@entreprise.ci" @bind="ContactEmail" /></label>
+        </div>
+        <label>
+            Sujet
+            <select @bind="ContactSubject">
+                <option>Devenir partenaire</option>
+                <option>Comprendre le fonctionnement</option>
+                <option>Suivi d'une demande</option>
+                <option>Autre demande</option>
+            </select>
+        </label>
+        <label>
+            Message
+            <textarea rows="5" placeholder="Expliquez rapidement votre besoin..." @bind="ContactBody"></textarea>
+        </label>
+
+        @if (!string.IsNullOrWhiteSpace(ContactMessage))
+        {
+            <p class="field-message">@ContactMessage</p>
+        }
+
+        <div class="contact-form-actions">
+            <button type="submit" class="primary-action">Envoyer le message</button>
+            <a class="secondary-action" href="register">Devenir partenaire</a>
+        </div>
+    </form>
 </section>
 
 <footer class="site-footer">
@@ -312,6 +345,13 @@
 @code {
     private CountryBrandingResponse Branding { get; set; } = DefaultBranding;
     private bool IsSubmittedConfirmationVisible { get; set; }
+    private string ContactName { get; set; } = string.Empty;
+    private string ContactCompany { get; set; } = string.Empty;
+    private string ContactPhone { get; set; } = string.Empty;
+    private string ContactEmail { get; set; } = string.Empty;
+    private string ContactSubject { get; set; } = "Devenir partenaire";
+    private string ContactBody { get; set; } = string.Empty;
+    private string? ContactMessage { get; set; }
 
     private string BrandStyle =>
         $"--country-primary:{Branding.PrimaryColor}; --country-secondary:{Branding.SecondaryColor}; --country-accent:{Branding.AccentColor};";
@@ -332,6 +372,21 @@
         {
             Branding = DefaultBranding;
         }
+    }
+
+    private Task SubmitContactAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ContactName)
+            || string.IsNullOrWhiteSpace(ContactCompany)
+            || string.IsNullOrWhiteSpace(ContactPhone)
+            || string.IsNullOrWhiteSpace(ContactBody))
+        {
+            ContactMessage = "Renseignez au moins le nom, l'entreprise, le telephone et le message.";
+            return Task.CompletedTask;
+        }
+
+        ContactMessage = "Message pret a etre transmis. Le branchement email/API sera ajoute a la prochaine etape.";
+        return Task.CompletedTask;
     }
 
     private static readonly CountryBrandingResponse DefaultBranding = new(
