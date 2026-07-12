@@ -1031,6 +1031,7 @@ textarea {
 .onboarding-choice-card label {
     display: grid;
     gap: 6px;
+    min-width: 0;
     color: var(--ink);
     font-size: var(--text-sm);
     font-weight: 850;
@@ -1038,6 +1039,8 @@ textarea {
 
 .onboarding-choice-card input,
 .onboarding-choice-card select {
+    width: 100%;
+    min-width: 0;
     min-height: 46px;
     border: 1px solid var(--muted-line);
     border-radius: 14px;
@@ -1202,7 +1205,23 @@ textarea {
 .two-field-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
+    gap: 12px;
+}
+
+.action-row button {
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    font-weight: 850;
+}
+
+.action-row .ghost-action {
+    border: 1px solid rgba(255, 130, 0, 0.35);
+    background: var(--orange-soft);
+    color: var(--ink);
 }
 
 .invitation-preview {
@@ -1349,6 +1368,12 @@ textarea {
 
     .action-row,
     .two-field-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 430px) {
+    .onboarding-choice-card .two-field-grid {
         grid-template-columns: 1fr;
     }
 }
