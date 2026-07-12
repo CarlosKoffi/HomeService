@@ -110,66 +110,78 @@
                 <p>Vous creez un profil demandeur d'interim. Une entreprise devra ensuite vous valider avant les missions.</p>
             </div>
 
-            <div class="provider-service-tags">
-                <strong>Service propose</strong>
-                <div class="suggested-tags">
-                    @foreach (var service in ExistingServices)
-                    {
-                        <button type="button"
-                                class="service-tag @(IsSelected(service.Name) ? "selected" : null)"
-                                @onclick="() => ToggleExistingService(service)">
-                            @service.Name
-                        </button>
-                    }
-                </div>
-                <label class="tag-entry">
-                    Ajouter un service
-                    <input placeholder="Ex: coiffure a domicile"
+            <div class="register-fieldset">
+                <span>Competence</span>
+                <label>
+                    Service propose
+                    <input list="provider-services"
+                           placeholder="Ex: Menage a domicile"
                            @bind="ServiceEntry"
-                           @bind:event="oninput"
-                           @onkeyup="HandleServiceEntryKeyUp" />
-                    <small>Entree ou virgule pour ajouter. Si le service n'existe pas encore, il sera cree.</small>
+                           @bind:event="oninput" />
+                    <datalist id="provider-services">
+                        @foreach (var service in ExistingServices)
+                        {
+                            <option value="@service.Name"></option>
+                        }
+                    </datalist>
+                    <small>Si le service n'existe pas encore, il sera cree comme nouveau service a verifier.</small>
                 </label>
-                <div class="selected-service-tags">
-                    @foreach (var service in SelectedServices)
-                    {
-                        <span class="@(service.ServiceId is null ? "proposed" : null)">
-                            @service.Name
-                            @if (service.ServiceId is null)
-                            {
-                                <em>nouveau</em>
-                            }
-                            <button type="button" @onclick="() => RemoveService(service.Name)">x</button>
-                        </span>
-                    }
+                <label>Annee d'experience<input type="number" min="0" placeholder="Ex: 3" @bind="RegisterYearsOfExperience" /></label>
+                @if (!string.IsNullOrWhiteSpace(ServiceEntry))
+                {
+                    <div class="service-autocomplete-preview">
+                        @if (FindExistingService(ServiceEntry) is not null)
+                        {
+                            <span>Service existant</span>
+                            <strong>@FindExistingService(ServiceEntry)!.Name</strong>
+                        }
+                        else
+                        {
+                            <span>Nouveau service</span>
+                            <strong>@ServiceEntry.Trim()</strong>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="register-fieldset">
+                <span>Identite</span>
+                <div class="two-field-grid">
+                    <label>Prenom<input placeholder="Awa" @bind="RegisterFirstName" /></label>
+                    <label>Nom<input placeholder="Kone" @bind="RegisterLastName" /></label>
+                </div>
+                <div class="two-field-grid">
+                    <label>Sexe
+                        <select @bind="RegisterGender">
+                            <option value="">Selectionnez</option>
+                            <option value="Female">Femme</option>
+                            <option value="Male">Homme</option>
+                        </select>
+                    </label>
+                    <label>Date de naissance<InputDate @bind-Value="RegisterBirthDate" /></label>
                 </div>
             </div>
-            <label>Annee d'experience<input type="number" min="0" placeholder="Ex: 3" @bind="RegisterYearsOfExperience" /></label>
-            <div class="two-field-grid">
-                <label>Prenom<input placeholder="Awa" @bind="RegisterFirstName" /></label>
-                <label>Nom<input placeholder="Kone" @bind="RegisterLastName" /></label>
+
+            <div class="register-fieldset">
+                <span>Contact</span>
+                <label>Tel<input type="tel" placeholder="+225 07 00 00 00 00" @bind="RegisterPhoneNumber" /></label>
+                <label>Adresse
+                    <input list="abidjan-neighborhoods" placeholder="Ex: Cocody Angre" @bind="RegisterAddress" />
+                    <datalist id="abidjan-neighborhoods">
+                        @foreach (var area in AbidjanAreas)
+                        {
+                            <option value="@area"></option>
+                        }
+                    </datalist>
+                </label>
             </div>
-            <label>Sexe
-                <select @bind="RegisterGender">
-                    <option value="Unspecified">Non renseigne</option>
-                    <option value="Female">Femme</option>
-                    <option value="Male">Homme</option>
-                </select>
-            </label>
-            <label>Date de naissance<InputDate @bind-Value="RegisterBirthDate" /></label>
-            <label>Tel<input type="tel" placeholder="+225 07 00 00 00 00" @bind="RegisterPhoneNumber" /></label>
-            <label>Adresse
-                <input list="abidjan-neighborhoods" placeholder="Ex: Cocody Angre" @bind="RegisterAddress" />
-                <datalist id="abidjan-neighborhoods">
-                    @foreach (var area in AbidjanAreas)
-                    {
-                        <option value="@area"></option>
-                    }
-                </datalist>
-            </label>
-            <div class="two-field-grid">
-                <label>Mot de passe<input type="password" placeholder="Minimum 8 caracteres" @bind="RegisterPassword" /></label>
-                <label>Confirmation<input type="password" placeholder="Retapez le mot de passe" @bind="RegisterConfirmPassword" /></label>
+
+            <div class="register-fieldset">
+                <span>Securite</span>
+                <div class="two-field-grid">
+                    <label>Mot de passe<input type="password" placeholder="Minimum 8 caracteres" @bind="RegisterPassword" /></label>
+                    <label>Confirmation<input type="password" placeholder="Retapez le mot de passe" @bind="RegisterConfirmPassword" /></label>
+                </div>
             </div>
 
             @if (!string.IsNullOrWhiteSpace(RegisterMessage))
@@ -202,7 +214,7 @@
     private string RegisterPhoneNumber { get; set; } = string.Empty;
     private DateTime? RegisterBirthDate { get; set; }
     private string RegisterAddress { get; set; } = string.Empty;
-    private string RegisterGender { get; set; } = "Unspecified";
+    private string RegisterGender { get; set; } = string.Empty;
     private int RegisterYearsOfExperience { get; set; }
     private string RegisterPassword { get; set; } = string.Empty;
     private string RegisterConfirmPassword { get; set; } = string.Empty;
@@ -236,7 +248,6 @@
         "Yopougon - Niangon",
         "Yopougon - Selmer"
     ];
-    private List<SelectedProviderService> SelectedServices { get; } = [];
     private string ServiceEntry { get; set; } = string.Empty;
     private bool RememberMe { get; set; } = true;
     private bool IsBusy { get; set; }
@@ -255,68 +266,6 @@
             InvitationCode = code.ToString();
             await LoadInvitationAsync();
         }
-    }
-
-    private bool IsSelected(string serviceName)
-    {
-        return SelectedServices.Any(service => IsSameService(service.Name, serviceName));
-    }
-
-    private void ToggleExistingService(ServiceSummaryResponse service)
-    {
-        if (IsSelected(service.Name))
-        {
-            RemoveService(service.Name);
-            return;
-        }
-
-        SelectedServices.Add(new SelectedProviderService(service.Id, service.Name));
-    }
-
-    private void RemoveService(string serviceName)
-    {
-        var item = SelectedServices.FirstOrDefault(service => IsSameService(service.Name, serviceName));
-        if (item is not null)
-        {
-            SelectedServices.Remove(item);
-        }
-    }
-
-    private void HandleServiceEntryKeyUp(KeyboardEventArgs args)
-    {
-        if (args.Key == "Enter" || ServiceEntry.EndsWith(",", StringComparison.Ordinal))
-        {
-            AddTypedService();
-        }
-    }
-
-    private void AddTypedService()
-    {
-        RegisterMessage = null;
-        var serviceName = ServiceEntry.Trim().Trim(',');
-        if (serviceName.Length < 3)
-        {
-            RegisterMessage = "Entrez au moins 3 caracteres pour le service.";
-            return;
-        }
-
-        if (SelectedServices.Count >= 10)
-        {
-            RegisterMessage = "Vous pouvez ajouter jusqu'a 10 services.";
-            return;
-        }
-
-        var existing = ExistingServices.FirstOrDefault(service => IsSameService(service.Name, serviceName));
-        var finalName = existing?.Name ?? serviceName;
-        if (IsSelected(finalName))
-        {
-            RegisterMessage = "Service deja ajoute.";
-            ServiceEntry = string.Empty;
-            return;
-        }
-
-        SelectedServices.Add(new SelectedProviderService(existing?.Id, finalName));
-        ServiceEntry = string.Empty;
     }
 
     private void SetMode(string mode)
@@ -400,10 +349,15 @@
             return;
         }
 
-        AddTypedServiceIfNeeded();
-        if (SelectedServices.Count == 0)
+        if (string.IsNullOrWhiteSpace(ServiceEntry.Trim()) || ServiceEntry.Trim().Length < 3)
         {
-            RegisterMessage = "Selectionnez ou creez au moins un service.";
+            RegisterMessage = "Selectionnez ou saisissez un service.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(RegisterGender))
+        {
+            RegisterMessage = "Selectionnez le sexe du prestataire.";
             return;
         }
 
@@ -421,14 +375,8 @@
             5,
             RegisterPassword,
             RegisterConfirmPassword,
-            SelectedServices
-                .Where(service => service.ServiceId is not null)
-                .Select(service => new ProviderCandidateServiceRequest(service.ServiceId!.Value, "Confirmed", RegisterYearsOfExperience))
-                .ToList(),
-            SelectedServices
-                .Where(service => service.ServiceId is null)
-                .Select(service => service.Name)
-                .ToList());
+            BuildSelectedServiceRequests(),
+            BuildProposedServiceNames());
         var result = await Api.RegisterSelfAsync(request);
         if (!result.IsSuccess)
         {
@@ -456,18 +404,49 @@
         await Js.InvokeVoidAsync("localStorage.setItem", "kaza.provider.session", System.Text.Json.JsonSerializer.Serialize(session));
     }
 
-    private void AddTypedServiceIfNeeded()
+    private ServiceSummaryResponse? FindExistingService(string serviceName)
     {
-        if (!string.IsNullOrWhiteSpace(ServiceEntry))
-        {
-            AddTypedService();
-        }
+        return ExistingServices.FirstOrDefault(service => IsSameCompletionValue(service.Name, serviceName));
+    }
+
+    private IReadOnlyList<ProviderCandidateServiceRequest> BuildSelectedServiceRequests()
+    {
+        var existing = FindExistingService(ServiceEntry);
+        return existing is null
+            ? []
+            : [new ProviderCandidateServiceRequest(existing.Id, "Confirmed", RegisterYearsOfExperience)];
+    }
+
+    private IReadOnlyList<string> BuildProposedServiceNames()
+    {
+        return FindExistingService(ServiceEntry) is null
+            ? [ServiceEntry.Trim()]
+            : [];
     }
 
     private static bool IsSameService(string left, string right)
     {
-        return string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+        return IsSameCompletionValue(left, right);
     }
 
-    private sealed record SelectedProviderService(Guid? ServiceId, string Name);
+    private static bool IsSameCompletionValue(string left, string right)
+    {
+        return NormalizeCompletionValue(left) == NormalizeCompletionValue(right);
+    }
+
+    private static string NormalizeCompletionValue(string value)
+    {
+        var normalized = value.Trim().Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder(normalized.Length);
+        foreach (var character in normalized)
+        {
+            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character);
+            if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(char.ToLowerInvariant(character));
+            }
+        }
+
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
 }

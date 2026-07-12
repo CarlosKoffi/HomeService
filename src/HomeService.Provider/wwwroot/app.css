@@ -854,11 +854,11 @@ textarea {
 
 .onboarding-choice-card {
     display: grid;
-    gap: 14px;
-    margin-top: 14px;
-    padding: 18px;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 14px;
     border: 1px solid var(--muted-line);
-    border-radius: 24px;
+    border-radius: 20px;
     background: #fff;
     box-shadow: var(--shadow);
 }
@@ -927,9 +927,9 @@ textarea {
 .onboarding-icon {
     display: grid;
     place-items: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 18px;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
     background: var(--green);
     color: #fff;
 }
@@ -960,13 +960,14 @@ textarea {
 .onboarding-choice-card h2 {
     margin: 4px 0 0;
     color: var(--ink);
-    font-size: var(--text-xl);
+    font-size: 1.15rem;
     font-weight: var(--weight-title);
 }
 
 .onboarding-choice-card p {
     margin: 6px 0 0;
     color: var(--ink);
+    font-size: var(--text-sm);
     line-height: 1.42;
 }
 
@@ -980,23 +981,57 @@ textarea {
 
 .onboarding-choice-card input,
 .onboarding-choice-card select {
-    min-height: 48px;
+    min-height: 44px;
     border: 1px solid var(--muted-line);
-    border-radius: 16px;
-    padding: 0 14px;
+    border-radius: 14px;
+    padding: 0 12px;
     background: #fff;
     color: var(--ink);
 }
 
-.provider-service-tags {
+.register-fieldset {
     display: grid;
-    gap: 10px;
+    gap: 9px;
+    padding: 10px;
+    border: 1px solid #edf2ee;
+    border-radius: 16px;
+    background: #fbfdfb;
 }
 
-.provider-service-tags > strong {
+.register-fieldset > span {
     color: var(--ink);
-    font-size: var(--text-sm);
+    font-size: .7rem;
+    font-weight: 950;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.register-fieldset small {
+    color: var(--ink);
+    font-size: .72rem;
+    font-weight: 650;
+}
+
+.service-autocomplete-preview {
+    display: grid;
+    gap: 3px;
+    padding: 8px 10px;
+    border: 1px solid rgba(0, 135, 81, 0.2);
+    border-radius: 14px;
+    background: var(--green-soft);
+    color: var(--ink);
+}
+
+.service-autocomplete-preview span {
+    color: var(--ink);
+    font-size: var(--text-xs);
     font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.service-autocomplete-preview strong {
+    color: var(--ink);
 }
 
 .suggested-tags,
