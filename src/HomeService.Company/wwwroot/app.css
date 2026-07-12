@@ -1327,122 +1327,107 @@ h3 {
 }
 
 .partner-illustration {
-    min-height: 360px;
-    position: relative;
+    min-height: auto;
 }
 
-.illustration-card,
-.mobile-notification {
-    background: rgba(255, 255, 255, .94);
+.partner-panel {
+    background: rgba(255, 255, 255, .96);
     border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, .055);
+    border-radius: 18px;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, .08);
     display: grid;
-    gap: .25rem;
-    padding: .85rem .95rem;
-    position: absolute;
+    gap: 1rem;
+    padding: 1rem;
 }
 
-.illustration-card strong,
-.mobile-notification strong {
+.partner-panel-head {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: .85rem;
+}
+
+.partner-panel-head span {
+    color: var(--country-primary);
+    font-size: .78rem;
+    font-weight: 820;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.partner-panel-head strong {
     color: var(--ink);
-    font-size: .96rem;
-    font-weight: 850;
+    font-size: .94rem;
+    font-weight: 760;
 }
 
-.illustration-card small,
-.mobile-notification small {
+.partner-kpis {
+    display: grid;
+    gap: .65rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.partner-kpis article {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: .75rem;
+}
+
+.partner-kpis span {
     color: #000;
-    font-size: .82rem;
-    font-weight: 650;
+    display: block;
+    font-size: .72rem;
+    font-weight: 680;
 }
 
-.company-card {
-    left: 0;
-    top: 1rem;
-    width: 190px;
+.partner-kpis strong {
+    color: var(--ink);
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 760;
+    margin-top: .25rem;
 }
 
-.manager-card {
-    right: 0;
-    top: 4.5rem;
-    width: 185px;
+.partner-flow {
+    display: grid;
+    gap: .65rem;
 }
 
-.request-card {
-    left: 3.2rem;
-    top: 11.5rem;
-    width: 220px;
-}
-
-.tech-card {
-    bottom: 2rem;
-    right: 1.2rem;
-    width: 210px;
-}
-
-.mobile-notification {
-    bottom: 7rem;
-    left: 0;
-    width: 190px;
-}
-
-.mobile-notification span,
-.avatar-dot {
+.partner-flow div {
     align-items: center;
     background: #fff;
-    border: 1px solid rgba(249, 115, 22, .42);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: grid;
+    gap: .15rem .7rem;
+    grid-template-columns: 12px minmax(0, 1fr);
+    padding: .75rem .85rem;
+}
+
+.partner-flow span {
+    background: var(--country-primary);
     border-radius: 999px;
-    color: #000;
-    display: inline-flex;
-    font-size: .76rem;
+    grid-row: span 2;
+    height: 8px;
+    width: 8px;
+}
+
+.partner-flow div:nth-child(2) span {
+    background: var(--country-accent);
+}
+
+.partner-flow strong {
+    color: var(--ink);
+    font-size: .94rem;
     font-weight: 760;
-    height: 34px;
-    justify-content: center;
-    width: 34px;
 }
 
-.mobile-notification span::before {
-    content: "!";
-}
-
-.enterprise-line-icon {
-    border: 1px solid rgba(18, 130, 76, .42);
-    border-radius: 10px;
-    display: inline-block;
-    height: 30px;
-    position: relative;
-    width: 30px;
-}
-
-.enterprise-line-icon::before,
-.enterprise-line-icon::after {
-    background: #12824c;
-    content: "";
-    position: absolute;
-}
-
-.enterprise-line-icon::before {
-    height: 1px;
-    left: 7px;
-    right: 7px;
-    top: 14px;
-}
-
-.enterprise-line-icon::after {
-    bottom: 7px;
-    left: 14px;
-    top: 7px;
-    width: 1px;
-}
-
-.enterprise-line-icon.orange {
-    border-color: rgba(249, 115, 22, .42);
-}
-
-.enterprise-line-icon.orange::before,
-.enterprise-line-icon.orange::after {
-    background: #f97316;
+.partner-flow small {
+    color: #000;
+    font-size: .82rem;
+    font-weight: 560;
 }
 
 .platform-icon {
@@ -3556,15 +3541,7 @@ h3 {
     }
 
     .partner-illustration {
-        display: grid;
-        gap: .75rem;
         min-height: auto;
-    }
-
-    .illustration-card,
-    .mobile-notification {
-        position: static;
-        width: auto;
     }
 
     .actions {
