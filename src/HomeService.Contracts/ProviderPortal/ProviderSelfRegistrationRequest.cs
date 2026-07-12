@@ -13,7 +13,8 @@ public sealed record ProviderSelfRegistrationRequest(
     int MissionRadiusKm,
     string Password,
     string ConfirmPassword,
-    IReadOnlyList<ProviderCandidateServiceRequest> Services);
+    IReadOnlyList<ProviderCandidateServiceRequest> Services,
+    IReadOnlyList<string> ProposedServices);
 
 public sealed record ProviderCandidateServiceRequest(
     Guid ServiceId,

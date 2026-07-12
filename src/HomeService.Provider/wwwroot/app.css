@@ -863,6 +863,63 @@ textarea {
     box-shadow: var(--shadow);
 }
 
+.onboarding-shell {
+    padding-top: 14px;
+}
+
+.compact-heading {
+    margin-bottom: 12px;
+}
+
+.compact-heading h1 {
+    font-size: 1.55rem;
+}
+
+.onboarding-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+    margin-bottom: 14px;
+    border: 1px solid var(--muted-line);
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: var(--shadow);
+}
+
+.onboarding-tabs button {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    min-height: 54px;
+    border: 0;
+    border-radius: 15px;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    font: inherit;
+    line-height: 1.1;
+}
+
+.onboarding-tabs button.active {
+    background: var(--green);
+    color: #fff;
+}
+
+.onboarding-tabs span {
+    font-size: .86rem;
+    font-weight: 920;
+}
+
+.onboarding-tabs small {
+    font-size: .68rem;
+    font-weight: 760;
+}
+
+.onboarding-note {
+    margin-bottom: 84px;
+}
+
 .onboarding-choice-card.highlighted {
     border-color: rgba(0, 135, 83, .28);
 }
@@ -929,6 +986,84 @@ textarea {
     padding: 0 14px;
     background: #fff;
     color: var(--ink);
+}
+
+.provider-service-tags {
+    display: grid;
+    gap: 10px;
+}
+
+.provider-service-tags > strong {
+    color: var(--ink);
+    font-size: var(--text-sm);
+    font-weight: 900;
+}
+
+.suggested-tags,
+.selected-service-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.service-tag {
+    min-height: 38px;
+    border: 1px solid var(--muted-line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    font-weight: 850;
+    padding: 0 12px;
+}
+
+.service-tag.selected {
+    border-color: var(--green);
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.tag-entry small {
+    color: var(--ink);
+    font-size: var(--text-xs);
+    font-weight: 650;
+}
+
+.selected-service-tags span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    border-radius: 999px;
+    background: var(--green-soft);
+    color: var(--green);
+    font-size: var(--text-sm);
+    font-weight: 900;
+    padding: 0 8px 0 12px;
+}
+
+.selected-service-tags span.proposed {
+    background: rgba(255, 107, 23, 0.14);
+    color: var(--orange);
+}
+
+.selected-service-tags em {
+    font-size: .68rem;
+    font-style: normal;
+    opacity: .85;
+}
+
+.selected-service-tags button {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .8);
+    color: currentColor;
+    cursor: pointer;
+    font-weight: 950;
 }
 
 .onboarding-steps {

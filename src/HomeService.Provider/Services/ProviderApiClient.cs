@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using HomeService.Contracts.ProviderPortal;
+using HomeService.Contracts.Services;
 
 namespace HomeService.Provider.Services;
 
@@ -14,6 +15,11 @@ public sealed class ProviderApiClient(HttpClient httpClient)
         return await SendAsync<ProviderInvitationPreviewResponse>(
             () => httpClient.GetAsync($"/api/provider-portal/invitations/{Uri.EscapeDataString(code)}", cancellationToken),
             cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
+    {
+        return await httpClient.GetFromJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", JsonOptions, cancellationToken) ?? [];
     }
 
     public async Task<ApiResult<ProviderPortalLoginResponse>> ActivateAsync(

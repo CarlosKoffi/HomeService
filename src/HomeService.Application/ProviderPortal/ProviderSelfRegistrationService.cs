@@ -41,13 +41,34 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
             .Where(service => requestedServiceIds.Contains(service.Id) && service.IsActive)
             .Select(service => service.Id)
             .ToListAsync(cancellationToken);
-
-        provider.SyncCandidateServices(request.Services
+        var requestedCandidateServices = request.Services
             .Where(service => activeServiceIds.Contains(service.ServiceId))
             .Select(service => (
                 service.ServiceId,
                 ParseExperienceLevel(service.ExperienceLevel),
-                Math.Max(0, service.YearsOfExperience))));
+                Math.Max(0, service.YearsOfExperience)))
+            .ToList();
+
+        foreach (var proposedName in NormalizeProposedServiceNames(request.ProposedServices))
+        {
+            var normalizedName = proposedName.ToLowerInvariant();
+            var service = await db.Services
+                .FirstOrDefaultAsync(service => service.NormalizedName == normalizedName, cancellationToken);
+            if (service is null)
+            {
+                service = new Service(proposedName, null, null);
+                db.Services.Add(service);
+            }
+
+            requestedCandidateServices.Add((service.Id, ExperienceLevel.Confirmed, Math.Max(0, request.YearsOfExperience)));
+        }
+
+        if (requestedCandidateServices.Count == 0)
+        {
+            return new ProviderSelfRegistrationResponse(Guid.Empty, "ValidationFailed", "Selectionnez ou proposez au moins un service.");
+        }
+
+        provider.SyncCandidateServices(requestedCandidateServices);
 
         db.Providers.Add(provider);
         await db.SaveChangesAsync(cancellationToken);
@@ -70,5 +91,16 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
         return Enum.TryParse<ProviderGender>(value, true, out var gender)
             ? gender
             : ProviderGender.Unspecified;
+    }
+
+    private static IReadOnlyList<string> NormalizeProposedServiceNames(IEnumerable<string> services)
+    {
+        return services
+            .Where(service => !string.IsNullOrWhiteSpace(service))
+            .Select(service => service.Trim())
+            .Where(service => service.Length >= 3)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(10)
+            .ToList();
     }
 }

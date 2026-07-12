@@ -1,113 +1,154 @@
+@page "/"
 @page "/onboarding"
 @inject ProviderApiClient Api
 @inject NavigationManager Navigation
 @inject IJSRuntime Js
 
-<PageTitle>Kaza Prestataire - Inscription</PageTitle>
+<PageTitle>Kaza Prestataire - Acces</PageTitle>
 
-<main class="provider-mobile-shell">
-    <section class="screen-heading">
-        <span>Acces prestataire</span>
-        <h1>Entrez dans votre espace Kaza</h1>
-        <p>Utilisez le code fourni par votre entreprise ou connectez-vous avec votre telephone si votre compte est deja active.</p>
+<main class="provider-mobile-shell onboarding-shell">
+    <section class="screen-heading compact-heading">
+        <span>Kaza prestataire</span>
+        <h1>Acces prestataire</h1>
+        <p>Choisissez votre mode d'entree. Une seule etape a la fois, simple et rapide.</p>
     </section>
 
-    <section class="onboarding-choice-card highlighted">
-        <div class="onboarding-icon">
-            <svg viewBox="0 0 24 24"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h10" /></svg>
-        </div>
-        <div>
-            <span>Activation entreprise</span>
-            <h2>Code de preinscription</h2>
-            <p>Ce code est cree par l'entreprise qui vous rattache comme prestataire.</p>
-        </div>
+    <nav class="onboarding-tabs" aria-label="Choix du parcours prestataire">
+        <button type="button" class="@TabClass("code")" @onclick='() => SetMode("code")'>
+            <span>Code</span>
+            <small>Entreprise</small>
+        </button>
+        <button type="button" class="@TabClass("login")" @onclick='() => SetMode("login")'>
+            <span>Connexion</span>
+            <small>Compte actif</small>
+        </button>
+        <button type="button" class="@TabClass("register")" @onclick='() => SetMode("register")'>
+            <span>Creer</span>
+            <small>Interim</small>
+        </button>
+    </nav>
 
-        <label>
-            Code recu
-            <input placeholder="Ex: KAZA-482135" @bind="InvitationCode" @bind:event="oninput" />
-        </label>
-
-        @if (Invitation is not null)
-        {
-            <div class="invitation-preview">
-                <strong>@Invitation.ProviderName</strong>
-                <span>@Invitation.CompanyName</span>
-                <small>Code valable jusqu'au @Invitation.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+    @if (ActiveMode == "code")
+    {
+        <section class="onboarding-choice-card highlighted">
+            <div class="onboarding-icon">
+                <svg viewBox="0 0 24 24"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h10" /></svg>
             </div>
-        }
+            <div>
+                <span>Activation entreprise</span>
+                <h2>Code de preinscription</h2>
+                <p>Utilisez le code cree par l'entreprise qui vous rattache comme prestataire.</p>
+            </div>
 
-        <div class="two-field-grid">
             <label>
-                Mot de passe
-                <input type="password" autocomplete="new-password" placeholder="Minimum 8 caracteres" @bind="ActivationPassword" />
+                Code recu
+                <input placeholder="Ex: KAZA-482135" @bind="InvitationCode" @bind:event="oninput" />
             </label>
-            <label>
-                Confirmation
-                <input type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" @bind="ActivationConfirmPassword" />
+
+            @if (Invitation is not null)
+            {
+                <div class="invitation-preview">
+                    <strong>@Invitation.ProviderName</strong>
+                    <span>@Invitation.CompanyName</span>
+                    <small>Valable jusqu'au @Invitation.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+            }
+
+            <div class="two-field-grid">
+                <label>Mot de passe<input type="password" autocomplete="new-password" placeholder="Minimum 8 caracteres" @bind="ActivationPassword" /></label>
+                <label>Confirmation<input type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" @bind="ActivationConfirmPassword" /></label>
+            </div>
+
+            <label class="remember-row">
+                <input type="checkbox" @bind="RememberMe" />
+                <span>Rester connecte sur ce telephone</span>
             </label>
-        </div>
 
-        <label class="remember-row">
-            <input type="checkbox" @bind="RememberMe" />
-            <span>Rester connecte sur ce telephone</span>
-        </label>
+            @if (!string.IsNullOrWhiteSpace(ActivationMessage))
+            {
+                <p class="field-message">@ActivationMessage</p>
+            }
 
-        @if (!string.IsNullOrWhiteSpace(ActivationMessage))
-        {
-            <p class="field-message">@ActivationMessage</p>
-        }
+            <div class="action-row">
+                <button type="button" class="ghost-action" @onclick="LoadInvitationAsync" disabled="@IsBusy">Verifier</button>
+                <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsBusy">Activer</button>
+            </div>
+        </section>
+    }
+    else if (ActiveMode == "login")
+    {
+        <section class="onboarding-choice-card">
+            <div class="onboarding-icon orange">
+                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+            </div>
+            <div>
+                <span>Compte actif</span>
+                <h2>Connexion</h2>
+                <p>Connectez-vous avec le numero de telephone connu par votre entreprise.</p>
+            </div>
 
-        <div class="action-row">
-            <button type="button" class="ghost-action" @onclick="LoadInvitationAsync" disabled="@IsBusy">Verifier</button>
-            <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsBusy">Activer mon compte</button>
-        </div>
-    </section>
+            <label>Telephone<input type="tel" autocomplete="tel" placeholder="+225 07 00 00 00 00" @bind="PhoneNumber" /></label>
+            <label>Mot de passe<input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="LoginPassword" /></label>
 
-    <section class="onboarding-choice-card">
-        <div class="onboarding-icon orange">
-            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
-        </div>
-        <div>
-            <span>Compte active</span>
-            <h2>Connexion</h2>
-            <p>Connectez-vous avec le numero de telephone connu par votre entreprise.</p>
-        </div>
+            @if (!string.IsNullOrWhiteSpace(LoginMessage))
+            {
+                <p class="field-message">@LoginMessage</p>
+            }
 
-        <label>
-            Telephone
-            <input type="tel" autocomplete="tel" placeholder="+225 07 00 00 00 00" @bind="PhoneNumber" />
-        </label>
-        <label>
-            Mot de passe
-            <input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="LoginPassword" />
-        </label>
+            <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
+        </section>
+    }
+    else
+    {
+        <section class="onboarding-choice-card">
+            <div class="onboarding-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M19 8v6" /><path d="M16 11h6" /></svg>
+            </div>
+            <div>
+                <span>Nouveau prestataire</span>
+                <h2>Creer mon compte</h2>
+                <p>Vous creez un profil demandeur d'interim. Une entreprise devra ensuite vous valider avant les missions.</p>
+            </div>
 
-        @if (!string.IsNullOrWhiteSpace(LoginMessage))
-        {
-            <p class="field-message">@LoginMessage</p>
-        }
-
-        <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
-    </section>
-
-    <section class="onboarding-choice-card">
-        <div class="onboarding-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M19 8v6" /><path d="M16 11h6" /></svg>
-        </div>
-        <div>
-            <span>Nouveau prestataire</span>
-            <h2>Creer mon compte</h2>
-            <p>Vous creez un profil demandeur d'interim. Ensuite vous pourrez completer vos services et candidater aux entreprises proches.</p>
-        </div>
-
-        <div class="two-field-grid">
-            <label>Prenom<input placeholder="Awa" @bind="RegisterFirstName" /></label>
-            <label>Nom<input placeholder="Kone" @bind="RegisterLastName" /></label>
-        </div>
-        <label>Telephone<input type="tel" placeholder="+225 07 00 00 00 00" @bind="RegisterPhoneNumber" /></label>
-        <label>Date de naissance<InputDate @bind-Value="RegisterBirthDate" /></label>
-        <label>Adresse<input placeholder="Cocody, Abidjan" @bind="RegisterAddress" /></label>
-        <div class="two-field-grid">
+            <div class="provider-service-tags">
+                <strong>Service propose</strong>
+                <div class="suggested-tags">
+                    @foreach (var service in ExistingServices)
+                    {
+                        <button type="button"
+                                class="service-tag @(IsSelected(service.Name) ? "selected" : null)"
+                                @onclick="() => ToggleExistingService(service)">
+                            @service.Name
+                        </button>
+                    }
+                </div>
+                <label class="tag-entry">
+                    Ajouter un service
+                    <input placeholder="Ex: coiffure a domicile"
+                           @bind="ServiceEntry"
+                           @bind:event="oninput"
+                           @onkeyup="HandleServiceEntryKeyUp" />
+                    <small>Entree ou virgule pour ajouter. Si le service n'existe pas encore, il sera cree.</small>
+                </label>
+                <div class="selected-service-tags">
+                    @foreach (var service in SelectedServices)
+                    {
+                        <span class="@(service.ServiceId is null ? "proposed" : null)">
+                            @service.Name
+                            @if (service.ServiceId is null)
+                            {
+                                <em>nouveau</em>
+                            }
+                            <button type="button" @onclick="() => RemoveService(service.Name)">x</button>
+                        </span>
+                    }
+                </div>
+            </div>
+            <label>Annee d'experience<input type="number" min="0" placeholder="Ex: 3" @bind="RegisterYearsOfExperience" /></label>
+            <div class="two-field-grid">
+                <label>Prenom<input placeholder="Awa" @bind="RegisterFirstName" /></label>
+                <label>Nom<input placeholder="Kone" @bind="RegisterLastName" /></label>
+            </div>
             <label>Sexe
                 <select @bind="RegisterGender">
                     <option value="Unspecified">Non renseigne</option>
@@ -115,31 +156,42 @@
                     <option value="Male">Homme</option>
                 </select>
             </label>
-            <label>Experience<input type="number" min="0" @bind="RegisterYearsOfExperience" /></label>
-        </div>
-        <div class="two-field-grid">
-            <label>Mot de passe<input type="password" placeholder="Minimum 8 caracteres" @bind="RegisterPassword" /></label>
-            <label>Confirmation<input type="password" placeholder="Retapez le mot de passe" @bind="RegisterConfirmPassword" /></label>
-        </div>
+            <label>Date de naissance<InputDate @bind-Value="RegisterBirthDate" /></label>
+            <label>Tel<input type="tel" placeholder="+225 07 00 00 00 00" @bind="RegisterPhoneNumber" /></label>
+            <label>Adresse
+                <input list="abidjan-neighborhoods" placeholder="Ex: Cocody Angre" @bind="RegisterAddress" />
+                <datalist id="abidjan-neighborhoods">
+                    @foreach (var area in AbidjanAreas)
+                    {
+                        <option value="@area"></option>
+                    }
+                </datalist>
+            </label>
+            <div class="two-field-grid">
+                <label>Mot de passe<input type="password" placeholder="Minimum 8 caracteres" @bind="RegisterPassword" /></label>
+                <label>Confirmation<input type="password" placeholder="Retapez le mot de passe" @bind="RegisterConfirmPassword" /></label>
+            </div>
 
-        @if (!string.IsNullOrWhiteSpace(RegisterMessage))
-        {
-            <p class="field-message">@RegisterMessage</p>
-        }
+            @if (!string.IsNullOrWhiteSpace(RegisterMessage))
+            {
+                <p class="field-message">@RegisterMessage</p>
+            }
 
-        <button type="button" class="primary-action" @onclick="RegisterAsync" disabled="@IsBusy">Creer mon compte</button>
-    </section>
+            <button type="button" class="primary-action" @onclick="RegisterAsync" disabled="@IsBusy">Creer mon compte</button>
+        </section>
+    }
 
-    <section class="profile-completion-banner">
+    <section class="profile-completion-banner onboarding-note">
         <div>
-            <span>Regle importante</span>
+            <span>Important</span>
             <strong>Validation entreprise</strong>
         </div>
-        <p>Sans entreprise validee, vous pouvez preparer votre profil, mais vous ne recevez pas encore de missions.</p>
+        <p>Sans validation par une entreprise, vous pouvez preparer votre profil, mais vous ne recevez pas encore de missions.</p>
     </section>
 </main>
 
 @code {
+    private string ActiveMode { get; set; } = "code";
     private string InvitationCode { get; set; } = string.Empty;
     private string ActivationPassword { get; set; } = string.Empty;
     private string ActivationConfirmPassword { get; set; } = string.Empty;
@@ -154,6 +206,38 @@
     private int RegisterYearsOfExperience { get; set; }
     private string RegisterPassword { get; set; } = string.Empty;
     private string RegisterConfirmPassword { get; set; } = string.Empty;
+    private IReadOnlyList<ServiceSummaryResponse> ExistingServices { get; set; } = [];
+    private static readonly string[] AbidjanAreas =
+    [
+        "Abobo - Abobo Baoule",
+        "Abobo - Avocatier",
+        "Abobo - PK18",
+        "Adjame - 220 logements",
+        "Adjame - Williamsville",
+        "Anyama - Centre",
+        "Attécoubé - Locodjro",
+        "Bingerville - Centre",
+        "Cocody - Angre",
+        "Cocody - Deux Plateaux",
+        "Cocody - Riviera 2",
+        "Cocody - Riviera 3",
+        "Cocody - Riviera Palmeraie",
+        "Cocody - Mermoz",
+        "Koumassi - Centre",
+        "Koumassi - Remblais",
+        "Marcory - Zone 4",
+        "Marcory - Residentiel",
+        "Plateau - Centre",
+        "Port-Bouet - Vridi",
+        "Port-Bouet - Gonzagueville",
+        "Treichville - Avenue 16",
+        "Yopougon - Ananeraie",
+        "Yopougon - Maroc",
+        "Yopougon - Niangon",
+        "Yopougon - Selmer"
+    ];
+    private List<SelectedProviderService> SelectedServices { get; } = [];
+    private string ServiceEntry { get; set; } = string.Empty;
     private bool RememberMe { get; set; } = true;
     private bool IsBusy { get; set; }
     private string? ActivationMessage { get; set; }
@@ -163,13 +247,87 @@
 
     protected override async Task OnInitializedAsync()
     {
+        ExistingServices = (await Api.GetServicesAsync()).Where(service => service.IsActive).ToList();
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
         if (query.TryGetValue("code", out var code))
         {
+            ActiveMode = "code";
             InvitationCode = code.ToString();
             await LoadInvitationAsync();
         }
     }
+
+    private bool IsSelected(string serviceName)
+    {
+        return SelectedServices.Any(service => IsSameService(service.Name, serviceName));
+    }
+
+    private void ToggleExistingService(ServiceSummaryResponse service)
+    {
+        if (IsSelected(service.Name))
+        {
+            RemoveService(service.Name);
+            return;
+        }
+
+        SelectedServices.Add(new SelectedProviderService(service.Id, service.Name));
+    }
+
+    private void RemoveService(string serviceName)
+    {
+        var item = SelectedServices.FirstOrDefault(service => IsSameService(service.Name, serviceName));
+        if (item is not null)
+        {
+            SelectedServices.Remove(item);
+        }
+    }
+
+    private void HandleServiceEntryKeyUp(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" || ServiceEntry.EndsWith(",", StringComparison.Ordinal))
+        {
+            AddTypedService();
+        }
+    }
+
+    private void AddTypedService()
+    {
+        RegisterMessage = null;
+        var serviceName = ServiceEntry.Trim().Trim(',');
+        if (serviceName.Length < 3)
+        {
+            RegisterMessage = "Entrez au moins 3 caracteres pour le service.";
+            return;
+        }
+
+        if (SelectedServices.Count >= 10)
+        {
+            RegisterMessage = "Vous pouvez ajouter jusqu'a 10 services.";
+            return;
+        }
+
+        var existing = ExistingServices.FirstOrDefault(service => IsSameService(service.Name, serviceName));
+        var finalName = existing?.Name ?? serviceName;
+        if (IsSelected(finalName))
+        {
+            RegisterMessage = "Service deja ajoute.";
+            ServiceEntry = string.Empty;
+            return;
+        }
+
+        SelectedServices.Add(new SelectedProviderService(existing?.Id, finalName));
+        ServiceEntry = string.Empty;
+    }
+
+    private void SetMode(string mode)
+    {
+        ActiveMode = mode;
+        ActivationMessage = null;
+        LoginMessage = null;
+        RegisterMessage = null;
+    }
+
+    private string TabClass(string mode) => ActiveMode == mode ? "active" : string.Empty;
 
     private async Task LoadInvitationAsync()
     {
@@ -213,7 +371,7 @@
         }
 
         await StoreSessionAsync(result.Value);
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo("/home");
     }
 
     private async Task LoginAsync()
@@ -230,7 +388,7 @@
         }
 
         await StoreSessionAsync(result.Value);
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo("/home");
     }
 
     private async Task RegisterAsync()
@@ -239,6 +397,13 @@
         if (RegisterBirthDate is null)
         {
             RegisterMessage = "Renseignez une date de naissance valide.";
+            return;
+        }
+
+        AddTypedServiceIfNeeded();
+        if (SelectedServices.Count == 0)
+        {
+            RegisterMessage = "Selectionnez ou creez au moins un service.";
             return;
         }
 
@@ -256,7 +421,14 @@
             5,
             RegisterPassword,
             RegisterConfirmPassword,
-            []);
+            SelectedServices
+                .Where(service => service.ServiceId is not null)
+                .Select(service => new ProviderCandidateServiceRequest(service.ServiceId!.Value, "Confirmed", RegisterYearsOfExperience))
+                .ToList(),
+            SelectedServices
+                .Where(service => service.ServiceId is null)
+                .Select(service => service.Name)
+                .ToList());
         var result = await Api.RegisterSelfAsync(request);
         if (!result.IsSuccess)
         {
@@ -270,15 +442,32 @@
         if (!login.IsSuccess || login.Value is null)
         {
             RegisterMessage = "Profil cree. Connectez-vous avec votre telephone et mot de passe.";
+            ActiveMode = "login";
+            PhoneNumber = RegisterPhoneNumber;
             return;
         }
 
         await StoreSessionAsync(login.Value);
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo("/home");
     }
 
     private async Task StoreSessionAsync(ProviderPortalLoginResponse session)
     {
         await Js.InvokeVoidAsync("localStorage.setItem", "kaza.provider.session", System.Text.Json.JsonSerializer.Serialize(session));
     }
+
+    private void AddTypedServiceIfNeeded()
+    {
+        if (!string.IsNullOrWhiteSpace(ServiceEntry))
+        {
+            AddTypedService();
+        }
+    }
+
+    private static bool IsSameService(string left, string right)
+    {
+        return string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed record SelectedProviderService(Guid? ServiceId, string Name);
 }
