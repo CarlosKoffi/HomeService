@@ -4,62 +4,310 @@
 @inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
 
-<PageTitle>HomeService Entreprises</PageTitle>
+<PageTitle>Kaza Entreprises</PageTitle>
 
 @if (IsSubmittedConfirmationVisible)
 {
     <section class="submission-confirmation">
         <strong>Demande envoyee</strong>
-        <p>Votre dossier a bien ete transmis. Notre equipe va verifier les informations et les pieces fournies.</p>
+        <p>Votre dossier a bien ete transmis. Notre equipe va verifier les informations et revenir vers vous.</p>
     </section>
 }
 
-<section class="hero hero-company country-branded @MotifClass" style="@BrandStyle">
+<section id="home" class="hero hero-company country-branded @MotifClass" style="@BrandStyle">
     <div class="hero-copy">
-        <h1>@Branding.BrandName <span>@Branding.HeroTitle</span></h1>
+        <p class="eyebrow">Partenariat entreprises</p>
+        <h1>Developpez votre activite avec <span>Kaza</span></h1>
         <p class="lead">
-            @Branding.HeroSubtitle
+            Recevez de nouvelles demandes de services a domicile, pilotez vos prestataires depuis un portail clair
+            et gardez le controle de vos missions, paiements et equipes.
         </p>
         <div class="actions">
-            <a class="primary-action" href="register">Inscrire mon entreprise</a>
-            <a class="secondary-action" href="concept">Comprendre le concept</a>
+            <a class="primary-action" href="register">Devenir partenaire</a>
+            <a class="secondary-action" href="#how-it-works">Voir le fonctionnement</a>
         </div>
     </div>
 
-    <aside class="hero-panel" aria-label="Parcours entreprise">
-        <strong>Parcours entreprise</strong>
-        <ol>
-            <li>
-                <PlatformIcon Name="company" Tone="green" />
-                <div>
-                    <strong>Creer</strong>
-                    <small>Compte entreprise</small>
-                </div>
-            </li>
-            <li>
-                <PlatformIcon Name="documents" Tone="orange" />
-                <div>
-                    <strong>Completer</strong>
-                    <small>Pieces et services</small>
-                </div>
-            </li>
-            <li>
-                <PlatformIcon Name="validate" Tone="green" />
-                <div>
-                    <strong>Valider</strong>
-                    <small>Conformite admin</small>
-                </div>
-            </li>
-            <li>
-                <PlatformIcon Name="pilot" Tone="orange" />
-                <div>
-                    <strong>Piloter</strong>
-                    <small>Employes, missions, XOF</small>
-                </div>
-            </li>
-        </ol>
+    <aside class="partner-illustration" aria-label="Apercu du reseau Kaza">
+        <div class="illustration-card company-card">
+            <PlatformIcon Name="company" Tone="green" />
+            <strong>Entreprise</strong>
+            <small>Compte verifie</small>
+        </div>
+        <div class="illustration-card manager-card">
+            <span class="avatar-dot">DG</span>
+            <strong>Responsable</strong>
+            <small>Affecte les missions</small>
+        </div>
+        <div class="illustration-card request-card">
+            <PlatformIcon Name="pilot" Tone="orange" />
+            <strong>Nouvelle demande</strong>
+            <small>Menage - Cocody</small>
+        </div>
+        <div class="illustration-card tech-card">
+            <PlatformIcon Name="providers" Tone="green" />
+            <strong>Prestataires</strong>
+            <small>Disponibles et suivis</small>
+        </div>
+        <div class="mobile-notification">
+            <span></span>
+            <strong>Mission assignee</strong>
+            <small>Confirmation recue</small>
+        </div>
     </aside>
 </section>
+
+<section class="service-strip" aria-label="Services de depart">
+    <span>Menage a domicile</span>
+    <span>Nounou</span>
+    <span>Jardinage</span>
+    <span>Services proposes par vos equipes</span>
+</section>
+
+<section id="concept" class="landing-section split-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">Concept</p>
+        <h2>Kaza connecte les clients avec des entreprises de services verifiees</h2>
+        <p>
+            Les entreprises recoivent des demandes adaptees a leurs services et a leur zone d'intervention.
+            Elles restent maitres de leurs equipes, des missions acceptees et des prestataires affectes.
+        </p>
+    </div>
+    <div class="control-list">
+        <article><strong>Prestataires</strong><span>Ajout, suspension, documents et services maitrises.</span></article>
+        <article><strong>Demandes</strong><span>Acceptation selon vos disponibilites et votre zone.</span></article>
+        <article><strong>Affectations</strong><span>Choix du prestataire ou delegation a Kaza selon votre mode.</span></article>
+        <article><strong>Operations</strong><span>Suivi des missions, paiements, retours clients et historique.</span></article>
+    </div>
+</section>
+
+<section id="benefits" class="landing-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">Avantages</p>
+        <h2>Pourquoi devenir partenaire ?</h2>
+        <p>Un canal de demandes supplementaire, sans perdre le controle de votre activite.</p>
+    </div>
+
+    <div class="benefit-grid">
+        <article><PlatformIcon Name="company" Tone="green" /><h3>Nouveaux clients</h3><p>Recevez des demandes qualifiees dans vos services.</p></article>
+        <article><PlatformIcon Name="payments" Tone="orange" /><h3>Chiffre d'affaires</h3><p>Developpez vos revenus avec des missions suivies.</p></article>
+        <article><PlatformIcon Name="providers" Tone="green" /><h3>Controle equipe</h3><p>Vous decidez qui intervient et sur quel service.</p></article>
+        <article><PlatformIcon Name="pilot" Tone="orange" /><h3>Portail unique</h3><p>Employes, missions et paiements au meme endroit.</p></article>
+        <article><PlatformIcon Name="validate" Tone="green" /><h3>Demandes choisies</h3><p>Vous acceptez uniquement les missions pertinentes.</p></article>
+        <article><PlatformIcon Name="documents" Tone="orange" /><h3>Visibilite</h3><p>Votre entreprise gagne en presence locale.</p></article>
+        <article><PlatformIcon Name="payments" Tone="green" /><h3>Paiements suivis</h3><p>Mobile Money, cash terrain et commissions traces.</p></article>
+        <article><PlatformIcon Name="company" Tone="orange" /><h3>Support partenaire</h3><p>Une equipe Kaza vous accompagne dans le demarrage.</p></article>
+    </div>
+</section>
+
+<section id="how-it-works" class="landing-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">Fonctionnement</p>
+        <h2>Le parcours partenaire en 6 etapes</h2>
+    </div>
+
+    <div class="timeline-six">
+        <article><strong>1</strong><h3>Creer le compte</h3><p>Renseignez votre entreprise, vos services et le responsable.</p></article>
+        <article><strong>2</strong><h3>Completer le dossier</h3><p>Ajoutez les documents en ligne ou deposez-les dans nos bureaux.</p></article>
+        <article><strong>3</strong><h3>Validation Kaza</h3><p>Notre equipe verifie les informations et la conformite.</p></article>
+        <article><strong>4</strong><h3>Ajouter l'equipe</h3><p>Ajoutez salaries, interimaires, documents et services maitrises.</p></article>
+        <article><strong>5</strong><h3>Recevoir les demandes</h3><p>Les demandes clients arrivent selon vos services et zones.</p></article>
+        <article><strong>6</strong><h3>Affecter et suivre</h3><p>Assignez un prestataire, suivez la mission et les encaissements.</p></article>
+    </div>
+</section>
+
+<section id="services" class="landing-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">Services</p>
+        <h2>Qui peut rejoindre Kaza ?</h2>
+        <p>Toute entreprise serieuse proposant des services a domicile ou de proximite.</p>
+    </div>
+
+    <div class="service-category-grid">
+        <span>Plomberie</span>
+        <span>Electricite</span>
+        <span>Climatisation</span>
+        <span>Menage</span>
+        <span>Jardinage</span>
+        <span>Serrurerie</span>
+        <span>Peinture</span>
+        <span>Anti-nuisibles</span>
+        <span>Electromenager</span>
+        <span>Demenagement</span>
+        <span>Maintenance maison</span>
+        <span>Autres services bientot</span>
+    </div>
+</section>
+
+<section id="requirements" class="landing-section requirements-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">Conditions</p>
+        <h2>Documents et criteres attendus</h2>
+        <p>Ces elements permettent de proteger les clients, les entreprises et les prestataires.</p>
+    </div>
+
+    <div class="requirements-layout">
+        <div class="verified-badge-card">
+            <span>Verifie</span>
+            <strong>Partenaire Kaza</strong>
+            <p>Une entreprise identifiee, joignable, responsable et capable de suivre ses interventions.</p>
+        </div>
+        <ul class="requirement-list">
+            <li>Registre de commerce RCCM</li>
+            <li>Declaration fiscale d'existence DFE</li>
+            <li>Piece du representant legal</li>
+            <li>Adresse de l'entreprise</li>
+            <li>Telephone professionnel</li>
+            <li>Equipe de prestataires ou techniciens</li>
+            <li>Pieces des prestataires</li>
+            <li>Diplomes ou certificats si disponibles</li>
+            <li>Compte de paiement accepte</li>
+            <li>Acceptation des conditions partenaires Kaza</li>
+        </ul>
+    </div>
+</section>
+
+<section class="landing-section dashboard-preview-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">Portail partenaire</p>
+        <h2>Un tableau de bord pour piloter votre activite</h2>
+        <p>Une vision claire des demandes, affectations, prestataires et encaissements.</p>
+    </div>
+
+    <div class="dashboard-mockup">
+        <aside>
+            <strong>Kaza Partner</strong>
+            <span>Dashboard</span>
+            <span>Demandes</span>
+            <span>Equipe</span>
+            <span>Services</span>
+            <span>Zones</span>
+            <span>Paiements</span>
+            <span>Notes</span>
+            <span>Documents</span>
+            <span>Support</span>
+        </aside>
+        <div class="mockup-main">
+            <div class="mockup-stats">
+                <article><span>Demandes jour</span><strong>12</strong></article>
+                <article><span>Assignees</span><strong>8</strong></article>
+                <article><span>Terminees</span><strong>5</strong></article>
+                <article><span>Paiements</span><strong>185k</strong></article>
+            </div>
+            <div class="mockup-grid">
+                <section>
+                    <h3>Demandes en attente</h3>
+                    <p>Menage - Cocody Riviera</p>
+                    <p>Jardinage - Marcory</p>
+                    <p>Nounou - Deux Plateaux</p>
+                </section>
+                <section>
+                    <h3>Prestataires disponibles</h3>
+                    <p>Awa K. - Menage</p>
+                    <p>Jean M. - Jardinage</p>
+                    <p>Fatou C. - Nounou</p>
+                </section>
+                <section class="wide">
+                    <h3>Activite recente</h3>
+                    <p>Mission confirmee, paiement Mobile Money recu, client satisfait.</p>
+                </section>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="landing-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">Gestion</p>
+        <h2>Tout ce que vous pouvez piloter</h2>
+    </div>
+    <div class="management-grid">
+        <span>Demandes clients</span>
+        <span>Affectations</span>
+        <span>Employes</span>
+        <span>Interventions</span>
+        <span>Notes clients</span>
+        <span>Documents</span>
+        <span>Paiements</span>
+        <span>Parametres entreprise</span>
+        <span>Support</span>
+    </div>
+</section>
+
+<section class="landing-section commitment-section">
+    <div class="commitment-card">
+        <h2>Kaza s'engage a</h2>
+        <ul>
+            <li>Apporter de nouvelles demandes clients</li>
+            <li>Fournir une plateforme professionnelle</li>
+            <li>Accompagner le support client</li>
+            <li>Suivre les paiements de maniere claire</li>
+            <li>Ameliorer la plateforme en continu</li>
+        </ul>
+    </div>
+    <div class="commitment-card">
+        <h2>Le partenaire s'engage a</h2>
+        <ul>
+            <li>Assurer un service professionnel</li>
+            <li>Encadrer des prestataires qualifies</li>
+            <li>Respecter les horaires de rendez-vous</li>
+            <li>Respecter les clients</li>
+            <li>Maintenir la qualite des interventions</li>
+        </ul>
+    </div>
+</section>
+
+<section class="landing-section pricing-section">
+    <div>
+        <p class="eyebrow">Tarifs</p>
+        <h2>Inscription gratuite</h2>
+        <p>Aucun abonnement mensuel. Kaza applique une commission uniquement sur les missions realisees avec succes.</p>
+        <p>Le detail complet des commissions est presente avant validation finale du partenariat.</p>
+    </div>
+    <strong>0 XOF / mois</strong>
+</section>
+
+<section id="faq" class="landing-section faq-section">
+    <div class="landing-section-head">
+        <p class="eyebrow">FAQ</p>
+        <h2>Questions frequentes</h2>
+    </div>
+
+    <div class="faq-grid">
+        <details open><summary>L'inscription est-elle gratuite ?</summary><p>Oui, la demande de partenariat est gratuite.</p></details>
+        <details><summary>Puis-je refuser une demande ?</summary><p>Oui, l'entreprise reste libre d'accepter ou non une demande.</p></details>
+        <details><summary>Qui choisit le prestataire ?</summary><p>L'entreprise peut affecter elle-meme ou demander a Kaza de le faire selon le mode choisi.</p></details>
+        <details><summary>Puis-je ajouter plus d'employes ?</summary><p>Oui, vous pouvez ajouter salaries et interimaires depuis votre portail.</p></details>
+        <details><summary>Comment fonctionnent les paiements ?</summary><p>Mobile Money, cash et commissions sont suivis depuis le portail.</p></details>
+        <details><summary>Qui gere les reclamations clients ?</summary><p>Kaza centralise le support client et travaille avec l'entreprise pour regler les cas terrain.</p></details>
+        <details><summary>Puis-je mettre mon compte en pause ?</summary><p>Oui, les disponibilites et services pourront etre ajustes.</p></details>
+        <details><summary>Combien de temps prend la validation ?</summary><p>Elle depend de la qualite du dossier et des documents transmis.</p></details>
+    </div>
+</section>
+
+<section id="contact" class="landing-section final-cta-section">
+    <div>
+        <p class="eyebrow">Demarrer</p>
+        <h2>Pret a developper votre activite ?</h2>
+        <p>Rejoignez Kaza et commencez a recevoir de nouvelles demandes clients.</p>
+    </div>
+    <div class="contact-actions">
+        <a class="primary-action" href="register">Devenir partenaire</a>
+        <a class="secondary-action" href="dashboard">Contacter l'equipe</a>
+    </div>
+</section>
+
+<footer class="site-footer">
+    <strong>Kaza</strong>
+    <nav aria-label="Liens footer">
+        <a href="#concept">A propos</a>
+        <a href="register">Devenir partenaire</a>
+        <a href="#contact">Support</a>
+        <a href="#contact">WhatsApp</a>
+        <a href="#contact">Email</a>
+        <a href="#faq">Conditions partenaires</a>
+    </nav>
+</footer>
 
 @code {
     private CountryBrandingResponse Branding { get; set; } = DefaultBranding;
@@ -98,28 +346,3 @@
         null,
         "flag-ribbon");
 }
-
-<section class="service-strip" aria-label="Services de depart">
-    <span>Menage a domicile</span>
-    <span>Nounou</span>
-    <span>Jardinage</span>
-    <span>Services proposes par vos equipes</span>
-</section>
-
-<section class="dashboard-grid feature-grid">
-    <article>
-        <PlatformIcon Name="company" Tone="green" />
-        <h2>Votre entreprise est verifiee</h2>
-        <p>Vous creez votre compte, puis vous ajoutez les pieces de conformite depuis le portail ou via nos bureaux.</p>
-    </article>
-    <article>
-        <PlatformIcon Name="providers" Tone="orange" />
-        <h2>Vos prestataires sont encadres</h2>
-        <p>Vous ajoutez salaries et interimaires, avec leurs documents, services maitrises et niveau normal ou premium.</p>
-    </article>
-    <article>
-        <PlatformIcon Name="payments" Tone="green" />
-        <h2>Vous gardez la tracabilite</h2>
-        <p>Suivez les demandes, refus, retards, notes clients, paiements Mobile Money et cash collecte sur le terrain.</p>
-    </article>
-</section>
