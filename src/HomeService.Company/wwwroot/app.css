@@ -1904,6 +1904,144 @@ h3 {
     margin: 0;
 }
 
+.how-carousel {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+
+.how-carousel-track {
+    display: grid;
+    gap: 1rem;
+    grid-auto-columns: minmax(92%, 1fr);
+    grid-auto-flow: column;
+    overflow-x: auto;
+    padding: .2rem .15rem 1rem;
+    scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+}
+
+.how-slide {
+    align-items: center;
+    background: rgba(255, 255, 255, .96);
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    display: grid;
+    gap: clamp(1.2rem, 3vw, 2.5rem);
+    grid-template-columns: 110px minmax(260px, .74fr) minmax(420px, 1.26fr);
+    min-height: 440px;
+    overflow: hidden;
+    padding: clamp(1.35rem, 3vw, 2.35rem);
+    scroll-snap-align: center;
+}
+
+.how-step-meta {
+    align-self: start;
+    color: #000;
+    display: grid;
+    gap: .35rem;
+}
+
+.how-step-meta span {
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+.how-step-meta strong {
+    font-size: clamp(2.4rem, 4vw, 3.5rem);
+    font-weight: 540;
+    letter-spacing: -.04em;
+    line-height: .95;
+}
+
+.how-step-copy {
+    display: grid;
+    gap: .65rem;
+    justify-items: start;
+    max-width: 380px;
+}
+
+.how-step-icon {
+    align-items: center;
+    background: rgba(0, 113, 227, .1);
+    border: 1px solid rgba(0, 113, 227, .16);
+    border-radius: 999px;
+    color: #0071e3;
+    display: inline-flex;
+    font-size: 1.05rem;
+    font-weight: 760;
+    height: 42px;
+    justify-content: center;
+    width: 42px;
+}
+
+.how-step-copy h3 {
+    color: #000;
+    font-size: clamp(1.55rem, 2.6vw, 2.4rem);
+    font-weight: 650;
+    letter-spacing: -.015em;
+    line-height: 1.05;
+    margin: 0;
+}
+
+.how-step-copy p {
+    color: #000;
+    font-size: clamp(.98rem, 1.2vw, 1.08rem);
+    line-height: 1.45;
+    margin: 0;
+}
+
+.compact-action {
+    min-height: 42px !important;
+    padding: .72rem 1.05rem !important;
+}
+
+.how-slide figure {
+    align-self: stretch;
+    border-radius: 24px;
+    margin: 0;
+    min-height: 300px;
+    overflow: hidden;
+}
+
+.how-slide img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    width: 100%;
+}
+
+.how-carousel-nav {
+    align-items: center;
+    display: flex;
+    gap: .65rem;
+    justify-content: center;
+}
+
+.how-carousel-nav a {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 999px;
+    color: #000;
+    display: inline-flex;
+    font-size: .9rem;
+    font-weight: 700;
+    height: 42px;
+    justify-content: center;
+    text-decoration: none;
+    width: 42px;
+}
+
+.how-carousel-nav a:hover,
+.how-carousel-nav a:focus-visible {
+    background: #0071e3;
+    border-color: #0071e3;
+    color: #ffffff;
+}
+
 .service-category-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -5314,6 +5452,51 @@ h3 {
     background: #0071e3;
 }
 
+.company-theme-apple.company-landing .how-carousel {
+    gap: .9rem;
+}
+
+.company-theme-apple.company-landing .how-carousel-track {
+    gap: 1.15rem;
+    grid-auto-columns: minmax(94%, 1fr);
+    padding-bottom: .85rem;
+}
+
+.company-theme-apple.company-landing .how-slide {
+    background: #ffffff;
+    border: 0;
+    border-radius: 34px;
+    box-shadow: 0 22px 60px rgba(0, 0, 0, .055);
+    grid-template-columns: 112px minmax(250px, .68fr) minmax(460px, 1.32fr);
+    min-height: 460px;
+}
+
+.company-theme-apple.company-landing .how-step-meta span,
+.company-theme-apple.company-landing .how-step-copy p {
+    color: #1d1d1f;
+}
+
+.company-theme-apple.company-landing .how-step-meta strong {
+    color: #1d1d1f;
+    font-weight: 520;
+}
+
+.company-theme-apple.company-landing .how-step-copy h3 {
+    color: #1d1d1f;
+    font-size: clamp(1.6rem, 2.2vw, 2.25rem);
+    font-weight: 650;
+}
+
+.company-theme-apple.company-landing .how-slide figure {
+    border-radius: 28px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .05);
+}
+
+.company-theme-apple.company-landing .how-carousel-nav a {
+    border: 0;
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .055);
+}
+
 .company-theme-apple.company-landing .timeline-six strong {
     background: #1d1d1f !important;
     border-color: #1d1d1f !important;
@@ -5542,6 +5725,46 @@ h3 {
         min-height: 38px;
         padding: .52rem .62rem;
         text-align: center;
+    }
+
+    .how-carousel-track,
+    .company-theme-apple.company-landing .how-carousel-track {
+        grid-auto-columns: minmax(100%, 1fr);
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .how-slide,
+    .company-theme-apple.company-landing .how-slide {
+        border-radius: 22px;
+        gap: 1rem;
+        grid-template-columns: 1fr;
+        min-height: auto;
+        padding: 1.05rem;
+    }
+
+    .how-step-meta {
+        align-items: end;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .how-step-meta strong {
+        font-size: 2rem;
+    }
+
+    .how-step-copy {
+        max-width: none;
+    }
+
+    .how-step-copy h3,
+    .company-theme-apple.company-landing .how-step-copy h3 {
+        font-size: clamp(1.45rem, 7vw, 2rem);
+    }
+
+    .how-slide figure {
+        border-radius: 18px;
+        min-height: 220px;
     }
 
     .company-landing > .landing-section {
