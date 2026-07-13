@@ -11,13 +11,13 @@
     --panel: rgba(255, 255, 255, 0.86);
     --wash: #f7fffc;
     --company-font: "Uber Move", "UberMove", "Inter", "Helvetica Neue", Arial, sans-serif;
-    --title-hero: clamp(2.2rem, 5vw, 4.65rem);
-    --title-page: clamp(1.55rem, 2.8vw, 2.25rem);
-    --title-panel: clamp(1.28rem, 2.25vw, 1.82rem);
+    --title-hero: clamp(2rem, 3.7vw, 3.35rem);
+    --title-page: clamp(1.45rem, 2.25vw, 1.95rem);
+    --title-panel: clamp(1.2rem, 1.85vw, 1.55rem);
     --title-section: clamp(1.04rem, 1.55vw, 1.24rem);
     --title-card: 1.05rem;
-    --text-lead: clamp(1rem, 1.45vw, 1.2rem);
-    --company-title-weight: 700;
+    --text-lead: clamp(.98rem, 1.18vw, 1.08rem);
+    --company-title-weight: 650;
     --company-heading-weight: 650;
     --company-body-weight: 400;
 }
@@ -1852,6 +1852,20 @@ h3 {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.timeline-three {
+    gap: 1.15rem;
+}
+
+.timeline-three article {
+    min-height: 188px;
+    padding: 1.25rem;
+}
+
+.timeline-three h3 {
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    line-height: 1.2;
 }
 
 .timeline-six article {
@@ -4158,8 +4172,8 @@ h3 {
 }
 
 .company-theme .landing-section-head h2 {
-    font-size: clamp(1.55rem, 2.7vw, 2.45rem);
-    line-height: 1.06;
+    font-size: clamp(1.35rem, 2.05vw, 1.95rem);
+    line-height: 1.14;
 }
 
 .company-theme .lead,
@@ -4433,9 +4447,9 @@ h3 {
 .company-landing .landing-section-head h2,
 .company-landing .contact-copy h2,
 .company-landing .pricing-section h2 {
-    font-size: clamp(1.75rem, 3.2vw, 3rem);
+    font-size: clamp(1.45rem, 2.15vw, 2.05rem);
     font-weight: var(--company-title-weight);
-    line-height: 1.04;
+    line-height: 1.14;
 }
 
 .company-landing .landing-section-head p,
@@ -4520,7 +4534,7 @@ h3 {
 }
 
 .company-landing .faq-section .landing-section-head h2 {
-    font-size: clamp(2rem, 3.6vw, 3.25rem);
+    font-size: clamp(1.55rem, 2.3vw, 2.15rem);
 }
 
 .company-landing .faq-grid details {
@@ -5069,8 +5083,8 @@ h3 {
     }
 
     .company-landing .hero h1 {
-        font-size: clamp(2.15rem, 10.6vw, 2.75rem);
-        line-height: 1.02;
+        font-size: clamp(1.85rem, 8.2vw, 2.25rem);
+        line-height: 1.08;
     }
 
     .company-landing .lead {
