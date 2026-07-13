@@ -4336,3 +4336,182 @@ h3 {
     gap: 1.1rem;
 }
 
+/* Unified public landing: fewer isolated blocks, more continuous page rhythm. */
+.company-landing {
+    --landing-max: 1180px;
+    margin-left: calc(50% - 50vw);
+    width: 100vw;
+}
+
+.company-landing > .hero,
+.company-landing > .landing-section,
+.company-landing > .site-footer {
+    width: min(100% - 3rem, var(--landing-max));
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.company-landing > .hero-company {
+    width: 100%;
+    max-width: none;
+    min-height: clamp(420px, 64vh, 620px);
+    margin: -1.1rem 0 0;
+    padding:
+        clamp(3.2rem, 8vw, 6.5rem)
+        max(1.5rem, calc((100vw - var(--landing-max)) / 2))
+        clamp(2.8rem, 6vw, 5rem);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background:
+        linear-gradient(110deg, rgba(255, 247, 237, .92), rgba(255, 255, 255, .98) 48%, rgba(240, 253, 244, .92));
+}
+
+.company-landing > .hero-company .hero-copy {
+    width: min(100%, var(--landing-max));
+    margin: 0 auto;
+}
+
+.company-landing .hero-service-strip {
+    border-top-color: rgba(0, 0, 0, .09);
+}
+
+.company-landing .hero-service-strip span,
+.company-landing .service-strip span {
+    box-shadow: none;
+}
+
+.company-landing > .landing-section {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: clamp(3.2rem, 7vw, 5.6rem) 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+.company-landing > .landing-section + .landing-section {
+    border-top: 1px solid rgba(0, 0, 0, .08);
+}
+
+.company-landing .landing-section-head {
+    max-width: 760px;
+    margin-bottom: clamp(1.4rem, 3vw, 2.4rem);
+}
+
+.company-landing .landing-section-head h2,
+.company-landing .contact-copy h2,
+.company-landing .pricing-section h2 {
+    font-size: clamp(1.75rem, 3.2vw, 3rem);
+    font-weight: var(--company-title-weight);
+    line-height: 1.04;
+}
+
+.company-landing .landing-section-head p,
+.company-landing .contact-copy p,
+.company-landing .pricing-section p {
+    max-width: 720px;
+    font-size: clamp(1rem, 1.25vw, 1.12rem);
+    line-height: 1.52;
+}
+
+.company-landing .split-section,
+.company-landing .requirements-layout,
+.company-landing .commitment-section,
+.company-landing .contact-form-section,
+.company-landing .pricing-section {
+    gap: clamp(1.4rem, 3vw, 2.4rem);
+}
+
+.company-landing .control-list article,
+.company-landing .timeline-six article,
+.company-landing .service-category-grid article,
+.company-landing .requirement-list li,
+.company-landing .verified-badge-card,
+.company-landing .commitment-card,
+.company-landing .faq-grid details,
+.company-landing .contact-form,
+.company-landing .mockup-stats article,
+.company-landing .mockup-grid section,
+.company-landing .management-grid span {
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.company-landing .benefit-list {
+    border-top: 1px solid rgba(0, 0, 0, .12);
+}
+
+.company-landing .benefit-list article {
+    padding: 1.2rem 1.2rem 1.2rem 1.4rem;
+}
+
+.company-landing .dashboard-preview-section {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.company-landing .dashboard-mockup {
+    border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, .08);
+}
+
+.company-landing .pricing-section,
+.company-landing .contact-form-section {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.company-landing .contact-form {
+    background: rgba(255, 255, 255, .86);
+}
+
+.company-landing .site-footer {
+    margin-top: 0;
+}
+
+.company-theme.company-landing > .hero-company {
+    background: linear-gradient(112deg, var(--preview-panel), #ffffff 62%);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.company-theme.company-landing > .landing-section + .landing-section {
+    border-top-color: var(--preview-line);
+}
+
+.company-theme.company-landing .landing-section-head,
+.company-theme.company-landing .contact-copy,
+.company-theme.company-landing .pricing-section > div {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+}
+
+@media (max-width: 720px) {
+    .company-landing > .hero,
+    .company-landing > .landing-section,
+    .company-landing > .site-footer {
+        width: min(100% - 1.4rem, var(--landing-max));
+    }
+
+    .company-landing > .hero-company {
+        margin-top: -.9rem;
+        padding: 2.7rem .7rem 2.4rem;
+    }
+
+    .company-landing > .landing-section {
+        padding: 2.4rem 0;
+    }
+}
+

@@ -354,9 +354,9 @@
 
     private string LandingThemeClass => LandingVariant switch
     {
-        "bleu" => "company-theme company-theme-blue",
-        "vert" => "company-theme company-theme-green",
-        _ => string.Empty
+        "bleu" => "company-landing company-theme company-theme-blue",
+        "vert" => "company-landing company-theme company-theme-green",
+        _ => "company-landing"
     };
 
     private string BrandStyle => LandingVariant switch
