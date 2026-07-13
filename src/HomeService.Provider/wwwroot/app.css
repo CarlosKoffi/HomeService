@@ -2111,3 +2111,133 @@ textarea {
         flex-direction: column;
     }
 }
+
+/* Unified provider landing: continuous page flow, not stacked blocks. */
+.provider-acquisition {
+    --provider-landing-max: 1120px;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding: 0 0 70px;
+}
+
+.provider-acquisition > .provider-site-hero,
+.provider-acquisition > .provider-site-section {
+    width: min(100% - 3rem, var(--provider-landing-max));
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.provider-acquisition > .provider-site-hero {
+    width: 100%;
+    max-width: none;
+    min-height: clamp(430px, 64vh, 640px);
+    margin-top: -34px;
+    padding:
+        clamp(3.2rem, 8vw, 6.5rem)
+        max(1.5rem, calc((100vw - var(--provider-landing-max)) / 2))
+        clamp(2.8rem, 6vw, 5rem);
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background:
+        linear-gradient(115deg, rgba(255, 240, 223, .92), rgba(255, 255, 255, .98) 50%, rgba(223, 243, 234, .86));
+}
+
+.provider-acquisition > .provider-site-section {
+    margin-top: 0;
+    padding: clamp(3.1rem, 7vw, 5.3rem) 0;
+}
+
+.provider-acquisition > .provider-site-section + .provider-site-section {
+    border-top: 1px solid rgba(2, 8, 23, .09);
+}
+
+.provider-acquisition .provider-section-head {
+    margin-bottom: clamp(1.35rem, 3vw, 2.25rem);
+}
+
+.provider-acquisition .provider-choice-row article,
+.provider-acquisition .provider-simple-steps article,
+.provider-acquisition .provider-benefit-list article,
+.provider-acquisition .provider-detail-strip details,
+.provider-acquisition .provider-faq-grid details,
+.provider-acquisition .provider-app-callout,
+.provider-acquisition .provider-final-cta {
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.provider-acquisition .provider-choice-row article,
+.provider-acquisition .provider-simple-steps article,
+.provider-acquisition .provider-benefit-list article,
+.provider-acquisition .provider-detail-strip details,
+.provider-acquisition .provider-faq-grid details {
+    background: rgba(255, 255, 255, .9);
+}
+
+.provider-acquisition .provider-app-callout,
+.provider-acquisition .provider-final-cta {
+    background: transparent;
+    border: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.provider-acquisition .provider-faq-grid,
+.provider-acquisition .provider-detail-strip {
+    display: block;
+    max-width: none;
+    border-top: 1px solid rgba(2, 8, 23, .12);
+}
+
+.provider-acquisition .provider-faq-grid details,
+.provider-acquisition .provider-detail-strip details {
+    display: block;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid rgba(2, 8, 23, .12);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.provider-acquisition .provider-faq-grid summary,
+.provider-acquisition .provider-detail-strip summary {
+    display: list-item;
+    padding: 1.2rem 0;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 650;
+    list-style-position: outside;
+}
+
+.provider-acquisition .provider-faq-grid details p,
+.provider-acquisition .provider-detail-strip details p {
+    max-width: 760px;
+    margin: -.3rem 0 1.2rem;
+    color: var(--ink);
+    font-size: .98rem;
+    line-height: 1.55;
+}
+
+.provider-acquisition .provider-phone-illustration {
+    box-shadow: 0 22px 54px rgba(2, 8, 23, .16);
+}
+
+@media (max-width: 820px) {
+    .provider-acquisition > .provider-site-hero,
+    .provider-acquisition > .provider-site-section {
+        width: min(100% - 1.4rem, var(--provider-landing-max));
+    }
+
+    .provider-acquisition > .provider-site-hero {
+        width: 100%;
+        margin-top: -18px;
+        padding: 2.6rem .7rem 2.4rem;
+    }
+
+    .provider-acquisition > .provider-site-section {
+        padding: 2.35rem 0;
+    }
+}
