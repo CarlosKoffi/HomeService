@@ -4913,6 +4913,274 @@ h3 {
     stroke: #000000;
 }
 
+.concept-visual {
+    align-self: stretch;
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-radius: 28px;
+    box-shadow: 0 28px 70px rgba(15, 23, 42, .1);
+    min-height: 360px;
+    overflow: hidden;
+    position: relative;
+}
+
+.concept-visual::after {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, .16));
+    bottom: 0;
+    content: "";
+    height: 42%;
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+}
+
+.concept-visual img {
+    display: block;
+    height: 100%;
+    min-height: 360px;
+    object-fit: cover;
+    object-position: center;
+    width: 100%;
+}
+
+/* Apple-inspired preview: calm contrast, generous whitespace, focused content. */
+.company-theme-apple.company-landing {
+    --preview-bg: #f5f5f7;
+    --preview-panel: #ffffff;
+    --preview-panel-strong: #fbfbfd;
+    --line: rgba(0, 0, 0, .12);
+    background: #f5f5f7;
+    color: #1d1d1f;
+    font-family: "SF Pro Display", "SF Pro Text", "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
+}
+
+.company-theme-apple.company-landing > .hero-company {
+    align-items: flex-start;
+    background: #f5f5f7;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    margin-top: 0;
+    max-width: none;
+    min-height: min(520px, calc(100vh - 58px));
+    padding: clamp(2.7rem, 5vw, 4.2rem) max(1.25rem, calc((100vw - var(--landing-max)) / 2)) clamp(2.4rem, 4.5vw, 3.6rem);
+    width: 100%;
+}
+
+.company-theme-apple.company-landing > .hero-company .hero-copy {
+    max-width: 900px;
+}
+
+.company-theme-apple.company-landing .hero h1 {
+    color: #1d1d1f;
+    font-size: clamp(2.35rem, 4.8vw, 4.6rem);
+    font-weight: 680;
+    letter-spacing: -.015em;
+    line-height: 1;
+    max-width: 840px;
+}
+
+.company-theme-apple.company-landing .hero h1 span {
+    background: none;
+    border-radius: 0;
+    color: #0071e3;
+    padding: 0;
+}
+
+.company-theme-apple.company-landing .lead {
+    color: #1d1d1f !important;
+    font-size: clamp(1.05rem, 1.45vw, 1.32rem);
+    line-height: 1.38;
+    max-width: 700px;
+}
+
+.company-theme-apple.company-landing .eyebrow {
+    color: #6e6e73 !important;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+}
+
+.company-theme-apple.company-landing .primary-action {
+    background: #0071e3 !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+}
+
+.company-theme-apple.company-landing .secondary-action,
+.company-theme-apple.company-landing .hero-service-strip span,
+.company-theme-apple.company-landing .contact-shortcuts span {
+    background: #ffffff !important;
+    border-color: rgba(0, 0, 0, .12) !important;
+    color: #1d1d1f !important;
+}
+
+.company-theme-apple.company-landing > .landing-section,
+.company-theme-apple.company-landing > .site-footer {
+    max-width: none;
+    padding-left: max(1.25rem, calc((100vw - var(--landing-max)) / 2));
+    padding-right: max(1.25rem, calc((100vw - var(--landing-max)) / 2));
+    width: 100%;
+}
+
+.company-theme-apple.company-landing > .landing-section {
+    padding-bottom: clamp(3.2rem, 6vw, 5rem);
+    padding-top: clamp(3.2rem, 6vw, 5rem);
+}
+
+.company-theme-apple.company-landing > .landing-section::before,
+.company-theme-apple.company-landing > .landing-section.section-soft::before,
+.company-theme-apple.company-landing > .landing-section.section-muted::before,
+.company-theme-apple.company-landing > .landing-section.section-warm::before,
+.company-theme-apple.company-landing > .landing-section.section-green::before,
+.company-theme-apple.company-landing > .landing-section.section-strong::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(2)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(3)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(4)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(5)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(6)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(7)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(8)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(9)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(11)::before,
+.company-theme-apple.company-landing > .landing-section:nth-of-type(12)::before {
+    background: transparent;
+}
+
+.company-theme-apple.company-landing > .landing-section + .landing-section {
+    border-top: 0;
+}
+
+.company-theme-apple.company-landing > .landing-section + .landing-section::after {
+    display: none;
+}
+
+.company-theme-apple.company-landing .landing-section-head,
+.company-theme-apple.company-landing .contact-copy,
+.company-theme-apple.company-landing .pricing-section > div {
+    padding-left: 0 !important;
+}
+
+.company-theme-apple.company-landing .landing-section-head::before,
+.company-theme-apple.company-landing .split-section .landing-section-head::before,
+.company-theme-apple.company-landing .dashboard-preview-section .landing-section-head::before,
+.company-theme-apple.company-landing .faq-section .landing-section-head::before {
+    display: none;
+}
+
+.company-theme-apple.company-landing .landing-section-head h2,
+.company-theme-apple.company-landing .contact-copy h2,
+.company-theme-apple.company-landing .pricing-section h2 {
+    color: #1d1d1f;
+    font-size: clamp(1.7rem, 3.2vw, 2.75rem);
+    font-weight: 650;
+    letter-spacing: -.012em;
+    line-height: 1.08;
+    max-width: 760px;
+}
+
+.company-theme-apple.company-landing .landing-section-head p,
+.company-theme-apple.company-landing .contact-copy p,
+.company-theme-apple.company-landing .pricing-section p,
+.company-theme-apple.company-landing .benefit-list p,
+.company-theme-apple.company-landing .timeline-six p,
+.company-theme-apple.company-landing .faq-grid p {
+    color: #1d1d1f !important;
+}
+
+.company-theme-apple.company-landing .concept-visual,
+.company-theme-apple.company-landing .timeline-six article,
+.company-theme-apple.company-landing .service-category-grid article,
+.company-theme-apple.company-landing .verified-badge-card,
+.company-theme-apple.company-landing .requirement-list li,
+.company-theme-apple.company-landing .commitment-card,
+.company-theme-apple.company-landing .contact-form,
+.company-theme-apple.company-landing .mockup-stats article,
+.company-theme-apple.company-landing .mockup-grid section,
+.company-theme-apple.company-landing .management-grid span,
+.company-theme-apple.company-landing .site-footer {
+    background: #ffffff !important;
+    border: 0 !important;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .055) !important;
+}
+
+.company-theme-apple.company-landing .split-section {
+    align-items: center;
+    gap: clamp(2rem, 4vw, 4rem);
+    grid-template-columns: minmax(0, .86fr) minmax(360px, 1.14fr);
+}
+
+.company-theme-apple.company-landing .concept-visual {
+    border-radius: 30px;
+    min-height: 420px;
+}
+
+.company-theme-apple.company-landing .concept-visual img {
+    min-height: 420px;
+}
+
+.company-theme-apple.company-landing .hero-service-strip {
+    gap: .55rem;
+    margin-top: 1.8rem;
+}
+
+.company-theme-apple.company-landing .hero-service-strip span {
+    min-height: 36px;
+    padding: .5rem .76rem;
+}
+
+.company-theme-apple.company-landing .benefit-list,
+.company-theme-apple.company-landing .faq-grid {
+    border-color: rgba(0, 0, 0, .12);
+}
+
+.company-theme-apple.company-landing .benefit-list article,
+.company-theme-apple.company-landing .faq-grid details {
+    border-color: rgba(0, 0, 0, .12);
+}
+
+.company-theme-apple.company-landing .benefit-list article::before,
+.company-theme-apple.company-landing .requirement-list li::before {
+    background: #0071e3;
+}
+
+.company-theme-apple.company-landing .timeline-six strong {
+    background: #1d1d1f !important;
+    border-color: #1d1d1f !important;
+    color: #ffffff !important;
+}
+
+.company-theme-apple.company-landing .dashboard-mockup {
+    background: #ffffff !important;
+    border: 0 !important;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .07);
+}
+
+.company-theme-apple.company-landing .dashboard-mockup aside {
+    background: #1d1d1f !important;
+    color: #ffffff !important;
+}
+
+.company-theme-apple.company-landing .dashboard-mockup aside span:first-of-type {
+    background: rgba(255, 255, 255, .14) !important;
+    color: #ffffff !important;
+}
+
+.company-theme-apple.company-landing .pricing-section {
+    background: #ffffff !important;
+    border: 0 !important;
+    border-radius: 36px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .055);
+    padding-left: clamp(1.5rem, 4vw, 3rem);
+    padding-right: clamp(1.5rem, 4vw, 3rem);
+}
+
+.company-theme-apple.company-landing .pricing-section > strong {
+    background: #f5f5f7 !important;
+    border: 0 !important;
+    color: #1d1d1f !important;
+}
+
 /* Premium service illustrations and cleaner section headings. */
 .company-landing .landing-section-head {
     display: grid;
@@ -5112,6 +5380,43 @@ h3 {
 
     .company-landing .landing-section-head {
         padding-left: .9rem;
+    }
+
+    .concept-visual,
+    .concept-visual img {
+        min-height: 260px;
+    }
+
+    .concept-visual {
+        border-radius: 20px;
+    }
+
+    .company-theme-apple.company-landing > .hero-company,
+    .company-theme-apple.company-landing > .landing-section,
+    .company-theme-apple.company-landing > .site-footer {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .company-theme-apple.company-landing > .hero-company {
+        min-height: auto;
+        padding-bottom: 2.4rem;
+        padding-top: 2.6rem;
+    }
+
+    .company-theme-apple.company-landing .hero h1 {
+        font-size: clamp(2rem, 8.8vw, 2.75rem);
+    }
+
+    .company-theme-apple.company-landing .landing-section-head h2,
+    .company-theme-apple.company-landing .contact-copy h2,
+    .company-theme-apple.company-landing .pricing-section h2 {
+        font-size: clamp(1.8rem, 8vw, 2.45rem);
+    }
+
+    .company-theme-apple.company-landing .split-section {
+        grid-template-columns: 1fr;
+        gap: 1.35rem;
     }
 }
 

@@ -2,6 +2,7 @@
 @page "/bleu"
 @page "/vert"
 @page "/noir"
+@page "/apple"
 @using HomeService.Company.Services
 @using HomeService.Contracts.Branding
 @inject PlatformApiClient ApiClient
@@ -23,8 +24,7 @@
         <p class="eyebrow">Partenariat entreprises</p>
         <h1>Recevez plus de missions avec <span>Kaza</span></h1>
         <p class="lead">
-            Kaza apporte des demandes clients qualifiees. Vous choisissez les missions, affectez vos prestataires
-            et suivez chaque intervention depuis un portail simple.
+            Kaza vous apporte des demandes clients qualifiees. Vous choisissez les missions et suivez vos interventions depuis un portail simple.
         </p>
         <div class="actions">
             <a class="primary-action" href="register">Devenir partenaire</a>
@@ -44,15 +44,11 @@
         <p class="eyebrow">Concept</p>
         <h2>Des clients cherchent un service. Votre entreprise peut repondre.</h2>
         <p>
-            Kaza met en relation les clients avec des entreprises identifiees et suivies. Vous gardez la main :
-            les demandes acceptees, les prestataires affectes et le suivi terrain restent sous votre controle.
+            Kaza relie les clients a des entreprises verifiees. Vous gardez la main sur vos prestataires, vos missions et votre suivi terrain.
         </p>
     </div>
-    <div class="control-list">
-        <article><strong>Prestataires</strong><span>Ajout, suspension, documents et services maitrises.</span></article>
-        <article><strong>Demandes</strong><span>Acceptation selon vos disponibilites et votre zone.</span></article>
-        <article><strong>Affectations</strong><span>Choix du prestataire ou delegation a Kaza selon votre mode.</span></article>
-        <article><strong>Operations</strong><span>Suivi des missions, paiements, retours clients et historique.</span></article>
+    <div class="concept-visual">
+        <img src="images/kaza-concept.png" alt="Kaza connecte clients, entreprises partenaires et interventions a domicile" loading="lazy" />
     </div>
 </section>
 
@@ -60,18 +56,16 @@
     <div class="landing-section-head">
         <p class="eyebrow">Avantages</p>
         <h2>Un nouveau canal de missions, sans perdre le controle.</h2>
-        <p>Kaza vous aide a trouver des clients, pendant que vous gardez votre facon de travailler.</p>
+        <p>Plus de demandes, moins de dispersion, une gestion plus claire.</p>
     </div>
 
     <div class="benefit-list">
-        <article><h3>Plus de demandes utiles</h3><p>Recevez des missions qui correspondent a vos services et a votre zone.</p></article>
-        <article><h3>Revenus mieux suivis</h3><p>Chaque mission, paiement et commission reste visible dans votre espace.</p></article>
-        <article><h3>Votre equipe reste a vous</h3><p>Vous decidez qui intervient, quand et sur quel type de service.</p></article>
-        <article><h3>Un seul portail</h3><p>Demandes, prestataires, documents et paiements sont reunis au meme endroit.</p></article>
-        <article><h3>Vous choisissez</h3><p>Vous acceptez uniquement les missions adaptees a votre organisation.</p></article>
-        <article><h3>Presence locale</h3><p>Votre entreprise devient plus visible aupres des clients proches de vous.</p></article>
-        <article><h3>Encaissements clairs</h3><p>Mobile Money, cash terrain et commissions sont traces proprement.</p></article>
-        <article><h3>Accompagnement</h3><p>L'equipe Kaza vous aide a demarrer et a traiter les cas terrain.</p></article>
+        <article><h3>Demandes qualifiees</h3><p>Des missions proches de vos services.</p></article>
+        <article><h3>Equipe maitrisee</h3><p>Vous decidez qui intervient.</p></article>
+        <article><h3>Portail unique</h3><p>Demandes, equipe et paiements au meme endroit.</p></article>
+        <article><h3>Choix des missions</h3><p>Vous acceptez ce qui vous convient.</p></article>
+        <article><h3>Visibilite locale</h3><p>Votre entreprise est plus facile a trouver.</p></article>
+        <article><h3>Accompagnement</h3><p>Kaza vous aide au demarrage.</p></article>
     </div>
 </section>
 
@@ -82,9 +76,9 @@
     </div>
 
     <div class="timeline-six timeline-three">
-        <article><strong>1</strong><h3>Creez votre compte</h3><p>Renseignez votre entreprise, vos services et le contact responsable.</p></article>
-        <article><strong>2</strong><h3>Nous verifions votre dossier</h3><p>Kaza controle les informations pour securiser les clients et les missions.</p></article>
-        <article><strong>3</strong><h3>Travaillez depuis votre portail</h3><p>Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.</p></article>
+        <article><strong>1</strong><h3>Creez votre compte</h3><p>Indiquez votre entreprise, vos services et le responsable.</p></article>
+        <article><strong>2</strong><h3>Nous verifions votre dossier</h3><p>Kaza controle les informations essentielles.</p></article>
+        <article><strong>3</strong><h3>Travaillez depuis votre portail</h3><p>Ajoutez l'equipe, recevez les demandes et suivez les missions.</p></article>
     </div>
 </section>
 
@@ -131,27 +125,23 @@
 <section id="requirements" class="landing-section requirements-section section-muted">
     <div class="landing-section-head">
         <p class="eyebrow">Conditions</p>
-        <h2>Ce que nous verifions avant activation</h2>
-        <p>Le but est simple : rassurer les clients et travailler avec des entreprises joignables, serieuses et responsables.</p>
+        <h2>Les bases pour travailler en confiance</h2>
+        <p>Nous demandons seulement les pieces utiles pour verifier l'entreprise et rassurer les clients.</p>
     </div>
 
     <div class="requirements-layout">
         <div class="verified-badge-card">
             <span>Verifie</span>
             <strong>Partenaire Kaza</strong>
-            <p>Une entreprise identifiee, avec un responsable clair, des prestataires suivis et des documents consultables.</p>
+            <p>Une entreprise identifiable, joignable et prete a intervenir.</p>
         </div>
         <ul class="requirement-list">
             <li>Registre de commerce RCCM</li>
             <li>Declaration fiscale d'existence DFE</li>
             <li>Piece du representant legal</li>
-            <li>Adresse de l'entreprise</li>
-            <li>Telephone professionnel</li>
-            <li>Equipe de prestataires ou techniciens</li>
-            <li>Pieces des prestataires</li>
-            <li>Diplomes ou certificats si disponibles</li>
+            <li>Adresse et telephone professionnel</li>
+            <li>Prestataires ou techniciens declares</li>
             <li>Compte de paiement accepte</li>
-            <li>Acceptation des conditions partenaires Kaza</li>
         </ul>
     </div>
 </section>
@@ -160,7 +150,7 @@
     <div class="landing-section-head">
         <p class="eyebrow">Portail partenaire</p>
         <h2>Votre activite, visible en un coup d'oeil.</h2>
-        <p>Suivez les demandes, les affectations, les prestataires disponibles et les paiements sans perdre de temps.</p>
+        <p>Demandes, equipe, missions et paiements : tout reste lisible.</p>
     </div>
 
     <div class="dashboard-mockup">
@@ -198,7 +188,7 @@
                 </section>
                 <section class="wide">
                     <h3>Activite recente</h3>
-                    <p>Mission confirmee, paiement Mobile Money recu, client satisfait.</p>
+                    <p>Mission confirmee. Paiement recu. Client satisfait.</p>
                 </section>
             </div>
         </div>
@@ -208,17 +198,14 @@
 <section class="landing-section section-warm">
     <div class="landing-section-head">
         <p class="eyebrow">Gestion</p>
-        <h2>Tout ce qu'une equipe doit gerer au quotidien</h2>
+        <h2>L'essentiel pour piloter votre equipe</h2>
     </div>
     <div class="management-grid">
         <span>Demandes clients</span>
         <span>Affectations</span>
-        <span>Employes</span>
-        <span>Interventions</span>
-        <span>Notes clients</span>
+        <span>Prestataires</span>
         <span>Documents</span>
         <span>Paiements</span>
-        <span>Parametres entreprise</span>
         <span>Support</span>
     </div>
 </section>
@@ -229,9 +216,7 @@
         <ul>
             <li>Apporter de nouvelles demandes clients</li>
             <li>Fournir une plateforme professionnelle</li>
-            <li>Accompagner le support client</li>
             <li>Suivre les paiements de maniere claire</li>
-            <li>Ameliorer la plateforme en continu</li>
         </ul>
     </div>
     <div class="commitment-card">
@@ -240,8 +225,6 @@
             <li>Assurer un service professionnel</li>
             <li>Encadrer des prestataires qualifies</li>
             <li>Respecter les horaires de rendez-vous</li>
-            <li>Respecter les clients</li>
-            <li>Maintenir la qualite des interventions</li>
         </ul>
     </div>
 </section>
@@ -250,8 +233,7 @@
     <div>
         <p class="eyebrow">Tarifs</p>
         <h2>Inscription gratuite</h2>
-        <p>Aucun abonnement mensuel. Kaza se remunere uniquement quand une mission est realisee.</p>
-        <p>Le detail des commissions est presente avant l'activation du partenariat.</p>
+        <p>Aucun abonnement mensuel. Kaza prend une commission uniquement sur les missions realisees.</p>
     </div>
     <strong>0 XOF / mois</strong>
 </section>
@@ -266,10 +248,7 @@
         <details open><summary>L'inscription est-elle gratuite ?</summary><p>Oui, la demande de partenariat est gratuite.</p></details>
         <details><summary>Puis-je refuser une demande ?</summary><p>Oui, l'entreprise reste libre d'accepter ou non une demande.</p></details>
         <details><summary>Qui choisit le prestataire ?</summary><p>L'entreprise peut affecter elle-meme ou demander a Kaza de le faire selon le mode choisi.</p></details>
-        <details><summary>Puis-je ajouter plus d'employes ?</summary><p>Oui, vous pouvez ajouter salaries et interimaires depuis votre portail.</p></details>
         <details><summary>Comment fonctionnent les paiements ?</summary><p>Mobile Money, cash et commissions sont suivis depuis le portail.</p></details>
-        <details><summary>Qui gere les reclamations clients ?</summary><p>Kaza centralise le support client et travaille avec l'entreprise pour regler les cas terrain.</p></details>
-        <details><summary>Puis-je mettre mon compte en pause ?</summary><p>Oui, les disponibilites et services pourront etre ajustes.</p></details>
         <details><summary>Combien de temps prend la validation ?</summary><p>Elle depend de la qualite du dossier et des documents transmis.</p></details>
     </div>
 </section>
@@ -278,7 +257,7 @@
     <div class="contact-copy">
         <p class="eyebrow">Contact</p>
         <h2>Vous voulez en parler avant de vous inscrire ?</h2>
-        <p>Laissez vos coordonnees. Nous vous rappelons pour comprendre vos services, votre zone et la meilleure facon de demarrer.</p>
+        <p>Laissez vos coordonnees. Nous vous rappelons pour voir si Kaza peut vous aider a demarrer.</p>
         <div class="contact-shortcuts">
             <span>Abidjan et communes proches</span>
             <span>Entreprises de services</span>
@@ -348,7 +327,7 @@
         get
         {
             var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').ToLowerInvariant();
-            return path is "bleu" or "vert" or "noir" ? path : string.Empty;
+            return path is "bleu" or "vert" or "noir" or "apple" ? path : string.Empty;
         }
     }
 
@@ -357,6 +336,7 @@
         "bleu" => "company-landing company-theme company-theme-blue",
         "vert" => "company-landing company-theme company-theme-green",
         "noir" => "company-landing company-theme company-theme-black",
+        "apple" => "company-landing company-theme company-theme-apple",
         _ => "company-landing"
     };
 
@@ -365,6 +345,7 @@
         "bleu" => "--country-primary:#0a66c2; --country-secondary:#ffffff; --country-accent:#0a66c2;",
         "vert" => "--country-primary:#12824c; --country-secondary:#ffffff; --country-accent:#12824c;",
         "noir" => "--country-primary:#000000; --country-secondary:#ffffff; --country-accent:#000000;",
+        "apple" => "--country-primary:#1d1d1f; --country-secondary:#f5f5f7; --country-accent:#0071e3;",
         _ => $"--country-primary:{Branding.PrimaryColor}; --country-secondary:{Branding.SecondaryColor}; --country-accent:{Branding.AccentColor};"
     };
 
