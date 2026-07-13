@@ -4133,6 +4133,16 @@ h3 {
     --preview-shadow: rgba(18, 130, 76, .07);
 }
 
+.company-theme-black {
+    --preview-main: #111111;
+    --preview-main-dark: #000000;
+    --preview-page: #ffffff;
+    --preview-panel: #f6f6f6;
+    --preview-panel-strong: #eeeeee;
+    --preview-line: #d8d8d8;
+    --preview-shadow: rgba(0, 0, 0, .045);
+}
+
 .company-theme .hero h1,
 .company-theme .landing-section-head h2,
 .company-theme .company-dashboard-hero h1,
@@ -4576,6 +4586,475 @@ h3 {
     border-color: var(--preview-line);
 }
 
+/* Stronger editorial rhythm for the public company landing. */
+.company-landing > .landing-section {
+    isolation: isolate;
+    z-index: 0;
+}
+
+.company-landing > .landing-section > * {
+    position: relative;
+    z-index: 1;
+}
+
+.company-landing > .landing-section::before {
+    z-index: -1;
+}
+
+.company-landing > .landing-section:nth-of-type(2)::before {
+    background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+}
+
+.company-landing > .landing-section.section-soft::before {
+    background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+}
+
+.company-landing > .landing-section.section-muted::before {
+    background: #f2f5f4;
+}
+
+.company-landing > .landing-section.section-warm::before {
+    background:
+        linear-gradient(90deg, rgba(249, 115, 22, .11), transparent 30%),
+        linear-gradient(180deg, #fff8ef, #ffffff);
+}
+
+.company-landing > .landing-section.section-green::before {
+    background:
+        linear-gradient(90deg, rgba(18, 130, 76, .12), transparent 32%),
+        #f3faf6;
+}
+
+.company-landing > .landing-section.section-strong::before {
+    background:
+        linear-gradient(135deg, rgba(6, 17, 31, .05), transparent 42%),
+        #eef4f1;
+}
+
+.company-landing > .landing-section:nth-of-type(3)::before,
+.company-landing > .landing-section:nth-of-type(7)::before,
+.company-landing > .landing-section:nth-of-type(11)::before {
+    background: #f4f7f5;
+}
+
+.company-landing > .landing-section:nth-of-type(4)::before,
+.company-landing > .landing-section:nth-of-type(8)::before,
+.company-landing > .landing-section:nth-of-type(12)::before {
+    background:
+        linear-gradient(90deg, rgba(249, 115, 22, .08), transparent 26%),
+        linear-gradient(180deg, #fffaf4, #ffffff);
+}
+
+.company-landing > .landing-section:nth-of-type(5)::before,
+.company-landing > .landing-section:nth-of-type(9)::before {
+    background:
+        linear-gradient(90deg, rgba(18, 130, 76, .08), transparent 28%),
+        #f6fbf8;
+}
+
+.company-landing > .landing-section + .landing-section {
+    border-top: 0;
+}
+
+.company-landing > .landing-section + .landing-section::after {
+    background: linear-gradient(90deg, var(--country-accent), rgba(18, 130, 76, .9));
+    content: "";
+    height: 3px;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: min(160px, 22vw);
+}
+
+.company-landing .landing-section-head {
+    position: relative;
+    padding-left: 1.15rem;
+}
+
+.company-landing .landing-section-head::before {
+    background: var(--country-accent);
+    border-radius: 999px;
+    content: "";
+    height: calc(100% - .25rem);
+    left: 0;
+    min-height: 44px;
+    position: absolute;
+    top: .12rem;
+    width: 4px;
+}
+
+.company-landing .landing-section-head .eyebrow {
+    color: #000000;
+    letter-spacing: .11em;
+}
+
+.company-landing .split-section .landing-section-head::before,
+.company-landing .dashboard-preview-section .landing-section-head::before,
+.company-landing .faq-section .landing-section-head::before {
+    background: var(--country-primary);
+}
+
+.company-landing .benefit-list,
+.company-landing .faq-grid {
+    border-top-color: rgba(0, 0, 0, .18);
+}
+
+.company-landing .benefit-list article,
+.company-landing .faq-grid details {
+    border-bottom-color: rgba(0, 0, 0, .18);
+}
+
+.company-landing .timeline-six article,
+.company-landing .control-list article,
+.company-landing .service-category-grid article,
+.company-landing .verified-badge-card,
+.company-landing .requirement-list li,
+.company-landing .management-grid span,
+.company-landing .commitment-card {
+    background: rgba(255, 255, 255, .72);
+    border-color: rgba(0, 0, 0, .1);
+}
+
+.company-landing .faq-section {
+    padding-top: clamp(4rem, 8vw, 6.5rem);
+    padding-bottom: clamp(4rem, 8vw, 6.5rem);
+}
+
+.company-landing .faq-section .landing-section-head {
+    margin-bottom: 1rem;
+}
+
+.company-landing .faq-grid summary {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+}
+
+.company-landing .faq-grid summary::-webkit-details-marker {
+    display: none;
+}
+
+.company-landing .faq-grid summary::after {
+    content: "+";
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.company-landing .faq-grid details[open] summary::after {
+    content: "-";
+}
+
+.company-theme.company-landing > .landing-section:nth-of-type(3)::before,
+.company-theme.company-landing > .landing-section:nth-of-type(7)::before,
+.company-theme.company-landing > .landing-section:nth-of-type(11)::before {
+    background: var(--preview-panel);
+}
+
+.company-theme.company-landing > .landing-section.section-soft::before,
+.company-theme.company-landing > .landing-section.section-muted::before,
+.company-theme.company-landing > .landing-section.section-green::before,
+.company-theme.company-landing > .landing-section.section-strong::before {
+    background: var(--preview-panel);
+}
+
+.company-theme.company-landing > .landing-section:nth-of-type(4)::before,
+.company-theme.company-landing > .landing-section:nth-of-type(8)::before,
+.company-theme.company-landing > .landing-section:nth-of-type(12)::before {
+    background: linear-gradient(180deg, var(--preview-panel-strong), #ffffff);
+}
+
+.company-theme.company-landing > .landing-section.section-warm::before {
+    background: linear-gradient(180deg, var(--preview-panel-strong), #ffffff);
+}
+
+/* Black and white corporate preview: sober, editorial, no color noise. */
+.company-theme-black.company-landing {
+    background: #ffffff;
+    color: #000000;
+}
+
+.company-theme-black.company-landing > .hero-company {
+    background: #ffffff;
+    border-bottom: 1px solid #111111;
+}
+
+.company-theme-black.company-landing .hero h1 span {
+    background: #111111;
+    border-radius: 4px;
+    color: #ffffff;
+}
+
+.company-theme-black.company-landing .eyebrow {
+    color: #000000 !important;
+}
+
+.company-theme-black.company-landing .primary-action {
+    background: #111111 !important;
+    color: #ffffff !important;
+}
+
+.company-theme-black.company-landing .primary-action:hover {
+    background: #000000 !important;
+}
+
+.company-theme-black.company-landing .secondary-action,
+.company-theme-black.company-landing .hero-service-strip span,
+.company-theme-black.company-landing .service-category-grid article span,
+.company-theme-black.company-landing .contact-shortcuts span {
+    background: #ffffff !important;
+    border-color: #111111 !important;
+    color: #000000 !important;
+}
+
+.company-theme-black.company-landing > .landing-section::before,
+.company-theme-black.company-landing > .landing-section.section-soft::before,
+.company-theme-black.company-landing > .landing-section.section-muted::before,
+.company-theme-black.company-landing > .landing-section.section-warm::before,
+.company-theme-black.company-landing > .landing-section.section-green::before,
+.company-theme-black.company-landing > .landing-section.section-strong::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(2)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(3)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(4)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(5)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(6)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(7)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(8)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(9)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(11)::before,
+.company-theme-black.company-landing > .landing-section:nth-of-type(12)::before {
+    background: #ffffff;
+}
+
+.company-theme-black.company-landing > .landing-section + .landing-section {
+    border-top: 1px solid #111111;
+}
+
+.company-theme-black.company-landing > .landing-section + .landing-section::after {
+    background: #111111;
+    height: 2px;
+    width: min(120px, 18vw);
+}
+
+.company-theme-black.company-landing .landing-section-head::before,
+.company-theme-black.company-landing .split-section .landing-section-head::before,
+.company-theme-black.company-landing .dashboard-preview-section .landing-section-head::before,
+.company-theme-black.company-landing .faq-section .landing-section-head::before {
+    background: #111111;
+}
+
+.company-theme-black.company-landing .benefit-list,
+.company-theme-black.company-landing .faq-grid,
+.company-theme-black.company-landing .benefit-list article,
+.company-theme-black.company-landing .faq-grid details {
+    border-color: #111111;
+}
+
+.company-theme-black.company-landing .control-list article,
+.company-theme-black.company-landing .timeline-six article,
+.company-theme-black.company-landing .service-category-grid article,
+.company-theme-black.company-landing .requirement-list li,
+.company-theme-black.company-landing .verified-badge-card,
+.company-theme-black.company-landing .commitment-card,
+.company-theme-black.company-landing .contact-form,
+.company-theme-black.company-landing .mockup-stats article,
+.company-theme-black.company-landing .mockup-grid section,
+.company-theme-black.company-landing .management-grid span,
+.company-theme-black.company-landing .pricing-section > strong,
+.company-theme-black.company-landing .site-footer {
+    background: #ffffff !important;
+    border-color: #111111 !important;
+    box-shadow: none !important;
+}
+
+.company-theme-black.company-landing .dashboard-mockup {
+    background: #ffffff !important;
+    border-color: #111111 !important;
+    box-shadow: none;
+}
+
+.company-theme-black.company-landing .dashboard-mockup aside {
+    background: #111111 !important;
+    color: #ffffff !important;
+}
+
+.company-theme-black.company-landing .dashboard-mockup aside span:first-of-type,
+.company-theme-black.company-landing .timeline-six strong {
+    background: #ffffff !important;
+    border-color: #111111 !important;
+    color: #000000 !important;
+}
+
+.company-theme-black.company-landing .benefit-list article::before,
+.company-theme-black.company-landing .benefit-list article:nth-child(even)::before,
+.company-theme-black.company-landing .requirement-list li::before {
+    background: #111111;
+    border-color: #111111;
+}
+
+.company-theme-black.company-landing .service-category-grid svg,
+.company-theme-black.company-landing .platform-icon svg {
+    color: #000000;
+    stroke: #000000;
+}
+
+/* Premium service illustrations and cleaner section headings. */
+.company-landing .landing-section-head {
+    display: grid;
+    gap: .7rem;
+    padding-left: 1.35rem;
+}
+
+.company-landing .landing-section-head h2 {
+    max-width: 880px;
+}
+
+.company-landing .landing-section-head p {
+    max-width: 780px;
+}
+
+.company-theme.company-landing .landing-section-head,
+.company-theme.company-landing .contact-copy,
+.company-theme.company-landing .pricing-section > div {
+    padding: .35rem 0 .1rem 1.35rem !important;
+}
+
+.company-theme.company-landing .landing-section-head::before {
+    left: 0;
+    top: .35rem;
+}
+
+.company-theme.company-landing .landing-section-head .eyebrow {
+    margin-bottom: .1rem;
+}
+
+.company-landing .service-category-grid {
+    gap: .9rem;
+}
+
+.company-landing .service-category-grid article {
+    align-items: center;
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .78));
+    border: 1px solid rgba(0, 0, 0, .1);
+    border-radius: 14px;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 96px minmax(0, 1fr);
+    min-height: 120px;
+    padding: 1rem 1.05rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.company-landing .service-category-grid article::after {
+    background: linear-gradient(180deg, rgba(0, 0, 0, .055), rgba(0, 0, 0, 0));
+    border-radius: 18px;
+    content: "";
+    height: 76px;
+    position: absolute;
+    right: -34px;
+    top: -34px;
+    transform: rotate(12deg);
+    width: 92px;
+}
+
+.company-landing .service-category-grid article span {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .45)),
+        linear-gradient(145deg, rgba(18, 130, 76, .12), rgba(18, 130, 76, .035));
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: 14px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .9),
+        0 10px 24px rgba(15, 23, 42, .045);
+    position: relative;
+    height: 78px;
+    width: 58px;
+    width: 90px;
+    z-index: 1;
+}
+
+.company-landing .service-category-grid article span::before {
+    background: rgba(0, 0, 0, .08);
+    border-radius: 999px;
+    bottom: 13px;
+    content: "";
+    height: 7px;
+    left: 20px;
+    position: absolute;
+    width: 50px;
+}
+
+.company-landing .service-category-grid article span::after {
+    background: rgba(255, 255, 255, .75);
+    border-radius: 999px;
+    content: "";
+    height: 12px;
+    left: 12px;
+    position: absolute;
+    top: 10px;
+    width: 28px;
+}
+
+.company-landing .service-category-grid article:nth-child(even) span {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .45)),
+        linear-gradient(145deg, rgba(249, 115, 22, .12), rgba(249, 115, 22, .035));
+    border-color: rgba(0, 0, 0, .12);
+}
+
+.company-landing .service-category-grid svg {
+    height: 48px;
+    position: relative;
+    stroke-width: 1.35;
+    width: 54px;
+    z-index: 1;
+}
+
+.company-landing .service-category-grid strong {
+    font-size: 1.02rem;
+    line-height: 1.18;
+    position: relative;
+    z-index: 1;
+}
+
+.company-theme-blue.company-landing .service-category-grid article span {
+    background: linear-gradient(145deg, rgba(10, 102, 194, .13), rgba(10, 102, 194, .04)) !important;
+    border-color: rgba(10, 102, 194, .24) !important;
+}
+
+.company-theme-green.company-landing .service-category-grid article span {
+    background: linear-gradient(145deg, rgba(18, 130, 76, .13), rgba(18, 130, 76, .04)) !important;
+    border-color: rgba(18, 130, 76, .24) !important;
+}
+
+.company-theme-black.company-landing .service-category-grid article {
+    background: #ffffff !important;
+    border-color: #111111 !important;
+}
+
+.company-theme-black.company-landing .service-category-grid article::after {
+    background: #f1f1f1;
+}
+
+.company-theme-black.company-landing .service-category-grid article span,
+.company-theme-black.company-landing .service-category-grid article:nth-child(even) span {
+    background: linear-gradient(180deg, #ffffff, #f6f6f6) !important;
+    border-color: #111111 !important;
+    color: #000000 !important;
+    box-shadow: none;
+}
+
+.company-theme-black.company-landing .service-category-grid article span::before {
+    background: rgba(0, 0, 0, .14);
+}
+
+.company-theme-black.company-landing .service-category-grid article span::after {
+    background: rgba(0, 0, 0, .055);
+}
+
 @media (max-width: 720px) {
     .company-landing > .hero,
     .company-landing > .landing-section,
@@ -4585,11 +5064,40 @@ h3 {
 
     .company-landing > .hero-company {
         margin-top: -.9rem;
-        padding: 2.7rem .7rem 2.4rem;
+        min-height: auto;
+        padding: 2.15rem .7rem 1.9rem;
+    }
+
+    .company-landing .hero h1 {
+        font-size: clamp(2.15rem, 10.6vw, 2.75rem);
+        line-height: 1.02;
+    }
+
+    .company-landing .lead {
+        font-size: .98rem;
+        line-height: 1.45;
+    }
+
+    .company-landing .hero-service-strip {
+        display: grid;
+        gap: .45rem;
+        grid-template-columns: 1fr 1fr;
+        margin-top: 1.25rem;
+    }
+
+    .company-landing .hero-service-strip span {
+        justify-content: center;
+        min-height: 38px;
+        padding: .52rem .62rem;
+        text-align: center;
     }
 
     .company-landing > .landing-section {
         padding: 2.4rem 0;
+    }
+
+    .company-landing .landing-section-head {
+        padding-left: .9rem;
     }
 }
 

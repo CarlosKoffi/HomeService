@@ -1,6 +1,7 @@
 @page "/"
 @page "/bleu"
 @page "/vert"
+@page "/noir"
 @using HomeService.Company.Services
 @using HomeService.Contracts.Branding
 @inject PlatformApiClient ApiClient
@@ -20,10 +21,10 @@
 <section id="home" class="hero hero-company country-branded @MotifClass" style="@BrandStyle">
     <div class="hero-copy">
         <p class="eyebrow">Partenariat entreprises</p>
-        <h1>Developpez votre activite avec <span>Kaza</span></h1>
+        <h1>Recevez plus de missions avec <span>Kaza</span></h1>
         <p class="lead">
-            Recevez de nouvelles demandes de services a domicile, pilotez vos prestataires depuis un portail clair
-            et gardez le controle de vos missions, paiements et equipes.
+            Kaza apporte des demandes clients qualifiees. Vous choisissez les missions, affectez vos prestataires
+            et suivez chaque intervention depuis un portail simple.
         </p>
         <div class="actions">
             <a class="primary-action" href="register">Devenir partenaire</a>
@@ -38,13 +39,13 @@
     </div>
 </section>
 
-<section id="concept" class="landing-section split-section">
+<section id="concept" class="landing-section split-section section-soft">
     <div class="landing-section-head">
         <p class="eyebrow">Concept</p>
-        <h2>Kaza connecte les clients avec des entreprises de services verifiees</h2>
+        <h2>Des clients cherchent un service. Votre entreprise peut repondre.</h2>
         <p>
-            Les entreprises recoivent des demandes adaptees a leurs services et a leur zone d'intervention.
-            Elles restent maitres de leurs equipes, des missions acceptees et des prestataires affectes.
+            Kaza met en relation les clients avec des entreprises identifiees et suivies. Vous gardez la main :
+            les demandes acceptees, les prestataires affectes et le suivi terrain restent sous votre controle.
         </p>
     </div>
     <div class="control-list">
@@ -55,42 +56,42 @@
     </div>
 </section>
 
-<section id="benefits" class="landing-section">
+<section id="benefits" class="landing-section section-muted">
     <div class="landing-section-head">
         <p class="eyebrow">Avantages</p>
-        <h2>Pourquoi devenir partenaire ?</h2>
-        <p>Un canal de demandes supplementaire, sans perdre le controle de votre activite.</p>
+        <h2>Un nouveau canal de missions, sans perdre le controle.</h2>
+        <p>Kaza vous aide a trouver des clients, pendant que vous gardez votre facon de travailler.</p>
     </div>
 
     <div class="benefit-list">
-        <article><h3>Nouveaux clients</h3><p>Recevez des demandes qualifiees dans vos services.</p></article>
-        <article><h3>Chiffre d'affaires</h3><p>Developpez vos revenus avec des missions suivies.</p></article>
-        <article><h3>Controle equipe</h3><p>Vous decidez qui intervient et sur quel service.</p></article>
-        <article><h3>Portail unique</h3><p>Employes, missions et paiements au meme endroit.</p></article>
-        <article><h3>Demandes choisies</h3><p>Vous acceptez uniquement les missions pertinentes.</p></article>
-        <article><h3>Visibilite</h3><p>Votre entreprise gagne en presence locale.</p></article>
-        <article><h3>Paiements suivis</h3><p>Mobile Money, cash terrain et commissions traces.</p></article>
-        <article><h3>Support partenaire</h3><p>Une equipe Kaza vous accompagne dans le demarrage.</p></article>
+        <article><h3>Plus de demandes utiles</h3><p>Recevez des missions qui correspondent a vos services et a votre zone.</p></article>
+        <article><h3>Revenus mieux suivis</h3><p>Chaque mission, paiement et commission reste visible dans votre espace.</p></article>
+        <article><h3>Votre equipe reste a vous</h3><p>Vous decidez qui intervient, quand et sur quel type de service.</p></article>
+        <article><h3>Un seul portail</h3><p>Demandes, prestataires, documents et paiements sont reunis au meme endroit.</p></article>
+        <article><h3>Vous choisissez</h3><p>Vous acceptez uniquement les missions adaptees a votre organisation.</p></article>
+        <article><h3>Presence locale</h3><p>Votre entreprise devient plus visible aupres des clients proches de vous.</p></article>
+        <article><h3>Encaissements clairs</h3><p>Mobile Money, cash terrain et commissions sont traces proprement.</p></article>
+        <article><h3>Accompagnement</h3><p>L'equipe Kaza vous aide a demarrer et a traiter les cas terrain.</p></article>
     </div>
 </section>
 
-<section id="how-it-works" class="landing-section">
+<section id="how-it-works" class="landing-section section-warm">
     <div class="landing-section-head">
         <p class="eyebrow">Fonctionnement</p>
-        <h2>Le parcours partenaire en 6 etapes</h2>
+        <h2>Simple a lancer, clair a suivre.</h2>
     </div>
 
     <div class="timeline-six">
-        <article><strong>1</strong><h3>Creer le compte</h3><p>Renseignez votre entreprise, vos services et le responsable.</p></article>
-        <article><strong>2</strong><h3>Completer le dossier</h3><p>Ajoutez les documents en ligne ou deposez-les dans nos bureaux.</p></article>
-        <article><strong>3</strong><h3>Validation Kaza</h3><p>Notre equipe verifie les informations et la conformite.</p></article>
-        <article><strong>4</strong><h3>Ajouter l'equipe</h3><p>Ajoutez salaries, interimaires, documents et services maitrises.</p></article>
-        <article><strong>5</strong><h3>Recevoir les demandes</h3><p>Les demandes clients arrivent selon vos services et zones.</p></article>
-        <article><strong>6</strong><h3>Affecter et suivre</h3><p>Assignez un prestataire, suivez la mission et les encaissements.</p></article>
+        <article><strong>1</strong><h3>Inscription</h3><p>Vous indiquez votre entreprise, vos services et le contact responsable.</p></article>
+        <article><strong>2</strong><h3>Dossier</h3><p>Vous ajoutez les pieces en ligne ou vous les deposez dans nos bureaux.</p></article>
+        <article><strong>3</strong><h3>Verification</h3><p>Kaza controle les informations avant d'ouvrir les fonctions sensibles.</p></article>
+        <article><strong>4</strong><h3>Equipe</h3><p>Vous ajoutez vos prestataires, leurs pieces et leurs services.</p></article>
+        <article><strong>5</strong><h3>Demandes</h3><p>Les clients vous sollicitent selon vos services et votre zone.</p></article>
+        <article><strong>6</strong><h3>Mission</h3><p>Vous affectez, suivez l'intervention et gardez la trace du paiement.</p></article>
     </div>
 </section>
 
-<section id="services" class="landing-section">
+<section id="services" class="landing-section section-green">
     <div class="landing-section-head">
         <p class="eyebrow">Services</p>
         <h2>Qui peut rejoindre Kaza ?</h2>
@@ -98,17 +99,18 @@
     </div>
 
     <svg aria-hidden="true" class="service-icon-defs">
-        <symbol id="service-plumbing" viewBox="0 0 24 24"><path d="M5 7h8a3 3 0 0 1 3 3v7"/><path d="M5 4v6"/><path d="M3 4h4"/><path d="M14 17h4"/><path d="M18 15v4"/></symbol>
+        <symbol id="service-plumbing" viewBox="0 0 24 24"><path d="M8 6h8"/><path d="M12 6v4"/><path d="M6 10h12"/><path d="M9 10v3a3 3 0 0 0 6 0v-3"/><path d="M12 16v5"/><path d="M9 21h6"/></symbol>
         <symbol id="service-electricity" viewBox="0 0 24 24"><path d="M13 2 6 13h6l-1 9 7-12h-6z"/></symbol>
         <symbol id="service-cooling" viewBox="0 0 24 24"><path d="M4 6h16v8H4z"/><path d="M7 10h10"/><path d="M8 18h8"/><path d="M10 14v4"/><path d="M14 14v4"/></symbol>
-        <symbol id="service-cleaning" viewBox="0 0 24 24"><path d="m6 20 3-11 6-2 3 13"/><path d="M8 14h8"/><path d="M10 4h4"/><path d="M12 4v4"/></symbol>
+        <symbol id="service-cleaning" viewBox="0 0 24 24"><path d="M14 3 7 10"/><path d="m6 11 7 7"/><path d="M4 13l5 5"/><path d="m8 9 7 7"/><path d="M3 21h14"/><path d="M6 18l-2 3"/><path d="M13 18l2 3"/></symbol>
         <symbol id="service-garden" viewBox="0 0 24 24"><path d="M12 20V9"/><path d="M12 12c-4 0-6-2-7-6 4 0 7 2 7 6z"/><path d="M12 14c4 0 6-2 7-6-4 0-7 2-7 6z"/></symbol>
         <symbol id="service-lock" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v9H6z"/><path d="M12 15v2"/></symbol>
-        <symbol id="service-paint" viewBox="0 0 24 24"><path d="M4 5h11v6H4z"/><path d="M15 8h3a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-5"/><path d="M10 11v9"/><path d="M8 20h4"/></symbol>
+        <symbol id="service-paint" viewBox="0 0 24 24"><path d="M4 6h12v5H4z"/><path d="M16 8h2a3 3 0 0 1 3 3v1a3 3 0 0 1-3 3h-6"/><path d="M10 11v9"/><path d="M8 20h4"/><path d="M6 8h8"/></symbol>
         <symbol id="service-pest" viewBox="0 0 24 24"><path d="M8 10a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0z"/><path d="M12 6V3"/><path d="M7 8 5 6"/><path d="m17 8 2-2"/><path d="M8 13H4"/><path d="M20 13h-4"/><path d="m7 18-2 2"/><path d="m17 18 2 2"/></symbol>
         <symbol id="service-appliance" viewBox="0 0 24 24"><path d="M7 3h10v18H7z"/><path d="M10 6h4"/><path d="M10 10h4"/><circle cx="12" cy="16" r="2.5"/></symbol>
         <symbol id="service-moving" viewBox="0 0 24 24"><path d="M3 8h12v8H3z"/><path d="M15 11h4l2 3v2h-6z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></symbol>
         <symbol id="service-home" viewBox="0 0 24 24"><path d="m4 11 8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/></symbol>
+        <symbol id="service-iron" viewBox="0 0 24 24"><path d="M4 16h14a3 3 0 0 0-3-3H8a4 4 0 0 0-4 3z"/><path d="M4 16h16v3H4z"/><path d="M8 13V8h5"/><path d="M13 8a2 2 0 0 1 2 2v3"/></symbol>
         <symbol id="service-more" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
     </svg>
 
@@ -117,6 +119,7 @@
         <article><span><svg><use href="#service-electricity" /></svg></span><strong>Electricite</strong></article>
         <article><span><svg><use href="#service-cooling" /></svg></span><strong>Climatisation</strong></article>
         <article><span><svg><use href="#service-cleaning" /></svg></span><strong>Menage</strong></article>
+        <article><span><svg><use href="#service-iron" /></svg></span><strong>Repassage</strong></article>
         <article><span><svg><use href="#service-garden" /></svg></span><strong>Jardinage</strong></article>
         <article><span><svg><use href="#service-lock" /></svg></span><strong>Serrurerie</strong></article>
         <article><span><svg><use href="#service-paint" /></svg></span><strong>Peinture</strong></article>
@@ -128,18 +131,18 @@
     </div>
 </section>
 
-<section id="requirements" class="landing-section requirements-section">
+<section id="requirements" class="landing-section requirements-section section-muted">
     <div class="landing-section-head">
         <p class="eyebrow">Conditions</p>
-        <h2>Documents et criteres attendus</h2>
-        <p>Ces elements permettent de proteger les clients, les entreprises et les prestataires.</p>
+        <h2>Ce que nous verifions avant activation</h2>
+        <p>Le but est simple : rassurer les clients et travailler avec des entreprises joignables, serieuses et responsables.</p>
     </div>
 
     <div class="requirements-layout">
         <div class="verified-badge-card">
             <span>Verifie</span>
             <strong>Partenaire Kaza</strong>
-            <p>Une entreprise identifiee, joignable, responsable et capable de suivre ses interventions.</p>
+            <p>Une entreprise identifiee, avec un responsable clair, des prestataires suivis et des documents consultables.</p>
         </div>
         <ul class="requirement-list">
             <li>Registre de commerce RCCM</li>
@@ -156,11 +159,11 @@
     </div>
 </section>
 
-<section id="partner-dashboard" class="landing-section dashboard-preview-section">
+<section id="partner-dashboard" class="landing-section dashboard-preview-section section-strong">
     <div class="landing-section-head">
         <p class="eyebrow">Portail partenaire</p>
-        <h2>Un tableau de bord pour piloter votre activite</h2>
-        <p>Une vision claire des demandes, affectations, prestataires et encaissements.</p>
+        <h2>Votre activite, visible en un coup d'oeil.</h2>
+        <p>Suivez les demandes, les affectations, les prestataires disponibles et les paiements sans perdre de temps.</p>
     </div>
 
     <div class="dashboard-mockup">
@@ -205,10 +208,10 @@
     </div>
 </section>
 
-<section class="landing-section">
+<section class="landing-section section-warm">
     <div class="landing-section-head">
         <p class="eyebrow">Gestion</p>
-        <h2>Tout ce que vous pouvez piloter</h2>
+        <h2>Tout ce qu'une equipe doit gerer au quotidien</h2>
     </div>
     <div class="management-grid">
         <span>Demandes clients</span>
@@ -223,7 +226,7 @@
     </div>
 </section>
 
-<section class="landing-section commitment-section">
+<section class="landing-section commitment-section section-green">
     <div class="commitment-card">
         <h2>Kaza s'engage a</h2>
         <ul>
@@ -246,17 +249,17 @@
     </div>
 </section>
 
-<section class="landing-section pricing-section">
+<section class="landing-section pricing-section section-muted">
     <div>
         <p class="eyebrow">Tarifs</p>
         <h2>Inscription gratuite</h2>
-        <p>Aucun abonnement mensuel. Kaza applique une commission uniquement sur les missions realisees avec succes.</p>
-        <p>Le detail complet des commissions est presente avant validation finale du partenariat.</p>
+        <p>Aucun abonnement mensuel. Kaza se remunere uniquement quand une mission est realisee.</p>
+        <p>Le detail des commissions est presente avant l'activation du partenariat.</p>
     </div>
     <strong>0 XOF / mois</strong>
 </section>
 
-<section id="faq" class="landing-section faq-section">
+<section id="faq" class="landing-section faq-section section-soft">
     <div class="landing-section-head">
         <p class="eyebrow">FAQ</p>
         <h2>Foire aux questions</h2>
@@ -274,11 +277,11 @@
     </div>
 </section>
 
-<section id="contact" class="landing-section contact-form-section">
+<section id="contact" class="landing-section contact-form-section section-warm">
     <div class="contact-copy">
         <p class="eyebrow">Contact</p>
-        <h2>Parlons de votre entreprise</h2>
-        <p>Vous avez une equipe, des services a proposer ou une question avant inscription ? Laissez vos coordonnees, l'equipe Kaza vous recontacte.</p>
+        <h2>Vous voulez en parler avant de vous inscrire ?</h2>
+        <p>Laissez vos coordonnees. Nous vous rappelons pour comprendre vos services, votre zone et la meilleure facon de demarrer.</p>
         <div class="contact-shortcuts">
             <span>Abidjan et communes proches</span>
             <span>Entreprises de services</span>
@@ -348,7 +351,7 @@
         get
         {
             var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').ToLowerInvariant();
-            return path is "bleu" or "vert" ? path : string.Empty;
+            return path is "bleu" or "vert" or "noir" ? path : string.Empty;
         }
     }
 
@@ -356,6 +359,7 @@
     {
         "bleu" => "company-landing company-theme company-theme-blue",
         "vert" => "company-landing company-theme company-theme-green",
+        "noir" => "company-landing company-theme company-theme-black",
         _ => "company-landing"
     };
 
@@ -363,6 +367,7 @@
     {
         "bleu" => "--country-primary:#0a66c2; --country-secondary:#ffffff; --country-accent:#0a66c2;",
         "vert" => "--country-primary:#12824c; --country-secondary:#ffffff; --country-accent:#12824c;",
+        "noir" => "--country-primary:#000000; --country-secondary:#ffffff; --country-accent:#000000;",
         _ => $"--country-primary:{Branding.PrimaryColor}; --country-secondary:{Branding.SecondaryColor}; --country-accent:{Branding.AccentColor};"
     };
 
