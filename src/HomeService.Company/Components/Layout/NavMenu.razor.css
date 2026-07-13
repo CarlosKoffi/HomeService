@@ -6,6 +6,7 @@
     border-image: linear-gradient(90deg, #f97316 0 33%, #ffffff 33% 66%, #12824c 66% 100%) 1;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     display: flex;
+    font-family: "Uber Move", "UberMove", "Inter", "Helvetica Neue", Arial, sans-serif;
     gap: 1.5rem;
     justify-content: space-between;
     min-height: 68px;
@@ -18,7 +19,7 @@
 .brand {
     color: #102019;
     font-size: clamp(1.35rem, 2.4vw, 1.85rem);
-    font-weight: 760;
+    font-weight: 700;
     letter-spacing: 0;
     text-decoration: none;
 }
@@ -33,7 +34,7 @@
 .site-nav a {
     border-radius: 999px;
     color: #334155;
-    font-weight: 640;
+    font-weight: 650;
     padding: .52rem .65rem;
     position: relative;
     text-decoration: none;
@@ -79,7 +80,7 @@
 .header-primary,
 .header-secondary {
     border-radius: 999px !important;
-    font-weight: 780 !important;
+    font-weight: 650 !important;
     padding: .62rem .9rem !important;
 }
 
@@ -119,7 +120,7 @@
 .session-chip strong {
     color: #000;
     font-size: .86rem;
-    font-weight: 720;
+    font-weight: 650;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -128,7 +129,7 @@
 .session-chip span {
     color: #000;
     font-size: .74rem;
-    font-weight: 600;
+    font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
