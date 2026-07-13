@@ -53,15 +53,16 @@
 }
 
 .public-nav a.section-active {
-    background: #fff7ed;
-    box-shadow: inset 0 -2px 0 #f97316;
+    background: #06111f;
+    box-shadow: none;
     color: #000;
+    color: #fff;
 }
 
 .public-nav a.section-active::after {
-    background: #12824c;
+    background: #f97316;
     border-radius: 999px;
-    bottom: .2rem;
+    bottom: -.34rem;
     content: "";
     height: 4px;
     left: 50%;
@@ -274,13 +275,15 @@
 }
 
 .site-header.theme-blue .public-nav a.section-active {
-    background: #eef6ff;
-    box-shadow: inset 0 -2px 0 #0a66c2;
+    background: #06111f;
+    box-shadow: none;
+    color: #ffffff;
 }
 
 .site-header.theme-green .public-nav a.section-active {
-    background: #edf9f1;
-    box-shadow: inset 0 -2px 0 #12824c;
+    background: #06111f;
+    box-shadow: none;
+    color: #ffffff;
 }
 
 .site-header.theme-blue .public-nav a.section-active::after {

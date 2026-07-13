@@ -4382,6 +4382,7 @@ h3 {
 }
 
 .company-landing > .landing-section {
+    position: relative;
     margin-top: 0;
     margin-bottom: 0;
     padding: clamp(3.2rem, 7vw, 5.6rem) 0;
@@ -4389,6 +4390,25 @@ h3 {
     border-radius: 0;
     box-shadow: none;
     background: transparent;
+}
+
+.company-landing > .landing-section::before {
+    content: "";
+    position: absolute;
+    inset: 0 calc(50% - 50vw);
+    z-index: -1;
+    background: transparent;
+}
+
+.company-landing > .landing-section:nth-of-type(3)::before,
+.company-landing > .landing-section:nth-of-type(6)::before,
+.company-landing > .landing-section:nth-of-type(9)::before {
+    background: rgba(248, 250, 252, .82);
+}
+
+.company-landing > .landing-section:nth-of-type(4)::before,
+.company-landing > .landing-section:nth-of-type(8)::before {
+    background: linear-gradient(115deg, rgba(255, 247, 237, .5), rgba(240, 253, 244, .42));
 }
 
 .company-landing > .landing-section + .landing-section {
@@ -4485,6 +4505,14 @@ h3 {
     border-top: 1px solid rgba(0, 0, 0, .12);
 }
 
+.company-landing .faq-section .landing-section-head {
+    max-width: none;
+}
+
+.company-landing .faq-section .landing-section-head h2 {
+    font-size: clamp(2rem, 3.6vw, 3.25rem);
+}
+
 .company-landing .faq-grid details {
     display: block;
     padding: 0;
@@ -4522,6 +4550,17 @@ h3 {
 
 .company-theme.company-landing > .landing-section + .landing-section {
     border-top-color: var(--preview-line);
+}
+
+.company-theme.company-landing > .landing-section:nth-of-type(3)::before,
+.company-theme.company-landing > .landing-section:nth-of-type(6)::before,
+.company-theme.company-landing > .landing-section:nth-of-type(9)::before {
+    background: color-mix(in srgb, var(--preview-panel) 78%, white);
+}
+
+.company-theme.company-landing > .landing-section:nth-of-type(4)::before,
+.company-theme.company-landing > .landing-section:nth-of-type(8)::before {
+    background: linear-gradient(115deg, color-mix(in srgb, var(--preview-panel-strong) 62%, white), #ffffff);
 }
 
 .company-theme.company-landing .landing-section-head,
