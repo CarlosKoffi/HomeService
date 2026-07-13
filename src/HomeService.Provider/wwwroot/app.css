@@ -4,7 +4,7 @@ body {
     min-height: 100%;
     background: #f7faf8;
     color: #020817;
-    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    font-family: "Uber Move", "UberMove", "Inter", "Helvetica Neue", Arial, sans-serif;
 }
 
 * {
@@ -43,6 +43,15 @@ textarea {
     --weight-label: 820;
     --weight-title: 760;
     --weight-strong: 820;
+    --landing-font: "Uber Move", "UberMove", "Inter", "Helvetica Neue", Arial, sans-serif;
+    --landing-title-weight: 700;
+    --landing-body-weight: 400;
+    --landing-strong-weight: 650;
+    --landing-h1: clamp(2.25rem, 5vw, 4.7rem);
+    --landing-h2: clamp(1.65rem, 2.8vw, 2.55rem);
+    --landing-h3: 1.05rem;
+    --landing-body: 1rem;
+    --landing-small: .88rem;
 }
 
 .provider-page {
@@ -1667,6 +1676,80 @@ textarea {
     grid-template-columns: minmax(0, 1fr) minmax(270px, 360px);
 }
 
+.provider-acquisition {
+    font-family: var(--landing-font);
+}
+
+.provider-acquisition .provider-eyebrow {
+    color: var(--ink);
+    font-size: .78rem;
+    font-weight: 650;
+    letter-spacing: .08em;
+}
+
+.provider-acquisition h1,
+.provider-acquisition h2,
+.provider-acquisition h3,
+.provider-acquisition strong,
+.provider-acquisition p {
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+.provider-acquisition h1 {
+    margin: 0;
+    font-size: var(--landing-h1);
+    font-weight: var(--landing-title-weight);
+    line-height: .98;
+}
+
+.provider-acquisition h2 {
+    margin: 0;
+    font-size: var(--landing-h2);
+    font-weight: var(--landing-title-weight);
+    line-height: 1.06;
+}
+
+.provider-acquisition h3 {
+    margin: 0;
+    font-size: var(--landing-h3);
+    font-weight: var(--landing-strong-weight);
+    line-height: 1.18;
+}
+
+.provider-acquisition p {
+    margin: 0;
+    font-size: var(--landing-body);
+    font-weight: var(--landing-body-weight);
+    line-height: 1.5;
+}
+
+.provider-acquisition .provider-site-copy > p {
+    max-width: 620px;
+    font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+    line-height: 1.45;
+}
+
+.provider-acquisition .provider-site-section {
+    margin-top: clamp(3rem, 7vw, 5.5rem);
+}
+
+.provider-acquisition .provider-section-head {
+    gap: 12px;
+    max-width: 760px;
+    margin-bottom: 26px;
+}
+
+.provider-acquisition .provider-primary-link,
+.provider-acquisition .provider-secondary-link {
+    min-height: 50px;
+    padding: 0 22px;
+    border-radius: 999px;
+    font-size: .98rem;
+    font-weight: 650;
+    letter-spacing: 0;
+}
+
 .provider-earn-hero h1 {
     max-width: 720px;
 }
@@ -1707,7 +1790,7 @@ textarea {
 .provider-phone-card span {
     color: var(--green);
     font-size: .68rem;
-    font-weight: 950;
+    font-weight: 700;
     letter-spacing: .06em;
     text-transform: uppercase;
 }
@@ -1715,12 +1798,12 @@ textarea {
 .provider-phone-card strong {
     color: var(--ink);
     font-size: 1rem;
-    font-weight: 850;
+    font-weight: 650;
 }
 
 .provider-phone-card small {
     color: var(--ink);
-    font-weight: 700;
+    font-weight: 500;
 }
 
 .provider-phone-actions {
@@ -1736,7 +1819,7 @@ textarea {
     place-items: center;
     border-radius: 999px;
     font-size: .88rem;
-    font-weight: 850;
+    font-weight: 650;
 }
 
 .provider-phone-actions span {
@@ -1757,16 +1840,17 @@ textarea {
 
 .provider-choice-row article {
     display: grid;
-    gap: 10px;
-    padding: 20px;
+    gap: 12px;
+    padding: 22px;
     border: 1px solid rgba(0, 135, 83, .18);
-    border-radius: 24px;
+    border-radius: 18px;
     background: #ffffff;
 }
 
 .provider-choice-row strong {
     color: var(--ink);
-    font-size: 1.08rem;
+    font-size: 1.15rem;
+    font-weight: 650;
 }
 
 .provider-choice-row p {
@@ -1776,8 +1860,9 @@ textarea {
 
 .provider-choice-row a {
     color: var(--green);
-    font-weight: 900;
+    font-weight: 650;
     text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .provider-how-simple {
@@ -1796,7 +1881,7 @@ textarea {
     gap: 10px;
     padding: 18px;
     border: 1px solid var(--muted-line);
-    border-radius: 22px;
+    border-radius: 18px;
     background: #ffffff;
 }
 
@@ -1808,7 +1893,7 @@ textarea {
     border-radius: 12px;
     background: var(--green);
     color: #ffffff;
-    font-weight: 950;
+    font-weight: 700;
 }
 
 .provider-simple-steps strong,
@@ -1827,14 +1912,14 @@ textarea {
 .provider-detail-strip details {
     padding: 18px 20px;
     border: 1px solid rgba(0, 135, 83, .18);
-    border-radius: 22px;
+    border-radius: 18px;
     background: #ffffff;
 }
 
 .provider-detail-strip summary {
     color: var(--ink);
     cursor: pointer;
-    font-weight: 900;
+    font-weight: 650;
 }
 
 .provider-detail-strip p {
