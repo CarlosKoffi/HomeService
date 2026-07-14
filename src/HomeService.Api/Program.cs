@@ -76,6 +76,7 @@ if (string.Equals(app.Configuration["FORCE_HTTPS_REDIRECT"], "true", StringCompa
 app.MapPublicEndpoints();
 app.MapProviderOnboardingEndpoints();
 app.MapCompanyActivationEndpoints();
+app.MapCompanyPortalEndpoints();
 
 app.MapPost("/api/company-applications", async (
     HttpRequest httpRequest,
@@ -180,45 +181,6 @@ app.MapPost("/api/company-applications", async (
     }
 })
 .WithName("RegisterCompanyApplication");
-
-app.MapPost("/api/company-portal/login", async (
-    CompanyPortalLoginRequest request,
-    HttpRequest httpRequest,
-    CompanyPortalAuthService authService,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var result = await authService.LoginAsync(request, cancellationToken);
-    if (result.Status == CompanyPortalLoginStatus.MissingCredentials)
-    {
-        return Results.BadRequest(new { message = result.Message });
-    }
-
-    if (result.Status == CompanyPortalLoginStatus.InvalidCredentials)
-    {
-        return Results.Unauthorized();
-    }
-
-    if (result.Status == CompanyPortalLoginStatus.CompanySuspended)
-    {
-        return Results.BadRequest(new { message = result.Message });
-    }
-
-    var response = result.Response!;
-    AddAuditLog(
-        db,
-        httpRequest,
-        AuditActor.Company(response.CompanyId, response.CompanyName),
-        "CompanyPortalLoginSucceeded",
-        nameof(CompanyPortalSession),
-        result.Session!.Id,
-        "Connexion au portail entreprise.",
-        after: new { response.Email, response.CompanyId, request.RememberMe, response.ExpiresAt });
-    await db.SaveChangesAsync(cancellationToken);
-
-    return Results.Ok(response);
-})
-.WithName("LoginCompanyPortal");
 
 app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
     Guid companyId,
