@@ -47,6 +47,7 @@ builder.Services.AddScoped<CompanyComplianceDocumentService>();
 builder.Services.AddScoped<CompanyEmployeeManagementService>();
 builder.Services.AddScoped<CompanyInterimCandidateService>();
 builder.Services.AddScoped<ProviderSelfRegistrationService>();
+builder.Services.AddScoped<ProviderOnboardingService>();
 builder.Services.AddScoped<ProviderPortalAuthService>();
 builder.Services.AddScoped<AdminCompanyApplicationReviewService>();
 builder.Services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
@@ -71,119 +72,7 @@ if (string.Equals(app.Configuration["FORCE_HTTPS_REDIRECT"], "true", StringCompa
 }
 
 app.MapPublicEndpoints();
-
-app.MapPost("/api/provider-onboarding/self-registration", async (
-    ProviderSelfRegistrationRequest request,
-    ProviderSelfRegistrationService registrationService,
-    CancellationToken cancellationToken) =>
-{
-    var result = await registrationService.RegisterAsync(request, cancellationToken);
-    if (result.ProviderId == Guid.Empty)
-    {
-        return Results.BadRequest(new { message = result.Message });
-    }
-
-    return Results.Ok(result);
-})
-.WithName("RegisterSelfProviderCandidate");
-
-app.MapGet("/api/provider-onboarding/companies", async (
-    string? serviceIds,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var requestedServiceIds = ParseGuidList(serviceIds);
-    if (requestedServiceIds.Count == 0)
-    {
-        return Results.Ok(Array.Empty<ProviderCompanySearchResponse>());
-    }
-
-    var companies = await db.Companies
-        .AsNoTracking()
-        .Where(company => company.Status == CompanyStatus.Approved)
-        .Select(company => new
-        {
-            Company = company,
-            LatestApplication = db.CompanyApplications
-                .Where(application => application.CompanyId == company.Id)
-                .OrderByDescending(application => application.CreatedAt)
-                .FirstOrDefault(),
-            MatchingServices = db.ProviderServices
-                .Where(providerService =>
-                    providerService.CompanyId == company.Id
-                    && providerService.IsActive
-                    && requestedServiceIds.Contains(providerService.ServiceId))
-                .Select(providerService => providerService.Service!.Name)
-                .Distinct()
-                .OrderBy(name => name)
-                .ToList()
-        })
-        .Where(row => row.MatchingServices.Count > 0)
-        .OrderByDescending(row => row.MatchingServices.Count)
-        .ThenBy(row => row.Company.Name)
-        .Take(30)
-        .Select(row => new ProviderCompanySearchResponse(
-            row.Company.Id,
-            row.Company.Name,
-            row.LatestApplication == null ? null : row.LatestApplication.City,
-            row.MatchingServices.Count,
-            row.MatchingServices,
-            null,
-            row.Company.Status.ToString()))
-        .ToListAsync(cancellationToken);
-
-    return Results.Ok(companies);
-})
-.WithName("SearchProviderOnboardingCompanies");
-
-app.MapPost("/api/provider-onboarding/affiliation-requests", async (
-    ProviderAffiliationRequestCreateRequest request,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == request.ProviderId, cancellationToken);
-    if (provider is null)
-    {
-        return Results.NotFound(new { message = "Profil prestataire introuvable." });
-    }
-
-    if (provider.CompanyId is not null || provider.Status != ProviderStatus.InterimCandidate)
-    {
-        return Results.BadRequest(new { message = "Ce profil n'est pas en statut demandeur d'interim." });
-    }
-
-    var company = await db.Companies.FirstOrDefaultAsync(
-        company => company.Id == request.CompanyId && company.Status == CompanyStatus.Approved,
-        cancellationToken);
-    if (company is null)
-    {
-        return Results.NotFound(new { message = "Entreprise introuvable ou non active." });
-    }
-
-    var hasPending = await db.ProviderAffiliationRequests.AnyAsync(existing =>
-        existing.ProviderId == request.ProviderId
-        && existing.CompanyId == request.CompanyId
-        && existing.Status == ProviderAffiliationRequestStatus.Pending,
-        cancellationToken);
-    if (hasPending)
-    {
-        return Results.BadRequest(new { message = "Une demande est deja en attente pour cette entreprise." });
-    }
-
-    var affiliationRequest = new ProviderAffiliationRequest(request.ProviderId, request.CompanyId, request.Message);
-    db.ProviderAffiliationRequests.Add(affiliationRequest);
-    await db.SaveChangesAsync(cancellationToken);
-
-    return Results.Ok(new ProviderAffiliationRequestResponse(
-        affiliationRequest.Id,
-        affiliationRequest.ProviderId,
-        affiliationRequest.CompanyId,
-        company.Name,
-        affiliationRequest.Status.ToString(),
-        affiliationRequest.RequestedAt,
-        "Demande envoyee. L'entreprise doit vous recevoir, vous evaluer et valider votre profil avant toute mission."));
-})
-.WithName("CreateProviderAffiliationRequest");
+app.MapProviderOnboardingEndpoints();
 
 app.MapPost("/api/company-applications", async (
     HttpRequest httpRequest,
@@ -2414,21 +2303,6 @@ static string BuildCustomerDisplayName(CustomerProfile? customer)
 
     var displayName = $"{customer.FirstName} {customer.LastName}".Trim();
     return string.IsNullOrWhiteSpace(displayName) ? "Client" : displayName;
-}
-
-static IReadOnlyList<Guid> ParseGuidList(string? value)
-{
-    if (string.IsNullOrWhiteSpace(value))
-    {
-        return [];
-    }
-
-    return value
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-        .Select(item => Guid.TryParse(item, out var id) ? id : Guid.Empty)
-        .Where(id => id != Guid.Empty)
-        .Distinct()
-        .ToList();
 }
 
 static double? CalculateDistanceKm(decimal? fromLatitude, decimal? fromLongitude, decimal? toLatitude, decimal? toLongitude)
