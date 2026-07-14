@@ -184,15 +184,13 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddAuditLog(
+            AddCompanyApplicationReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationApproved",
-                nameof(HomeService.Domain.Entities.CompanyApplication),
-                application.Id,
                 "Demande entreprise validee.",
-                before: new { Status = result.PreviousStatus },
+                application,
+                result.PreviousStatus,
                 after: new { application.Status, application.CompanyId });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -216,15 +214,13 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddAuditLog(
+            AddCompanyApplicationReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationRejected",
-                nameof(HomeService.Domain.Entities.CompanyApplication),
-                application.Id,
                 "Demande entreprise refusee.",
-                before: new { Status = result.PreviousStatus },
+                application,
+                result.PreviousStatus,
                 after: new { application.Status, application.ReviewNote });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -248,15 +244,13 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddAuditLog(
+            AddCompanyApplicationReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationReopened",
-                nameof(HomeService.Domain.Entities.CompanyApplication),
-                application.Id,
                 "Demande entreprise reouverte.",
-                before: new { Status = result.PreviousStatus },
+                application,
+                result.PreviousStatus,
                 after: new { application.Status, application.ReviewNote });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -280,15 +274,13 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddAuditLog(
+            AddCompanyApplicationReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationMoreInformationRequested",
-                nameof(HomeService.Domain.Entities.CompanyApplication),
-                application.Id,
                 "Complement demande sur un dossier entreprise.",
-                before: new { Status = result.PreviousStatus },
+                application,
+                result.PreviousStatus,
                 after: new { application.Status, application.ReviewNote });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -364,15 +356,13 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddAuditLog(
+            AddCompanyApplicationDocumentReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationDocumentApproved",
-                nameof(CompanyApplicationDocument),
-                document.Id,
                 "Piece entreprise validee.",
-                before: new { Status = result.PreviousStatus },
+                document,
+                result.PreviousStatus,
                 after: new { document.ReviewStatus });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -396,15 +386,13 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddAuditLog(
+            AddCompanyApplicationDocumentReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationDocumentRejected",
-                nameof(CompanyApplicationDocument),
-                document.Id,
                 "Piece entreprise refusee.",
-                before: new { Status = result.PreviousStatus },
+                document,
+                result.PreviousStatus,
                 after: new { document.ReviewStatus, document.ReviewNote });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -428,15 +416,13 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddAuditLog(
+            AddCompanyApplicationDocumentReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationDocumentReplacementRequested",
-                nameof(CompanyApplicationDocument),
-                document.Id,
                 "Remplacement de piece entreprise demande.",
-                before: new { Status = result.PreviousStatus },
+                document,
+                result.PreviousStatus,
                 after: new { document.ReviewStatus, document.ReviewNote });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -460,15 +446,13 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddAuditLog(
+            AddCompanyApplicationDocumentReviewAudit(
                 db,
                 httpRequest,
-                AuditActor.Admin(),
                 "AdminCompanyApplicationDocumentReopened",
-                nameof(CompanyApplicationDocument),
-                document.Id,
                 "Piece entreprise reouverte.",
-                before: new { Status = result.PreviousStatus },
+                document,
+                result.PreviousStatus,
                 after: new { document.ReviewStatus, document.ReviewNote });
             await db.SaveChangesAsync(cancellationToken);
         
@@ -559,6 +543,48 @@ public static class AdminEndpoints
             document.CompanyApplicationId,
             document.ReviewStatus.ToString(),
             document.ReviewNote);
+    }
+
+    static void AddCompanyApplicationReviewAudit(
+        IAppDbContext db,
+        HttpRequest request,
+        string action,
+        string summary,
+        HomeService.Domain.Entities.CompanyApplication application,
+        CompanyApplicationStatus? previousStatus,
+        object? after)
+    {
+        AddAuditLog(
+            db,
+            request,
+            AuditActor.Admin(),
+            action,
+            nameof(HomeService.Domain.Entities.CompanyApplication),
+            application.Id,
+            summary,
+            before: new { Status = previousStatus },
+            after);
+    }
+
+    static void AddCompanyApplicationDocumentReviewAudit(
+        IAppDbContext db,
+        HttpRequest request,
+        string action,
+        string summary,
+        CompanyApplicationDocument document,
+        DocumentReviewStatus? previousStatus,
+        object? after)
+    {
+        AddAuditLog(
+            db,
+            request,
+            AuditActor.Admin(),
+            action,
+            nameof(CompanyApplicationDocument),
+            document.Id,
+            summary,
+            before: new { Status = previousStatus },
+            after);
     }
     
     static string GetCompanyPortalBaseUrl(HttpRequest request, IConfiguration configuration)
