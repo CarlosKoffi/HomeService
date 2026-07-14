@@ -33,19 +33,19 @@ Scripts presents a la date du 2026-07-14:
 - `004_reset_company_application_tests.sql`
 - `005_add_notification_outbox.sql`
 - `006_add_company_portal_employee_workspace.sql`
-- `006_add_country_branding.sql`
-- `007_add_company_assignment_mode.sql`
-- `008_add_provider_gender.sql`
-- `008_add_provider_mobile_workspace.sql`
-- `009_move_pricing_to_services.sql`
-- `010_add_provider_service_price_tier.sql`
-- `011_add_audit_log_entries.sql`
-- `012_add_service_icons.sql`
-- `013_add_mission_confirmation_contact_release.sql`
-- `014_add_provider_interim_affiliation_workflow.sql`
-- `015_add_provider_portal_password.sql`
+- `007_add_country_branding.sql`
+- `008_add_company_assignment_mode.sql`
+- `009_add_provider_gender.sql`
+- `010_add_provider_mobile_workspace.sql`
+- `011_move_pricing_to_services.sql`
+- `012_add_provider_service_price_tier.sql`
+- `013_add_audit_log_entries.sql`
+- `014_add_service_icons.sql`
+- `015_add_mission_confirmation_contact_release.sql`
+- `016_add_provider_interim_affiliation_workflow.sql`
+- `017_add_provider_portal_password.sql`
 
-Attention: il existe deux numeros `006` et deux numeros `008`. Avant production longue, il faudra renumeroter ou documenter cette sequence pour eviter toute confusion humaine.
+Le manifeste detaille est dans `src/HomeService.Admin/Sql/README.md`.
 
 ## Donnees sensibles
 
@@ -96,4 +96,3 @@ Avant push/deploiement:
 3. confirmer les migrations/scripts SQL;
 4. verifier qu'aucun secret n'est present;
 5. commiter par lot clair.
-

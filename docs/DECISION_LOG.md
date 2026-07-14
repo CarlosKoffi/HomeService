@@ -35,3 +35,12 @@ Raison:
 - Prestataires: rattachement entreprise, interim, code d'activation, mission mobile, verification position.
 - Admin: roles, modules, permissions, validations, textes, pays, audit, notifications.
 
+## 2026-07-14 - Sequence SQL unique
+
+Decision: renommer les scripts SQL de reference pour supprimer les doublons de prefixe `006` et `008`.
+
+Raison:
+
+- l'ordre d'application doit etre lisible pour un humain;
+- Coolify/production ne doivent pas dependre d'une interpretation ambigue;
+- les scripts restent des references controlees, EF Core reste la source principale du schema.
