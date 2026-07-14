@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\HomeService.Provider.props" />
-</Project>

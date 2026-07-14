@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\HomeService.Admin.props" />
-</Project>
