@@ -218,7 +218,7 @@ public static class DatabaseInitializer
 
         AddSeedPage(db, companySite, french.Id, "home", "Accueil entreprises", "landing", "entreprises", "Kaza pour les entreprises", hero.Id, steps.Id, services.Id, faq.Id, contact.Id);
         AddSeedPage(db, providerSite, french.Id, "home", "Accueil prestataires", "landing", "prestataires", "Kaza pour les prestataires", hero.Id, steps.Id, faq.Id);
-        AddSeedPage(db, clientSite, french.Id, "home", "Accueil clients", "landing", "", "Kaza", hero.Id, services.Id, faq.Id);
+        AddSeedPage(db, clientSite, french.Id, "home", "Accueil clients", "landing", "accueil", "Kaza", hero.Id, services.Id, faq.Id);
         AddSeedPage(db, companyPortal, french.Id, "dashboard", "Tableau de bord entreprise", "portal-dashboard", "dashboard", "Tableau de bord", cta.Id);
 
         db.CmsMenus.AddRange(
