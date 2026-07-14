@@ -5,6 +5,7 @@ using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Api.Endpoints;
 
@@ -201,6 +202,18 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalMissions");
 
+        group.MapGet("/{companyId:guid}/employees", async (
+            Guid companyId,
+            CompanyPortalQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await queryService.ListEmployeesAsync(companyId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Employees)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("ListCompanyPortalEmployees");
+
         group.MapGet("/{companyId:guid}/payments", async (
             Guid companyId,
             string? period,
@@ -213,6 +226,38 @@ public static class CompanyPortalEndpoints
                 : Results.NotFound(new { message = result.Message });
         })
         .WithName("GetCompanyPortalPayments");
+
+        group.MapGet("/provider-documents/{id:guid}/preview", async (
+            Guid id,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var document = await db.ProviderDocuments
+                .AsNoTracking()
+                .Where(document => document.Id == id)
+                .Select(document => new
+                {
+                    document.OriginalFileName,
+                    document.StoragePath,
+                    document.ContentType
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (document is null)
+            {
+                return Results.NotFound();
+            }
+
+            var absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "Le fichier employe n'existe plus sur le serveur." });
+            }
+
+            return Results.File(absolutePath, document.ContentType, document.OriginalFileName, enableRangeProcessing: true);
+        })
+        .WithName("PreviewCompanyPortalProviderDocument");
 
         return app;
     }

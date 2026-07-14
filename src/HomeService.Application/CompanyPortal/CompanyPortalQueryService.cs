@@ -118,6 +118,96 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
         return CompanyPortalMissionsResult.Ok(missions);
     }
 
+    public async Task<CompanyPortalEmployeesResult> ListEmployeesAsync(Guid companyId, CancellationToken cancellationToken)
+    {
+        if (!await CompanyExistsAsync(companyId, cancellationToken))
+        {
+            return CompanyPortalEmployeesResult.NotFound();
+        }
+
+        var employees = await db.Providers
+            .AsNoTracking()
+            .Where(provider => provider.CompanyId == companyId && provider.Status != ProviderStatus.Inactive)
+            .OrderBy(provider => provider.LastName)
+            .ThenBy(provider => provider.FirstName)
+            .Select(provider => new CompanyEmployeeResponse(
+                provider.Id,
+                provider.FirstName,
+                provider.LastName,
+                provider.PhoneNumber,
+                provider.DateOfBirth,
+                provider.Address,
+                provider.Gender.ToString(),
+                provider.EmploymentType.ToString(),
+                provider.EmploymentType == ProviderEmploymentType.TemporaryWorker,
+                provider.YearsOfExperience,
+                provider.Status.ToString(),
+                provider.IsAvailable,
+                provider.MissionLatitude ?? provider.CurrentLatitude,
+                provider.MissionLongitude ?? provider.CurrentLongitude,
+                provider.MissionRadiusKm,
+                provider.Documents
+                    .Where(document => document.DocumentType == ProviderDocumentType.Photo)
+                    .OrderByDescending(document => document.CreatedAt)
+                    .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                    .FirstOrDefault(),
+                provider.Documents
+                    .Where(document => document.DocumentType == ProviderDocumentType.IdentityDocument)
+                    .OrderByDescending(document => document.CreatedAt)
+                    .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                    .FirstOrDefault(),
+                provider.Documents
+                    .Where(document => document.DocumentType == ProviderDocumentType.Diploma)
+                    .OrderByDescending(document => document.CreatedAt)
+                    .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                    .FirstOrDefault(),
+                provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.Diploma),
+                provider.Services
+                    .Where(providerService => providerService.IsActive)
+                    .OrderBy(providerService => providerService.Service!.Name)
+                    .Select(providerService => new CompanyEmployeeServiceResponse(
+                        providerService.ServiceId,
+                        providerService.Service!.Name,
+                        providerService.ExperienceLevel.ToString(),
+                        providerService.YearsOfExperience,
+                        providerService.PriceTier.ToString(),
+                        providerService.Service.NormalPriceAmount,
+                        providerService.Service.PremiumPriceAmount,
+                        providerService.Service.Currency,
+                        providerService.IsActive))
+                    .ToList(),
+                provider.Documents
+                    .OrderBy(document => document.DocumentType)
+                    .ThenByDescending(document => document.CreatedAt)
+                    .Select(document => new CompanyEmployeeDocumentResponse(
+                        document.Id,
+                        document.DocumentType.ToString(),
+                        document.OriginalFileName,
+                        document.ContentType,
+                        $"/api/company-portal/provider-documents/{document.Id}/preview",
+                        document.CreatedAt))
+                    .ToList(),
+                provider.CreatedAt,
+                db.ProviderInvitations
+                    .Where(invitation => invitation.ProviderId == provider.Id && invitation.Status == ProviderInvitationStatus.Pending)
+                    .OrderByDescending(invitation => invitation.CreatedAt)
+                    .Select(invitation => invitation.Code)
+                    .FirstOrDefault(),
+                db.ProviderInvitations
+                    .Where(invitation => invitation.ProviderId == provider.Id && invitation.Status == ProviderInvitationStatus.Pending)
+                    .OrderByDescending(invitation => invitation.CreatedAt)
+                    .Select(invitation => invitation.InvitationLink)
+                    .FirstOrDefault(),
+                db.ProviderInvitations
+                    .Where(invitation => invitation.ProviderId == provider.Id && invitation.Status == ProviderInvitationStatus.Pending)
+                    .OrderByDescending(invitation => invitation.CreatedAt)
+                    .Select(invitation => (DateTimeOffset?)invitation.ExpiresAt)
+                    .FirstOrDefault()))
+            .ToListAsync(cancellationToken);
+
+        return CompanyPortalEmployeesResult.Ok(employees);
+    }
+
     public async Task<CompanyPortalPaymentsResult> GetPaymentsAsync(Guid companyId, string? period, CancellationToken cancellationToken)
     {
         if (!await CompanyExistsAsync(companyId, cancellationToken))
@@ -192,6 +282,12 @@ public sealed record CompanyPortalMissionsResult(bool IsSuccess, IReadOnlyList<C
 {
     public static CompanyPortalMissionsResult Ok(IReadOnlyList<CompanyPortalMissionResponse> missions) => new(true, missions, null);
     public static CompanyPortalMissionsResult NotFound() => new(false, [], "Entreprise introuvable ou inactive.");
+}
+
+public sealed record CompanyPortalEmployeesResult(bool IsSuccess, IReadOnlyList<CompanyEmployeeResponse> Employees, string? Message)
+{
+    public static CompanyPortalEmployeesResult Ok(IReadOnlyList<CompanyEmployeeResponse> employees) => new(true, employees, null);
+    public static CompanyPortalEmployeesResult NotFound() => new(false, [], "Entreprise introuvable ou inactive.");
 }
 
 public sealed record CompanyPortalPaymentsResult(bool IsSuccess, CompanyPortalPaymentSummaryResponse? Summary, string? Message)

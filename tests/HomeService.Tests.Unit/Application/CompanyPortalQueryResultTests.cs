@@ -26,6 +26,27 @@ public sealed class CompanyPortalQueryResultTests
     }
 
     [Fact]
+    public void EmployeesOk_CarriesEmployeeList()
+    {
+        var employees = Array.Empty<CompanyEmployeeResponse>();
+
+        var result = CompanyPortalEmployeesResult.Ok(employees);
+
+        Assert.True(result.IsSuccess);
+        Assert.Same(employees, result.Employees);
+    }
+
+    [Fact]
+    public void EmployeesNotFound_ReturnsBusinessMessage()
+    {
+        var result = CompanyPortalEmployeesResult.NotFound();
+
+        Assert.False(result.IsSuccess);
+        Assert.Empty(result.Employees);
+        Assert.Equal("Entreprise introuvable ou inactive.", result.Message);
+    }
+
+    [Fact]
     public void PaymentsOk_CarriesSummary()
     {
         var summary = new CompanyPortalPaymentSummaryResponse("month", 0, 0, 0, 0, 0, "XOF", []);
