@@ -176,6 +176,44 @@ public static class CompanyPortalEndpoints
         })
         .WithName("UploadCompanyPortalComplianceDocuments");
 
+        group.MapGet("/{companyId:guid}/profile", async (
+            Guid companyId,
+            CompanyPortalQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await queryService.GetProfileAsync(companyId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("GetCompanyPortalProfile");
+
+        group.MapGet("/{companyId:guid}/missions", async (
+            Guid companyId,
+            string? view,
+            CompanyPortalQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await queryService.ListMissionsAsync(companyId, view, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Missions)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("ListCompanyPortalMissions");
+
+        group.MapGet("/{companyId:guid}/payments", async (
+            Guid companyId,
+            string? period,
+            CompanyPortalQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await queryService.GetPaymentsAsync(companyId, period, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Summary)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("GetCompanyPortalPayments");
+
         return app;
     }
 }

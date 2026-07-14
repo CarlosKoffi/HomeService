@@ -48,6 +48,7 @@ builder.Services.AddScoped<CompanyActivationPasswordService>();
 builder.Services.AddScoped<CompanyComplianceDocumentService>();
 builder.Services.AddScoped<CompanyEmployeeManagementService>();
 builder.Services.AddScoped<CompanyInterimCandidateService>();
+builder.Services.AddScoped<CompanyPortalQueryService>();
 builder.Services.AddScoped<ProviderSelfRegistrationService>();
 builder.Services.AddScoped<ProviderOnboardingService>();
 builder.Services.AddScoped<ProviderPortalAuthService>();
@@ -276,83 +277,6 @@ app.MapGet("/api/company-portal/{companyId:guid}/employees", async (
     return Results.Ok(employees);
 })
 .WithName("ListCompanyPortalEmployees");
-
-app.MapGet("/api/company-portal/{companyId:guid}/profile", async (
-    Guid companyId,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var company = await db.Companies
-        .AsNoTracking()
-        .FirstOrDefaultAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
-    if (company is null)
-    {
-        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
-    }
-
-    var application = await db.CompanyApplications
-        .AsNoTracking()
-        .Where(application => application.CompanyId == companyId)
-        .OrderByDescending(application => application.CreatedAt)
-        .Select(application => new CompanyPortalProfileResponse(
-            company.Id,
-            application.Id,
-            application.CompanyName,
-            application.RegistrationNumber,
-            application.City,
-            application.Address,
-            application.ContactName,
-            application.Email,
-            application.PhoneNumber,
-            application.PlannedServices,
-            application.EstimatedProviderCount,
-            company.Status.ToString(),
-            application.Status.ToString(),
-            company.Status == CompanyStatus.Approved,
-            application.ReviewNote,
-            application.Documents
-                .OrderBy(document => document.DocumentType)
-                .ThenByDescending(document => document.CreatedAt)
-                .Select(document => new CompanyPortalProfileDocumentResponse(
-                    document.Id,
-                    document.DocumentType.ToString(),
-                    document.DocumentType == CompanyDocumentType.FiscalExistenceDeclaration
-                        ? "DFE"
-                        : document.DocumentType == CompanyDocumentType.BusinessRegistration
-                            ? "Registre de commerce"
-                            : document.DocumentType == CompanyDocumentType.OwnerIdentity
-                                ? "Identite du responsable"
-                                : document.DocumentType == CompanyDocumentType.AddressProof
-                                    ? "Justificatif d'adresse"
-                                    : "Document complementaire",
-                    document.OriginalFileName,
-                    document.ContentType,
-                    document.ReviewStatus.ToString(),
-                    document.ReviewNote,
-                    document.CreatedAt,
-                    $"/api/admin/company-application-documents/{document.Id}/download"))
-                .ToList()))
-        .FirstOrDefaultAsync(cancellationToken);
-
-    return Results.Ok(application ?? new CompanyPortalProfileResponse(
-        company.Id,
-        null,
-        company.Name,
-        null,
-        string.Empty,
-        null,
-        string.Empty,
-        company.Email ?? string.Empty,
-        company.PhoneNumber,
-        null,
-        null,
-        company.Status.ToString(),
-        "Submitted",
-        company.Status == CompanyStatus.Approved,
-        null,
-        []));
-})
-.WithName("GetCompanyPortalProfile");
 
 app.MapPost("/api/company-portal/{companyId:guid}/employees", async (
     Guid companyId,
@@ -735,110 +659,6 @@ app.MapGet("/api/company-portal/provider-documents/{id:guid}/preview", async (
     return Results.File(absolutePath, document.ContentType, document.OriginalFileName, enableRangeProcessing: true);
 })
 .WithName("PreviewCompanyPortalProviderDocument");
-
-app.MapGet("/api/company-portal/{companyId:guid}/missions", async (
-    Guid companyId,
-    string? view,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
-    if (!exists)
-    {
-        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
-    }
-
-    var now = DateTimeOffset.UtcNow;
-    var query = from mission in db.Missions.AsNoTracking()
-                where mission.CompanyId == companyId
-                join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
-                join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
-                join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
-                from provider in providerJoin.DefaultIfEmpty()
-                select new { mission, service, customer, provider };
-
-    query = view?.Trim().ToLowerInvariant() switch
-    {
-        "upcoming" => query.Where(row => row.mission.ScheduledFor >= now && row.mission.Status != MissionStatus.Completed && row.mission.Status != MissionStatus.Cancelled),
-        "past" => query.Where(row => row.mission.Status == MissionStatus.Completed || row.mission.Status == MissionStatus.Cancelled),
-        "live" => query.Where(row => row.mission.Status == MissionStatus.SearchingProvider || row.mission.Status == MissionStatus.Offered || row.mission.Status == MissionStatus.Accepted || row.mission.Status == MissionStatus.OnTheWay || row.mission.Status == MissionStatus.Started),
-        _ => query
-    };
-
-    var missions = await query
-        .OrderBy(row => row.mission.ScheduledFor ?? row.mission.CreatedAt)
-        .Select(row => new CompanyPortalMissionResponse(
-            row.mission.Id,
-            row.service.Name,
-            row.customer.FirstName + " " + row.customer.LastName,
-            row.customer.PhoneNumber,
-            row.mission.Mode.ToString(),
-            row.mission.Status.ToString(),
-            row.mission.PaymentMethod.ToString(),
-            row.mission.PaymentStatus.ToString(),
-            row.mission.ScheduledFor,
-            row.mission.EstimatedDurationMinutes,
-            row.mission.FinalTotalAmount ?? row.mission.EstimatedTotalAmount,
-            row.mission.Currency,
-            row.mission.ProviderId,
-            row.provider == null ? null : row.provider.FirstName + " " + row.provider.LastName))
-        .ToListAsync(cancellationToken);
-
-    return Results.Ok(missions);
-})
-.WithName("ListCompanyPortalMissions");
-
-app.MapGet("/api/company-portal/{companyId:guid}/payments", async (
-    Guid companyId,
-    string? period,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var exists = await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
-    if (!exists)
-    {
-        return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
-    }
-
-    var normalizedPeriod = period?.Trim().ToLowerInvariant() ?? "month";
-    var start = PaymentPeriodCalculator.GetStart(normalizedPeriod, DateTimeOffset.UtcNow);
-    var missions = await (from mission in db.Missions.AsNoTracking()
-                          where mission.CompanyId == companyId
-                              && mission.Status == MissionStatus.Completed
-                              && (mission.ScheduledFor == null || mission.ScheduledFor >= start)
-                          join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
-                          join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
-                          join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
-                          from provider in providerJoin.DefaultIfEmpty()
-                          orderby mission.ScheduledFor descending
-                          select new CompanyPortalMissionResponse(
-                              mission.Id,
-                              service.Name,
-                              customer.FirstName + " " + customer.LastName,
-                              customer.PhoneNumber,
-                              mission.Mode.ToString(),
-                              mission.Status.ToString(),
-                              mission.PaymentMethod.ToString(),
-                              mission.PaymentStatus.ToString(),
-                              mission.ScheduledFor,
-                              mission.EstimatedDurationMinutes,
-                              mission.FinalTotalAmount ?? mission.EstimatedTotalAmount,
-                              mission.Currency,
-                              mission.ProviderId,
-                              provider == null ? null : provider.FirstName + " " + provider.LastName))
-        .ToListAsync(cancellationToken);
-
-    return Results.Ok(new CompanyPortalPaymentSummaryResponse(
-        normalizedPeriod,
-        missions.Sum(mission => mission.FinalTotalAmount ?? 0),
-        missions.Where(mission => mission.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
-        missions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
-        missions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
-        missions.Count,
-        "XOF",
-        missions));
-})
-.WithName("GetCompanyPortalPayments");
 
 var providerPortal = app.MapGroup("/api/provider-portal");
 
