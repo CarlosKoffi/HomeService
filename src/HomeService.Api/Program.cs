@@ -1,5 +1,6 @@
 using HomeService.Application.Abstractions;
 using HomeService.Api;
+using HomeService.Api.Auditing;
 using HomeService.Api.Endpoints;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
@@ -41,6 +42,7 @@ builder.Services.AddSingleton<CompanyProviderUploadService>();
 builder.Services.AddScoped<ProviderMissionWorkflowService>();
 builder.Services.AddScoped<CompanyApplicationRegistrationService>();
 builder.Services.AddScoped<CompanyPortalAuthService>();
+builder.Services.AddScoped<CompanyActivationPreviewService>();
 builder.Services.AddScoped<CompanyActivationLinkGenerationService>();
 builder.Services.AddScoped<CompanyActivationPasswordService>();
 builder.Services.AddScoped<CompanyComplianceDocumentService>();
@@ -73,6 +75,7 @@ if (string.Equals(app.Configuration["FORCE_HTTPS_REDIRECT"], "true", StringCompa
 
 app.MapPublicEndpoints();
 app.MapProviderOnboardingEndpoints();
+app.MapCompanyActivationEndpoints();
 
 app.MapPost("/api/company-applications", async (
     HttpRequest httpRequest,
@@ -177,37 +180,6 @@ app.MapPost("/api/company-applications", async (
     }
 })
 .WithName("RegisterCompanyApplication");
-
-app.MapGet("/api/company-activation/{applicationId:guid}", async (
-    Guid applicationId,
-    string token,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var tokenHash = PortalTokenService.HashToken(token);
-    var activationToken = await db.CompanyActivationTokens
-        .AsNoTracking()
-        .Where(item => item.CompanyApplicationId == applicationId && item.TokenHash == tokenHash)
-        .Select(item => new
-        {
-            Token = item,
-            item.CompanyApplication!.CompanyName,
-            item.CompanyApplication.Email
-        })
-        .FirstOrDefaultAsync(cancellationToken);
-
-    if (activationToken is null || !activationToken.Token.IsActive)
-    {
-        return Results.BadRequest(new { message = "Ce lien d'activation est invalide ou expire." });
-    }
-
-    return Results.Ok(new CompanyActivationPreviewResponse(
-        applicationId,
-        activationToken.CompanyName,
-        activationToken.Email,
-        activationToken.Token.ExpiresAt));
-})
-.WithName("PreviewCompanyActivation");
 
 app.MapPost("/api/company-portal/login", async (
     CompanyPortalLoginRequest request,
@@ -2149,47 +2121,6 @@ admin.MapGet("/company-application-documents/{id:guid}/download", async (
 })
 .WithName("DownloadCompanyApplicationDocument");
 
-app.MapPost("/api/company-activation/password", async (
-    CompanyActivationPasswordRequest request,
-    HttpRequest httpRequest,
-    CompanyActivationPasswordService activationPasswordService,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var result = await activationPasswordService.CreatePasswordAsync(request, cancellationToken);
-    if (result.Status == CompanyActivationPasswordStatus.ValidationFailed)
-    {
-        return Results.BadRequest(new { message = result.Message });
-    }
-
-    if (result.Status == CompanyActivationPasswordStatus.InvalidOrExpiredToken)
-    {
-        return Results.BadRequest(new { message = result.Message });
-    }
-
-    if (result.Status == CompanyActivationPasswordStatus.DuplicatePortalUser)
-    {
-        return Results.BadRequest(new { message = result.Message });
-    }
-
-    var application = result.Application!;
-    var company = result.Company!;
-    AddAuditLog(
-        db,
-        httpRequest,
-        AuditActor.Company(company.Id, company.Name),
-        "CompanyActivationPasswordCreated",
-        nameof(HomeService.Domain.Entities.CompanyApplication),
-        application.Id,
-        "Mot de passe entreprise cree depuis le lien d'activation.",
-        before: new { Status = result.PreviousStatus },
-        after: new { application.Status, company.Id, result.Email });
-    await db.SaveChangesAsync(cancellationToken);
-
-    return Results.Ok(result.Response);
-})
-.WithName("CreateCompanyPasswordFromActivationToken");
-
 app.Run();
 
 static ProviderMobileProfileCompletionResponse? BuildProviderMobileProfileCompletion(ProviderProfile provider)
@@ -2606,18 +2537,7 @@ static void AddAuditLog(
 
 static AuditRequestContext GetAuditRequestContext(HttpRequest request)
 {
-    var correlationId = request.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
-        ? headerValue.ToString()
-        : request.HttpContext.TraceIdentifier;
-
-    var ipAddress = request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor)
-        ? forwardedFor.ToString().Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
-        : request.HttpContext.Connection.RemoteIpAddress?.ToString();
-
-    return new AuditRequestContext(
-        ipAddress,
-        request.Headers.UserAgent.ToString(),
-        correlationId);
+    return HttpAuditContextFactory.Create(request);
 }
 
 public partial class Program;
