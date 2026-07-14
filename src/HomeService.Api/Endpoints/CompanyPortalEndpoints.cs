@@ -215,6 +215,105 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalEmployees");
 
+        group.MapPost("/{companyId:guid}/employees", async (
+            Guid companyId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CompanyEmployeeInvitationService invitationService,
+            IConfiguration configuration,
+            CancellationToken cancellationToken) =>
+        {
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "Le formulaire employe doit etre envoye au format multipart/form-data." });
+            }
+
+            var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
+            if (company is null)
+            {
+                return Results.NotFound(new { message = "Entreprise introuvable ou inactive." });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            var errors = CompanyProviderValidator.Validate(ToCompanyProviderFormData(form));
+            if (errors.Count > 0)
+            {
+                return Results.BadRequest(new { message = "Le formulaire employe contient des erreurs.", errors });
+            }
+
+            var provider = new ProviderProfile(
+                companyId,
+                GetFormValue(form, "firstName"),
+                GetFormValue(form, "lastName"),
+                GetFormValue(form, "phoneNumber"),
+                DateOnly.Parse(GetFormValue(form, "dateOfBirth")),
+                GetFormValue(form, "address"),
+                ParseProviderGender(GetOptionalFormValue(form, "gender")),
+                ParseProviderEmploymentType(GetOptionalFormValue(form, "employmentType")),
+                GetOptionalInt(form, "yearsOfExperience") ?? 0,
+                GetOptionalDecimal(form, "missionLatitude"),
+                GetOptionalDecimal(form, "missionLongitude"),
+                GetOptionalInt(form, "missionRadiusKm") ?? 5);
+
+            var requestedServiceIds = GetGuidValues(form, "serviceIds");
+            var services = await db.Services
+                .Where(service => requestedServiceIds.Contains(service.Id) && service.IsActive)
+                .Select(service => service.Id)
+                .ToListAsync(cancellationToken);
+
+            foreach (var serviceId in services)
+            {
+                provider.AddService(
+                    serviceId,
+                    ParseExperienceLevel(GetOptionalFormValue(form, "experienceLevel")));
+            }
+
+            db.Providers.Add(provider);
+
+            var invitation = await invitationService.CreatePendingInvitationAsync(
+                provider.Id,
+                companyId,
+                configuration["PROVIDER_PORTAL_BASE_URL"],
+                cancellationToken);
+
+            var documents = await uploadService.SaveAsync(companyId, provider.Id, form.Files, cancellationToken);
+            foreach (var document in documents)
+            {
+                provider.AttachDocument(new ProviderDocument(
+                    provider.Id,
+                    document.DocumentType,
+                    document.OriginalFileName,
+                    document.StoragePath,
+                    document.ContentType));
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(company.Id, company.Name),
+                "CompanyEmployeeCreated",
+                nameof(ProviderProfile),
+                provider.Id,
+                "Prestataire ajoute depuis le portail entreprise.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new
+                {
+                    provider.FirstName,
+                    provider.LastName,
+                    provider.PhoneNumber,
+                    provider.EmploymentType,
+                    provider.Gender,
+                    provider.YearsOfExperience,
+                    ServiceCount = services.Count,
+                    DocumentCount = documents.Count
+                }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Created(
+                $"/api/company-portal/{companyId}/employees/{provider.Id}",
+                new CreateCompanyEmployeeResult(provider.Id, invitation.Code, invitation.InvitationLink, invitation.ExpiresAt));
+        })
+        .WithName("CreateCompanyPortalEmployee");
+
         group.MapPut("/{companyId:guid}/employees/{employeeId:guid}", async (
             Guid companyId,
             Guid employeeId,
@@ -523,13 +622,80 @@ public static class CompanyPortalEndpoints
 
     private static string? GetOptionalFormValue(IFormCollection form, string key)
     {
-        var value = form.TryGetValue(key, out var formValue) ? formValue.ToString() : string.Empty;
+        var value = GetFormValue(form, key);
         return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static string GetFormValue(IFormCollection form, string key)
+    {
+        return form.TryGetValue(key, out var value) ? value.ToString() : string.Empty;
+    }
+
+    private static int? GetOptionalInt(IFormCollection form, string key)
+    {
+        return int.TryParse(GetFormValue(form, key), out var value) ? value : null;
+    }
+
+    private static IReadOnlyList<Guid> GetGuidValues(IFormCollection form, string key)
+    {
+        if (!form.TryGetValue(key, out var values))
+        {
+            return [];
+        }
+
+        return values
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .SelectMany(value => value!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Select(value => Guid.TryParse(value, out var parsed) ? parsed : Guid.Empty)
+            .Where(value => value != Guid.Empty)
+            .Distinct()
+            .ToList();
+    }
+
+    private static decimal? GetOptionalDecimal(IFormCollection form, string key)
+    {
+        return decimal.TryParse(GetFormValue(form, key), out var value) ? value : null;
     }
 
     private static bool TryParseProviderDocumentType(string? value, out ProviderDocumentType documentType)
     {
         return Enum.TryParse(value?.Trim(), true, out documentType);
+    }
+
+    private static ExperienceLevel ParseExperienceLevel(string? value)
+    {
+        return Enum.TryParse<ExperienceLevel>(value, true, out var level)
+            ? level
+            : ExperienceLevel.Confirmed;
+    }
+
+    private static ProviderEmploymentType ParseProviderEmploymentType(string? value)
+    {
+        return Enum.TryParse<ProviderEmploymentType>(value, true, out var employmentType)
+            ? employmentType
+            : ProviderEmploymentType.CompanyEmployee;
+    }
+
+    private static ProviderGender ParseProviderGender(string? value)
+    {
+        return Enum.TryParse<ProviderGender>(value, true, out var gender)
+            ? gender
+            : ProviderGender.Unspecified;
+    }
+
+    private static CompanyProviderFormData ToCompanyProviderFormData(IFormCollection form)
+    {
+        return new CompanyProviderFormData(
+            GetFormValue(form, "firstName"),
+            GetFormValue(form, "lastName"),
+            GetFormValue(form, "phoneNumber"),
+            DateOnly.TryParse(GetFormValue(form, "dateOfBirth"), out var birthDate) ? birthDate : null,
+            GetFormValue(form, "address"),
+            GetOptionalInt(form, "yearsOfExperience"),
+            GetOptionalInt(form, "missionRadiusKm"),
+            GetGuidValues(form, "serviceIds"),
+            form.Files.GetFile("photo") is not null,
+            form.Files.GetFile("identityDocument") is not null);
     }
 
     private static void TryDeleteProviderFile(CompanyProviderUploadService uploadService, string storagePath)
