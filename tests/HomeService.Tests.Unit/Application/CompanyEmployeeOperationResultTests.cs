@@ -31,6 +31,35 @@ public sealed class CompanyEmployeeOperationResultTests
         Assert.Null(result.Provider);
     }
 
+    [Fact]
+    public void InvitationOk_CarriesProviderAndInvitation()
+    {
+        var providerId = Guid.NewGuid();
+        var invitation = new ProviderInvitation(
+            providerId,
+            Guid.NewGuid(),
+            "KAZA-123456",
+            "token-hash",
+            DateTimeOffset.UtcNow.AddDays(14));
+
+        var result = CompanyEmployeeInvitationResult.Ok(providerId, invitation);
+
+        Assert.Equal(CompanyEmployeeInvitationStatus.Ok, result.Status);
+        Assert.Equal(providerId, result.ProviderId);
+        Assert.Same(invitation, result.Invitation);
+    }
+
+    [Fact]
+    public void InvitationNotFound_CarriesBusinessMessage()
+    {
+        var result = CompanyEmployeeInvitationResult.NotFound();
+
+        Assert.Equal(CompanyEmployeeInvitationStatus.NotFound, result.Status);
+        Assert.Equal("Prestataire introuvable.", result.Message);
+        Assert.Null(result.ProviderId);
+        Assert.Null(result.Invitation);
+    }
+
     private static ProviderProfile CreateProvider()
     {
         return new ProviderProfile(
