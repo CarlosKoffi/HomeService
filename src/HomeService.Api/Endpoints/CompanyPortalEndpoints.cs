@@ -5,6 +5,7 @@ using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Api.Endpoints;
@@ -328,6 +329,95 @@ public static class CompanyPortalEndpoints
         })
         .WithName("DeactivateCompanyPortalEmployee");
 
+        group.MapPost("/{companyId:guid}/employees/{employeeId:guid}/documents", async (
+            Guid companyId,
+            Guid employeeId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "La piece doit etre envoyee au format multipart/form-data." });
+            }
+
+            var provider = await db.Providers
+                .Include(provider => provider.Documents)
+                .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+            if (provider is null)
+            {
+                return Results.NotFound(new { message = "Employe introuvable." });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            if (!TryParseProviderDocumentType(GetOptionalFormValue(form, "documentType"), out var documentType))
+            {
+                return Results.BadRequest(new { message = "Type de piece invalide." });
+            }
+
+            var file = form.Files.GetFile("file");
+            if (file is null)
+            {
+                return Results.BadRequest(new { message = "Aucun fichier recu." });
+            }
+
+            var oldDocuments = provider.Documents.Where(document => document.DocumentType == documentType).ToList();
+            foreach (var oldDocument in oldDocuments)
+            {
+                TryDeleteProviderFile(uploadService, oldDocument.StoragePath);
+                db.ProviderDocuments.Remove(oldDocument);
+            }
+
+            var stored = await uploadService.SaveOneAsync(companyId, provider.Id, documentType, file, cancellationToken);
+            provider.AttachDocument(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, null),
+                "CompanyEmployeeDocumentUploaded",
+                nameof(ProviderDocument),
+                null,
+                "Piece prestataire ajoutee ou remplacee.",
+                HttpAuditContextFactory.Create(httpRequest),
+                before: new { ReplacedDocumentCount = oldDocuments.Count, DocumentType = documentType },
+                after: new { stored.DocumentType, stored.OriginalFileName, stored.ContentType }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("UploadCompanyPortalEmployeeDocument");
+
+        group.MapDelete("/{companyId:guid}/employees/{employeeId:guid}/documents/{documentId:guid}", async (
+            Guid companyId,
+            Guid employeeId,
+            Guid documentId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var document = await db.ProviderDocuments
+                .Include(document => document.Provider)
+                .FirstOrDefaultAsync(document => document.Id == documentId && document.ProviderId == employeeId && document.Provider!.CompanyId == companyId, cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound(new { message = "Piece introuvable." });
+            }
+
+            TryDeleteProviderFile(uploadService, document.StoragePath);
+            db.ProviderDocuments.Remove(document);
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, null),
+                "CompanyEmployeeDocumentDeleted",
+                nameof(ProviderDocument),
+                document.Id,
+                "Piece prestataire supprimee.",
+                HttpAuditContextFactory.Create(httpRequest),
+                before: new { document.DocumentType, document.OriginalFileName, document.ContentType }));
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("DeleteCompanyPortalEmployeeDocument");
+
         group.MapGet("/{companyId:guid}/payments", async (
             Guid companyId,
             string? period,
@@ -395,6 +485,35 @@ public static class CompanyPortalEndpoints
             HttpAuditContextFactory.Create(httpRequest),
             before,
             after));
+    }
+
+    private static string? GetOptionalFormValue(IFormCollection form, string key)
+    {
+        var value = form.TryGetValue(key, out var formValue) ? formValue.ToString() : string.Empty;
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static bool TryParseProviderDocumentType(string? value, out ProviderDocumentType documentType)
+    {
+        return Enum.TryParse(value?.Trim(), true, out documentType);
+    }
+
+    private static void TryDeleteProviderFile(CompanyProviderUploadService uploadService, string storagePath)
+    {
+        try
+        {
+            var absolutePath = uploadService.GetAbsolutePath(storagePath);
+            if (File.Exists(absolutePath))
+            {
+                File.Delete(absolutePath);
+            }
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 }
 
