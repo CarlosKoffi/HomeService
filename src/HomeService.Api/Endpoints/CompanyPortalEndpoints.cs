@@ -329,6 +329,40 @@ public static class CompanyPortalEndpoints
         })
         .WithName("DeactivateCompanyPortalEmployee");
 
+        group.MapPost("/{companyId:guid}/employees/{employeeId:guid}/invitation-code", async (
+            Guid companyId,
+            Guid employeeId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyEmployeeInvitationService invitationService,
+            IConfiguration configuration,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await invitationService.RegenerateAsync(
+                companyId,
+                employeeId,
+                configuration["PROVIDER_PORTAL_BASE_URL"],
+                cancellationToken);
+            if (result.Status == CompanyEmployeeInvitationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = "Prestataire introuvable." });
+            }
+
+            var invitation = result.Invitation!;
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, null),
+                "ProviderInvitationCodeGenerated",
+                nameof(ProviderInvitation),
+                invitation.Id,
+                "Code d'acces prestataire genere depuis le portail entreprise.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new { ProviderId = result.ProviderId, invitation.Code, invitation.ExpiresAt }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new CreateCompanyEmployeeResult(result.ProviderId!.Value, invitation.Code, invitation.InvitationLink, invitation.ExpiresAt));
+        })
+        .WithName("GenerateCompanyPortalEmployeeInvitationCode");
+
         group.MapPost("/{companyId:guid}/employees/{employeeId:guid}/documents", async (
             Guid companyId,
             Guid employeeId,
