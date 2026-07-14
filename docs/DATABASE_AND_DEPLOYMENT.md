@@ -48,6 +48,7 @@ Scripts presents a la date du 2026-07-14:
 - `015_add_mission_confirmation_contact_release.sql`
 - `016_add_provider_interim_affiliation_workflow.sql`
 - `017_add_provider_portal_password.sql`
+- `018_add_cms_foundation.sql`
 
 Le manifeste detaille est dans `src/HomeService.Admin/Sql/README.md`.
 

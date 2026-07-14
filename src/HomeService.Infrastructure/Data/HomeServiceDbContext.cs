@@ -41,6 +41,17 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<AdminUserRole> AdminUserRoles => Set<AdminUserRole>();
     public DbSet<NotificationOutboxMessage> NotificationOutboxMessages => Set<NotificationOutboxMessage>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
+    public DbSet<CmsSite> CmsSites => Set<CmsSite>();
+    public DbSet<CmsComponentDefinition> CmsComponentDefinitions => Set<CmsComponentDefinition>();
+    public DbSet<CmsPage> CmsPages => Set<CmsPage>();
+    public DbSet<CmsPageTranslation> CmsPageTranslations => Set<CmsPageTranslation>();
+    public DbSet<CmsPageVersion> CmsPageVersions => Set<CmsPageVersion>();
+    public DbSet<CmsSection> CmsSections => Set<CmsSection>();
+    public DbSet<CmsContentValue> CmsContentValues => Set<CmsContentValue>();
+    public DbSet<CmsMenu> CmsMenus => Set<CmsMenu>();
+    public DbSet<CmsMenuItem> CmsMenuItems => Set<CmsMenuItem>();
+    public DbSet<CmsMediaAsset> CmsMediaAssets => Set<CmsMediaAsset>();
+    public DbSet<CmsMediaVariant> CmsMediaVariants => Set<CmsMediaVariant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -39,6 +39,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 015 | `015_add_mission_confirmation_contact_release.sql` | Mission confirmation contact release |
 | 016 | `016_add_provider_interim_affiliation_workflow.sql` | Provider interim affiliation workflow |
 | 017 | `017_add_provider_portal_password.sql` | Provider portal password hash |
+| 018 | `018_add_cms_foundation.sql` | CMS multi-site foundation |
 
 ## Notes
 

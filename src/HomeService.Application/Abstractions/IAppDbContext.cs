@@ -39,6 +39,17 @@ public interface IAppDbContext
     DbSet<AdminUserRole> AdminUserRoles { get; }
     DbSet<NotificationOutboxMessage> NotificationOutboxMessages { get; }
     DbSet<AuditLogEntry> AuditLogEntries { get; }
+    DbSet<CmsSite> CmsSites { get; }
+    DbSet<CmsComponentDefinition> CmsComponentDefinitions { get; }
+    DbSet<CmsPage> CmsPages { get; }
+    DbSet<CmsPageTranslation> CmsPageTranslations { get; }
+    DbSet<CmsPageVersion> CmsPageVersions { get; }
+    DbSet<CmsSection> CmsSections { get; }
+    DbSet<CmsContentValue> CmsContentValues { get; }
+    DbSet<CmsMenu> CmsMenus { get; }
+    DbSet<CmsMenuItem> CmsMenuItems { get; }
+    DbSet<CmsMediaAsset> CmsMediaAssets { get; }
+    DbSet<CmsMediaVariant> CmsMediaVariants { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

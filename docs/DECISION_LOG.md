@@ -44,3 +44,27 @@ Raison:
 - l'ordre d'application doit etre lisible pour un humain;
 - Coolify/production ne doivent pas dependre d'une interpretation ambigue;
 - les scripts restent des references controlees, EF Core reste la source principale du schema.
+
+## 2026-07-15 - Fondation CMS multi-site
+
+Decision: ajouter un premier noyau CMS relationnel multi-site avant de brancher les ecrans admin et les futurs Figma.
+
+Raisons:
+
+- eviter de continuer a ajouter du texte durable en dur;
+- permettre plusieurs sites et portails sans dupliquer les modeles;
+- garder des contenus versionnes, traduisibles et auditables;
+- preparer un mapping Figma propre sans construire un page builder libre.
+
+Portee:
+
+- sites, pages, traductions, versions, sections, composants, valeurs typees, menus et medias;
+- migration EF `AddCmsFoundation`;
+- script SQL de reference `018_add_cms_foundation.sql`.
+
+Hors portee de ce lot:
+
+- ecrans admin CMS;
+- endpoints publics CMS;
+- workflow complet de publication;
+- permissions CMS detaillees.
