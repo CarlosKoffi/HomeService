@@ -1,4 +1,5 @@
 using HomeService.Api.Auditing;
+using HomeService.Application.Companies;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
@@ -109,6 +110,71 @@ public static class CompanyPortalEndpoints
             return Results.Ok(new { message = "Candidature refusee." });
         })
         .WithName("RejectCompanyPortalInterimCandidate");
+
+        group.MapPost("/{companyId:guid}/compliance-documents", async (
+            Guid companyId,
+            HttpRequest httpRequest,
+            CompanyComplianceDocumentService complianceDocumentService,
+            IAppDbContext db,
+            CompanyApplicationUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "Les documents doivent etre envoyes au format multipart/form-data." });
+            }
+
+            var target = await complianceDocumentService.GetUploadTargetAsync(companyId, cancellationToken);
+            if (target.Status == CompanyComplianceDocumentStatus.CompanyNotFound)
+            {
+                return Results.NotFound(new { message = target.Message });
+            }
+
+            if (target.Status == CompanyComplianceDocumentStatus.ApplicationNotFound || target.ApplicationId is null)
+            {
+                return Results.NotFound(new { message = target.Message });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            var documents = await uploadService.SaveAsync(target.ApplicationId.Value, form.Files, cancellationToken);
+            var result = await complianceDocumentService.AttachDocumentsAsync(
+                companyId,
+                documents.Select(document => new CompanyApplicationUploadedDocument(
+                        document.DocumentType,
+                        document.OriginalFileName,
+                        document.StoragePath,
+                        document.ContentType))
+                    .ToList(),
+                cancellationToken);
+
+            if (result.Status == CompanyComplianceDocumentStatus.NoValidDocument)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            if (result.Status == CompanyComplianceDocumentStatus.CompanyNotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == CompanyComplianceDocumentStatus.ApplicationNotFound || result.ApplicationId is null)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, null),
+                "CompanyComplianceDocumentsUploaded",
+                nameof(HomeService.Domain.Entities.CompanyApplication),
+                result.ApplicationId.Value,
+                "Pieces de conformite ajoutees depuis le portail entreprise.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new { result.DocumentCount, result.DocumentTypes }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new { message = result.Message, count = result.DocumentCount });
+        })
+        .WithName("UploadCompanyPortalComplianceDocuments");
 
         return app;
     }

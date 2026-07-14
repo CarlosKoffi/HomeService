@@ -25,4 +25,22 @@ public sealed class CompanyComplianceDocumentUploadResultTests
         Assert.Equal(CompanyComplianceDocumentStatus.NoValidDocument, result.Status);
         Assert.Equal("Aucun document valide n'a ete transmis.", result.Message);
     }
+
+    [Fact]
+    public void CompanyNotFound_ReturnsBusinessMessage()
+    {
+        var result = CompanyComplianceDocumentUploadResult.CompanyNotFound();
+
+        Assert.Equal(CompanyComplianceDocumentStatus.CompanyNotFound, result.Status);
+        Assert.Equal("Entreprise introuvable ou inactive.", result.Message);
+    }
+
+    [Fact]
+    public void ApplicationNotFound_ReturnsBusinessMessage()
+    {
+        var result = CompanyComplianceDocumentUploadResult.ApplicationNotFound();
+
+        Assert.Equal(CompanyComplianceDocumentStatus.ApplicationNotFound, result.Status);
+        Assert.Equal("Dossier entreprise introuvable.", result.Message);
+    }
 }
