@@ -52,6 +52,7 @@ builder.Services.AddScoped<CompanyPortalQueryService>();
 builder.Services.AddScoped<ProviderSelfRegistrationService>();
 builder.Services.AddScoped<ProviderOnboardingService>();
 builder.Services.AddScoped<ProviderPortalAuthService>();
+builder.Services.AddScoped<AdminConfigurationService>();
 builder.Services.AddScoped<AdminQueryService>();
 builder.Services.AddScoped<AdminCompanyApplicationReviewService>();
 builder.Services.AddScoped<AdminCompanyApplicationDocumentReviewService>();

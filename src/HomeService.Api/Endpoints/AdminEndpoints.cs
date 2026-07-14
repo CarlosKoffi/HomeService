@@ -90,62 +90,23 @@ public static class AdminEndpoints
             string countryCode,
             UpdateCountryBrandingRequest request,
             HttpRequest httpRequest,
+            AdminConfigurationService configurationService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var validationError = CountryBrandingValidator.Validate(request);
-            if (validationError is not null)
+            var result = await configurationService.UpdateCountryBrandingAsync(countryCode, request, cancellationToken);
+            if (result.Status == AdminConfigurationUpdateStatus.ValidationFailed)
             {
-                return Results.BadRequest(new { message = validationError });
+                return Results.BadRequest(new { message = result.Message });
             }
         
-            var normalizedCountryCode = countryCode.Trim().ToUpperInvariant();
-            var country = await db.Countries.FirstOrDefaultAsync(country => country.IsoCode == normalizedCountryCode, cancellationToken);
-            if (country is null)
+            if (result.Status == AdminConfigurationUpdateStatus.NotFound)
             {
-                return Results.NotFound(new { message = "Pays introuvable." });
+                return Results.NotFound(new { message = result.Message });
             }
         
-            var branding = await db.CountryBrandings.FirstOrDefaultAsync(branding => branding.CountryId == country.Id, cancellationToken);
-            object? before = null;
-            if (branding is null)
-            {
-                branding = new CountryBranding(
-                    country.Id,
-                    request.BrandName,
-                    request.PrimaryColor,
-                    request.SecondaryColor,
-                    request.AccentColor,
-                    request.HeroTitle,
-                    request.HeroSubtitle,
-                    request.HeroImageUrl,
-                    request.MotifStyle);
-                db.CountryBrandings.Add(branding);
-            }
-            else
-            {
-                before = new
-                {
-                    branding.BrandName,
-                    branding.PrimaryColor,
-                    branding.SecondaryColor,
-                    branding.AccentColor,
-                    branding.HeroTitle,
-                    branding.HeroSubtitle,
-                    branding.HeroImageUrl,
-                    branding.MotifStyle
-                };
-                branding.Update(
-                    request.BrandName,
-                    request.PrimaryColor,
-                    request.SecondaryColor,
-                    request.AccentColor,
-                    request.HeroTitle,
-                    request.HeroSubtitle,
-                    request.HeroImageUrl,
-                    request.MotifStyle);
-            }
-        
+            var branding = result.Branding!;
+            var response = result.Response!;
             AddAuditLog(
                 db,
                 httpRequest,
@@ -153,22 +114,12 @@ public static class AdminEndpoints
                 "AdminCountryBrandingUpdated",
                 nameof(CountryBranding),
                 branding.Id,
-                $"Branding pays {country.IsoCode} mis a jour.",
-                before,
-                after: request);
+                $"Branding pays {response.CountryIsoCode} mis a jour.",
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
         
-            return Results.Ok(new CountryBrandingResponse(
-                country.IsoCode,
-                country.Name,
-                branding.BrandName,
-                branding.PrimaryColor,
-                branding.SecondaryColor,
-                branding.AccentColor,
-                branding.HeroTitle,
-                branding.HeroSubtitle,
-                branding.HeroImageUrl,
-                branding.MotifStyle));
+            return Results.Ok(response);
         })
         .WithName("UpdateAdminCountryBranding");
         
@@ -186,22 +137,22 @@ public static class AdminEndpoints
             Guid id,
             UpdateCompanyAssignmentModeRequest request,
             HttpRequest httpRequest,
+            AdminConfigurationService configurationService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == id, cancellationToken);
-            if (company is null)
+            var result = await configurationService.UpdateCompanyAssignmentModeAsync(id, request, cancellationToken);
+            if (result.Status == AdminConfigurationUpdateStatus.NotFound)
             {
                 return Results.NotFound();
             }
         
-            if (!TryParseCompanyAssignmentMode(request.AssignmentMode, out var assignmentMode))
+            if (result.Status == AdminConfigurationUpdateStatus.ValidationFailed)
             {
-                return Results.BadRequest(new { message = "Mode d'affectation invalide." });
+                return Results.BadRequest(new { message = result.Message });
             }
         
-            var previousMode = company.AssignmentMode;
-            company.ChangeAssignmentMode(assignmentMode);
+            var company = result.Company!;
             AddAuditLog(
                 db,
                 httpRequest,
@@ -210,11 +161,11 @@ public static class AdminEndpoints
                 nameof(Company),
                 company.Id,
                 "Mode d'affectation entreprise modifie.",
-                before: new { AssignmentMode = previousMode },
-                after: new { company.AssignmentMode });
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
         
-            return Results.Ok(CompanyAssignmentModePresenter.ToResponse(company));
+            return Results.Ok(result.Response);
         })
         .WithName("UpdateCompanyAssignmentMode");
         
@@ -567,11 +518,6 @@ public static class AdminEndpoints
         .WithName("DownloadCompanyApplicationDocument");
         return app;
     }
-    static bool TryParseCompanyAssignmentMode(string? value, out CompanyAssignmentMode assignmentMode)
-    {
-        return Enum.TryParse(value?.Trim(), true, out assignmentMode);
-    }
-    
     static CompanyApplicationActionResponse ToCompanyApplicationActionResponse(HomeService.Domain.Entities.CompanyApplication application)
     {
         return new CompanyApplicationActionResponse(
