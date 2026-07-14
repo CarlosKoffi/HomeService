@@ -32,161 +32,30 @@ public static class AdminEndpoints
             DateTimeOffset? to,
             int? skip,
             int? take,
-            IAppDbContext db,
+            AdminQueryService queryService,
             CancellationToken cancellationToken) =>
         {
-            var pageSize = Math.Clamp(take ?? 50, 1, 200);
-            var offset = Math.Max(skip ?? 0, 0);
-            var query = db.AuditLogEntries.AsNoTracking();
-        
-            if (Enum.TryParse<AuditActorType>(actorType, true, out var parsedActorType))
-            {
-                query = query.Where(entry => entry.ActorType == parsedActorType);
-            }
-        
-            if (actorId.HasValue)
-            {
-                query = query.Where(entry => entry.ActorId == actorId.Value);
-            }
-        
-            if (!string.IsNullOrWhiteSpace(action))
-            {
-                var normalizedAction = action.Trim();
-                query = query.Where(entry => entry.Action == normalizedAction);
-            }
-        
-            if (!string.IsNullOrWhiteSpace(entityType))
-            {
-                var normalizedEntityType = entityType.Trim();
-                query = query.Where(entry => entry.EntityType == normalizedEntityType);
-            }
-        
-            if (entityId.HasValue)
-            {
-                query = query.Where(entry => entry.EntityId == entityId.Value);
-            }
-        
-            if (from.HasValue)
-            {
-                query = query.Where(entry => entry.OccurredAt >= from.Value);
-            }
-        
-            if (to.HasValue)
-            {
-                query = query.Where(entry => entry.OccurredAt <= to.Value);
-            }
-        
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var term = search.Trim().ToLowerInvariant();
-                query = query.Where(entry =>
-                    entry.Action.ToLower().Contains(term)
-                    || entry.EntityType.ToLower().Contains(term)
-                    || (entry.ActorDisplayName != null && entry.ActorDisplayName.ToLower().Contains(term))
-                    || (entry.Summary != null && entry.Summary.ToLower().Contains(term)));
-            }
-        
-            var total = await query.CountAsync(cancellationToken);
-            var items = await query
-                .OrderByDescending(entry => entry.OccurredAt)
-                .Skip(offset)
-                .Take(pageSize)
-                .Select(entry => new AuditLogEntryResponse(
-                    entry.Id,
-                    entry.ActorType.ToString(),
-                    entry.ActorId,
-                    entry.ActorDisplayName,
-                    entry.Action,
-                    entry.EntityType,
-                    entry.EntityId,
-                    entry.Summary,
-                    entry.BeforeJson,
-                    entry.AfterJson,
-                    entry.IpAddress,
-                    entry.UserAgent,
-                    entry.CorrelationId,
-                    entry.OccurredAt))
-                .ToListAsync(cancellationToken);
-        
-            return Results.Ok(new AuditLogListResponse(total, offset, pageSize, items));
+            var result = await queryService.ListAuditLogsAsync(new AdminAuditLogQuery(
+                actorType,
+                actorId,
+                action,
+                entityType,
+                entityId,
+                search,
+                from,
+                to,
+                skip,
+                take), cancellationToken);
+
+            return Results.Ok(result);
         })
         .WithName("ListAdminAuditLogs");
         
-        admin.MapGet("/company-applications", async (IAppDbContext db, ILogger<Program> logger, CancellationToken cancellationToken) =>
+        admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {
             try
             {
-                var applications = await db.CompanyApplications
-                    .AsNoTracking()
-                    .OrderBy(application => application.Status == HomeService.Domain.Enums.CompanyApplicationStatus.Approved
-                        || application.Status == HomeService.Domain.Enums.CompanyApplicationStatus.ActivationSent
-                        || application.Status == HomeService.Domain.Enums.CompanyApplicationStatus.Activated)
-                    .ThenByDescending(application => application.SubmittedAt)
-                    .Select(application => new
-                    {
-                        application.Id,
-                        application.CompanyName,
-                        application.City,
-                        application.ContactName,
-                        application.Email,
-                        application.PhoneNumber,
-                        Status = application.Status.ToString(),
-                        application.SubmittedAt,
-                        application.LastReminderSentAt,
-                        application.ActivationEmailSentAt
-                    })
-                    .ToListAsync(cancellationToken);
-        
-                var applicationIds = applications.Select(application => application.Id).ToList();
-                var documents = await db.CompanyApplicationDocuments
-                    .AsNoTracking()
-                    .Where(document => applicationIds.Contains(document.CompanyApplicationId))
-                    .OrderBy(document => document.DocumentType)
-                    .Select(document => new
-                    {
-                        document.CompanyApplicationId,
-                        document.Id,
-                        DocumentType = document.DocumentType.ToString(),
-                        ReviewStatus = document.ReviewStatus.ToString(),
-                        document.ReviewNote
-                    })
-                    .ToListAsync(cancellationToken);
-        
-                var documentsByApplication = documents
-                    .GroupBy(document => document.CompanyApplicationId)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group
-                            .Select(document => new CompanyApplicationDocumentSummaryResponse(
-                                document.Id,
-                                document.DocumentType,
-                                document.ReviewStatus,
-                                document.ReviewNote))
-                            .ToList());
-        
-                var response = applications
-                    .Select(application =>
-                    {
-                        documentsByApplication.TryGetValue(application.Id, out var applicationDocuments);
-                        applicationDocuments ??= [];
-        
-                        return new CompanyApplicationSummaryResponse(
-                            application.Id,
-                            application.CompanyName,
-                            application.City,
-                            application.ContactName,
-                            application.Email,
-                            application.PhoneNumber,
-                            application.Status,
-                            application.SubmittedAt,
-                            application.LastReminderSentAt,
-                            application.ActivationEmailSentAt,
-                            applicationDocuments.Count,
-                            applicationDocuments.Count(document => document.ReviewStatus == HomeService.Domain.Enums.DocumentReviewStatus.Pending.ToString()),
-                            applicationDocuments);
-                    })
-                    .ToList();
-        
+                var response = await queryService.ListCompanyApplicationsAsync(cancellationToken);
                 return Results.Ok(response);
             }
             catch (Exception exception)
@@ -200,27 +69,9 @@ public static class AdminEndpoints
         })
         .WithName("ListCompanyApplications");
         
-        admin.MapGet("/notifications", async (IAppDbContext db, CancellationToken cancellationToken) =>
+        admin.MapGet("/notifications", async (AdminQueryService queryService, CancellationToken cancellationToken) =>
         {
-            var notifications = await db.NotificationOutboxMessages
-                .AsNoTracking()
-                .OrderBy(notification => notification.Status)
-                .ThenByDescending(notification => notification.ScheduledAt)
-                .Take(100)
-                .Select(notification => new NotificationOutboxMessageResponse(
-                    notification.Id,
-                    notification.Channel.ToString(),
-                    notification.Status.ToString(),
-                    notification.Recipient,
-                    notification.Subject,
-                    notification.Body,
-                    notification.RelatedEntityType,
-                    notification.RelatedEntityId,
-                    notification.ScheduledAt,
-                    notification.SentAt,
-                    notification.FailureReason))
-                .ToListAsync(cancellationToken);
-        
+            var notifications = await queryService.ListNotificationsAsync(cancellationToken);
             return Results.Ok(notifications);
         })
         .WithName("ListNotificationOutboxMessages");
