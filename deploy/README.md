@@ -45,6 +45,9 @@ Variables:
 - `ASPNETCORE_ENVIRONMENT=Production`
 - `ASPNETCORE_URLS=http://+:8080`
 - `ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homeservice;Username=homeservice;Password=...`
+- Alternative acceptee: `DATABASE_URL=postgres://homeservice:motdepasse@postgres:5432/homeservice`
+- L'API applique les migrations EF automatiquement au demarrage.
+- Volume persistant recommande: destination `/app/storage`
 
 ### Portail entreprise
 
@@ -99,18 +102,16 @@ Dans Coolify, l'ideal est d'attacher un domaine ou sous-domaine par interface:
 ## Points restants avant production publique
 
 - Ajouter une authentification reelle pour l'admin.
-- Ajouter une authentification entreprise avec lien d'activation.
-- Brancher les formulaires sur l'API.
+- Finaliser le durcissement de l'authentification admin.
 - Decider le stockage des documents uploades: volume Docker, S3 compatible ou MinIO.
-- Appliquer les migrations EF Core au deploiement.
 - Creer un premier compte super admin.
 - Ajouter les secrets email/SMS quand les integrations seront choisies.
 
 ## SQL
 
-Le script SQL complet genere depuis les migrations EF Core est conserve dans:
+Les scripts SQL de reference sont conserves dans:
 
-`src/HomeService.Admin/Sql/001_create_homeservice_schema.sql`
+`src/HomeService.Admin/Sql`
 
-Il sert de reference pour inspecter la structure de base depuis le projet admin. En production,
-la strategie definitive sera soit migrations EF automatisees, soit job de migration controle.
+Ils servent a inspecter et auditer la structure de base depuis le projet admin. En production standard,
+les migrations EF sont appliquees automatiquement par l'API au demarrage.

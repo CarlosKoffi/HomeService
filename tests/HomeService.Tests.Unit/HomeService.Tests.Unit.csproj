@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\HomeService.Domain\HomeService.Domain.csproj" />
     <ProjectReference Include="..\..\src\HomeService.Application\HomeService.Application.csproj" />
+    <ProjectReference Include="..\..\src\HomeService.Infrastructure\HomeService.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

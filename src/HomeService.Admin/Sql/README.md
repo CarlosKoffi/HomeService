@@ -6,7 +6,9 @@ EF Core migrations remain the primary schema source in:
 
 `src/HomeService.Infrastructure/Data/Migrations`
 
-Use these SQL files to inspect, review, or manually apply controlled changes when Coolify or production operations require it.
+Use these SQL files to inspect, review, or manually apply controlled changes when production operations require it.
+
+Normal Coolify deployments do not run these files manually: the API applies EF Core migrations automatically at startup through `DatabaseInitializer`.
 
 ## Rules
 
@@ -41,4 +43,3 @@ Use these SQL files to inspect, review, or manually apply controlled changes whe
 ## Notes
 
 `013_add_audit_log_entries.sql` and `014_add_service_icons.sql` are split for operational readability, while the EF migration `20260711223950_AddMissionConfirmationContactRelease` also contains those schema changes in the current history.
-

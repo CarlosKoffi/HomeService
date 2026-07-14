@@ -6,6 +6,8 @@ La base cible est PostgreSQL, deployee via Coolify.
 
 La source principale du schema est EF Core dans `HomeService.Infrastructure`.
 
+Au demarrage, l'API execute `DatabaseInitializer.InitializeAsync`, applique les migrations EF Core avec `MigrateAsync`, puis seed les donnees minimales. En deploiement Coolify normal, il n'y a donc pas de script SQL a lancer a la main.
+
 Chaque evolution doit produire:
 
 - une migration EF dans `src/HomeService.Infrastructure/Data/Migrations`;
@@ -14,9 +16,11 @@ Chaque evolution doit produire:
 
 ## Scripts SQL
 
-Les scripts SQL sont gardes dans le projet admin pour inspection et exploitation:
+Les scripts SQL sont gardes dans le projet admin pour inspection, audit DBA et exploitation controlee:
 
 `src/HomeService.Admin/Sql`
+
+Ils ne sont pas la voie d'execution principale en production. La production passe par les migrations EF appliquees par l'API au demarrage. Les scripts SQL servent de reference lisible, ou de secours si une operation exceptionnelle doit etre faite hors application.
 
 Convention:
 
@@ -83,9 +87,17 @@ Variables minimales par app:
 - `ASPNETCORE_ENVIRONMENT=Production`
 - `ASPNETCORE_URLS=http://+:8080`
 - `ApiBaseUrl` pour les frontaux
-- `ConnectionStrings__DefaultConnection` pour l'API
+- `ConnectionStrings__DefaultConnection` pour l'API, ou une URL PostgreSQL via `DATABASE_URL` / `POSTGRES_URL`
 - variables d'auth temporaire si activees
 - variables de stockage et notification quand branchees
+
+Formats acceptes pour la base API:
+
+- `ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homeservice;Username=homeservice;Password=...`
+- `DATABASE_URL=postgres://homeservice:motdepasse@postgres:5432/homeservice`
+- `POSTGRES_URL=postgres://homeservice:motdepasse@postgres:5432/homeservice`
+
+Si une URL PostgreSQL est fournie et que la configuration par defaut pointe encore vers `localhost`, l'API utilise automatiquement l'URL Coolify.
 
 ## Regle de livraison
 
