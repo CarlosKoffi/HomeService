@@ -11,7 +11,6 @@ using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
-using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Api.Endpoints;
 
@@ -462,21 +461,11 @@ public static class AdminEndpoints
         
         admin.MapGet("/company-application-documents/{id:guid}/download", async (
             Guid id,
-            IAppDbContext db,
+            AdminQueryService queryService,
             CompanyApplicationUploadService uploadService,
             CancellationToken cancellationToken) =>
         {
-            var document = await db.CompanyApplicationDocuments
-                .AsNoTracking()
-                .Where(document => document.Id == id)
-                .Select(document => new
-                {
-                    document.OriginalFileName,
-                    document.StoragePath,
-                    document.ContentType
-                })
-                .FirstOrDefaultAsync(cancellationToken);
-        
+            var document = await queryService.GetCompanyApplicationDocumentFileAsync(id, cancellationToken);
             if (document is null)
             {
                 return Results.NotFound();

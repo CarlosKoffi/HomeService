@@ -260,7 +260,24 @@ public sealed class AdminQueryService(IAppDbContext db)
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<AdminCompanyApplicationDocumentFile?> GetCompanyApplicationDocumentFileAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await db.CompanyApplicationDocuments
+            .AsNoTracking()
+            .Where(document => document.Id == id)
+            .Select(document => new AdminCompanyApplicationDocumentFile(
+                document.OriginalFileName,
+                document.StoragePath,
+                document.ContentType))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }
+
+public sealed record AdminCompanyApplicationDocumentFile(
+    string OriginalFileName,
+    string StoragePath,
+    string ContentType);
 
 public sealed record AdminAuditLogQuery(
     string? ActorType,
