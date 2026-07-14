@@ -76,25 +76,12 @@ public static class AdminEndpoints
         })
         .WithName("ListNotificationOutboxMessages");
         
-        admin.MapGet("/country-brandings/{countryCode}", async (string countryCode, IAppDbContext db, CancellationToken cancellationToken) =>
+        admin.MapGet("/country-brandings/{countryCode}", async (
+            string countryCode,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
         {
-            var normalizedCountryCode = countryCode.Trim().ToUpperInvariant();
-            var branding = await db.CountryBrandings
-                .AsNoTracking()
-                .Where(branding => branding.Country!.IsoCode == normalizedCountryCode)
-                .Select(branding => new CountryBrandingResponse(
-                    branding.Country!.IsoCode,
-                    branding.Country.Name,
-                    branding.BrandName,
-                    branding.PrimaryColor,
-                    branding.SecondaryColor,
-                    branding.AccentColor,
-                    branding.HeroTitle,
-                    branding.HeroSubtitle,
-                    branding.HeroImageUrl,
-                    branding.MotifStyle))
-                .FirstOrDefaultAsync(cancellationToken);
-        
+            var branding = await queryService.GetCountryBrandingAsync(countryCode, cancellationToken);
             return branding is null ? Results.NotFound() : Results.Ok(branding);
         })
         .WithName("GetAdminCountryBranding");
@@ -185,62 +172,12 @@ public static class AdminEndpoints
         })
         .WithName("UpdateAdminCountryBranding");
         
-        admin.MapGet("/company-applications/{id:guid}", async (Guid id, IAppDbContext db, CancellationToken cancellationToken) =>
+        admin.MapGet("/company-applications/{id:guid}", async (
+            Guid id,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
         {
-            var application = await db.CompanyApplications
-                .AsNoTracking()
-                .Where(application => application.Id == id)
-                .Select(application => new CompanyApplicationDetailResponse(
-                    application.Id,
-                    application.CompanyId,
-                    application.CompanyName,
-                    application.RegistrationNumber,
-                    application.City,
-                    application.Address,
-                    application.ContactName,
-                    application.Email,
-                    application.PhoneNumber,
-                    application.PlannedServices,
-                    application.EstimatedProviderCount,
-                    application.Status.ToString(),
-                    application.SubmittedAt,
-                    application.ReviewedAt,
-                    application.LastReminderSentAt,
-                    application.ActivationEmailSentAt,
-                    application.ActivatedAt,
-                    application.Company == null ? null : application.Company.AssignmentMode.ToString(),
-                    application.ActivationTokens
-                        .OrderByDescending(token => token.CreatedAt)
-                        .Select(token => token.ActivationLink)
-                        .FirstOrDefault(),
-                    application.ActivationTokens
-                        .OrderByDescending(token => token.CreatedAt)
-                        .Select(token => (DateTimeOffset?)token.ExpiresAt)
-                        .FirstOrDefault(),
-                    application.ReviewNote,
-                    application.Documents
-                        .OrderBy(document => document.DocumentType)
-                        .Select(document => new CompanyApplicationDocumentResponse(
-                            document.Id,
-                            document.DocumentType.ToString(),
-                            document.OriginalFileName,
-                            document.ContentType,
-                            document.ReviewStatus.ToString(),
-                            document.ReviewNote,
-                            document.CreatedAt))
-                        .ToList(),
-                    application.StatusHistory
-                        .OrderBy(history => history.ChangedAt)
-                        .Select(history => new CompanyApplicationStatusHistoryResponse(
-                            history.Id,
-                            history.PreviousStatus == null ? null : history.PreviousStatus.ToString(),
-                            history.NewStatus.ToString(),
-                            history.Note,
-                            history.ChangedBy,
-                            history.ChangedAt))
-                        .ToList()))
-                .FirstOrDefaultAsync(cancellationToken);
-        
+            var application = await queryService.GetCompanyApplicationAsync(id, cancellationToken);
             return application is null ? Results.NotFound() : Results.Ok(application);
         })
         .WithName("GetCompanyApplication");
