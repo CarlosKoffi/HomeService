@@ -214,6 +214,120 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalEmployees");
 
+        group.MapPut("/{companyId:guid}/employees/{employeeId:guid}", async (
+            Guid companyId,
+            Guid employeeId,
+            UpdateCompanyEmployeeRequest request,
+            HttpRequest httpRequest,
+            CompanyEmployeeManagementService employeeManagementService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await employeeManagementService.UpdateProfileAsync(companyId, employeeId, request, cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            AddCompanyEmployeeAudit(
+                db,
+                httpRequest,
+                companyId,
+                "CompanyEmployeeUpdated",
+                result.Provider!.Id,
+                "Profil prestataire modifie depuis le portail entreprise.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyPortalEmployee");
+
+        group.MapPut("/{companyId:guid}/employees/{employeeId:guid}/services", async (
+            Guid companyId,
+            Guid employeeId,
+            UpdateCompanyEmployeeServicesRequest request,
+            HttpRequest httpRequest,
+            CompanyEmployeeManagementService employeeManagementService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await employeeManagementService.UpdateServicesAsync(companyId, employeeId, request, cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            AddCompanyEmployeeAudit(
+                db,
+                httpRequest,
+                companyId,
+                "CompanyEmployeeServicesUpdated",
+                result.Provider!.Id,
+                "Services prestataire mis a jour.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyPortalEmployeeServices");
+
+        group.MapPost("/{companyId:guid}/employees/{employeeId:guid}/suspend", async (
+            Guid companyId,
+            Guid employeeId,
+            HttpRequest httpRequest,
+            CompanyEmployeeManagementService employeeManagementService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await employeeManagementService.SuspendAsync(companyId, employeeId, cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                return Results.NotFound();
+            }
+
+            AddCompanyEmployeeAudit(
+                db,
+                httpRequest,
+                companyId,
+                "CompanyEmployeeSuspended",
+                result.Provider!.Id,
+                "Prestataire suspendu par l'entreprise.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("SuspendCompanyPortalEmployee");
+
+        group.MapDelete("/{companyId:guid}/employees/{employeeId:guid}", async (
+            Guid companyId,
+            Guid employeeId,
+            HttpRequest httpRequest,
+            CompanyEmployeeManagementService employeeManagementService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await employeeManagementService.DeactivateAsync(companyId, employeeId, cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                return Results.NotFound();
+            }
+
+            AddCompanyEmployeeAudit(
+                db,
+                httpRequest,
+                companyId,
+                "CompanyEmployeeDeactivated",
+                result.Provider!.Id,
+                "Prestataire desactive par l'entreprise.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("DeactivateCompanyPortalEmployee");
+
         group.MapGet("/{companyId:guid}/payments", async (
             Guid companyId,
             string? period,
@@ -260,6 +374,27 @@ public static class CompanyPortalEndpoints
         .WithName("PreviewCompanyPortalProviderDocument");
 
         return app;
+    }
+
+    private static void AddCompanyEmployeeAudit(
+        IAppDbContext db,
+        HttpRequest httpRequest,
+        Guid companyId,
+        string action,
+        Guid providerId,
+        string description,
+        object? before,
+        object? after)
+    {
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            AuditActor.Company(companyId, null),
+            action,
+            nameof(ProviderProfile),
+            providerId,
+            description,
+            HttpAuditContextFactory.Create(httpRequest),
+            before,
+            after));
     }
 }
 

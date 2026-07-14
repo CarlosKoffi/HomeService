@@ -319,68 +319,6 @@ app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/in
 })
 .WithName("GenerateCompanyPortalEmployeeInvitationCode");
 
-app.MapPut("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}", async (
-    Guid companyId,
-    Guid employeeId,
-    UpdateCompanyEmployeeRequest request,
-    HttpRequest httpRequest,
-    CompanyEmployeeManagementService employeeManagementService,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var result = await employeeManagementService.UpdateProfileAsync(companyId, employeeId, request, cancellationToken);
-    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
-    {
-        return Results.NotFound(new { message = result.Message });
-    }
-
-    var provider = result.Provider!;
-    AddAuditLog(
-        db,
-        httpRequest,
-        AuditActor.Company(companyId, null),
-        "CompanyEmployeeUpdated",
-        nameof(ProviderProfile),
-        provider.Id,
-        "Profil prestataire modifie depuis le portail entreprise.",
-        result.Before,
-        result.After);
-    await db.SaveChangesAsync(cancellationToken);
-    return Results.NoContent();
-})
-.WithName("UpdateCompanyPortalEmployee");
-
-app.MapPut("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/services", async (
-    Guid companyId,
-    Guid employeeId,
-    UpdateCompanyEmployeeServicesRequest request,
-    HttpRequest httpRequest,
-    CompanyEmployeeManagementService employeeManagementService,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var result = await employeeManagementService.UpdateServicesAsync(companyId, employeeId, request, cancellationToken);
-    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
-    {
-        return Results.NotFound(new { message = result.Message });
-    }
-
-    var provider = result.Provider!;
-    AddAuditLog(
-        db,
-        httpRequest,
-        AuditActor.Company(companyId, null),
-        "CompanyEmployeeServicesUpdated",
-        nameof(ProviderProfile),
-        provider.Id,
-        "Services prestataire mis a jour.",
-        result.Before,
-        result.After);
-    await db.SaveChangesAsync(cancellationToken);
-    return Results.NoContent();
-})
-.WithName("UpdateCompanyPortalEmployeeServices");
-
 app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/documents", async (
     Guid companyId,
     Guid employeeId,
@@ -471,66 +409,6 @@ app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/
     return Results.NoContent();
 })
 .WithName("DeleteCompanyPortalEmployeeDocument");
-
-app.MapPost("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}/suspend", async (
-    Guid companyId,
-    Guid employeeId,
-    HttpRequest httpRequest,
-    CompanyEmployeeManagementService employeeManagementService,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var result = await employeeManagementService.SuspendAsync(companyId, employeeId, cancellationToken);
-    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
-    {
-        return Results.NotFound();
-    }
-
-    var provider = result.Provider!;
-    AddAuditLog(
-        db,
-        httpRequest,
-        AuditActor.Company(companyId, null),
-        "CompanyEmployeeSuspended",
-        nameof(ProviderProfile),
-        provider.Id,
-        "Prestataire suspendu par l'entreprise.",
-        result.Before,
-        result.After);
-    await db.SaveChangesAsync(cancellationToken);
-    return Results.NoContent();
-})
-.WithName("SuspendCompanyPortalEmployee");
-
-app.MapDelete("/api/company-portal/{companyId:guid}/employees/{employeeId:guid}", async (
-    Guid companyId,
-    Guid employeeId,
-    HttpRequest httpRequest,
-    CompanyEmployeeManagementService employeeManagementService,
-    IAppDbContext db,
-    CancellationToken cancellationToken) =>
-{
-    var result = await employeeManagementService.DeactivateAsync(companyId, employeeId, cancellationToken);
-    if (result.Status == CompanyEmployeeOperationStatus.NotFound)
-    {
-        return Results.NotFound();
-    }
-
-    var provider = result.Provider!;
-    AddAuditLog(
-        db,
-        httpRequest,
-        AuditActor.Company(companyId, null),
-        "CompanyEmployeeDeactivated",
-        nameof(ProviderProfile),
-        provider.Id,
-        "Prestataire desactive par l'entreprise.",
-        result.Before,
-        result.After);
-    await db.SaveChangesAsync(cancellationToken);
-    return Results.NoContent();
-})
-.WithName("DeactivateCompanyPortalEmployee");
 
 var providerPortal = app.MapGroup("/api/provider-portal");
 
