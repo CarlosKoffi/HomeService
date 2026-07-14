@@ -684,6 +684,233 @@ h3 {
     text-align: center;
 }
 
+.cms-header {
+    align-items: end;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.cms-health,
+.cms-overview article,
+.cms-sites-panel,
+.cms-detail-panel,
+.cms-components,
+.cms-empty {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.cms-health {
+    min-width: 180px;
+    padding: 1rem;
+    text-align: right;
+}
+
+.cms-health strong,
+.cms-overview strong,
+.cms-detail-grid strong {
+    display: block;
+    font-size: 1.65rem;
+    line-height: 1;
+}
+
+.cms-health span,
+.cms-overview span,
+.cms-detail-grid span {
+    color: #000;
+    font-size: .85rem;
+    font-weight: 800;
+}
+
+.cms-overview {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-top: 1.25rem;
+}
+
+.cms-overview article {
+    padding: 1rem;
+}
+
+.cms-overview small {
+    color: #000;
+}
+
+.cms-workspace {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+    margin-top: 1rem;
+}
+
+.cms-sites-panel,
+.cms-detail-panel,
+.cms-components {
+    padding: 1rem;
+}
+
+.cms-site-list {
+    display: grid;
+    gap: .5rem;
+    margin-top: .9rem;
+}
+
+.cms-site-list button {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #000;
+    cursor: pointer;
+    display: grid;
+    gap: .2rem;
+    padding: .8rem;
+    text-align: left;
+}
+
+.cms-site-list button.active,
+.cms-site-list button:hover {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #fff;
+}
+
+.cms-site-list span,
+.cms-site-list small {
+    font-size: .78rem;
+    font-weight: 800;
+}
+
+.cms-detail-heading {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.cms-detail-heading h2 {
+    font-size: 1.7rem;
+    margin: 0 0 .25rem;
+}
+
+.cms-detail-heading p {
+    color: #000;
+    margin: 0;
+}
+
+.cms-status {
+    background: #e2e8f0;
+    border-radius: 999px;
+    color: #0f172a;
+    display: inline-flex;
+    font-size: .78rem;
+    font-weight: 900;
+    padding: .3rem .65rem;
+    white-space: nowrap;
+}
+
+.cms-status-ok {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.cms-status-pending {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.cms-status-muted {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.cms-detail-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    margin: 1rem 0;
+}
+
+.cms-detail-grid article {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: .85rem;
+}
+
+.cms-table-section {
+    margin-top: 1.15rem;
+}
+
+.cms-table {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cms-table > div {
+    align-items: center;
+    border-top: 1px solid #e5e7eb;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) 90px 90px 100px;
+    padding: .75rem .85rem;
+}
+
+.cms-table > div:first-child {
+    border-top: 0;
+}
+
+.cms-table .cms-table-head {
+    background: #f8fafc;
+    color: #000;
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.cms-menu-table > div {
+    grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) 90px 100px;
+}
+
+.cms-components {
+    margin-top: 1rem;
+}
+
+.cms-component-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    margin-top: 1rem;
+}
+
+.cms-component-grid article {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    display: grid;
+    gap: .25rem;
+    padding: .9rem;
+}
+
+.cms-component-grid span {
+    color: #0f766e;
+    font-size: .78rem;
+    font-weight: 900;
+}
+
+.cms-component-grid small,
+.cms-component-grid p {
+    color: #000;
+}
+
+.cms-empty {
+    padding: 1rem;
+}
+
 .translation-list textarea {
     border: 1px solid #cbd5e1;
     border-radius: 8px;
@@ -790,8 +1017,21 @@ h3 {
     .access-layout,
     .permission-matrix,
     .proposal-list article,
-    .notification-list article {
+    .notification-list article,
+    .cms-workspace,
+    .cms-table > div,
+    .cms-menu-table > div {
         grid-template-columns: 1fr;
+    }
+
+    .cms-header,
+    .cms-detail-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .cms-health {
+        text-align: left;
     }
 }
 

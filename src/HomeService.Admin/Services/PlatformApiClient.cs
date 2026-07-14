@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Notifications;
@@ -95,6 +96,24 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await GetJsonAsync<IReadOnlyList<NotificationOutboxMessageResponse>>("/api/admin/notifications", cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<CmsSiteSummaryResponse>> GetCmsSitesAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<CmsSiteSummaryResponse>>("/api/admin/cms/sites", cancellationToken) ?? [];
+    }
+
+    public async Task<CmsSiteDetailResponse?> GetCmsSiteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<CmsSiteDetailResponse>($"/api/admin/cms/sites/{id}", cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<CmsComponentDefinitionResponse>> GetCmsComponentDefinitionsAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<CmsComponentDefinitionResponse>>("/api/admin/cms/component-definitions", cancellationToken) ?? [];
     }
 
     public async Task<CountryBrandingResponse?> GetCountryBrandingAsync(string countryCode, CancellationToken cancellationToken = default)

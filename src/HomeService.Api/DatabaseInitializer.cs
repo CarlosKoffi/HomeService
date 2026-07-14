@@ -19,6 +19,7 @@ public static class DatabaseInitializer
         await SeedServicesAsync(db, cancellationToken);
         await SeedAdminAccessAsync(db, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
+        await SeedCmsFoundationAsync(db, cancellationToken);
     }
 
     private static async Task SeedCountriesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
@@ -176,6 +177,88 @@ public static class DatabaseInitializer
         }
 
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task SeedCmsFoundationAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        if (await db.CmsSites.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var french = await db.Languages.FirstAsync(language => language.Code == "fr", cancellationToken);
+        var coteDIvoire = await db.Countries.FirstAsync(country => country.IsoCode == "CI", cancellationToken);
+
+        var hero = new CmsComponentDefinition("HeroStandard", "Hero standard", 1, "Section d'ouverture sobre avec titre, texte court et appels a l'action.");
+        var steps = new CmsComponentDefinition("StepsTimeline", "Parcours en etapes", 1, "Explication courte d'un processus en trois a six etapes.");
+        var services = new CmsComponentDefinition("ServicesList", "Liste de services", 1, "Liste structuree de services ou metiers affichables.");
+        var faq = new CmsComponentDefinition("FaqAccordion", "Foire aux questions", 1, "Questions/reponses simples avec ouverture progressive.");
+        var cta = new CmsComponentDefinition("CallToAction", "Appel a l'action", 1, "Bloc final ou contextuel pour pousser une action principale.");
+        var contact = new CmsComponentDefinition("ContactForm", "Formulaire de contact", 1, "Formulaire editorial de prise de contact.");
+
+        db.CmsComponentDefinitions.AddRange(hero, steps, services, faq, cta, contact);
+
+        var companySite = new CmsSite("company-public", "Kaza entreprises", CmsSiteSurface.PublicCompany, coteDIvoire.Id, french.Id);
+        companySite.Activate();
+        companySite.SetHomePage("home");
+
+        var providerSite = new CmsSite("provider-public", "Kaza prestataires", CmsSiteSurface.PublicProvider, coteDIvoire.Id, french.Id);
+        providerSite.Activate();
+        providerSite.SetHomePage("home");
+
+        var clientSite = new CmsSite("client-public", "Kaza clients", CmsSiteSurface.PublicClient, coteDIvoire.Id, french.Id);
+        clientSite.Activate();
+        clientSite.SetHomePage("home");
+
+        var companyPortal = new CmsSite("company-portal", "Portail entreprise", CmsSiteSurface.CompanyPortal, coteDIvoire.Id, french.Id);
+        companyPortal.Activate();
+        companyPortal.SetHomePage("dashboard");
+
+        db.CmsSites.AddRange(companySite, providerSite, clientSite, companyPortal);
+
+        AddSeedPage(db, companySite, french.Id, "home", "Accueil entreprises", "landing", "entreprises", "Kaza pour les entreprises", hero.Id, steps.Id, services.Id, faq.Id, contact.Id);
+        AddSeedPage(db, providerSite, french.Id, "home", "Accueil prestataires", "landing", "prestataires", "Kaza pour les prestataires", hero.Id, steps.Id, faq.Id);
+        AddSeedPage(db, clientSite, french.Id, "home", "Accueil clients", "landing", "", "Kaza", hero.Id, services.Id, faq.Id);
+        AddSeedPage(db, companyPortal, french.Id, "dashboard", "Tableau de bord entreprise", "portal-dashboard", "dashboard", "Tableau de bord", cta.Id);
+
+        db.CmsMenus.AddRange(
+            new CmsMenu(companySite.Id, "main", "Menu principal", "header"),
+            new CmsMenu(companySite.Id, "footer", "Pied de page", "footer"),
+            new CmsMenu(providerSite.Id, "main", "Menu principal", "header"),
+            new CmsMenu(clientSite.Id, "main", "Menu principal", "header"),
+            new CmsMenu(companyPortal.Id, "portal", "Navigation portail", "sidebar"));
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static void AddSeedPage(
+        HomeServiceDbContext db,
+        CmsSite site,
+        Guid languageId,
+        string code,
+        string internalName,
+        string templateKey,
+        string slug,
+        string title,
+        params Guid[] componentDefinitionIds)
+    {
+        var page = new CmsPage(site.Id, code, internalName, templateKey);
+        var translation = new CmsPageTranslation(site.Id, page.Id, languageId, slug, title);
+        var version = new CmsPageVersion(page.Id, 1);
+
+        db.CmsPages.Add(page);
+        db.CmsPageTranslations.Add(translation);
+        db.CmsPageVersions.Add(version);
+
+        for (var index = 0; index < componentDefinitionIds.Length; index++)
+        {
+            db.CmsSections.Add(new CmsSection(
+                version.Id,
+                componentDefinitionIds[index],
+                $"{internalName} - section {index + 1}",
+                "main",
+                index + 1));
+        }
     }
 
     private sealed record TranslationSeed(string Key, string Scope, string Description, string Value);

@@ -1,0 +1,265 @@
+@page "/cms"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Cms
+@inject PlatformApiClient ApiClient
+
+<PageTitle>CMS</PageTitle>
+
+<section class="cms-header">
+    <div>
+        <p class="eyebrow">Contenu & sites</p>
+        <h1>CMS Kaza</h1>
+        <p class="lead">
+            Pilotez les surfaces publiques et les contenus administrables sans toucher au code.
+        </p>
+    </div>
+    <div class="cms-health">
+        <strong>@Sites.Count</strong>
+        <span>sites configures</span>
+    </div>
+</section>
+
+@if (IsLoading)
+{
+    <section class="info-panel">
+        <div>
+            <h2>Chargement du CMS</h2>
+            <p>Recuperation des sites, pages, menus et composants disponibles.</p>
+        </div>
+    </section>
+}
+else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <section class="info-panel status-rejected">
+        <div>
+            <h2>CMS indisponible</h2>
+            <p>@ErrorMessage</p>
+        </div>
+    </section>
+}
+else
+{
+    <section class="cms-overview">
+        <article>
+            <span>Pages</span>
+            <strong>@Sites.Sum(site => site.PageCount)</strong>
+            <small>toutes surfaces</small>
+        </article>
+        <article>
+            <span>Menus</span>
+            <strong>@Sites.Sum(site => site.MenuCount)</strong>
+            <small>navigation par site</small>
+        </article>
+        <article>
+            <span>Composants</span>
+            <strong>@Components.Count</strong>
+            <small>contrats frontend</small>
+        </article>
+    </section>
+
+    <section class="cms-workspace">
+        <aside class="cms-sites-panel">
+            <div class="section-heading">
+                <div>
+                    <h2>Sites</h2>
+                    <p class="section-help">Choisissez une surface pour consulter ses pages et menus.</p>
+                </div>
+            </div>
+
+            @if (Sites.Count == 0)
+            {
+                <article class="cms-empty">
+                    <strong>Aucun site CMS</strong>
+                    <p>Le socle est pret. Il reste a creer les premieres surfaces dans l'administration.</p>
+                </article>
+            }
+            else
+            {
+                <div class="cms-site-list">
+                    @foreach (var site in Sites)
+                    {
+                        <button type="button"
+                                class="@(SelectedSite?.Id == site.Id ? "active" : null)"
+                                @onclick="() => SelectSiteAsync(site.Id)">
+                            <span>@site.Surface</span>
+                            <strong>@site.Name</strong>
+                            <small>@site.PageCount page(s) - @site.DefaultLanguageCode</small>
+                        </button>
+                    }
+                </div>
+            }
+        </aside>
+
+        <section class="cms-detail-panel">
+            @if (SelectedSite is null)
+            {
+                <article class="cms-empty">
+                    <strong>Selectionnez un site</strong>
+                    <p>Vous verrez ici ses pages, menus et informations de publication.</p>
+                </article>
+            }
+            else
+            {
+                <div class="cms-detail-heading">
+                    <div>
+                        <p class="eyebrow">@SelectedSite.Surface</p>
+                        <h2>@SelectedSite.Name</h2>
+                        <p>@SelectedSite.Code - @SelectedSite.Status - langue @SelectedSite.DefaultLanguageCode</p>
+                    </div>
+                    <span class="@GetStatusClass(SelectedSite.Status)">@SelectedSite.Status</span>
+                </div>
+
+                <div class="cms-detail-grid">
+                    <article>
+                        <span>Page accueil</span>
+                        <strong>@(SelectedSite.HomePageCode ?? "Non definie")</strong>
+                    </article>
+                    <article>
+                        <span>Pages</span>
+                        <strong>@SelectedSite.Pages.Count</strong>
+                    </article>
+                    <article>
+                        <span>Menus</span>
+                        <strong>@SelectedSite.Menus.Count</strong>
+                    </article>
+                </div>
+
+                <div class="cms-table-section">
+                    <h3>Pages</h3>
+                    @if (SelectedSite.Pages.Count == 0)
+                    {
+                        <p class="section-help">Aucune page n'est encore creee pour ce site.</p>
+                    }
+                    else
+                    {
+                        <div class="cms-table">
+                            <div class="cms-table-head">
+                                <span>Page</span>
+                                <span>Route</span>
+                                <span>Versions</span>
+                                <span>Sections</span>
+                                <span>Statut</span>
+                            </div>
+                            @foreach (var cmsPage in SelectedSite.Pages)
+                            {
+                                <div>
+                                    <strong>@cmsPage.InternalName</strong>
+                                    <span>@(cmsPage.DefaultSlug ?? cmsPage.Code)</span>
+                                    <span>@cmsPage.VersionCount</span>
+                                    <span>@cmsPage.SectionCount</span>
+                                    <span class="@GetStatusClass(cmsPage.Status)">@cmsPage.Status</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="cms-table-section">
+                    <h3>Menus</h3>
+                    @if (SelectedSite.Menus.Count == 0)
+                    {
+                        <p class="section-help">Aucun menu configure pour ce site.</p>
+                    }
+                    else
+                    {
+                        <div class="cms-table cms-menu-table">
+                            <div class="cms-table-head">
+                                <span>Menu</span>
+                                <span>Emplacement</span>
+                                <span>Elements</span>
+                                <span>Statut</span>
+                            </div>
+                            @foreach (var menu in SelectedSite.Menus)
+                            {
+                                <div>
+                                    <strong>@menu.Name</strong>
+                                    <span>@menu.Placement</span>
+                                    <span>@menu.ItemCount</span>
+                                    <span>@(menu.IsActive ? "Actif" : "Masque")</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    </section>
+
+    <section class="cms-components">
+        <div class="section-heading">
+            <div>
+                <h2>Composants disponibles</h2>
+                <p class="section-help">Contrats stables qui permettront de mapper les futurs Figma sans bricoler les pages.</p>
+            </div>
+        </div>
+
+        <div class="cms-component-grid">
+            @foreach (var component in Components)
+            {
+                <article>
+                    <span>v@component.SchemaVersion</span>
+                    <strong>@component.Name</strong>
+                    <small>@component.Key</small>
+                    @if (!string.IsNullOrWhiteSpace(component.Description))
+                    {
+                        <p>@component.Description</p>
+                    }
+                </article>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    private List<CmsSiteSummaryResponse> Sites { get; set; } = [];
+    private List<CmsComponentDefinitionResponse> Components { get; set; } = [];
+    private CmsSiteDetailResponse? SelectedSite { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Sites = (await ApiClient.GetCmsSitesAsync()).ToList();
+            Components = (await ApiClient.GetCmsComponentDefinitionsAsync()).ToList();
+
+            var firstSite = Sites.FirstOrDefault();
+            if (firstSite is not null)
+            {
+                SelectedSite = await ApiClient.GetCmsSiteAsync(firstSite.Id);
+            }
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger le CMS. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SelectSiteAsync(Guid siteId)
+    {
+        try
+        {
+            SelectedSite = await ApiClient.GetCmsSiteAsync(siteId);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger le site CMS. Detail: {exception.Message}";
+        }
+    }
+
+    private static string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Active" or "Published" => "cms-status cms-status-ok",
+            "Draft" or "InReview" => "cms-status cms-status-pending",
+            "Disabled" or "Archived" => "cms-status cms-status-muted",
+            _ => "cms-status"
+        };
+    }
+}
