@@ -6,6 +6,7 @@ using HomeService.Application.Companies;
 using HomeService.Application.Notifications;
 using HomeService.Api.Auditing;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
@@ -49,6 +50,49 @@ public static class AdminEndpoints
             return Results.Ok(result);
         })
         .WithName("ListAdminAuditLogs");
+
+        admin.MapGet("/cms/sites", async (
+            AdminCmsQueryService cmsQueryService,
+            CancellationToken cancellationToken) =>
+        {
+            var sites = await cmsQueryService.ListSitesAsync(cancellationToken);
+            return Results.Ok(sites);
+        })
+        .WithName("ListAdminCmsSites")
+        .Produces<IReadOnlyList<CmsSiteSummaryResponse>>();
+
+        admin.MapGet("/cms/sites/{id:guid}", async (
+            Guid id,
+            AdminCmsQueryService cmsQueryService,
+            CancellationToken cancellationToken) =>
+        {
+            var site = await cmsQueryService.GetSiteAsync(id, cancellationToken);
+            return site is null ? Results.NotFound() : Results.Ok(site);
+        })
+        .WithName("GetAdminCmsSite")
+        .Produces<CmsSiteDetailResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapGet("/cms/sites/{siteId:guid}/pages", async (
+            Guid siteId,
+            AdminCmsQueryService cmsQueryService,
+            CancellationToken cancellationToken) =>
+        {
+            var pages = await cmsQueryService.ListPagesAsync(siteId, cancellationToken);
+            return Results.Ok(pages);
+        })
+        .WithName("ListAdminCmsPages")
+        .Produces<IReadOnlyList<CmsPageSummaryResponse>>();
+
+        admin.MapGet("/cms/component-definitions", async (
+            AdminCmsQueryService cmsQueryService,
+            CancellationToken cancellationToken) =>
+        {
+            var components = await cmsQueryService.ListComponentDefinitionsAsync(cancellationToken);
+            return Results.Ok(components);
+        })
+        .WithName("ListAdminCmsComponentDefinitions")
+        .Produces<IReadOnlyList<CmsComponentDefinitionResponse>>();
         
         admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {
