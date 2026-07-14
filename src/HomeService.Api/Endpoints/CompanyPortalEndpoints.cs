@@ -42,6 +42,74 @@ public static class CompanyPortalEndpoints
         })
         .WithName("LoginCompanyPortal");
 
+        group.MapGet("/{companyId:guid}/interim-candidates", async (
+            Guid companyId,
+            CompanyInterimCandidateService interimCandidateService,
+            CancellationToken cancellationToken) =>
+        {
+            var candidates = await interimCandidateService.ListAsync(companyId, cancellationToken);
+            return Results.Ok(candidates);
+        })
+        .WithName("ListCompanyPortalInterimCandidates");
+
+        group.MapPost("/{companyId:guid}/interim-candidates/{requestId:guid}/approve", async (
+            Guid companyId,
+            Guid requestId,
+            CompanyReviewInterimCandidateRequest request,
+            HttpRequest httpRequest,
+            CompanyInterimCandidateService interimCandidateService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await interimCandidateService.ApproveAsync(companyId, requestId, request.Note, cancellationToken);
+            if (result.IsNotFound)
+            {
+                return Results.NotFound(new { message = "Demande d'interim introuvable." });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, "Entreprise"),
+                "InterimCandidateApproved",
+                nameof(ProviderAffiliationRequest),
+                requestId,
+                "Demandeur d'interim valide par l'entreprise.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new { companyId, requestId, request.Note }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new { message = "Candidat valide comme interimaire. Il devient assignable apres rattachement entreprise." });
+        })
+        .WithName("ApproveCompanyPortalInterimCandidate");
+
+        group.MapPost("/{companyId:guid}/interim-candidates/{requestId:guid}/reject", async (
+            Guid companyId,
+            Guid requestId,
+            CompanyReviewInterimCandidateRequest request,
+            HttpRequest httpRequest,
+            CompanyInterimCandidateService interimCandidateService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await interimCandidateService.RejectAsync(companyId, requestId, request.Note, cancellationToken);
+            if (result.IsNotFound)
+            {
+                return Results.NotFound(new { message = "Demande d'interim introuvable." });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, "Entreprise"),
+                "InterimCandidateRejected",
+                nameof(ProviderAffiliationRequest),
+                requestId,
+                "Demandeur d'interim refuse par l'entreprise.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new { companyId, requestId, request.Note }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new { message = "Candidature refusee." });
+        })
+        .WithName("RejectCompanyPortalInterimCandidate");
+
         return app;
     }
 }
