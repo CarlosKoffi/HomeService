@@ -102,3 +102,13 @@ Le back-office prevoit un controle par roles:
 - `AdminUserRoles`: affectation des roles aux admins
 
 Le super admin est le seul profil qui peut creer les roles et definir quel module correspond a quel role.
+
+## Documentation projet
+
+Les documents de pilotage sont dans `docs/`:
+
+- `docs/PROJECT_GOVERNANCE.md`: regles de travail, priorites et definition of done
+- `docs/ARCHITECTURE.md`: organisation de la solution et direction des dependances
+- `docs/DATABASE_AND_DEPLOYMENT.md`: PostgreSQL, scripts SQL, Coolify et stockage fichiers
+- `docs/TEST_STRATEGY.md`: strategie de tests unitaires, integration et front
+- `docs/DECISION_LOG.md`: decisions importantes prises pendant le projet
