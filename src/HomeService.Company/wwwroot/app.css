@@ -547,50 +547,91 @@
 }
 
 .premium-footer {
-    background: #111111;
-    color: #ffffff;
+    background: #ffffff;
+    border-top: 1px solid var(--premium-border);
+    color: var(--premium-black);
     display: grid;
-    gap: 2.5rem;
-    grid-template-columns: 2fr repeat(3, 1fr);
-    padding: 4rem max(1.5rem, calc((100vw - 1180px) / 2));
+    gap: 3rem 4rem;
+    grid-template-columns: 1.45fr repeat(4, minmax(0, 1fr));
+    padding: 4.4rem max(1.5rem, calc((100vw - 1180px) / 2)) 2rem;
 }
 
-.premium-footer strong {
-    display: block;
-    font-size: 1.35rem;
+.premium-footer-brand {
+    max-width: 240px;
+}
+
+.premium-footer-logo {
+    align-items: center;
+    color: var(--premium-black);
+    display: inline-flex;
+    gap: .7rem;
+    text-decoration: none;
+}
+
+.premium-footer-logo span {
+    align-items: center;
+    background: var(--premium-blue);
+    border-radius: 8px;
+    color: #ffffff;
+    display: inline-flex;
+    font-size: .86rem;
     font-weight: 700;
-    margin-bottom: .8rem;
+    height: 28px;
+    justify-content: center;
+    width: 28px;
+}
+
+.premium-footer-logo strong {
+    color: var(--premium-black);
+    display: block;
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -.02em;
 }
 
 .premium-footer p {
-    color: #777777;
-    line-height: 1.7;
-    margin: 0;
-    max-width: 320px;
+    color: #9CA3AF;
+    font-size: .92rem;
+    font-weight: 350;
+    line-height: 1.55;
+    margin: 1.5rem 0 0;
 }
 
 .premium-footer nav {
     display: grid;
-    gap: .55rem;
+    gap: 1.05rem;
 }
 
 .premium-footer h2 {
-    color: #555555;
+    color: var(--premium-black);
     font-size: .68rem;
     font-weight: 700;
-    letter-spacing: .1em;
-    margin: 0 0 .6rem;
+    letter-spacing: .16em;
+    margin: 0 0 .65rem;
     text-transform: uppercase;
 }
 
 .premium-footer a {
-    color: #777777;
-    font-size: .9rem;
+    color: #9CA3AF;
+    font-size: .92rem;
+    font-weight: 350;
     text-decoration: none;
+    transition: color .18s ease;
 }
 
 .premium-footer a:hover {
-    color: #ffffff;
+    color: var(--premium-blue);
+}
+
+.premium-footer-bottom {
+    border-top: 1px solid var(--premium-border);
+    color: #CBD5E1;
+    display: flex;
+    font-size: .78rem;
+    gap: 1rem;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    padding-top: 1.8rem;
 }
 
 @media (max-width: 900px) {
@@ -606,9 +647,16 @@
     .premium-how-grid,
     .premium-dashboard-stats,
     .premium-dashboard-body,
-    .premium-contact-section,
-    .premium-footer {
+    .premium-contact-section {
         grid-template-columns: 1fr;
+    }
+
+    .premium-footer {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .premium-footer-brand {
+        grid-column: 1 / -1;
     }
 
     .premium-dashboard-stats article {
@@ -647,6 +695,22 @@
     .premium-form-grid {
         grid-template-columns: 1fr;
     }
+
+    .premium-footer {
+        gap: 2rem;
+        grid-template-columns: 1fr;
+        padding-top: 3.2rem;
+    }
+
+    .premium-footer-brand {
+        max-width: none;
+    }
+
+    .premium-footer-bottom {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
 }
 
 .workspace-header {
@@ -4883,5 +4947,324 @@ h3 {
     .candidate-actions .primary-action,
     .candidate-actions .secondary-action {
         width: 100%;
+    }
+}
+
+/* Company final skin: keeps registration and portal pages aligned with the Figma landing. */
+.registration-header,
+.registration-form,
+.portal-entry,
+.portal-copy,
+.portal-login,
+.company-dashboard-hero,
+.metric-strip,
+.company-dashboard-actions,
+.compliance-banner {
+    font-family: "Plus Jakarta Sans", "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
+    letter-spacing: 0;
+}
+
+.registration-header {
+    gap: .55rem;
+    margin: 2rem auto 1.2rem;
+    max-width: 860px;
+    text-align: center;
+}
+
+.registration-header .eyebrow,
+.portal-copy .eyebrow,
+.company-dashboard-hero .eyebrow {
+    color: #1A6AFF;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+}
+
+.registration-header h1,
+.portal-copy h1,
+.company-dashboard-hero h1 {
+    color: #111111;
+    font-size: clamp(2.15rem, 4.2vw, 3.75rem);
+    font-weight: 650;
+    letter-spacing: -.035em;
+    line-height: 1;
+    margin: 0;
+}
+
+.registration-header p,
+.portal-copy .lead,
+.company-dashboard-hero .lead {
+    color: #666666;
+    font-size: clamp(1rem, 1.35vw, 1.1rem);
+    font-weight: 350;
+    line-height: 1.68;
+    margin: .55rem auto 0;
+    max-width: 680px;
+}
+
+.registration-form {
+    gap: 1.05rem;
+    margin: 0 auto 4rem;
+    max-width: 900px;
+}
+
+.registration-form section,
+.portal-login,
+.company-dashboard-actions article,
+.metric-strip article,
+.compliance-banner {
+    background: #ffffff;
+    border: 1px solid #ECECEC;
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(17, 17, 17, .06);
+}
+
+.registration-form section,
+.portal-login {
+    padding: clamp(1.25rem, 2.4vw, 2rem);
+}
+
+.registration-steps {
+    background: #FAFAFA;
+    border: 1px solid #ECECEC;
+    border-radius: 18px;
+    padding: .35rem;
+}
+
+.registration-steps span {
+    border-radius: 14px;
+    color: #666666;
+    font-size: .85rem;
+    font-weight: 650;
+}
+
+.registration-steps span.active,
+.registration-steps span.done {
+    background: #1A6AFF;
+    color: #ffffff;
+}
+
+.registration-form h2,
+.portal-login h2,
+.company-dashboard-actions h2,
+.metric-strip span {
+    color: #111111;
+    font-weight: 650;
+}
+
+.registration-form label,
+.portal-login label {
+    color: #111111;
+    font-size: .9rem;
+    font-weight: 650;
+}
+
+.registration-form input,
+.registration-form textarea,
+.portal-login input,
+.portal-login select,
+.portal-login textarea {
+    background: #ffffff;
+    border: 1px solid #ECECEC;
+    border-radius: 16px;
+    box-shadow: none;
+    color: #111111;
+    min-height: 52px;
+}
+
+.registration-form input:focus,
+.registration-form textarea:focus,
+.portal-login input:focus,
+.portal-login select:focus,
+.portal-login textarea:focus {
+    border-color: #1A6AFF;
+    box-shadow: 0 0 0 4px rgba(26, 106, 255, .12);
+}
+
+.registration-form .primary-action,
+.portal-login .primary-action,
+.compliance-banner a,
+.company-dashboard-hero .secondary-action {
+    background: #1A6AFF !important;
+    border: 1px solid #1A6AFF !important;
+    border-radius: 16px !important;
+    color: #ffffff !important;
+    font-weight: 650 !important;
+}
+
+.registration-form .primary-action:hover,
+.portal-login .primary-action:hover,
+.compliance-banner a:hover,
+.company-dashboard-hero .secondary-action:hover {
+    background: #155ee5 !important;
+    border-color: #155ee5 !important;
+}
+
+.registration-form .secondary-action,
+.portal-actions .secondary-action {
+    background: #ffffff !important;
+    border: 1px solid #ECECEC !important;
+    border-radius: 16px !important;
+    color: #111111 !important;
+    font-weight: 650 !important;
+}
+
+.suggested-tags .service-tag,
+.selected-service-tags span,
+.portal-highlights span {
+    background: #FAFAFA;
+    border: 1px solid #ECECEC;
+    border-radius: 16px;
+    box-shadow: none;
+}
+
+.suggested-tags .service-tag.selected,
+.selected-service-tags span:not(.proposed) {
+    background: #EFF4FF;
+    border-color: rgba(26, 106, 255, .26);
+    color: #1A6AFF;
+}
+
+.portal-entry {
+    align-items: stretch;
+    gap: clamp(1rem, 2vw, 1.5rem);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
+    margin: 2rem 0 4rem;
+}
+
+.portal-copy {
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .78) 58%, rgba(255, 255, 255, .32) 100%),
+        url("images/kaza-premium-hero.png") center / cover;
+    border: 1px solid #ECECEC;
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(17, 17, 17, .06);
+    min-height: 500px;
+    padding: clamp(1.6rem, 3vw, 2.6rem);
+}
+
+.portal-copy::before,
+.login-accent {
+    display: none;
+}
+
+.portal-highlights {
+    gap: .7rem;
+    margin-top: 1.6rem;
+}
+
+.portal-highlights strong,
+.create-account-link,
+.login-options a,
+.company-dashboard-actions a {
+    color: #1A6AFF;
+}
+
+.portal-login {
+    align-self: center;
+    gap: 1rem;
+}
+
+.login-options {
+    align-items: flex-start;
+}
+
+.remember-option small,
+.metric-strip small,
+.company-dashboard-actions p,
+.portal-actions span {
+    color: #666666;
+    font-weight: 400;
+}
+
+.remember-option input {
+    accent-color: #1A6AFF;
+}
+
+.company-dashboard-hero {
+    align-items: center;
+    background:
+        linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .78) 55%, rgba(255, 255, 255, .32) 100%),
+        url("images/kaza-premium-hero.png") center / cover;
+    border: 1px solid #ECECEC;
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(17, 17, 17, .06);
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin: 1rem 0 1.1rem;
+    min-height: 270px;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.metric-strip {
+    gap: 1rem;
+    margin-top: 1.1rem;
+}
+
+.metric-strip article {
+    padding: 1.3rem;
+}
+
+.metric-strip strong {
+    color: #111111;
+    font-size: clamp(1.7rem, 3vw, 2.25rem);
+    font-weight: 650;
+    letter-spacing: -.035em;
+}
+
+.company-dashboard-actions {
+    gap: 1rem;
+}
+
+.company-dashboard-actions article {
+    min-height: 230px;
+    padding: 1.35rem;
+}
+
+.company-dashboard-actions h2 {
+    font-size: 1.12rem;
+    letter-spacing: -.015em;
+}
+
+.compliance-banner {
+    background: #EFF4FF;
+    border-color: rgba(26, 106, 255, .18);
+    color: #111111;
+}
+
+@media (max-width: 900px) {
+    .portal-entry {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-highlights,
+    .metric-strip,
+    .company-dashboard-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-copy {
+        min-height: 420px;
+    }
+}
+
+@media (max-width: 620px) {
+    .registration-header,
+    .portal-entry {
+        margin-top: 1.2rem;
+    }
+
+    .registration-header h1,
+    .portal-copy h1,
+    .company-dashboard-hero h1 {
+        font-size: clamp(2rem, 10vw, 2.65rem);
+    }
+
+    .login-options,
+    .compliance-banner,
+    .company-dashboard-hero {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
