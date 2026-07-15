@@ -48,7 +48,7 @@
     display: flex;
     min-height: 560px;
     overflow: hidden;
-    padding: 8.5rem max(1.5rem, calc((100vw - 1180px) / 2)) 5rem;
+    padding: 7.75rem max(1.5rem, calc((100vw - 1180px) / 2)) 5rem;
     position: relative;
 }
 
@@ -596,7 +596,7 @@
 @media (max-width: 900px) {
     .premium-hero {
         min-height: 620px;
-        padding-top: 7rem;
+        padding-top: 7.5rem;
     }
 
     .premium-hero-overlay {

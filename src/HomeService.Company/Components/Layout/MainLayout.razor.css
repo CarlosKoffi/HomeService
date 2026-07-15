@@ -12,6 +12,15 @@ main {
     padding: 1.1rem 1.5rem 2rem;
 }
 
+.content:has(.premium-b2b) {
+    max-width: none;
+    padding: 0;
+}
+
+main:has(.premium-b2b) {
+    min-height: 100vh;
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: #fff3cd;

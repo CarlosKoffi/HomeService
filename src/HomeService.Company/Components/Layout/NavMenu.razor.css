@@ -254,14 +254,21 @@
 }
 
 .site-header.theme-premium {
-    background: rgba(255, 255, 255, .85);
+    background: linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(255, 255, 255, .74));
     backdrop-filter: blur(24px);
-    border-bottom-color: #ececec;
+    border-bottom-color: rgba(236, 236, 236, .7);
     border-top-color: transparent;
     box-shadow: none;
     min-height: 68px;
     padding-left: max(1.5rem, calc((100vw - 1180px) / 2));
     padding-right: max(1.5rem, calc((100vw - 1180px) / 2));
+}
+
+body:has(.premium-b2b) .site-header.theme-premium {
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
 }
 
 .site-header.theme-premium .brand,
