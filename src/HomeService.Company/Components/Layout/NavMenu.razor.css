@@ -262,6 +262,7 @@
     min-height: 68px;
     padding-left: max(1.5rem, calc((100vw - 1180px) / 2));
     padding-right: max(1.5rem, calc((100vw - 1180px) / 2));
+    transition: background .22s ease, border-color .22s ease, box-shadow .22s ease, backdrop-filter .22s ease;
 }
 
 body:has(.premium-b2b) .site-header.theme-premium {
@@ -269,6 +270,20 @@ body:has(.premium-b2b) .site-header.theme-premium {
     position: fixed;
     right: 0;
     top: 0;
+}
+
+body:has(.premium-b2b) .site-header.theme-premium.is-transparent {
+    background: linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, 0));
+    backdrop-filter: none;
+    border-bottom-color: transparent;
+    box-shadow: none;
+}
+
+body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
+    background: linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .82));
+    backdrop-filter: blur(24px);
+    border-bottom-color: rgba(236, 236, 236, .76);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .045);
 }
 
 .site-header.theme-premium .brand,

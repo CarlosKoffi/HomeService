@@ -1,6 +1,19 @@
 window.kazaCompanyNavigation = (() => {
     let observer;
     let trackedLinks = [];
+    let headerScrollBound = false;
+
+    const updateHeaderState = () => {
+        const header = document.querySelector(".site-header.theme-premium");
+        if (!header) {
+            return;
+        }
+
+        const isLanding = Boolean(document.querySelector(".premium-b2b"));
+        const isScrolled = !isLanding || window.scrollY > 18;
+        header.classList.toggle("is-transparent", isLanding && !isScrolled);
+        header.classList.toggle("is-scrolled", isScrolled);
+    };
 
     const setActive = (sectionId) => {
         trackedLinks.forEach((link) => {
@@ -28,6 +41,14 @@ window.kazaCompanyNavigation = (() => {
     };
 
     const init = () => {
+        updateHeaderState();
+
+        if (!headerScrollBound) {
+            window.addEventListener("scroll", updateHeaderState, { passive: true });
+            window.addEventListener("resize", updateHeaderState, { passive: true });
+            headerScrollBound = true;
+        }
+
         trackedLinks = Array.from(document.querySelectorAll("[data-section-nav]"));
 
         if (observer) {
