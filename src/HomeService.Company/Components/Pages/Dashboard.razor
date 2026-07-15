@@ -79,72 +79,139 @@ else if (Session is null)
 }
 else
 {
-    <CompanyPortalNav Active="dashboard" />
+    <CompanyPortalShell Active="dashboard"
+                        Title="Tableau de bord"
+                        Subtitle="@DashboardSubtitle"
+                        CompanyName="@PortalCompanyName"
+                        Email="@PortalEmail"
+                        ProfileCompletionPercent="@PortalCompletion"
+                        ProgressSteps="@PortalProgressSteps">
+        @if (!Session.IsCompanyApproved)
+        {
+            <section class="portal-alert portal-alert-warning">
+                <div>
+                    <strong>Compte en attente de conformite</strong>
+                    <span>Vous pouvez preparer votre equipe. Les affectations seront ouvertes apres validation.</span>
+                </div>
+                <a href="@PortalLink("company-profile")">Finaliser</a>
+            </section>
+        }
 
-    @if (!Session.IsCompanyApproved)
-    {
-        <section class="compliance-banner">
+        <section class="portal-mission-banner">
             <div>
-                <strong>Compte en attente de conformite</strong>
-                <span>Votre entreprise est creee. Ajoutez vos documents depuis la page Informations pour activer les affectations et les fonctions sensibles.</span>
+                <span class="portal-mission-eyebrow">Prochaine action</span>
+                <h2>@NextMissionTitle</h2>
+                <div class="portal-mission-meta">
+                    <span><FigmaDashboardIcon Name="calendar" Tone="light" /> @NextMissionScheduleText</span>
+                    <span><FigmaDashboardIcon Name="customer" Tone="light" /> @NextMissionCustomerText</span>
+                </div>
             </div>
-            <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
+            <a href="@PortalLink("operations")">Voir les missions</a>
         </section>
-    }
 
-    <section class="company-dashboard-hero">
-        <div>
-            <p class="eyebrow">Portail connecte</p>
-            <h1>@Session.CompanyName</h1>
-            <p class="lead">@Session.UserName - @Session.Email</p>
-        </div>
-        <button type="button" class="secondary-action" @onclick="LogoutAsync">Se deconnecter</button>
-    </section>
+        <section class="portal-stats-grid" aria-label="Indicateurs du portail">
+            <article>
+                <div class="portal-stat-head">
+                    <span>Employes</span>
+                    <FigmaDashboardIcon Name="employees" />
+                </div>
+                <strong>@(DashboardData?.EmployeeCount ?? 0)</strong>
+                <small>@(DashboardData?.AvailableEmployeeCount ?? 0) disponibles</small>
+            </article>
+            <article>
+                <div class="portal-stat-head">
+                    <span>Missions live</span>
+                    <FigmaDashboardIcon Name="live-missions" />
+                </div>
+                <strong>@(DashboardData?.LiveMissionCount ?? 0)</strong>
+                <small>@(DashboardData?.UpcomingMissionCount ?? 0) rendez-vous a venir</small>
+            </article>
+            <article>
+                <div class="portal-stat-head">
+                    <span>Terminees</span>
+                    <FigmaDashboardIcon Name="completed" />
+                </div>
+                <strong>@(DashboardData?.CompletedMissionCount ?? 0)</strong>
+                <small>Historique suivi</small>
+            </article>
+            <article>
+                <div class="portal-stat-head">
+                    <span>Encaissements</span>
+                    <FigmaDashboardIcon Name="payments" />
+                </div>
+                <strong>@FormatMoney(DashboardData?.MonthlyRevenueAmount ?? 0)</strong>
+                <small>@FormatMoney(DashboardData?.CashToCollectAmount ?? 0) cash a suivre</small>
+            </article>
+        </section>
 
-    <section class="metric-strip">
-        <article>
-            <span>Employes actifs</span>
-            <strong>0</strong>
-            <small>Ajoutez vos premiers prestataires</small>
-        </article>
-        <article>
-            <span>Missions a venir</span>
-            <strong>0</strong>
-            <small>Rendez-vous a assigner</small>
-        </article>
-        <article>
-            <span>Encaissements mois</span>
-            <strong>0 XOF</strong>
-            <small>Mobile Money et cash suivis</small>
-        </article>
-    </section>
+        <section class="portal-dashboard-grid">
+            <article class="portal-panel portal-panel-wide">
+                <div class="portal-panel-heading">
+                    <div>
+                        <span>Activite recente</span>
+                        <h2>Ce qui bouge dans votre entreprise</h2>
+                    </div>
+                    <a href="@PortalLink("operations")">Ouvrir</a>
+                </div>
 
-    <section class="company-dashboard-actions">
-        <article>
-            <PlatformIcon Name="company" Tone="green" />
-            <h2>Informations</h2>
-            <p>Suivez le statut de conformite, les pieces a fournir et les options de depot au bureau.</p>
-            <a href="@PortalLink("company-profile")">Voir les informations</a>
-        </article>
-        <article>
-            <PlatformIcon Name="providers" Tone="orange" />
-            <h2>Employes</h2>
-            <p>Ajoutez les salaries et interimaires, leurs pieces, photos, services et experience.</p>
-            <a href="@PortalLink("employees")">Gerer les employes</a>
-        </article>
-        <article>
-            <PlatformIcon Name="pilot" Tone="green" />
-            <h2>Missions</h2>
-            <p>Suivez les demandes directes, les rendez-vous, les missions live et les affectations.</p>
-            <a href="@PortalLink("operations")">Ouvrir les missions</a>
-        </article>
-        <article>
-            <PlatformIcon Name="payments" Tone="orange" />
-            <h2>Encaissements</h2>
-            <p>Controlez Mobile Money, cash a reverser, commissions, ecarts et vues semaine/mois/annee.</p>
-            <a href="@PortalLink("accounts")">Voir les comptes</a>
-        </article>
-    </section>
+                <div class="portal-activity-list">
+                    @foreach (var activity in PortalActivities)
+                    {
+                        <div class="portal-activity-row">
+                            <span class="@GetActivityToneClass(activity.Tone)"></span>
+                            <div>
+                                <strong>@activity.Title</strong>
+                                <small>@activity.Description</small>
+                            </div>
+                            <time>@activity.OccurredAt.ToLocalTime().ToString("HH:mm")</time>
+                        </div>
+                    }
+                </div>
+            </article>
+
+            <article class="portal-panel">
+                <div class="portal-panel-heading">
+                    <div>
+                        <span>Equipe</span>
+                        <h2>Prestataires suivis</h2>
+                    </div>
+                    <a href="@PortalLink("employees")">Gerer</a>
+                </div>
+
+                <div class="portal-employee-digest">
+                    @foreach (var employee in PortalEmployees)
+                    {
+                        <div>
+                            <span>@employee.Initials</span>
+                            <div>
+                                <strong>@employee.FullName</strong>
+                                <small>@employee.Role - @(employee.IsAvailable ? "Disponible" : "Indisponible")</small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </article>
+        </section>
+
+        <section class="portal-quick-actions">
+            <a href="@PortalLink("company-profile")">
+                <strong>Informations</strong>
+                <span>Documents, statut et profil entreprise.</span>
+            </a>
+            <a href="@PortalLink("employees")">
+                <strong>Employes</strong>
+                <span>Ajouter, verifier et suivre les prestataires.</span>
+            </a>
+            <a href="@PortalLink("interim-candidates")">
+                <strong>Interim</strong>
+                <span>Voir les candidatures proches de vos services.</span>
+            </a>
+            <a href="@PortalLink("accounts")">
+                <strong>Encaissements</strong>
+                <span>Paiements, cash terrain et commissions.</span>
+            </a>
+        </section>
+    </CompanyPortalShell>
 }
 
 @code {
@@ -155,6 +222,26 @@ else
     private bool IsSubmitting { get; set; }
     private bool IsSessionLoading { get; set; } = true;
     private CompanyPortalSessionResponse? Session { get; set; }
+    private CompanyPortalDashboardResponse? DashboardData { get; set; }
+
+    private string DashboardSubtitle => $"Portail connecte - {PortalCompanyName}";
+    private string PortalCompanyName => DashboardData?.CompanyName ?? Session?.CompanyName ?? "Entreprise";
+    private string PortalEmail => DashboardData?.UserEmail ?? Session?.Email ?? "mode.demo@kaza.ci";
+    private int PortalCompletion => DashboardData?.ProfileCompletionPercent ?? (Session?.IsCompanyApproved == true ? 75 : 25);
+    private IReadOnlyList<CompanyPortalProgressStepResponse> PortalProgressSteps => DashboardData?.ProgressSteps ?? DefaultProgressSteps;
+    private IEnumerable<CompanyPortalActivityResponse> PortalActivities => DashboardData?.RecentActivities is { Count: > 0 } activities ? activities : DemoActivities();
+    private IEnumerable<CompanyPortalEmployeeDigestResponse> PortalEmployees => DashboardData?.EmployeeDigest is { Count: > 0 } employees ? employees : DemoEmployees();
+    private string NextMissionTitle => DashboardData?.NextMission is null ? "Aucune mission urgente" : DashboardData.NextMission.ServiceName;
+    private string NextMissionScheduleText => DashboardData?.NextMission?.ScheduledFor?.ToLocalTime().ToString("dd/MM HH:mm") ?? "Demande directe";
+    private string NextMissionCustomerText => DashboardData?.NextMission?.CustomerName ?? "Aucune demande urgente";
+
+    private static readonly IReadOnlyList<CompanyPortalProgressStepResponse> DefaultProgressSteps =
+    [
+        new("Profil entreprise", true, null, null),
+        new("Documents de conformite", false, "Completer", "company-profile"),
+        new("Premier employe ajoute", false, "Ajouter", "employees"),
+        new("Premiere mission creee", false, "Voir", "operations")
+    ];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -176,6 +263,7 @@ else
                 false);
             RememberMe = true;
             Email = Session.Email;
+            DashboardData = DemoDashboard(Session);
             IsSessionLoading = false;
             StateHasChanged();
             return;
@@ -199,6 +287,11 @@ else
         if (!string.IsNullOrWhiteSpace(sessionJson))
         {
             Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+        }
+
+        if (Session is not null)
+        {
+            DashboardData = await ApiClient.GetCompanyDashboardAsync(Session.CompanyId);
         }
 
         IsSessionLoading = false;
@@ -232,6 +325,7 @@ else
 
             Session = result.Session;
             await Js.InvokeVoidAsync("localStorage.setItem", "homeservice.company.session", JsonSerializer.Serialize(Session));
+            DashboardData = await ApiClient.GetCompanyDashboardAsync(Session.CompanyId);
             Password = string.Empty;
             Navigation.NavigateTo("dashboard");
         }
@@ -248,6 +342,7 @@ else
     private async Task LogoutAsync()
     {
         Session = null;
+        DashboardData = null;
         await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
     }
 
@@ -256,5 +351,68 @@ else
         return Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase)
             ? $"{path}?preview=1"
             : path;
+    }
+
+    private string FormatMoney(int amount)
+    {
+        return $"{amount:N0} {DashboardData?.Currency ?? "XOF"}";
+    }
+
+    private static string GetActivityToneClass(string tone) => tone switch
+    {
+        "success" => "tone-success",
+        "warning" => "tone-warning",
+        "danger" => "tone-danger",
+        _ => "tone-info"
+    };
+
+    private static CompanyPortalDashboardResponse DemoDashboard(CompanyPortalSessionResponse session)
+    {
+        return new CompanyPortalDashboardResponse(
+            session.CompanyId,
+            session.CompanyName,
+            session.Email,
+            session.CompanyStatus,
+            session.UserName,
+            session.Email,
+            78,
+            [
+                new("Profil entreprise", true, null, null),
+                new("Documents de conformite", true, null, null),
+                new("Equipe initiale", true, null, null),
+                new("Premiere mission", false, "Voir", "operations")
+            ],
+            8,
+            5,
+            12,
+            4,
+            38,
+            185000,
+            42000,
+            "XOF",
+            new(Guid.NewGuid(), "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", null, 180, 15000, "XOF", null, null),
+            DemoActivities().ToList(),
+            DemoEmployees().ToList());
+    }
+
+    private static IReadOnlyList<CompanyPortalActivityResponse> DemoActivities()
+    {
+        var now = DateTimeOffset.Now;
+        return
+        [
+            new(Guid.NewGuid(), "Mission", "Nouvelle demande recue", "Menage a domicile - Cocody Angre", "info", now.AddMinutes(-12), false),
+            new(Guid.NewGuid(), "Affectation", "Prestataire affecte", "Yao N'Dri sur Jardinage - Riviera", "success", now.AddMinutes(-42), true),
+            new(Guid.NewGuid(), "Paiement", "Cash terrain a recuperer", "12 000 XOF signales par Fatou Soro", "warning", now.AddHours(-2), false)
+        ];
+    }
+
+    private static IReadOnlyList<CompanyPortalEmployeeDigestResponse> DemoEmployees()
+    {
+        return
+        [
+            new(Guid.NewGuid(), "AK", "Awa Kone", "Menage", "Approved", true, false, null),
+            new(Guid.NewGuid(), "YN", "Yao N'Dri", "Jardinage", "Approved", true, true, null),
+            new(Guid.NewGuid(), "FS", "Fatou Soro", "Menage", "Approved", false, false, null)
+        ];
     }
 }

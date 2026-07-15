@@ -1,0 +1,141 @@
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
+@inject IJSRuntime Js
+
+<div class="company-portal-shell">
+    <input id="portal-sidebar-toggle" class="portal-sidebar-toggle" type="checkbox" />
+    <label for="portal-sidebar-toggle" class="portal-mobile-backdrop" aria-hidden="true"></label>
+
+    <aside class="portal-sidebar" aria-label="Navigation portail entreprise">
+        <a class="portal-sidebar-logo" href="@PortalLink("dashboard")">
+            <span>K</span>
+            <strong>kaza</strong>
+        </a>
+
+        <nav class="portal-sidebar-nav">
+            <a class="@GetClass("activity")" href="@PortalLink("dashboard")">
+                <PlatformIcon Name="complete" Tone="green" />
+                Activite recente
+            </a>
+            <a class="@GetClass("dashboard")" href="@PortalLink("dashboard")">
+                <PlatformIcon Name="pilot" Tone="green" />
+                Tableau de bord
+            </a>
+            <a class="@GetClass("company-profile")" href="@PortalLink("company-profile")">
+                <PlatformIcon Name="company" Tone="blue" />
+                Informations
+            </a>
+            <a class="@GetClass("employees")" href="@PortalLink("employees")">
+                <PlatformIcon Name="providers" Tone="blue" />
+                Employes
+            </a>
+            <a class="@GetClass("interim-candidates")" href="@PortalLink("interim-candidates")">
+                <PlatformIcon Name="locked" Tone="green" />
+                Interim
+            </a>
+            <a class="@GetClass("operations")" href="@PortalLink("operations")">
+                <PlatformIcon Name="complete" Tone="green" />
+                Missions
+            </a>
+            <a class="@GetClass("accounts")" href="@PortalLink("accounts")">
+                <PlatformIcon Name="payments" Tone="blue" />
+                Encaissements
+            </a>
+        </nav>
+
+        <div class="portal-sidebar-progress">
+            <div class="portal-progress-head">
+                <span>Profil complete</span>
+                <strong>@ProfileCompletionPercent%</strong>
+            </div>
+            <div class="portal-progress-track">
+                <span style="width: @ProfileCompletionPercent%"></span>
+            </div>
+            <div class="portal-progress-steps">
+                @foreach (var step in ProgressSteps)
+                {
+                    <div>
+                        <span class="@(step.IsDone ? "done" : "todo")">@(step.IsDone ? "OK" : "+")</span>
+                        <small>@step.Label</small>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="portal-sidebar-user">
+            <span>@Initials</span>
+            <div>
+                <strong>@CompanyName</strong>
+                <small>@Email</small>
+            </div>
+            <button type="button" title="Sortir" @onclick="LogoutAsync">x</button>
+        </div>
+    </aside>
+
+    <section class="portal-main">
+        <header class="portal-topbar">
+            <label for="portal-sidebar-toggle" class="portal-menu-button" title="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </label>
+            <div>
+                <h1>@Title</h1>
+                <p>@Subtitle</p>
+            </div>
+            <div class="portal-topbar-actions">
+                <button type="button" class="portal-bell" title="Notifications"><span></span></button>
+                <button type="button" class="portal-logout" @onclick="LogoutAsync">Sortir</button>
+            </div>
+        </header>
+
+        <main class="portal-content">
+            @ChildContent
+        </main>
+    </section>
+</div>
+
+@code {
+    [Parameter] public string Active { get; set; } = "dashboard";
+    [Parameter] public string Title { get; set; } = "Tableau de bord";
+    [Parameter] public string Subtitle { get; set; } = "Portail connecte";
+    [Parameter] public string CompanyName { get; set; } = "CI Home Service";
+    [Parameter] public string Email { get; set; } = "mode.demo@kaza.ci";
+    [Parameter] public int ProfileCompletionPercent { get; set; } = 25;
+    [Parameter] public IReadOnlyList<CompanyPortalProgressStepResponse> ProgressSteps { get; set; } =
+    [
+        new("Profil entreprise", true, null, null),
+        new("Documents de conformite", false, "Completer", "company-profile"),
+        new("Premier employe ajoute", false, "Ajouter", "employees"),
+        new("Premiere mission creee", false, "Voir", "operations")
+    ];
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string Initials
+    {
+        get
+        {
+            var parts = CompanyName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return string.Concat(parts.Take(2).Select(part => part[0])).ToUpperInvariant();
+        }
+    }
+
+    private string GetClass(string key)
+    {
+        return string.Equals(Active, key, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+    }
+
+    private string PortalLink(string path)
+    {
+        return Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase)
+            ? $"{path}?preview=1"
+            : path;
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
+        Navigation.NavigateTo("");
+    }
+}
+

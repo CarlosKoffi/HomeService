@@ -1,8 +1,11 @@
 @page "/register"
 @using HomeService.Company.Services
 @using HomeService.Contracts.Companies
+@using HomeService.Contracts.Services
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
+@using System.Globalization
+@using System.Text
 @using System.Text.RegularExpressions
 @inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
@@ -44,34 +47,25 @@
                 <input name="address" type="text" autocomplete="street-address" placeholder="Ex: Cocody Angre, 7e tranche" @bind="Address" />
             </label>
 
-            <div class="service-picker">
-                <div class="service-picker-heading">
-                    <strong>Services proposes</strong>
-                    <span>Choisissez les services que votre entreprise peut assurer.</span>
-                </div>
-
-                <div class="suggested-tags" aria-label="Services existants">
-                    @foreach (var service in ExistingServices)
+            <div class="service-autocomplete">
+                <label class="tag-entry">
+                    Service ou prestation proposee
+                    <input name="serviceEntry"
+                           type="text"
+                           list="company-service-options"
+                           placeholder="Ex: Jardinage, tondre le gazon, ou Jardinage: taille de palmiers"
+                           @bind="ServiceEntry"
+                           @bind:event="oninput"
+                           @onkeyup="HandleServiceEntryKeyUp" />
+                    <small>Choisissez une suggestion ou appuyez sur Entree pour ajouter votre saisie.</small>
+                </label>
+                <datalist id="company-service-options">
+                    @foreach (var option in CatalogOptions)
                     {
-                        <button type="button"
-                                class="service-tag @(IsSelected(service) ? "selected" : null)"
-                                @onclick="() => ToggleExistingService(service)">
-                            @service
-                        </button>
+                        <option value="@option.InputValue">@option.Helper</option>
                     }
-                </div>
+                </datalist>
             </div>
-
-        <label class="tag-entry">
-            Ajouter un service
-            <input name="serviceEntry"
-                   type="text"
-                   placeholder="Ex: nettoyage de bureaux"
-                   @bind="ServiceEntry"
-                   @bind:event="oninput"
-                   @onkeyup="HandleServiceEntryKeyUp" />
-            <small>Appuyez sur Entree ou ajoutez une virgule pour creer un tag.</small>
-        </label>
 
         @if (!string.IsNullOrWhiteSpace(ServiceMessage))
         {
@@ -82,12 +76,12 @@
             @foreach (var service in SelectedServices)
             {
                 <span class="@(service.IsProposed ? "proposed" : null)">
-                    @service.Name
+                    @service.Label
                     @if (service.IsProposed)
                     {
                         <em>propose</em>
                     }
-                    <button type="button" aria-label="Retirer @service.Name" @onclick="() => RemoveService(service.Name)">x</button>
+                    <button type="button" aria-label="Retirer @service.Label" @onclick="() => RemoveService(service.Key)">x</button>
                 </span>
             }
         </div>
@@ -164,8 +158,9 @@
 </form>
 
 @code {
-    private IReadOnlyList<string> ExistingServices { get; set; } = [];
-    private readonly List<ServiceTag> SelectedServices = [];
+    private IReadOnlyList<ServiceSummaryResponse> CatalogServices { get; set; } = [];
+    private IReadOnlyList<ServiceCatalogOption> CatalogOptions { get; set; } = [];
+    private readonly List<ServiceSelection> SelectedServices = [];
     private string ServiceEntry { get; set; } = string.Empty;
     private string? ServiceMessage { get; set; }
     private string? FormMessage { get; set; }
@@ -187,41 +182,30 @@
         try
         {
             var services = await ApiClient.GetServicesAsync();
-            ExistingServices = services.Where(service => service.IsActive).Select(service => service.Name).ToList();
-            foreach (var service in ExistingServices.Take(2))
+            CatalogServices = services.Where(service => service.IsActive).ToList();
+            CatalogOptions = BuildCatalogOptions(CatalogServices);
+            foreach (var service in CatalogServices.Take(2))
             {
-                SelectedServices.Add(new ServiceTag(service, false));
+                SelectedServices.Add(ServiceSelection.ForService(service.Name, false));
             }
         }
         catch
         {
-            ExistingServices = ["Menage a domicile", "Nounou", "Jardinage"];
-            SelectedServices.AddRange(ExistingServices.Take(2).Select(service => new ServiceTag(service, false)));
+            CatalogServices =
+            [
+                new ServiceSummaryResponse(Guid.Empty, "Menage a domicile", null, "sparkles", "Active", true, 3500, 5000, "XOF", []),
+                new ServiceSummaryResponse(Guid.Empty, "Nounou", null, "baby", "Active", true, 4000, 6500, "XOF", []),
+                new ServiceSummaryResponse(Guid.Empty, "Jardinage", null, "sprout", "Active", true, 4500, 6500, "XOF", [])
+            ];
+            CatalogOptions = BuildCatalogOptions(CatalogServices);
+            SelectedServices.AddRange(CatalogServices.Take(2).Select(service => ServiceSelection.ForService(service.Name, false)));
             FormMessage = "Connexion API indisponible: liste locale chargee temporairement.";
         }
     }
 
-    private bool IsSelected(string service)
-    {
-        return SelectedServices.Any(item => IsSameService(item.Name, service));
-    }
-
-    private void ToggleExistingService(string service)
-    {
-        ServiceMessage = null;
-
-        if (IsSelected(service))
-        {
-            RemoveService(service);
-            return;
-        }
-
-        SelectedServices.Add(new ServiceTag(service, false));
-    }
-
     private void RemoveService(string service)
     {
-        var item = SelectedServices.FirstOrDefault(candidate => IsSameService(candidate.Name, service));
+        var item = SelectedServices.FirstOrDefault(candidate => candidate.Key == service);
         if (item is not null)
         {
             SelectedServices.Remove(item);
@@ -238,10 +222,10 @@
 
     private void AddTypedService()
     {
-        var service = ServiceEntry.Trim().Trim(',');
+        var input = ServiceEntry.Trim().Trim(',');
         ServiceMessage = null;
 
-        if (service.Length < 3)
+        if (input.Length < 3)
         {
             ServiceMessage = "Entrez au moins 3 caracteres.";
             return;
@@ -253,17 +237,16 @@
             return;
         }
 
-        var existingMatch = ExistingServices.FirstOrDefault(existing => IsSameService(existing, service));
-        var serviceName = existingMatch ?? service;
+        var selection = ResolveServiceSelection(input);
 
-        if (SelectedServices.Any(item => IsSameService(item.Name, serviceName)))
+        if (SelectedServices.Any(item => item.Key == selection.Key))
         {
-            ServiceMessage = "Service deja ajoute.";
+            ServiceMessage = "Element deja ajoute.";
             ServiceEntry = string.Empty;
             return;
         }
 
-        SelectedServices.Add(new ServiceTag(serviceName, existingMatch is null));
+        SelectedServices.Add(selection);
         ServiceEntry = string.Empty;
     }
 
@@ -316,7 +299,7 @@
                 PhoneNumber,
                 Password,
                 ConfirmPassword,
-                SelectedServices.Select(service => service.Name).ToList(),
+                SelectedServices.Select(service => service.SubmittedName).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
                 EstimatedProviderCount);
 
             var result = await ApiClient.RegisterCompanyAsync(request);
@@ -359,7 +342,7 @@
 
         if (SelectedServices.Count == 0)
         {
-            errors.Add("Selectionnez au moins un service envisage.");
+            errors.Add("Selectionnez au moins un service ou une prestation envisagee.");
         }
 
         return errors;
@@ -408,15 +391,123 @@
         return digits.Length is >= 8 and <= 15;
     }
 
-    private static bool IsSameService(string left, string right)
+    private ServiceSelection ResolveServiceSelection(string input)
     {
-        return Normalize(left) == Normalize(right);
+        var exactOption = CatalogOptions.FirstOrDefault(option => option.Matches(input));
+        if (exactOption is not null)
+        {
+            return exactOption.ToSelection();
+        }
+
+        var fuzzyOption = CatalogOptions
+            .Where(option => option.SearchValue.Contains(Normalize(input), StringComparison.Ordinal)
+                || Normalize(input).Contains(option.SearchValue, StringComparison.Ordinal))
+            .OrderBy(option => option.IsPrestation ? 0 : 1)
+            .FirstOrDefault();
+
+        if (fuzzyOption is not null)
+        {
+            return fuzzyOption.ToSelection();
+        }
+
+        var split = SplitServiceAndPrestation(input);
+        if (split is not null)
+        {
+            var parent = CatalogServices.FirstOrDefault(service => Normalize(service.Name) == Normalize(split.Value.Service));
+            if (parent is not null)
+            {
+                return ServiceSelection.ForPrestation(parent.Name, split.Value.Prestation, true);
+            }
+        }
+
+        return ServiceSelection.ForService(input, true);
+    }
+
+    private static (string Service, string Prestation)? SplitServiceAndPrestation(string value)
+    {
+        var separators = new[] { ':', '/', '-' };
+        foreach (var separator in separators)
+        {
+            var parts = value.Split(separator, 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 2 && parts[0].Length >= 3 && parts[1].Length >= 3)
+            {
+                return (parts[0], parts[1]);
+            }
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<ServiceCatalogOption> BuildCatalogOptions(IReadOnlyList<ServiceSummaryResponse> services)
+    {
+        var options = new List<ServiceCatalogOption>();
+        foreach (var service in services.OrderBy(item => item.Name))
+        {
+            options.Add(ServiceCatalogOption.ForService(service.Name));
+            options.AddRange(service.Prestations
+                .Where(prestation => prestation.IsActive)
+                .OrderBy(prestation => prestation.SortOrder)
+                .ThenBy(prestation => prestation.Name)
+                .Select(prestation => ServiceCatalogOption.ForPrestation(service.Name, prestation.Name)));
+        }
+
+        return options;
     }
 
     private static string Normalize(string value)
     {
-        return value.Trim().ToLowerInvariant();
+        var normalized = value.Trim().ToLowerInvariant().Normalize(NormalizationForm.FormD);
+        return string.Concat(normalized.Where(character => CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark))
+            .Normalize(NormalizationForm.FormC);
     }
 
-    private sealed record ServiceTag(string Name, bool IsProposed);
+    private sealed record ServiceSelection(string Key, string Label, string SubmittedName, bool IsProposed)
+    {
+        public static ServiceSelection ForService(string serviceName, bool isProposed)
+        {
+            var cleanService = serviceName.Trim();
+            return new ServiceSelection($"service:{Normalize(cleanService)}", cleanService, cleanService, isProposed);
+        }
+
+        public static ServiceSelection ForPrestation(string serviceName, string prestationName, bool isProposed)
+        {
+            var cleanService = serviceName.Trim();
+            var cleanPrestation = prestationName.Trim();
+            return new ServiceSelection(
+                $"prestation:{Normalize(cleanService)}:{Normalize(cleanPrestation)}",
+                $"{cleanService} - {cleanPrestation}",
+                cleanService,
+                isProposed);
+        }
+    }
+
+    private sealed record ServiceCatalogOption(string InputValue, string ServiceName, string? PrestationName, string Helper, bool IsPrestation)
+    {
+        public string SearchValue { get; } = Normalize($"{InputValue} {ServiceName} {PrestationName}");
+
+        public static ServiceCatalogOption ForService(string serviceName)
+        {
+            return new ServiceCatalogOption(serviceName, serviceName, null, "Service", false);
+        }
+
+        public static ServiceCatalogOption ForPrestation(string serviceName, string prestationName)
+        {
+            return new ServiceCatalogOption(prestationName, serviceName, prestationName, $"Prestation - {serviceName}", true);
+        }
+
+        public bool Matches(string value)
+        {
+            var normalizedValue = Normalize(value);
+            return normalizedValue == Normalize(InputValue)
+                || normalizedValue == Normalize($"{ServiceName} - {PrestationName}")
+                || normalizedValue == Normalize($"{ServiceName}: {PrestationName}");
+        }
+
+        public ServiceSelection ToSelection()
+        {
+            return PrestationName is null
+                ? ServiceSelection.ForService(ServiceName, false)
+                : ServiceSelection.ForPrestation(ServiceName, PrestationName, false);
+        }
+    }
 }

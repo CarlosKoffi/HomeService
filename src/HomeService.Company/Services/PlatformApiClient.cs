@@ -267,6 +267,16 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken) ?? [];
     }
 
+    public async Task<CompanyPortalDashboardResponse?> GetCompanyDashboardAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<CompanyPortalDashboardResponse>(
+            $"/api/company-portal/{companyId:D}/dashboard",
+            cancellationToken);
+    }
+
     public async Task<EmployeeSaveResult> ApproveInterimCandidateAsync(
         Guid companyId,
         Guid requestId,
@@ -475,6 +485,34 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyPortalMissionResponse>>(
             $"/api/company-portal/{companyId:D}/missions?view={Uri.EscapeDataString(view)}",
             cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<CompanyPortalAssignableProviderResponse>> GetAssignableProvidersAsync(
+        Guid companyId,
+        Guid missionId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyPortalAssignableProviderResponse>>(
+            $"/api/company-portal/{companyId:D}/missions/{missionId:D}/assignable-providers",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<EmployeeSaveResult> AssignCompanyMissionAsync(
+        Guid companyId,
+        Guid missionId,
+        Guid providerId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/company-portal/{companyId:D}/missions/{missionId:D}/assign",
+            new AssignCompanyMissionRequest(providerId),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Affectation impossible.");
     }
 
     public async Task<CompanyPortalPaymentSummaryResponse?> GetCompanyPaymentsAsync(

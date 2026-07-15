@@ -55,6 +55,18 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalInterimCandidates");
 
+        group.MapGet("/{companyId:guid}/dashboard", async (
+            Guid companyId,
+            CompanyPortalDashboardService dashboardService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await dashboardService.GetAsync(companyId, userId: null, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("GetCompanyPortalDashboard");
+
         group.MapPost("/{companyId:guid}/interim-candidates/{requestId:guid}/approve", async (
             Guid companyId,
             Guid requestId,
@@ -202,6 +214,38 @@ public static class CompanyPortalEndpoints
                 : Results.NotFound(new { message = result.Message });
         })
         .WithName("ListCompanyPortalMissions");
+
+        group.MapGet("/{companyId:guid}/missions/{missionId:guid}/assignable-providers", async (
+            Guid companyId,
+            Guid missionId,
+            CompanyMissionAssignmentService assignmentService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await assignmentService.ListAssignableProvidersAsync(companyId, missionId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Providers)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("ListCompanyPortalAssignableProviders");
+
+        group.MapPost("/{companyId:guid}/missions/{missionId:guid}/assign", async (
+            Guid companyId,
+            Guid missionId,
+            AssignCompanyMissionRequest request,
+            CompanyMissionAssignmentService assignmentService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await assignmentService.AssignAsync(companyId, missionId, request.ProviderId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.IsNotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("AssignCompanyPortalMission");
 
         group.MapGet("/{companyId:guid}/employees", async (
             Guid companyId,

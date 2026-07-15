@@ -16,16 +16,12 @@
 }
 else
 {
-    <CompanyPortalNav Active="interim-candidates" />
-
-    <section class="workspace-header">
-        <div>
-            <p class="eyebrow">Portail entreprise</p>
-            <h1>Demandes d'interim</h1>
-            <p class="lead">Recevez, evaluez et validez les prestataires autonomes avant de les rendre assignables aux missions.</p>
-        </div>
-        <a class="secondary-action" href="@PortalLink("employees")">Voir les prestataires</a>
-    </section>
+    <CompanyPortalShell Active="interim-candidates"
+                        Title="Interim"
+                        Subtitle="Candidatures a verifier"
+                        CompanyName="@Session.CompanyName"
+                        Email="@Session.Email"
+                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
 
     <section class="interim-advice">
         <div>
@@ -77,6 +73,7 @@ else
             </article>
         }
     </section>
+    </CompanyPortalShell>
 }
 
 @code {

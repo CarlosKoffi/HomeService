@@ -41,6 +41,12 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 017 | `017_add_provider_portal_password.sql` | Provider portal password hash |
 | 018 | `018_add_cms_foundation.sql` | CMS multi-site foundation |
 | 019 | `019_seed_premium_company_landing_cms.sql` | Premium company landing CMS seed/update |
+| 020 | `020_add_service_prestations.sql` | Service prestations catalog |
+| 021 | `021_seed_company_cms_editorial_content.sql` | Company CMS editorial seed/update |
+| 022 | `022_add_service_prestation_pricing_provider_selection.sql` | Service prestation pricing and provider selection |
+| 023 | `023_seed_ci_service_catalog.sql` | Cote d'Ivoire service catalog seed/update |
+| 024 | `024_reset_company_portal_password_bruce.sql` | Operational reset helper for one company portal password |
+| 025 | `025_add_company_portal_activities.sql` | Company portal activity feed table |
 
 ## Notes
 

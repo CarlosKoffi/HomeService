@@ -24,16 +24,12 @@ else if (Session is null)
 }
 else
 {
-    <CompanyPortalNav Active="employees" />
-
-    <section class="workspace-header">
-        <div>
-            <p class="eyebrow">Portail entreprise</p>
-            <h1>Employes</h1>
-            <p class="lead">Ajoutez, controlez et suivez les prestataires que votre entreprise autorise sur la plateforme.</p>
-        </div>
-        <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
-    </section>
+    <CompanyPortalShell Active="employees"
+                        Title="Employes"
+                        Subtitle="Equipe et prestataires"
+                        CompanyName="@Session.CompanyName"
+                        Email="@Session.Email"
+                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
 
     <section class="portal-session-banner">
         <div>
@@ -452,6 +448,7 @@ else
             </section>
         </div>
     }
+    </CompanyPortalShell>
 }
 
 @code {

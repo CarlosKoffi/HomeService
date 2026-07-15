@@ -10,6 +10,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<Company> Companies => Set<Company>();
     public DbSet<CompanyPortalUser> CompanyPortalUsers => Set<CompanyPortalUser>();
     public DbSet<CompanyPortalSession> CompanyPortalSessions => Set<CompanyPortalSession>();
+    public DbSet<CompanyPortalActivity> CompanyPortalActivities => Set<CompanyPortalActivity>();
     public DbSet<CompanyApplication> CompanyApplications => Set<CompanyApplication>();
     public DbSet<CompanyApplicationDocument> CompanyApplicationDocuments => Set<CompanyApplicationDocument>();
     public DbSet<CompanyApplicationService> CompanyApplicationServices => Set<CompanyApplicationService>();

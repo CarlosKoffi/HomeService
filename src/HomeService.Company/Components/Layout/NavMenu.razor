@@ -3,46 +3,49 @@
 @inject IJSRuntime Js
 @inject NavigationManager Navigation
 
-<header class="site-header @HeaderThemeClass @(IsPortalExperience ? "portal-mode" : "public-mode")">
-    <a class="brand" href="@BrandHref">Kaza</a>
+@if (!HideGlobalHeader)
+{
+    <header class="site-header @HeaderThemeClass @(IsPortalExperience ? "portal-mode" : "public-mode")">
+        <a class="brand" href="@BrandHref">Kaza</a>
 
-    <input type="checkbox" id="menu-toggle" class="menu-toggle" />
-    <label for="menu-toggle" class="menu-button" title="Menu">
-        <span></span>
-        <span></span>
-        <span></span>
-    </label>
+        <input type="checkbox" id="menu-toggle" class="menu-toggle" />
+        <label for="menu-toggle" class="menu-button" title="Menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </label>
 
-    <nav class="site-nav @(IsPortalExperience ? "portal-header-nav" : "public-nav")">
-        @if (!IsPortalExperience)
-        {
-            <a href="@($"{PublicLandingBase}#home")" data-section-nav="home">Accueil</a>
-            <a href="@($"{PublicLandingBase}#how")" data-section-nav="how">Fonctionnement</a>
-            <a href="@($"{PublicLandingBase}#trusted")" data-section-nav="trusted">References</a>
-            <a href="@($"{PublicLandingBase}#dashboard")" data-section-nav="dashboard">Dashboard</a>
-            <a href="@($"{PublicLandingBase}#faq")" data-section-nav="faq">FAQ</a>
-            <a href="@($"{PublicLandingBase}#contact")" data-section-nav="contact">Contact</a>
-            <div class="header-actions">
-                <a class="header-secondary" href="dashboard">Se connecter</a>
-                <a class="header-primary" href="register">Commencer</a>
-            </div>
-        }
-        else
-        {
-            <a class="@GetPortalLinkClass("dashboard")" href="@PortalLink("dashboard")">Tableau de bord</a>
-            <a class="@GetPortalLinkClass("company-profile")" href="@PortalLink("company-profile")">Informations</a>
-            <a class="@GetPortalLinkClass("employees")" href="@PortalLink("employees")">Employes</a>
-            <a class="@GetPortalLinkClass("interim-candidates")" href="@PortalLink("interim-candidates")">Interim</a>
-            <a class="@GetPortalLinkClass("operations")" href="@PortalLink("operations")">Missions</a>
-            <a class="@GetPortalLinkClass("accounts")" href="@PortalLink("accounts")">Encaissements</a>
-            <div class="session-chip" title="@SessionEmail">
-                <strong>@SessionCompanyName</strong>
-                <span>@SessionEmail</span>
-            </div>
-            <button type="button" class="logout-button" @onclick="LogoutAsync">Sortir</button>
-        }
-    </nav>
-</header>
+        <nav class="site-nav @(IsPortalExperience ? "portal-header-nav" : "public-nav")">
+            @if (!IsPortalExperience)
+            {
+                <a href="@($"{PublicLandingBase}#home")" data-section-nav="home">Accueil</a>
+                <a href="@($"{PublicLandingBase}#how")" data-section-nav="how">Fonctionnement</a>
+                <a href="@($"{PublicLandingBase}#trusted")" data-section-nav="trusted">References</a>
+                <a href="@($"{PublicLandingBase}#dashboard")" data-section-nav="dashboard">Dashboard</a>
+                <a href="@($"{PublicLandingBase}#faq")" data-section-nav="faq">FAQ</a>
+                <a href="@($"{PublicLandingBase}#contact")" data-section-nav="contact">Contact</a>
+                <div class="header-actions">
+                    <a class="header-secondary" href="dashboard">Se connecter</a>
+                    <a class="header-primary" href="register">Commencer</a>
+                </div>
+            }
+            else
+            {
+                <a class="@GetPortalLinkClass("dashboard")" href="@PortalLink("dashboard")">Tableau de bord</a>
+                <a class="@GetPortalLinkClass("company-profile")" href="@PortalLink("company-profile")">Informations</a>
+                <a class="@GetPortalLinkClass("employees")" href="@PortalLink("employees")">Employes</a>
+                <a class="@GetPortalLinkClass("interim-candidates")" href="@PortalLink("interim-candidates")">Interim</a>
+                <a class="@GetPortalLinkClass("operations")" href="@PortalLink("operations")">Missions</a>
+                <a class="@GetPortalLinkClass("accounts")" href="@PortalLink("accounts")">Encaissements</a>
+                <div class="session-chip" title="@SessionEmail">
+                    <strong>@SessionCompanyName</strong>
+                    <span>@SessionEmail</span>
+                </div>
+                <button type="button" class="logout-button" @onclick="LogoutAsync">Sortir</button>
+            }
+        </nav>
+    </header>
+}
 
 @code {
     private CompanyPortalSessionResponse? Session { get; set; }
@@ -59,7 +62,8 @@
         "accounts"
     };
 
-    private bool IsPortalExperience => IsPreviewMode || Session is not null || PortalSegments.Contains(CurrentSegment);
+    private bool IsPortalExperience => IsPreviewMode || Session is not null;
+    private bool HideGlobalHeader => PortalSegments.Contains(CurrentSegment) && IsPortalExperience;
     private bool IsPreviewMode => Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase);
     private string CurrentSegment => Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
     private string BrandHref => IsPortalExperience ? PortalLink("dashboard") : PublicLandingBase;

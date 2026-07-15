@@ -24,16 +24,12 @@ else if (Session is null)
 }
 else
 {
-    <CompanyPortalNav Active="accounts" />
-
-    <section class="workspace-header">
-        <div>
-            <p class="eyebrow">Portail entreprise</p>
-            <h1>Encaissements</h1>
-            <p class="lead">Controlez Mobile Money, cash terrain, commissions et rapprochements par periode.</p>
-        </div>
-        <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
-    </section>
+    <CompanyPortalShell Active="accounts"
+                        Title="Encaissements"
+                        Subtitle="Paiements et rapprochements"
+                        CompanyName="@Session.CompanyName"
+                        Email="@Session.Email"
+                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
 
     <section class="portal-tabs" aria-label="Periode encaissements">
         <button class="@GetTabClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
@@ -80,6 +76,7 @@ else
             </section>
         }
     }
+    </CompanyPortalShell>
 }
 
 @code {

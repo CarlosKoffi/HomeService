@@ -24,16 +24,12 @@ else if (Session is null)
 }
 else
 {
-    <CompanyPortalNav Active="operations" />
-
-    <section class="workspace-header">
-        <div>
-            <p class="eyebrow">Portail entreprise</p>
-            <h1>Missions</h1>
-            <p class="lead">Suivez les demandes live, les rendez-vous a venir et l'historique de vos interventions.</p>
-        </div>
-        <a class="secondary-action" href="@PortalLink("dashboard")">Retour portail</a>
-    </section>
+    <CompanyPortalShell Active="operations"
+                        Title="Missions"
+                        Subtitle="Live, rendez-vous et affectations"
+                        CompanyName="@Session.CompanyName"
+                        Email="@Session.Email"
+                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
 
     @if (!Session.IsCompanyApproved)
     {
@@ -74,7 +70,7 @@ else
         <section class="mission-list">
             @foreach (var mission in Missions)
             {
-                <article class="mission-row @GetMissionRowClass(mission)" @onclick="() => SelectMission(mission)">
+                <article class="mission-row @GetMissionRowClass(mission)" @onclick="() => SelectMissionAsync(mission)">
                     <div>
                         <span class="status-pill @GetStatusClass(mission.Status)">@GetStatusLabel(mission.Status)</span>
                         <h2>@mission.ServiceName</h2>
@@ -135,17 +131,22 @@ else
                         <p>@(Session.IsCompanyApproved ? "Liste filtree sur le service demande." : "Disponible apres validation de votre entreprise.")</p>
                     </div>
 
-                    @foreach (var candidate in GetCandidateProviders(SelectedMission))
+                    @if (!string.IsNullOrWhiteSpace(AssignmentMessage))
+                    {
+                        <p class="field-message">@AssignmentMessage</p>
+                    }
+
+                    @foreach (var candidate in AssignableProviders)
                     {
                         <article class="candidate-row">
                             <div>
-                                <strong>@candidate.Name</strong>
-                                <span>@candidate.TypeLabel - @candidate.ExperienceLabel - @candidate.DistanceKm.ToString("N1") km</span>
+                                <strong>@candidate.FullName</strong>
+                                <span>@GetEmploymentTypeLabel(candidate.EmploymentType) - @GetExperienceLabel(candidate.ExperienceLevel) - @(candidate.IsAvailable ? "Disponible" : "Occupe")</span>
                             </div>
                             <div>
-                                <strong>@candidate.NormalPriceAmount.ToString("N0") / @candidate.PremiumPriceAmount.ToString("N0") XOF</strong>
+                                <strong>@candidate.NormalPriceAmount.ToString("N0") / @candidate.PremiumPriceAmount.ToString("N0") @candidate.Currency</strong>
                                 <span>Normal / premium</span>
-                                <button type="button" disabled="@(!Session.IsCompanyApproved)" @onclick="() => AssignMission(candidate)">Affecter</button>
+                                <button type="button" disabled="@(!Session.IsCompanyApproved || !candidate.IsAvailable)" @onclick="() => AssignMissionAsync(candidate)">Affecter</button>
                             </div>
                         </article>
                     }
@@ -153,6 +154,7 @@ else
             </section>
         }
     }
+    </CompanyPortalShell>
 }
 
 @code {
@@ -165,6 +167,8 @@ else
     private int UpcomingCount { get; set; }
     private int PastCount { get; set; }
     private CompanyPortalMissionResponse? SelectedMission { get; set; }
+    private IReadOnlyList<CompanyPortalAssignableProviderResponse> AssignableProviders { get; set; } = [];
+    private string? AssignmentMessage { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -228,6 +232,7 @@ else
         {
             Missions = GetPreviewMissions(view);
             SelectedMission = Missions.FirstOrDefault();
+            LoadPreviewAssignableProviders();
             IsLoading = false;
             StateHasChanged();
             return;
@@ -235,36 +240,97 @@ else
 
         Missions = await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, view);
         SelectedMission = Missions.FirstOrDefault();
+        await LoadAssignableProvidersAsync();
         IsLoading = false;
         StateHasChanged();
     }
 
-    private void SelectMission(CompanyPortalMissionResponse mission)
+    private async Task SelectMissionAsync(CompanyPortalMissionResponse mission)
     {
         SelectedMission = mission;
+        AssignmentMessage = null;
+        if (IsPreviewMode())
+        {
+            LoadPreviewAssignableProviders();
+            return;
+        }
+
+        await LoadAssignableProvidersAsync();
     }
 
     private void ClearSelectedMission()
     {
         SelectedMission = null;
+        AssignableProviders = [];
+        AssignmentMessage = null;
     }
 
-    private void AssignMission(PreviewProviderCandidate candidate)
+    private async Task AssignMissionAsync(CompanyPortalAssignableProviderResponse candidate)
     {
         if (SelectedMission is null || Session?.IsCompanyApproved != true)
         {
             return;
         }
 
+        if (!IsPreviewMode())
+        {
+            var result = await ApiClient.AssignCompanyMissionAsync(Session.CompanyId, SelectedMission.Id, candidate.Id);
+            if (!result.IsSuccess)
+            {
+                AssignmentMessage = result.ErrorMessage ?? "Affectation impossible.";
+                return;
+            }
+        }
+
         var updatedMission = SelectedMission with
         {
             ProviderId = candidate.Id,
-            ProviderName = candidate.Name,
+            ProviderName = candidate.FullName,
             Status = SelectedMission.Status == "SearchingProvider" ? "Assigned" : SelectedMission.Status
         };
 
         Missions = Missions.Select(mission => mission.Id == updatedMission.Id ? updatedMission : mission).ToList();
         SelectedMission = updatedMission;
+        AssignmentMessage = "Mission affectee.";
+        await RefreshCountsAsync();
+    }
+
+    private async Task LoadAssignableProvidersAsync()
+    {
+        if (Session is null || SelectedMission is null)
+        {
+            AssignableProviders = [];
+            return;
+        }
+
+        AssignableProviders = await ApiClient.GetAssignableProvidersAsync(Session.CompanyId, SelectedMission.Id);
+    }
+
+    private void LoadPreviewAssignableProviders()
+    {
+        if (SelectedMission is null)
+        {
+            AssignableProviders = [];
+            return;
+        }
+
+        AssignableProviders = GetCandidateProviders(SelectedMission)
+            .Select(candidate => new CompanyPortalAssignableProviderResponse(
+                candidate.Id,
+                candidate.Name,
+                "+225 07 00 00 00 00",
+                "Approved",
+                true,
+                candidate.TypeLabel,
+                4,
+                candidate.ExperienceLabel,
+                "Normal",
+                candidate.NormalPriceAmount,
+                candidate.PremiumPriceAmount,
+                "XOF",
+                candidate.ReceivesDirectRequests,
+                null))
+            .ToList();
     }
 
     private string GetTabClass(string view) => ActiveView == view ? "active" : string.Empty;
@@ -304,6 +370,22 @@ else
         "Scheduled" => "Rendez-vous",
         "Direct" => "Demande directe",
         _ => mode
+    };
+
+    private static string GetEmploymentTypeLabel(string employmentType) => employmentType switch
+    {
+        "CompanyEmployee" or "Employe" => "Employe",
+        "TemporaryWorker" or "Interimaire" => "Interimaire",
+        _ => employmentType
+    };
+
+    private static string GetExperienceLabel(string experienceLevel) => experienceLevel switch
+    {
+        "Junior" => "Junior",
+        "Confirmed" or "Confirme" => "Confirme",
+        "Senior" => "Senior",
+        "Expert" => "Expert",
+        _ => experienceLevel
     };
 
     private static string GetAssignmentHelp(CompanyPortalMissionResponse mission)
