@@ -10,8 +10,10 @@ using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
+using HomeService.Contracts.Services;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Api.Endpoints;
 
@@ -383,6 +385,152 @@ public static class AdminEndpoints
             }
         })
         .WithName("GenerateCompanyApplicationActivationLink");
+
+        admin.MapPost("/services/{serviceId:guid}/prestations", async (
+            Guid serviceId,
+            UpsertServicePrestationRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return Results.BadRequest(new { message = "Le nom de la prestation est obligatoire." });
+            }
+
+            var service = await db.Services
+                .Include(item => item.Prestations)
+                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
+
+            if (service is null)
+            {
+                return Results.NotFound(new { message = "Service introuvable." });
+            }
+
+            var before = new
+            {
+                service.Id,
+                service.Name,
+                Prestations = service.Prestations
+                    .OrderBy(item => item.SortOrder)
+                    .ThenBy(item => item.Name)
+                    .Select(ToServicePrestationResponse)
+                    .ToList()
+            };
+
+            var prestation = service.AddPrestation(request.Name, request.Description, request.SortOrder);
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServicePrestationUpserted",
+                nameof(ServicePrestation),
+                prestation.Id,
+                $"Prestation '{prestation.Name}' rattachee au service '{service.Name}'.",
+                before,
+                after: ToServicePrestationResponse(prestation));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServicePrestationResponse(prestation));
+        })
+        .WithName("UpsertAdminServicePrestation");
+
+        admin.MapPut("/service-prestations/{id:guid}", async (
+            Guid id,
+            UpsertServicePrestationRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return Results.BadRequest(new { message = "Le nom de la prestation est obligatoire." });
+            }
+
+            var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+            if (prestation is null)
+            {
+                return Results.NotFound(new { message = "Prestation introuvable." });
+            }
+
+            var before = ToServicePrestationResponse(prestation);
+            prestation.Rename(request.Name, request.Description);
+            prestation.MoveTo(request.SortOrder);
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServicePrestationUpdated",
+                nameof(ServicePrestation),
+                prestation.Id,
+                "Prestation de service modifiee.",
+                before,
+                after: ToServicePrestationResponse(prestation));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServicePrestationResponse(prestation));
+        })
+        .WithName("UpdateAdminServicePrestation");
+
+        admin.MapPost("/service-prestations/{id:guid}/activate", async (
+            Guid id,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+            if (prestation is null)
+            {
+                return Results.NotFound(new { message = "Prestation introuvable." });
+            }
+
+            var before = ToServicePrestationResponse(prestation);
+            prestation.Activate();
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServicePrestationActivated",
+                nameof(ServicePrestation),
+                prestation.Id,
+                "Prestation de service activee.",
+                before,
+                after: ToServicePrestationResponse(prestation));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServicePrestationResponse(prestation));
+        })
+        .WithName("ActivateAdminServicePrestation");
+
+        admin.MapPost("/service-prestations/{id:guid}/deactivate", async (
+            Guid id,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+            if (prestation is null)
+            {
+                return Results.NotFound(new { message = "Prestation introuvable." });
+            }
+
+            var before = ToServicePrestationResponse(prestation);
+            prestation.Deactivate();
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServicePrestationDeactivated",
+                nameof(ServicePrestation),
+                prestation.Id,
+                "Prestation de service desactivee.",
+                before,
+                after: ToServicePrestationResponse(prestation));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServicePrestationResponse(prestation));
+        })
+        .WithName("DeactivateAdminServicePrestation");
         
         admin.MapPost("/company-application-documents/{id:guid}/approve", async (
             Guid id,
@@ -576,6 +724,16 @@ public static class AdminEndpoints
             document.CompanyApplicationId,
             document.ReviewStatus.ToString(),
             document.ReviewNote);
+    }
+
+    static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)
+    {
+        return new ServicePrestationSummaryResponse(
+            prestation.Id,
+            prestation.Name,
+            prestation.Description,
+            prestation.SortOrder,
+            prestation.IsActive);
     }
 
     static void AddCompanyApplicationReviewAudit(

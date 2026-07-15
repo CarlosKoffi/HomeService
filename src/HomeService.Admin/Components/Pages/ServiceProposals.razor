@@ -1,104 +1,358 @@
 @page "/service-proposals"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Services
+@inject PlatformApiClient ApiClient
 
-<PageTitle>Services proposes</PageTitle>
+<PageTitle>Catalogue services</PageTitle>
 
-<h1>Services proposes</h1>
-<p class="lead">
-    Les entreprises peuvent proposer des services pendant leur inscription. L'admin regroupe les variantes,
-    associe aux services existants ou cree un nouveau service officiel.
-</p>
-
-<section class="info-panel">
+<section class="admin-page-heading">
     <div>
-        <h2>Regle produit</h2>
-        <p>
-            Les services restent dans une liste plate: pas de categorie imposee au depart. Si une entreprise
-            tape "netoyage bureau", l'admin doit pouvoir le rapprocher de "Nettoyage de bureaux" avec une
-            tolerance aux fautes. Si le besoin est vraiment nouveau, on cree un service inactif ou actif selon
-            decision operationnelle.
+        <p class="eyebrow">Catalogue operationnel</p>
+        <h1>Services et prestations</h1>
+        <p class="lead">
+            Un service reste le metier principal. Les prestations servent a detailler ce que le client peut demander,
+            par exemple tondre le gazon dans Jardinage.
         </p>
     </div>
-    <div class="check-list">
-        <span>Eviter les doublons</span>
-        <span>Corriger les fautes courantes</span>
-        <span>Creer seulement si besoin reel</span>
-        <span>Activer quand l'offre est prete</span>
-    </div>
+    <button type="button" class="secondary-action" @onclick="LoadServicesAsync" disabled="@IsLoading">
+        Actualiser
+    </button>
 </section>
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message">@Message</p>
+}
 
 <section class="toolbar">
     <label>
-        Statut
-        <select>
-            <option>A traiter</option>
-            <option>Correspondance probable</option>
-            <option>Nouveau service</option>
-            <option>Rejete</option>
-        </select>
+        Recherche
+        <input type="search" placeholder="Service ou prestation" @bind="Search" @bind:event="oninput" />
     </label>
     <label>
-        Recherche
-        <input type="search" placeholder="Service, entreprise, ville" />
+        Affichage
+        <select @bind="StatusFilter">
+            <option value="all">Tous</option>
+            <option value="active">Services actifs</option>
+            <option value="inactive">Services inactifs</option>
+        </select>
     </label>
-    <button type="button">Regrouper les similaires</button>
 </section>
 
-<section class="status-guide">
-    <article>
-        <strong>Associer</strong>
-        <p>Utiliser quand la proposition est une faute, une variante ou un synonyme d'un service existant.</p>
-    </article>
-    <article>
-        <strong>Creer service</strong>
-        <p>Utiliser quand plusieurs entreprises demandent un service absent du catalogue et exploitable.</p>
-    </article>
-    <article>
-        <strong>Fusionner</strong>
-        <p>Regrouper plusieurs libelles proches avant de prendre une decision propre.</p>
-    </article>
-    <article>
-        <strong>Rejeter</strong>
-        <p>Utiliser pour les libelles trop vagues, hors scope ou impossibles a operer proprement.</p>
-    </article>
-</section>
+@if (IsLoading)
+{
+    <section class="info-panel">
+        <div>
+            <h2>Chargement du catalogue</h2>
+            <p>Recuperation des services et prestations depuis l'API.</p>
+        </div>
+    </section>
+}
+else if (FilteredServices.Count == 0)
+{
+    <section class="info-panel">
+        <div>
+            <h2>Aucun service trouve</h2>
+            <p>Modifiez la recherche ou rechargez le catalogue.</p>
+        </div>
+    </section>
+}
+else
+{
+    <section class="service-catalog">
+        @foreach (var service in FilteredServices)
+        {
+            var draft = GetDraft(service.Id);
+            var activePrestations = service.Prestations.Count(item => item.IsActive);
 
-<section class="proposal-list">
-    @foreach (var proposal in Proposals)
-    {
-        <article>
-            <div>
-                <strong>@proposal.RawName</strong>
-                <p>@proposal.CompanyName - @proposal.City - @proposal.Count entreprises</p>
-                <p class="section-help">@proposal.Recommendation</p>
-            </div>
-            <div>
-                <span>@proposal.MatchLabel</span>
-                <small>@proposal.Score</small>
-            </div>
-            <div class="easy-actions">
-                <button type="button">Associer</button>
-                <button type="button">Creer service</button>
-                <button type="button">Fusionner</button>
-                <button type="button">Rejeter</button>
-            </div>
-        </article>
-    }
-</section>
+            <article class="service-catalog-card" @key="service.Id">
+                <header>
+                    <div>
+                        <span class="catalog-icon">@service.IconName</span>
+                        <div>
+                            <h2>@service.Name</h2>
+                            <p>@(string.IsNullOrWhiteSpace(service.Description) ? "Service officiel du catalogue Kaza." : service.Description)</p>
+                        </div>
+                    </div>
+                    <div class="catalog-meta">
+                        <span class="@(service.IsActive ? "status-pill accepted" : "status-pill rejected")">
+                            @(service.IsActive ? "Actif" : "Inactif")
+                        </span>
+                        <strong>@activePrestations/@service.Prestations.Count prestations actives</strong>
+                        <small>@service.NormalPriceAmount @service.Currency normal - @service.PremiumPriceAmount @service.Currency premium</small>
+                    </div>
+                </header>
+
+                <div class="prestation-admin-grid">
+                    <div class="prestation-list">
+                        @if (service.Prestations.Count == 0)
+                        {
+                            <p class="section-help">Aucune prestation specifique pour ce service. Il peut rester simple si cela suffit au produit.</p>
+                        }
+                        else
+                        {
+                            @foreach (var prestation in service.Prestations.OrderBy(item => item.SortOrder).ThenBy(item => item.Name))
+                            {
+                                var isEditing = EditingPrestationId == prestation.Id;
+                                var editDraft = GetEditDraft(prestation);
+
+                                <div class="prestation-row" @key="prestation.Id">
+                                    @if (isEditing)
+                                    {
+                                        <div class="prestation-edit">
+                                            <label>
+                                                Nom
+                                                <input type="text" @bind="editDraft.Name" />
+                                            </label>
+                                            <label>
+                                                Ordre
+                                                <input type="number" min="0" @bind="editDraft.SortOrder" />
+                                            </label>
+                                            <label class="wide">
+                                                Description courte
+                                                <input type="text" @bind="editDraft.Description" />
+                                            </label>
+                                        </div>
+                                        <div class="easy-actions">
+                                            <button type="button" @onclick="() => UpdatePrestationAsync(prestation.Id)" disabled="@IsSaving">Enregistrer</button>
+                                            <button type="button" class="light-action" @onclick="CancelEdit">Annuler</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div>
+                                            <strong>@prestation.Name</strong>
+                                            <p>@(string.IsNullOrWhiteSpace(prestation.Description) ? "Aucune description." : prestation.Description)</p>
+                                        </div>
+                                        <div class="prestation-state">
+                                            <span class="@(prestation.IsActive ? "status-pill accepted" : "status-pill rejected")">
+                                                @(prestation.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                            <small>Ordre @prestation.SortOrder</small>
+                                        </div>
+                                        <div class="easy-actions">
+                                            <button type="button" @onclick="() => StartEdit(prestation)">Modifier</button>
+                                            @if (prestation.IsActive)
+                                            {
+                                                <button type="button" class="light-action" @onclick="() => DeactivatePrestationAsync(prestation.Id)" disabled="@IsSaving">Desactiver</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" @onclick="() => ActivatePrestationAsync(prestation.Id)" disabled="@IsSaving">Reactiver</button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <div class="service-admin-form">
+                        <h3>Ajouter une prestation</h3>
+                        <label>
+                            Nom
+                            <input type="text" placeholder="Ex: Tondre le gazon" @bind="draft.Name" />
+                        </label>
+                        <label>
+                            Description courte
+                            <textarea rows="3" placeholder="Expliquez clairement ce que couvre la prestation." @bind="draft.Description"></textarea>
+                        </label>
+                        <label>
+                            Ordre d'affichage
+                            <input type="number" min="0" @bind="draft.SortOrder" />
+                        </label>
+                        <button type="button" @onclick="() => SaveNewPrestationAsync(service.Id)" disabled="@IsSaving">
+                            Ajouter
+                        </button>
+                    </div>
+                </div>
+            </article>
+        }
+    </section>
+}
 
 @code {
-    private static readonly IReadOnlyList<ProposalRow> Proposals =
-    [
-        new("Netoyage bureau", "Ivoire Clean Services", "Abidjan", "Suggestion: Nettoyage de bureaux", "Score 86%", 4, "Probable faute d'orthographe. Associer au service officiel apres verification."),
-        new("Menage apres travaux", "Maison Plus", "Yopougon", "Suggestion: Menage d'apres travaux", "Score 92%", 2, "Variante tres proche. Fusionner pour garder un seul libelle public."),
-        new("Garde enfant nuit", "Nanny Pro CI", "Cocody", "Nouveau service probable", "A verifier", 1, "Nouveau besoin possible. Verifier les contraintes legales, horaires et niveau de confiance attendu.")
-    ];
+    private readonly Dictionary<Guid, PrestationDraft> Drafts = [];
+    private readonly Dictionary<Guid, PrestationDraft> EditDrafts = [];
+    private IReadOnlyList<ServiceSummaryResponse> Services = [];
+    private string Search { get; set; } = string.Empty;
+    private string StatusFilter { get; set; } = "all";
+    private string? Message { get; set; }
+    private Guid? EditingPrestationId { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsSaving { get; set; }
 
-    private sealed record ProposalRow(
-        string RawName,
-        string CompanyName,
-        string City,
-        string MatchLabel,
-        string Score,
-        int Count,
-        string Recommendation);
+    private IReadOnlyList<ServiceSummaryResponse> FilteredServices
+    {
+        get
+        {
+            var query = Services.AsEnumerable();
+
+            query = StatusFilter switch
+            {
+                "active" => query.Where(service => service.IsActive),
+                "inactive" => query.Where(service => !service.IsActive),
+                _ => query
+            };
+
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                var search = Search.Trim();
+                query = query.Where(service =>
+                    service.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || service.Prestations.Any(prestation => prestation.Name.Contains(search, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return query.ToList();
+        }
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        return LoadServicesAsync();
+    }
+
+    private async Task LoadServicesAsync()
+    {
+        IsLoading = true;
+        Message = null;
+
+        try
+        {
+            Services = await ApiClient.GetServicesAsync();
+        }
+        catch (PlatformApiException exception)
+        {
+            Message = $"Impossible de charger le catalogue. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private PrestationDraft GetDraft(Guid serviceId)
+    {
+        if (!Drafts.TryGetValue(serviceId, out var draft))
+        {
+            draft = new PrestationDraft();
+            Drafts[serviceId] = draft;
+        }
+
+        return draft;
+    }
+
+    private PrestationDraft GetEditDraft(ServicePrestationSummaryResponse prestation)
+    {
+        if (!EditDrafts.TryGetValue(prestation.Id, out var draft))
+        {
+            draft = new PrestationDraft
+            {
+                Name = prestation.Name,
+                Description = prestation.Description ?? string.Empty,
+                SortOrder = prestation.SortOrder
+            };
+            EditDrafts[prestation.Id] = draft;
+        }
+
+        return draft;
+    }
+
+    private void StartEdit(ServicePrestationSummaryResponse prestation)
+    {
+        EditingPrestationId = prestation.Id;
+        EditDrafts[prestation.Id] = new PrestationDraft
+        {
+            Name = prestation.Name,
+            Description = prestation.Description ?? string.Empty,
+            SortOrder = prestation.SortOrder
+        };
+    }
+
+    private void CancelEdit()
+    {
+        EditingPrestationId = null;
+    }
+
+    private async Task SaveNewPrestationAsync(Guid serviceId)
+    {
+        var draft = GetDraft(serviceId);
+        if (string.IsNullOrWhiteSpace(draft.Name))
+        {
+            Message = "Renseignez le nom de la prestation avant d'ajouter.";
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            await ApiClient.CreateServicePrestationAsync(
+                serviceId,
+                new UpsertServicePrestationRequest(draft.Name, draft.Description, draft.SortOrder));
+            Drafts[serviceId] = new PrestationDraft();
+            Message = "Prestation ajoutee au catalogue.";
+        });
+    }
+
+    private async Task UpdatePrestationAsync(Guid prestationId)
+    {
+        var draft = EditDrafts[prestationId];
+        if (string.IsNullOrWhiteSpace(draft.Name))
+        {
+            Message = "Le nom de la prestation est obligatoire.";
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            await ApiClient.UpdateServicePrestationAsync(
+                prestationId,
+                new UpsertServicePrestationRequest(draft.Name, draft.Description, draft.SortOrder));
+            EditingPrestationId = null;
+            Message = "Prestation modifiee.";
+        });
+    }
+
+    private Task ActivatePrestationAsync(Guid prestationId)
+    {
+        return RunMutationAsync(async () =>
+        {
+            await ApiClient.ActivateServicePrestationAsync(prestationId);
+            Message = "Prestation reactivee.";
+        });
+    }
+
+    private Task DeactivatePrestationAsync(Guid prestationId)
+    {
+        return RunMutationAsync(async () =>
+        {
+            await ApiClient.DeactivateServicePrestationAsync(prestationId);
+            Message = "Prestation desactivee.";
+        });
+    }
+
+    private async Task RunMutationAsync(Func<Task> action)
+    {
+        IsSaving = true;
+
+        try
+        {
+            await action();
+            await LoadServicesAsync();
+        }
+        catch (PlatformApiException exception)
+        {
+            Message = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private sealed class PrestationDraft
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int SortOrder { get; set; }
+    }
 }

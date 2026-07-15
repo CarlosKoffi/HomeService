@@ -86,6 +86,42 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
     }
 
+    public async Task<ServicePrestationSummaryResponse?> CreateServicePrestationAsync(
+        Guid serviceId,
+        UpsertServicePrestationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<ServicePrestationSummaryResponse>(
+            $"/api/admin/services/{serviceId}/prestations",
+            request,
+            cancellationToken);
+    }
+
+    public async Task<ServicePrestationSummaryResponse?> UpdateServicePrestationAsync(
+        Guid prestationId,
+        UpsertServicePrestationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<ServicePrestationSummaryResponse>(
+            $"/api/admin/service-prestations/{prestationId}",
+            request,
+            cancellationToken);
+    }
+
+    public async Task<ServicePrestationSummaryResponse?> ActivateServicePrestationAsync(Guid prestationId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<ServicePrestationSummaryResponse>($"/api/admin/service-prestations/{prestationId}/activate", null, cancellationToken);
+    }
+
+    public async Task<ServicePrestationSummaryResponse?> DeactivateServicePrestationAsync(Guid prestationId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<ServicePrestationSummaryResponse>($"/api/admin/service-prestations/{prestationId}/deactivate", null, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<TranslationValueResponse>> GetTranslationsAsync(string scope, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
