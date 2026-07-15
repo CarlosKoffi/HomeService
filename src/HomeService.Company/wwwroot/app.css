@@ -5557,10 +5557,16 @@ h3 {
     border: 0;
     border-radius: 12px;
     color: #888888;
-    cursor: default;
+    cursor: pointer;
     font-size: 11px;
     font-weight: 650;
     padding: 6px 10px;
+}
+
+.info-edit-button:hover,
+.info-add-button:hover {
+    background: var(--portal-blue-bg);
+    color: var(--portal-blue);
 }
 
 .info-add-button {
@@ -5602,6 +5608,114 @@ h3 {
     font-weight: 650;
     margin: 0;
     overflow-wrap: anywhere;
+}
+
+.info-inline-message {
+    background: var(--portal-blue-bg);
+    border: 1px solid rgba(26, 106, 255, .18);
+    border-radius: 16px;
+    color: #111111;
+    font-size: 13px;
+    font-weight: 650;
+    margin: 0;
+    padding: 12px 16px;
+}
+
+.info-edit-grid,
+.info-edit-stack {
+    display: grid;
+    gap: 14px;
+}
+
+.info-edit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.info-edit-wide {
+    grid-column: 1 / -1;
+}
+
+.info-edit-grid label,
+.info-edit-stack label,
+.info-edit-field {
+    display: grid;
+    gap: 6px;
+}
+
+.info-edit-grid span,
+.info-edit-stack span,
+.info-edit-field span {
+    color: #111111;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.info-edit-grid input,
+.info-edit-grid textarea,
+.info-edit-stack input,
+.info-edit-field textarea {
+    background: #ffffff;
+    border: 1px solid var(--portal-border);
+    border-radius: 14px;
+    color: #111111;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    min-height: 42px;
+    outline: none;
+    padding: 10px 12px;
+    width: 100%;
+}
+
+.info-edit-grid textarea,
+.info-edit-field textarea {
+    min-height: 86px;
+    resize: vertical;
+}
+
+.info-edit-grid input:focus,
+.info-edit-grid textarea:focus,
+.info-edit-stack input:focus,
+.info-edit-field textarea:focus {
+    border-color: var(--portal-blue);
+    box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
+}
+
+.info-card-actions {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.info-save-button,
+.info-cancel-button {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 750;
+    min-height: 38px;
+    padding: 9px 16px;
+}
+
+.info-save-button {
+    background: var(--portal-blue);
+    color: #ffffff;
+}
+
+.info-cancel-button {
+    background: #ffffff;
+    border-color: var(--portal-border);
+    color: #111111;
+}
+
+.info-save-button:disabled,
+.info-cancel-button:disabled {
+    cursor: wait;
+    opacity: .7;
 }
 
 .info-status-badge {
@@ -5907,6 +6021,10 @@ h3 {
     }
 
     .info-documents-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-edit-grid {
         grid-template-columns: 1fr;
     }
 }

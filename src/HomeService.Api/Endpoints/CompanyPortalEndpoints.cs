@@ -202,6 +202,94 @@ public static class CompanyPortalEndpoints
         })
         .WithName("GetCompanyPortalProfile");
 
+        group.MapPut("/{companyId:guid}/profile/company", async (
+            Guid companyId,
+            UpdateCompanyPortalCompanyInfoRequest request,
+            HttpRequest httpRequest,
+            CompanyPortalProfileManagementService profileService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await profileService.UpdateCompanyInformationAsync(companyId, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return result.IsNotFound
+                    ? Results.NotFound(new { message = result.Message })
+                    : Results.BadRequest(new { message = result.Message });
+            }
+
+            AddCompanyProfileAudit(db, httpRequest, companyId, "CompanyPortalCompanyInformationUpdated", "Informations entreprise modifiees.", after: request);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyPortalCompanyInformation");
+
+        group.MapPut("/{companyId:guid}/profile/contact", async (
+            Guid companyId,
+            UpdateCompanyPortalContactRequest request,
+            HttpRequest httpRequest,
+            CompanyPortalProfileManagementService profileService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await profileService.UpdateContactAsync(companyId, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return result.IsNotFound
+                    ? Results.NotFound(new { message = result.Message })
+                    : Results.BadRequest(new { message = result.Message });
+            }
+
+            AddCompanyProfileAudit(db, httpRequest, companyId, "CompanyPortalContactUpdated", "Responsable entreprise modifie.", after: request);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyPortalContact");
+
+        group.MapPut("/{companyId:guid}/profile/operations", async (
+            Guid companyId,
+            UpdateCompanyPortalOperationsRequest request,
+            HttpRequest httpRequest,
+            CompanyPortalProfileManagementService profileService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await profileService.UpdateOperationsAsync(companyId, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return result.IsNotFound
+                    ? Results.NotFound(new { message = result.Message })
+                    : Results.BadRequest(new { message = result.Message });
+            }
+
+            AddCompanyProfileAudit(db, httpRequest, companyId, "CompanyPortalOperationsUpdated", "Zones et services entreprise modifies.", after: request);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyPortalOperations");
+
+        group.MapPut("/{companyId:guid}/profile/payment", async (
+            Guid companyId,
+            UpdateCompanyPortalPaymentRequest request,
+            HttpRequest httpRequest,
+            CompanyPortalProfileManagementService profileService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await profileService.UpdatePaymentAsync(companyId, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return result.IsNotFound
+                    ? Results.NotFound(new { message = result.Message })
+                    : Results.BadRequest(new { message = result.Message });
+            }
+
+            AddCompanyProfileAudit(db, httpRequest, companyId, "CompanyPortalPaymentUpdated", "Coordonnees de paiement modifiees.", after: request);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyPortalPayment");
+
         group.MapGet("/{companyId:guid}/missions", async (
             Guid companyId,
             string? view,
@@ -662,6 +750,24 @@ public static class CompanyPortalEndpoints
             HttpAuditContextFactory.Create(httpRequest),
             before,
             after));
+    }
+
+    private static void AddCompanyProfileAudit(
+        IAppDbContext db,
+        HttpRequest httpRequest,
+        Guid companyId,
+        string action,
+        string description,
+        object? after)
+    {
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            AuditActor.Company(companyId, null),
+            action,
+            nameof(Company),
+            companyId,
+            description,
+            HttpAuditContextFactory.Create(httpRequest),
+            after: after));
     }
 
     private static string? GetOptionalFormValue(IFormCollection form, string key)

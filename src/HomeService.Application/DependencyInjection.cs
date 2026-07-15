@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<CompanyInterimCandidateService>();
         services.AddScoped<CompanyMissionAssignmentService>();
         services.AddScoped<CompanyPortalDashboardService>();
+        services.AddScoped<CompanyPortalProfileManagementService>();
         services.AddScoped<CompanyPortalQueryService>();
         services.AddScoped<ProviderSelfRegistrationService>();
         services.AddScoped<ProviderOnboardingService>();

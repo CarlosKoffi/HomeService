@@ -46,12 +46,17 @@ public sealed class CompanyApplication : AuditableEntity
     public Company? Company { get; private set; }
     public string CompanyName { get; private set; } = string.Empty;
     public string? RegistrationNumber { get; private set; }
+    public string? LegalForm { get; private set; }
+    public string? TaxIdentificationNumber { get; private set; }
     public string City { get; private set; } = string.Empty;
     public string? Address { get; private set; }
     public string ContactName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
     public string PhoneNumber { get; private set; } = string.Empty;
     public string? PlannedServices { get; private set; }
+    public string? InterventionZones { get; private set; }
+    public string? WavePaymentNumber { get; private set; }
+    public string? OrangeMoneyPaymentNumber { get; private set; }
     public int? EstimatedProviderCount { get; private set; }
     public CompanyApplicationStatus Status { get; private set; } = CompanyApplicationStatus.Submitted;
     public DateTimeOffset? SubmittedAt { get; private set; } = DateTimeOffset.UtcNow;
@@ -170,6 +175,45 @@ public sealed class CompanyApplication : AuditableEntity
         }
     }
 
+    public void UpdateCompanyInformation(
+        string companyName,
+        string? legalForm,
+        string? registrationNumber,
+        string? taxIdentificationNumber,
+        string city,
+        string? address)
+    {
+        CompanyName = CleanRequired(companyName);
+        LegalForm = Clean(legalForm);
+        RegistrationNumber = Clean(registrationNumber);
+        TaxIdentificationNumber = Clean(taxIdentificationNumber);
+        City = CleanRequired(city);
+        Address = Clean(address);
+        Touch();
+    }
+
+    public void UpdateContact(string contactName, string email, string phoneNumber)
+    {
+        ContactName = CleanRequired(contactName);
+        Email = CleanRequired(email);
+        PhoneNumber = CleanRequired(phoneNumber);
+        Touch();
+    }
+
+    public void UpdateOperations(string? interventionZones, string? plannedServices)
+    {
+        InterventionZones = Clean(interventionZones);
+        PlannedServices = Clean(plannedServices);
+        Touch();
+    }
+
+    public void UpdatePayment(string? wavePaymentNumber, string? orangeMoneyPaymentNumber)
+    {
+        WavePaymentNumber = Clean(wavePaymentNumber);
+        OrangeMoneyPaymentNumber = Clean(orangeMoneyPaymentNumber);
+        Touch();
+    }
+
     private void SetStatus(CompanyApplicationStatus newStatus, string? note, string? changedBy)
     {
         if (Status == newStatus)
@@ -180,5 +224,21 @@ public sealed class CompanyApplication : AuditableEntity
         var previousStatus = Status;
         Status = newStatus;
         Touch();
+    }
+
+    private static string CleanRequired(string value)
+    {
+        var cleaned = Clean(value);
+        if (cleaned is null)
+        {
+            throw new ArgumentException("La valeur obligatoire est vide.", nameof(value));
+        }
+
+        return cleaned;
+    }
+
+    private static string? Clean(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }

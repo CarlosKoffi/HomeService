@@ -249,6 +249,38 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await httpClient.GetFromJsonAsync<CompanyPortalProfileResponse>($"/api/company-portal/{companyId:D}/profile", cancellationToken);
     }
 
+    public Task<EmployeeSaveResult> UpdateCompanyInformationAsync(
+        Guid companyId,
+        UpdateCompanyPortalCompanyInfoRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return PutCompanyProfileAsync($"/api/company-portal/{companyId:D}/profile/company", request, "Modification des informations entreprise impossible.", cancellationToken);
+    }
+
+    public Task<EmployeeSaveResult> UpdateCompanyContactAsync(
+        Guid companyId,
+        UpdateCompanyPortalContactRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return PutCompanyProfileAsync($"/api/company-portal/{companyId:D}/profile/contact", request, "Modification du responsable impossible.", cancellationToken);
+    }
+
+    public Task<EmployeeSaveResult> UpdateCompanyOperationsAsync(
+        Guid companyId,
+        UpdateCompanyPortalOperationsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return PutCompanyProfileAsync($"/api/company-portal/{companyId:D}/profile/operations", request, "Modification des zones et services impossible.", cancellationToken);
+    }
+
+    public Task<EmployeeSaveResult> UpdateCompanyPaymentAsync(
+        Guid companyId,
+        UpdateCompanyPortalPaymentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return PutCompanyProfileAsync($"/api/company-portal/{companyId:D}/profile/payment", request, "Modification du paiement impossible.", cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CompanyEmployeeResponse>> GetCompanyEmployeesAsync(
         Guid companyId,
         CancellationToken cancellationToken = default)
@@ -574,6 +606,20 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var value = configuration["SITE_AUTH_ENABLED"];
         return !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task<EmployeeSaveResult> PutCompanyProfileAsync<TRequest>(
+        string url,
+        TRequest request,
+        string fallbackMessage,
+        CancellationToken cancellationToken)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PutAsJsonAsync(url, request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? fallbackMessage);
     }
 
     private static string? ExtractErrorMessage(string body)

@@ -44,6 +44,7 @@ public sealed class CompanyActivationPasswordService(IAppDbContext db)
         else
         {
             company = new Company(application.CompanyName, application.PhoneNumber, application.Email);
+            SyncCompanyFromApplication(company, application);
             company.Approve();
             db.Companies.Add(company);
             application.LinkApprovedCompany(company.Id);
@@ -61,6 +62,19 @@ public sealed class CompanyActivationPasswordService(IAppDbContext db)
             company,
             previousStatus,
             email);
+    }
+
+    private static void SyncCompanyFromApplication(Company company, CompanyApplication application)
+    {
+        company.UpdateCompanyInformation(
+            application.CompanyName,
+            application.LegalForm,
+            application.RegistrationNumber,
+            application.TaxIdentificationNumber,
+            application.City,
+            application.Address);
+        company.UpdateOperations(application.InterventionZones, application.PlannedServices);
+        company.UpdatePayment(application.WavePaymentNumber, application.OrangeMoneyPaymentNumber);
     }
 
     private void AddStatusHistory(Guid companyApplicationId, Domain.Enums.CompanyApplicationStatus previousStatus, Domain.Enums.CompanyApplicationStatus newStatus)

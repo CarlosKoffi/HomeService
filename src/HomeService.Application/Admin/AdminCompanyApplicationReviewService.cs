@@ -33,6 +33,7 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db)
         if (application.CompanyId is null)
         {
             var company = new Company(application.CompanyName, application.PhoneNumber, application.Email);
+            SyncCompanyFromApplication(company, application);
             company.Approve();
             db.Companies.Add(company);
             application.LinkApprovedCompany(company.Id, AdminActor);
@@ -40,10 +41,27 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db)
         else
         {
             var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == application.CompanyId, cancellationToken);
-            company?.Approve();
+            if (company is not null)
+            {
+                SyncCompanyFromApplication(company, application);
+                company.Approve();
+            }
         }
 
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
+    }
+
+    private static void SyncCompanyFromApplication(Company company, CompanyApplication application)
+    {
+        company.UpdateCompanyInformation(
+            application.CompanyName,
+            application.LegalForm,
+            application.RegistrationNumber,
+            application.TaxIdentificationNumber,
+            application.City,
+            application.Address);
+        company.UpdateOperations(application.InterventionZones, application.PlannedServices);
+        company.UpdatePayment(application.WavePaymentNumber, application.OrangeMoneyPaymentNumber);
     }
 
     public async Task<AdminCompanyApplicationReviewResult> RejectAsync(Guid applicationId, string? note, CancellationToken cancellationToken)

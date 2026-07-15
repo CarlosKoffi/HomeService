@@ -47,6 +47,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 023 | `023_seed_ci_service_catalog.sql` | Cote d'Ivoire service catalog seed/update |
 | 024 | `024_reset_company_portal_password_bruce.sql` | Operational reset helper for one company portal password |
 | 025 | `025_add_company_portal_activities.sql` | Company portal activity feed table |
+| 026 | `026_add_company_profile_details.sql` | Company profile details editable from the company portal |
 
 ## Notes
 

@@ -74,6 +74,11 @@ else
                     </div>
                 </section>
 
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <p class="info-inline-message">@Message</p>
+                }
+
                 <section class="info-grid-row">
                     <article class="info-card info-card-large">
                         <header>
@@ -81,34 +86,52 @@ else
                                 <span class="info-card-icon info-blue"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V7l6-4 6 4v14"/><path d="M9 10h.01M12 10h.01M15 10h.01M9 14h.01M12 14h.01M15 14h.01"/></svg></span>
                                 <h2>Entreprise</h2>
                             </div>
-                            <button type="button" class="info-edit-button" disabled>Modifier</button>
+                            <button type="button" class="info-edit-button" @onclick="@(() => StartEdit("company"))">Modifier</button>
                         </header>
-                        <dl class="info-fields-grid">
-                            <div>
-                                <dt>Raison sociale</dt>
-                                <dd>@Display(Profile?.CompanyName, Session.CompanyName)</dd>
+                        @if (IsEditing("company"))
+                        {
+                            <div class="info-edit-grid">
+                                <label><span>Raison sociale</span><input @bind="CompanyNameDraft" /></label>
+                                <label><span>Forme juridique</span><input @bind="LegalFormDraft" placeholder="SARL, SA, entreprise individuelle..." /></label>
+                                <label><span>Numero RCCM</span><input @bind="RegistrationNumberDraft" /></label>
+                                <label><span>Numero DFE / NIF</span><input @bind="TaxIdentificationNumberDraft" /></label>
+                                <label><span>Ville</span><input @bind="CityDraft" /></label>
+                                <label class="info-edit-wide"><span>Adresse</span><textarea @bind="AddressDraft"></textarea></label>
                             </div>
-                            <div>
-                                <dt>Forme juridique</dt>
-                                <dd>A completer</dd>
+                            <div class="info-card-actions">
+                                <button type="button" class="info-save-button" disabled="@IsSaving" @onclick="SaveCompanyInfoAsync">Enregistrer</button>
+                                <button type="button" class="info-cancel-button" disabled="@IsSaving" @onclick="CancelEdit">Annuler</button>
                             </div>
-                            <div>
-                                <dt>Numero RCCM</dt>
-                                <dd>@Display(Profile?.RegistrationNumber, "Document RCCM fourni")</dd>
-                            </div>
-                            <div>
-                                <dt>Numero DFE / NIF</dt>
-                                <dd>Document DFE fourni</dd>
-                            </div>
-                            <div>
-                                <dt>Ville</dt>
-                                <dd>@Display(Profile?.City, "A completer")</dd>
-                            </div>
-                            <div class="info-field-wide">
-                                <dt>Adresse</dt>
-                                <dd>@Display(Profile?.Address, "A completer")</dd>
-                            </div>
-                        </dl>
+                        }
+                        else
+                        {
+                            <dl class="info-fields-grid">
+                                <div>
+                                    <dt>Raison sociale</dt>
+                                    <dd>@Display(Profile?.CompanyName, Session.CompanyName)</dd>
+                                </div>
+                                <div>
+                                    <dt>Forme juridique</dt>
+                                    <dd>@Display(Profile?.LegalForm, "A completer")</dd>
+                                </div>
+                                <div>
+                                    <dt>Numero RCCM</dt>
+                                    <dd>@Display(Profile?.RegistrationNumber, "A completer")</dd>
+                                </div>
+                                <div>
+                                    <dt>Numero DFE / NIF</dt>
+                                    <dd>@Display(Profile?.TaxIdentificationNumber, "A completer")</dd>
+                                </div>
+                                <div>
+                                    <dt>Ville</dt>
+                                    <dd>@Display(Profile?.City, "A completer")</dd>
+                                </div>
+                                <div class="info-field-wide">
+                                    <dt>Adresse</dt>
+                                    <dd>@Display(Profile?.Address, "A completer")</dd>
+                                </div>
+                            </dl>
+                        }
                     </article>
 
                     <article class="info-card">
@@ -117,22 +140,37 @@ else
                                 <span class="info-card-icon info-purple"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg></span>
                                 <h2>Administrateur</h2>
                             </div>
-                            <button type="button" class="info-edit-button" disabled>Modifier</button>
+                            <button type="button" class="info-edit-button" @onclick="@(() => StartEdit("contact"))">Modifier</button>
                         </header>
-                        <dl class="info-fields-stack">
-                            <div>
-                                <dt>Nom</dt>
-                                <dd>@Display(Profile?.ContactName, Session.UserName)</dd>
+                        @if (IsEditing("contact"))
+                        {
+                            <div class="info-edit-stack">
+                                <label><span>Nom</span><input @bind="ContactNameDraft" /></label>
+                                <label><span>Email</span><input type="email" @bind="EmailDraft" /></label>
+                                <label><span>Telephone</span><input @bind="PhoneNumberDraft" /></label>
                             </div>
-                            <div>
-                                <dt>Email</dt>
-                                <dd>@Display(Profile?.Email, Session.Email)</dd>
+                            <div class="info-card-actions">
+                                <button type="button" class="info-save-button" disabled="@IsSaving" @onclick="SaveContactAsync">Enregistrer</button>
+                                <button type="button" class="info-cancel-button" disabled="@IsSaving" @onclick="CancelEdit">Annuler</button>
                             </div>
-                            <div>
-                                <dt>Telephone</dt>
-                                <dd>@Display(Profile?.PhoneNumber, "A completer")</dd>
-                            </div>
-                        </dl>
+                        }
+                        else
+                        {
+                            <dl class="info-fields-stack">
+                                <div>
+                                    <dt>Nom</dt>
+                                    <dd>@Display(Profile?.ContactName, Session.UserName)</dd>
+                                </div>
+                                <div>
+                                    <dt>Email</dt>
+                                    <dd>@Display(Profile?.Email, Session.Email)</dd>
+                                </div>
+                                <div>
+                                    <dt>Telephone</dt>
+                                    <dd>@Display(Profile?.PhoneNumber, "A completer")</dd>
+                                </div>
+                            </dl>
+                        }
                         <span class="info-status-badge @GetStatusBadgeClass()">@GetStatusLabel()</span>
                     </article>
                 </section>
@@ -145,14 +183,24 @@ else
                                     <span class="info-card-icon info-blue"><svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
                                     <h2>Zones d'intervention</h2>
                                 </div>
-                                <button type="button" class="info-add-button" disabled>Ajouter</button>
+                                <button type="button" class="info-add-button" @onclick="@(() => StartEdit("operations"))">Gerer</button>
                             </header>
-                            <div class="info-tags">
-                                @foreach (var zone in GetInterventionZones())
-                                {
-                                    <span>@zone</span>
-                                }
-                            </div>
+                            @if (IsEditing("operations"))
+                            {
+                                <label class="info-edit-field">
+                                    <span>Zones separees par des virgules</span>
+                                    <textarea @bind="InterventionZonesDraft" placeholder="Cocody, Angre, Marcory, Zone 4"></textarea>
+                                </label>
+                            }
+                            else
+                            {
+                                <div class="info-tags">
+                                    @foreach (var zone in GetInterventionZones())
+                                    {
+                                        <span>@zone</span>
+                                    }
+                                </div>
+                            }
                         </div>
 
                         <div class="info-section-divider"></div>
@@ -163,14 +211,28 @@ else
                                     <span class="info-card-icon info-blue"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
                                     <h2>Services declares</h2>
                                 </div>
-                                <button type="button" class="info-add-button" disabled>Ajouter</button>
+                                <button type="button" class="info-add-button" @onclick="@(() => StartEdit("operations"))">Gerer</button>
                             </header>
-                            <div class="info-tags info-tags-blue">
-                                @foreach (var service in GetPlannedServices())
-                                {
-                                    <span>@service</span>
-                                }
-                            </div>
+                            @if (IsEditing("operations"))
+                            {
+                                <label class="info-edit-field">
+                                    <span>Services separes par des virgules</span>
+                                    <textarea @bind="PlannedServicesDraft" placeholder="Menage a domicile, Jardinage, Depannage auto"></textarea>
+                                </label>
+                                <div class="info-card-actions">
+                                    <button type="button" class="info-save-button" disabled="@IsSaving" @onclick="SaveOperationsAsync">Enregistrer</button>
+                                    <button type="button" class="info-cancel-button" disabled="@IsSaving" @onclick="CancelEdit">Annuler</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="info-tags info-tags-blue">
+                                    @foreach (var service in GetPlannedServices())
+                                    {
+                                        <span>@service</span>
+                                    }
+                                </div>
+                            }
                         </div>
                     </article>
 
@@ -180,26 +242,40 @@ else
                                 <span class="info-card-icon info-amber"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
                                 <h2>Coordonnees de paiement</h2>
                             </div>
-                            <button type="button" class="info-edit-button" disabled>Modifier</button>
+                            <button type="button" class="info-edit-button" @onclick="@(() => StartEdit("payment"))">Modifier</button>
                         </header>
-                        <div class="info-payment-list">
-                            <div class="info-payment-row">
-                                <span class="info-payment-icon info-wave">W</span>
-                                <div>
-                                    <strong>Wave</strong>
-                                    <small>@Display(Profile?.PhoneNumber, "A completer")</small>
-                                </div>
-                                <em>Actif</em>
+                        @if (IsEditing("payment"))
+                        {
+                            <div class="info-edit-stack">
+                                <label><span>Numero Wave</span><input @bind="WavePaymentNumberDraft" placeholder="+225..." /></label>
+                                <label><span>Numero Orange Money</span><input @bind="OrangeMoneyPaymentNumberDraft" placeholder="+225..." /></label>
                             </div>
-                            <div class="info-payment-row info-payment-empty">
-                                <span class="info-payment-icon">OM</span>
-                                <div>
-                                    <strong>Orange Money</strong>
-                                    <small>Non renseigne</small>
-                                </div>
-                                <button type="button" disabled>Ajouter</button>
+                            <div class="info-card-actions">
+                                <button type="button" class="info-save-button" disabled="@IsSaving" @onclick="SavePaymentAsync">Enregistrer</button>
+                                <button type="button" class="info-cancel-button" disabled="@IsSaving" @onclick="CancelEdit">Annuler</button>
                             </div>
-                        </div>
+                        }
+                        else
+                        {
+                            <div class="info-payment-list">
+                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber) ? "info-payment-empty" : string.Empty)">
+                                    <span class="info-payment-icon info-wave">W</span>
+                                    <div>
+                                        <strong>Wave</strong>
+                                        <small>@Display(Profile?.WavePaymentNumber, "A completer")</small>
+                                    </div>
+                                    <em>@(string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber) ? "Manquant" : "Actif")</em>
+                                </div>
+                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber) ? "info-payment-empty" : string.Empty)">
+                                    <span class="info-payment-icon">OM</span>
+                                    <div>
+                                        <strong>Orange Money</strong>
+                                        <small>@Display(Profile?.OrangeMoneyPaymentNumber, "A completer")</small>
+                                    </div>
+                                    <em>@(string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber) ? "Manquant" : "Actif")</em>
+                                </div>
+                            </div>
+                        }
                     </article>
                 </section>
 
@@ -274,8 +350,23 @@ else
     private CompanyPortalProfileResponse? Profile { get; set; }
     private bool IsLoading { get; set; }
     private bool IsUploading { get; set; }
+    private bool IsSaving { get; set; }
     private bool IsSessionLoading { get; set; } = true;
     private string? Message { get; set; }
+    private string? EditingSection { get; set; }
+    private string CompanyNameDraft { get; set; } = string.Empty;
+    private string? LegalFormDraft { get; set; }
+    private string? RegistrationNumberDraft { get; set; }
+    private string? TaxIdentificationNumberDraft { get; set; }
+    private string CityDraft { get; set; } = string.Empty;
+    private string? AddressDraft { get; set; }
+    private string ContactNameDraft { get; set; } = string.Empty;
+    private string EmailDraft { get; set; } = string.Empty;
+    private string PhoneNumberDraft { get; set; } = string.Empty;
+    private string? InterventionZonesDraft { get; set; }
+    private string? PlannedServicesDraft { get; set; }
+    private string? WavePaymentNumberDraft { get; set; }
+    private string? OrangeMoneyPaymentNumberDraft { get; set; }
     private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -335,6 +426,120 @@ else
 
     private bool IsCompanyApproved() => (Profile?.IsCompanyApproved ?? Session?.IsCompanyApproved) == true;
 
+    private bool IsEditing(string section) => string.Equals(EditingSection, section, StringComparison.OrdinalIgnoreCase);
+
+    private void StartEdit(string section)
+    {
+        HydrateDrafts();
+        EditingSection = section;
+        Message = null;
+    }
+
+    private void CancelEdit()
+    {
+        EditingSection = null;
+        Message = null;
+    }
+
+    private void HydrateDrafts()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        CompanyNameDraft = Display(Profile?.CompanyName, Session.CompanyName);
+        LegalFormDraft = Profile?.LegalForm;
+        RegistrationNumberDraft = Profile?.RegistrationNumber;
+        TaxIdentificationNumberDraft = Profile?.TaxIdentificationNumber;
+        CityDraft = Display(Profile?.City, "Abidjan");
+        AddressDraft = Profile?.Address;
+        ContactNameDraft = Display(Profile?.ContactName, Session.UserName);
+        EmailDraft = Display(Profile?.Email, Session.Email);
+        PhoneNumberDraft = Display(Profile?.PhoneNumber, string.Empty);
+        InterventionZonesDraft = Profile?.InterventionZones ?? string.Join(", ", GetInterventionZones().Where(zone => zone != "A completer"));
+        PlannedServicesDraft = Profile?.PlannedServices ?? string.Join(", ", GetPlannedServices().Where(service => service != "A completer"));
+        WavePaymentNumberDraft = Profile?.WavePaymentNumber;
+        OrangeMoneyPaymentNumberDraft = Profile?.OrangeMoneyPaymentNumber;
+    }
+
+    private async Task SaveCompanyInfoAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        await SaveProfileSectionAsync(ApiClient.UpdateCompanyInformationAsync(
+            Session.CompanyId,
+            new UpdateCompanyPortalCompanyInfoRequest(
+                CompanyNameDraft,
+                LegalFormDraft,
+                RegistrationNumberDraft,
+                TaxIdentificationNumberDraft,
+                CityDraft,
+                AddressDraft)));
+    }
+
+    private async Task SaveContactAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        await SaveProfileSectionAsync(ApiClient.UpdateCompanyContactAsync(
+            Session.CompanyId,
+            new UpdateCompanyPortalContactRequest(ContactNameDraft, EmailDraft, PhoneNumberDraft)));
+    }
+
+    private async Task SaveOperationsAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        await SaveProfileSectionAsync(ApiClient.UpdateCompanyOperationsAsync(
+            Session.CompanyId,
+            new UpdateCompanyPortalOperationsRequest(InterventionZonesDraft, PlannedServicesDraft)));
+    }
+
+    private async Task SavePaymentAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        await SaveProfileSectionAsync(ApiClient.UpdateCompanyPaymentAsync(
+            Session.CompanyId,
+            new UpdateCompanyPortalPaymentRequest(WavePaymentNumberDraft, OrangeMoneyPaymentNumberDraft)));
+    }
+
+    private async Task SaveProfileSectionAsync(Task<EmployeeSaveResult> operation)
+    {
+        IsSaving = true;
+        Message = null;
+        try
+        {
+            var result = await operation;
+            if (!result.IsSuccess)
+            {
+                Message = result.ErrorMessage;
+                return;
+            }
+
+            EditingSection = null;
+            Message = "Informations mises a jour.";
+            await LoadProfileAsync();
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
     private string GetStatusLabel() => IsCompanyApproved()
         ? "Compte valide"
         : "Conformite requise";
@@ -349,7 +554,8 @@ else
     private string GetLegalSubtitle()
     {
         var city = Display(Profile?.City, "Cote d'Ivoire");
-        return $"Societe de services - {city}";
+        var legalForm = Display(Profile?.LegalForm, "Societe de services");
+        return $"{legalForm} - {city}";
     }
 
     private string GetShortStatusLabel() => IsCompanyApproved() ? "Valide" : "Incomplet";
@@ -398,6 +604,13 @@ else
         if (!string.IsNullOrWhiteSpace(Profile?.Address))
         {
             zones.AddRange(Profile.Address
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(zone => !string.IsNullOrWhiteSpace(zone)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(Profile?.InterventionZones))
+        {
+            zones.AddRange(Profile.InterventionZones
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Where(zone => !string.IsNullOrWhiteSpace(zone)));
         }
@@ -541,12 +754,17 @@ else
             Guid.Parse("22222222-2222-2222-2222-222222222222"),
             session.CompanyName,
             null,
+            "SARL",
+            "DFE-2026-DEMO",
             "Abidjan",
             "Cocody Angre, 7e tranche",
             session.UserName,
             session.Email,
             "+2250700000000",
             "Menage a domicile, Jardinage, Nounou",
+            "Cocody, Angre, Riviera, Marcory",
+            "+2250700000000",
+            null,
             12,
             session.CompanyStatus,
             "Submitted",

@@ -43,6 +43,14 @@ public sealed class CompanyApplicationRegistrationService(IAppDbContext db)
             request.CompanyName,
             request.PhoneNumber,
             plan.Email);
+        company.UpdateCompanyInformation(
+            request.CompanyName,
+            null,
+            request.RegistrationNumber,
+            null,
+            request.City,
+            request.Address);
+        company.UpdateOperations(null, plan.ServiceNames.Count > 0 ? string.Join(", ", plan.ServiceNames) : null);
 
         db.CompanyApplications.Add(application);
         db.Companies.Add(company);
