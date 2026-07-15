@@ -40,6 +40,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 016 | `016_add_provider_interim_affiliation_workflow.sql` | Provider interim affiliation workflow |
 | 017 | `017_add_provider_portal_password.sql` | Provider portal password hash |
 | 018 | `018_add_cms_foundation.sql` | CMS multi-site foundation |
+| 019 | `019_seed_premium_company_landing_cms.sql` | Premium company landing CMS seed/update |
 
 ## Notes
 

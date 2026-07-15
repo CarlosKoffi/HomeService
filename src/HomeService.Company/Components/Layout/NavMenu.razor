@@ -46,30 +46,9 @@
 
 @code {
     private CompanyPortalSessionResponse? Session { get; set; }
-    private string PublicLandingBase
-    {
-        get
-        {
-            var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').ToLowerInvariant();
-            return path is "bleu" or "vert" or "noir" or "apple" ? $"/{path}" : "/";
-        }
-    }
+    private const string PublicLandingBase = "/";
 
-    private string HeaderThemeClass
-    {
-        get
-        {
-            var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').ToLowerInvariant();
-            return path switch
-            {
-                "bleu" => "theme-blue",
-                "vert" => "theme-green",
-                "noir" => "theme-black",
-                "apple" => "theme-apple",
-                _ => "theme-premium"
-            };
-        }
-    }
+    private const string HeaderThemeClass = "theme-premium";
 
     protected override void OnInitialized()
     {

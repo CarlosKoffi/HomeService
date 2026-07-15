@@ -1,8 +1,4 @@
 @page "/"
-@page "/bleu"
-@page "/vert"
-@page "/noir"
-@page "/apple"
 @inject NavigationManager Navigation
 
 <PageTitle>Kaza Entreprises</PageTitle>
@@ -15,7 +11,7 @@
     </section>
 }
 
-<div class="@LandingThemeClass">
+<div class="company-landing premium-b2b">
     <section id="home" class="premium-hero">
         <img class="premium-hero-image" src="images/kaza-premium-hero.png" alt="" aria-hidden="true" />
         <div class="premium-hero-overlay"></div>
@@ -233,24 +229,6 @@
     private string ContactSubject { get; set; } = "Devenir partenaire";
     private string ContactBody { get; set; } = string.Empty;
     private string? ContactMessage { get; set; }
-
-    private string LandingVariant
-    {
-        get
-        {
-            var path = Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').ToLowerInvariant();
-            return path is "bleu" or "vert" or "noir" or "apple" ? path : string.Empty;
-        }
-    }
-
-    private string LandingThemeClass => LandingVariant switch
-    {
-        "bleu" => "company-landing premium-b2b premium-theme-blue",
-        "vert" => "company-landing premium-b2b premium-theme-green",
-        "noir" => "company-landing premium-b2b premium-theme-black",
-        "apple" => "company-landing premium-b2b premium-theme-apple",
-        _ => "company-landing premium-b2b premium-theme-blue"
-    };
 
     protected override void OnInitialized()
     {

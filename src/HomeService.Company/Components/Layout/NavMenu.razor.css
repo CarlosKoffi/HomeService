@@ -246,15 +246,11 @@
     }
 }
 
-.site-header.theme-blue,
-.site-header.theme-green,
-.site-header.theme-black,
-.site-header.theme-apple,
 .site-header.theme-premium {
     border-image: none;
     box-shadow: 0 8px 22px rgba(0, 0, 0, .045);
     color: #000000;
-    font-family: "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
+    font-family: "Plus Jakarta Sans", "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
 }
 
 .site-header.theme-premium {
@@ -268,60 +264,8 @@
     padding-right: max(1.5rem, calc((100vw - 1180px) / 2));
 }
 
-.site-header.theme-blue {
-    background: rgba(247, 250, 255, .96);
-    border-bottom-color: #d8e7f7;
-    border-top-color: #0a66c2;
-}
-
-.site-header.theme-green {
-    background: rgba(248, 255, 251, .96);
-    border-bottom-color: #d9efe2;
-    border-top-color: #12824c;
-}
-
-.site-header.theme-black {
-    background: rgba(255, 255, 255, .98);
-    border-bottom-color: #111111;
-    border-top-color: #111111;
-    box-shadow: none;
-}
-
-.site-header.theme-apple {
-    background: rgba(255, 255, 255, .82);
-    backdrop-filter: blur(18px);
-    border-bottom-color: rgba(0, 0, 0, .12);
-    border-top-color: transparent;
-    box-shadow: none;
-    gap: 1rem;
-    min-height: 58px;
-    padding-left: max(1rem, calc((100vw - 1180px) / 2));
-    padding-right: max(1rem, calc((100vw - 1180px) / 2));
-}
-
-.site-header.theme-apple .brand {
-    font-size: 1.42rem;
-    font-weight: 680;
-}
-
-.site-header.theme-apple .site-nav {
-    gap: .18rem;
-}
-
-.site-header.theme-blue .brand,
-.site-header.theme-green .brand,
-.site-header.theme-black .brand,
-.site-header.theme-apple .brand,
 .site-header.theme-premium .brand,
-.site-header.theme-blue .site-nav ::deep a,
-.site-header.theme-green .site-nav ::deep a,
-.site-header.theme-black .site-nav ::deep a,
-.site-header.theme-apple .site-nav ::deep a,
 .site-header.theme-premium .site-nav ::deep a,
-.site-header.theme-blue .site-nav a,
-.site-header.theme-green .site-nav a,
-.site-header.theme-black .site-nav a,
-.site-header.theme-apple .site-nav a,
 .site-header.theme-premium .site-nav a {
     color: #000000;
     font-weight: 650;
@@ -362,158 +306,4 @@
 .site-header.theme-premium .header-secondary {
     border: 0;
     color: #666666 !important;
-}
-
-.site-header.theme-blue .site-nav ::deep a.active,
-.site-header.theme-blue .site-nav a.section-active,
-.site-header.theme-blue .site-nav ::deep a:hover,
-.site-header.theme-blue .site-nav a:hover {
-    background: #eef6ff;
-    color: #000000;
-}
-
-.site-header.theme-green .site-nav ::deep a.active,
-.site-header.theme-green .site-nav a.section-active,
-.site-header.theme-green .site-nav ::deep a:hover,
-.site-header.theme-green .site-nav a:hover {
-    background: #edf9f1;
-    color: #000000;
-}
-
-.site-header.theme-black .site-nav ::deep a.active,
-.site-header.theme-black .site-nav a.section-active,
-.site-header.theme-black .site-nav ::deep a:hover,
-.site-header.theme-black .site-nav a:hover {
-    background: #111111;
-    color: #ffffff;
-}
-
-.site-header.theme-apple .site-nav ::deep a.active,
-.site-header.theme-apple .site-nav a.section-active,
-.site-header.theme-apple .site-nav ::deep a:hover,
-.site-header.theme-apple .site-nav a:hover {
-    background: #1d1d1f;
-    color: #ffffff;
-}
-
-.site-header.theme-apple .site-nav ::deep a,
-.site-header.theme-apple .site-nav a {
-    font-size: .82rem;
-    padding: .44rem .56rem;
-}
-
-.site-header.theme-blue .public-nav a.section-active {
-    background: #06111f;
-    box-shadow: none;
-    color: #ffffff;
-}
-
-.site-header.theme-green .public-nav a.section-active {
-    background: #06111f;
-    box-shadow: none;
-    color: #ffffff;
-}
-
-.site-header.theme-black .public-nav a.section-active {
-    background: #111111;
-    box-shadow: none;
-    color: #ffffff;
-}
-
-.site-header.theme-apple .public-nav a.section-active {
-    background: #1d1d1f;
-    box-shadow: none;
-    color: #ffffff;
-}
-
-.site-header.theme-blue .public-nav a.section-active::after {
-    background: #0a66c2;
-}
-
-.site-header.theme-green .public-nav a.section-active::after {
-    background: #12824c;
-}
-
-.site-header.theme-black .public-nav a.section-active::after {
-    background: #111111;
-}
-
-.site-header.theme-apple .public-nav a.section-active::after {
-    background: #0071e3;
-}
-
-.site-header.theme-blue .header-primary {
-    background: #0a66c2;
-    color: #ffffff !important;
-}
-
-.site-header.theme-blue .header-primary:hover {
-    background: #004182 !important;
-}
-
-.site-header.theme-green .header-primary {
-    background: #12824c;
-    color: #ffffff !important;
-}
-
-.site-header.theme-green .header-primary:hover {
-    background: #0f6f41 !important;
-}
-
-.site-header.theme-black .header-primary {
-    background: #111111;
-    color: #ffffff !important;
-}
-
-.site-header.theme-black .header-primary:hover {
-    background: #000000 !important;
-}
-
-.site-header.theme-apple .header-primary {
-    background: #0071e3;
-    color: #ffffff !important;
-    padding: .5rem .78rem !important;
-}
-
-.site-header.theme-apple .header-primary:hover {
-    background: #005bb5 !important;
-}
-
-.site-header.theme-blue .header-secondary,
-.site-header.theme-green .header-secondary,
-.site-header.theme-black .header-secondary,
-.site-header.theme-apple .header-secondary,
-.site-header.theme-blue .logout-button,
-.site-header.theme-green .logout-button,
-.site-header.theme-black .logout-button,
-.site-header.theme-apple .logout-button {
-    color: #000000 !important;
-}
-
-.site-header.theme-blue .header-secondary,
-.site-header.theme-blue .logout-button {
-    background: #eef6ff;
-    border-color: #d8e7f7;
-}
-
-.site-header.theme-green .header-secondary,
-.site-header.theme-green .logout-button {
-    background: #edf9f1;
-    border-color: #d9efe2;
-}
-
-.site-header.theme-black .header-secondary,
-.site-header.theme-black .logout-button {
-    background: #ffffff;
-    border-color: #111111;
-}
-
-.site-header.theme-apple .header-secondary,
-.site-header.theme-apple .logout-button {
-    background: rgba(245, 245, 247, .9);
-    border-color: rgba(0, 0, 0, .1);
-}
-
-.site-header.theme-apple .header-secondary {
-    padding: .5rem .78rem !important;
 }
