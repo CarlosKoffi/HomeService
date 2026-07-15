@@ -44,16 +44,23 @@
                 <input name="address" type="text" autocomplete="street-address" placeholder="Ex: Cocody Angre, 7e tranche" @bind="Address" />
             </label>
 
-        <div class="suggested-tags" aria-label="Services existants">
-            @foreach (var service in ExistingServices)
-            {
-                <button type="button"
-                        class="service-tag @(IsSelected(service) ? "selected" : null)"
-                        @onclick="() => ToggleExistingService(service)">
-                    @service
-                </button>
-            }
-        </div>
+            <div class="service-picker">
+                <div class="service-picker-heading">
+                    <strong>Services proposes</strong>
+                    <span>Choisissez les services que votre entreprise peut assurer.</span>
+                </div>
+
+                <div class="suggested-tags" aria-label="Services existants">
+                    @foreach (var service in ExistingServices)
+                    {
+                        <button type="button"
+                                class="service-tag @(IsSelected(service) ? "selected" : null)"
+                                @onclick="() => ToggleExistingService(service)">
+                            @service
+                        </button>
+                    }
+                </div>
+            </div>
 
         <label class="tag-entry">
             Ajouter un service
