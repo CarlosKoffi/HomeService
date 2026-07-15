@@ -67,6 +67,7 @@ public sealed class CompanyEmployeeOperationResultTests
             "Awa",
             "Kone",
             "+2250700000000",
+            "awa.kone@kaza.ci",
             new DateOnly(1994, 5, 10),
             "Cocody",
             ProviderGender.Female,

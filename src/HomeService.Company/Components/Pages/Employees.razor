@@ -31,20 +31,50 @@ else
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
 
-    <section class="portal-session-banner">
-        <div>
-            <span>Entreprise active</span>
-            <strong>@Session.CompanyName</strong>
-            <p>@EmployeeRows.Count employe(s) suivi(s)</p>
+    <section class="employee-workspace">
+        <div class="employee-hero-panel">
+            <div class="employee-hero-copy">
+                <span>Effectif</span>
+                <strong>@EmployeeRows.Count employe(s) suivi(s)</strong>
+                <p>Controlez disponibilite, services, zones et pieces de vos prestataires.</p>
+            </div>
+            <div class="employee-hero-stats">
+                <button type="button" class="@GetFilterButtonClass("Disponible")" @onclick="@(() => SetEmployeeFilter("Disponible"))">
+                    <strong>@AvailableEmployees.Count</strong>
+                    <span>Disponibles</span>
+                </button>
+                <button type="button" class="@GetFilterButtonClass("En mission")" @onclick="@(() => SetEmployeeFilter("En mission"))">
+                    <strong class="blue">@LiveEmployees.Count</strong>
+                    <span>En mission</span>
+                </button>
+                <button type="button" class="@GetFilterButtonClass("Indisponible")" @onclick="@(() => SetEmployeeFilter("Indisponible"))">
+                    <strong>@UnavailableEmployees.Count</strong>
+                    <span>Indisponibles</span>
+                </button>
+            </div>
         </div>
-        <button type="button" class="primary-action" @onclick="ToggleForm">
-            @(ShowForm ? "Masquer l'ajout" : "Ajouter un employe")
-        </button>
+
+        <div class="employee-toolbar">
+            <label class="employee-search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input @bind="EmployeeSearch" @bind:event="oninput" placeholder="Rechercher un employe, service ou zone..." />
+            </label>
+            <div class="employee-filter-tabs" role="tablist" aria-label="Filtres employes">
+                @foreach (var filter in EmployeeFilters)
+                {
+                    <button type="button" class="@GetFilterTabClass(filter)" @onclick="@(() => SetEmployeeFilter(filter))">@filter</button>
+                }
+            </div>
+            <button type="button" class="employee-add-button" @onclick="ToggleForm">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                @(ShowForm ? "Fermer" : "Ajouter un employe")
+            </button>
+        </div>
     </section>
 
     @if (ShowForm)
     {
-        <EditForm Model="Form" OnSubmit="CreateEmployeeAsync" class="employee-form">
+        <EditForm Model="Form" OnSubmit="CreateEmployeeAsync" class="employee-form employee-form-modern">
             <div class="form-section-title">
                 <h2>@T("company.employees.form.title", "Nouvel employe")</h2>
                 <p>@T("company.employees.form.description", "Renseignez les informations essentielles. Les prix des services sont fixes par la plateforme.")</p>
@@ -62,6 +92,10 @@ else
                 <label>
                     Telephone
                     <InputText @bind-Value="Form.PhoneNumber" placeholder="+225 07 00 00 00 00" />
+                </label>
+                <label>
+                    Email
+                    <InputText @bind-Value="Form.Email" placeholder="awa.kone@entreprise.ci" />
                 </label>
                 <label>
                     Date de naissance
@@ -165,75 +199,96 @@ else
         </EditForm>
     }
 
-    <section class="employee-directory">
-        <div class="directory-header">
-            <div>
-                <h2>Liste des employes</h2>
-                <p>Vue de pilotage pour verifier rapidement disponibilite, services, tarifs et pieces.</p>
+    @if (LiveEmployees.Count > 0)
+    {
+        <section class="employee-live-card">
+            <header>
+                <span class="employee-live-dot"></span>
+                <strong>En mission maintenant</strong>
+                <em>@LiveEmployees.Count</em>
+            </header>
+            <div class="employee-live-grid">
+                @foreach (var employee in LiveEmployees.Take(3))
+                {
+                    <button type="button" class="employee-live-item" @onclick="() => SelectEmployee(employee)">
+                        <span class="@GetEmployeeAvatarClass(employee)">@GetInitials(employee)</span>
+                        <span>
+                            <strong>@employee.FirstName @employee.LastName</strong>
+                            <small>@GetCurrentMissionTitle(employee)</small>
+                            <em>@GetCurrentMissionLocation(employee)</em>
+                        </span>
+                    </button>
+                }
             </div>
-            <span>@EmployeeRows.Count profil(s)</span>
-        </div>
+        </section>
+    }
 
-        <div class="employee-table-wrap">
-            <table class="employee-table">
-                <thead>
-                    <tr>
-                        <th>Employe</th>
-                        <th>Type</th>
-                        <th>Sexe</th>
-                        <th>Services</th>
-                        <th>Prix service</th>
-                        <th>Experience</th>
-                        <th>Zone</th>
-                        <th>Statut</th>
-                        <th>Pieces</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var employee in EmployeeRows)
-                    {
-                        <tr class="@GetRowClass(employee)" @onclick="() => SelectEmployee(employee)">
-                            <td data-label="Employe">
-                                <div class="employee-identity">
-                                    <div class="employee-avatar compact">@GetInitials(employee)</div>
-                                    <div>
-                                        <strong>@employee.FirstName @employee.LastName</strong>
-                                        <span>@employee.PhoneNumber</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td data-label="Type">
-                                <span class="employment-pill">@GetEmploymentTypeLabel(employee.EmploymentType)</span>
-                                <span class="assignment-note">@GetAssignmentLabel(employee.ReceivesDirectRequests)</span>
-                            </td>
-                            <td data-label="Sexe">@GetGenderLabel(employee.Gender)</td>
-                            <td data-label="Services">@GetServicesText(employee)</td>
-                            <td data-label="Prix service">@GetServicePriceText(employee)</td>
-                            <td data-label="Experience">
-                                <strong>@employee.YearsOfExperience an(s)</strong>
-                                <span>@GetExperienceLevelText(employee)</span>
-                            </td>
-                            <td data-label="Zone">
-                                <strong>@(employee.ServiceRadiusKm?.ToString("N0") ?? "-") km</strong>
-                                <span>@Display(employee.Address)</span>
-                            </td>
-                            <td data-label="Statut">
-                                <span class="status-pill @GetStatusClass(employee.Status)">@GetStatusLabel(employee.Status)</span>
-                            </td>
-                            <td data-label="Pieces">@GetDocumentsText(employee)</td>
-                            <td data-label="Actions">
-                                <div class="row-actions" @onclick:stopPropagation>
-                                    <button type="button" @onclick="() => SuspendEmployeeAsync(employee.Id)">Suspendre</button>
-                                    <button type="button" class="danger-action" @onclick="() => DeleteEmployeeAsync(employee.Id)">Supprimer</button>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+    <section class="employee-modern-table">
+        <div class="employee-table-head">
+            <button type="button" @onclick="@(() => ToggleEmployeeSort("name"))">Employe @GetSortMarker("name")</button>
+            <span>Services</span>
+            <button type="button" @onclick="@(() => ToggleEmployeeSort("experience"))">Experience @GetSortMarker("experience")</button>
+            <span>Zone</span>
+            <button type="button" @onclick="@(() => ToggleEmployeeSort("status"))">Statut @GetSortMarker("status")</button>
+            <span></span>
         </div>
-
+        @if (VisibleEmployees.Count == 0)
+        {
+            <div class="employee-empty-line">
+                <strong>Aucun employe trouve</strong>
+                <span>Changez le filtre ou ajoutez votre premier prestataire.</span>
+            </div>
+        }
+        else
+        {
+            @foreach (var employee in VisibleEmployees)
+            {
+                <article class="@GetEmployeeRowClass(employee)" @onclick="() => SelectEmployee(employee)">
+                    <div class="employee-person-cell">
+                        <span class="@GetEmployeeAvatarClass(employee)">@GetInitials(employee)</span>
+                        <div>
+                            <strong>@employee.FirstName @employee.LastName</strong>
+                            <a href="tel:@employee.PhoneNumber" @onclick:stopPropagation>@employee.PhoneNumber</a>
+                            @if (!string.IsNullOrWhiteSpace(employee.Email))
+                            {
+                                <a href="mailto:@employee.Email" @onclick:stopPropagation>@employee.Email</a>
+                            }
+                            <small>@GetGenderLabel(employee.Gender) - @GetEmploymentTypeLabel(employee.EmploymentType)</small>
+                        </div>
+                    </div>
+                    <div class="employee-service-tags">
+                        @foreach (var service in employee.Services.Take(3))
+                        {
+                            <span>@service.ServiceName</span>
+                        }
+                        @if (employee.Services.Count > 3)
+                        {
+                            <span>+@(employee.Services.Count - 3)</span>
+                        }
+                    </div>
+                    <div class="employee-experience-cell">
+                        <strong>@employee.YearsOfExperience an(s)</strong>
+                        <span class="@GetLevelClass(employee)">@GetExperienceLevelText(employee)</span>
+                        <small>@GetServicePriceText(employee)</small>
+                    </div>
+                    <div class="employee-zone-cell">
+                        <svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                        <span>@Display(employee.Address)</span>
+                    </div>
+                    <div class="employee-status-cell">
+                        <span class="@GetEmployeeStatusBadgeClass(employee)">@GetEmployeeOperationalStatus(employee)</span>
+                        <small>@GetDocumentsText(employee)</small>
+                    </div>
+                    <div class="employee-row-menu" @onclick:stopPropagation>
+                        <button type="button" title="Voir le profil" @onclick="() => SelectEmployee(employee)">Voir</button>
+                    </div>
+                </article>
+            }
+        }
+        <footer>
+            <span>@VisibleEmployees.Count resultat(s) affiche(s) sur @EmployeeRows.Count</span>
+            <button type="button" @onclick="@(() => SetEmployeeFilter("Tous"))">Reinitialiser</button>
+        </footer>
     </section>
 
     @if (SelectedEmployee is not null)
@@ -246,6 +301,10 @@ else
                         <div>
                             <h2>@SelectedEmployee.FirstName @SelectedEmployee.LastName</h2>
                             <span>@SelectedEmployee.PhoneNumber</span>
+                            @if (!string.IsNullOrWhiteSpace(SelectedEmployee.Email))
+                            {
+                                <span>@SelectedEmployee.Email</span>
+                            }
                         </div>
                     </div>
                     <button type="button" @onclick="ClearSelectedEmployee">Fermer</button>
@@ -255,6 +314,7 @@ else
                     <label>Prenom<InputText @bind-Value="EditModel.FirstName" /></label>
                     <label>Nom<InputText @bind-Value="EditModel.LastName" /></label>
                     <label>Telephone<InputText @bind-Value="EditModel.PhoneNumber" /></label>
+                    <label>Email<InputText @bind-Value="EditModel.Email" /></label>
                     <label>Date de naissance<InputDate @bind-Value="EditBirthDate" /></label>
                     <label>Sexe
                         <InputSelect @bind-Value="EditModel.Gender">
@@ -470,6 +530,61 @@ else
     private List<CompanyEmployeeServiceEditModel> EditableServices { get; set; } = [];
     private string? ServiceToAddId { get; set; }
     private IReadOnlyDictionary<string, string> Texts { get; set; } = new Dictionary<string, string>();
+    private string EmployeeSearch { get; set; } = string.Empty;
+    private string ActiveEmployeeFilter { get; set; } = "Tous";
+    private string? EmployeeSortKey { get; set; } = "name";
+    private bool EmployeeSortAscending { get; set; } = true;
+    private static readonly IReadOnlyList<string> EmployeeFilters = ["Tous", "Disponible", "En mission", "Indisponible"];
+
+    private IReadOnlyList<CompanyEmployeeResponse> AvailableEmployees => EmployeeRows
+        .Where(employee => GetEmployeeOperationalStatus(employee) == "Disponible")
+        .ToList();
+
+    private IReadOnlyList<CompanyEmployeeResponse> LiveEmployees => EmployeeRows
+        .Where(employee => GetEmployeeOperationalStatus(employee) == "En mission")
+        .ToList();
+
+    private IReadOnlyList<CompanyEmployeeResponse> UnavailableEmployees => EmployeeRows
+        .Where(employee => GetEmployeeOperationalStatus(employee) == "Indisponible")
+        .ToList();
+
+    private IReadOnlyList<CompanyEmployeeResponse> VisibleEmployees
+    {
+        get
+        {
+            IEnumerable<CompanyEmployeeResponse> query = EmployeeRows;
+            if (ActiveEmployeeFilter != "Tous")
+            {
+                query = query.Where(employee => GetEmployeeOperationalStatus(employee) == ActiveEmployeeFilter);
+            }
+
+            if (!string.IsNullOrWhiteSpace(EmployeeSearch))
+            {
+                var search = EmployeeSearch.Trim();
+                query = query.Where(employee =>
+                    $"{employee.FirstName} {employee.LastName}".Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || employee.PhoneNumber.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || (!string.IsNullOrWhiteSpace(employee.Email) && employee.Email.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    || (employee.Address?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || employee.Services.Any(service => service.ServiceName.Contains(search, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            query = EmployeeSortKey switch
+            {
+                "experience" => EmployeeSortAscending
+                    ? query.OrderBy(employee => employee.YearsOfExperience)
+                    : query.OrderByDescending(employee => employee.YearsOfExperience),
+                "status" => EmployeeSortAscending
+                    ? query.OrderBy(GetEmployeeOperationalStatus)
+                    : query.OrderByDescending(GetEmployeeOperationalStatus),
+                _ => EmployeeSortAscending
+                    ? query.OrderBy(employee => employee.LastName).ThenBy(employee => employee.FirstName)
+                    : query.OrderByDescending(employee => employee.LastName).ThenByDescending(employee => employee.FirstName)
+            };
+
+            return query.ToList();
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -521,6 +636,40 @@ else
         Message = null;
     }
 
+    private void SetEmployeeFilter(string filter)
+    {
+        ActiveEmployeeFilter = filter;
+    }
+
+    private void ToggleEmployeeSort(string sortKey)
+    {
+        if (EmployeeSortKey == sortKey)
+        {
+            EmployeeSortAscending = !EmployeeSortAscending;
+            return;
+        }
+
+        EmployeeSortKey = sortKey;
+        EmployeeSortAscending = true;
+    }
+
+    private string GetSortMarker(string sortKey)
+    {
+        return EmployeeSortKey == sortKey
+            ? (EmployeeSortAscending ? "↑" : "↓")
+            : string.Empty;
+    }
+
+    private string GetFilterTabClass(string filter)
+    {
+        return ActiveEmployeeFilter == filter ? "active" : string.Empty;
+    }
+
+    private string GetFilterButtonClass(string filter)
+    {
+        return ActiveEmployeeFilter == filter ? "active" : string.Empty;
+    }
+
     private void SelectEmployee(CompanyEmployeeResponse employee)
     {
         SelectedEmployee = employee;
@@ -529,6 +678,7 @@ else
             FirstName = employee.FirstName,
             LastName = employee.LastName,
             PhoneNumber = employee.PhoneNumber,
+            Email = employee.Email,
             Address = employee.Address ?? string.Empty,
             Gender = employee.Gender,
             EmploymentType = employee.EmploymentType,
@@ -576,6 +726,7 @@ else
             FirstName = EditModel.FirstName,
             LastName = EditModel.LastName,
             PhoneNumber = EditModel.PhoneNumber,
+            Email = EditModel.Email,
             Address = EditModel.Address,
             Gender = EditModel.Gender,
             EmploymentType = EditModel.EmploymentType,
@@ -620,6 +771,7 @@ else
                 EditModel.FirstName,
                 EditModel.LastName,
                 EditModel.PhoneNumber,
+                EditModel.Email,
                 DateOnly.FromDateTime(EditBirthDate.Value),
                 EditModel.Address,
                 EditModel.Gender,
@@ -931,6 +1083,90 @@ else
     private static string GetInitials(CompanyEmployeeResponse employee)
     {
         return string.Concat(employee.FirstName.FirstOrDefault(), employee.LastName.FirstOrDefault()).ToUpperInvariant();
+    }
+
+    private string GetEmployeeOperationalStatus(CompanyEmployeeResponse employee)
+    {
+        if (employee.Status is "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" or "PendingPlatformReview" or "ProfileIncomplete")
+        {
+            return "Indisponible";
+        }
+
+        if (employee.CurrentMission is not null)
+        {
+            return "En mission";
+        }
+
+        return employee.IsAvailable ? "Disponible" : "En mission";
+    }
+
+    private string GetEmployeeStatusBadgeClass(CompanyEmployeeResponse employee)
+    {
+        return GetEmployeeOperationalStatus(employee) switch
+        {
+            "Disponible" => "employee-status-badge available",
+            "En mission" => "employee-status-badge live",
+            _ => "employee-status-badge unavailable"
+        };
+    }
+
+    private string GetEmployeeRowClass(CompanyEmployeeResponse employee)
+    {
+        var classes = new List<string> { "employee-table-row-modern" };
+        if (SelectedEmployee?.Id == employee.Id)
+        {
+            classes.Add("selected");
+        }
+
+        if (GetEmployeeOperationalStatus(employee) == "Indisponible")
+        {
+            classes.Add("muted");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetEmployeeAvatarClass(CompanyEmployeeResponse employee)
+    {
+        var index = EmployeeRows.ToList().FindIndex(item => item.Id == employee.Id);
+        var tone = (Math.Max(index, 0) % 4) switch
+        {
+            1 => "violet",
+            2 => "green",
+            3 => "amber",
+            _ => "blue"
+        };
+
+        return $"employee-avatar-modern {tone}";
+    }
+
+    private static string GetPrimaryService(CompanyEmployeeResponse employee)
+    {
+        return employee.Services.FirstOrDefault()?.ServiceName ?? "Service a definir";
+    }
+
+    private static string GetCurrentMissionTitle(CompanyEmployeeResponse employee)
+    {
+        return employee.CurrentMission is null
+            ? GetPrimaryService(employee)
+            : $"{employee.CurrentMission.ServiceName} - {employee.CurrentMission.CustomerName}";
+    }
+
+    private static string GetCurrentMissionLocation(CompanyEmployeeResponse employee)
+    {
+        return employee.CurrentMission is null
+            ? Display(employee.Address)
+            : Display(employee.CurrentMission.LocationLabel);
+    }
+
+    private static string GetLevelClass(CompanyEmployeeResponse employee)
+    {
+        return employee.Services.FirstOrDefault()?.ExperienceLevel switch
+        {
+            "Expert" => "employee-level expert",
+            "Senior" or "Confirmed" => "employee-level confirmed",
+            _ => "employee-level beginner"
+        };
     }
 
     private static string GetStatusClass(string status)
@@ -1265,6 +1501,7 @@ else
                 "Awa",
                 "Kone",
                 "+225 07 11 22 33 44",
+                "awa.kone@kaza.ci",
                 new DateOnly(1994, 5, 12),
                 "Cocody, Abidjan",
                 "Female",
@@ -1298,12 +1535,15 @@ else
                     new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), "IdentityDocument", "piece-identite-awa.pdf", "application/pdf", "#", DateTimeOffset.UtcNow.AddDays(-14)),
                     new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), "Diploma", "certificat-menage-awa.pdf", "application/pdf", "#", DateTimeOffset.UtcNow.AddDays(-12))
                 },
+                23,
+                null,
                 DateTimeOffset.UtcNow.AddDays(-14)),
             new(
                 Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"),
                 "Yao",
                 "N'Dri",
                 "+225 05 45 67 89 10",
+                "yao.ndri@kaza.ci",
                 new DateOnly(1989, 9, 3),
                 "Marcory, Abidjan",
                 "Male",
@@ -1311,7 +1551,7 @@ else
                 true,
                 9,
                 "Approved",
-                true,
+                false,
                 5.316m,
                 -4.016m,
                 12,
@@ -1332,12 +1572,21 @@ else
                     new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc4"), "Photo", "yao-ndri-photo.jpg", "image/jpeg", "#", DateTimeOffset.UtcNow.AddDays(-8)),
                     new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc5"), "IdentityDocument", "cni-yao.pdf", "application/pdf", "#", DateTimeOffset.UtcNow.AddDays(-8))
                 },
+                41,
+                new CompanyEmployeeCurrentMissionResponse(
+                    Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1"),
+                    "Jardinage",
+                    "Traore Nadege",
+                    "Cocody Angre, 7e tranche",
+                    DateTimeOffset.UtcNow.AddMinutes(45),
+                    "Assigned"),
                 DateTimeOffset.UtcNow.AddDays(-8)),
             new(
                 Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"),
                 "Mariam",
                 "Coulibaly",
                 "+225 01 98 76 54 32",
+                "mariam.coulibaly@kaza.ci",
                 new DateOnly(1998, 2, 21),
                 "Yopougon, Abidjan",
                 "Female",
@@ -1364,6 +1613,8 @@ else
                 {
                     new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc6"), "IdentityDocument", "piece-mariam.png", "image/png", "#", DateTimeOffset.UtcNow.AddDays(-2))
                 },
+                0,
+                null,
                 DateTimeOffset.UtcNow.AddDays(-2))
         };
     }
@@ -1413,6 +1664,7 @@ else
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
+        public string? Email { get; set; }
         public string Address { get; set; } = string.Empty;
         public string Gender { get; set; } = "Unspecified";
         public string EmploymentType { get; set; } = "CompanyEmployee";

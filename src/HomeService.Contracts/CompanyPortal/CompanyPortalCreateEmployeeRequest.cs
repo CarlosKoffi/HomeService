@@ -4,6 +4,7 @@ public sealed record CompanyPortalCreateEmployeeRequest(
     string FirstName,
     string LastName,
     string PhoneNumber,
+    string? Email,
     DateOnly DateOfBirth,
     string Address,
     string EmploymentType,

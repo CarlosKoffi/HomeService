@@ -27,6 +27,7 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
             request.FirstName,
             request.LastName,
             request.PhoneNumber,
+            null,
             request.DateOfBirth,
             request.Address,
             ParseProviderGender(request.Gender),

@@ -48,6 +48,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 024 | `024_reset_company_portal_password_bruce.sql` | Operational reset helper for one company portal password |
 | 025 | `025_add_company_portal_activities.sql` | Company portal activity feed table |
 | 026 | `026_add_company_profile_details.sql` | Company profile details editable from the company portal |
+| 027 | `027_add_provider_email_for_company_employees.sql` | Provider email field for company employee management |
 
 ## Notes
 

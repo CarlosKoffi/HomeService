@@ -76,10 +76,21 @@ public sealed class CompanyProviderValidatorTests
         Assert.Contains(errors, error => error.Contains("service", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void Validate_WhenEmailFormatIsInvalid_ReturnsEmailError()
+    {
+        var provider = ValidProvider(email: "pas-un-mail");
+
+        var errors = CompanyProviderValidator.Validate(provider);
+
+        Assert.Contains(errors, error => error.Contains("email", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static CompanyProviderFormData ValidProvider(
         DateOnly? dateOfBirth = null,
         int yearsOfExperience = 4,
         int radiusKm = 5,
+        string? email = "awa.kone@kaza.ci",
         IReadOnlyList<Guid>? serviceIds = null,
         bool hasPhoto = true,
         bool hasIdentityDocument = true)
@@ -88,6 +99,7 @@ public sealed class CompanyProviderValidatorTests
             "Awa",
             "Kone",
             "+2250701020304",
+            email,
             dateOfBirth ?? DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-30)),
             "Cocody",
             yearsOfExperience,

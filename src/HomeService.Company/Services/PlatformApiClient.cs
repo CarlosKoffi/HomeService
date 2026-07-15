@@ -355,6 +355,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             AddString(content, "firstName", employee.FirstName);
             AddString(content, "lastName", employee.LastName);
             AddString(content, "phoneNumber", employee.PhoneNumber);
+            AddString(content, "email", employee.Email);
             AddString(content, "dateOfBirth", employee.DateOfBirth?.ToString("yyyy-MM-dd"));
             AddString(content, "address", employee.Address);
             AddString(content, "gender", employee.Gender);
@@ -673,6 +674,7 @@ public sealed class CompanyEmployeeFormModel
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
+    public string? Email { get; set; }
     public DateOnly? DateOfBirth { get; set; }
     public string Address { get; set; } = string.Empty;
     public string Gender { get; set; } = "Unspecified";

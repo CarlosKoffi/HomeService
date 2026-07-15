@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Net.Mail;
 
 namespace HomeService.Application.CompanyPortal;
 
@@ -22,6 +23,11 @@ public static class CompanyProviderValidator
         if (phoneDigits.Length is < 8 or > 15)
         {
             errors.Add("Le telephone de l'employe doit contenir entre 8 et 15 chiffres.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(provider.Email) && !IsValidEmail(provider.Email))
+        {
+            errors.Add("L'email de l'employe doit etre au bon format.");
         }
 
         if (provider.DateOfBirth is null)
@@ -64,5 +70,18 @@ public static class CompanyProviderValidator
         }
 
         return errors;
+    }
+
+    private static bool IsValidEmail(string email)
+    {
+        try
+        {
+            _ = new MailAddress(email.Trim());
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }

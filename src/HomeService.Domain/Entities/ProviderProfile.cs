@@ -18,6 +18,7 @@ public sealed class ProviderProfile : AuditableEntity
         string firstName,
         string lastName,
         string phoneNumber,
+        string? email,
         DateOnly dateOfBirth,
         string address,
         ProviderGender gender,
@@ -31,6 +32,7 @@ public sealed class ProviderProfile : AuditableEntity
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         PhoneNumber = phoneNumber.Trim();
+        Email = NormalizeEmail(email);
         DateOfBirth = dateOfBirth;
         Address = address.Trim();
         Gender = gender;
@@ -45,6 +47,7 @@ public sealed class ProviderProfile : AuditableEntity
         string firstName,
         string lastName,
         string phoneNumber,
+        string? email,
         DateOnly dateOfBirth,
         string address,
         ProviderGender gender,
@@ -56,6 +59,7 @@ public sealed class ProviderProfile : AuditableEntity
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         PhoneNumber = phoneNumber.Trim();
+        Email = NormalizeEmail(email);
         DateOfBirth = dateOfBirth;
         Address = address.Trim();
         Gender = gender;
@@ -73,6 +77,7 @@ public sealed class ProviderProfile : AuditableEntity
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string PhoneNumber { get; private set; } = string.Empty;
+    public string? Email { get; private set; }
     public DateOnly? DateOfBirth { get; private set; }
     public string Address { get; private set; } = string.Empty;
     public ProviderGender Gender { get; private set; } = ProviderGender.Unspecified;
@@ -102,6 +107,7 @@ public sealed class ProviderProfile : AuditableEntity
         string firstName,
         string lastName,
         string phoneNumber,
+        string? email,
         DateOnly dateOfBirth,
         string address,
         ProviderGender gender,
@@ -112,6 +118,7 @@ public sealed class ProviderProfile : AuditableEntity
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         PhoneNumber = phoneNumber.Trim();
+        Email = NormalizeEmail(email);
         DateOfBirth = dateOfBirth;
         Address = address.Trim();
         Gender = gender;
@@ -281,5 +288,11 @@ public sealed class ProviderProfile : AuditableEntity
         CurrentLatitude = latitude;
         CurrentLongitude = longitude;
         Touch();
+    }
+
+    private static string? NormalizeEmail(string? email)
+    {
+        var normalized = email?.Trim().ToLowerInvariant();
+        return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
     }
 }

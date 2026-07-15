@@ -4,6 +4,7 @@ public sealed record CompanyProviderFormData(
     string FirstName,
     string LastName,
     string PhoneNumber,
+    string? Email,
     DateOnly? DateOfBirth,
     string Address,
     int? YearsOfExperience,

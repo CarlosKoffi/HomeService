@@ -145,6 +145,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 provider.FirstName,
                 provider.LastName,
                 provider.PhoneNumber,
+                provider.Email,
                 provider.DateOfBirth,
                 provider.Address,
                 provider.Gender.ToString(),
@@ -209,6 +210,8 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                         $"/api/company-portal/provider-documents/{document.Id}/preview",
                         document.CreatedAt))
                     .ToList(),
+                0,
+                null,
                 provider.CreatedAt,
                 db.ProviderInvitations
                     .Where(invitation => invitation.ProviderId == provider.Id && invitation.Status == ProviderInvitationStatus.Pending)
@@ -226,6 +229,61 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                     .Select(invitation => (DateTimeOffset?)invitation.ExpiresAt)
                     .FirstOrDefault()))
             .ToListAsync(cancellationToken);
+
+        if (employees.Count == 0)
+        {
+            return CompanyPortalEmployeesResult.Ok(employees);
+        }
+
+        var providerIds = employees.Select(employee => employee.Id).ToHashSet();
+        var missionRows = await (from mission in db.Missions.AsNoTracking()
+                                 where mission.CompanyId == companyId
+                                     && mission.ProviderId != null
+                                     && providerIds.Contains(mission.ProviderId.Value)
+                                 join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+                                 join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
+                                 select new EmployeeMissionRow(
+                                     mission.ProviderId!.Value,
+                                     mission.Id,
+                                     service.Name,
+                                     customer.FirstName + " " + customer.LastName,
+                                     mission.ServiceAddress,
+                                     mission.ScheduledFor,
+                                     mission.Status,
+                                     mission.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var completedMissionCounts = missionRows
+            .Where(mission => mission.Status == MissionStatus.Completed)
+            .GroupBy(mission => mission.ProviderId)
+            .ToDictionary(group => group.Key, group => group.Count());
+
+        var currentMissions = missionRows
+            .Where(mission => IsCurrentMissionStatus(mission.Status))
+            .OrderBy(mission => mission.ScheduledFor ?? mission.CreatedAt)
+            .GroupBy(mission => mission.ProviderId)
+            .ToDictionary(
+                group => group.Key,
+                group =>
+                {
+                    var mission = group.First();
+                    return new CompanyEmployeeCurrentMissionResponse(
+                        mission.MissionId,
+                        mission.ServiceName,
+                        mission.CustomerName,
+                        mission.LocationLabel,
+                        mission.ScheduledFor,
+                        mission.Status.ToString());
+                });
+
+        employees = employees
+            .Select(employee => employee with
+            {
+                CompletedMissionCount = completedMissionCounts.GetValueOrDefault(employee.Id),
+                CurrentMission = currentMissions.GetValueOrDefault(employee.Id),
+                IsAvailable = employee.IsAvailable && !currentMissions.ContainsKey(employee.Id)
+            })
+            .ToList();
 
         return CompanyPortalEmployeesResult.Ok(employees);
     }
@@ -292,7 +350,25 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             _ => "Document complementaire"
         };
     }
+
+    private static bool IsCurrentMissionStatus(MissionStatus status)
+    {
+        return status is MissionStatus.Assigned
+            or MissionStatus.Accepted
+            or MissionStatus.OnTheWay
+            or MissionStatus.Started;
+    }
 }
+
+internal sealed record EmployeeMissionRow(
+    Guid ProviderId,
+    Guid MissionId,
+    string ServiceName,
+    string CustomerName,
+    string? LocationLabel,
+    DateTimeOffset? ScheduledFor,
+    MissionStatus Status,
+    DateTimeOffset CreatedAt);
 
 public sealed record CompanyPortalProfileResult(bool IsSuccess, CompanyPortalProfileResponse? Response, string? Message)
 {

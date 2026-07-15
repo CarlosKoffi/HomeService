@@ -188,6 +188,7 @@ public sealed class ProviderMissionWorkflowServiceTests
             "Awa",
             "Kone",
             "+2250701020304",
+            "awa.kone@kaza.ci",
             new DateOnly(1995, 1, 12),
             "Cocody",
             ProviderGender.Female,
