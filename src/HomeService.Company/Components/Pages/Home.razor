@@ -1,5 +1,6 @@
 @page "/"
 @inject NavigationManager Navigation
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Kaza Entreprises</PageTitle>
 
@@ -13,74 +14,66 @@
 
 <div class="company-landing premium-b2b">
     <section id="home" class="premium-hero">
-        <img class="premium-hero-image" src="images/kaza-premium-hero.png" alt="" aria-hidden="true" />
+        <img class="premium-hero-image" src="@HomeContent.Hero.ImageUrl" alt="@HomeContent.Hero.ImageAlt" />
         <div class="premium-hero-overlay"></div>
         <div class="premium-hero-content">
-            <p class="premium-label">Plateforme partenaire</p>
+            <p class="premium-label">@HomeContent.Hero.Label</p>
             <h1>
-                Recevez plus de missions.
-                <span>Developpez votre entreprise.</span>
+                @HeroHeadline.Main
+                @if (!string.IsNullOrWhiteSpace(HeroHeadline.Highlight))
+                {
+                    <span>@HeroHeadline.Highlight</span>
+                }
             </h1>
-            <p>
-                Kaza connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.
-            </p>
+            <p>@HomeContent.Hero.Subtitle</p>
             <div class="premium-actions">
-                <a class="premium-primary" href="register">Commencer</a>
-                <a class="premium-secondary" href="#how">Voir le fonctionnement</a>
+                <a class="premium-primary" href="@HomeContent.Hero.PrimaryCta.Url">@HomeContent.Hero.PrimaryCta.Label</a>
+                <a class="premium-secondary" href="@HomeContent.Hero.SecondaryCta.Url">@HomeContent.Hero.SecondaryCta.Label</a>
             </div>
             <div class="premium-proof" aria-label="Indicateurs Kaza">
-                <span>Inscription gratuite</span>
-                <span>Validation dossier</span>
-                <span>Portail entreprise</span>
+                @foreach (var proof in HomeContent.Hero.ProofItems)
+                {
+                    <span>@proof</span>
+                }
             </div>
         </div>
     </section>
 
     <section id="how" class="premium-section">
         <div class="premium-section-head">
-            <p class="premium-label">Comment ca marche</p>
-            <h2>Trois etapes, puis votre portail est pret.</h2>
-            <p>Un parcours court pour verifier l'entreprise et demarrer avec une base claire.</p>
+            <p class="premium-label">@HomeContent.Steps.Label</p>
+            <h2>@HomeContent.Steps.Headline</h2>
+            <p>@HomeContent.Steps.Subtitle</p>
         </div>
 
         <div class="premium-how-grid">
-            <article>
-                <figure><img src="images/kaza-how-step-1.png" alt="Creation du compte entreprise Kaza" loading="lazy" /></figure>
-                <div class="premium-step-meta"><span>01</span><strong>Compte</strong></div>
-                <h3>Creez votre compte</h3>
-                <p>Renseignez votre entreprise, vos services et le contact responsable.</p>
-            </article>
-            <article>
-                <figure><img src="images/kaza-how-step-2.png" alt="Verification du dossier partenaire Kaza" loading="lazy" /></figure>
-                <div class="premium-step-meta"><span>02</span><strong>Verification</strong></div>
-                <h3>Nous verifions votre dossier</h3>
-                <p>Kaza controle les informations pour securiser les clients et les missions.</p>
-            </article>
-            <article>
-                <figure><img src="images/kaza-how-step-3.png" alt="Portail entreprise Kaza pour suivre les interventions" loading="lazy" /></figure>
-                <div class="premium-step-meta"><span>03</span><strong>Portail</strong></div>
-                <h3>Travaillez depuis votre portail</h3>
-                <p>Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.</p>
-            </article>
+            @foreach (var step in HomeContent.Steps.Items)
+            {
+                <article>
+                    <figure><img src="@step.Image" alt="@step.Title" loading="lazy" /></figure>
+                    <div class="premium-step-meta"><span>@step.Number</span><strong>@step.Label</strong></div>
+                    <h3>@step.Title</h3>
+                    <p>@step.Text</p>
+                </article>
+            }
         </div>
     </section>
 
     <section id="trusted" class="premium-trusted" aria-label="Entreprises partenaires">
-        <p>Ils font confiance a Kaza</p>
+        <p>@HomeContent.Trusted.Headline</p>
         <div>
-            <span>Services verifies</span>
-            <span>Entreprises locales</span>
-            <span>Prestataires suivis</span>
-            <span>Paiements traces</span>
-            <span>Support partenaire</span>
+            @foreach (var item in HomeContent.Trusted.Items)
+            {
+                <span>@item</span>
+            }
         </div>
     </section>
 
     <section id="dashboard" class="premium-section premium-dashboard-section">
         <div class="premium-section-head">
-            <p class="premium-label">Dashboard</p>
-            <h2>Tout ce qui compte, lisible en un coup d'oeil.</h2>
-            <p>Demandes, equipe, missions, documents et paiements restent au meme endroit.</p>
+            <p class="premium-label">@HomeContent.Dashboard.Label</p>
+            <h2>@HomeContent.Dashboard.Headline</h2>
+            <p>@HomeContent.Dashboard.Subtitle</p>
         </div>
 
         <div class="premium-dashboard">
@@ -89,22 +82,25 @@
                 <small>Aujourd'hui</small>
             </div>
             <div class="premium-dashboard-stats">
-                <article><span>Demandes</span><strong>12</strong><small>+4 cette semaine</small></article>
-                <article><span>Assignees</span><strong>8</strong><small>Equipe mobilisee</small></article>
-                <article><span>Paiements</span><strong>185k</strong><small>XOF suivis</small></article>
+                @foreach (var stat in HomeContent.Dashboard.Stats)
+                {
+                    <article><span>@stat.Label</span><strong>@stat.Value</strong><small>@stat.Help</small></article>
+                }
             </div>
             <div class="premium-dashboard-body">
                 <section>
                     <h3>Demandes en cours</h3>
-                    <p>Menage a Cocody Riviera</p>
-                    <p>Jardinage a Marcory</p>
-                    <p>Nounou aux Deux Plateaux</p>
+                    @foreach (var request in HomeContent.Dashboard.Requests)
+                    {
+                        <p>@request</p>
+                    }
                 </section>
                 <section>
                     <h3>Prestataires disponibles</h3>
-                    <p>Awa K. - Menage</p>
-                    <p>Jean M. - Jardinage</p>
-                    <p>Fatou C. - Nounou</p>
+                    @foreach (var provider in HomeContent.Dashboard.Providers)
+                    {
+                        <p>@provider</p>
+                    }
                 </section>
             </div>
             <div class="premium-floating-card mission-card">
@@ -120,47 +116,31 @@
 
     <section id="faq" class="premium-section premium-faq-section">
         <div class="premium-section-head centered">
-            <p class="premium-label">FAQ</p>
-            <h2>Foire aux questions</h2>
+            <p class="premium-label">@HomeContent.Faq.Label</p>
+            <h2>@HomeContent.Faq.Headline</h2>
         </div>
 
         <div class="premium-faq">
-            <details open>
-                <summary>Comment sont verifiees les entreprises sur Kaza ?</summary>
-                <p>Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete.</p>
-            </details>
-            <details>
-                <summary>L'inscription est-elle gratuite ?</summary>
-                <p>Oui. L'inscription est gratuite. Kaza applique ensuite une commission uniquement sur les missions realisees.</p>
-            </details>
-            <details>
-                <summary>Puis-je refuser une demande client ?</summary>
-                <p>Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites.</p>
-            </details>
-            <details>
-                <summary>Qui choisit le prestataire ?</summary>
-                <p>Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser Kaza vous accompagner selon le mode choisi.</p>
-            </details>
-            <details>
-                <summary>Comment sont suivis les paiements ?</summary>
-                <p>Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions.</p>
-            </details>
-            <details>
-                <summary>Combien de temps prend la validation ?</summary>
-                <p>Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide.</p>
-            </details>
+            @foreach (var item in HomeContent.Faq.Questions.Select((question, index) => new { question, index }))
+            {
+                <details open="@(item.index == 0)">
+                    <summary>@item.question.Question</summary>
+                    <p>@item.question.Answer</p>
+                </details>
+            }
         </div>
     </section>
 
     <section id="contact" class="premium-section premium-contact-section">
         <div class="premium-contact-copy">
-            <p class="premium-label">Contact</p>
-            <h2>Vous voulez en parler avant de vous inscrire ?</h2>
-            <p>Laissez vos coordonnees. Nous vous rappelons pour voir comment Kaza peut aider votre entreprise.</p>
+            <p class="premium-label">@HomeContent.Contact.Label</p>
+            <h2>@HomeContent.Contact.Headline</h2>
+            <p>@HomeContent.Contact.Subtitle</p>
             <div class="premium-contact-tags">
-                <span>Abidjan</span>
-                <span>Services a domicile</span>
-                <span>Partenariat entreprise</span>
+                @foreach (var tag in HomeContent.Contact.Tags)
+                {
+                    <span>@tag</span>
+                }
             </div>
         </div>
 
@@ -200,49 +180,28 @@
                 <span>K</span>
                 <strong>Kaza</strong>
             </a>
-            <p>La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.</p>
+            <p>@HomeContent.Footer.BrandText</p>
         </div>
-        <nav aria-label="Produit">
-            <h2>Produit</h2>
-            <a href="#dashboard">Plateforme</a>
-            <a href="#how">Fonctionnement</a>
-            <a href="#contact">Tarifs</a>
-            <a href="#faq">Securite</a>
-            <a href="#contact">Integrations</a>
-            <a href="#contact">Changelog</a>
-        </nav>
-        <nav aria-label="Entreprise">
-            <h2>Entreprise</h2>
-            <a href="#trusted">A propos</a>
-            <a href="#contact">Blog</a>
-            <a href="#contact">Carrieres</a>
-            <a href="#contact">Presse</a>
-            <a href="register">Partenaires</a>
-        </nav>
-        <nav aria-label="Ressources">
-            <h2>Ressources</h2>
-            <a href="#how">Documentation</a>
-            <a href="#contact">Centre d'aide</a>
-            <a href="#trusted">Communaute</a>
-            <a href="#dashboard">Dashboard</a>
-            <a href="#contact">Etudes de cas</a>
-        </nav>
-        <nav aria-label="Legal">
-            <h2>Legal</h2>
-            <a href="#contact">CGU</a>
-            <a href="#contact">Confidentialite</a>
-            <a href="#contact">Cookies</a>
-            <a href="#contact">Mentions legales</a>
-            <a href="#contact">Conditions partenaires</a>
-        </nav>
+        @foreach (var column in HomeContent.Footer.Columns)
+        {
+            <nav aria-label="@column.Title">
+                <h2>@column.Title</h2>
+                @foreach (var link in column.Links)
+                {
+                    <a href="#contact">@link</a>
+                }
+            </nav>
+        }
         <div class="premium-footer-bottom">
-            <span>© 2026 Kaza Technologies. Tous droits reserves.</span>
-            <span>Concu pour l'Afrique de l'Ouest</span>
+            <span>@HomeContent.Footer.Copyright</span>
+            <span>@HomeContent.Footer.Baseline</span>
         </div>
     </footer>
 </div>
 
 @code {
+    private CompanyHomeCmsResponse HomeContent { get; set; } = CreateDefaultHomeContent();
+    private HeroHeadlineParts HeroHeadline => SplitHeroHeadline(HomeContent.Hero.Headline);
     private bool IsSubmittedConfirmationVisible { get; set; }
     private string ContactName { get; set; } = string.Empty;
     private string ContactCompany { get; set; } = string.Empty;
@@ -252,11 +211,13 @@
     private string ContactBody { get; set; } = string.Empty;
     private string? ContactMessage { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         IsSubmittedConfirmationVisible = new Uri(Navigation.Uri)
             .Query
             .Contains("submitted=1", StringComparison.OrdinalIgnoreCase);
+
+        HomeContent = await ApiClient.GetCompanyHomeContentAsync() ?? CreateDefaultHomeContent();
     }
 
     private Task SubmitContactAsync()
@@ -273,4 +234,78 @@
         ContactMessage = "Message pret a etre transmis. Le branchement email/API sera ajoute a la prochaine etape.";
         return Task.CompletedTask;
     }
+
+    private static HeroHeadlineParts SplitHeroHeadline(string headline)
+    {
+        const string marker = ". ";
+        var index = headline.IndexOf(marker, StringComparison.Ordinal);
+        return index < 0
+            ? new HeroHeadlineParts(headline, string.Empty)
+            : new HeroHeadlineParts(headline[..(index + 1)], headline[(index + marker.Length)..]);
+    }
+
+    private static CompanyHomeCmsResponse CreateDefaultHomeContent()
+    {
+        return new CompanyHomeCmsResponse(
+            new CompanyHomeHeroCmsResponse(
+                "Plateforme partenaire",
+                "Recevez plus de missions. Developpez votre entreprise.",
+                "Kaza connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.",
+                new CmsLinkResponse("Commencer", "register"),
+                new CmsLinkResponse("Voir le fonctionnement", "#how"),
+                "images/kaza-premium-hero.png",
+                "Equipe Kaza en intervention chez un client",
+                ["Inscription gratuite", "Validation dossier", "Portail entreprise"]),
+            new CompanyHomeStepsCmsResponse(
+                "Comment ca marche",
+                "Trois etapes, puis votre portail est pret.",
+                "Un parcours court pour verifier l'entreprise et demarrer avec une base claire.",
+                [
+                    new CmsStepResponse("01", "Compte", "Creez votre compte", "Renseignez votre entreprise, vos services et le contact responsable.", "images/kaza-how-step-1.png"),
+                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "Kaza controle les informations pour securiser les clients et les missions.", "images/kaza-how-step-2.png"),
+                    new CmsStepResponse("03", "Portail", "Travaillez depuis votre portail", "Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.", "images/kaza-how-step-3.png")
+                ]),
+            new CompanyHomeTrustedCmsResponse(
+                "Ils font confiance a Kaza",
+                ["Services verifies", "Entreprises locales", "Prestataires suivis", "Paiements traces", "Support partenaire"]),
+            new CompanyHomeDashboardCmsResponse(
+                "Dashboard",
+                "Tout ce qui compte, lisible en un coup d'oeil.",
+                "Demandes, equipe, missions, documents et paiements restent au meme endroit.",
+                [
+                    new CmsDashboardStatResponse("Demandes", "12", "+4 cette semaine"),
+                    new CmsDashboardStatResponse("Assignees", "8", "Equipe mobilisee"),
+                    new CmsDashboardStatResponse("Paiements", "185k", "XOF suivis")
+                ],
+                ["Menage a Cocody Riviera", "Jardinage a Marcory", "Nounou aux Deux Plateaux"],
+                ["Awa K. - Menage", "Jean M. - Jardinage", "Fatou C. - Nounou"]),
+            new CompanyHomeFaqCmsResponse(
+                "FAQ",
+                "Foire aux questions",
+                [
+                    new CmsFaqItemResponse("Comment sont verifiees les entreprises sur Kaza ?", "Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."),
+                    new CmsFaqItemResponse("L'inscription est-elle gratuite ?", "Oui. L'inscription est gratuite. Kaza applique ensuite une commission uniquement sur les missions realisees."),
+                    new CmsFaqItemResponse("Puis-je refuser une demande client ?", "Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."),
+                    new CmsFaqItemResponse("Qui choisit le prestataire ?", "Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser Kaza vous accompagner selon le mode choisi."),
+                    new CmsFaqItemResponse("Comment sont suivis les paiements ?", "Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions."),
+                    new CmsFaqItemResponse("Combien de temps prend la validation ?", "Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide.")
+                ]),
+            new CompanyHomeContactCmsResponse(
+                "Contact",
+                "Vous voulez en parler avant de vous inscrire ?",
+                "Laissez vos coordonnees. Nous vous rappelons pour voir comment Kaza peut aider votre entreprise.",
+                ["Abidjan", "Services a domicile", "Partenariat entreprise"]),
+            new CompanyHomeFooterCmsResponse(
+                "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.",
+                "(c) 2026 Kaza Technologies. Tous droits reserves.",
+                "Concu pour l'Afrique de l'Ouest",
+                [
+                    new CmsFooterColumnResponse("Produit", ["Plateforme", "Fonctionnement", "Tarifs", "Securite", "Integrations", "Changelog"]),
+                    new CmsFooterColumnResponse("Entreprise", ["A propos", "Blog", "Carrieres", "Presse", "Partenaires"]),
+                    new CmsFooterColumnResponse("Ressources", ["Documentation", "Centre d'aide", "Communaute", "Dashboard", "Etudes de cas"]),
+                    new CmsFooterColumnResponse("Legal", ["CGU", "Confidentialite", "Cookies", "Mentions legales", "Conditions partenaires"])
+                ]));
+    }
+
+    private sealed record HeroHeadlineParts(string Main, string Highlight);
 }

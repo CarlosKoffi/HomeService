@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Contracts.Localization;
@@ -41,6 +42,25 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await httpClient.GetFromJsonAsync<CountryBrandingResponse>($"/api/country-branding?country={Uri.EscapeDataString(countryCode)}", cancellationToken);
+    }
+
+    public async Task<CompanyHomeCmsResponse?> GetCompanyHomeContentAsync(
+        string language = "fr",
+        string country = "CI",
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            AddBasicAuthIfConfigured();
+            return await httpClient.GetFromJsonAsync<CompanyHomeCmsResponse>(
+                $"/api/cms/company/home?language={Uri.EscapeDataString(language)}&country={Uri.EscapeDataString(country)}",
+                JsonOptions,
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     public async Task<RegisterCompanyResult> RegisterCompanyAsync(
