@@ -9,4 +9,12 @@ public sealed record ServiceSummaryResponse(
     bool IsActive,
     int NormalPriceAmount,
     int PremiumPriceAmount,
-    string Currency);
+    string Currency,
+    IReadOnlyList<ServicePrestationSummaryResponse> Prestations);
+
+public sealed record ServicePrestationSummaryResponse(
+    Guid Id,
+    string Name,
+    string? Description,
+    int SortOrder,
+    bool IsActive);

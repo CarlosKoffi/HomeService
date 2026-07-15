@@ -93,4 +93,42 @@ public sealed class ServiceTests
         Assert.True(service.RequiresBeforeAfterPhotos);
         Assert.True(service.RequiresAdminApprovalBeforeAssignment);
     }
+
+    [Fact]
+    public void Constructor_StartsWithoutPrestations()
+    {
+        var service = new Service("Electricite", null, null);
+
+        Assert.Empty(service.Prestations);
+    }
+
+    [Fact]
+    public void AddPrestation_AddsChildLinkedToService()
+    {
+        var service = new Service("Jardinage", null, null);
+
+        var prestation = service.AddPrestation("Tondre le gazon", "Coupe simple.", 10);
+
+        Assert.Single(service.Prestations);
+        Assert.Equal(service.Id, prestation.ServiceId);
+        Assert.Equal("Tondre le gazon", prestation.Name);
+        Assert.Equal("tondre le gazon", prestation.NormalizedName);
+        Assert.Equal(10, prestation.SortOrder);
+        Assert.True(prestation.IsActive);
+    }
+
+    [Fact]
+    public void AddPrestation_WhenNameAlreadyExists_UpdatesExistingPrestation()
+    {
+        var service = new Service("Jardinage", null, null);
+        var first = service.AddPrestation("Tondre le gazon", "Coupe simple.", 10);
+
+        var second = service.AddPrestation(" Tondre le gazon ", "Coupe complete.", 20);
+
+        Assert.Same(first, second);
+        Assert.Single(service.Prestations);
+        Assert.Equal("Tondre le gazon", second.Name);
+        Assert.Equal("Coupe complete.", second.Description);
+        Assert.Equal(20, second.SortOrder);
+    }
 }

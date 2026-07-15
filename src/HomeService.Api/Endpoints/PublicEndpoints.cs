@@ -21,6 +21,7 @@ public static class PublicEndpoints
         {
             var services = await db.Services
                 .AsNoTracking()
+                .Include(service => service.Prestations)
                 .OrderBy(service => service.Name)
                 .Select(service => new ServiceSummaryResponse(
                     service.Id,
@@ -31,7 +32,17 @@ public static class PublicEndpoints
                     service.IsActive,
                     service.NormalPriceAmount,
                     service.PremiumPriceAmount,
-                    service.Currency))
+                    service.Currency,
+                    service.Prestations
+                        .OrderBy(prestation => prestation.SortOrder)
+                        .ThenBy(prestation => prestation.Name)
+                        .Select(prestation => new ServicePrestationSummaryResponse(
+                            prestation.Id,
+                            prestation.Name,
+                            prestation.Description,
+                            prestation.SortOrder,
+                            prestation.IsActive))
+                        .ToList()))
                 .ToListAsync(cancellationToken);
 
             return Results.Ok(services);

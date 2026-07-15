@@ -17,6 +17,7 @@ public static class DatabaseInitializer
         await SeedCountryBrandingAsync(db, cancellationToken);
         await SeedLanguagesAsync(db, cancellationToken);
         await SeedServicesAsync(db, cancellationToken);
+        await SeedServicePrestationsAsync(db, cancellationToken);
         await SeedAdminAccessAsync(db, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
         await SeedCmsFoundationAsync(db, cancellationToken);
@@ -90,6 +91,32 @@ public static class DatabaseInitializer
         jardinage.UpdatePricing(4500, 6500, "XOF");
 
         db.Services.AddRange(menage, nounou, jardinage);
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task SeedServicePrestationsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var services = await db.Services
+            .Include(service => service.Prestations)
+            .Where(service => service.NormalizedName == "jardinage"
+                || service.NormalizedName == "menage a domicile"
+                || service.NormalizedName == "nounou")
+            .ToListAsync(cancellationToken);
+
+        var jardinage = services.FirstOrDefault(service => service.NormalizedName == "jardinage");
+        jardinage?.AddPrestation("Tondre le gazon", "Coupe et entretien simple de pelouse.", 10);
+        jardinage?.AddPrestation("Tailler une haie", "Taille legere et remise en forme des haies.", 20);
+        jardinage?.AddPrestation("Desherbage", "Nettoyage des mauvaises herbes sur les zones indiquees.", 30);
+
+        var menage = services.FirstOrDefault(service => service.NormalizedName == "menage a domicile");
+        menage?.AddPrestation("Menage regulier", "Entretien courant du domicile.", 10);
+        menage?.AddPrestation("Nettoyage apres travaux", "Nettoyage renforce apres petits travaux ou renovation.", 20);
+        menage?.AddPrestation("Nettoyage vitres", "Nettoyage simple des vitres accessibles.", 30);
+
+        var nounou = services.FirstOrDefault(service => service.NormalizedName == "nounou");
+        nounou?.AddPrestation("Garde ponctuelle", "Garde d'enfant sur une plage horaire courte.", 10);
+        nounou?.AddPrestation("Garde apres ecole", "Presence et accompagnement apres l'ecole.", 20);
 
         await db.SaveChangesAsync(cancellationToken);
     }

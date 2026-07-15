@@ -5,6 +5,8 @@ namespace HomeService.Domain.Entities;
 
 public sealed class Service : AuditableEntity
 {
+    private readonly List<ServicePrestation> _prestations = [];
+
     private Service()
     {
     }
@@ -34,6 +36,26 @@ public sealed class Service : AuditableEntity
     public Guid? CreatedByCompanyId { get; private set; }
     public ServiceStatus Status { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public IReadOnlyCollection<ServicePrestation> Prestations => _prestations;
+
+    public ServicePrestation AddPrestation(string name, string? description, int sortOrder)
+    {
+        var normalizedName = Normalize(name);
+        var existing = _prestations.FirstOrDefault(prestation => prestation.NormalizedName == normalizedName);
+        if (existing is not null)
+        {
+            existing.Rename(name, description);
+            existing.MoveTo(sortOrder);
+            existing.Activate();
+            Touch();
+            return existing;
+        }
+
+        var prestation = new ServicePrestation(Id, name, description, sortOrder);
+        _prestations.Add(prestation);
+        Touch();
+        return prestation;
+    }
 
     public void UpdatePricing(int normalPriceAmount, int premiumPriceAmount, string currency)
     {

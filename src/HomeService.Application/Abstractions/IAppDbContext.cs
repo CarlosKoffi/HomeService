@@ -14,6 +14,7 @@ public interface IAppDbContext
     DbSet<CompanyApplicationStatusHistory> CompanyApplicationStatusHistories { get; }
     DbSet<CompanyActivationToken> CompanyActivationTokens { get; }
     DbSet<Service> Services { get; }
+    DbSet<ServicePrestation> ServicePrestations { get; }
     DbSet<ProviderProfile> Providers { get; }
     DbSet<ProviderInvitation> ProviderInvitations { get; }
     DbSet<ProviderAffiliationRequest> ProviderAffiliationRequests { get; }
