@@ -45,108 +45,198 @@ else
             </section>
         }
 
-        <section class="company-profile-hero">
-            <div>
-                <p class="eyebrow">Profil entreprise</p>
-                <h1>@(Profile?.CompanyName ?? Session.CompanyName)</h1>
-                <p>@GetProfileSubtitle()</p>
-            </div>
-            <span class="activation-status">@GetStatusLabel()</span>
-        </section>
-
         @if (IsLoading)
         {
             <section class="empty-state"><h2>Chargement...</h2><p>Recuperation de votre fiche entreprise.</p></section>
         }
         else
         {
-            <section class="profile-overview-strip">
-                <article><span>Statut</span><strong>@GetStatusLabel()</strong><small>@(Profile?.ApplicationStatus ?? Session.CompanyStatus)</small></article>
-                <article><span>Documents</span><strong>@GetDocumentProgress()</strong><small>DFE, RCCM, identite</small></article>
-                <article><span>Services</span><strong>@GetPlannedServices().Count</strong><small>Activites declarees</small></article>
-            </section>
-
-            <section class="company-profile-grid">
-                <article class="profile-card">
-                    <p class="eyebrow">Entreprise</p>
-                    <h2>Informations principales</h2>
-                    <dl class="profile-definition-list">
-                        <div><dt>Nom</dt><dd>@Display(Profile?.CompanyName, Session.CompanyName)</dd></div>
-                        <div><dt>Ville</dt><dd>@Display(Profile?.City, "A completer")</dd></div>
-                        <div><dt>Adresse / zone</dt><dd>@Display(Profile?.Address, "A completer")</dd></div>
-                        <div><dt>Prestataires prevus</dt><dd>@(Profile?.EstimatedProviderCount?.ToString() ?? "A definir")</dd></div>
-                    </dl>
-                </article>
-
-                <article class="profile-card">
-                    <p class="eyebrow">Responsable</p>
-                    <h2>Compte administrateur</h2>
-                    <dl class="profile-definition-list">
-                        <div><dt>Nom</dt><dd>@Display(Profile?.ContactName, Session.UserName)</dd></div>
-                        <div><dt>Email</dt><dd>@Display(Profile?.Email, Session.Email)</dd></div>
-                        <div><dt>Telephone</dt><dd>@Display(Profile?.PhoneNumber, "A completer")</dd></div>
-                        <div><dt>Statut</dt><dd>@GetStatusLabel()</dd></div>
-                    </dl>
-                </article>
-            </section>
-
-            <section class="profile-card">
-                <div class="profile-section-heading">
-                    <div>
-                        <p class="eyebrow">Services</p>
-                        <h2>Services envisages</h2>
+            <section class="info-profile-page">
+                <section class="info-hero-card">
+                    <div class="info-company-mark">@GetInitials(Profile?.CompanyName ?? Session.CompanyName)</div>
+                    <div class="info-company-main">
+                        <h1>@Display(Profile?.CompanyName, Session.CompanyName)</h1>
+                        <p>@GetLegalSubtitle()</p>
                     </div>
-                </div>
-                <div class="selected-service-tags">
-                    @foreach (var service in GetPlannedServices())
-                    {
-                        <span>@service</span>
-                    }
-                </div>
-            </section>
-
-            <section id="documents" class="documents-unified-card profile-card">
-                    <div class="profile-section-heading">
+                    <div class="info-hero-stats">
                         <div>
-                            <p class="eyebrow">Documents</p>
+                            <strong class="@GetStatusToneClass()">@GetShortStatusLabel()</strong>
+                            <span>Statut</span>
+                        </div>
+                        <a href="#documents">
+                            <strong class="@GetDocumentToneClass()">@GetDocumentCounter()</strong>
+                            <span>Documents</span>
+                        </a>
+                        <div>
+                            <strong>@GetZoneCount()</strong>
+                            <span>Zones</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="info-grid-row">
+                    <article class="info-card info-card-large">
+                        <header>
+                            <div>
+                                <span class="info-card-icon info-blue"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V7l6-4 6 4v14"/><path d="M9 10h.01M12 10h.01M15 10h.01M9 14h.01M12 14h.01M15 14h.01"/></svg></span>
+                                <h2>Entreprise</h2>
+                            </div>
+                            <button type="button" class="info-edit-button" disabled>Modifier</button>
+                        </header>
+                        <dl class="info-fields-grid">
+                            <div>
+                                <dt>Raison sociale</dt>
+                                <dd>@Display(Profile?.CompanyName, Session.CompanyName)</dd>
+                            </div>
+                            <div>
+                                <dt>Forme juridique</dt>
+                                <dd>A completer</dd>
+                            </div>
+                            <div>
+                                <dt>Numero RCCM</dt>
+                                <dd>@Display(Profile?.RegistrationNumber, "Document RCCM fourni")</dd>
+                            </div>
+                            <div>
+                                <dt>Numero DFE / NIF</dt>
+                                <dd>Document DFE fourni</dd>
+                            </div>
+                            <div>
+                                <dt>Ville</dt>
+                                <dd>@Display(Profile?.City, "A completer")</dd>
+                            </div>
+                            <div class="info-field-wide">
+                                <dt>Adresse</dt>
+                                <dd>@Display(Profile?.Address, "A completer")</dd>
+                            </div>
+                        </dl>
+                    </article>
+
+                    <article class="info-card">
+                        <header>
+                            <div>
+                                <span class="info-card-icon info-purple"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg></span>
+                                <h2>Administrateur</h2>
+                            </div>
+                            <button type="button" class="info-edit-button" disabled>Modifier</button>
+                        </header>
+                        <dl class="info-fields-stack">
+                            <div>
+                                <dt>Nom</dt>
+                                <dd>@Display(Profile?.ContactName, Session.UserName)</dd>
+                            </div>
+                            <div>
+                                <dt>Email</dt>
+                                <dd>@Display(Profile?.Email, Session.Email)</dd>
+                            </div>
+                            <div>
+                                <dt>Telephone</dt>
+                                <dd>@Display(Profile?.PhoneNumber, "A completer")</dd>
+                            </div>
+                        </dl>
+                        <span class="info-status-badge @GetStatusBadgeClass()">@GetStatusLabel()</span>
+                    </article>
+                </section>
+
+                <section class="info-grid-row">
+                    <article class="info-card info-card-large">
+                        <div class="info-section-block">
+                            <header>
+                                <div>
+                                    <span class="info-card-icon info-blue"><svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+                                    <h2>Zones d'intervention</h2>
+                                </div>
+                                <button type="button" class="info-add-button" disabled>Ajouter</button>
+                            </header>
+                            <div class="info-tags">
+                                @foreach (var zone in GetInterventionZones())
+                                {
+                                    <span>@zone</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="info-section-divider"></div>
+
+                        <div class="info-section-block">
+                            <header>
+                                <div>
+                                    <span class="info-card-icon info-blue"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+                                    <h2>Services declares</h2>
+                                </div>
+                                <button type="button" class="info-add-button" disabled>Ajouter</button>
+                            </header>
+                            <div class="info-tags info-tags-blue">
+                                @foreach (var service in GetPlannedServices())
+                                {
+                                    <span>@service</span>
+                                }
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="info-card">
+                        <header>
+                            <div>
+                                <span class="info-card-icon info-amber"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+                                <h2>Coordonnees de paiement</h2>
+                            </div>
+                            <button type="button" class="info-edit-button" disabled>Modifier</button>
+                        </header>
+                        <div class="info-payment-list">
+                            <div class="info-payment-row">
+                                <span class="info-payment-icon info-wave">W</span>
+                                <div>
+                                    <strong>Wave</strong>
+                                    <small>@Display(Profile?.PhoneNumber, "A completer")</small>
+                                </div>
+                                <em>Actif</em>
+                            </div>
+                            <div class="info-payment-row info-payment-empty">
+                                <span class="info-payment-icon">OM</span>
+                                <div>
+                                    <strong>Orange Money</strong>
+                                    <small>Non renseigne</small>
+                                </div>
+                                <button type="button" disabled>Ajouter</button>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <section id="documents" class="info-card info-documents-card @GetDocumentsCardClass()">
+                    <header>
+                        <div>
+                            <span class="info-card-icon @GetDocumentsIconClass()"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span>
                             <h2>Pieces du dossier</h2>
                         </div>
-                        <span>@GetDocumentProgress()</span>
-                    </div>
-                    <p class="documents-helper">
-                        Ajoutez vos documents en ligne ou deposez-les dans nos bureaux. Si une piece existe deja, vous pouvez la consulter ou la remplacer.
-                    </p>
+                        <span class="info-status-badge @GetDocumentBadgeClass()">@GetDocumentProgress()</span>
+                    </header>
 
-                    <div class="document-status-list">
+                    <div class="info-documents-grid">
                         @foreach (var slot in DocumentSlots)
                         {
                             var document = FindDocument(slot.Key);
                             var selectedFileName = GetSelectedFileName(slot.UploadKey);
-                            <article class="document-status-row document-upload-row">
-                                <span class="document-status-icon @GetDocumentStatusClass(document?.ReviewStatus)">@slot.ShortLabel</span>
+                            <article class="info-document-row @GetDocumentRowClass(document?.ReviewStatus)">
+                                <span class="info-document-code @GetDocumentStatusClass(document?.ReviewStatus)">@slot.ShortLabel</span>
                                 <div>
                                     <strong>@slot.Label</strong>
-                                    <small>@slot.Description</small>
-                                    @if (document is not null)
-                                    {
-                                        <em>@document.OriginalFileName</em>
-                                        @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
-                                        {
-                                            <small>@document.ReviewNote</small>
-                                        }
-                                    }
+                                    <small>@(document?.OriginalFileName ?? slot.Description)</small>
                                     @if (!string.IsNullOrWhiteSpace(selectedFileName))
                                     {
-                                        <em>Nouveau fichier selectionne: @selectedFileName</em>
+                                        <em>@selectedFileName</em>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(document?.ReviewNote))
+                                    {
+                                        <small>@document.ReviewNote</small>
                                     }
                                 </div>
-                                <div class="document-row-actions">
-                                    <span class="status-pill @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
+                                <div class="info-document-actions">
                                     @if (document is not null)
                                     {
-                                        <a href="@ApiClient.ToApiUrl(document.PreviewUrl)" target="_blank">Voir</a>
+                                        <a href="@ApiClient.ToApiUrl(document.PreviewUrl)" target="_blank" title="Voir">Voir</a>
                                     }
-                                    <label class="replace-document-action">
+                                    <label>
                                         @(document is null ? "Ajouter" : "Remplacer")
                                         <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
                                     </label>
@@ -155,16 +245,17 @@ else
                         }
                     </div>
 
-                    <div class="compliance-options documents-submit-row">
-                        <button type="button" class="primary-action" disabled="@IsUploading" @onclick="UploadAsync">
-                            @(IsUploading ? "Envoi en cours..." : "Envoyer les pieces selectionnees")
+                    <footer class="info-documents-footer">
+                        <span>Depot possible dans nos bureaux si vous preferez nous remettre les pieces en main propre.</span>
+                        <button type="button" class="info-send-button" disabled="@IsUploading" @onclick="UploadAsync">
+                            @(IsUploading ? "Envoi..." : "Envoyer les pieces")
                         </button>
-                        <button type="button" class="secondary-action">Depot au bureau</button>
-                    </div>
+                    </footer>
                     @if (!string.IsNullOrWhiteSpace(Message))
                     {
                         <p class="field-message">@Message</p>
                     }
+                </section>
             </section>
         }
     </CompanyPortalShell>
@@ -255,6 +346,65 @@ else
             : "Votre entreprise peut preparer son espace. Les affectations seront ouvertes apres validation.";
     }
 
+    private string GetLegalSubtitle()
+    {
+        var city = Display(Profile?.City, "Cote d'Ivoire");
+        return $"Societe de services - {city}";
+    }
+
+    private string GetShortStatusLabel() => IsCompanyApproved() ? "Valide" : "Incomplet";
+
+    private string GetStatusToneClass() => IsCompanyApproved() ? "info-tone-green" : "info-tone-amber";
+
+    private string GetStatusBadgeClass() => IsCompanyApproved() ? "info-badge-green" : "info-badge-amber";
+
+    private string GetDocumentBadgeClass() => AreRequiredDocumentsApproved() ? "info-badge-green" : "info-badge-amber";
+
+    private string GetDocumentsCardClass() => AreRequiredDocumentsApproved() ? "info-documents-complete" : "info-documents-pending";
+
+    private string GetDocumentsIconClass() => AreRequiredDocumentsApproved() ? "info-green" : "info-amber";
+
+    private string GetDocumentToneClass() => AreRequiredDocumentsApproved() ? "info-tone-green" : "info-tone-amber";
+
+    private string GetDocumentCounter()
+    {
+        var (approved, total) = GetRequiredDocumentCounts();
+        return $"{approved}/{total}";
+    }
+
+    private bool AreRequiredDocumentsApproved()
+    {
+        var (approved, total) = GetRequiredDocumentCounts();
+        return total > 0 && approved == total;
+    }
+
+    private (int Approved, int Total) GetRequiredDocumentCounts()
+    {
+        var required = DocumentSlots.Where(slot => !slot.Optional).ToList();
+        var approved = required.Count(slot => FindDocument(slot.Key)?.ReviewStatus == "Approved");
+        return (approved, required.Count);
+    }
+
+    private int GetZoneCount() => GetInterventionZones().Count;
+
+    private IReadOnlyList<string> GetInterventionZones()
+    {
+        var zones = new List<string>();
+        if (!string.IsNullOrWhiteSpace(Profile?.City))
+        {
+            zones.Add(Profile.City);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Profile?.Address))
+        {
+            zones.AddRange(Profile.Address
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(zone => !string.IsNullOrWhiteSpace(zone)));
+        }
+
+        return zones.Count == 0 ? ["A completer"] : zones.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
     private string PortalLink(string path)
     {
         return Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase)
@@ -293,6 +443,14 @@ else
         "Rejected" or "NeedsReplacement" => "status-rejected",
         "Pending" => "status-pending",
         _ => "status-muted"
+    };
+
+    private static string GetDocumentRowClass(string? status) => status switch
+    {
+        "Approved" => "info-document-valid",
+        "Rejected" or "NeedsReplacement" => "info-document-rejected",
+        "Pending" => "info-document-pending",
+        _ => "info-document-missing"
     };
 
     private static string GetDocumentStatusLabel(string? status) => status switch
@@ -350,6 +508,17 @@ else
     private static string Display(string? value, string fallback)
     {
         return string.IsNullOrWhiteSpace(value) ? fallback : value;
+    }
+
+    private static string GetInitials(string value)
+    {
+        var parts = value
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Take(2)
+            .Select(part => char.ToUpperInvariant(part[0]).ToString());
+
+        var initials = string.Concat(parts);
+        return string.IsNullOrWhiteSpace(initials) ? "K" : initials;
     }
 
     private static CompanyPortalSessionResponse DemoSession()
