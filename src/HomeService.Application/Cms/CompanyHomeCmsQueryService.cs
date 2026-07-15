@@ -39,7 +39,8 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                 value.Section!.ComponentDefinition!.Key,
                 value.FieldKey,
                 value.TextValue,
-                value.JsonValue))
+                value.JsonValue,
+                value.MediaAssetId))
             .ToListAsync(cancellationToken);
 
         return BuildCompanyHomeCmsResponse(values);
@@ -124,7 +125,9 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
             .GroupBy(value => value.FieldKey)
             .ToDictionary(
                 group => group.Key,
-                group => group.Select(value => value.JsonValue ?? value.TextValue).FirstOrDefault(),
+                group => group.Select(value => value.MediaAssetId is null
+                    ? value.JsonValue ?? value.TextValue
+                    : $"/api/cms/media/{value.MediaAssetId}").FirstOrDefault(),
                 StringComparer.OrdinalIgnoreCase);
     }
 
@@ -157,5 +160,6 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
         string ComponentKey,
         string FieldKey,
         string? TextValue,
-        string? JsonValue);
+        string? JsonValue,
+        Guid? MediaAssetId);
 }

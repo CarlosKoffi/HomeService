@@ -43,6 +43,13 @@ public sealed class CmsContentValue : AuditableEntity
         Touch();
     }
 
+    public void AttachMedia(Guid mediaAssetId, string? publicUrl)
+    {
+        MediaAssetId = mediaAssetId;
+        TextValue = string.IsNullOrWhiteSpace(publicUrl) ? null : publicUrl.Trim();
+        Touch();
+    }
+
     private static string NormalizeKey(string value)
     {
         return string.IsNullOrWhiteSpace(value)

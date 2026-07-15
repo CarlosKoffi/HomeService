@@ -307,7 +307,8 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 .site-header.theme-premium .site-nav a.section-active,
 .site-header.theme-premium .site-nav a:hover,
 .site-header.theme-premium .site-nav ::deep a.active,
-.site-header.theme-premium .site-nav ::deep a:hover {
+.site-header.theme-premium .site-nav ::deep a:hover,
+.site-header.theme-premium .site-nav a.portal-current {
     background: #eff4ff;
     color: #1a6aff;
 }
@@ -328,4 +329,30 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 .site-header.theme-premium .header-secondary {
     border: 0;
     color: #666666 !important;
+}
+
+.site-header.theme-premium.portal-mode {
+    background: rgba(255, 255, 255, .96);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(236, 236, 236, .86);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .045);
+    position: sticky;
+}
+
+.site-header.theme-premium.portal-mode .brand {
+    color: #111111;
+}
+
+.site-header.theme-premium.portal-mode .portal-header-nav a {
+    color: #111111;
+}
+
+.site-header.theme-premium.portal-mode .portal-header-nav a:hover,
+.site-header.theme-premium.portal-mode .portal-header-nav a.portal-current {
+    background: #eff4ff;
+    color: #1a6aff;
+}
+
+.site-header.theme-premium.portal-mode .logout-button {
+    border-color: #ececec;
 }

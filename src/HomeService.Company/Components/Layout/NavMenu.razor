@@ -3,8 +3,8 @@
 @inject IJSRuntime Js
 @inject NavigationManager Navigation
 
-<header class="site-header @HeaderThemeClass">
-    <a class="brand" href="">Kaza</a>
+<header class="site-header @HeaderThemeClass @(IsPortalExperience ? "portal-mode" : "public-mode")">
+    <a class="brand" href="@BrandHref">Kaza</a>
 
     <input type="checkbox" id="menu-toggle" class="menu-toggle" />
     <label for="menu-toggle" class="menu-button" title="Menu">
@@ -13,8 +13,8 @@
         <span></span>
     </label>
 
-    <nav class="site-nav @(Session is null ? "public-nav" : "portal-header-nav")">
-        @if (Session is null)
+    <nav class="site-nav @(IsPortalExperience ? "portal-header-nav" : "public-nav")">
+        @if (!IsPortalExperience)
         {
             <a href="@($"{PublicLandingBase}#home")" data-section-nav="home">Accueil</a>
             <a href="@($"{PublicLandingBase}#how")" data-section-nav="how">Fonctionnement</a>
@@ -29,15 +29,15 @@
         }
         else
         {
-            <NavLink href="dashboard" Match="NavLinkMatch.All">Tableau de bord</NavLink>
-            <NavLink href="company-profile">Informations</NavLink>
-            <NavLink href="employees">Employes</NavLink>
-            <NavLink href="interim-candidates">Interim</NavLink>
-            <NavLink href="operations">Missions</NavLink>
-            <NavLink href="accounts">Encaissements</NavLink>
-            <div class="session-chip" title="@Session.Email">
-                <strong>@Session.CompanyName</strong>
-                <span>@Session.Email</span>
+            <a class="@GetPortalLinkClass("dashboard")" href="@PortalLink("dashboard")">Tableau de bord</a>
+            <a class="@GetPortalLinkClass("company-profile")" href="@PortalLink("company-profile")">Informations</a>
+            <a class="@GetPortalLinkClass("employees")" href="@PortalLink("employees")">Employes</a>
+            <a class="@GetPortalLinkClass("interim-candidates")" href="@PortalLink("interim-candidates")">Interim</a>
+            <a class="@GetPortalLinkClass("operations")" href="@PortalLink("operations")">Missions</a>
+            <a class="@GetPortalLinkClass("accounts")" href="@PortalLink("accounts")">Encaissements</a>
+            <div class="session-chip" title="@SessionEmail">
+                <strong>@SessionCompanyName</strong>
+                <span>@SessionEmail</span>
             </div>
             <button type="button" class="logout-button" @onclick="LogoutAsync">Sortir</button>
         }
@@ -49,6 +49,22 @@
     private const string PublicLandingBase = "/";
 
     private const string HeaderThemeClass = "theme-premium";
+    private static readonly HashSet<string> PortalSegments = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "dashboard",
+        "company-profile",
+        "employees",
+        "interim-candidates",
+        "operations",
+        "accounts"
+    };
+
+    private bool IsPortalExperience => IsPreviewMode || Session is not null || PortalSegments.Contains(CurrentSegment);
+    private bool IsPreviewMode => Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase);
+    private string CurrentSegment => Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+    private string BrandHref => IsPortalExperience ? PortalLink("dashboard") : PublicLandingBase;
+    private string SessionCompanyName => Session?.CompanyName ?? "CI Home Service";
+    private string SessionEmail => Session?.Email ?? "mode.demo@kaza.ci";
 
     protected override void OnInitialized()
     {
@@ -96,5 +112,15 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= HandleLocationChanged;
+    }
+
+    private string PortalLink(string path)
+    {
+        return IsPreviewMode ? $"{path}?preview=1" : path;
+    }
+
+    private string GetPortalLinkClass(string path)
+    {
+        return string.Equals(CurrentSegment, path, StringComparison.OrdinalIgnoreCase) ? "portal-current" : string.Empty;
     }
 }

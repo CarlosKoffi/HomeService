@@ -684,6 +684,28 @@ h3 {
     margin-top: 1.25rem;
 }
 
+.service-admin-create {
+    align-items: start;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(240px, .75fr) minmax(0, 1.25fr);
+    margin-top: 1rem;
+    padding: 1rem;
+}
+
+.service-admin-create h2 {
+    font-size: 1.1rem;
+    margin: .15rem 0 .35rem;
+}
+
+.service-admin-create p {
+    color: #000000;
+    margin: 0;
+}
+
 .service-catalog-card {
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -755,6 +777,13 @@ h3 {
     gap: .65rem;
 }
 
+.service-card-actions {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: .65rem;
+}
+
 .prestation-row {
     align-items: center;
     background: #f8fafc;
@@ -778,6 +807,7 @@ h3 {
 }
 
 .service-admin-form,
+.service-edit-panel,
 .prestation-edit {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
@@ -788,6 +818,7 @@ h3 {
 }
 
 .service-admin-form label,
+.service-edit-panel label,
 .prestation-edit label {
     color: #000000;
     display: grid;
@@ -797,6 +828,8 @@ h3 {
 
 .service-admin-form input,
 .service-admin-form textarea,
+.service-edit-panel input,
+.service-edit-panel textarea,
 .prestation-edit input {
     border: 1px solid #cbd5e1;
     border-radius: 8px;
@@ -804,7 +837,8 @@ h3 {
     padding: .55rem .7rem;
 }
 
-.service-admin-form button {
+.service-admin-form button,
+.service-edit-panel button {
     background: #0f172a;
     border: 1px solid #0f172a;
     border-radius: 8px;
@@ -812,6 +846,16 @@ h3 {
     font: inherit;
     font-weight: 800;
     padding: .65rem .8rem;
+}
+
+.service-admin-form.compact,
+.service-edit-panel {
+    grid-template-columns: repeat(5, minmax(110px, 1fr));
+}
+
+.service-admin-form .wide,
+.service-edit-panel .wide {
+    grid-column: 1 / -1;
 }
 
 .prestation-edit {
@@ -1257,6 +1301,28 @@ h3 {
     font-size: .82rem;
     font-weight: 900;
     padding: .4rem .75rem;
+}
+
+.cms-upload-control {
+    background: #f8fafc;
+    border: 1px dashed #94a3b8;
+    border-radius: 10px;
+    color: #0f172a;
+    display: grid;
+    gap: .4rem;
+    padding: .75rem;
+}
+
+.cms-upload-control input::file-selector-button {
+    background: #0f172a;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    margin-right: .75rem;
+    padding: .45rem .85rem;
 }
 
 .cms-json-builder {

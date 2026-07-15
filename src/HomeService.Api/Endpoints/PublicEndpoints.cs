@@ -43,6 +43,9 @@ public static class PublicEndpoints
                             prestation.Name,
                             prestation.Description,
                             prestation.SortOrder,
+                            prestation.NormalPriceAmount,
+                            prestation.PremiumPriceAmount,
+                            prestation.Currency,
                             prestation.IsActive))
                         .ToList()))
                 .ToListAsync(cancellationToken);
@@ -146,6 +149,31 @@ public static class PublicEndpoints
         })
         .WithName("GetCompanyHomeCmsContent")
         .Produces<CompanyHomeCmsResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        app.MapGet("/api/cms/media/{id:guid}", async (
+            Guid id,
+            IAppDbContext db,
+            CmsMediaUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var asset = await db.CmsMediaAssets
+                .AsNoTracking()
+                .FirstOrDefaultAsync(media => media.Id == id, cancellationToken);
+            if (asset is null)
+            {
+                return Results.NotFound(new { message = "Image CMS introuvable." });
+            }
+
+            var absolutePath = uploadService.GetAbsolutePath(asset.StoragePath);
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "Le fichier image CMS n'existe plus sur le serveur." });
+            }
+
+            return Results.File(absolutePath, asset.ContentType, asset.FileName, enableRangeProcessing: true);
+        })
+        .WithName("GetCmsMedia")
         .Produces(StatusCodes.Status404NotFound);
 
         app.MapPost("/api/company-applications", async (

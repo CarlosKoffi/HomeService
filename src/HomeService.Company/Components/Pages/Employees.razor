@@ -125,7 +125,13 @@ else
                     {
                         <label class="service-check">
                             <input type="checkbox" checked="@Form.ServiceIds.Contains(service.Id)" @onchange="eventArgs => ToggleService(service.Id, eventArgs)" />
-                            <span>@service.Name</span>
+                            <span class="service-check-main">
+                                <strong>@service.Name</strong>
+                                @if (GetActivePrestations(service.Id).Count > 0)
+                                {
+                                    <small>@GetPrestationsText(service.Id)</small>
+                                }
+                            </span>
                         </label>
                     }
                 </div>
@@ -324,8 +330,38 @@ else
                         <div class="service-edit-list">
                             @foreach (var service in EditableServices)
                             {
-                                <div class="service-edit-row">
-                                    <strong>@service.ServiceName</strong>
+                                var activePrestations = GetActivePrestations(service.ServiceId);
+                                var hasPrestations = activePrestations.Count > 0;
+                                <div class="@($"service-edit-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
+                                    <div class="service-edit-name">
+                                        <strong>@service.ServiceName</strong>
+                                        @if (hasPrestations)
+                                        {
+                                            <small>Prestations autorisees pour ce prestataire</small>
+                                            <div class="service-prestation-list is-selectable" aria-label="Prestations rattachees">
+                                                @foreach (var prestation in activePrestations)
+                                                {
+                                                    <label class="service-prestation-choice">
+                                                        <input type="checkbox"
+                                                               checked="@service.ServicePrestationIds.Contains(prestation.Id)"
+                                                               @onchange="eventArgs => ToggleEditablePrestation(service, prestation.Id, eventArgs)" />
+                                                        <span>
+                                                            <strong>@prestation.Name</strong>
+                                                            <small>@prestation.Description</small>
+                                                            <span class="prestation-price-line">
+                                                                <em>Normal @prestation.NormalPriceAmount.ToString("N0") @prestation.Currency</em>
+                                                                <em>Premium @prestation.PremiumPriceAmount.ToString("N0") @prestation.Currency</em>
+                                                            </span>
+                                                        </span>
+                                                    </label>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <small>Aucune prestation specifique configuree</small>
+                                        }
+                                    </div>
                                     <label>Niveau
                                         <select @bind="service.ExperienceLevel">
                                             <option value="Junior">Junior</option>
@@ -343,14 +379,17 @@ else
                                             <option value="Premium">Premium</option>
                                         </select>
                                     </label>
-                                    <div class="service-price-readonly">
-                                        <span>Prix normal</span>
-                                        <strong>@service.NormalPriceAmount.ToString("N0") @service.Currency</strong>
-                                    </div>
-                                    <div class="service-price-readonly premium">
-                                        <span>Prix premium</span>
-                                        <strong>@service.PremiumPriceAmount.ToString("N0") @service.Currency</strong>
-                                    </div>
+                                    @if (!hasPrestations)
+                                    {
+                                        <div class="service-price-readonly">
+                                            <span>Prix normal</span>
+                                            <strong>@service.NormalPriceAmount.ToString("N0") @service.Currency</strong>
+                                        </div>
+                                        <div class="service-price-readonly premium">
+                                            <span>Prix premium</span>
+                                            <strong>@service.PremiumPriceAmount.ToString("N0") @service.Currency</strong>
+                                        </div>
+                                    }
                                     <button type="button" class="danger-action" @onclick="() => RemoveEditableService(service.ServiceId)">Retirer</button>
                                 </div>
                             }
@@ -364,7 +403,23 @@ else
                         @foreach (var slot in GetDocumentSlots(SelectedEmployee))
                         {
                             <article class="@($"document-slot {slot.StatusClass}")">
-                                <div>
+                                @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
+                                {
+                                    <div class="document-preview">
+                                        @if (slot.IsImagePreview)
+                                        {
+                                            <img src="@ToPreviewUrl(slot.PreviewUrl)" alt="@slot.Label" />
+                                        }
+                                        else
+                                        {
+                                            <div class="document-preview-file">
+                                                <span>@GetDocumentPreviewCode(slot)</span>
+                                                <strong>Apercu disponible</strong>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                <div class="document-slot-info">
                                     <span>@slot.ShortCode</span>
                                     <strong>@slot.Label</strong>
                                     <small>@slot.FileName</small>
@@ -494,7 +549,11 @@ else
                 PriceTier = service.PriceTier,
                 NormalPriceAmount = service.NormalPriceAmount,
                 PremiumPriceAmount = service.PremiumPriceAmount,
-                Currency = service.Currency
+                Currency = service.Currency,
+                ServicePrestationIds = service.Prestations
+                    .Where(prestation => prestation.IsActive)
+                    .Select(prestation => prestation.ServicePrestationId)
+                    .ToList()
             })
             .ToList();
         ServiceToAddId = null;
@@ -537,7 +596,16 @@ else
                     service.NormalPriceAmount,
                     service.PremiumPriceAmount,
                     service.Currency,
-                    true))
+                    true,
+                    GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds)
+                        .Select(prestation => new CompanyEmployeeServicePrestationResponse(
+                            prestation.Id,
+                            prestation.Name,
+                            prestation.NormalPriceAmount,
+                            prestation.PremiumPriceAmount,
+                            prestation.Currency,
+                            true))
+                        .ToList()))
                 .ToList()
         };
 
@@ -576,7 +644,8 @@ else
                     service.ServiceId,
                     service.ExperienceLevel,
                     service.YearsOfExperience,
-                    service.PriceTier))
+                    service.PriceTier,
+                    service.ServicePrestationIds))
                 .ToList()));
 
         if (!servicesResult.IsSuccess)
@@ -649,7 +718,8 @@ else
             PriceTier = "Normal",
             NormalPriceAmount = service.NormalPriceAmount,
             PremiumPriceAmount = service.PremiumPriceAmount,
-            Currency = service.Currency
+            Currency = service.Currency,
+            ServicePrestationIds = []
         });
         ServiceToAddId = null;
     }
@@ -919,6 +989,72 @@ else
             : string.Join(", ", employee.Services.Select(service => service.ServiceName));
     }
 
+    private IReadOnlyList<ServicePrestationSummaryResponse> GetActivePrestations(Guid serviceId)
+    {
+        return Services
+            .FirstOrDefault(service => service.Id == serviceId)?
+            .Prestations
+            .Where(prestation => prestation.IsActive)
+            .OrderBy(prestation => prestation.SortOrder)
+            .ThenBy(prestation => prestation.Name)
+            .ToList() ?? [];
+    }
+
+    private string GetPrestationsText(Guid serviceId)
+    {
+        var prestations = GetActivePrestations(serviceId);
+        return prestations.Count == 0
+            ? "Prestations a definir"
+            : string.Join(" · ", prestations.Take(3).Select(prestation => prestation.Name))
+                + (prestations.Count > 3 ? $" +{prestations.Count - 3}" : string.Empty);
+    }
+
+    private IReadOnlyList<ServicePrestationSummaryResponse> GetSelectedPrestations(Guid serviceId, IEnumerable<Guid> selectedIds)
+    {
+        var ids = selectedIds.ToHashSet();
+        return GetActivePrestations(serviceId)
+            .Where(prestation => ids.Contains(prestation.Id))
+            .ToList();
+    }
+
+    private void ToggleEditablePrestation(CompanyEmployeeServiceEditModel service, Guid prestationId, ChangeEventArgs eventArgs)
+    {
+        var isChecked = eventArgs.Value is bool value && value;
+        if (isChecked)
+        {
+            if (!service.ServicePrestationIds.Contains(prestationId))
+            {
+                service.ServicePrestationIds.Add(prestationId);
+            }
+
+            return;
+        }
+
+        service.ServicePrestationIds.Remove(prestationId);
+    }
+
+    private int GetEffectiveNormalPrice(CompanyEmployeeServiceEditModel service)
+    {
+        var prestations = GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds);
+        return prestations.Count == 0
+            ? service.NormalPriceAmount
+            : prestations.Sum(prestation => prestation.NormalPriceAmount);
+    }
+
+    private int GetEffectivePremiumPrice(CompanyEmployeeServiceEditModel service)
+    {
+        var prestations = GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds);
+        return prestations.Count == 0
+            ? service.PremiumPriceAmount
+            : prestations.Sum(prestation => prestation.PremiumPriceAmount);
+    }
+
+    private string GetEffectiveCurrency(CompanyEmployeeServiceEditModel service)
+    {
+        return GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds).FirstOrDefault()?.Currency
+            ?? service.Currency;
+    }
+
     private static string GetServicePriceText(CompanyEmployeeResponse employee)
     {
         if (employee.Services.Count == 0)
@@ -982,7 +1118,43 @@ else
             document?.Id,
             document?.OriginalFileName ?? (string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "Manquant" : "Optionnel") : "Piece deposee"),
             previewUrl,
+            document?.ContentType,
+            IsImageDocument(documentType, document?.ContentType, document?.OriginalFileName),
             string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "missing" : "optional") : "ready");
+    }
+
+    private string ToPreviewUrl(string previewUrl)
+    {
+        return previewUrl == "#" ? previewUrl : ApiClient.ToApiUrl(previewUrl);
+    }
+
+    private static bool IsImageDocument(string documentType, string? contentType, string? fileName)
+    {
+        if (documentType == "Photo")
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(contentType) && contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return fileName?.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) == true
+            || fileName?.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) == true
+            || fileName?.EndsWith(".png", StringComparison.OrdinalIgnoreCase) == true
+            || fileName?.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private static string GetDocumentPreviewCode(EmployeeDocumentSlot slot)
+    {
+        if (slot.ContentType?.Contains("pdf", StringComparison.OrdinalIgnoreCase) == true
+            || slot.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            return "PDF";
+        }
+
+        return "DOC";
     }
 
     private static string GetExperienceLevelText(CompanyEmployeeResponse employee)
@@ -1046,12 +1218,47 @@ else
         var menageId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1");
         var nounouId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2");
         var jardinageId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3");
+        var electriciteId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4");
+        var blanchisserieId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5");
+        var depannageAutoId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa6");
 
         Services = new List<ServiceSummaryResponse>
         {
-            new(menageId, "Menage a domicile", "Entretien courant du domicile.", "sparkles", "Active", true, 3500, 5000, "XOF", []),
-            new(nounouId, "Nounou", "Garde d'enfant a domicile.", "baby", "Active", true, 4000, 6500, "XOF", []),
-            new(jardinageId, "Jardinage", "Entretien jardin et exterieur.", "sprout", "Active", true, 4500, 6500, "XOF", [])
+            new(menageId, "Menage a domicile", "Entretien courant du domicile.", "sparkles", "Active", true, 3500, 5000, "XOF",
+            [
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd01"), "Menage regulier", "Entretien courant du domicile.", 10, 3500, 5000, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd02"), "Nettoyage apres travaux", "Nettoyage renforce apres petits travaux.", 20, 5000, 7000, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd03"), "Nettoyage vitres", "Vitres accessibles.", 30, 3000, 4500, "XOF", true)
+            ]),
+            new(nounouId, "Nounou", "Garde d'enfant a domicile.", "baby", "Active", true, 4000, 6500, "XOF",
+            [
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd04"), "Garde ponctuelle", "Garde courte duree.", 10, 4000, 6500, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd05"), "Garde apres ecole", "Presence apres l'ecole.", 20, 4500, 7000, "XOF", true)
+            ]),
+            new(jardinageId, "Jardinage", "Entretien jardin et exterieur.", "sprout", "Active", true, 4500, 6500, "XOF",
+            [
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd06"), "Tondre le gazon", "Coupe et entretien simple de pelouse.", 10, 4500, 6500, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd07"), "Tailler une haie", "Taille legere et remise en forme.", 20, 5500, 7500, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd08"), "Desherbage", "Nettoyage des mauvaises herbes.", 30, 3500, 5000, "XOF", true)
+            ]),
+            new(electriciteId, "Electricite", "Petites interventions electriques.", "zap", "Active", true, 5000, 8000, "XOF",
+            [
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd09"), "Diagnostic panne electrique", "Recherche simple de panne.", 10, 6000, 9000, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd10"), "Remplacement prise ou interrupteur", "Remplacement d'un point simple.", 20, 5000, 7500, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd11"), "Installation luminaire", "Pose ou remplacement d'un luminaire.", 30, 6000, 9000, "XOF", true)
+            ]),
+            new(blanchisserieId, "Blanchisserie", "Lavage, repassage et entretien du linge.", "shirt", "Active", true, 2500, 4500, "XOF",
+            [
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd12"), "Lavage et pliage", "Linge courant lave et plie.", 10, 2500, 4000, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd13"), "Repassage", "Repassage de vetements courants.", 20, 3000, 4500, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd14"), "Linge de maison", "Draps, serviettes et linge de maison.", 30, 3500, 5500, "XOF", true)
+            ]),
+            new(depannageAutoId, "Depannage auto", "Assistance auto de proximite.", "car", "Active", true, 7000, 12000, "XOF",
+            [
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd15"), "Changement batterie", "Assistance ou remplacement batterie.", 10, 7000, 12000, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd16"), "Aide crevaison", "Aide au changement de roue.", 20, 6000, 10000, "XOF", true),
+                new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd17"), "Demarrage avec cables", "Assistance demarrage avec cables.", 30, 6000, 9000, "XOF", true)
+            ])
         };
 
         EmployeeRows = new List<CompanyEmployeeResponse>
@@ -1078,8 +1285,15 @@ else
                 true,
                 new List<CompanyEmployeeServiceResponse>
                 {
-                    new(menageId, "Menage a domicile", "Senior", 6, "Premium", 3500, 5000, "XOF", true),
-                    new(nounouId, "Nounou", "Confirmed", 4, "Normal", 4000, 6500, "XOF", true)
+                    new(menageId, "Menage a domicile", "Senior", 6, "Premium", 3500, 5000, "XOF", true,
+                    [
+                        new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd01"), "Menage regulier", 3500, 5000, "XOF", true),
+                        new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd03"), "Nettoyage vitres", 3000, 4500, "XOF", true)
+                    ]),
+                    new(nounouId, "Nounou", "Confirmed", 4, "Normal", 4000, 6500, "XOF", true,
+                    [
+                        new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd04"), "Garde ponctuelle", 4000, 6500, "XOF", true)
+                    ])
                 },
                 new List<CompanyEmployeeDocumentResponse>
                 {
@@ -1110,7 +1324,11 @@ else
                 false,
                 new List<CompanyEmployeeServiceResponse>
                 {
-                    new(jardinageId, "Jardinage", "Expert", 9, "Premium", 4500, 6500, "XOF", true)
+                    new(jardinageId, "Jardinage", "Expert", 9, "Premium", 4500, 6500, "XOF", true,
+                    [
+                        new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd06"), "Tondre le gazon", 4500, 6500, "XOF", true),
+                        new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd07"), "Tailler une haie", 5500, 7500, "XOF", true)
+                    ])
                 },
                 new List<CompanyEmployeeDocumentResponse>
                 {
@@ -1140,7 +1358,10 @@ else
                 false,
                 new List<CompanyEmployeeServiceResponse>
                 {
-                    new(menageId, "Menage a domicile", "Junior", 2, "Normal", 3500, 5000, "XOF", true)
+                    new(menageId, "Menage a domicile", "Junior", 2, "Normal", 3500, 5000, "XOF", true,
+                    [
+                        new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd01"), "Menage regulier", 3500, 5000, "XOF", true)
+                    ])
                 },
                 new List<CompanyEmployeeDocumentResponse>
                 {
@@ -1212,6 +1433,7 @@ else
         public int NormalPriceAmount { get; set; }
         public int PremiumPriceAmount { get; set; }
         public string Currency { get; set; } = "XOF";
+        public List<Guid> ServicePrestationIds { get; set; } = [];
     }
 
     private sealed record EmployeeDocumentSlot(
@@ -1221,5 +1443,7 @@ else
         Guid? DocumentId,
         string FileName,
         string? PreviewUrl,
+        string? ContentType,
+        bool IsImagePreview,
         string StatusClass);
 }

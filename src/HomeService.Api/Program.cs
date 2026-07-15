@@ -19,6 +19,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddSingleton<CompanyApplicationUploadService>();
 builder.Services.AddSingleton<CompanyProviderUploadService>();
+builder.Services.AddSingleton<CmsMediaUploadService>();
 
 var app = builder.Build();
 

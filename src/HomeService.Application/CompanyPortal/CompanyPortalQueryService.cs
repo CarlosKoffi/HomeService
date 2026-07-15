@@ -174,7 +174,19 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                         providerService.Service.NormalPriceAmount,
                         providerService.Service.PremiumPriceAmount,
                         providerService.Service.Currency,
-                        providerService.IsActive))
+                        providerService.IsActive,
+                        providerService.Prestations
+                            .Where(prestation => prestation.IsActive)
+                            .OrderBy(prestation => prestation.ServicePrestation!.SortOrder)
+                            .ThenBy(prestation => prestation.ServicePrestation!.Name)
+                            .Select(prestation => new CompanyEmployeeServicePrestationResponse(
+                                prestation.ServicePrestationId,
+                                prestation.ServicePrestation!.Name,
+                                prestation.ServicePrestation.NormalPriceAmount,
+                                prestation.ServicePrestation.PremiumPriceAmount,
+                                prestation.ServicePrestation.Currency,
+                                prestation.IsActive))
+                            .ToList()))
                     .ToList(),
                 provider.Documents
                     .OrderBy(document => document.DocumentType)

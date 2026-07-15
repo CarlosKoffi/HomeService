@@ -7,6 +7,7 @@ using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace HomeService.Admin.Services;
 
@@ -86,6 +87,35 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
     }
 
+    public async Task<ServiceSummaryResponse?> CreateServiceAsync(
+        UpsertServiceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<ServiceSummaryResponse>("/api/admin/services", request, cancellationToken);
+    }
+
+    public async Task<ServiceSummaryResponse?> UpdateServiceAsync(
+        Guid serviceId,
+        UpsertServiceRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<ServiceSummaryResponse>($"/api/admin/services/{serviceId}", request, cancellationToken);
+    }
+
+    public async Task<ServiceSummaryResponse?> ActivateServiceAsync(Guid serviceId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<ServiceSummaryResponse>($"/api/admin/services/{serviceId}/activate", null, cancellationToken);
+    }
+
+    public async Task<ServiceSummaryResponse?> DeactivateServiceAsync(Guid serviceId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<ServiceSummaryResponse>($"/api/admin/services/{serviceId}/deactivate", null, cancellationToken);
+    }
+
     public async Task<ServicePrestationSummaryResponse?> CreateServicePrestationAsync(
         Guid serviceId,
         UpsertServicePrestationRequest request,
@@ -159,6 +189,48 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await PutJsonAsync<CmsContentValueResponse>($"/api/admin/cms/content-values/{id}", request, cancellationToken);
+    }
+
+    public async Task<CmsMediaUploadResponse?> UploadCmsMediaAsync(
+        Guid contentValueId,
+        IBrowserFile file,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        using var content = new MultipartFormDataContent();
+        await using var sourceStream = file.OpenReadStream(8 * 1024 * 1024, cancellationToken);
+        using var memoryStream = new MemoryStream();
+        await sourceStream.CopyToAsync(memoryStream, cancellationToken);
+
+        var fileContent = new ByteArrayContent(memoryStream.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, "file", file.Name);
+
+        using var response = await httpClient.PostAsync($"/api/admin/cms/content-values/{contentValueId}/media", content, cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<CmsMediaUploadResponse>(cancellationToken);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new PlatformApiException(
+            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, $"/api/admin/cms/content-values/{contentValueId}/media")}. {body}");
+    }
+
+    public string ToApiUrl(string? relativeUrl)
+    {
+        if (string.IsNullOrWhiteSpace(relativeUrl))
+        {
+            return string.Empty;
+        }
+
+        if (Uri.TryCreate(relativeUrl, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        return new Uri(httpClient.BaseAddress!, relativeUrl.TrimStart('/')).ToString();
     }
 
     public async Task<IReadOnlyList<CmsComponentDefinitionResponse>> GetCmsComponentDefinitionsAsync(CancellationToken cancellationToken = default)

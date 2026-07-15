@@ -146,6 +146,76 @@ public static class AdminEndpoints
         })
         .WithName("UpdateAdminCmsContentValue");
 
+        admin.MapPost("/cms/content-values/{id:guid}/media", async (
+            Guid id,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CmsMediaUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var value = await db.CmsContentValues.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+            if (value is null)
+            {
+                return Results.NotFound(new { message = "Champ CMS introuvable." });
+            }
+
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "Le formulaire doit contenir une image." });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+            if (file is null)
+            {
+                return Results.BadRequest(new { message = "Aucune image CMS recue." });
+            }
+
+            try
+            {
+                var before = new
+                {
+                    value.TextValue,
+                    value.MediaAssetId
+                };
+
+                var mediaAsset = await uploadService.SaveAsync(file, cancellationToken);
+                db.CmsMediaAssets.Add(mediaAsset);
+
+                var mediaUrl = $"/api/cms/media/{mediaAsset.Id}";
+                value.AttachMedia(mediaAsset.Id, mediaUrl);
+
+                AddAuditLog(
+                    db,
+                    httpRequest,
+                    AuditActor.Admin(),
+                    "AdminCmsMediaUploaded",
+                    nameof(CmsContentValue),
+                    value.Id,
+                    $"Image CMS '{value.FieldKey}' remplacee.",
+                    before,
+                    after: new { value.TextValue, value.MediaAssetId, mediaAsset.FileName, mediaAsset.SizeInBytes });
+
+                await db.SaveChangesAsync(cancellationToken);
+
+                return Results.Ok(new CmsMediaUploadResponse(
+                    mediaAsset.Id,
+                    mediaAsset.FileName,
+                    mediaUrl,
+                    mediaAsset.ContentType,
+                    mediaAsset.SizeInBytes));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .DisableAntiforgery()
+        .WithName("UploadAdminCmsMedia")
+        .Produces<CmsMediaUploadResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapGet("/cms/component-definitions", async (
             AdminCmsQueryService cmsQueryService,
             CancellationToken cancellationToken) =>
@@ -446,6 +516,162 @@ public static class AdminEndpoints
         })
         .WithName("GenerateCompanyApplicationActivationLink");
 
+        admin.MapPost("/services", async (
+            UpsertServiceRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return Results.BadRequest(new { message = "Le nom du service est obligatoire." });
+            }
+
+            var normalizedName = request.Name.Trim().ToLowerInvariant();
+            var existing = await db.Services
+                .Include(service => service.Prestations)
+                .FirstOrDefaultAsync(service => service.NormalizedName == normalizedName, cancellationToken);
+
+            if (existing is not null)
+            {
+                return Results.Conflict(new { message = "Un service avec ce nom existe deja." });
+            }
+
+            var service = new Service(request.Name, request.Description, createdByCompanyId: null);
+            service.UpdateDetails(request.Name, request.Description, request.IconName);
+            service.UpdatePricing(request.NormalPriceAmount, request.PremiumPriceAmount, request.Currency);
+            service.Approve();
+            db.Services.Add(service);
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServiceCreated",
+                nameof(Service),
+                service.Id,
+                $"Service '{service.Name}' cree dans le catalogue.",
+                before: null,
+                after: ToServiceResponse(service));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServiceResponse(service));
+        })
+        .WithName("CreateAdminService");
+
+        admin.MapPut("/services/{serviceId:guid}", async (
+            Guid serviceId,
+            UpsertServiceRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+            {
+                return Results.BadRequest(new { message = "Le nom du service est obligatoire." });
+            }
+
+            var normalizedName = request.Name.Trim().ToLowerInvariant();
+            var duplicate = await db.Services.AnyAsync(
+                service => service.Id != serviceId && service.NormalizedName == normalizedName,
+                cancellationToken);
+            if (duplicate)
+            {
+                return Results.Conflict(new { message = "Un autre service utilise deja ce nom." });
+            }
+
+            var service = await db.Services
+                .Include(item => item.Prestations)
+                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
+            if (service is null)
+            {
+                return Results.NotFound(new { message = "Service introuvable." });
+            }
+
+            var before = ToServiceResponse(service);
+            service.UpdateDetails(request.Name, request.Description, request.IconName);
+            service.UpdatePricing(request.NormalPriceAmount, request.PremiumPriceAmount, request.Currency);
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServiceUpdated",
+                nameof(Service),
+                service.Id,
+                "Service modifie dans le catalogue.",
+                before,
+                after: ToServiceResponse(service));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServiceResponse(service));
+        })
+        .WithName("UpdateAdminService");
+
+        admin.MapPost("/services/{serviceId:guid}/activate", async (
+            Guid serviceId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var service = await db.Services
+                .Include(item => item.Prestations)
+                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
+            if (service is null)
+            {
+                return Results.NotFound(new { message = "Service introuvable." });
+            }
+
+            var before = ToServiceResponse(service);
+            service.Activate();
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServiceActivated",
+                nameof(Service),
+                service.Id,
+                "Service active dans le catalogue.",
+                before,
+                after: ToServiceResponse(service));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServiceResponse(service));
+        })
+        .WithName("ActivateAdminService");
+
+        admin.MapPost("/services/{serviceId:guid}/deactivate", async (
+            Guid serviceId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var service = await db.Services
+                .Include(item => item.Prestations)
+                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
+            if (service is null)
+            {
+                return Results.NotFound(new { message = "Service introuvable." });
+            }
+
+            var before = ToServiceResponse(service);
+            service.Deactivate();
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminServiceDeactivated",
+                nameof(Service),
+                service.Id,
+                "Service desactive dans le catalogue.",
+                before,
+                after: ToServiceResponse(service));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(ToServiceResponse(service));
+        })
+        .WithName("DeactivateAdminService");
+
         admin.MapPost("/services/{serviceId:guid}/prestations", async (
             Guid serviceId,
             UpsertServicePrestationRequest request,
@@ -478,7 +704,13 @@ public static class AdminEndpoints
                     .ToList()
             };
 
-            var prestation = service.AddPrestation(request.Name, request.Description, request.SortOrder);
+            var prestation = service.AddPrestation(
+                request.Name,
+                request.Description,
+                request.SortOrder,
+                request.NormalPriceAmount,
+                request.PremiumPriceAmount,
+                request.Currency);
             AddAuditLog(
                 db,
                 httpRequest,
@@ -516,6 +748,7 @@ public static class AdminEndpoints
             var before = ToServicePrestationResponse(prestation);
             prestation.Rename(request.Name, request.Description);
             prestation.MoveTo(request.SortOrder);
+            prestation.UpdatePricing(request.NormalPriceAmount, request.PremiumPriceAmount, request.Currency);
             AddAuditLog(
                 db,
                 httpRequest,
@@ -786,6 +1019,25 @@ public static class AdminEndpoints
             document.ReviewNote);
     }
 
+    static ServiceSummaryResponse ToServiceResponse(Service service)
+    {
+        return new ServiceSummaryResponse(
+            service.Id,
+            service.Name,
+            service.Description,
+            service.IconName,
+            service.Status.ToString(),
+            service.IsActive,
+            service.NormalPriceAmount,
+            service.PremiumPriceAmount,
+            service.Currency,
+            service.Prestations
+                .OrderBy(prestation => prestation.SortOrder)
+                .ThenBy(prestation => prestation.Name)
+                .Select(ToServicePrestationResponse)
+                .ToList());
+    }
+
     static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)
     {
         return new ServicePrestationSummaryResponse(
@@ -793,6 +1045,9 @@ public static class AdminEndpoints
             prestation.Name,
             prestation.Description,
             prestation.SortOrder,
+            prestation.NormalPriceAmount,
+            prestation.PremiumPriceAmount,
+            prestation.Currency,
             prestation.IsActive);
     }
 

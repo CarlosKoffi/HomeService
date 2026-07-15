@@ -5,6 +5,8 @@ namespace HomeService.Domain.Entities;
 
 public sealed class ProviderService : AuditableEntity
 {
+    private readonly List<ProviderServicePrestation> _prestations = [];
+
     private ProviderService()
     {
     }
@@ -36,6 +38,7 @@ public sealed class ProviderService : AuditableEntity
     public PricingUnit PricingUnit { get; private set; } = PricingUnit.Hourly;
     public DateTimeOffset CompanyValidatedAt { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public IReadOnlyCollection<ProviderServicePrestation> Prestations => _prestations;
 
     public void Deactivate()
     {
@@ -50,6 +53,34 @@ public sealed class ProviderService : AuditableEntity
         PriceTier = priceTier;
         CompanyValidatedAt = DateTimeOffset.UtcNow;
         IsActive = true;
+        Touch();
+    }
+
+    public void SyncPrestations(IEnumerable<Guid> servicePrestationIds)
+    {
+        var requestedIds = servicePrestationIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToHashSet();
+
+        foreach (var existing in _prestations.Where(prestation => prestation.IsActive && !requestedIds.Contains(prestation.ServicePrestationId)))
+        {
+            existing.Deactivate();
+        }
+
+        foreach (var requestedId in requestedIds)
+        {
+            var existing = _prestations.FirstOrDefault(prestation => prestation.ServicePrestationId == requestedId);
+            if (existing is null)
+            {
+                _prestations.Add(new ProviderServicePrestation(Id, requestedId));
+            }
+            else
+            {
+                existing.Activate();
+            }
+        }
+
         Touch();
     }
 }

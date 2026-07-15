@@ -39,6 +39,41 @@
     </label>
 </section>
 
+<section class="service-admin-create">
+    <div>
+        <p class="eyebrow">Nouveau service</p>
+        <h2>Ajouter un service au catalogue</h2>
+        <p>Ajoutez le service principal. Les prestations detaillees pourront ensuite etre rattachees dans sa fiche.</p>
+    </div>
+    <div class="service-admin-form compact">
+        <label>
+            Nom
+            <input type="text" placeholder="Ex: Depannage auto" @bind="NewServiceDraft.Name" />
+        </label>
+        <label>
+            Icone
+            <input type="text" placeholder="Ex: car, zap, shirt" @bind="NewServiceDraft.IconName" />
+        </label>
+        <label>
+            Prix normal
+            <input type="number" min="0" step="100" @bind="NewServiceDraft.NormalPriceAmount" />
+        </label>
+        <label>
+            Prix premium
+            <input type="number" min="0" step="100" @bind="NewServiceDraft.PremiumPriceAmount" />
+        </label>
+        <label>
+            Devise
+            <input type="text" maxlength="8" @bind="NewServiceDraft.Currency" />
+        </label>
+        <label class="wide">
+            Description
+            <textarea rows="2" placeholder="Description courte du service." @bind="NewServiceDraft.Description"></textarea>
+        </label>
+        <button type="button" @onclick="CreateServiceAsync" disabled="@IsSaving">Ajouter le service</button>
+    </div>
+</section>
+
 @if (IsLoading)
 {
     <section class="info-panel">
@@ -85,6 +120,55 @@ else
 
                 <div class="prestation-admin-grid">
                     <div class="prestation-list">
+                        @if (EditingServiceId == service.Id)
+                        {
+                            var serviceEditDraft = GetServiceEditDraft(service);
+                            <div class="service-edit-panel">
+                                <label>
+                                    Nom
+                                    <input type="text" @bind="serviceEditDraft.Name" />
+                                </label>
+                                <label>
+                                    Icone
+                                    <input type="text" @bind="serviceEditDraft.IconName" />
+                                </label>
+                                <label>
+                                    Prix normal
+                                    <input type="number" min="0" step="100" @bind="serviceEditDraft.NormalPriceAmount" />
+                                </label>
+                                <label>
+                                    Prix premium
+                                    <input type="number" min="0" step="100" @bind="serviceEditDraft.PremiumPriceAmount" />
+                                </label>
+                                <label>
+                                    Devise
+                                    <input type="text" maxlength="8" @bind="serviceEditDraft.Currency" />
+                                </label>
+                                <label class="wide">
+                                    Description
+                                    <textarea rows="2" @bind="serviceEditDraft.Description"></textarea>
+                                </label>
+                                <div class="easy-actions wide">
+                                    <button type="button" @onclick="() => UpdateServiceAsync(service.Id)" disabled="@IsSaving">Enregistrer service</button>
+                                    <button type="button" class="light-action" @onclick="CancelServiceEdit">Annuler</button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="easy-actions service-card-actions">
+                                <button type="button" @onclick="() => StartServiceEdit(service)">Modifier le service</button>
+                                @if (service.IsActive)
+                                {
+                                    <button type="button" class="light-action" @onclick="() => DeactivateServiceAsync(service.Id)" disabled="@IsSaving">Desactiver</button>
+                                }
+                                else
+                                {
+                                    <button type="button" @onclick="() => ActivateServiceAsync(service.Id)" disabled="@IsSaving">Reactiver</button>
+                                }
+                            </div>
+                        }
+
                         @if (service.Prestations.Count == 0)
                         {
                             <p class="section-help">Aucune prestation specifique pour ce service. Il peut rester simple si cela suffit au produit.</p>
@@ -108,6 +192,18 @@ else
                                                 Ordre
                                                 <input type="number" min="0" @bind="editDraft.SortOrder" />
                                             </label>
+                                            <label>
+                                                Prix normal
+                                                <input type="number" min="0" step="100" @bind="editDraft.NormalPriceAmount" />
+                                            </label>
+                                            <label>
+                                                Prix premium
+                                                <input type="number" min="0" step="100" @bind="editDraft.PremiumPriceAmount" />
+                                            </label>
+                                            <label>
+                                                Devise
+                                                <input type="text" maxlength="8" @bind="editDraft.Currency" />
+                                            </label>
                                             <label class="wide">
                                                 Description courte
                                                 <input type="text" @bind="editDraft.Description" />
@@ -129,6 +225,7 @@ else
                                                 @(prestation.IsActive ? "Active" : "Inactive")
                                             </span>
                                             <small>Ordre @prestation.SortOrder</small>
+                                            <small>@prestation.NormalPriceAmount @prestation.Currency normal - @prestation.PremiumPriceAmount @prestation.Currency premium</small>
                                         </div>
                                         <div class="easy-actions">
                                             <button type="button" @onclick="() => StartEdit(prestation)">Modifier</button>
@@ -161,6 +258,18 @@ else
                             Ordre d'affichage
                             <input type="number" min="0" @bind="draft.SortOrder" />
                         </label>
+                        <label>
+                            Prix normal
+                            <input type="number" min="0" step="100" @bind="draft.NormalPriceAmount" />
+                        </label>
+                        <label>
+                            Prix premium
+                            <input type="number" min="0" step="100" @bind="draft.PremiumPriceAmount" />
+                        </label>
+                        <label>
+                            Devise
+                            <input type="text" maxlength="8" @bind="draft.Currency" />
+                        </label>
                         <button type="button" @onclick="() => SaveNewPrestationAsync(service.Id)" disabled="@IsSaving">
                             Ajouter
                         </button>
@@ -174,11 +283,14 @@ else
 @code {
     private readonly Dictionary<Guid, PrestationDraft> Drafts = [];
     private readonly Dictionary<Guid, PrestationDraft> EditDrafts = [];
+    private readonly Dictionary<Guid, ServiceDraft> ServiceEditDrafts = [];
     private IReadOnlyList<ServiceSummaryResponse> Services = [];
+    private ServiceDraft NewServiceDraft { get; set; } = new();
     private string Search { get; set; } = string.Empty;
     private string StatusFilter { get; set; } = "all";
     private string? Message { get; set; }
     private Guid? EditingPrestationId { get; set; }
+    private Guid? EditingServiceId { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSaving { get; set; }
 
@@ -242,6 +354,41 @@ else
         return draft;
     }
 
+    private ServiceDraft GetServiceEditDraft(ServiceSummaryResponse service)
+    {
+        if (!ServiceEditDrafts.TryGetValue(service.Id, out var draft))
+        {
+            draft = ToServiceDraft(service);
+            ServiceEditDrafts[service.Id] = draft;
+        }
+
+        return draft;
+    }
+
+    private static ServiceDraft ToServiceDraft(ServiceSummaryResponse service)
+    {
+        return new ServiceDraft
+        {
+            Name = service.Name,
+            Description = service.Description ?? string.Empty,
+            IconName = service.IconName,
+            NormalPriceAmount = service.NormalPriceAmount,
+            PremiumPriceAmount = service.PremiumPriceAmount,
+            Currency = service.Currency
+        };
+    }
+
+    private void StartServiceEdit(ServiceSummaryResponse service)
+    {
+        EditingServiceId = service.Id;
+        ServiceEditDrafts[service.Id] = ToServiceDraft(service);
+    }
+
+    private void CancelServiceEdit()
+    {
+        EditingServiceId = null;
+    }
+
     private PrestationDraft GetEditDraft(ServicePrestationSummaryResponse prestation)
     {
         if (!EditDrafts.TryGetValue(prestation.Id, out var draft))
@@ -250,7 +397,10 @@ else
             {
                 Name = prestation.Name,
                 Description = prestation.Description ?? string.Empty,
-                SortOrder = prestation.SortOrder
+                SortOrder = prestation.SortOrder,
+                NormalPriceAmount = prestation.NormalPriceAmount,
+                PremiumPriceAmount = prestation.PremiumPriceAmount,
+                Currency = prestation.Currency
             };
             EditDrafts[prestation.Id] = draft;
         }
@@ -265,7 +415,10 @@ else
         {
             Name = prestation.Name,
             Description = prestation.Description ?? string.Empty,
-            SortOrder = prestation.SortOrder
+            SortOrder = prestation.SortOrder,
+            NormalPriceAmount = prestation.NormalPriceAmount,
+            PremiumPriceAmount = prestation.PremiumPriceAmount,
+            Currency = prestation.Currency
         };
     }
 
@@ -287,10 +440,78 @@ else
         {
             await ApiClient.CreateServicePrestationAsync(
                 serviceId,
-                new UpsertServicePrestationRequest(draft.Name, draft.Description, draft.SortOrder));
+                new UpsertServicePrestationRequest(
+                    draft.Name,
+                    draft.Description,
+                    draft.SortOrder,
+                    draft.NormalPriceAmount,
+                    draft.PremiumPriceAmount,
+                    draft.Currency));
             Drafts[serviceId] = new PrestationDraft();
             Message = "Prestation ajoutee au catalogue.";
         });
+    }
+
+    private async Task CreateServiceAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewServiceDraft.Name))
+        {
+            Message = "Renseignez le nom du service avant d'ajouter.";
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            await ApiClient.CreateServiceAsync(ToUpsertServiceRequest(NewServiceDraft));
+            NewServiceDraft = new ServiceDraft();
+            Message = "Service ajoute au catalogue.";
+        });
+    }
+
+    private async Task UpdateServiceAsync(Guid serviceId)
+    {
+        var draft = ServiceEditDrafts[serviceId];
+        if (string.IsNullOrWhiteSpace(draft.Name))
+        {
+            Message = "Le nom du service est obligatoire.";
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            await ApiClient.UpdateServiceAsync(serviceId, ToUpsertServiceRequest(draft));
+            EditingServiceId = null;
+            Message = "Service modifie.";
+        });
+    }
+
+    private Task ActivateServiceAsync(Guid serviceId)
+    {
+        return RunMutationAsync(async () =>
+        {
+            await ApiClient.ActivateServiceAsync(serviceId);
+            Message = "Service reactive.";
+        });
+    }
+
+    private Task DeactivateServiceAsync(Guid serviceId)
+    {
+        return RunMutationAsync(async () =>
+        {
+            await ApiClient.DeactivateServiceAsync(serviceId);
+            Message = "Service desactive.";
+        });
+    }
+
+    private static UpsertServiceRequest ToUpsertServiceRequest(ServiceDraft draft)
+    {
+        return new UpsertServiceRequest(
+            draft.Name,
+            draft.Description,
+            draft.IconName,
+            draft.NormalPriceAmount,
+            draft.PremiumPriceAmount,
+            draft.Currency);
     }
 
     private async Task UpdatePrestationAsync(Guid prestationId)
@@ -306,7 +527,13 @@ else
         {
             await ApiClient.UpdateServicePrestationAsync(
                 prestationId,
-                new UpsertServicePrestationRequest(draft.Name, draft.Description, draft.SortOrder));
+                new UpsertServicePrestationRequest(
+                    draft.Name,
+                    draft.Description,
+                    draft.SortOrder,
+                    draft.NormalPriceAmount,
+                    draft.PremiumPriceAmount,
+                    draft.Currency));
             EditingPrestationId = null;
             Message = "Prestation modifiee.";
         });
@@ -354,5 +581,18 @@ else
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int SortOrder { get; set; }
+        public int NormalPriceAmount { get; set; }
+        public int PremiumPriceAmount { get; set; }
+        public string Currency { get; set; } = "XOF";
+    }
+
+    private sealed class ServiceDraft
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string IconName { get; set; } = "sparkles";
+        public int NormalPriceAmount { get; set; }
+        public int PremiumPriceAmount { get; set; }
+        public string Currency { get; set; } = "XOF";
     }
 }

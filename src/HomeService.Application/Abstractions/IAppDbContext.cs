@@ -22,6 +22,7 @@ public interface IAppDbContext
     DbSet<ProviderPortalSession> ProviderPortalSessions { get; }
     DbSet<ProviderDocument> ProviderDocuments { get; }
     DbSet<ProviderService> ProviderServices { get; }
+    DbSet<ProviderServicePrestation> ProviderServicePrestations { get; }
     DbSet<ProviderServicePortfolioItem> ProviderServicePortfolioItems { get; }
     DbSet<CustomerProfile> Customers { get; }
     DbSet<Mission> Missions { get; }

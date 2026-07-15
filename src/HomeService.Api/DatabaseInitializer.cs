@@ -79,30 +79,47 @@ public static class DatabaseInitializer
 
     private static async Task SeedServicesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
-        if (await db.Services.AnyAsync(cancellationToken))
+        var seeds = new[]
         {
-            return;
+            new SeededService("Menage a domicile", "Entretien courant du domicile, nettoyage, rangement et aide ponctuelle.", "sparkles", 3500, 5000, "XOF"),
+            new SeededService("Jardinage", "Entretien jardin, taille simple, arrosage et travaux exterieurs legers.", "sprout", 4500, 6500, "XOF"),
+            new SeededService("Electricite", "Petites interventions electriques, diagnostic simple et remise en service.", "zap", 5000, 8000, "XOF"),
+            new SeededService("Blanchisserie", "Lavage, repassage et entretien du linge pour particuliers et familles.", "shirt", 2500, 4500, "XOF"),
+            new SeededService("Depannage auto", "Assistance auto de proximite pour les urgences simples et depannages courants.", "car", 7000, 12000, "XOF"),
+            new SeededService("Nounou", "Garde d'enfant a domicile par un prestataire recommande et rattache a une entreprise validee.", "baby", 4000, 6500, "XOF")
+        };
+
+        var existingServices = await db.Services.ToListAsync(cancellationToken);
+        foreach (var seed in seeds)
+        {
+            var normalizedName = NormalizeSeedValue(seed.Name);
+            var service = existingServices.FirstOrDefault(item => item.NormalizedName == normalizedName);
+            if (service is null)
+            {
+                service = new Service(seed.Name, seed.Description, createdByCompanyId: null);
+                db.Services.Add(service);
+                existingServices.Add(service);
+            }
+
+            service.UpdatePricing(seed.NormalPriceAmount, seed.PremiumPriceAmount, seed.Currency);
+            service.UpdateIcon(seed.IconName);
         }
 
-        var menage = new Service("Menage a domicile", "Entretien courant du domicile, nettoyage, rangement et aide ponctuelle.", createdByCompanyId: null);
-        menage.UpdatePricing(3500, 5000, "XOF");
-        var nounou = new Service("Nounou", "Garde d'enfant a domicile par un prestataire recommande et rattache a une entreprise validee.", createdByCompanyId: null);
-        nounou.UpdatePricing(4000, 6500, "XOF");
-        var jardinage = new Service("Jardinage", "Entretien jardin, taille simple, arrosage et travaux exterieurs legers.", createdByCompanyId: null);
-        jardinage.UpdatePricing(4500, 6500, "XOF");
-
-        db.Services.AddRange(menage, nounou, jardinage);
-
-        await db.SaveChangesAsync(cancellationToken);
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private static async Task SeedServicePrestationsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         var services = await db.Services
-            .AsNoTracking()
             .Where(service => service.NormalizedName == "jardinage"
                 || service.NormalizedName == "menage a domicile"
-                || service.NormalizedName == "nounou")
+                || service.NormalizedName == "nounou"
+                || service.NormalizedName == "electricite"
+                || service.NormalizedName == "blanchisserie"
+                || service.NormalizedName == "depannage auto")
             .Select(service => new { service.Id, service.NormalizedName })
             .ToListAsync(cancellationToken);
 
@@ -112,26 +129,47 @@ public static class DatabaseInitializer
         }
 
         var serviceIds = services.Select(service => service.Id).ToArray();
-        var existingKeys = await db.ServicePrestations
-            .AsNoTracking()
+        var existingPrestations = await db.ServicePrestations
             .Where(prestation => serviceIds.Contains(prestation.ServiceId))
-            .Select(prestation => new { prestation.ServiceId, prestation.NormalizedName })
             .ToListAsync(cancellationToken);
 
-        var existingKeySet = existingKeys
+        var existingKeySet = existingPrestations
             .Select(prestation => $"{prestation.ServiceId:N}:{prestation.NormalizedName}")
             .ToHashSet(StringComparer.Ordinal);
 
         var seeds = new[]
         {
-            new SeededServicePrestation("jardinage", "Tondre le gazon", "Coupe et entretien simple de pelouse.", 10),
-            new SeededServicePrestation("jardinage", "Tailler une haie", "Taille legere et remise en forme des haies.", 20),
-            new SeededServicePrestation("jardinage", "Desherbage", "Nettoyage des mauvaises herbes sur les zones indiquees.", 30),
-            new SeededServicePrestation("menage a domicile", "Menage regulier", "Entretien courant du domicile.", 10),
-            new SeededServicePrestation("menage a domicile", "Nettoyage apres travaux", "Nettoyage renforce apres petits travaux ou renovation.", 20),
-            new SeededServicePrestation("menage a domicile", "Nettoyage vitres", "Nettoyage simple des vitres accessibles.", 30),
-            new SeededServicePrestation("nounou", "Garde ponctuelle", "Garde d'enfant sur une plage horaire courte.", 10),
-            new SeededServicePrestation("nounou", "Garde apres ecole", "Presence et accompagnement apres l'ecole.", 20)
+            new SeededServicePrestation("jardinage", "Tondre le gazon", "Coupe et entretien simple de pelouse.", 10, 4500, 6500, "XOF"),
+            new SeededServicePrestation("jardinage", "Tailler une haie", "Taille legere et remise en forme des haies.", 20, 5500, 7500, "XOF"),
+            new SeededServicePrestation("jardinage", "Desherbage", "Nettoyage des mauvaises herbes sur les zones indiquees.", 30, 3500, 5000, "XOF"),
+            new SeededServicePrestation("jardinage", "Arrosage et entretien plantes", "Arrosage, controle visuel et entretien leger des plantes.", 40, 3000, 4500, "XOF"),
+            new SeededServicePrestation("jardinage", "Ramassage feuilles", "Ramassage des feuilles et nettoyage leger des allees.", 50, 3000, 4500, "XOF"),
+            new SeededServicePrestation("jardinage", "Nettoyage terrasse exterieure", "Balayage et nettoyage simple de terrasse ou cour.", 60, 4500, 6500, "XOF"),
+            new SeededServicePrestation("menage a domicile", "Menage regulier", "Entretien courant du domicile.", 10, 3500, 5000, "XOF"),
+            new SeededServicePrestation("menage a domicile", "Grand nettoyage", "Nettoyage complet d'un logement ou d'une grande piece.", 15, 6000, 8500, "XOF"),
+            new SeededServicePrestation("menage a domicile", "Nettoyage apres travaux", "Nettoyage renforce apres petits travaux ou renovation.", 20, 5000, 7000, "XOF"),
+            new SeededServicePrestation("menage a domicile", "Nettoyage vitres", "Nettoyage simple des vitres accessibles.", 30, 3000, 4500, "XOF"),
+            new SeededServicePrestation("menage a domicile", "Nettoyage cuisine", "Nettoyage detaille de cuisine, plans de travail et surfaces.", 40, 4000, 6000, "XOF"),
+            new SeededServicePrestation("menage a domicile", "Nettoyage sanitaires", "Nettoyage detaille salle d'eau, WC et surfaces sanitaires.", 50, 4000, 6000, "XOF"),
+            new SeededServicePrestation("nounou", "Garde ponctuelle", "Garde d'enfant sur une plage horaire courte.", 10, 4000, 6500, "XOF"),
+            new SeededServicePrestation("nounou", "Garde apres ecole", "Presence et accompagnement apres l'ecole.", 20, 4500, 7000, "XOF"),
+            new SeededServicePrestation("electricite", "Diagnostic panne electrique", "Recherche simple de panne et conseil d'intervention.", 10, 6000, 9000, "XOF"),
+            new SeededServicePrestation("electricite", "Remplacement prise ou interrupteur", "Remplacement d'une prise, interrupteur ou point simple.", 20, 5000, 7500, "XOF"),
+            new SeededServicePrestation("electricite", "Installation luminaire", "Pose ou remplacement d'un luminaire existant.", 30, 6000, 9000, "XOF"),
+            new SeededServicePrestation("electricite", "Remise en service disjoncteur", "Controle et remise en service simple apres coupure.", 40, 5000, 8000, "XOF"),
+            new SeededServicePrestation("electricite", "Depannage court-circuit simple", "Intervention sur panne courte et localisee.", 50, 8000, 12000, "XOF"),
+            new SeededServicePrestation("electricite", "Installation ventilateur plafond", "Pose simple d'un ventilateur sur attente electrique existante.", 60, 10000, 15000, "XOF"),
+            new SeededServicePrestation("blanchisserie", "Lavage et pliage", "Lavage, sechage et pliage du linge courant.", 10, 2500, 4000, "XOF"),
+            new SeededServicePrestation("blanchisserie", "Repassage", "Repassage de vetements courants.", 20, 3000, 4500, "XOF"),
+            new SeededServicePrestation("blanchisserie", "Linge de maison", "Entretien draps, serviettes et linge de maison.", 30, 3500, 5500, "XOF"),
+            new SeededServicePrestation("blanchisserie", "Pressing tenue", "Entretien de tenue, robe, chemise ou costume selon disponibilite.", 40, 5000, 8000, "XOF"),
+            new SeededServicePrestation("blanchisserie", "Detache simple", "Traitement simple de tache avant lavage.", 50, 3000, 5000, "XOF"),
+            new SeededServicePrestation("depannage auto", "Changement batterie", "Remplacement ou assistance batterie sur place.", 10, 7000, 12000, "XOF"),
+            new SeededServicePrestation("depannage auto", "Aide crevaison", "Aide au changement de roue ou pose de roue de secours.", 20, 6000, 10000, "XOF"),
+            new SeededServicePrestation("depannage auto", "Demarrage avec cables", "Assistance demarrage avec cables ou booster.", 30, 6000, 9000, "XOF"),
+            new SeededServicePrestation("depannage auto", "Diagnostic panne demarrage", "Controle simple quand le vehicule ne demarre pas.", 40, 8000, 12000, "XOF"),
+            new SeededServicePrestation("depannage auto", "Carburant urgence", "Assistance en cas de panne seche dans la zone couverte.", 50, 6000, 10000, "XOF"),
+            new SeededServicePrestation("depannage auto", "Remorquage partenaire", "Mise en relation ou assistance remorquage selon disponibilite.", 60, 15000, 25000, "XOF")
         };
 
         foreach (var seed in seeds)
@@ -143,12 +181,22 @@ public static class DatabaseInitializer
             }
 
             var normalizedPrestationName = NormalizeSeedValue(seed.Name);
-            if (existingKeySet.Contains($"{service.Id:N}:{normalizedPrestationName}"))
+            var existing = existingPrestations.FirstOrDefault(prestation =>
+                prestation.ServiceId == service.Id && prestation.NormalizedName == normalizedPrestationName);
+            if (existing is not null)
             {
+                existing.UpdatePricing(seed.NormalPriceAmount, seed.PremiumPriceAmount, seed.Currency);
                 continue;
             }
 
-            db.ServicePrestations.Add(new ServicePrestation(service.Id, seed.Name, seed.Description, seed.SortOrder));
+            db.ServicePrestations.Add(new ServicePrestation(
+                service.Id,
+                seed.Name,
+                seed.Description,
+                seed.SortOrder,
+                seed.NormalPriceAmount,
+                seed.PremiumPriceAmount,
+                seed.Currency));
             existingKeySet.Add($"{service.Id:N}:{normalizedPrestationName}");
         }
 
@@ -163,11 +211,22 @@ public static class DatabaseInitializer
         return value.Trim().ToLowerInvariant();
     }
 
+    private sealed record SeededService(
+        string Name,
+        string Description,
+        string IconName,
+        int NormalPriceAmount,
+        int PremiumPriceAmount,
+        string Currency);
+
     private sealed record SeededServicePrestation(
         string ServiceNormalizedName,
         string Name,
         string? Description,
-        int SortOrder);
+        int SortOrder,
+        int NormalPriceAmount,
+        int PremiumPriceAmount,
+        string Currency);
 
     private static async Task SeedAdminAccessAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {

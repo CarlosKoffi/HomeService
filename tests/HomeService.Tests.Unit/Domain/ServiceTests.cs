@@ -131,4 +131,30 @@ public sealed class ServiceTests
         Assert.Equal("Coupe complete.", second.Description);
         Assert.Equal(20, second.SortOrder);
     }
+
+    [Fact]
+    public void AddPrestation_StoresPrestationPricing()
+    {
+        var service = new Service("Jardinage", null, null);
+
+        var prestation = service.AddPrestation("Tondre le gazon", "Coupe simple.", 10, 4500, 6500, "xof");
+
+        Assert.Equal(4500, prestation.NormalPriceAmount);
+        Assert.Equal(6500, prestation.PremiumPriceAmount);
+        Assert.Equal("XOF", prestation.Currency);
+    }
+
+    [Fact]
+    public void AddPrestation_WhenNameAlreadyExists_UpdatesPricing()
+    {
+        var service = new Service("Jardinage", null, null);
+        var first = service.AddPrestation("Tondre le gazon", "Coupe simple.", 10, 4500, 6500, "XOF");
+
+        var second = service.AddPrestation("Tondre le gazon", "Coupe premium.", 20, 6000, 8000, "XOF");
+
+        Assert.Same(first, second);
+        Assert.Equal(6000, second.NormalPriceAmount);
+        Assert.Equal(8000, second.PremiumPriceAmount);
+        Assert.Equal(20, second.SortOrder);
+    }
 }

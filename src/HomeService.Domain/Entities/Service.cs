@@ -38,7 +38,22 @@ public sealed class Service : AuditableEntity
     public bool IsActive { get; private set; } = true;
     public IReadOnlyCollection<ServicePrestation> Prestations => _prestations;
 
-    public ServicePrestation AddPrestation(string name, string? description, int sortOrder)
+    public void UpdateDetails(string name, string? description, string? iconName)
+    {
+        Name = name.Trim();
+        NormalizedName = Normalize(name);
+        Description = description?.Trim();
+        UpdateIcon(iconName);
+        Touch();
+    }
+
+    public ServicePrestation AddPrestation(
+        string name,
+        string? description,
+        int sortOrder,
+        int normalPriceAmount = 0,
+        int premiumPriceAmount = 0,
+        string? currency = null)
     {
         var normalizedName = Normalize(name);
         var existing = _prestations.FirstOrDefault(prestation => prestation.NormalizedName == normalizedName);
@@ -46,12 +61,13 @@ public sealed class Service : AuditableEntity
         {
             existing.Rename(name, description);
             existing.MoveTo(sortOrder);
+            existing.UpdatePricing(normalPriceAmount, premiumPriceAmount, currency);
             existing.Activate();
             Touch();
             return existing;
         }
 
-        var prestation = new ServicePrestation(Id, name, description, sortOrder);
+        var prestation = new ServicePrestation(Id, name, description, sortOrder, normalPriceAmount, premiumPriceAmount, currency);
         _prestations.Add(prestation);
         Touch();
         return prestation;

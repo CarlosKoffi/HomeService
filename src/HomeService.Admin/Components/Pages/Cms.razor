@@ -3,6 +3,7 @@
 @using System.Text.Json.Nodes
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Cms
+@using Microsoft.AspNetCore.Components.Forms
 @inject PlatformApiClient ApiClient
 
 <PageTitle>CMS</PageTitle>
@@ -247,7 +248,7 @@ else
                                                                 <div class="cms-media-preview">
                                                                     @if (!string.IsNullOrWhiteSpace(draft.EditableValue))
                                                                     {
-                                                                        <img src="@ToAssetUrl(draft.EditableValue)" alt="Apercu CMS" />
+                                                                        <img src="@GetMediaPreviewUrl(draft.EditableValue)" alt="Apercu CMS" />
                                                                     }
                                                                     else
                                                                     {
@@ -257,6 +258,10 @@ else
                                                                 <label>
                                                                     <small>URL ou chemin image</small>
                                                                     <input type="text" @bind="draft.EditableValue" placeholder="images/nom-image.png" />
+                                                                </label>
+                                                                <label class="cms-upload-control">
+                                                                    <small>Uploader une nouvelle image</small>
+                                                                    <InputFile OnChange="file => UploadMediaAsync(value, file)" accept="image/png,image/jpeg,image/webp,image/gif" />
                                                                 </label>
                                                             </div>
                                                         }
@@ -480,6 +485,44 @@ else
         }
     }
 
+    private async Task UploadMediaAsync(CmsContentValueResponse value, InputFileChangeEventArgs fileChange)
+    {
+        var file = fileChange.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        IsSaving = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var response = await ApiClient.UploadCmsMediaAsync(value.Id, file);
+            if (response is not null)
+            {
+                var draft = GetDraft(value);
+                draft.EditableValue = response.Url;
+                SuccessMessage = $"Image '{response.FileName}' uploadée.";
+            }
+
+            if (SelectedPage is not null)
+            {
+                SelectedPage = await ApiClient.GetCmsPageAsync(SelectedPage.Id);
+                ContentDrafts = [];
+            }
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible d'uploader l'image CMS. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
     private static bool IsLongValue(CmsContentValueResponse value)
     {
         return value.ValueType is "LongText" or "RichText" or "Json"
@@ -513,11 +556,16 @@ else
             || value.FieldKey.Contains("image", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string ToAssetUrl(string value)
+    private string GetMediaPreviewUrl(string value)
     {
         if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-            || value.StartsWith("/", StringComparison.Ordinal))
+            || value.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+        {
+            return ApiClient.ToApiUrl(value);
+        }
+
+        if (value.StartsWith("/", StringComparison.Ordinal))
         {
             return value;
         }

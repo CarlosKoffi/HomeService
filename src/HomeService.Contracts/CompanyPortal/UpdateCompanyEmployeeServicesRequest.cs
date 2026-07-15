@@ -7,4 +7,5 @@ public sealed record UpsertCompanyEmployeeServiceRequest(
     Guid ServiceId,
     string ExperienceLevel,
     int YearsOfExperience,
-    string PriceTier);
+    string PriceTier,
+    IReadOnlyList<Guid> ServicePrestationIds);

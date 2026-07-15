@@ -13,6 +13,7 @@ public sealed class ServicePrestationConfiguration : IEntityTypeConfiguration<Se
         builder.Property(prestation => prestation.NormalizedName).HasMaxLength(140).IsRequired();
         builder.Property(prestation => prestation.Description).HasMaxLength(800);
         builder.Property(prestation => prestation.SortOrder).HasDefaultValue(0);
+        builder.Property(prestation => prestation.Currency).HasMaxLength(8);
         builder.Property(prestation => prestation.IsActive).HasDefaultValue(true);
 
         builder.HasOne(prestation => prestation.Service)

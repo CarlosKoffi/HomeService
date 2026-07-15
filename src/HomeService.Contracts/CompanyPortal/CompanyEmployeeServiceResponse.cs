@@ -9,4 +9,13 @@ public sealed record CompanyEmployeeServiceResponse(
     int NormalPriceAmount,
     int PremiumPriceAmount,
     string Currency,
+    bool IsActive,
+    IReadOnlyList<CompanyEmployeeServicePrestationResponse> Prestations);
+
+public sealed record CompanyEmployeeServicePrestationResponse(
+    Guid ServicePrestationId,
+    string PrestationName,
+    int NormalPriceAmount,
+    int PremiumPriceAmount,
+    string Currency,
     bool IsActive);

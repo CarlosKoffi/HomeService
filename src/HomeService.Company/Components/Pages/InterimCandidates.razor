@@ -202,6 +202,11 @@ else
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Jardinage", "Senior", 8)
                 ])
         ];
+
+        foreach (var candidate in Candidates)
+        {
+            ReviewNotes.TryAdd(candidate.RequestId, null);
+        }
     }
 
     private static string GetStatusLabel(string status) => status switch

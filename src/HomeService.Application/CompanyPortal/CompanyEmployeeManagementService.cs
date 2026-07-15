@@ -43,6 +43,7 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
     {
         var provider = await db.Providers
             .Include(provider => provider.Services)
+                .ThenInclude(providerService => providerService.Prestations)
             .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
         if (provider is null)
         {
@@ -55,6 +56,17 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             .Select(service => service.Id)
             .ToListAsync(cancellationToken);
 
+        var activePrestations = await db.ServicePrestations
+            .Where(prestation => activeServiceIds.Contains(prestation.ServiceId) && prestation.IsActive)
+            .Select(prestation => new { prestation.Id, prestation.ServiceId })
+            .ToListAsync(cancellationToken);
+
+        var activePrestationsByService = activePrestations
+            .GroupBy(prestation => prestation.ServiceId)
+            .ToDictionary(
+                group => group.Key,
+                group => group.Select(prestation => prestation.Id).ToHashSet());
+
         var existingServiceCount = provider.Services.Count;
         provider.SyncCompanyServices(request.Services
             .Where(service => activeServiceIds.Contains(service.ServiceId))
@@ -63,6 +75,21 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
                 ParseExperienceLevel(service.ExperienceLevel),
                 Math.Max(0, service.YearsOfExperience),
                 ParseProviderServicePriceTier(service.PriceTier))));
+
+        foreach (var providerService in provider.Services.Where(service => service.IsActive))
+        {
+            var requestService = request.Services.LastOrDefault(service => service.ServiceId == providerService.ServiceId);
+            if (requestService is null)
+            {
+                continue;
+            }
+
+            var allowedPrestationIds = activePrestationsByService.TryGetValue(providerService.ServiceId, out var ids)
+                ? ids
+                : new HashSet<Guid>();
+            providerService.SyncPrestations(requestService.ServicePrestationIds
+                .Where(allowedPrestationIds.Contains));
+        }
 
         return CompanyEmployeeOperationResult.Ok(
             provider,

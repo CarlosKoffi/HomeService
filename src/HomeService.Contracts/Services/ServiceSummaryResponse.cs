@@ -17,4 +17,7 @@ public sealed record ServicePrestationSummaryResponse(
     string Name,
     string? Description,
     int SortOrder,
+    int NormalPriceAmount,
+    int PremiumPriceAmount,
+    string Currency,
     bool IsActive);

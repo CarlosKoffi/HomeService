@@ -176,7 +176,7 @@ public sealed class AdminCmsQueryService(IAppDbContext db)
                                 value.TextValue,
                                 value.JsonValue,
                                 value.MediaAssetId,
-                                value.MediaAsset == null ? null : value.MediaAsset.StoragePath))
+                                value.MediaAssetId == null ? null : $"/api/cms/media/{value.MediaAssetId}"))
                             .ToList()))
                     .ToList()))
             .FirstOrDefaultAsync(cancellationToken);
