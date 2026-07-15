@@ -249,11 +249,23 @@
 .site-header.theme-blue,
 .site-header.theme-green,
 .site-header.theme-black,
-.site-header.theme-apple {
+.site-header.theme-apple,
+.site-header.theme-premium {
     border-image: none;
     box-shadow: 0 8px 22px rgba(0, 0, 0, .045);
     color: #000000;
     font-family: "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
+}
+
+.site-header.theme-premium {
+    background: rgba(255, 255, 255, .85);
+    backdrop-filter: blur(24px);
+    border-bottom-color: #ececec;
+    border-top-color: transparent;
+    box-shadow: none;
+    min-height: 68px;
+    padding-left: max(1.5rem, calc((100vw - 1180px) / 2));
+    padding-right: max(1.5rem, calc((100vw - 1180px) / 2));
 }
 
 .site-header.theme-blue {
@@ -300,16 +312,56 @@
 .site-header.theme-green .brand,
 .site-header.theme-black .brand,
 .site-header.theme-apple .brand,
+.site-header.theme-premium .brand,
 .site-header.theme-blue .site-nav ::deep a,
 .site-header.theme-green .site-nav ::deep a,
 .site-header.theme-black .site-nav ::deep a,
 .site-header.theme-apple .site-nav ::deep a,
+.site-header.theme-premium .site-nav ::deep a,
 .site-header.theme-blue .site-nav a,
 .site-header.theme-green .site-nav a,
 .site-header.theme-black .site-nav a,
-.site-header.theme-apple .site-nav a {
+.site-header.theme-apple .site-nav a,
+.site-header.theme-premium .site-nav a {
     color: #000000;
     font-weight: 650;
+}
+
+.site-header.theme-premium .brand {
+    letter-spacing: -.03em;
+}
+
+.site-header.theme-premium .site-nav a,
+.site-header.theme-premium .site-nav ::deep a {
+    border-radius: 10px;
+    font-size: .82rem;
+    padding: .48rem .58rem;
+}
+
+.site-header.theme-premium .site-nav a.section-active,
+.site-header.theme-premium .site-nav a:hover,
+.site-header.theme-premium .site-nav ::deep a.active,
+.site-header.theme-premium .site-nav ::deep a:hover {
+    background: #eff4ff;
+    color: #1a6aff;
+}
+
+.site-header.theme-premium .public-nav a.section-active::after {
+    background: #1a6aff;
+}
+
+.site-header.theme-premium .header-primary {
+    background: #1a6aff;
+    border-radius: 10px !important;
+}
+
+.site-header.theme-premium .header-primary:hover {
+    background: #155ee5 !important;
+}
+
+.site-header.theme-premium .header-secondary {
+    border: 0;
+    color: #666666 !important;
 }
 
 .site-header.theme-blue .site-nav ::deep a.active,

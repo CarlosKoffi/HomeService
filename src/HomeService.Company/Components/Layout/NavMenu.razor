@@ -17,16 +17,14 @@
         @if (Session is null)
         {
             <a href="@($"{PublicLandingBase}#home")" data-section-nav="home">Accueil</a>
-            <a href="@($"{PublicLandingBase}#concept")" data-section-nav="concept">Concept</a>
-            <a href="@($"{PublicLandingBase}#benefits")" data-section-nav="benefits">Avantages</a>
-            <a href="@($"{PublicLandingBase}#how-it-works")" data-section-nav="how-it-works">Fonctionnement</a>
-            <a href="@($"{PublicLandingBase}#requirements")" data-section-nav="requirements">Conditions</a>
-            <a href="@($"{PublicLandingBase}#partner-dashboard")" data-section-nav="partner-dashboard">Portail</a>
+            <a href="@($"{PublicLandingBase}#how")" data-section-nav="how">Fonctionnement</a>
+            <a href="@($"{PublicLandingBase}#trusted")" data-section-nav="trusted">References</a>
+            <a href="@($"{PublicLandingBase}#dashboard")" data-section-nav="dashboard">Dashboard</a>
             <a href="@($"{PublicLandingBase}#faq")" data-section-nav="faq">FAQ</a>
             <a href="@($"{PublicLandingBase}#contact")" data-section-nav="contact">Contact</a>
             <div class="header-actions">
                 <a class="header-secondary" href="dashboard">Se connecter</a>
-                <a class="header-primary" href="register">Devenir partenaire</a>
+                <a class="header-primary" href="register">Commencer</a>
             </div>
         }
         else
@@ -68,7 +66,7 @@
                 "vert" => "theme-green",
                 "noir" => "theme-black",
                 "apple" => "theme-apple",
-                _ => string.Empty
+                _ => "theme-premium"
             };
         }
     }

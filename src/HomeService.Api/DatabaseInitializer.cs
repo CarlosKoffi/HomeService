@@ -191,12 +191,15 @@ public static class DatabaseInitializer
 
         var hero = new CmsComponentDefinition("HeroStandard", "Hero standard", 1, "Section d'ouverture sobre avec titre, texte court et appels a l'action.");
         var steps = new CmsComponentDefinition("StepsTimeline", "Parcours en etapes", 1, "Explication courte d'un processus en trois a six etapes.");
+        var trusted = new CmsComponentDefinition("TrustedLogos", "Preuve sociale", 1, "Bande de references ou preuves de confiance en style premium.");
         var services = new CmsComponentDefinition("ServicesList", "Liste de services", 1, "Liste structuree de services ou metiers affichables.");
+        var dashboard = new CmsComponentDefinition("DashboardPreview", "Apercu dashboard", 1, "Mockup produit avec indicateurs, activite et donnees de demonstration.");
         var faq = new CmsComponentDefinition("FaqAccordion", "Foire aux questions", 1, "Questions/reponses simples avec ouverture progressive.");
         var cta = new CmsComponentDefinition("CallToAction", "Appel a l'action", 1, "Bloc final ou contextuel pour pousser une action principale.");
         var contact = new CmsComponentDefinition("ContactForm", "Formulaire de contact", 1, "Formulaire editorial de prise de contact.");
+        var footer = new CmsComponentDefinition("FooterLinks", "Liens footer", 1, "Colonnes de liens de bas de page.");
 
-        db.CmsComponentDefinitions.AddRange(hero, steps, services, faq, cta, contact);
+        db.CmsComponentDefinitions.AddRange(hero, steps, trusted, services, dashboard, faq, cta, contact, footer);
 
         var companySite = new CmsSite("company-public", "Kaza entreprises", CmsSiteSurface.PublicCompany, coteDIvoire.Id, french.Id);
         companySite.Activate();
@@ -216,7 +219,7 @@ public static class DatabaseInitializer
 
         db.CmsSites.AddRange(companySite, providerSite, clientSite, companyPortal);
 
-        AddSeedPage(db, companySite, french.Id, "home", "Accueil entreprises", "landing", "entreprises", "Kaza pour les entreprises", hero.Id, steps.Id, services.Id, faq.Id, contact.Id);
+        AddSeedPage(db, companySite, french.Id, "home", "Accueil entreprises", "premium-b2b-landing", "entreprises", "Kaza pour les entreprises", hero.Id, steps.Id, trusted.Id, dashboard.Id, faq.Id, contact.Id, footer.Id);
         AddSeedPage(db, providerSite, french.Id, "home", "Accueil prestataires", "landing", "prestataires", "Kaza pour les prestataires", hero.Id, steps.Id, faq.Id);
         AddSeedPage(db, clientSite, french.Id, "home", "Accueil clients", "landing", "accueil", "Kaza", hero.Id, services.Id, faq.Id);
         AddSeedPage(db, companyPortal, french.Id, "dashboard", "Tableau de bord entreprise", "portal-dashboard", "dashboard", "Tableau de bord", cta.Id);
