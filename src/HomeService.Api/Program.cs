@@ -1,27 +1,7 @@
-using HomeService.Application.Abstractions;
 using HomeService.Api;
-using HomeService.Api.Auditing;
 using HomeService.Api.Endpoints;
-using HomeService.Contracts.Branding;
-using HomeService.Contracts.Companies;
-using HomeService.Contracts.CompanyPortal;
-using HomeService.Contracts.Notifications;
-using HomeService.Contracts.ProviderPortal;
-using HomeService.Contracts.Monitoring;
-using HomeService.Application.ProviderPortal;
-using HomeService.Application.Branding;
-using HomeService.Application.Companies;
-using HomeService.Application.Admin;
-using HomeService.Application.CompanyPortal;
-using HomeService.Application.Security;
-using HomeService.Application.Notifications;
-using HomeService.Application.Auditing;
-using HomeService.Domain.Entities;
-using HomeService.Domain.Enums;
+using HomeService.Application;
 using HomeService.Infrastructure;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
-using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,27 +16,9 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplicationServices();
 builder.Services.AddSingleton<CompanyApplicationUploadService>();
 builder.Services.AddSingleton<CompanyProviderUploadService>();
-builder.Services.AddScoped<ProviderMissionWorkflowService>();
-builder.Services.AddScoped<CompanyApplicationRegistrationService>();
-builder.Services.AddScoped<CompanyPortalAuthService>();
-builder.Services.AddScoped<CompanyActivationPreviewService>();
-builder.Services.AddScoped<CompanyActivationLinkGenerationService>();
-builder.Services.AddScoped<CompanyActivationPasswordService>();
-builder.Services.AddScoped<CompanyComplianceDocumentService>();
-builder.Services.AddScoped<CompanyEmployeeInvitationService>();
-builder.Services.AddScoped<CompanyEmployeeManagementService>();
-builder.Services.AddScoped<CompanyInterimCandidateService>();
-builder.Services.AddScoped<CompanyPortalQueryService>();
-builder.Services.AddScoped<ProviderSelfRegistrationService>();
-builder.Services.AddScoped<ProviderOnboardingService>();
-builder.Services.AddScoped<ProviderPortalAuthService>();
-builder.Services.AddScoped<AdminConfigurationService>();
-builder.Services.AddScoped<AdminQueryService>();
-builder.Services.AddScoped<AdminCmsQueryService>();
-builder.Services.AddScoped<AdminCompanyApplicationReviewService>();
-builder.Services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
 
 var app = builder.Build();
 
