@@ -139,6 +139,7 @@ else
                                 <span>Versions</span>
                                 <span>Sections</span>
                                 <span>Statut</span>
+                                <span>Action</span>
                             </div>
                             @foreach (var cmsPage in SelectedSite.Pages)
                             {
@@ -148,6 +149,7 @@ else
                                     <span>@cmsPage.VersionCount</span>
                                     <span>@cmsPage.SectionCount</span>
                                     <span class="@GetStatusClass(cmsPage.Status)">@cmsPage.Status</span>
+                                    <button type="button" class="cms-inline-action" @onclick="() => SelectPageAsync(cmsPage.Id)">Editer</button>
                                 </div>
                             }
                         </div>
@@ -181,6 +183,72 @@ else
                         </div>
                     }
                 </div>
+
+                @if (SelectedPage is not null)
+                {
+                    <div class="cms-editor">
+                        <div class="cms-editor-heading">
+                            <div>
+                                <p class="eyebrow">Edition contenu</p>
+                                <h3>@SelectedPage.DefaultTitle</h3>
+                                <p>@SelectedPage.TemplateKey - version @SelectedPage.VersionNumber - @SelectedPage.VersionStatus</p>
+                            </div>
+                            <span>@SelectedPage.Sections.Count section(s)</span>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+                        {
+                            <p class="admin-message">@SuccessMessage</p>
+                        }
+
+                        <div class="cms-section-editor-list">
+                            @foreach (var section in SelectedPage.Sections)
+                            {
+                                <article class="cms-section-editor" @key="section.Id">
+                                    <header>
+                                        <div>
+                                            <span>@(section.ComponentKey)</span>
+                                            <strong>@(section.InternalName)</strong>
+                                            <small>@(section.Zone) - position @(section.Position)</small>
+                                        </div>
+                                        <em>@(section.IsActive ? "Actif" : "Masque")</em>
+                                    </header>
+
+                                    @if (section.ContentValues.Count == 0)
+                                    {
+                                        <p class="section-help">Aucun champ editable n'est encore configure pour cette section.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="cms-field-list">
+                                            @foreach (var value in section.ContentValues)
+                                            {
+                                                var draft = GetDraft(value);
+                                                <div class="cms-field-row" @key="value.Id">
+                                                    <label>
+                                                        <span>@ToReadableFieldName(value.FieldKey)</span>
+                                                        <small>@value.ValueType</small>
+                                                        @if (IsLongValue(value))
+                                                        {
+                                                            <textarea rows="5" @bind="draft.EditableValue"></textarea>
+                                                        }
+                                                        else
+                                                        {
+                                                            <input type="text" @bind="draft.EditableValue" />
+                                                        }
+                                                    </label>
+                                                    <button type="button" @onclick="() => SaveContentValueAsync(value)" disabled="@IsSaving">
+                                                        Enregistrer
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </article>
+                            }
+                        </div>
+                    </div>
+                }
             }
         </section>
     </section>
@@ -214,8 +282,12 @@ else
     private List<CmsSiteSummaryResponse> Sites { get; set; } = [];
     private List<CmsComponentDefinitionResponse> Components { get; set; } = [];
     private CmsSiteDetailResponse? SelectedSite { get; set; }
+    private CmsPageDetailResponse? SelectedPage { get; set; }
+    private Dictionary<Guid, CmsValueDraft> ContentDrafts { get; set; } = [];
     private bool IsLoading { get; set; } = true;
+    private bool IsSaving { get; set; }
     private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -245,11 +317,88 @@ else
         try
         {
             SelectedSite = await ApiClient.GetCmsSiteAsync(siteId);
+            SelectedPage = null;
+            ContentDrafts = [];
+            SuccessMessage = null;
         }
         catch (Exception exception)
         {
             ErrorMessage = $"Impossible de charger le site CMS. Detail: {exception.Message}";
         }
+    }
+
+    private async Task SelectPageAsync(Guid pageId)
+    {
+        try
+        {
+            SelectedPage = await ApiClient.GetCmsPageAsync(pageId);
+            ContentDrafts = [];
+            SuccessMessage = null;
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger la page CMS. Detail: {exception.Message}";
+        }
+    }
+
+    private CmsValueDraft GetDraft(CmsContentValueResponse value)
+    {
+        if (!ContentDrafts.TryGetValue(value.Id, out var draft))
+        {
+            draft = new CmsValueDraft
+            {
+                EditableValue = value.ValueType == "Json" ? value.JsonValue ?? string.Empty : value.TextValue ?? string.Empty
+            };
+            ContentDrafts[value.Id] = draft;
+        }
+
+        return draft;
+    }
+
+    private async Task SaveContentValueAsync(CmsContentValueResponse value)
+    {
+        var draft = GetDraft(value);
+        IsSaving = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var request = value.ValueType == "Json"
+                ? new UpdateCmsContentValueRequest(value.TextValue, draft.EditableValue)
+                : new UpdateCmsContentValueRequest(draft.EditableValue, value.JsonValue);
+
+            await ApiClient.UpdateCmsContentValueAsync(value.Id, request);
+            SuccessMessage = $"Champ '{ToReadableFieldName(value.FieldKey)}' sauvegarde.";
+
+            if (SelectedPage is not null)
+            {
+                SelectedPage = await ApiClient.GetCmsPageAsync(SelectedPage.Id);
+                ContentDrafts = [];
+            }
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de sauvegarder le champ CMS. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private static bool IsLongValue(CmsContentValueResponse value)
+    {
+        return value.ValueType is "LongText" or "RichText" or "Json"
+            || (value.TextValue?.Length ?? value.JsonValue?.Length ?? 0) > 120;
+    }
+
+    private static string ToReadableFieldName(string fieldKey)
+    {
+        return fieldKey
+            .Replace(".", " / ", StringComparison.Ordinal)
+            .Replace("_", " ", StringComparison.Ordinal)
+            .Replace("-", " ", StringComparison.Ordinal);
     }
 
     private static string GetStatusClass(string status)
@@ -261,5 +410,10 @@ else
             "Disabled" or "Archived" => "cms-status cms-status-muted",
             _ => "cms-status"
         };
+    }
+
+    private sealed class CmsValueDraft
+    {
+        public string EditableValue { get; set; } = string.Empty;
     }
 }

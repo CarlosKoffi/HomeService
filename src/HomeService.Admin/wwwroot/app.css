@@ -1024,7 +1024,7 @@ h3 {
     border-top: 1px solid #e5e7eb;
     display: grid;
     gap: .75rem;
-    grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) 90px 90px 100px;
+    grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) 90px 90px 100px 100px;
     padding: .75rem .85rem;
 }
 
@@ -1043,6 +1043,132 @@ h3 {
 
 .cms-menu-table > div {
     grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 1fr) 90px 100px;
+}
+
+.cms-inline-action {
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 8px;
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    padding: .45rem .7rem;
+}
+
+.cms-editor {
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+}
+
+.cms-editor-heading {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.cms-editor-heading h3 {
+    font-size: 1.35rem;
+    margin: 0;
+}
+
+.cms-editor-heading p {
+    color: #000000;
+    margin: .25rem 0 0;
+}
+
+.cms-editor-heading > span {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    color: #1d4ed8;
+    font-weight: 900;
+    padding: .35rem .7rem;
+}
+
+.cms-section-editor-list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.cms-section-editor {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.cms-section-editor > header {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.cms-section-editor > header span {
+    color: #0f766e;
+    display: block;
+    font-size: .78rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.cms-section-editor > header strong {
+    display: block;
+    font-size: 1.05rem;
+    margin-top: .2rem;
+}
+
+.cms-section-editor > header small,
+.cms-section-editor > header em {
+    color: #000000;
+    font-style: normal;
+}
+
+.cms-field-list {
+    display: grid;
+    gap: .75rem;
+    margin-top: 1rem;
+}
+
+.cms-field-row {
+    align-items: end;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.cms-field-row label {
+    color: #000000;
+    display: grid;
+    font-weight: 800;
+    gap: .3rem;
+}
+
+.cms-field-row label small {
+    color: #000000;
+    font-weight: 600;
+}
+
+.cms-field-row input,
+.cms-field-row textarea {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+    padding: .65rem .75rem;
+}
+
+.cms-field-row button {
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 8px;
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    padding: .65rem .8rem;
 }
 
 .cms-components {
@@ -1199,6 +1325,7 @@ h3 {
 
     .cms-header,
     .cms-detail-heading,
+    .cms-editor-heading,
     .admin-page-heading {
         align-items: stretch;
         flex-direction: column;
@@ -1215,6 +1342,14 @@ h3 {
 
     .cms-health {
         text-align: left;
+    }
+
+    .cms-field-row {
+        grid-template-columns: 1fr;
+    }
+
+    .cms-field-row button {
+        justify-self: start;
     }
 }
 

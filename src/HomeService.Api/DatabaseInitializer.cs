@@ -21,6 +21,7 @@ public static class DatabaseInitializer
         await SeedAdminAccessAsync(db, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
         await SeedCmsFoundationAsync(db, cancellationToken);
+        await SeedCompanyEditorialContentAsync(db, cancellationToken);
     }
 
     private static async Task SeedCountriesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
@@ -261,6 +262,111 @@ public static class DatabaseInitializer
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    private static async Task SeedCompanyEditorialContentAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var french = await db.Languages.FirstAsync(language => language.Code == "fr", cancellationToken);
+        var homePage = await db.CmsPages
+            .Include(page => page.Site)
+            .Include(page => page.Versions)
+                .ThenInclude(version => version.Sections)
+                    .ThenInclude(section => section.ComponentDefinition)
+            .Include(page => page.Versions)
+                .ThenInclude(version => version.Sections)
+                    .ThenInclude(section => section.ContentValues)
+            .Where(page => page.Site!.Code == "company-public" && page.Code == "home")
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var version = homePage?.Versions.OrderByDescending(item => item.VersionNumber).FirstOrDefault();
+        if (version is null)
+        {
+            return;
+        }
+
+        foreach (var section in version.Sections)
+        {
+            switch (section.ComponentDefinition?.Key)
+            {
+                case "HeroStandard":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Plateforme partenaire", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Recevez plus de missions. Developpez votre entreprise.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Kaza connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.", french.Id);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Commencer", french.Id);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "register", french.Id);
+                    AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
+                    AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-premium-hero.png", french.Id);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Equipe Kaza en intervention chez un client", french.Id);
+                    AddCmsJson(db, section, "proofItems", "[\"Inscription gratuite\",\"Validation dossier\",\"Portail entreprise\"]", french.Id);
+                    break;
+
+                case "StepsTimeline":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Comment ca marche", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trois etapes, puis votre portail est pret.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours court pour verifier l'entreprise et demarrer avec une base claire.", french.Id);
+                    AddCmsJson(db, section, "steps", """
+                    [
+                      {"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/kaza-how-step-1.png"},
+                      {"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"Kaza controle les informations pour securiser les clients et les missions.","image":"images/kaza-how-step-2.png"},
+                      {"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/kaza-how-step-3.png"}
+                    ]
+                    """, french.Id);
+                    break;
+
+                case "TrustedLogos":
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Ils font confiance a Kaza", french.Id);
+                    AddCmsJson(db, section, "items", "[\"Services verifies\",\"Entreprises locales\",\"Prestataires suivis\",\"Paiements traces\",\"Support partenaire\"]", french.Id);
+                    break;
+
+                case "DashboardPreview":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Dashboard", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Tout ce qui compte, lisible en un coup d'oeil.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Demandes, equipe, missions, documents et paiements restent au meme endroit.", french.Id);
+                    AddCmsJson(db, section, "stats", "[{\"label\":\"Demandes\",\"value\":\"12\",\"help\":\"+4 cette semaine\"},{\"label\":\"Assignees\",\"value\":\"8\",\"help\":\"Equipe mobilisee\"},{\"label\":\"Paiements\",\"value\":\"185k\",\"help\":\"XOF suivis\"}]", french.Id);
+                    AddCmsJson(db, section, "requests", "[\"Menage a Cocody Riviera\",\"Jardinage a Marcory\",\"Nounou aux Deux Plateaux\"]", french.Id);
+                    AddCmsJson(db, section, "providers", "[\"Awa K. - Menage\",\"Jean M. - Jardinage\",\"Fatou C. - Nounou\"]", french.Id);
+                    break;
+
+                case "FaqAccordion":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "FAQ", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Foire aux questions", french.Id);
+                    AddCmsJson(db, section, "questions", """
+                    [
+                      {"question":"Comment sont verifiees les entreprises sur Kaza ?","answer":"Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."},
+                      {"question":"L'inscription est-elle gratuite ?","answer":"Oui. L'inscription est gratuite. Kaza applique ensuite une commission uniquement sur les missions realisees."},
+                      {"question":"Puis-je refuser une demande client ?","answer":"Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."},
+                      {"question":"Qui choisit le prestataire ?","answer":"Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser Kaza vous accompagner selon le mode choisi."},
+                      {"question":"Comment sont suivis les paiements ?","answer":"Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions."},
+                      {"question":"Combien de temps prend la validation ?","answer":"Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide."}
+                    ]
+                    """, french.Id);
+                    break;
+
+                case "ContactForm":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Contact", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Vous voulez en parler avant de vous inscrire ?", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnees. Nous vous rappelons pour voir comment Kaza peut aider votre entreprise.", french.Id);
+                    AddCmsJson(db, section, "tags", "[\"Abidjan\",\"Services a domicile\",\"Partenariat entreprise\"]", french.Id);
+                    break;
+
+                case "FooterLinks":
+                    AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.", french.Id);
+                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 Kaza Technologies. Tous droits reserves.", french.Id);
+                    AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Concu pour l'Afrique de l'Ouest", french.Id);
+                    AddCmsJson(db, section, "columns", """
+                    [
+                      {"title":"Produit","links":["Plateforme","Fonctionnement","Tarifs","Securite","Integrations","Changelog"]},
+                      {"title":"Entreprise","links":["A propos","Blog","Carrieres","Presse","Partenaires"]},
+                      {"title":"Ressources","links":["Documentation","Centre d'aide","Communaute","Dashboard","Etudes de cas"]},
+                      {"title":"Legal","links":["CGU","Confidentialite","Cookies","Mentions legales","Conditions partenaires"]}
+                    ]
+                    """, french.Id);
+                    break;
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private static void AddSeedPage(
         HomeServiceDbContext db,
         CmsSite site,
@@ -289,6 +395,41 @@ public static class DatabaseInitializer
                 "main",
                 index + 1));
         }
+    }
+
+    private static void AddCmsText(
+        HomeServiceDbContext db,
+        CmsSection section,
+        string fieldKey,
+        CmsContentValueType valueType,
+        string value,
+        Guid languageId)
+    {
+        if (section.ContentValues.Any(item => item.FieldKey == fieldKey && item.LanguageId == languageId))
+        {
+            return;
+        }
+
+        var contentValue = new CmsContentValue(section.Id, fieldKey, valueType, languageId);
+        contentValue.SetText(value);
+        db.CmsContentValues.Add(contentValue);
+    }
+
+    private static void AddCmsJson(
+        HomeServiceDbContext db,
+        CmsSection section,
+        string fieldKey,
+        string value,
+        Guid languageId)
+    {
+        if (section.ContentValues.Any(item => item.FieldKey == fieldKey && item.LanguageId == languageId))
+        {
+            return;
+        }
+
+        var contentValue = new CmsContentValue(section.Id, fieldKey, CmsContentValueType.Json, languageId);
+        contentValue.SetJson(value);
+        db.CmsContentValues.Add(contentValue);
     }
 
     private sealed record TranslationSeed(string Key, string Scope, string Description, string Value);

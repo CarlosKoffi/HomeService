@@ -37,6 +37,12 @@ public sealed class CmsContentValue : AuditableEntity
         Touch();
     }
 
+    public void SetJson(string? value)
+    {
+        JsonValue = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        Touch();
+    }
+
     private static string NormalizeKey(string value)
     {
         return string.IsNullOrWhiteSpace(value)

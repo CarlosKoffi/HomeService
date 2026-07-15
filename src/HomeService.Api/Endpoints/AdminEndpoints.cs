@@ -86,6 +86,66 @@ public static class AdminEndpoints
         .WithName("ListAdminCmsPages")
         .Produces<IReadOnlyList<CmsPageSummaryResponse>>();
 
+        admin.MapGet("/cms/pages/{pageId:guid}", async (
+            Guid pageId,
+            AdminCmsQueryService cmsQueryService,
+            CancellationToken cancellationToken) =>
+        {
+            var page = await cmsQueryService.GetPageAsync(pageId, cancellationToken);
+            return page is null ? Results.NotFound() : Results.Ok(page);
+        })
+        .WithName("GetAdminCmsPage")
+        .Produces<CmsPageDetailResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPut("/cms/content-values/{id:guid}", async (
+            Guid id,
+            UpdateCmsContentValueRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var value = await db.CmsContentValues.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
+            if (value is null)
+            {
+                return Results.NotFound(new { message = "Champ CMS introuvable." });
+            }
+
+            var before = new
+            {
+                value.TextValue,
+                value.JsonValue
+            };
+
+            value.SetText(request.TextValue);
+            value.SetJson(request.JsonValue);
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCmsContentValueUpdated",
+                nameof(CmsContentValue),
+                value.Id,
+                $"Champ CMS '{value.FieldKey}' mis a jour.",
+                before,
+                after: new { value.TextValue, value.JsonValue });
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new CmsContentValueResponse(
+                value.Id,
+                value.SectionId,
+                value.FieldKey,
+                value.ValueType.ToString(),
+                null,
+                value.TextValue,
+                value.JsonValue,
+                value.MediaAssetId,
+                null));
+        })
+        .WithName("UpdateAdminCmsContentValue");
+
         admin.MapGet("/cms/component-definitions", async (
             AdminCmsQueryService cmsQueryService,
             CancellationToken cancellationToken) =>

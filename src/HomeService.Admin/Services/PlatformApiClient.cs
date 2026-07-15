@@ -146,6 +146,21 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<CmsSiteDetailResponse>($"/api/admin/cms/sites/{id}", cancellationToken);
     }
 
+    public async Task<CmsPageDetailResponse?> GetCmsPageAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<CmsPageDetailResponse>($"/api/admin/cms/pages/{id}", cancellationToken);
+    }
+
+    public async Task<CmsContentValueResponse?> UpdateCmsContentValueAsync(
+        Guid id,
+        UpdateCmsContentValueRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<CmsContentValueResponse>($"/api/admin/cms/content-values/{id}", request, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CmsComponentDefinitionResponse>> GetCmsComponentDefinitionsAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

@@ -120,6 +120,68 @@ public sealed class AdminCmsQueryService(IAppDbContext db)
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<CmsPageDetailResponse?> GetPageAsync(Guid pageId, CancellationToken cancellationToken)
+    {
+        return await db.CmsPages
+            .AsNoTracking()
+            .Where(page => page.Id == pageId)
+            .Select(page => new CmsPageDetailResponse(
+                page.Id,
+                page.SiteId,
+                page.Code,
+                page.InternalName,
+                page.TemplateKey,
+                page.Status.ToString(),
+                page.Translations
+                    .Where(translation => translation.LanguageId == page.Site!.DefaultLanguageId)
+                    .Select(translation => translation.Title)
+                    .FirstOrDefault(),
+                page.Translations
+                    .Where(translation => translation.LanguageId == page.Site!.DefaultLanguageId)
+                    .Select(translation => translation.Slug)
+                    .FirstOrDefault(),
+                page.Versions
+                    .OrderByDescending(version => version.VersionNumber)
+                    .Select(version => version.VersionNumber)
+                    .FirstOrDefault(),
+                page.Versions
+                    .OrderByDescending(version => version.VersionNumber)
+                    .Select(version => version.Status.ToString())
+                    .FirstOrDefault() ?? "Draft",
+                page.Versions
+                    .OrderByDescending(version => version.VersionNumber)
+                    .Take(1)
+                    .SelectMany(version => version.Sections)
+                    .OrderBy(section => section.Zone)
+                    .ThenBy(section => section.Position)
+                    .Select(section => new CmsSectionDetailResponse(
+                        section.Id,
+                        section.PageVersionId,
+                        section.ComponentDefinition!.Key,
+                        section.ComponentDefinition.Name,
+                        section.InternalName,
+                        section.Zone,
+                        section.Position,
+                        section.Anchor,
+                        section.Variant,
+                        section.IsActive,
+                        section.ContentValues
+                            .OrderBy(value => value.FieldKey)
+                            .Select(value => new CmsContentValueResponse(
+                                value.Id,
+                                value.SectionId,
+                                value.FieldKey,
+                                value.ValueType.ToString(),
+                                value.Language == null ? null : value.Language.Code,
+                                value.TextValue,
+                                value.JsonValue,
+                                value.MediaAssetId,
+                                value.MediaAsset == null ? null : value.MediaAsset.StoragePath))
+                            .ToList()))
+                    .ToList()))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CmsComponentDefinitionResponse>> ListComponentDefinitionsAsync(CancellationToken cancellationToken)
     {
         return await db.CmsComponentDefinitions
