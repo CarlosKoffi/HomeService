@@ -99,28 +99,75 @@ public static class DatabaseInitializer
     private static async Task SeedServicePrestationsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         var services = await db.Services
-            .Include(service => service.Prestations)
+            .AsNoTracking()
             .Where(service => service.NormalizedName == "jardinage"
                 || service.NormalizedName == "menage a domicile"
                 || service.NormalizedName == "nounou")
+            .Select(service => new { service.Id, service.NormalizedName })
             .ToListAsync(cancellationToken);
 
-        var jardinage = services.FirstOrDefault(service => service.NormalizedName == "jardinage");
-        jardinage?.AddPrestation("Tondre le gazon", "Coupe et entretien simple de pelouse.", 10);
-        jardinage?.AddPrestation("Tailler une haie", "Taille legere et remise en forme des haies.", 20);
-        jardinage?.AddPrestation("Desherbage", "Nettoyage des mauvaises herbes sur les zones indiquees.", 30);
+        if (services.Count == 0)
+        {
+            return;
+        }
 
-        var menage = services.FirstOrDefault(service => service.NormalizedName == "menage a domicile");
-        menage?.AddPrestation("Menage regulier", "Entretien courant du domicile.", 10);
-        menage?.AddPrestation("Nettoyage apres travaux", "Nettoyage renforce apres petits travaux ou renovation.", 20);
-        menage?.AddPrestation("Nettoyage vitres", "Nettoyage simple des vitres accessibles.", 30);
+        var serviceIds = services.Select(service => service.Id).ToArray();
+        var existingKeys = await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => serviceIds.Contains(prestation.ServiceId))
+            .Select(prestation => new { prestation.ServiceId, prestation.NormalizedName })
+            .ToListAsync(cancellationToken);
 
-        var nounou = services.FirstOrDefault(service => service.NormalizedName == "nounou");
-        nounou?.AddPrestation("Garde ponctuelle", "Garde d'enfant sur une plage horaire courte.", 10);
-        nounou?.AddPrestation("Garde apres ecole", "Presence et accompagnement apres l'ecole.", 20);
+        var existingKeySet = existingKeys
+            .Select(prestation => $"{prestation.ServiceId:N}:{prestation.NormalizedName}")
+            .ToHashSet(StringComparer.Ordinal);
 
-        await db.SaveChangesAsync(cancellationToken);
+        var seeds = new[]
+        {
+            new SeededServicePrestation("jardinage", "Tondre le gazon", "Coupe et entretien simple de pelouse.", 10),
+            new SeededServicePrestation("jardinage", "Tailler une haie", "Taille legere et remise en forme des haies.", 20),
+            new SeededServicePrestation("jardinage", "Desherbage", "Nettoyage des mauvaises herbes sur les zones indiquees.", 30),
+            new SeededServicePrestation("menage a domicile", "Menage regulier", "Entretien courant du domicile.", 10),
+            new SeededServicePrestation("menage a domicile", "Nettoyage apres travaux", "Nettoyage renforce apres petits travaux ou renovation.", 20),
+            new SeededServicePrestation("menage a domicile", "Nettoyage vitres", "Nettoyage simple des vitres accessibles.", 30),
+            new SeededServicePrestation("nounou", "Garde ponctuelle", "Garde d'enfant sur une plage horaire courte.", 10),
+            new SeededServicePrestation("nounou", "Garde apres ecole", "Presence et accompagnement apres l'ecole.", 20)
+        };
+
+        foreach (var seed in seeds)
+        {
+            var service = services.FirstOrDefault(item => item.NormalizedName == seed.ServiceNormalizedName);
+            if (service is null)
+            {
+                continue;
+            }
+
+            var normalizedPrestationName = NormalizeSeedValue(seed.Name);
+            if (existingKeySet.Contains($"{service.Id:N}:{normalizedPrestationName}"))
+            {
+                continue;
+            }
+
+            db.ServicePrestations.Add(new ServicePrestation(service.Id, seed.Name, seed.Description, seed.SortOrder));
+            existingKeySet.Add($"{service.Id:N}:{normalizedPrestationName}");
+        }
+
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
+
+    private static string NormalizeSeedValue(string value)
+    {
+        return value.Trim().ToLowerInvariant();
+    }
+
+    private sealed record SeededServicePrestation(
+        string ServiceNormalizedName,
+        string Name,
+        string? Description,
+        int SortOrder);
 
     private static async Task SeedAdminAccessAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
