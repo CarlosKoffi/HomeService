@@ -1,4 +1,6 @@
 @page "/cms"
+@using System.Text.Json
+@using System.Text.Json.Nodes
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Cms
 @inject PlatformApiClient ApiClient
@@ -225,10 +227,95 @@ else
                                             {
                                                 var draft = GetDraft(value);
                                                 <div class="cms-field-row" @key="value.Id">
-                                                    <label>
-                                                        <span>@ToReadableFieldName(value.FieldKey)</span>
-                                                        <small>@value.ValueType</small>
-                                                        @if (IsLongValue(value))
+                                                    <div class="cms-field-editor">
+                                                        <div class="cms-field-title">
+                                                            <div>
+                                                                <span>@ToReadableFieldName(value.FieldKey)</span>
+                                                                <small>@GetFieldHelp(value)</small>
+                                                            </div>
+                                                            @if (value.ValueType == "Json")
+                                                            {
+                                                                <button type="button" class="cms-ghost-action" @onclick="() => ToggleRawJson(draft)">
+                                                                    @(draft.ShowRawJson ? "Edition simple" : "Voir JSON")
+                                                                </button>
+                                                            }
+                                                        </div>
+
+                                                        @if (IsMediaField(value))
+                                                        {
+                                                            <div class="cms-media-editor">
+                                                                <div class="cms-media-preview">
+                                                                    @if (!string.IsNullOrWhiteSpace(draft.EditableValue))
+                                                                    {
+                                                                        <img src="@ToAssetUrl(draft.EditableValue)" alt="Apercu CMS" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <span>Image</span>
+                                                                    }
+                                                                </div>
+                                                                <label>
+                                                                    <small>URL ou chemin image</small>
+                                                                    <input type="text" @bind="draft.EditableValue" placeholder="images/nom-image.png" />
+                                                                </label>
+                                                            </div>
+                                                        }
+                                                        else if (value.ValueType == "Json" && !draft.ShowRawJson && draft.JsonItems.Count > 0)
+                                                        {
+                                                            <div class="cms-json-builder">
+                                                                @foreach (var item in draft.JsonItems)
+                                                                {
+                                                                    <article class="cms-json-card" @key="item.Id">
+                                                                        <header>
+                                                                            <strong>@GetJsonItemTitle(value.FieldKey, item)</strong>
+                                                                            <button type="button" class="cms-danger-action" @onclick="() => RemoveJsonItem(draft, item.Id)">Supprimer</button>
+                                                                        </header>
+
+                                                                        @if (draft.JsonShape == CmsJsonShape.StringArray)
+                                                                        {
+                                                                            <input type="text" @bind="item.Value" placeholder="Texte a afficher" />
+                                                                        }
+                                                                        else if (value.FieldKey == "questions")
+                                                                        {
+                                                                            <input type="text" @bind="item.Question" placeholder="Question" />
+                                                                            <textarea rows="3" @bind="item.Answer" placeholder="Reponse courte"></textarea>
+                                                                        }
+                                                                        else if (value.FieldKey == "steps")
+                                                                        {
+                                                                            <div class="cms-json-grid">
+                                                                                <input type="text" @bind="item.Number" placeholder="01" />
+                                                                                <input type="text" @bind="item.Label" placeholder="Libelle" />
+                                                                            </div>
+                                                                            <input type="text" @bind="item.Title" placeholder="Titre" />
+                                                                            <textarea rows="3" @bind="item.Text" placeholder="Texte court"></textarea>
+                                                                            <input type="text" @bind="item.Image" placeholder="images/..." />
+                                                                        }
+                                                                        else if (value.FieldKey == "stats")
+                                                                        {
+                                                                            <div class="cms-json-grid">
+                                                                                <input type="text" @bind="item.Label" placeholder="Libelle" />
+                                                                                <input type="text" @bind="item.Value" placeholder="Valeur" />
+                                                                            </div>
+                                                                            <input type="text" @bind="item.Help" placeholder="Aide courte" />
+                                                                        }
+                                                                        else if (value.FieldKey == "columns")
+                                                                        {
+                                                                            <input type="text" @bind="item.Title" placeholder="Titre colonne" />
+                                                                            <textarea rows="4" @bind="item.LinksText" placeholder="Un lien par ligne"></textarea>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <textarea rows="4" @bind="item.RawJson"></textarea>
+                                                                        }
+                                                                    </article>
+                                                                }
+
+                                                                <button type="button" class="cms-add-action" @onclick="() => AddJsonItem(draft, value.FieldKey)">
+                                                                    Ajouter une ligne
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                        else if (IsLongValue(value))
                                                         {
                                                             <textarea rows="5" @bind="draft.EditableValue"></textarea>
                                                         }
@@ -236,7 +323,7 @@ else
                                                         {
                                                             <input type="text" @bind="draft.EditableValue" />
                                                         }
-                                                    </label>
+                                                    </div>
                                                     <button type="button" @onclick="() => SaveContentValueAsync(value)" disabled="@IsSaving">
                                                         Enregistrer
                                                     </button>
@@ -349,6 +436,12 @@ else
             {
                 EditableValue = value.ValueType == "Json" ? value.JsonValue ?? string.Empty : value.TextValue ?? string.Empty
             };
+
+            if (value.ValueType == "Json")
+            {
+                HydrateJsonDraft(draft, draft.EditableValue);
+            }
+
             ContentDrafts[value.Id] = draft;
         }
 
@@ -365,7 +458,7 @@ else
         try
         {
             var request = value.ValueType == "Json"
-                ? new UpdateCmsContentValueRequest(value.TextValue, draft.EditableValue)
+                ? new UpdateCmsContentValueRequest(value.TextValue, BuildJsonValue(draft))
                 : new UpdateCmsContentValueRequest(draft.EditableValue, value.JsonValue);
 
             await ApiClient.UpdateCmsContentValueAsync(value.Id, request);
@@ -401,6 +494,228 @@ else
             .Replace("-", " ", StringComparison.Ordinal);
     }
 
+    private static string GetFieldHelp(CmsContentValueResponse value)
+    {
+        if (IsMediaField(value))
+        {
+            return "Image affichable sur le site";
+        }
+
+        return value.ValueType == "Json"
+            ? "Liste editable"
+            : value.ValueType;
+    }
+
+    private static bool IsMediaField(CmsContentValueResponse value)
+    {
+        return value.ValueType == "Media"
+            || value.FieldKey.EndsWith(".url", StringComparison.OrdinalIgnoreCase)
+            || value.FieldKey.Contains("image", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ToAssetUrl(string value)
+    {
+        if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/", StringComparison.Ordinal))
+        {
+            return value;
+        }
+
+        return $"/{value.TrimStart('/')}";
+    }
+
+    private static void ToggleRawJson(CmsValueDraft draft)
+    {
+        draft.ShowRawJson = !draft.ShowRawJson;
+        if (draft.ShowRawJson)
+        {
+            draft.EditableValue = BuildJsonValue(draft);
+        }
+        else
+        {
+            HydrateJsonDraft(draft, draft.EditableValue);
+        }
+    }
+
+    private static void AddJsonItem(CmsValueDraft draft, string fieldKey)
+    {
+        var item = new CmsJsonItemDraft();
+        if (draft.JsonShape == CmsJsonShape.StringArray)
+        {
+            item.Value = "Nouvel element";
+        }
+        else if (fieldKey == "questions")
+        {
+            item.Question = "Nouvelle question";
+            item.Answer = "Reponse courte.";
+        }
+        else if (fieldKey == "steps")
+        {
+            item.Number = (draft.JsonItems.Count + 1).ToString("00");
+            item.Label = "Etape";
+            item.Title = "Nouveau titre";
+            item.Text = "Texte court.";
+        }
+        else if (fieldKey == "stats")
+        {
+            item.Label = "Indicateur";
+            item.Value = "0";
+            item.Help = "Aide courte";
+        }
+        else if (fieldKey == "columns")
+        {
+            item.Title = "Colonne";
+            item.LinksText = "Lien 1";
+        }
+        else
+        {
+            item.RawJson = "{}";
+        }
+
+        draft.JsonItems.Add(item);
+    }
+
+    private static void RemoveJsonItem(CmsValueDraft draft, Guid itemId)
+    {
+        var item = draft.JsonItems.FirstOrDefault(candidate => candidate.Id == itemId);
+        if (item is not null)
+        {
+            draft.JsonItems.Remove(item);
+        }
+    }
+
+    private static string GetJsonItemTitle(string fieldKey, CmsJsonItemDraft item)
+    {
+        return fieldKey switch
+        {
+            "questions" => string.IsNullOrWhiteSpace(item.Question) ? "Question" : item.Question,
+            "steps" => string.IsNullOrWhiteSpace(item.Title) ? $"Etape {item.Number}" : item.Title,
+            "stats" => string.IsNullOrWhiteSpace(item.Label) ? "Indicateur" : item.Label,
+            "columns" => string.IsNullOrWhiteSpace(item.Title) ? "Colonne footer" : item.Title,
+            _ => string.IsNullOrWhiteSpace(item.Value) ? "Element" : item.Value
+        };
+    }
+
+    private static string BuildJsonValue(CmsValueDraft draft)
+    {
+        if (draft.ShowRawJson || draft.JsonItems.Count == 0)
+        {
+            return draft.EditableValue;
+        }
+
+        JsonArray array = [];
+        foreach (var item in draft.JsonItems)
+        {
+            if (draft.JsonShape == CmsJsonShape.StringArray)
+            {
+                array.Add(item.Value);
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(item.RawJson))
+            {
+                var parsed = JsonNode.Parse(item.RawJson);
+                if (parsed is not null)
+                {
+                    array.Add(parsed);
+                    continue;
+                }
+            }
+
+            var node = new JsonObject();
+            AddJsonProperty(node, "number", item.Number);
+            AddJsonProperty(node, "label", item.Label);
+            AddJsonProperty(node, "title", item.Title);
+            AddJsonProperty(node, "text", item.Text);
+            AddJsonProperty(node, "image", item.Image);
+            AddJsonProperty(node, "question", item.Question);
+            AddJsonProperty(node, "answer", item.Answer);
+            AddJsonProperty(node, "value", item.Value);
+            AddJsonProperty(node, "help", item.Help);
+
+            if (!string.IsNullOrWhiteSpace(item.LinksText))
+            {
+                node["links"] = new JsonArray(item.LinksText
+                    .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(link => JsonValue.Create(link))
+                    .ToArray<JsonNode?>());
+            }
+
+            array.Add(node);
+        }
+
+        return array.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private static void AddJsonProperty(JsonObject node, string key, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            node[key] = value;
+        }
+    }
+
+    private static void HydrateJsonDraft(CmsValueDraft draft, string json)
+    {
+        draft.JsonItems = [];
+        draft.JsonShape = CmsJsonShape.Raw;
+
+        try
+        {
+            var root = JsonNode.Parse(json);
+            if (root is not JsonArray array)
+            {
+                return;
+            }
+
+            if (array.All(item => item is JsonValue))
+            {
+                draft.JsonShape = CmsJsonShape.StringArray;
+                draft.JsonItems = array
+                    .Select(item => new CmsJsonItemDraft { Value = item?.GetValue<string>() ?? string.Empty })
+                    .ToList();
+                return;
+            }
+
+            draft.JsonShape = CmsJsonShape.ObjectArray;
+            foreach (var item in array)
+            {
+                if (item is not JsonObject obj)
+                {
+                    continue;
+                }
+
+                draft.JsonItems.Add(new CmsJsonItemDraft
+                {
+                    Number = GetJsonString(obj, "number"),
+                    Label = GetJsonString(obj, "label"),
+                    Title = GetJsonString(obj, "title"),
+                    Text = GetJsonString(obj, "text"),
+                    Image = GetJsonString(obj, "image"),
+                    Question = GetJsonString(obj, "question"),
+                    Answer = GetJsonString(obj, "answer"),
+                    Value = GetJsonString(obj, "value"),
+                    Help = GetJsonString(obj, "help"),
+                    LinksText = obj["links"] is JsonArray links
+                        ? string.Join(Environment.NewLine, links.Select(link => link?.GetValue<string>()).Where(link => !string.IsNullOrWhiteSpace(link)))
+                        : string.Empty
+                });
+            }
+        }
+        catch (JsonException)
+        {
+            draft.ShowRawJson = true;
+        }
+    }
+
+    private static string GetJsonString(JsonObject obj, string key)
+    {
+        return obj.TryGetPropertyValue(key, out var value) && value is not null
+            ? value.GetValue<string>()
+            : string.Empty;
+    }
+
     private static string GetStatusClass(string status)
     {
         return status switch
@@ -415,5 +730,31 @@ else
     private sealed class CmsValueDraft
     {
         public string EditableValue { get; set; } = string.Empty;
+        public bool ShowRawJson { get; set; }
+        public CmsJsonShape JsonShape { get; set; } = CmsJsonShape.Raw;
+        public List<CmsJsonItemDraft> JsonItems { get; set; } = [];
+    }
+
+    private sealed class CmsJsonItemDraft
+    {
+        public Guid Id { get; } = Guid.NewGuid();
+        public string Number { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string Image { get; set; } = string.Empty;
+        public string Question { get; set; } = string.Empty;
+        public string Answer { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+        public string Help { get; set; } = string.Empty;
+        public string LinksText { get; set; } = string.Empty;
+        public string RawJson { get; set; } = string.Empty;
+    }
+
+    private enum CmsJsonShape
+    {
+        Raw,
+        StringArray,
+        ObjectArray
     }
 }
