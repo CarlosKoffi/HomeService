@@ -208,10 +208,10 @@ else
                 </label>
             </div>
 
-            <div class="service-picker">
+            <div class="service-picker employee-skill-picker">
                 <strong>@T("company.employees.services.title", "Services maitrises")</strong>
                 <p>@T("company.employees.services.description", "Selectionnez les services puis les prestations que ce prestataire peut realiser. Les prix affiches sont les fourchettes plateforme.")</p>
-                <div>
+                <div class="service-tile-grid">
                     @foreach (var service in Services)
                     {
                         var selection = Form.Services.FirstOrDefault(item => item.ServiceId == service.Id);
@@ -219,15 +219,22 @@ else
                         <article class="@($"service-check {(selection is not null ? "selected expanded" : string.Empty)}")">
                             <label class="service-check-toggle">
                                 <input type="checkbox" checked="@(selection is not null)" @onchange="eventArgs => ToggleService(service.Id, eventArgs)" />
+                                <span class="service-check-emoji">@GetServiceEmoji(service.Name)</span>
                                 <span class="service-check-main">
                                     <strong>@service.Name</strong>
                                     <small>@FormatPriceRange(service.PriceMinAmount ?? service.NormalPriceAmount, service.PriceMaxAmount ?? service.PremiumPriceAmount, service.Currency)</small>
+                                </span>
+                                <span class="service-check-box">
+                                    @if (selection is not null)
+                                    {
+                                        <svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-5"/></svg>
+                                    }
                                 </span>
                             </label>
 
                             @if (selection is not null)
                             {
-                                <div class="service-check-details">
+                                <div class="service-check-details figma-service-details">
                                     <label>
                                         Niveau
                                         <select @bind="selection.ExperienceLevel">
@@ -251,7 +258,7 @@ else
 
                                 @if (activePrestations.Count > 0)
                                 {
-                                    <div class="service-prestation-picker">
+                                    <div class="service-prestation-picker figma-prestation-picker">
                                         <label>
                                             Prestations
                                             <input list="@GetPrestationDatalistId("form", selection.ServiceId)"
@@ -587,10 +594,10 @@ else
                                 </label>
                             </div>
 
-                            <div class="service-picker">
+                            <div class="service-picker employee-skill-picker">
                                 <strong>Services et prestations</strong>
                                 <p>Ajoutez les services, cochez les prestations autorisees et indiquez le niveau du prestataire.</p>
-                                <div class="service-editor-toolbar">
+                                <div class="service-editor-toolbar figma-service-toolbar">
                                     <select @bind="ServiceToAddId">
                                         <option value="">Ajouter un service</option>
                                         @foreach (var service in Services.Where(service => EditableServices.All(item => item.ServiceId != service.Id)))
@@ -612,13 +619,16 @@ else
                                         {
                                             var activePrestations = GetActivePrestations(service.ServiceId);
                                             var hasPrestations = activePrestations.Count > 0;
-                                            <div class="@($"service-edit-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
+                                            <div class="@($"service-edit-row figma-service-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
                                                 <div class="service-edit-name">
-                                                    <strong>@service.ServiceName</strong>
+                                                    <div class="service-profile-title">
+                                                        <span class="service-check-emoji">@GetServiceEmoji(service.ServiceName)</span>
+                                                        <strong>@service.ServiceName</strong>
+                                                    </div>
                                                     @if (hasPrestations)
                                                     {
                                                         <small>Prestations autorisees pour ce prestataire</small>
-                                                        <div class="service-prestation-picker">
+                                                        <div class="service-prestation-picker figma-prestation-picker">
                                                             <label>
                                                                 Prestations
                                                                 <input list="@GetPrestationDatalistId("edit", service.ServiceId)"
@@ -1627,6 +1637,47 @@ else
             ? "Prestations a definir"
             : string.Join(" · ", prestations.Take(3).Select(prestation => prestation.Name))
                 + (prestations.Count > 3 ? $" +{prestations.Count - 3}" : string.Empty);
+    }
+
+    private static string GetServiceEmoji(string serviceName)
+    {
+        var normalized = NormalizeSearch(serviceName);
+        if (normalized.Contains("MENAGE", StringComparison.OrdinalIgnoreCase) || normalized.Contains("NETTOYAGE", StringComparison.OrdinalIgnoreCase))
+        {
+            return "🧹";
+        }
+
+        if (normalized.Contains("JARDIN", StringComparison.OrdinalIgnoreCase))
+        {
+            return "🌿";
+        }
+
+        if (normalized.Contains("NOUNOU", StringComparison.OrdinalIgnoreCase) || normalized.Contains("ENFANT", StringComparison.OrdinalIgnoreCase))
+        {
+            return "👶";
+        }
+
+        if (normalized.Contains("PLOMB", StringComparison.OrdinalIgnoreCase))
+        {
+            return "🔧";
+        }
+
+        if (normalized.Contains("ELECT", StringComparison.OrdinalIgnoreCase))
+        {
+            return "⚡";
+        }
+
+        if (normalized.Contains("BLANCH", StringComparison.OrdinalIgnoreCase) || normalized.Contains("LINGE", StringComparison.OrdinalIgnoreCase))
+        {
+            return "👔";
+        }
+
+        if (normalized.Contains("AUTO", StringComparison.OrdinalIgnoreCase))
+        {
+            return "🚗";
+        }
+
+        return "✓";
     }
 
     private IReadOnlyList<ServicePrestationSummaryResponse> GetSelectedPrestations(Guid serviceId, IEnumerable<Guid> selectedIds)

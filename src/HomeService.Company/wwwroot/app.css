@@ -130,6 +130,181 @@
     color: #991b1b !important;
 }
 
+/* Employee modal: Figma-aligned job profile section */
+.employee-upsert-modal .employee-skill-picker {
+    display: grid !important;
+    gap: 1rem !important;
+    order: 2 !important;
+}
+
+.employee-upsert-modal .employee-profile-card > .compact-upsert-grid {
+    order: 3 !important;
+}
+
+.employee-upsert-modal .employee-skill-picker > strong {
+    color: #AAAAAA !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: .12em !important;
+    text-transform: uppercase !important;
+}
+
+.employee-upsert-modal .employee-skill-picker > p {
+    color: #666666 !important;
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+    margin: -.35rem 0 0 !important;
+}
+
+.employee-upsert-modal .service-tile-grid {
+    display: grid !important;
+    gap: .65rem !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.employee-upsert-modal .service-check {
+    background: #FAFAFA !important;
+    border: 1px solid #ECECEC !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.employee-upsert-modal .service-check.selected {
+    background: #EEF4FF !important;
+    border-color: rgba(26, 106, 255, .3) !important;
+}
+
+.employee-upsert-modal .service-check-toggle {
+    align-items: center !important;
+    display: flex !important;
+    gap: .75rem !important;
+    min-height: 56px !important;
+    padding: .7rem .85rem !important;
+}
+
+.employee-upsert-modal .service-check-toggle input {
+    display: none !important;
+}
+
+.employee-upsert-modal .service-check-emoji {
+    flex: 0 0 auto !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+}
+
+.employee-upsert-modal .service-check-main {
+    flex: 1 !important;
+}
+
+.employee-upsert-modal .service-check-main strong {
+    color: #111111 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+}
+
+.employee-upsert-modal .service-check.selected .service-check-main strong {
+    color: #1A6AFF !important;
+}
+
+.employee-upsert-modal .service-check-main small {
+    display: none !important;
+}
+
+.employee-upsert-modal .service-check-box {
+    align-items: center !important;
+    background: #ffffff !important;
+    border: 1px solid #DDDDDD !important;
+    border-radius: 5px !important;
+    color: #ffffff !important;
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    height: 16px !important;
+    justify-content: center !important;
+    width: 16px !important;
+}
+
+.employee-upsert-modal .service-check-box svg {
+    fill: none !important;
+    height: 10px !important;
+    stroke: currentColor !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    stroke-width: 2 !important;
+    width: 10px !important;
+}
+
+.employee-upsert-modal .service-check.selected .service-check-box {
+    background: #1A6AFF !important;
+    border-color: #1A6AFF !important;
+}
+
+.employee-upsert-modal .figma-service-details {
+    background: #ffffff !important;
+    border-top: 1px solid rgba(26, 106, 255, .16) !important;
+    grid-template-columns: minmax(0, 1fr) minmax(90px, .75fr) minmax(120px, .85fr) !important;
+    margin: 0 .85rem .85rem !important;
+    padding-top: .8rem !important;
+}
+
+.employee-upsert-modal .figma-service-toolbar {
+    background: #FAFAFA !important;
+    border: 1px solid #ECECEC !important;
+    border-radius: 14px !important;
+    display: grid !important;
+    gap: .65rem !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    padding: .65rem !important;
+}
+
+.employee-upsert-modal .figma-service-row,
+.employee-upsert-modal .figma-service-row.has-prestations {
+    align-items: stretch !important;
+    background: #FAFAFA !important;
+    border: 1px solid #ECECEC !important;
+    border-radius: 16px !important;
+    box-shadow: none !important;
+    grid-template-columns: minmax(0, 1.6fr) minmax(120px, .55fr) minmax(100px, .45fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(120px, .55fr) auto !important;
+    padding: .9rem !important;
+}
+
+.employee-upsert-modal .figma-service-row .service-edit-name {
+    display: grid !important;
+    gap: .55rem !important;
+}
+
+.employee-upsert-modal .service-profile-title {
+    align-items: center !important;
+    display: flex !important;
+    gap: .7rem !important;
+}
+
+.employee-upsert-modal .figma-prestation-picker {
+    background: #ffffff !important;
+    border: 1px solid #ECECEC !important;
+    border-radius: 14px !important;
+    margin-top: .2rem !important;
+    padding: .75rem !important;
+}
+
+.employee-upsert-modal .figma-prestation-picker input {
+    background: #F8F9FF !important;
+}
+
+@media (max-width: 760px) {
+    .employee-upsert-modal .service-tile-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .employee-upsert-modal .figma-service-details,
+    .employee-upsert-modal .figma-service-row,
+    .employee-upsert-modal .figma-service-row.has-prestations,
+    .employee-upsert-modal .figma-service-toolbar {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 .employee-form-modern .service-picker > div {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
 }
@@ -746,6 +921,177 @@
     display: inline-flex;
     font-weight: 800;
     margin-top: .6rem;
+}
+
+.employee-upsert-modal .employee-skill-picker {
+    display: grid;
+    gap: 1rem;
+}
+
+.employee-upsert-modal .employee-skill-picker > strong {
+    color: #AAAAAA;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.employee-upsert-modal .employee-skill-picker > p {
+    color: #666666;
+    font-size: 12px;
+    line-height: 1.55;
+    margin: -.35rem 0 0;
+}
+
+.employee-upsert-modal .service-tile-grid {
+    display: grid !important;
+    gap: .65rem !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.employee-upsert-modal .service-check {
+    background: #FAFAFA !important;
+    border: 1px solid #ECECEC !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.employee-upsert-modal .service-check.selected {
+    background: #EEF4FF !important;
+    border-color: rgba(26, 106, 255, .3) !important;
+    box-shadow: none !important;
+}
+
+.employee-upsert-modal .service-check-toggle {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+    min-height: 56px;
+    padding: .7rem .85rem;
+}
+
+.employee-upsert-modal .service-check-toggle input {
+    display: none;
+}
+
+.service-check-emoji {
+    flex: 0 0 auto;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.employee-upsert-modal .service-check-main {
+    flex: 1;
+}
+
+.employee-upsert-modal .service-check-main strong {
+    color: #111111 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1.2;
+}
+
+.employee-upsert-modal .service-check.selected .service-check-main strong {
+    color: #1A6AFF !important;
+}
+
+.employee-upsert-modal .service-check-main small {
+    display: none;
+}
+
+.service-check-box {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #DDDDDD;
+    border-radius: 5px;
+    color: #ffffff;
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 16px;
+    justify-content: center;
+    width: 16px;
+}
+
+.service-check-box svg {
+    fill: none;
+    height: 10px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    width: 10px;
+}
+
+.employee-upsert-modal .service-check.selected .service-check-box {
+    background: #1A6AFF;
+    border-color: #1A6AFF;
+}
+
+.employee-upsert-modal .figma-service-details {
+    background: #ffffff;
+    border-top: 1px solid rgba(26, 106, 255, .16);
+    grid-template-columns: minmax(0, 1fr) minmax(90px, .75fr) minmax(120px, .85fr);
+    margin: 0 .85rem .85rem;
+    padding-top: .8rem;
+}
+
+.employee-upsert-modal .figma-service-toolbar {
+    background: #FAFAFA;
+    border: 1px solid #ECECEC;
+    border-radius: 14px;
+    display: grid;
+    gap: .65rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: .65rem;
+}
+
+.employee-upsert-modal .figma-service-row {
+    align-items: stretch;
+    background: #FAFAFA;
+    border: 1px solid #ECECEC;
+    border-radius: 16px;
+    box-shadow: none;
+    grid-template-columns: minmax(0, 1fr);
+    padding: .9rem;
+}
+
+.employee-upsert-modal .figma-service-row .service-edit-name {
+    display: grid;
+    gap: .55rem;
+}
+
+.service-profile-title {
+    align-items: center;
+    display: flex;
+    gap: .7rem;
+}
+
+.employee-upsert-modal .figma-service-row > label,
+.employee-upsert-modal .figma-service-row > .service-premium-toggle,
+.employee-upsert-modal .figma-service-row > .service-price-readonly,
+.employee-upsert-modal .figma-service-row > .danger-action {
+    margin-top: .7rem;
+}
+
+.employee-upsert-modal .figma-service-row {
+    grid-template-columns: minmax(0, 1.6fr) minmax(120px, .55fr) minmax(100px, .45fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(120px, .55fr) auto;
+}
+
+.employee-upsert-modal .figma-service-row.has-prestations {
+    grid-template-columns: minmax(280px, 1.8fr) minmax(120px, .55fr) minmax(100px, .45fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(120px, .55fr) auto;
+}
+
+.employee-upsert-modal .figma-prestation-picker {
+    background: #ffffff;
+    border: 1px solid #ECECEC;
+    border-radius: 14px;
+    margin-top: .2rem;
+    padding: .75rem;
+}
+
+.employee-upsert-modal .figma-prestation-picker input {
+    background: #F8F9FF;
 }
 
 @media (max-width: 760px) {
