@@ -149,20 +149,64 @@ else
 
             <div class="service-picker">
                 <strong>@T("company.employees.services.title", "Services maitrises")</strong>
-                <p>@T("company.employees.services.description", "Selectionnez les services que ce prestataire peut realiser. Les tarifs normal et premium sont fixes dans l'administration.")</p>
+                <p>@T("company.employees.services.description", "Selectionnez les services puis les prestations que ce prestataire peut realiser. Les prix affiches sont les fourchettes plateforme.")</p>
                 <div>
                     @foreach (var service in Services)
                     {
-                        <label class="service-check">
-                            <input type="checkbox" checked="@Form.ServiceIds.Contains(service.Id)" @onchange="eventArgs => ToggleService(service.Id, eventArgs)" />
-                            <span class="service-check-main">
-                                <strong>@service.Name</strong>
-                                @if (GetActivePrestations(service.Id).Count > 0)
+                        var selection = Form.Services.FirstOrDefault(item => item.ServiceId == service.Id);
+                        var activePrestations = GetActivePrestations(service.Id);
+                        <article class="@($"service-check {(selection is not null ? "selected expanded" : string.Empty)}")">
+                            <label class="service-check-toggle">
+                                <input type="checkbox" checked="@(selection is not null)" @onchange="eventArgs => ToggleService(service.Id, eventArgs)" />
+                                <span class="service-check-main">
+                                    <strong>@service.Name</strong>
+                                    <small>@FormatPriceRange(service.PriceMinAmount ?? service.NormalPriceAmount, service.PriceMaxAmount ?? service.PremiumPriceAmount, service.Currency)</small>
+                                </span>
+                            </label>
+
+                            @if (selection is not null)
+                            {
+                                <div class="service-check-details">
+                                    <label>
+                                        Niveau
+                                        <select @bind="selection.ExperienceLevel">
+                                            <option value="Junior">Junior</option>
+                                            <option value="Confirmed">Confirme</option>
+                                            <option value="Senior">Senior</option>
+                                            <option value="Expert">Expert</option>
+                                        </select>
+                                    </label>
+                                    <label>
+                                        Experience
+                                        <InputNumber @bind-Value="selection.YearsOfExperience" />
+                                    </label>
+                                    <label class="service-premium-toggle">
+                                        <input type="checkbox"
+                                               checked="@(selection.PriceTier == "Premium")"
+                                               @onchange="eventArgs => ToggleFormPremium(selection, eventArgs)" />
+                                        <span>Profil premium</span>
+                                    </label>
+                                </div>
+
+                                @if (activePrestations.Count > 0)
                                 {
-                                    <small>@GetPrestationsText(service.Id)</small>
+                                    <div class="service-prestation-list is-selectable compact">
+                                        @foreach (var prestation in activePrestations)
+                                        {
+                                            <label class="service-prestation-choice">
+                                                <input type="checkbox"
+                                                       checked="@selection.ServicePrestationIds.Contains(prestation.Id)"
+                                                       @onchange="eventArgs => ToggleFormPrestation(selection, prestation.Id, eventArgs)" />
+                                                <span>
+                                                    <strong>@prestation.Name</strong>
+                                                    <small>@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</small>
+                                                </span>
+                                            </label>
+                                        }
+                                    </div>
                                 }
-                            </span>
-                        </label>
+                            }
+                        </article>
                     }
                 </div>
             </div>
@@ -983,11 +1027,40 @@ else
         if (isChecked && !Form.ServiceIds.Contains(serviceId))
         {
             Form.ServiceIds.Add(serviceId);
+            Form.Services.Add(new CompanyEmployeeServiceFormModel
+            {
+                ServiceId = serviceId,
+                ExperienceLevel = Form.ExperienceLevel,
+                YearsOfExperience = Form.YearsOfExperience,
+                PriceTier = "Normal"
+            });
         }
         else if (!isChecked)
         {
             Form.ServiceIds.Remove(serviceId);
+            Form.Services.RemoveAll(service => service.ServiceId == serviceId);
         }
+    }
+
+    private static void ToggleFormPrestation(CompanyEmployeeServiceFormModel service, Guid prestationId, ChangeEventArgs eventArgs)
+    {
+        var isChecked = eventArgs.Value is bool value && value;
+        if (isChecked)
+        {
+            if (!service.ServicePrestationIds.Contains(prestationId))
+            {
+                service.ServicePrestationIds.Add(prestationId);
+            }
+
+            return;
+        }
+
+        service.ServicePrestationIds.Remove(prestationId);
+    }
+
+    private static void ToggleFormPremium(CompanyEmployeeServiceFormModel service, ChangeEventArgs eventArgs)
+    {
+        service.PriceTier = eventArgs.Value is bool isPremium && isPremium ? "Premium" : "Normal";
     }
 
     private void OnPhotoSelected(InputFileChangeEventArgs eventArgs)
@@ -1666,9 +1739,9 @@ else
         return new Dictionary<string, string>
         {
             ["company.employees.form.title"] = "Nouvel employe",
-            ["company.employees.form.description"] = "Renseignez les informations essentielles. Les prix des services sont fixes par la plateforme.",
+            ["company.employees.form.description"] = "Renseignez les informations essentielles. Les prix restent controles par la plateforme.",
             ["company.employees.services.title"] = "Services maitrises",
-            ["company.employees.services.description"] = "Selectionnez les services que ce prestataire peut realiser. Les tarifs normal et premium sont fixes dans l'administration.",
+            ["company.employees.services.description"] = "Selectionnez les services puis les prestations que ce prestataire peut realiser. Les prix affiches sont les fourchettes plateforme.",
             ["company.employees.upload.photo"] = "Photo du prestataire",
             ["company.employees.upload.identity"] = "Piece d'identite",
             ["company.employees.upload.diploma"] = "Diplome ou certificat",

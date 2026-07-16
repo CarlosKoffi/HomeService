@@ -7,6 +7,7 @@ using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace HomeService.Api.Endpoints;
 
@@ -395,17 +396,45 @@ public static class CompanyPortalEndpoints
                 GetOptionalDecimal(form, "missionLongitude"),
                 GetOptionalInt(form, "missionRadiusKm") ?? 5);
 
-            var requestedServiceIds = GetGuidValues(form, "serviceIds");
+            var requestedServices = GetEmployeeServiceSelections(form);
+            var requestedServiceIds = requestedServices.Select(service => service.ServiceId).Distinct().ToList();
             var services = await db.Services
                 .Where(service => requestedServiceIds.Contains(service.Id) && service.IsActive)
                 .Select(service => service.Id)
                 .ToListAsync(cancellationToken);
 
-            foreach (var serviceId in services)
+            var activePrestations = await db.ServicePrestations
+                .Where(prestation => services.Contains(prestation.ServiceId) && prestation.IsActive)
+                .Select(prestation => new { prestation.Id, prestation.ServiceId })
+                .ToListAsync(cancellationToken);
+
+            var activePrestationsByService = activePrestations
+                .GroupBy(prestation => prestation.ServiceId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(prestation => prestation.Id).ToHashSet());
+
+            provider.SyncCompanyServices(requestedServices
+                .Where(service => services.Contains(service.ServiceId))
+                .Select(service => (
+                    service.ServiceId,
+                    ParseExperienceLevel(service.ExperienceLevel),
+                    Math.Max(0, service.YearsOfExperience),
+                    ParseProviderServicePriceTier(service.PriceTier))));
+
+            foreach (var providerService in provider.Services.Where(service => service.IsActive))
             {
-                provider.AddService(
-                    serviceId,
-                    ParseExperienceLevel(GetOptionalFormValue(form, "experienceLevel")));
+                var requestService = requestedServices.LastOrDefault(service => service.ServiceId == providerService.ServiceId);
+                if (requestService is null)
+                {
+                    continue;
+                }
+
+                var allowedPrestationIds = activePrestationsByService.TryGetValue(providerService.ServiceId, out var ids)
+                    ? ids
+                    : new HashSet<Guid>();
+                providerService.SyncPrestations(requestService.ServicePrestationIds
+                    .Where(allowedPrestationIds.Contains));
             }
 
             db.Providers.Add(provider);
@@ -810,6 +839,38 @@ public static class CompanyPortalEndpoints
             .ToList();
     }
 
+    private static IReadOnlyList<CompanyPortalCreateEmployeeServiceRequest> GetEmployeeServiceSelections(IFormCollection form)
+    {
+        var rawSelections = GetOptionalFormValue(form, "serviceSelections");
+        if (!string.IsNullOrWhiteSpace(rawSelections))
+        {
+            try
+            {
+                var selections = JsonSerializer.Deserialize<IReadOnlyList<CompanyPortalCreateEmployeeServiceRequest>>(
+                        rawSelections,
+                        new JsonSerializerOptions(JsonSerializerDefaults.Web))
+                    ?? [];
+
+                if (selections.Count > 0)
+                {
+                    return selections;
+                }
+            }
+            catch (JsonException)
+            {
+            }
+        }
+
+        return GetGuidValues(form, "serviceIds")
+            .Select(serviceId => new CompanyPortalCreateEmployeeServiceRequest(
+                serviceId,
+                GetOptionalFormValue(form, "experienceLevel") ?? nameof(ExperienceLevel.Confirmed),
+                GetOptionalInt(form, "yearsOfExperience") ?? 0,
+                nameof(ProviderServicePriceTier.Normal),
+                []))
+            .ToList();
+    }
+
     private static decimal? GetOptionalDecimal(IFormCollection form, string key)
     {
         return decimal.TryParse(GetFormValue(form, key), out var value) ? value : null;
@@ -839,6 +900,13 @@ public static class CompanyPortalEndpoints
         return Enum.TryParse<ProviderGender>(value, true, out var gender)
             ? gender
             : ProviderGender.Unspecified;
+    }
+
+    private static ProviderServicePriceTier ParseProviderServicePriceTier(string? value)
+    {
+        return Enum.TryParse<ProviderServicePriceTier>(value, true, out var tier)
+            ? tier
+            : ProviderServicePriceTier.Normal;
     }
 
     private static CompanyProviderFormData ToCompanyProviderFormData(IFormCollection form)

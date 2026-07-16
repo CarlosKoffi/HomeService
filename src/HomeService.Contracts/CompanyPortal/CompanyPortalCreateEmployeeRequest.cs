@@ -12,4 +12,12 @@ public sealed record CompanyPortalCreateEmployeeRequest(
     decimal? MissionLatitude,
     decimal? MissionLongitude,
     int MissionRadiusKm,
-    IReadOnlyList<Guid> ServiceIds);
+    IReadOnlyList<Guid> ServiceIds,
+    IReadOnlyList<CompanyPortalCreateEmployeeServiceRequest>? Services = null);
+
+public sealed record CompanyPortalCreateEmployeeServiceRequest(
+    Guid ServiceId,
+    string ExperienceLevel,
+    int YearsOfExperience,
+    string PriceTier,
+    IReadOnlyList<Guid> ServicePrestationIds);

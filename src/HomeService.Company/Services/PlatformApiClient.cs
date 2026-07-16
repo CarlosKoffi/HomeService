@@ -365,6 +365,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             AddString(content, "missionLongitude", employee.MissionLongitude?.ToString());
             AddString(content, "missionRadiusKm", employee.MissionRadiusKm.ToString());
             AddString(content, "experienceLevel", employee.ExperienceLevel);
+            AddString(content, "serviceSelections", JsonSerializer.Serialize(employee.Services, JsonOptions));
 
             foreach (var serviceId in employee.ServiceIds)
             {
@@ -687,7 +688,17 @@ public sealed class CompanyEmployeeFormModel
     public int MissionRadiusKm { get; set; } = 5;
     public string ExperienceLevel { get; set; } = "Confirmed";
     public List<Guid> ServiceIds { get; } = [];
+    public List<CompanyEmployeeServiceFormModel> Services { get; } = [];
     public IBrowserFile? Photo { get; set; }
     public IBrowserFile? IdentityDocument { get; set; }
     public IBrowserFile? DiplomaDocument { get; set; }
+}
+
+public sealed class CompanyEmployeeServiceFormModel
+{
+    public Guid ServiceId { get; set; }
+    public string ExperienceLevel { get; set; } = "Confirmed";
+    public int YearsOfExperience { get; set; }
+    public string PriceTier { get; set; } = "Normal";
+    public List<Guid> ServicePrestationIds { get; set; } = [];
 }
