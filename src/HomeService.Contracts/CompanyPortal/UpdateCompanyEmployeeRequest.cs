@@ -10,4 +10,6 @@ public sealed record UpdateCompanyEmployeeRequest(
     string Gender,
     string EmploymentType,
     int YearsOfExperience,
+    decimal? MissionLatitude,
+    decimal? MissionLongitude,
     int MissionRadiusKm);

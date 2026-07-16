@@ -568,6 +568,23 @@ else
                                     Perimetre km
                                     <InputNumber @bind-Value="EditModel.MissionRadiusKm" />
                                 </label>
+                                <label>
+                                    Niveau
+                                    <InputSelect @bind-Value="EditModel.ExperienceLevel">
+                                        <option value="Junior">Junior</option>
+                                        <option value="Confirmed">Confirme</option>
+                                        <option value="Senior">Senior</option>
+                                        <option value="Expert">Expert</option>
+                                    </InputSelect>
+                                </label>
+                                <label>
+                                    Latitude mission
+                                    <InputNumber @bind-Value="EditModel.MissionLatitude" />
+                                </label>
+                                <label>
+                                    Longitude mission
+                                    <InputNumber @bind-Value="EditModel.MissionLongitude" />
+                                </label>
                             </div>
 
                             <div class="service-picker">
@@ -943,6 +960,9 @@ else
             Gender = employee.Gender,
             EmploymentType = employee.EmploymentType,
             YearsOfExperience = employee.YearsOfExperience,
+            MissionLatitude = employee.CurrentLatitude,
+            MissionLongitude = employee.CurrentLongitude,
+            ExperienceLevel = employee.Services.FirstOrDefault()?.ExperienceLevel ?? "Confirmed",
             MissionRadiusKm = (int)(employee.ServiceRadiusKm ?? 5)
         };
         EditableServices = employee.Services
@@ -1005,6 +1025,8 @@ else
             EmploymentType = EditModel.EmploymentType,
             ReceivesDirectRequests = EditModel.EmploymentType == "TemporaryWorker",
             YearsOfExperience = EditModel.YearsOfExperience,
+            CurrentLatitude = EditModel.MissionLatitude,
+            CurrentLongitude = EditModel.MissionLongitude,
             ServiceRadiusKm = EditModel.MissionRadiusKm,
             BirthDate = DateOnly.FromDateTime(EditBirthDate.Value),
             Services = EditableServices
@@ -1054,6 +1076,8 @@ else
                 EditModel.Gender,
                 EditModel.EmploymentType,
                 EditModel.YearsOfExperience,
+                EditModel.MissionLatitude,
+                EditModel.MissionLongitude,
                 EditModel.MissionRadiusKm));
 
         if (!profileResult.IsSuccess)
@@ -2123,6 +2147,9 @@ else
         public string Gender { get; set; } = "Unspecified";
         public string EmploymentType { get; set; } = "CompanyEmployee";
         public int YearsOfExperience { get; set; }
+        public string ExperienceLevel { get; set; } = "Confirmed";
+        public decimal? MissionLatitude { get; set; }
+        public decimal? MissionLongitude { get; set; }
         public int MissionRadiusKm { get; set; } = 5;
     }
 

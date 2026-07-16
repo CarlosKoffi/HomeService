@@ -31,6 +31,8 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             ParseProviderGender(request.Gender),
             ParseProviderEmploymentType(request.EmploymentType),
             request.YearsOfExperience,
+            request.MissionLatitude,
+            request.MissionLongitude,
             request.MissionRadiusKm);
 
         return CompanyEmployeeOperationResult.Ok(provider, before, SnapshotProfile(provider));

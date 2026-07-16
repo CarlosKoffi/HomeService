@@ -113,6 +113,8 @@ public sealed class ProviderProfile : AuditableEntity
         ProviderGender gender,
         ProviderEmploymentType employmentType,
         int yearsOfExperience,
+        decimal? missionLatitude,
+        decimal? missionLongitude,
         int missionRadiusKm)
     {
         FirstName = firstName.Trim();
@@ -124,6 +126,8 @@ public sealed class ProviderProfile : AuditableEntity
         Gender = gender;
         EmploymentType = employmentType;
         YearsOfExperience = yearsOfExperience;
+        MissionLatitude = missionLatitude;
+        MissionLongitude = missionLongitude;
         MissionRadiusKm = missionRadiusKm;
         Touch();
     }
