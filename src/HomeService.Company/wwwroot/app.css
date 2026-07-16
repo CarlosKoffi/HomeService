@@ -6898,7 +6898,8 @@ h3 {
     box-shadow: 0 1px 4px rgba(0, 0, 0, .04);
     margin: 0 auto;
     max-width: 1100px;
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
     width: 100%;
 }
 
@@ -6941,7 +6942,12 @@ h3 {
     border-bottom: 1px solid #f5f5f5;
     cursor: pointer;
     padding: 16px 20px;
+    position: relative;
     transition: background .15s ease;
+}
+
+.employee-table-row-modern:has(.employee-action-menu) {
+    z-index: 40;
 }
 
 .employee-table-row-modern:hover,
@@ -7125,6 +7131,7 @@ h3 {
     display: flex;
     justify-content: flex-end;
     position: relative;
+    z-index: 45;
 }
 
 .employee-row-menu button,
@@ -7176,7 +7183,7 @@ h3 {
     position: absolute;
     right: 0;
     top: 36px;
-    z-index: 20;
+    z-index: 60;
 }
 
 .employee-action-menu button {
