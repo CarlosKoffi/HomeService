@@ -74,13 +74,41 @@ else
 
     @if (ShowForm)
     {
-        <EditForm Model="Form" OnSubmit="CreateEmployeeAsync" class="employee-form employee-form-modern">
-            <div class="form-section-title">
-                <h2>@T("company.employees.form.title", "Nouvel employe")</h2>
-                <p>@T("company.employees.form.description", "Renseignez les informations essentielles. Les prix des services sont fixes par la plateforme.")</p>
-            </div>
+        <div class="modal-backdrop employee-upsert-backdrop" @onclick="ToggleForm">
+            <section class="employee-upsert-modal" @onclick:stopPropagation>
+                <EditForm Model="Form" OnSubmit="CreateEmployeeAsync" class="employee-upsert-form employee-form-modern">
+                    <header class="employee-upsert-header">
+                        <div class="employee-upsert-title">
+                            <span class="employee-upsert-icon">
+                                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            </span>
+                            <span>
+                                <strong>@T("company.employees.form.title", "Ajouter un employe")</strong>
+                                <small>@T("company.employees.form.description", "Renseignez les informations du prestataire.")</small>
+                            </span>
+                        </div>
+                        <button type="button" class="employee-upsert-close" @onclick="ToggleForm" aria-label="Fermer">
+                            <svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                    </header>
 
-            <div class="form-grid">
+                    <div class="employee-upsert-body">
+                        <article class="employee-profile-card identity-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon violet">
+                                        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    </span>
+                                    <strong>Identite civile</strong>
+                                </div>
+                                <div class="employee-type-toggle">
+                                    <button type="button" class="@(Form.EmploymentType == "CompanyEmployee" ? "active" : string.Empty)" @onclick="@(() => SetFormEmploymentType("CompanyEmployee"))">Employe</button>
+                                    <button type="button" class="@(Form.EmploymentType == "TemporaryWorker" ? "active interim" : string.Empty)" @onclick="@(() => SetFormEmploymentType("TemporaryWorker"))">Interimaire</button>
+                                </div>
+                            </div>
+
+                            <div class="employee-identity-layout">
+                                <div class="form-grid upsert-grid">
                 <label>
                     Prenom
                     <InputText @bind-Value="Form.FirstName" placeholder="Awa" />
@@ -90,44 +118,75 @@ else
                     <InputText @bind-Value="Form.LastName" placeholder="Kone" />
                 </label>
                 <label>
-                    Telephone
-                    <InputText @bind-Value="Form.PhoneNumber" placeholder="+225 07 00 00 00 00" />
-                </label>
-                <label>
-                    Email
-                    <InputText @bind-Value="Form.Email" placeholder="awa.kone@entreprise.ci" />
-                </label>
-                <label>
                     Date de naissance
                     <InputDate @bind-Value="BirthDate" />
                 </label>
+                                    <div class="@GetAgeBadgeClass(BirthDate)">
+                                        <span>Age</span>
+                                        <strong>@GetAgeText(BirthDate)</strong>
+                                    </div>
+                                </div>
+                                <label class="@($"employee-photo-drop {(Form.Photo is not null ? "ready" : string.Empty)}")">
+                                    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                    <span>@DisplayFileName(PhotoFileName, "Photo du prestataire")</span>
+                                    <InputFile OnChange="OnPhotoSelected" accept=".jpg,.jpeg,.png,.webp" />
+                                </label>
+                            </div>
+                        </article>
+
+                        <article class="employee-profile-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon blue">
+                                        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    </span>
+                                    <strong>Contact</strong>
+                                </div>
+                            </div>
+
+                            <div class="form-grid contact-grid">
+                                <label class="wide-field">
+                                    Zone d'intervention
+                                    <InputText @bind-Value="Form.Address" placeholder="Cocody, Abidjan" />
+                                </label>
                 <label class="wide-field">
-                    Adresse
-                    <InputText @bind-Value="Form.Address" placeholder="Cocody, Abidjan" />
-                </label>
-                <label>
-                    Sexe
-                    <InputSelect @bind-Value="Form.Gender">
-                        <option value="Unspecified">Non renseigne</option>
-                        <option value="Female">Femme</option>
-                        <option value="Male">Homme</option>
-                    </InputSelect>
-                </label>
-                <label>
-                    Type
-                    <InputSelect @bind-Value="Form.EmploymentType">
-                        <option value="CompanyEmployee">Employe de l'entreprise</option>
-                        <option value="TemporaryWorker">Interimaire</option>
-                    </InputSelect>
-                </label>
-                <label>
-                    Experience
-                    <InputNumber @bind-Value="Form.YearsOfExperience" />
-                </label>
-                <label>
-                    Perimetre km
-                    <InputNumber @bind-Value="Form.MissionRadiusKm" />
-                </label>
+                                    Telephone
+                                    <InputText @bind-Value="Form.PhoneNumber" placeholder="+225 07 00 00 00 00" />
+                                </label>
+                                <label class="wide-field">
+                                    Email
+                                    <InputText @bind-Value="Form.Email" placeholder="awa@exemple.com" />
+                                </label>
+                            </div>
+                        </article>
+
+                        <article class="employee-profile-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon green">
+                                        <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                                    </span>
+                                    <strong>Profil metier</strong>
+                                </div>
+                            </div>
+
+                            <div class="form-grid compact-upsert-grid">
+                                <label>
+                                    Sexe
+                                    <InputSelect @bind-Value="Form.Gender">
+                                        <option value="Unspecified">Non renseigne</option>
+                                        <option value="Female">Femme</option>
+                                        <option value="Male">Homme</option>
+                                    </InputSelect>
+                                </label>
+                                <label>
+                                    Experience
+                                    <InputNumber @bind-Value="Form.YearsOfExperience" />
+                                </label>
+                                <label>
+                                    Perimetre km
+                                    <InputNumber @bind-Value="Form.MissionRadiusKm" />
+                                </label>
                 <label>
                     Niveau
                     <InputSelect @bind-Value="Form.ExperienceLevel">
@@ -210,14 +269,18 @@ else
                     }
                 </div>
             </div>
+                        </article>
 
+                        <article class="employee-profile-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon amber">
+                                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                                    </span>
+                                    <strong>Documents</strong>
+                                </div>
+                            </div>
             <div class="employee-upload-grid">
-                <label class="upload-mini">
-                    <strong>@T("company.employees.upload.photo", "Photo du prestataire")</strong>
-                    <small>@DisplayFileName(PhotoFileName, "JPG, PNG ou WEBP")</small>
-                    <em>@T("company.employees.upload.choose", "Selectionner")</em>
-                    <InputFile OnChange="OnPhotoSelected" accept=".jpg,.jpeg,.png,.webp" />
-                </label>
                 <label class="upload-mini required">
                     <strong>@T("company.employees.upload.identity", "Piece d'identite")</strong>
                     <small>@DisplayFileName(IdentityFileName, "PDF, JPG ou PNG")</small>
@@ -231,16 +294,23 @@ else
                     <InputFile OnChange="OnDiplomaSelected" accept=".pdf,.jpg,.jpeg,.png,.webp" />
                 </label>
             </div>
+                        </article>
 
             @if (!string.IsNullOrWhiteSpace(Message))
             {
                 <p class="field-message">@Message</p>
             }
+                    </div>
 
-            <button type="submit" class="primary-action" disabled="@IsSaving">
-                @(IsSaving ? "Enregistrement..." : "Enregistrer l'employe")
-            </button>
-        </EditForm>
+                    <footer class="employee-upsert-footer">
+                        <button type="button" class="secondary-action" @onclick="ToggleForm">Annuler</button>
+                        <button type="submit" class="primary-action" disabled="@IsSaving">
+                            @(IsSaving ? "Enregistrement..." : "Enregistrer l'employe")
+                        </button>
+                    </footer>
+                </EditForm>
+            </section>
+        </div>
     }
 
     @if (LiveEmployees.Count > 0)
@@ -370,7 +440,7 @@ else
     @if (SelectedEmployee is not null)
     {
         <div class="modal-backdrop" @onclick="ClearSelectedEmployee">
-            <section class="employee-modal" @onclick:stopPropagation>
+            <section class="employee-modal employee-upsert-modal employee-profile-modal" @onclick:stopPropagation>
                 <div class="employee-detail-heading">
                     <div class="employee-identity">
                         <div class="employee-avatar compact">@GetInitials(SelectedEmployee)</div>
@@ -707,6 +777,11 @@ else
     {
         ShowForm = !ShowForm;
         Message = null;
+    }
+
+    private void SetFormEmploymentType(string employmentType)
+    {
+        Form.EmploymentType = employmentType;
     }
 
     private void SetEmployeeFilter(string filter)
@@ -1815,6 +1890,28 @@ else
     private static string DisplayFileName(string? fileName, string fallback)
     {
         return string.IsNullOrWhiteSpace(fileName) ? fallback : fileName;
+    }
+
+    private static string GetAgeText(DateTime? birthDate)
+    {
+        if (birthDate is null)
+        {
+            return "-- ans";
+        }
+
+        var today = DateTime.Today;
+        var age = today.Year - birthDate.Value.Year;
+        if (birthDate.Value.Date > today.AddYears(-age))
+        {
+            age--;
+        }
+
+        return age < 0 ? "-- ans" : $"{age} ans";
+    }
+
+    private static string GetAgeBadgeClass(DateTime? birthDate)
+    {
+        return birthDate is null ? "employee-age-box" : "employee-age-box ready";
     }
 
     private static IReadOnlyDictionary<string, string> PreviewTexts()
