@@ -6670,6 +6670,7 @@ h3 {
 .employee-row-menu {
     display: flex;
     justify-content: flex-end;
+    position: relative;
 }
 
 .employee-row-menu button,
@@ -6684,10 +6685,100 @@ h3 {
     padding: 8px 11px;
 }
 
+.employee-row-menu .employee-menu-trigger {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    display: inline-flex;
+    gap: 3px;
+    height: 32px;
+    justify-content: center;
+    padding: 0;
+    width: 32px;
+}
+
+.employee-menu-trigger span {
+    background: #9CA3AF;
+    border-radius: 999px;
+    display: block;
+    height: 3px;
+    width: 3px;
+}
+
+.employee-row-menu .employee-menu-trigger:hover {
+    background: #F3F6FB;
+}
+
+.employee-action-menu {
+    background: #ffffff;
+    border: 1px solid #ECECEC;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px rgba(17, 17, 17, .14);
+    display: grid;
+    min-width: 218px;
+    overflow: hidden;
+    padding: .45rem;
+    position: absolute;
+    right: 0;
+    top: 36px;
+    z-index: 20;
+}
+
+.employee-action-menu button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    color: #111111;
+    display: flex;
+    gap: .7rem;
+    justify-content: flex-start;
+    min-height: 42px;
+    padding: .65rem .75rem;
+    text-align: left;
+    width: 100%;
+}
+
+.employee-action-menu button + button {
+    border-top: 1px solid #F2F4F7;
+}
+
+.employee-action-menu button:hover {
+    background: #F7FAFF;
+    color: #1A6AFF;
+}
+
+.employee-action-menu button.danger {
+    color: #DC2626;
+}
+
+.employee-action-menu svg {
+    fill: none;
+    flex-shrink: 0;
+    height: 15px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    width: 15px;
+}
+
 .employee-row-menu button:hover,
 .employee-modern-table footer button:hover {
     border-color: rgba(26, 106, 255, .28);
     color: var(--portal-blue);
+}
+
+.employee-row-menu .employee-action-menu button:hover {
+    background: #F7FAFF;
+    border-color: transparent;
+    color: #1A6AFF;
+}
+
+.employee-row-menu .employee-action-menu button.danger,
+.employee-row-menu .employee-action-menu button.danger:hover {
+    color: #DC2626;
 }
 
 .employee-empty-line {

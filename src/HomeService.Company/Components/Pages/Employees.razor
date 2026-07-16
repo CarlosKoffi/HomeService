@@ -324,7 +324,39 @@ else
                         <small>@GetDocumentsText(employee)</small>
                     </div>
                     <div class="employee-row-menu" @onclick:stopPropagation>
-                        <button type="button" title="Voir le profil" @onclick="() => SelectEmployee(employee)">Voir</button>
+                        <button type="button"
+                                class="employee-menu-trigger"
+                                title="Actions"
+                                aria-label="Actions employe"
+                                @onclick="() => ToggleEmployeeActionMenu(employee.Id)">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
+                        @if (OpenEmployeeActionMenuId == employee.Id)
+                        {
+                            <div class="employee-action-menu">
+                                <button type="button" @onclick="() => OpenEmployeeProfile(employee)">
+                                    <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    Voir le profil
+                                </button>
+                                @if (CanChangeAvailability(employee))
+                                {
+                                    <button type="button" @onclick="() => ToggleEmployeeAvailabilityAsync(employee)">
+                                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
+                                        @(employee.IsAvailable ? "Marquer indisponible" : "Marquer disponible")
+                                    </button>
+                                }
+                                <button type="button" @onclick="() => SuspendEmployeeAsync(employee.Id)">
+                                    <svg viewBox="0 0 24 24"><path d="M12 3v6"/><path d="M8 7 4 11v5l4 4h8l4-4v-5l-4-4Z"/></svg>
+                                    Suspendre
+                                </button>
+                                <button type="button" class="danger" @onclick="() => DeleteEmployeeAsync(employee.Id)">
+                                    <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>
+                                    Supprimer
+                                </button>
+                            </div>
+                        }
                     </div>
                 </article>
             }
@@ -574,6 +606,7 @@ else
     private string ActiveEmployeeFilter { get; set; } = "Tous";
     private string? EmployeeSortKey { get; set; } = "name";
     private bool EmployeeSortAscending { get; set; } = true;
+    private Guid? OpenEmployeeActionMenuId { get; set; }
     private static readonly IReadOnlyList<string> EmployeeFilters = ["Tous", "Disponible", "En mission", "Indisponible"];
 
     private IReadOnlyList<CompanyEmployeeResponse> AvailableEmployees => EmployeeRows
@@ -712,6 +745,7 @@ else
 
     private void SelectEmployee(CompanyEmployeeResponse employee)
     {
+        OpenEmployeeActionMenuId = null;
         SelectedEmployee = employee;
         EditModel = new CompanyEmployeeEditModel
         {
@@ -754,6 +788,17 @@ else
         SelectedEmployee = null;
         EditableServices = [];
         ServiceToAddId = null;
+    }
+
+    private void ToggleEmployeeActionMenu(Guid employeeId)
+    {
+        OpenEmployeeActionMenuId = OpenEmployeeActionMenuId == employeeId ? null : employeeId;
+    }
+
+    private void OpenEmployeeProfile(CompanyEmployeeResponse employee)
+    {
+        OpenEmployeeActionMenuId = null;
+        SelectEmployee(employee);
     }
 
     private async Task SaveEmployeeEditAsync()
@@ -1119,6 +1164,7 @@ else
 
     private async Task SuspendEmployeeAsync(Guid employeeId)
     {
+        OpenEmployeeActionMenuId = null;
         if (Session is null)
         {
             return;
@@ -1136,8 +1182,39 @@ else
         await LoadAsync();
     }
 
+    private async Task ToggleEmployeeAvailabilityAsync(CompanyEmployeeResponse employee)
+    {
+        OpenEmployeeActionMenuId = null;
+        if (Session is null || !CanChangeAvailability(employee))
+        {
+            return;
+        }
+
+        var nextAvailability = !employee.IsAvailable;
+        if (IsPreviewMode())
+        {
+            EmployeeRows = EmployeeRows.Select(row => row.Id == employee.Id
+                ? row with { IsAvailable = nextAvailability }
+                : row).ToList();
+            return;
+        }
+
+        var result = await ApiClient.UpdateCompanyEmployeeAvailabilityAsync(
+            Session.CompanyId,
+            employee.Id,
+            new UpdateCompanyEmployeeAvailabilityRequest(nextAvailability));
+        if (!result.IsSuccess)
+        {
+            Message = result.ErrorMessage;
+            return;
+        }
+
+        await LoadAsync();
+    }
+
     private async Task DeleteEmployeeAsync(Guid employeeId)
     {
+        OpenEmployeeActionMenuId = null;
         if (Session is null)
         {
             return;
@@ -1155,6 +1232,12 @@ else
 
         await ApiClient.DeleteCompanyEmployeeAsync(Session.CompanyId, employeeId);
         await LoadAsync();
+    }
+
+    private static bool CanChangeAvailability(CompanyEmployeeResponse employee)
+    {
+        return employee.Status is not ("SuspendedByCompany" or "Inactive")
+            && employee.CurrentMission is null;
     }
 
     private static string GetInitials(CompanyEmployeeResponse employee)

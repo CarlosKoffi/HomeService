@@ -541,6 +541,35 @@ public static class CompanyPortalEndpoints
         })
         .WithName("UpdateCompanyPortalEmployeeServices");
 
+        group.MapPost("/{companyId:guid}/employees/{employeeId:guid}/availability", async (
+            Guid companyId,
+            Guid employeeId,
+            UpdateCompanyEmployeeAvailabilityRequest request,
+            HttpRequest httpRequest,
+            CompanyEmployeeManagementService employeeManagementService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await employeeManagementService.UpdateAvailabilityAsync(companyId, employeeId, request, cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            AddCompanyEmployeeAudit(
+                db,
+                httpRequest,
+                companyId,
+                "CompanyEmployeeAvailabilityUpdated",
+                result.Provider!.Id,
+                request.IsAvailable ? "Prestataire marque disponible." : "Prestataire marque indisponible.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyPortalEmployeeAvailability");
+
         group.MapPost("/{companyId:guid}/employees/{employeeId:guid}/suspend", async (
             Guid companyId,
             Guid employeeId,

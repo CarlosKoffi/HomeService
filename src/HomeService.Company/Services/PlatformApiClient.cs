@@ -500,6 +500,20 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
     }
 
+    public async Task<EmployeeSaveResult> UpdateCompanyEmployeeAvailabilityAsync(
+        Guid companyId,
+        Guid employeeId,
+        UpdateCompanyEmployeeAvailabilityRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync($"/api/company-portal/{companyId:D}/employees/{employeeId:D}/availability", request, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
+    }
+
     public async Task<EmployeeSaveResult> DeleteCompanyEmployeeAsync(Guid companyId, Guid employeeId, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

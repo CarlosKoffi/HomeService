@@ -111,6 +111,26 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         return CompanyEmployeeOperationResult.Ok(provider, before, new { provider.Status });
     }
 
+    public async Task<CompanyEmployeeOperationResult> UpdateAvailabilityAsync(
+        Guid companyId,
+        Guid employeeId,
+        UpdateCompanyEmployeeAvailabilityRequest request,
+        CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+        if (provider is null)
+        {
+            return CompanyEmployeeOperationResult.NotFound();
+        }
+
+        var before = new { provider.IsAvailable, provider.CurrentLatitude, provider.CurrentLongitude };
+        provider.SetAvailability(request.IsAvailable, request.Latitude ?? provider.CurrentLatitude, request.Longitude ?? provider.CurrentLongitude);
+        return CompanyEmployeeOperationResult.Ok(
+            provider,
+            before,
+            new { provider.IsAvailable, provider.CurrentLatitude, provider.CurrentLongitude });
+    }
+
     public async Task<CompanyEmployeeOperationResult> DeactivateAsync(Guid companyId, Guid employeeId, CancellationToken cancellationToken)
     {
         var provider = await db.Providers.FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
