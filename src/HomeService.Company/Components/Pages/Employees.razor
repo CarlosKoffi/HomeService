@@ -1,4 +1,6 @@
 @page "/employees"
+@using System.Globalization
+@using System.Text
 @using System.Text.Json
 @inject IJSRuntime Js
 @inject PlatformApiClient ApiClient
@@ -249,18 +251,32 @@ else
 
                                 @if (activePrestations.Count > 0)
                                 {
-                                    <div class="service-prestation-list is-selectable compact">
-                                        @foreach (var prestation in activePrestations)
+                                    <div class="service-prestation-picker">
+                                        <label>
+                                            Prestations
+                                            <input list="@GetPrestationDatalistId("form", selection.ServiceId)"
+                                                   @bind="selection.PrestationSearchTerm"
+                                                   @bind:event="oninput"
+                                                   placeholder="Rechercher une prestation" />
+                                        </label>
+                                        <datalist id="@GetPrestationDatalistId("form", selection.ServiceId)">
+                                            @foreach (var prestation in activePrestations)
+                                            {
+                                                <option value="@prestation.Name">@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</option>
+                                            }
+                                        </datalist>
+                                        <button type="button" @onclick="() => AddFormPrestation(selection)">Ajouter</button>
+                                        @if (selection.ServicePrestationIds.Count > 0)
                                         {
-                                            <label class="service-prestation-choice">
-                                                <input type="checkbox"
-                                                       checked="@selection.ServicePrestationIds.Contains(prestation.Id)"
-                                                       @onchange="eventArgs => ToggleFormPrestation(selection, prestation.Id, eventArgs)" />
-                                                <span>
-                                                    <strong>@prestation.Name</strong>
-                                                    <small>@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</small>
-                                                </span>
-                                            </label>
+                                            <div class="selected-prestation-list">
+                                                @foreach (var prestation in GetSelectedPrestations(selection.ServiceId, selection.ServicePrestationIds))
+                                                {
+                                                    <span>
+                                                        @prestation.Name
+                                                        <button type="button" @onclick="() => RemoveFormPrestation(selection, prestation.Id)" aria-label="Retirer la prestation">×</button>
+                                                    </span>
+                                                }
+                                            </div>
                                         }
                                     </div>
                                 }
@@ -585,21 +601,32 @@ else
                                                     @if (hasPrestations)
                                                     {
                                                         <small>Prestations autorisees pour ce prestataire</small>
-                                                        <div class="service-prestation-list is-selectable" aria-label="Prestations rattachees">
-                                                            @foreach (var prestation in activePrestations)
+                                                        <div class="service-prestation-picker">
+                                                            <label>
+                                                                Prestations
+                                                                <input list="@GetPrestationDatalistId("edit", service.ServiceId)"
+                                                                       @bind="service.PrestationSearchTerm"
+                                                                       @bind:event="oninput"
+                                                                       placeholder="Rechercher une prestation" />
+                                                            </label>
+                                                            <datalist id="@GetPrestationDatalistId("edit", service.ServiceId)">
+                                                                @foreach (var prestation in activePrestations)
+                                                                {
+                                                                    <option value="@prestation.Name">@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</option>
+                                                                }
+                                                            </datalist>
+                                                            <button type="button" @onclick="() => AddEditablePrestation(service)">Ajouter</button>
+                                                            @if (service.ServicePrestationIds.Count > 0)
                                                             {
-                                                                <label class="service-prestation-choice">
-                                                                    <input type="checkbox"
-                                                                           checked="@service.ServicePrestationIds.Contains(prestation.Id)"
-                                                                           @onchange="eventArgs => ToggleEditablePrestation(service, prestation.Id, eventArgs)" />
-                                                                    <span>
-                                                                        <strong>@prestation.Name</strong>
-                                                                        <small>@prestation.Description</small>
-                                                                        <span class="prestation-price-line">
-                                                                            <em>@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</em>
+                                                                <div class="selected-prestation-list">
+                                                                    @foreach (var prestation in GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds))
+                                                                    {
+                                                                        <span>
+                                                                            @prestation.Name
+                                                                            <button type="button" @onclick="() => RemoveEditablePrestation(service, prestation.Id)" aria-label="Retirer la prestation">×</button>
                                                                         </span>
-                                                                    </span>
-                                                                </label>
+                                                                    }
+                                                                </div>
                                                             }
                                                         </div>
                                                     }
@@ -1262,6 +1289,23 @@ else
         service.ServicePrestationIds.Remove(prestationId);
     }
 
+    private void AddFormPrestation(CompanyEmployeeServiceFormModel service)
+    {
+        var prestation = FindPrestation(service.ServiceId, service.PrestationSearchTerm);
+        if (prestation is null || service.ServicePrestationIds.Contains(prestation.Id))
+        {
+            return;
+        }
+
+        service.ServicePrestationIds.Add(prestation.Id);
+        service.PrestationSearchTerm = null;
+    }
+
+    private static void RemoveFormPrestation(CompanyEmployeeServiceFormModel service, Guid prestationId)
+    {
+        service.ServicePrestationIds.Remove(prestationId);
+    }
+
     private static void ToggleFormPremium(CompanyEmployeeServiceFormModel service, ChangeEventArgs eventArgs)
     {
         service.PriceTier = eventArgs.Value is bool isPremium && isPremium ? "Premium" : "Normal";
@@ -1569,6 +1613,39 @@ else
             .ToList();
     }
 
+    private ServicePrestationSummaryResponse? FindPrestation(Guid serviceId, string? searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return null;
+        }
+
+        var normalizedSearch = NormalizeSearch(searchTerm);
+        var prestations = GetActivePrestations(serviceId);
+        return prestations.FirstOrDefault(prestation => NormalizeSearch(prestation.Name) == normalizedSearch)
+            ?? prestations.FirstOrDefault(prestation => NormalizeSearch(prestation.Name).Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string GetPrestationDatalistId(string scope, Guid serviceId)
+    {
+        return $"prestations-{scope}-{serviceId:N}";
+    }
+
+    private static string NormalizeSearch(string value)
+    {
+        var normalized = value.Trim().Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(normalized.Length);
+        foreach (var character in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString().Normalize(NormalizationForm.FormC).ToUpperInvariant();
+    }
+
     private void ToggleEditablePrestation(CompanyEmployeeServiceEditModel service, Guid prestationId, ChangeEventArgs eventArgs)
     {
         var isChecked = eventArgs.Value is bool value && value;
@@ -1582,6 +1659,23 @@ else
             return;
         }
 
+        service.ServicePrestationIds.Remove(prestationId);
+    }
+
+    private void AddEditablePrestation(CompanyEmployeeServiceEditModel service)
+    {
+        var prestation = FindPrestation(service.ServiceId, service.PrestationSearchTerm);
+        if (prestation is null || service.ServicePrestationIds.Contains(prestation.Id))
+        {
+            return;
+        }
+
+        service.ServicePrestationIds.Add(prestation.Id);
+        service.PrestationSearchTerm = null;
+    }
+
+    private static void RemoveEditablePrestation(CompanyEmployeeServiceEditModel service, Guid prestationId)
+    {
         service.ServicePrestationIds.Remove(prestationId);
     }
 
@@ -2045,6 +2139,7 @@ else
         public int PriceMaxAmount { get; set; }
         public string Currency { get; set; } = "XOF";
         public List<Guid> ServicePrestationIds { get; set; } = [];
+        public string? PrestationSearchTerm { get; set; }
     }
 
     private sealed record EmployeeDocumentSlot(

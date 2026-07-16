@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
@@ -715,4 +716,6 @@ public sealed class CompanyEmployeeServiceFormModel
     public int YearsOfExperience { get; set; }
     public string PriceTier { get; set; } = "Normal";
     public List<Guid> ServicePrestationIds { get; set; } = [];
+    [JsonIgnore]
+    public string? PrestationSearchTerm { get; set; }
 }

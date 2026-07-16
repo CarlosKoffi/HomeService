@@ -241,13 +241,89 @@
     gap: .1rem;
 }
 
+.service-prestation-picker {
+    align-items: end;
+    border-top: 1px solid #ECECEC;
+    display: grid;
+    gap: .65rem;
+    grid-template-columns: minmax(180px, 1fr) auto;
+    padding-top: .75rem;
+}
+
+.service-prestation-picker label {
+    color: #111111 !important;
+    display: grid;
+    font-size: .72rem;
+    font-weight: 750;
+    gap: .35rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+
+.service-prestation-picker input {
+    background: #ffffff;
+    border: 1px solid #E4E7EC;
+    border-radius: 12px;
+    color: #111111;
+    min-height: 40px;
+    padding: .55rem .65rem;
+}
+
+.service-prestation-picker button {
+    background: #1A6AFF;
+    border: 1px solid #1A6AFF;
+    border-radius: 12px;
+    color: #ffffff;
+    cursor: pointer;
+    font-weight: 850;
+    min-height: 40px;
+    padding: .55rem .95rem;
+}
+
+.selected-prestation-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    grid-column: 1 / -1;
+}
+
+.selected-prestation-list span {
+    align-items: center;
+    background: #F4F7FF;
+    border: 1px solid rgba(26, 106, 255, .18);
+    border-radius: 999px;
+    color: #111111;
+    display: inline-flex;
+    font-size: .78rem;
+    font-weight: 750;
+    gap: .45rem;
+    min-height: 32px;
+    padding: .3rem .4rem .3rem .75rem;
+}
+
+.selected-prestation-list button {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid rgba(26, 106, 255, .2);
+    border-radius: 999px;
+    color: #1A6AFF;
+    display: inline-flex;
+    font-size: 1rem;
+    height: 22px;
+    justify-content: center;
+    min-height: 0;
+    padding: 0;
+    width: 22px;
+}
+
 .service-price-readonly strong,
 .service-price-readonly.premium strong {
     color: #1A6AFF !important;
 }
 
 @media (max-width: 720px) {
-    .service-check-details {
+    .service-check-details,
+    .service-prestation-picker {
         grid-template-columns: 1fr;
     }
 }
