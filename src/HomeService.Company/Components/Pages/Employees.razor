@@ -439,214 +439,293 @@ else
 
     @if (SelectedEmployee is not null)
     {
-        <div class="modal-backdrop" @onclick="ClearSelectedEmployee">
-            <section class="employee-modal employee-upsert-modal employee-profile-modal" @onclick:stopPropagation>
-                <div class="employee-detail-heading">
-                    <div class="employee-identity">
-                        <div class="employee-avatar compact">@GetInitials(SelectedEmployee)</div>
-                        <div>
-                            <h2>@SelectedEmployee.FirstName @SelectedEmployee.LastName</h2>
-                            <span>@SelectedEmployee.PhoneNumber</span>
-                            @if (!string.IsNullOrWhiteSpace(SelectedEmployee.Email))
-                            {
-                                <span>@SelectedEmployee.Email</span>
-                            }
+        <div class="modal-backdrop employee-upsert-backdrop" @onclick="ClearSelectedEmployee">
+            <section class="employee-upsert-modal employee-profile-modal" @onclick:stopPropagation>
+                <EditForm Model="EditModel" OnSubmit="SaveEmployeeEditAsync" class="employee-upsert-form employee-form-modern">
+                    <header class="employee-upsert-header">
+                        <div class="employee-upsert-title">
+                            <span class="employee-upsert-icon">
+                                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </span>
+                            <span>
+                                <strong>@SelectedEmployee.FirstName @SelectedEmployee.LastName</strong>
+                                <small>Profil prestataire modifiable</small>
+                            </span>
                         </div>
-                    </div>
-                    <button type="button" @onclick="ClearSelectedEmployee">Fermer</button>
-                </div>
+                        <button type="button" class="employee-upsert-close" @onclick="ClearSelectedEmployee" aria-label="Fermer">
+                            <svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                    </header>
 
-                <div class="form-grid compact-form">
-                    <label>Prenom<InputText @bind-Value="EditModel.FirstName" /></label>
-                    <label>Nom<InputText @bind-Value="EditModel.LastName" /></label>
-                    <label>Telephone<InputText @bind-Value="EditModel.PhoneNumber" /></label>
-                    <label>Email<InputText @bind-Value="EditModel.Email" /></label>
-                    <label>Date de naissance<InputDate @bind-Value="EditBirthDate" /></label>
-                    <label>Sexe
-                        <InputSelect @bind-Value="EditModel.Gender">
-                            <option value="Unspecified">Non renseigne</option>
-                            <option value="Female">Femme</option>
-                            <option value="Male">Homme</option>
-                        </InputSelect>
-                    </label>
-                    <label>Type
-                        <InputSelect @bind-Value="EditModel.EmploymentType">
-                            <option value="CompanyEmployee">Employe de l'entreprise</option>
-                            <option value="TemporaryWorker">Interimaire</option>
-                        </InputSelect>
-                    </label>
-                    <label>Experience<InputNumber @bind-Value="EditModel.YearsOfExperience" /></label>
-                    <label>Perimetre km<InputNumber @bind-Value="EditModel.MissionRadiusKm" /></label>
-                    <label class="wide-field">Adresse<InputText @bind-Value="EditModel.Address" /></label>
-                </div>
-
-                <div class="employee-detail-grid">
-                    <article class="employee-invitation-card">
-                        <span>Acces prestataire</span>
-                        @if (!string.IsNullOrWhiteSpace(SelectedEmployee.InvitationCode))
-                        {
-                            <strong>@SelectedEmployee.InvitationCode</strong>
-                            <p>Code a envoyer par SMS ou WhatsApp. Valable jusqu'au @SelectedEmployee.InvitationExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm").</p>
-                            @if (!string.IsNullOrWhiteSpace(SelectedEmployee.InvitationLink))
-                            {
-                                <a href="@SelectedEmployee.InvitationLink" target="_blank">Ouvrir le lien d'activation</a>
-                            }
-                        }
-                        else
-                        {
-                            <strong>Compte active ou code expire</strong>
-                            <p>Generez un nouveau code si le prestataire doit recuperer son acces.</p>
-                        }
-                        <button type="button" class="secondary-action compact-action" @onclick="GenerateInvitationCodeAsync">Generer un nouveau code</button>
-                    </article>
-                    <article>
-                        <span>Affectation</span>
-                        <strong>@GetAssignmentLabel(EditModel.EmploymentType == "TemporaryWorker")</strong>
-                        <p>@(EditModel.EmploymentType == "TemporaryWorker" ? "Eligible aux demandes directes." : "Affectation depuis le portail entreprise.")</p>
-                    </article>
-                    <article>
-                        <span>Statut</span>
-                        <strong>@GetStatusLabel(SelectedEmployee.Status)</strong>
-                        <p>@(SelectedEmployee.IsAvailable ? "Disponible" : "Non disponible")</p>
-                    </article>
-                </div>
-
-                <div class="employee-detail-section">
-                    <h3>Services et prix plateforme</h3>
-                    <div class="service-editor-toolbar">
-                        <select @bind="ServiceToAddId">
-                            <option value="">Ajouter un service</option>
-                            @foreach (var service in Services.Where(service => EditableServices.All(item => item.ServiceId != service.Id)))
-                            {
-                                <option value="@service.Id">@service.Name</option>
-                            }
-                        </select>
-                        <button type="button" @onclick="AddEditableService">Ajouter</button>
-                    </div>
-                    @if (EditableServices.Count == 0)
-                    {
-                        <p>Aucun service rattache. Ajoutez au moins un service avant de rendre le profil exploitable.</p>
-                    }
-                    else
-                    {
-                        <div class="service-edit-list">
-                            @foreach (var service in EditableServices)
-                            {
-                                var activePrestations = GetActivePrestations(service.ServiceId);
-                                var hasPrestations = activePrestations.Count > 0;
-                                <div class="@($"service-edit-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
-                                    <div class="service-edit-name">
-                                        <strong>@service.ServiceName</strong>
-                                        @if (hasPrestations)
-                                        {
-                                            <small>Prestations autorisees pour ce prestataire</small>
-                                            <div class="service-prestation-list is-selectable" aria-label="Prestations rattachees">
-                                                @foreach (var prestation in activePrestations)
-                                                {
-                                                    <label class="service-prestation-choice">
-                                                        <input type="checkbox"
-                                                               checked="@service.ServicePrestationIds.Contains(prestation.Id)"
-                                                               @onchange="eventArgs => ToggleEditablePrestation(service, prestation.Id, eventArgs)" />
-                                                        <span>
-                                                            <strong>@prestation.Name</strong>
-                                                            <small>@prestation.Description</small>
-                                                            <span class="prestation-price-line">
-                                                                <em>@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</em>
-                                                            </span>
-                                                        </span>
-                                                    </label>
-                                                }
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <small>Aucune prestation specifique configuree</small>
-                                        }
-                                    </div>
-                                    <label>Niveau
-                                        <select @bind="service.ExperienceLevel">
-                                            <option value="Junior">Junior</option>
-                                            <option value="Confirmed">Confirme</option>
-                                            <option value="Senior">Senior</option>
-                                            <option value="Expert">Expert</option>
-                                        </select>
-                                    </label>
-                                    <label>Experience
-                                        <InputNumber @bind-Value="service.YearsOfExperience" />
-                                    </label>
-                                    <label class="service-premium-toggle">
-                                        <input type="checkbox"
-                                               checked="@(service.PriceTier == "Premium")"
-                                               @onchange="eventArgs => TogglePremium(service, eventArgs)" />
-                                        <span>Profil premium</span>
-                                    </label>
-                                    <div class="service-price-readonly">
-                                        <span>Prix minimum</span>
-                                        <strong>@GetEffectiveMinPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
-                                    </div>
-                                    <div class="service-price-readonly premium">
-                                        <span>Prix maximum</span>
-                                        <strong>@GetEffectiveMaxPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
-                                    </div>
-                                    <button type="button" class="danger-action" @onclick="() => RemoveEditableService(service.ServiceId)">Retirer</button>
+                    <div class="employee-upsert-body">
+                        <article class="employee-profile-card identity-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon violet">
+                                        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    </span>
+                                    <strong>Identite civile</strong>
                                 </div>
-                            }
-                        </div>
-                    }
-                </div>
+                                <div class="employee-type-toggle">
+                                    <button type="button" class="@(EditModel.EmploymentType == "CompanyEmployee" ? "active" : string.Empty)" @onclick="@(() => SetEditEmploymentType("CompanyEmployee"))">Employe</button>
+                                    <button type="button" class="@(EditModel.EmploymentType == "TemporaryWorker" ? "active interim" : string.Empty)" @onclick="@(() => SetEditEmploymentType("TemporaryWorker"))">Interimaire</button>
+                                </div>
+                            </div>
 
-                <div class="employee-detail-section">
-                    <h3>Pieces du dossier</h3>
-                    <div class="document-manager">
-                        @foreach (var slot in GetDocumentSlots(SelectedEmployee))
-                        {
-                            <article class="@($"document-slot {slot.StatusClass}")">
-                                @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
-                                {
-                                    <div class="document-preview">
-                                        @if (slot.IsImagePreview)
+                            <div class="employee-identity-layout">
+                                <div class="form-grid upsert-grid">
+                                    <label>
+                                        Prenom
+                                        <InputText @bind-Value="EditModel.FirstName" placeholder="Awa" />
+                                    </label>
+                                    <label>
+                                        Nom
+                                        <InputText @bind-Value="EditModel.LastName" placeholder="Kone" />
+                                    </label>
+                                    <label>
+                                        Date de naissance
+                                        <InputDate @bind-Value="EditBirthDate" />
+                                    </label>
+                                    <div class="@GetAgeBadgeClass(EditBirthDate)">
+                                        <span>Age</span>
+                                        <strong>@GetAgeText(EditBirthDate)</strong>
+                                    </div>
+                                </div>
+                                <label class="@($"employee-photo-drop {(HasEmployeePhoto(SelectedEmployee) ? "ready" : string.Empty)}")">
+                                    <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                    <span>@(HasEmployeePhoto(SelectedEmployee) ? "Remplacer la photo" : "Photo du prestataire")</span>
+                                    <InputFile OnChange='eventArgs => UploadEmployeeDocumentAsync("Photo", eventArgs)' accept=".jpg,.jpeg,.png,.webp" />
+                                </label>
+                            </div>
+                        </article>
+
+                        <article class="employee-profile-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon blue">
+                                        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    </span>
+                                    <strong>Contact</strong>
+                                </div>
+                            </div>
+
+                            <div class="form-grid contact-grid">
+                                <label class="wide-field">
+                                    Zone d'intervention
+                                    <InputText @bind-Value="EditModel.Address" placeholder="Cocody, Abidjan" />
+                                </label>
+                                <label class="wide-field">
+                                    Telephone
+                                    <InputText @bind-Value="EditModel.PhoneNumber" placeholder="+225 07 00 00 00 00" />
+                                </label>
+                                <label class="wide-field">
+                                    Email
+                                    <InputText @bind-Value="EditModel.Email" placeholder="awa@exemple.com" />
+                                </label>
+                            </div>
+                        </article>
+
+                        <article class="employee-profile-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon green">
+                                        <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                                    </span>
+                                    <strong>Profil metier</strong>
+                                </div>
+                            </div>
+
+                            <div class="form-grid compact-upsert-grid">
+                                <label>
+                                    Sexe
+                                    <InputSelect @bind-Value="EditModel.Gender">
+                                        <option value="Unspecified">Non renseigne</option>
+                                        <option value="Female">Femme</option>
+                                        <option value="Male">Homme</option>
+                                    </InputSelect>
+                                </label>
+                                <label>
+                                    Experience
+                                    <InputNumber @bind-Value="EditModel.YearsOfExperience" />
+                                </label>
+                                <label>
+                                    Perimetre km
+                                    <InputNumber @bind-Value="EditModel.MissionRadiusKm" />
+                                </label>
+                            </div>
+
+                            <div class="service-picker">
+                                <strong>Services et prestations</strong>
+                                <p>Ajoutez les services, cochez les prestations autorisees et indiquez le niveau du prestataire.</p>
+                                <div class="service-editor-toolbar">
+                                    <select @bind="ServiceToAddId">
+                                        <option value="">Ajouter un service</option>
+                                        @foreach (var service in Services.Where(service => EditableServices.All(item => item.ServiceId != service.Id)))
                                         {
-                                            <img src="@ToPreviewUrl(slot.PreviewUrl)" alt="@slot.Label" />
+                                            <option value="@service.Id">@service.Name</option>
                                         }
-                                        else
+                                    </select>
+                                    <button type="button" @onclick="AddEditableService">Ajouter</button>
+                                </div>
+
+                                @if (EditableServices.Count == 0)
+                                {
+                                    <p>Aucun service rattache. Ajoutez au moins un service avant de rendre le profil exploitable.</p>
+                                }
+                                else
+                                {
+                                    <div class="service-edit-list">
+                                        @foreach (var service in EditableServices)
                                         {
-                                            <div class="document-preview-file">
-                                                <span>@GetDocumentPreviewCode(slot)</span>
-                                                <strong>Apercu disponible</strong>
+                                            var activePrestations = GetActivePrestations(service.ServiceId);
+                                            var hasPrestations = activePrestations.Count > 0;
+                                            <div class="@($"service-edit-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
+                                                <div class="service-edit-name">
+                                                    <strong>@service.ServiceName</strong>
+                                                    @if (hasPrestations)
+                                                    {
+                                                        <small>Prestations autorisees pour ce prestataire</small>
+                                                        <div class="service-prestation-list is-selectable" aria-label="Prestations rattachees">
+                                                            @foreach (var prestation in activePrestations)
+                                                            {
+                                                                <label class="service-prestation-choice">
+                                                                    <input type="checkbox"
+                                                                           checked="@service.ServicePrestationIds.Contains(prestation.Id)"
+                                                                           @onchange="eventArgs => ToggleEditablePrestation(service, prestation.Id, eventArgs)" />
+                                                                    <span>
+                                                                        <strong>@prestation.Name</strong>
+                                                                        <small>@prestation.Description</small>
+                                                                        <span class="prestation-price-line">
+                                                                            <em>@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</em>
+                                                                        </span>
+                                                                    </span>
+                                                                </label>
+                                                            }
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <small>Aucune prestation specifique configuree</small>
+                                                    }
+                                                </div>
+                                                <label>Niveau
+                                                    <select @bind="service.ExperienceLevel">
+                                                        <option value="Junior">Junior</option>
+                                                        <option value="Confirmed">Confirme</option>
+                                                        <option value="Senior">Senior</option>
+                                                        <option value="Expert">Expert</option>
+                                                    </select>
+                                                </label>
+                                                <label>Experience
+                                                    <InputNumber @bind-Value="service.YearsOfExperience" />
+                                                </label>
+                                                <label class="service-premium-toggle">
+                                                    <input type="checkbox"
+                                                           checked="@(service.PriceTier == "Premium")"
+                                                           @onchange="eventArgs => TogglePremium(service, eventArgs)" />
+                                                    <span>Profil premium</span>
+                                                </label>
+                                                <div class="service-price-readonly">
+                                                    <span>Prix minimum</span>
+                                                    <strong>@GetEffectiveMinPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
+                                                </div>
+                                                <div class="service-price-readonly premium">
+                                                    <span>Prix maximum</span>
+                                                    <strong>@GetEffectiveMaxPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
+                                                </div>
+                                                <button type="button" class="danger-action" @onclick="() => RemoveEditableService(service.ServiceId)">Retirer</button>
                                             </div>
                                         }
                                     </div>
                                 }
-                                <div class="document-slot-info">
-                                    <span>@slot.ShortCode</span>
-                                    <strong>@slot.Label</strong>
-                                    <small>@slot.FileName</small>
+                            </div>
+                        </article>
+
+                        <article class="employee-profile-card">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon amber">
+                                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                                    </span>
+                                    <strong>Documents</strong>
                                 </div>
-                                <div class="document-actions">
-                                    @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
+                            </div>
+
+                            <div class="document-manager">
+                                @foreach (var slot in GetDocumentSlots(SelectedEmployee))
+                                {
+                                    <article class="@($"document-slot {slot.StatusClass}")">
+                                        @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
+                                        {
+                                            <div class="document-preview">
+                                                @if (slot.IsImagePreview)
+                                                {
+                                                    <img src="@ToPreviewUrl(slot.PreviewUrl)" alt="@slot.Label" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="document-preview-file">
+                                                        <span>@GetDocumentPreviewCode(slot)</span>
+                                                        <strong>Apercu disponible</strong>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        <div class="document-slot-info">
+                                            <span>@slot.ShortCode</span>
+                                            <strong>@slot.Label</strong>
+                                            <small>@slot.FileName</small>
+                                        </div>
+                                        <div class="document-actions">
+                                            @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
+                                            {
+                                                <a href="@ApiClient.ToApiUrl(slot.PreviewUrl)" target="_blank">Ouvrir</a>
+                                                <button type="button" class="danger-action" @onclick="() => DeleteEmployeeDocumentAsync(slot.DocumentId!.Value)">Supprimer</button>
+                                            }
+                                            <label class="replace-document">
+                                                @(slot.DocumentId is null ? "Ajouter" : "Remplacer")
+                                                <InputFile OnChange="eventArgs => UploadEmployeeDocumentAsync(slot.DocumentType, eventArgs)" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                                            </label>
+                                        </div>
+                                    </article>
+                                }
+                            </div>
+                        </article>
+
+                        <article class="employee-profile-card employee-access-card">
+                            <div>
+                                <span>Acces prestataire</span>
+                                @if (!string.IsNullOrWhiteSpace(SelectedEmployee.InvitationCode))
+                                {
+                                    <strong>@SelectedEmployee.InvitationCode</strong>
+                                    <p>Code a envoyer par SMS ou WhatsApp. Valable jusqu'au @SelectedEmployee.InvitationExpiresAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm").</p>
+                                    @if (!string.IsNullOrWhiteSpace(SelectedEmployee.InvitationLink))
                                     {
-                                        <a href="@ApiClient.ToApiUrl(slot.PreviewUrl)" target="_blank">Ouvrir</a>
-                                        <button type="button" class="danger-action" @onclick="() => DeleteEmployeeDocumentAsync(slot.DocumentId!.Value)">Supprimer</button>
+                                        <a href="@SelectedEmployee.InvitationLink" target="_blank">Ouvrir le lien d'activation</a>
                                     }
-                                    <label class="replace-document">
-                                        @(slot.DocumentId is null ? "Ajouter" : "Remplacer")
-                                        <InputFile OnChange="eventArgs => UploadEmployeeDocumentAsync(slot.DocumentType, eventArgs)" accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                                    </label>
-                                </div>
-                            </article>
+                                }
+                                else
+                                {
+                                    <strong>Compte active ou code expire</strong>
+                                    <p>Generez un nouveau code si le prestataire doit recuperer son acces.</p>
+                                }
+                            </div>
+                            <button type="button" class="secondary-action compact-action" @onclick="GenerateInvitationCodeAsync">Generer un nouveau code</button>
+                        </article>
+
+                        @if (!string.IsNullOrWhiteSpace(Message))
+                        {
+                            <p class="field-message">@Message</p>
                         }
                     </div>
-                </div>
 
-                @if (!string.IsNullOrWhiteSpace(Message))
-                {
-                    <p class="field-message">@Message</p>
-                }
-
-                <div class="modal-actions">
-                    <button type="button" class="secondary-action" @onclick="ClearSelectedEmployee">Annuler</button>
-                    <button type="button" class="primary-action" @onclick="SaveEmployeeEditAsync">Enregistrer</button>
-                </div>
+                    <footer class="employee-upsert-footer">
+                        <button type="button" class="secondary-action" @onclick="ClearSelectedEmployee">Annuler</button>
+                        <button type="submit" class="primary-action" disabled="@IsSaving">
+                            @(IsSaving ? "Enregistrement..." : "Enregistrer les modifications")
+                        </button>
+                    </footer>
+                </EditForm>
             </section>
         </div>
     }
@@ -782,6 +861,11 @@ else
     private void SetFormEmploymentType(string employmentType)
     {
         Form.EmploymentType = employmentType;
+    }
+
+    private void SetEditEmploymentType(string employmentType)
+    {
+        EditModel.EmploymentType = employmentType;
     }
 
     private void SetEmployeeFilter(string filter)
@@ -1912,6 +1996,12 @@ else
     private static string GetAgeBadgeClass(DateTime? birthDate)
     {
         return birthDate is null ? "employee-age-box" : "employee-age-box ready";
+    }
+
+    private static bool HasEmployeePhoto(CompanyEmployeeResponse employee)
+    {
+        return !string.IsNullOrWhiteSpace(employee.PhotoUrl)
+            || employee.Documents.Any(document => document.DocumentType == "Photo");
     }
 
     private static IReadOnlyDictionary<string, string> PreviewTexts()
