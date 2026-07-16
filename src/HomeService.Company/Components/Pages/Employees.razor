@@ -405,8 +405,7 @@ else
                                                             <strong>@prestation.Name</strong>
                                                             <small>@prestation.Description</small>
                                                             <span class="prestation-price-line">
-                                                                <em>Normal @prestation.NormalPriceAmount.ToString("N0") @prestation.Currency</em>
-                                                                <em>Premium @prestation.PremiumPriceAmount.ToString("N0") @prestation.Currency</em>
+                                                                <em>@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</em>
                                                             </span>
                                                         </span>
                                                     </label>
@@ -429,23 +428,20 @@ else
                                     <label>Experience
                                         <InputNumber @bind-Value="service.YearsOfExperience" />
                                     </label>
-                                    <label>Mode tarif
-                                        <select @bind="service.PriceTier">
-                                            <option value="Normal">Normal</option>
-                                            <option value="Premium">Premium</option>
-                                        </select>
+                                    <label class="service-premium-toggle">
+                                        <input type="checkbox"
+                                               checked="@(service.PriceTier == "Premium")"
+                                               @onchange="eventArgs => TogglePremium(service, eventArgs)" />
+                                        <span>Profil premium</span>
                                     </label>
-                                    @if (!hasPrestations)
-                                    {
-                                        <div class="service-price-readonly">
-                                            <span>Prix normal</span>
-                                            <strong>@service.NormalPriceAmount.ToString("N0") @service.Currency</strong>
-                                        </div>
-                                        <div class="service-price-readonly premium">
-                                            <span>Prix premium</span>
-                                            <strong>@service.PremiumPriceAmount.ToString("N0") @service.Currency</strong>
-                                        </div>
-                                    }
+                                    <div class="service-price-readonly">
+                                        <span>Prix minimum</span>
+                                        <strong>@GetEffectiveMinPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
+                                    </div>
+                                    <div class="service-price-readonly premium">
+                                        <span>Prix maximum</span>
+                                        <strong>@GetEffectiveMaxPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
+                                    </div>
                                     <button type="button" class="danger-action" @onclick="() => RemoveEditableService(service.ServiceId)">Retirer</button>
                                 </div>
                             }
@@ -696,6 +692,8 @@ else
                 PriceTier = service.PriceTier,
                 NormalPriceAmount = service.NormalPriceAmount,
                 PremiumPriceAmount = service.PremiumPriceAmount,
+                PriceMinAmount = service.PriceMinAmount ?? service.NormalPriceAmount,
+                PriceMaxAmount = service.PriceMaxAmount ?? service.PremiumPriceAmount,
                 Currency = service.Currency,
                 ServicePrestationIds = service.Prestations
                     .Where(prestation => prestation.IsActive)
@@ -752,8 +750,12 @@ else
                             prestation.NormalPriceAmount,
                             prestation.PremiumPriceAmount,
                             prestation.Currency,
-                            true))
-                        .ToList()))
+                            true,
+                            prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
+                            prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount))
+                        .ToList(),
+                    service.PriceMinAmount,
+                    service.PriceMaxAmount))
                 .ToList()
         };
 
@@ -867,6 +869,8 @@ else
             PriceTier = "Normal",
             NormalPriceAmount = service.NormalPriceAmount,
             PremiumPriceAmount = service.PremiumPriceAmount,
+            PriceMinAmount = service.PriceMinAmount ?? service.NormalPriceAmount,
+            PriceMaxAmount = service.PriceMaxAmount ?? service.PremiumPriceAmount,
             Currency = service.Currency,
             ServicePrestationIds = []
         });
@@ -1266,20 +1270,25 @@ else
         service.ServicePrestationIds.Remove(prestationId);
     }
 
-    private int GetEffectiveNormalPrice(CompanyEmployeeServiceEditModel service)
+    private static void TogglePremium(CompanyEmployeeServiceEditModel service, ChangeEventArgs eventArgs)
     {
-        var prestations = GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds);
-        return prestations.Count == 0
-            ? service.NormalPriceAmount
-            : prestations.Sum(prestation => prestation.NormalPriceAmount);
+        service.PriceTier = eventArgs.Value is bool isPremium && isPremium ? "Premium" : "Normal";
     }
 
-    private int GetEffectivePremiumPrice(CompanyEmployeeServiceEditModel service)
+    private int GetEffectiveMinPrice(CompanyEmployeeServiceEditModel service)
     {
         var prestations = GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds);
         return prestations.Count == 0
-            ? service.PremiumPriceAmount
-            : prestations.Sum(prestation => prestation.PremiumPriceAmount);
+            ? service.PriceMinAmount
+            : prestations.Sum(prestation => prestation.PriceMinAmount ?? prestation.NormalPriceAmount);
+    }
+
+    private int GetEffectiveMaxPrice(CompanyEmployeeServiceEditModel service)
+    {
+        var prestations = GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds);
+        return prestations.Count == 0
+            ? service.PriceMaxAmount
+            : prestations.Sum(prestation => prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount);
     }
 
     private string GetEffectiveCurrency(CompanyEmployeeServiceEditModel service)
@@ -1295,12 +1304,20 @@ else
             return "Non defini";
         }
 
-        var minRate = employee.Services.Min(service => service.NormalPriceAmount);
-        var maxRate = employee.Services.Max(service => service.PremiumPriceAmount);
+        var minRate = employee.Services.Min(service => service.PriceMinAmount ?? service.NormalPriceAmount);
+        var maxRate = employee.Services.Max(service => service.PriceMaxAmount ?? service.PremiumPriceAmount);
         var currency = employee.Services.First().Currency;
         return minRate == maxRate
             ? $"{minRate:N0} {currency}"
             : $"{minRate:N0} - {maxRate:N0} {currency}";
+    }
+
+    private static string FormatPriceRange(int priceMinAmount, int priceMaxAmount, string currency)
+    {
+        var max = Math.Max(priceMinAmount, priceMaxAmount);
+        return priceMinAmount == max
+            ? $"{priceMinAmount:N0} {currency}"
+            : $"{priceMinAmount:N0} - {max:N0} {currency}";
     }
 
     private static string GetDocumentsText(CompanyEmployeeResponse employee)
@@ -1681,6 +1698,8 @@ else
         public string PriceTier { get; set; } = "Normal";
         public int NormalPriceAmount { get; set; }
         public int PremiumPriceAmount { get; set; }
+        public int PriceMinAmount { get; set; }
+        public int PriceMaxAmount { get; set; }
         public string Currency { get; set; } = "XOF";
         public List<Guid> ServicePrestationIds { get; set; } = [];
     }

@@ -33,6 +33,8 @@ public sealed class ServicePrestation : AuditableEntity
     public int SortOrder { get; private set; }
     public int NormalPriceAmount { get; private set; }
     public int PremiumPriceAmount { get; private set; }
+    public int PriceMinAmount { get; private set; }
+    public int PriceMaxAmount { get; private set; }
     public string Currency { get; private set; } = "XOF";
     public bool IsActive { get; private set; } = true;
 
@@ -52,8 +54,15 @@ public sealed class ServicePrestation : AuditableEntity
 
     public void UpdatePricing(int normalPriceAmount, int premiumPriceAmount, string? currency)
     {
-        NormalPriceAmount = Math.Max(0, normalPriceAmount);
-        PremiumPriceAmount = Math.Max(NormalPriceAmount, premiumPriceAmount);
+        UpdatePriceRange(normalPriceAmount, premiumPriceAmount, currency);
+    }
+
+    public void UpdatePriceRange(int priceMinAmount, int priceMaxAmount, string? currency)
+    {
+        PriceMinAmount = Math.Max(0, priceMinAmount);
+        PriceMaxAmount = Math.Max(PriceMinAmount, priceMaxAmount);
+        NormalPriceAmount = PriceMinAmount;
+        PremiumPriceAmount = PriceMaxAmount;
         Currency = string.IsNullOrWhiteSpace(currency) ? "XOF" : currency.Trim().ToUpperInvariant();
         Touch();
     }

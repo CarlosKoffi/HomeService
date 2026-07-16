@@ -193,9 +193,9 @@
         {
             CatalogServices =
             [
-                new ServiceSummaryResponse(Guid.Empty, "Menage a domicile", null, "sparkles", "Active", true, 3500, 5000, "XOF", []),
-                new ServiceSummaryResponse(Guid.Empty, "Nounou", null, "baby", "Active", true, 4000, 6500, "XOF", []),
-                new ServiceSummaryResponse(Guid.Empty, "Jardinage", null, "sprout", "Active", true, 4500, 6500, "XOF", [])
+                new ServiceSummaryResponse(Guid.Empty, "Menage a domicile", null, "sparkles", "Active", true, 3500, 5000, "XOF", [], 3500, 5000),
+                new ServiceSummaryResponse(Guid.Empty, "Nounou", null, "baby", "Active", true, 4000, 6500, "XOF", [], 4000, 6500),
+                new ServiceSummaryResponse(Guid.Empty, "Jardinage", null, "sprout", "Active", true, 4500, 6500, "XOF", [], 4500, 6500)
             ];
             CatalogOptions = BuildCatalogOptions(CatalogServices);
             SelectedServices.AddRange(CatalogServices.Take(2).Select(service => ServiceSelection.ForService(service.Name, false)));

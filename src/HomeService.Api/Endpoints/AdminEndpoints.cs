@@ -539,7 +539,10 @@ public static class AdminEndpoints
 
             var service = new Service(request.Name, request.Description, createdByCompanyId: null);
             service.UpdateDetails(request.Name, request.Description, request.IconName);
-            service.UpdatePricing(request.NormalPriceAmount, request.PremiumPriceAmount, request.Currency);
+            service.UpdatePriceRange(
+                request.PriceMinAmount ?? request.NormalPriceAmount,
+                request.PriceMaxAmount ?? request.PremiumPriceAmount,
+                request.Currency);
             service.Approve();
             db.Services.Add(service);
 
@@ -590,7 +593,10 @@ public static class AdminEndpoints
 
             var before = ToServiceResponse(service);
             service.UpdateDetails(request.Name, request.Description, request.IconName);
-            service.UpdatePricing(request.NormalPriceAmount, request.PremiumPriceAmount, request.Currency);
+            service.UpdatePriceRange(
+                request.PriceMinAmount ?? request.NormalPriceAmount,
+                request.PriceMaxAmount ?? request.PremiumPriceAmount,
+                request.Currency);
 
             AddAuditLog(
                 db,
@@ -708,8 +714,8 @@ public static class AdminEndpoints
                 request.Name,
                 request.Description,
                 request.SortOrder,
-                request.NormalPriceAmount,
-                request.PremiumPriceAmount,
+                request.PriceMinAmount ?? request.NormalPriceAmount,
+                request.PriceMaxAmount ?? request.PremiumPriceAmount,
                 request.Currency);
             AddAuditLog(
                 db,
@@ -748,7 +754,10 @@ public static class AdminEndpoints
             var before = ToServicePrestationResponse(prestation);
             prestation.Rename(request.Name, request.Description);
             prestation.MoveTo(request.SortOrder);
-            prestation.UpdatePricing(request.NormalPriceAmount, request.PremiumPriceAmount, request.Currency);
+            prestation.UpdatePriceRange(
+                request.PriceMinAmount ?? request.NormalPriceAmount,
+                request.PriceMaxAmount ?? request.PremiumPriceAmount,
+                request.Currency);
             AddAuditLog(
                 db,
                 httpRequest,
@@ -1035,7 +1044,9 @@ public static class AdminEndpoints
                 .OrderBy(prestation => prestation.SortOrder)
                 .ThenBy(prestation => prestation.Name)
                 .Select(ToServicePrestationResponse)
-                .ToList());
+                .ToList(),
+            service.PriceMinAmount,
+            service.PriceMaxAmount);
     }
 
     static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)
@@ -1048,7 +1059,9 @@ public static class AdminEndpoints
             prestation.NormalPriceAmount,
             prestation.PremiumPriceAmount,
             prestation.Currency,
-            prestation.IsActive);
+            prestation.IsActive,
+            prestation.PriceMinAmount,
+            prestation.PriceMaxAmount);
     }
 
     static void AddCompanyApplicationReviewAudit(

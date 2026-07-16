@@ -49,6 +49,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 025 | `025_add_company_portal_activities.sql` | Company portal activity feed table |
 | 026 | `026_add_company_profile_details.sql` | Company profile details editable from the company portal |
 | 027 | `027_add_provider_email_for_company_employees.sql` | Provider email field for company employee management |
+| 028 | `028_add_service_price_ranges_and_mission_quotes.sql` | Service/prestation price ranges and company mission quote fields |
 
 ## Notes
 

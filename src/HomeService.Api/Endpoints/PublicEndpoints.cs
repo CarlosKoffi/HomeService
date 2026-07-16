@@ -46,8 +46,12 @@ public static class PublicEndpoints
                             prestation.NormalPriceAmount,
                             prestation.PremiumPriceAmount,
                             prestation.Currency,
-                            prestation.IsActive))
-                        .ToList()))
+                            prestation.IsActive,
+                            prestation.PriceMinAmount,
+                            prestation.PriceMaxAmount))
+                        .ToList(),
+                    service.PriceMinAmount,
+                    service.PriceMaxAmount))
                 .ToListAsync(cancellationToken);
 
             return Results.Ok(services);

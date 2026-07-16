@@ -6,4 +6,6 @@ public sealed record UpsertServiceRequest(
     string? IconName,
     int NormalPriceAmount = 0,
     int PremiumPriceAmount = 0,
-    string Currency = "XOF");
+    string Currency = "XOF",
+    int? PriceMinAmount = null,
+    int? PriceMaxAmount = null);

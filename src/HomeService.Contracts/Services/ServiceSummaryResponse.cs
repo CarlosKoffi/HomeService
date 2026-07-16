@@ -10,7 +10,9 @@ public sealed record ServiceSummaryResponse(
     int NormalPriceAmount,
     int PremiumPriceAmount,
     string Currency,
-    IReadOnlyList<ServicePrestationSummaryResponse> Prestations);
+    IReadOnlyList<ServicePrestationSummaryResponse> Prestations,
+    int? PriceMinAmount = null,
+    int? PriceMaxAmount = null);
 
 public sealed record ServicePrestationSummaryResponse(
     Guid Id,
@@ -20,4 +22,6 @@ public sealed record ServicePrestationSummaryResponse(
     int NormalPriceAmount,
     int PremiumPriceAmount,
     string Currency,
-    bool IsActive);
+    bool IsActive,
+    int? PriceMinAmount = null,
+    int? PriceMaxAmount = null);

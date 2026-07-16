@@ -70,7 +70,11 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
                                      mission.EstimatedTotalAmount,
                                      mission.Currency,
                                      mission.ProviderId,
-                                     provider == null ? null : provider.FirstName + " " + provider.LastName))
+                                     provider == null ? null : provider.FirstName + " " + provider.LastName,
+                                     mission.CompanyQuotedAmount,
+                                     mission.CompanyQuoteJustification,
+                                     mission.CompanyQuotedAt,
+                                     mission.CustomerQuoteAcceptedAt))
             .ToListAsync(cancellationToken);
 
         var liveStatuses = new[]
@@ -161,7 +165,11 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
             row.FinalTotalAmount ?? row.EstimatedTotalAmount,
             row.Currency,
             row.ProviderId,
-            row.ProviderName);
+            row.ProviderName,
+            row.CompanyQuotedAmount,
+            row.CompanyQuoteJustification,
+            row.CompanyQuotedAt,
+            row.CustomerQuoteAcceptedAt);
     }
 
     private static int GetProfileCompletionPercent(CompanyStatus companyStatus, int providerCount, int activityCount)
@@ -220,7 +228,11 @@ internal sealed record DashboardMissionRow(
     int? EstimatedTotalAmount,
     string Currency,
     Guid? ProviderId,
-    string? ProviderName);
+    string? ProviderName,
+    int? CompanyQuotedAmount,
+    string? CompanyQuoteJustification,
+    DateTimeOffset? CompanyQuotedAt,
+    DateTimeOffset? CustomerQuoteAcceptedAt);
 
 public sealed record CompanyPortalDashboardResult(bool IsSuccess, CompanyPortalDashboardResponse? Response, string? Message)
 {

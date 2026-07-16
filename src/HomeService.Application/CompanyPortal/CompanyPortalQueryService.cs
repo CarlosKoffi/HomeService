@@ -122,7 +122,11 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 row.mission.FinalTotalAmount ?? row.mission.EstimatedTotalAmount,
                 row.mission.Currency,
                 row.mission.ProviderId,
-                row.provider == null ? null : row.provider.FirstName + " " + row.provider.LastName))
+                row.provider == null ? null : row.provider.FirstName + " " + row.provider.LastName,
+                row.mission.CompanyQuotedAmount,
+                row.mission.CompanyQuoteJustification,
+                row.mission.CompanyQuotedAt,
+                row.mission.CustomerQuoteAcceptedAt))
             .ToListAsync(cancellationToken);
 
         return CompanyPortalMissionsResult.Ok(missions);
@@ -196,8 +200,12 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                 prestation.ServicePrestation.NormalPriceAmount,
                                 prestation.ServicePrestation.PremiumPriceAmount,
                                 prestation.ServicePrestation.Currency,
-                                prestation.IsActive))
-                            .ToList()))
+                                prestation.IsActive,
+                                prestation.ServicePrestation.PriceMinAmount,
+                                prestation.ServicePrestation.PriceMaxAmount))
+                            .ToList(),
+                        providerService.Service.PriceMinAmount,
+                        providerService.Service.PriceMaxAmount))
                     .ToList(),
                 provider.Documents
                     .OrderBy(document => document.DocumentType)
@@ -320,7 +328,11 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   mission.FinalTotalAmount ?? mission.EstimatedTotalAmount,
                                   mission.Currency,
                                   mission.ProviderId,
-                                  provider == null ? null : provider.FirstName + " " + provider.LastName))
+                                  provider == null ? null : provider.FirstName + " " + provider.LastName,
+                                  mission.CompanyQuotedAmount,
+                                  mission.CompanyQuoteJustification,
+                                  mission.CompanyQuotedAt,
+                                  mission.CustomerQuoteAcceptedAt))
             .ToListAsync(cancellationToken);
 
         return CompanyPortalPaymentsResult.Ok(new CompanyPortalPaymentSummaryResponse(

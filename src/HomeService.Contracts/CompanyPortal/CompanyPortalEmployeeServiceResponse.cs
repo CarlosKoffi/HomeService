@@ -10,7 +10,9 @@ public sealed record CompanyPortalEmployeeServiceResponse(
     int PremiumPriceAmount,
     string Currency,
     bool IsActive,
-    IReadOnlyList<CompanyPortalEmployeeServicePrestationResponse> Prestations);
+    IReadOnlyList<CompanyPortalEmployeeServicePrestationResponse> Prestations,
+    int? PriceMinAmount = null,
+    int? PriceMaxAmount = null);
 
 public sealed record CompanyPortalEmployeeServicePrestationResponse(
     Guid ServicePrestationId,
@@ -18,4 +20,6 @@ public sealed record CompanyPortalEmployeeServicePrestationResponse(
     int NormalPriceAmount,
     int PremiumPriceAmount,
     string Currency,
-    bool IsActive);
+    bool IsActive,
+    int? PriceMinAmount = null,
+    int? PriceMaxAmount = null);

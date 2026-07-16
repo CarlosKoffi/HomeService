@@ -71,13 +71,27 @@ public sealed class CompanyMissionAssignmentService(IAppDbContext db)
                     .Where(document => document.DocumentType == ProviderDocumentType.Photo)
                     .OrderByDescending(document => document.CreatedAt)
                     .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                    .FirstOrDefault(),
+                provider.Services
+                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Select(service => service.Service!.PriceMinAmount)
+                    .FirstOrDefault(),
+                provider.Services
+                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Select(service => service.Service!.PriceMaxAmount)
                     .FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
         return CompanyAssignableProvidersResult.Ok(providers);
     }
 
-    public async Task<CompanyMissionAssignmentResult> AssignAsync(Guid companyId, Guid missionId, Guid providerId, CancellationToken cancellationToken)
+    public async Task<CompanyMissionAssignmentResult> AssignAsync(
+        Guid companyId,
+        Guid missionId,
+        Guid providerId,
+        int quotedAmount,
+        string? overMaxJustification,
+        CancellationToken cancellationToken)
     {
         var mission = await db.Missions.FirstOrDefaultAsync(mission => mission.Id == missionId && mission.CompanyId == companyId, cancellationToken);
         var provider = await db.Providers
@@ -111,10 +125,13 @@ public sealed class CompanyMissionAssignmentService(IAppDbContext db)
         var validMission = mission!;
         var validProvider = provider!;
         var validProviderService = providerService!;
-        var priceAmount = validProviderService.PriceTier == ProviderServicePriceTier.Premium
-            ? validProviderService.Service!.PremiumPriceAmount
-            : validProviderService.Service!.NormalPriceAmount;
-        validMission.Assign(providerId, companyId, priceAmount);
+        var maxAllowedAmount = validProviderService.Service!.PriceMaxAmount;
+        if (quotedAmount > maxAllowedAmount && string.IsNullOrWhiteSpace(overMaxJustification))
+        {
+            return CompanyMissionAssignmentResult.Invalid("Justifiez le depassement du prix maximum configure avant d'envoyer le devis au client.");
+        }
+
+        validMission.AssignWithCompanyQuote(providerId, companyId, quotedAmount, maxAllowedAmount, overMaxJustification);
 
         var assignment = new ProviderMissionAssignment(
             validMission.Id,
@@ -126,7 +143,7 @@ public sealed class CompanyMissionAssignmentService(IAppDbContext db)
             companyId,
             "mission",
             "Mission assignee",
-            $"{validProvider.FullName} a recu une mission {validProviderService.Service!.Name}.",
+            $"{validProvider.FullName} a recu une mission {validProviderService.Service!.Name} avec un devis de {quotedAmount:N0} {validProviderService.Service!.Currency}.",
             "blue",
             nameof(Mission),
             validMission.Id));

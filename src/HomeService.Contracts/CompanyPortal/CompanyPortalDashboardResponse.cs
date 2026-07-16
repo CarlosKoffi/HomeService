@@ -60,9 +60,14 @@ public sealed record CompanyPortalAssignableProviderResponse(
     int PremiumPriceAmount,
     string Currency,
     bool HasDiploma,
-    string? PhotoUrl);
+    string? PhotoUrl,
+    int? PriceMinAmount = null,
+    int? PriceMaxAmount = null);
 
-public sealed record AssignCompanyMissionRequest(Guid ProviderId);
+public sealed record AssignCompanyMissionRequest(
+    Guid ProviderId,
+    int QuotedAmount,
+    string? OverMaxJustification);
 
 public sealed record AssignCompanyMissionResponse(
     Guid MissionId,

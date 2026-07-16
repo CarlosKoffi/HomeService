@@ -55,11 +55,11 @@
             <input type="text" placeholder="Ex: car, zap, shirt" @bind="NewServiceDraft.IconName" />
         </label>
         <label>
-            Prix normal
+            Prix minimum
             <input type="number" min="0" step="100" @bind="NewServiceDraft.NormalPriceAmount" />
         </label>
         <label>
-            Prix premium
+            Prix maximum
             <input type="number" min="0" step="100" @bind="NewServiceDraft.PremiumPriceAmount" />
         </label>
         <label>
@@ -114,7 +114,7 @@ else
                             @(service.IsActive ? "Actif" : "Inactif")
                         </span>
                         <strong>@activePrestations/@service.Prestations.Count prestations actives</strong>
-                        <small>@service.NormalPriceAmount @service.Currency normal - @service.PremiumPriceAmount @service.Currency premium</small>
+                        <small>@FormatPriceRange(service.PriceMinAmount ?? service.NormalPriceAmount, service.PriceMaxAmount ?? service.PremiumPriceAmount, service.Currency)</small>
                     </div>
                 </header>
 
@@ -133,11 +133,11 @@ else
                                     <input type="text" @bind="serviceEditDraft.IconName" />
                                 </label>
                                 <label>
-                                    Prix normal
+                                    Prix minimum
                                     <input type="number" min="0" step="100" @bind="serviceEditDraft.NormalPriceAmount" />
                                 </label>
                                 <label>
-                                    Prix premium
+                                    Prix maximum
                                     <input type="number" min="0" step="100" @bind="serviceEditDraft.PremiumPriceAmount" />
                                 </label>
                                 <label>
@@ -193,11 +193,11 @@ else
                                                 <input type="number" min="0" @bind="editDraft.SortOrder" />
                                             </label>
                                             <label>
-                                                Prix normal
+                                                Prix minimum
                                                 <input type="number" min="0" step="100" @bind="editDraft.NormalPriceAmount" />
                                             </label>
                                             <label>
-                                                Prix premium
+                                                Prix maximum
                                                 <input type="number" min="0" step="100" @bind="editDraft.PremiumPriceAmount" />
                                             </label>
                                             <label>
@@ -225,7 +225,7 @@ else
                                                 @(prestation.IsActive ? "Active" : "Inactive")
                                             </span>
                                             <small>Ordre @prestation.SortOrder</small>
-                                            <small>@prestation.NormalPriceAmount @prestation.Currency normal - @prestation.PremiumPriceAmount @prestation.Currency premium</small>
+                                            <small>@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</small>
                                         </div>
                                         <div class="easy-actions">
                                             <button type="button" @onclick="() => StartEdit(prestation)">Modifier</button>
@@ -259,11 +259,11 @@ else
                             <input type="number" min="0" @bind="draft.SortOrder" />
                         </label>
                         <label>
-                            Prix normal
+                            Prix minimum
                             <input type="number" min="0" step="100" @bind="draft.NormalPriceAmount" />
                         </label>
                         <label>
-                            Prix premium
+                            Prix maximum
                             <input type="number" min="0" step="100" @bind="draft.PremiumPriceAmount" />
                         </label>
                         <label>
@@ -372,8 +372,8 @@ else
             Name = service.Name,
             Description = service.Description ?? string.Empty,
             IconName = service.IconName,
-            NormalPriceAmount = service.NormalPriceAmount,
-            PremiumPriceAmount = service.PremiumPriceAmount,
+            NormalPriceAmount = service.PriceMinAmount ?? service.NormalPriceAmount,
+            PremiumPriceAmount = service.PriceMaxAmount ?? service.PremiumPriceAmount,
             Currency = service.Currency
         };
     }
@@ -398,8 +398,8 @@ else
                 Name = prestation.Name,
                 Description = prestation.Description ?? string.Empty,
                 SortOrder = prestation.SortOrder,
-                NormalPriceAmount = prestation.NormalPriceAmount,
-                PremiumPriceAmount = prestation.PremiumPriceAmount,
+                NormalPriceAmount = prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
+                PremiumPriceAmount = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount,
                 Currency = prestation.Currency
             };
             EditDrafts[prestation.Id] = draft;
@@ -416,8 +416,8 @@ else
             Name = prestation.Name,
             Description = prestation.Description ?? string.Empty,
             SortOrder = prestation.SortOrder,
-            NormalPriceAmount = prestation.NormalPriceAmount,
-            PremiumPriceAmount = prestation.PremiumPriceAmount,
+            NormalPriceAmount = prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
+            PremiumPriceAmount = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount,
             Currency = prestation.Currency
         };
     }
@@ -511,7 +511,9 @@ else
             draft.IconName,
             draft.NormalPriceAmount,
             draft.PremiumPriceAmount,
-            draft.Currency);
+            draft.Currency,
+            draft.NormalPriceAmount,
+            draft.PremiumPriceAmount);
     }
 
     private async Task UpdatePrestationAsync(Guid prestationId)
@@ -533,7 +535,9 @@ else
                     draft.SortOrder,
                     draft.NormalPriceAmount,
                     draft.PremiumPriceAmount,
-                    draft.Currency));
+                    draft.Currency,
+                    draft.NormalPriceAmount,
+                    draft.PremiumPriceAmount));
             EditingPrestationId = null;
             Message = "Prestation modifiee.";
         });
@@ -574,6 +578,14 @@ else
         {
             IsSaving = false;
         }
+    }
+
+    private static string FormatPriceRange(int priceMinAmount, int priceMaxAmount, string currency)
+    {
+        var max = Math.Max(priceMinAmount, priceMaxAmount);
+        return priceMinAmount == max
+            ? $"{priceMinAmount:N0} {currency}"
+            : $"{priceMinAmount:N0} - {max:N0} {currency}";
     }
 
     private sealed class PrestationDraft

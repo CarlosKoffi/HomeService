@@ -323,7 +323,13 @@ public static class CompanyPortalEndpoints
             CompanyMissionAssignmentService assignmentService,
             CancellationToken cancellationToken) =>
         {
-            var result = await assignmentService.AssignAsync(companyId, missionId, request.ProviderId, cancellationToken);
+            var result = await assignmentService.AssignAsync(
+                companyId,
+                missionId,
+                request.ProviderId,
+                request.QuotedAmount,
+                request.OverMaxJustification,
+                cancellationToken);
             if (result.IsSuccess)
             {
                 return Results.Ok(result.Response);

@@ -13,6 +13,8 @@ public sealed class ServiceConfiguration : IEntityTypeConfiguration<Service>
         builder.Property(service => service.NormalizedName).HasMaxLength(120).IsRequired();
         builder.Property(service => service.Description).HasMaxLength(800);
         builder.Property(service => service.IconName).HasMaxLength(80).HasDefaultValue("sparkles").IsRequired();
+        builder.Property(service => service.PriceMinAmount).HasDefaultValue(1500);
+        builder.Property(service => service.PriceMaxAmount).HasDefaultValue(2500);
         builder.Property(service => service.Currency).HasMaxLength(3).IsRequired();
         builder.Property(service => service.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(service => service.MinimumPortfolioItems).HasDefaultValue(0);

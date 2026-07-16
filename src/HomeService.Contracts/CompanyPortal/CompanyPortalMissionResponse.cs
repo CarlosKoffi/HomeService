@@ -14,4 +14,8 @@ public sealed record CompanyPortalMissionResponse(
     int? FinalTotalAmount,
     string Currency,
     Guid? ProviderId,
-    string? ProviderName);
+    string? ProviderName,
+    int? CompanyQuotedAmount = null,
+    string? CompanyQuoteJustification = null,
+    DateTimeOffset? CompanyQuotedAt = null,
+    DateTimeOffset? CustomerQuoteAcceptedAt = null);

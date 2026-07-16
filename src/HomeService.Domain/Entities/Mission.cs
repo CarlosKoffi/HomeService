@@ -39,6 +39,10 @@ public sealed class Mission : AuditableEntity
     public int? HourlyRateAmount { get; private set; }
     public int? EstimatedTotalAmount { get; private set; }
     public int? FinalTotalAmount { get; private set; }
+    public int? CompanyQuotedAmount { get; private set; }
+    public string? CompanyQuoteJustification { get; private set; }
+    public DateTimeOffset? CompanyQuotedAt { get; private set; }
+    public DateTimeOffset? CustomerQuoteAcceptedAt { get; private set; }
     public int PlatformCommissionAmount { get; private set; }
     public int TransportFeeAmount { get; private set; }
     public int CancellationFeeAmount { get; private set; }
@@ -75,6 +79,54 @@ public sealed class Mission : AuditableEntity
         HourlyRateAmount = hourlyRateAmount;
         EstimatedTotalAmount = CalculateAmount(EstimatedDurationMinutes, hourlyRateAmount);
         Status = MissionStatus.Assigned;
+        Touch();
+    }
+
+    public void AssignWithCompanyQuote(
+        Guid providerId,
+        Guid companyId,
+        int quotedAmount,
+        int maxAllowedAmount,
+        string? overMaxJustification)
+    {
+        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed)
+        {
+            throw new InvalidOperationException("Mission cannot be assigned in its current state.");
+        }
+
+        var normalizedQuote = Math.Max(0, quotedAmount);
+        if (normalizedQuote > Math.Max(0, maxAllowedAmount) && string.IsNullOrWhiteSpace(overMaxJustification))
+        {
+            throw new InvalidOperationException("A justification is required when the quoted amount exceeds the configured maximum.");
+        }
+
+        ProviderId = providerId;
+        CompanyId = companyId;
+        CompanyQuotedAmount = normalizedQuote;
+        CompanyQuoteJustification = string.IsNullOrWhiteSpace(overMaxJustification)
+            ? null
+            : overMaxJustification.Trim();
+        CompanyQuotedAt = DateTimeOffset.UtcNow;
+        EstimatedTotalAmount = normalizedQuote;
+        HourlyRateAmount = null;
+        CustomerQuoteAcceptedAt = null;
+        Status = MissionStatus.Assigned;
+        Touch();
+    }
+
+    public void AcceptCompanyQuote()
+    {
+        if (CompanyQuotedAmount is null)
+        {
+            throw new InvalidOperationException("Mission has no company quote to accept.");
+        }
+
+        if (Status != MissionStatus.Assigned)
+        {
+            throw new InvalidOperationException("Only assigned missions can have their quote accepted.");
+        }
+
+        CustomerQuoteAcceptedAt = DateTimeOffset.UtcNow;
         Touch();
     }
 

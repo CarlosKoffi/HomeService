@@ -535,12 +535,14 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         Guid companyId,
         Guid missionId,
         Guid providerId,
+        int quotedAmount,
+        string? overMaxJustification,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
         var response = await httpClient.PostAsJsonAsync(
             $"/api/company-portal/{companyId:D}/missions/{missionId:D}/assign",
-            new AssignCompanyMissionRequest(providerId),
+            new AssignCompanyMissionRequest(providerId, quotedAmount, overMaxJustification),
             cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         return response.IsSuccessStatusCode

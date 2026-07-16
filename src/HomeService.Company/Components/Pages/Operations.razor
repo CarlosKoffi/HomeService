@@ -144,8 +144,8 @@ else
                                 <span>@GetEmploymentTypeLabel(candidate.EmploymentType) - @GetExperienceLabel(candidate.ExperienceLevel) - @(candidate.IsAvailable ? "Disponible" : "Occupe")</span>
                             </div>
                             <div>
-                                <strong>@candidate.NormalPriceAmount.ToString("N0") / @candidate.PremiumPriceAmount.ToString("N0") @candidate.Currency</strong>
-                                <span>Normal / premium</span>
+                                <strong>@GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</strong>
+                                <span>@(candidate.PriceTier == "Premium" ? "Profil premium" : "Fourchette autorisee")</span>
                                 <button type="button" disabled="@(!Session.IsCompanyApproved || !candidate.IsAvailable)" @onclick="() => AssignMissionAsync(candidate)">Affecter</button>
                             </div>
                         </article>
@@ -274,7 +274,12 @@ else
 
         if (!IsPreviewMode())
         {
-            var result = await ApiClient.AssignCompanyMissionAsync(Session.CompanyId, SelectedMission.Id, candidate.Id);
+            var result = await ApiClient.AssignCompanyMissionAsync(
+                Session.CompanyId,
+                SelectedMission.Id,
+                candidate.Id,
+                GetPriceMin(candidate),
+                null);
             if (!result.IsSuccess)
             {
                 AssignmentMessage = result.ErrorMessage ?? "Affectation impossible.";
@@ -329,7 +334,9 @@ else
                 candidate.PremiumPriceAmount,
                 "XOF",
                 candidate.ReceivesDirectRequests,
-                null))
+                null,
+                candidate.NormalPriceAmount,
+                candidate.PremiumPriceAmount))
             .ToList();
     }
 
@@ -393,6 +400,16 @@ else
         return mission.ProviderName is null
             ? "Selectionnez un prestataire compatible."
             : "Prestataire deja affecte.";
+    }
+
+    private static int GetPriceMin(CompanyPortalAssignableProviderResponse candidate)
+    {
+        return candidate.PriceMinAmount ?? candidate.NormalPriceAmount;
+    }
+
+    private static int GetPriceMax(CompanyPortalAssignableProviderResponse candidate)
+    {
+        return candidate.PriceMaxAmount ?? candidate.PremiumPriceAmount;
     }
 
     private string GetMissionRowClass(CompanyPortalMissionResponse mission)

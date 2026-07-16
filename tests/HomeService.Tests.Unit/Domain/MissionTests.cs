@@ -83,6 +83,54 @@ public sealed class MissionTests
     }
 
     [Fact]
+    public void AssignWithCompanyQuote_WhenQuoteIsInsideRange_StoresQuoteAndWaitsForCustomer()
+    {
+        var mission = CreateMission(60);
+
+        mission.AssignWithCompanyQuote(ProviderId, CompanyId, quotedAmount: 7500, maxAllowedAmount: 10000, overMaxJustification: null);
+
+        Assert.Equal(ProviderId, mission.ProviderId);
+        Assert.Equal(CompanyId, mission.CompanyId);
+        Assert.Equal(7500, mission.CompanyQuotedAmount);
+        Assert.Equal(7500, mission.EstimatedTotalAmount);
+        Assert.Null(mission.HourlyRateAmount);
+        Assert.Null(mission.CompanyQuoteJustification);
+        Assert.NotNull(mission.CompanyQuotedAt);
+        Assert.Equal(MissionStatus.Assigned, mission.Status);
+    }
+
+    [Fact]
+    public void AssignWithCompanyQuote_WhenQuoteExceedsRangeWithoutJustification_Throws()
+    {
+        var mission = CreateMission(60);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            mission.AssignWithCompanyQuote(ProviderId, CompanyId, quotedAmount: 12500, maxAllowedAmount: 10000, overMaxJustification: " "));
+    }
+
+    [Fact]
+    public void AssignWithCompanyQuote_WhenQuoteExceedsRangeWithJustification_StoresJustification()
+    {
+        var mission = CreateMission(60);
+
+        mission.AssignWithCompanyQuote(ProviderId, CompanyId, quotedAmount: 12500, maxAllowedAmount: 10000, overMaxJustification: " Piece rare a remplacer ");
+
+        Assert.Equal(12500, mission.CompanyQuotedAmount);
+        Assert.Equal("Piece rare a remplacer", mission.CompanyQuoteJustification);
+    }
+
+    [Fact]
+    public void AcceptCompanyQuote_WhenAssignedWithQuote_StoresCustomerAcceptance()
+    {
+        var mission = CreateMission(60);
+        mission.AssignWithCompanyQuote(ProviderId, CompanyId, quotedAmount: 7500, maxAllowedAmount: 10000, overMaxJustification: null);
+
+        mission.AcceptCompanyQuote();
+
+        Assert.NotNull(mission.CustomerQuoteAcceptedAt);
+    }
+
+    [Fact]
     public void MarkProviderAccepted_WhenAssigned_MovesMissionToAcceptedWithoutReleasingContacts()
     {
         var mission = CreateAssignedMission();

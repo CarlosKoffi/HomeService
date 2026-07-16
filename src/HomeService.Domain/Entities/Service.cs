@@ -26,6 +26,8 @@ public sealed class Service : AuditableEntity
     public string IconName { get; private set; } = "sparkles";
     public int NormalPriceAmount { get; private set; } = 1500;
     public int PremiumPriceAmount { get; private set; } = 2500;
+    public int PriceMinAmount { get; private set; } = 1500;
+    public int PriceMaxAmount { get; private set; } = 2500;
     public string Currency { get; private set; } = "XOF";
     public bool RequiresPortfolio { get; private set; }
     public int MinimumPortfolioItems { get; private set; }
@@ -75,8 +77,15 @@ public sealed class Service : AuditableEntity
 
     public void UpdatePricing(int normalPriceAmount, int premiumPriceAmount, string currency)
     {
-        NormalPriceAmount = Math.Max(0, normalPriceAmount);
-        PremiumPriceAmount = Math.Max(NormalPriceAmount, premiumPriceAmount);
+        UpdatePriceRange(normalPriceAmount, premiumPriceAmount, currency);
+    }
+
+    public void UpdatePriceRange(int priceMinAmount, int priceMaxAmount, string currency)
+    {
+        PriceMinAmount = Math.Max(0, priceMinAmount);
+        PriceMaxAmount = Math.Max(PriceMinAmount, priceMaxAmount);
+        NormalPriceAmount = PriceMinAmount;
+        PremiumPriceAmount = PriceMaxAmount;
         Currency = string.IsNullOrWhiteSpace(currency) ? "XOF" : currency.Trim().ToUpperInvariant();
         Touch();
     }

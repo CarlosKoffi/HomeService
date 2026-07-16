@@ -32,6 +32,8 @@ public sealed class ServiceTests
 
         Assert.Equal(0, service.NormalPriceAmount);
         Assert.Equal(0, service.PremiumPriceAmount);
+        Assert.Equal(0, service.PriceMinAmount);
+        Assert.Equal(0, service.PriceMaxAmount);
         Assert.Equal("XOF", service.Currency);
     }
 
@@ -44,6 +46,22 @@ public sealed class ServiceTests
 
         Assert.Equal(1500, service.NormalPriceAmount);
         Assert.Equal(1500, service.PremiumPriceAmount);
+        Assert.Equal(1500, service.PriceMinAmount);
+        Assert.Equal(1500, service.PriceMaxAmount);
+        Assert.Equal("XOF", service.Currency);
+    }
+
+    [Fact]
+    public void UpdatePriceRange_MirrorsLegacyPricingForCompatibility()
+    {
+        var service = new Service("Menage", null, null);
+
+        service.UpdatePriceRange(3000, 5500, "xof");
+
+        Assert.Equal(3000, service.PriceMinAmount);
+        Assert.Equal(5500, service.PriceMaxAmount);
+        Assert.Equal(3000, service.NormalPriceAmount);
+        Assert.Equal(5500, service.PremiumPriceAmount);
         Assert.Equal("XOF", service.Currency);
     }
 
@@ -141,6 +159,8 @@ public sealed class ServiceTests
 
         Assert.Equal(4500, prestation.NormalPriceAmount);
         Assert.Equal(6500, prestation.PremiumPriceAmount);
+        Assert.Equal(4500, prestation.PriceMinAmount);
+        Assert.Equal(6500, prestation.PriceMaxAmount);
         Assert.Equal("XOF", prestation.Currency);
     }
 
@@ -155,6 +175,8 @@ public sealed class ServiceTests
         Assert.Same(first, second);
         Assert.Equal(6000, second.NormalPriceAmount);
         Assert.Equal(8000, second.PremiumPriceAmount);
+        Assert.Equal(6000, second.PriceMinAmount);
+        Assert.Equal(8000, second.PriceMaxAmount);
         Assert.Equal(20, second.SortOrder);
     }
 }
