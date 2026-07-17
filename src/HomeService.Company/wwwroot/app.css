@@ -8802,6 +8802,141 @@ h3 {
     border-color: #fecaca !important;
     color: #991b1b !important;
 }
+.missions-page-shell {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    min-height: 100vh;
+    margin: -2rem;
+    background: #f5f6fa;
+    color: #111111;
+    font-family: "Plus Jakarta Sans", "Segoe UI Variable", "Segoe UI", Inter, Arial, sans-serif;
+}
+
+.missions-page-shell svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.missions-sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    height: 100vh;
+    padding: 24px 16px;
+    border-right: 1px solid #ececec;
+    background: #ffffff;
+}
+
+.missions-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #111111;
+    text-decoration: none;
+}
+
+.missions-logo span {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: #1a6aff;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.missions-logo strong {
+    color: #111111;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+}
+
+.missions-sidebar-nav {
+    display: grid;
+    gap: 4px;
+}
+
+.missions-sidebar-nav a,
+.missions-logout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #666666;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    text-align: left;
+    text-decoration: none;
+}
+
+.missions-sidebar-nav a.active {
+    background: #eef4ff;
+    color: #1a6aff;
+}
+
+.missions-logout {
+    width: 100%;
+    margin-top: auto;
+    cursor: pointer;
+}
+
+.missions-app-main {
+    min-width: 0;
+}
+
+.missions-app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 72px;
+    padding: 16px 32px;
+    border-bottom: 1px solid #ececec;
+    background: #ffffff;
+}
+
+.missions-app-topbar h1 {
+    margin: 0;
+    color: #111111;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -.02em;
+}
+
+.missions-app-topbar p {
+    margin: 2px 0 0;
+    color: #aaaaaa;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.35;
+}
+
+.missions-app-body {
+    display: grid;
+    gap: 20px;
+    padding: 24px 32px 32px;
+}
+
 .missions-workspace {
     --mission-bg: #f5f6fa;
     --mission-surface: #ffffff;
@@ -9509,6 +9644,39 @@ h3 {
 }
 
 @media (max-width: 1180px) {
+    .missions-page-shell {
+        grid-template-columns: 1fr;
+        margin: -1rem;
+    }
+
+    .missions-sidebar {
+        position: static;
+        height: auto;
+        padding: 14px 16px;
+        border-right: 0;
+        border-bottom: 1px solid #ececec;
+    }
+
+    .missions-sidebar-nav {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+    }
+
+    .missions-sidebar-nav a {
+        flex: 0 0 auto;
+    }
+
+    .missions-logout {
+        display: none;
+    }
+
+    .missions-app-topbar,
+    .missions-app-body {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
     .missions-kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -9520,6 +9688,26 @@ h3 {
 }
 
 @media (max-width: 720px) {
+    .missions-logo strong {
+        font-size: 15px;
+    }
+
+    .missions-sidebar-nav a {
+        min-height: 36px;
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    .missions-sidebar-nav svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    .missions-app-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
     .missions-topbar,
     .missions-today-banner {
         align-items: flex-start;

@@ -1,5 +1,6 @@
 ﻿@page "/missions"
 @page "/operations"
+@layout HomeService.Company.Components.Layout.EmptyLayout
 @using System.Globalization
 @using System.Text.Json
 @inject IJSRuntime Js
@@ -26,29 +27,50 @@ else if (Session is null)
 }
 else
 {
-    <CompanyPortalShell Active="missions"
-                        Title="Missions"
-                        Subtitle="@($"{CurrentMonthLabel} - {AllMissions.Count} missions au total")"
-                        CompanyName="@Session.CompanyName"
-                        Email="@Session.Email"
-                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
+    <section class="missions-page-shell">
+        <aside class="missions-sidebar" aria-label="Navigation portail entreprise">
+            <a class="missions-logo" href="@PortalLink("dashboard")">
+                <span>K</span>
+                <strong>Kaza</strong>
+            </a>
 
-        @if (!Session.IsCompanyApproved)
-        {
-            <section class="compliance-banner">
-                <div>
-                    <strong>Compte en attente de conformite</strong>
-                    <span>Vous pouvez consulter les missions et preparer votre equipe. L'affectation sera disponible apres validation.</span>
-                </div>
-                <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
-            </section>
-        }
+            <nav class="missions-sidebar-nav">
+                <a href="@PortalLink("dashboard")">
+                    <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm10 8h8V3h-8v18ZM3 21h8v-6H3v6Z"/></svg>
+                    Tableau de bord
+                </a>
+                <a href="@PortalLink("company-profile")">
+                    <svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-8h6v8"/></svg>
+                    Informations
+                </a>
+                <a href="@PortalLink("employees")">
+                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    Employes
+                </a>
+                <a href="@PortalLink("interim-candidates")">
+                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5Z"/><path d="M8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11Z"/><path d="M2 20c.55-3.4 2.55-5 6-5"/><path d="M22 20c-.55-3.4-2.55-5-6-5"/></svg>
+                    Interim
+                </a>
+                <a class="active" href="@PortalLink("missions")">
+                    <svg viewBox="0 0 24 24"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/></svg>
+                    Missions
+                </a>
+                <a href="@PortalLink("accounts")">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                    Encaissements
+                </a>
+            </nav>
 
-        <section class="missions-workspace">
-            <header class="missions-topbar">
+            <button type="button" class="missions-logout" @onclick="LogoutAsync">
+                <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+                Sortir
+            </button>
+        </aside>
+
+        <main class="missions-app-main">
+            <header class="missions-app-topbar">
                 <div>
-                    <span class="missions-eyebrow">Planning entreprise</span>
-                    <h2>Missions</h2>
+                    <h1>Missions</h1>
                     <p>@CurrentMonthLabel - @AllMissions.Count missions au total</p>
                 </div>
                 <button type="button" class="missions-primary-action" disabled>
@@ -56,6 +78,20 @@ else
                     Nouvelle mission
                 </button>
             </header>
+
+            <section class="missions-app-body">
+                @if (!Session.IsCompanyApproved)
+                {
+                    <section class="compliance-banner">
+                        <div>
+                            <strong>Compte en attente de conformite</strong>
+                            <span>Vous pouvez consulter les missions et preparer votre equipe. L'affectation sera disponible apres validation.</span>
+                        </div>
+                        <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
+                    </section>
+                }
+
+                <section class="missions-workspace">
 
             @if (IsLoading)
             {
@@ -286,8 +322,10 @@ else
                     </section>
                 }
             }
-        </section>
-    </CompanyPortalShell>
+                </section>
+            </section>
+        </main>
+    </section>
 }
 
 @code {
@@ -752,6 +790,12 @@ else
 
     private string PortalLink(string path) => IsPreviewMode() ? $"{path}?preview=1" : path;
 
+    private async Task LogoutAsync()
+    {
+        await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
+        Navigation.NavigateTo("");
+    }
+
     private static CompanyPortalSessionResponse DemoSession()
     {
         return new CompanyPortalSessionResponse(
@@ -811,5 +855,7 @@ else
         decimal DistanceKm,
         bool ReceivesDirectRequests);
 }
+
+
 
 
