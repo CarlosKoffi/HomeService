@@ -1,4 +1,6 @@
 @page "/accounts"
+@page "/encaissements"
+@layout HomeService.Company.Components.Layout.EmptyLayout
 @using System.Text.Json
 @inject IJSRuntime Js
 @inject PlatformApiClient ApiClient
@@ -9,81 +11,349 @@
 
 @if (IsSessionLoading)
 {
-    <section class="empty-state">
+    <section class="payments-empty">
         <h2>Chargement...</h2>
         <p>Ouverture des encaissements.</p>
     </section>
 }
 else if (Session is null)
 {
-    <section class="empty-state">
+    <section class="payments-empty">
         <h2>Connexion requise</h2>
         <p>Connectez-vous pour voir les encaissements.</p>
-        <a class="primary-action" href="@PortalLink("dashboard")">Se connecter</a>
+        <a class="payments-primary-link" href="@PortalLink("dashboard")">Se connecter</a>
     </section>
 }
 else
 {
-    <CompanyPortalShell Active="accounts"
-                        Title="Encaissements"
-                        Subtitle="Paiements et rapprochements"
-                        CompanyName="@Session.CompanyName"
-                        Email="@Session.Email"
-                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
+    <section class="payments-page-shell">
+        <aside class="payments-sidebar" aria-label="Navigation portail entreprise">
+            <a class="payments-logo" href="@PortalLink("dashboard")">
+                <span>K</span>
+                <strong>Kaza</strong>
+            </a>
 
-    <section class="portal-tabs" aria-label="Periode encaissements">
-        <button class="@GetTabClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
-        <button class="@GetTabClass("month")" type="button" @onclick='() => LoadPaymentsAsync("month")'>Mois</button>
-        <button class="@GetTabClass("year")" type="button" @onclick='() => LoadPaymentsAsync("year")'>Annee</button>
-    </section>
+            <nav class="payments-sidebar-nav">
+                <a href="@PortalLink("company-profile")">@Icon("info") Informations</a>
+                <a href="@PortalLink("employees")">@Icon("users") Employes</a>
+                <a href="@PortalLink("interim-candidates")">@Icon("clock") Interim</a>
+                <a href="@PortalLink("missions")">@Icon("briefcase") Missions</a>
+                <a class="active" href="@PortalLink("accounts")">@Icon("card") Encaissements</a>
+            </nav>
 
-    @if (Summary is not null)
-    {
-        <section class="metric-strip">
-            <article><span>Total</span><strong>@Summary.TotalAmount.ToString("N0") @Summary.Currency</strong></article>
-            <article><span>Mobile Money</span><strong>@Summary.MobileMoneyAmount.ToString("N0")</strong></article>
-            <article><span>Cash a recuperer</span><strong>@Summary.CashToCollectAmount.ToString("N0")</strong></article>
-        </section>
+            <button type="button" class="payments-logout" @onclick="LogoutAsync">@Icon("logout") Deconnexion</button>
+        </aside>
 
-        @if (Summary.Missions.Count == 0)
-        {
-            <section class="empty-state">
-                <h2>Aucun encaissement</h2>
-                <p>Les paiements apparaitront ici quand des missions seront terminees.</p>
-            </section>
-        }
-        else
-        {
-            <section class="mission-list">
-                @foreach (var mission in Summary.Missions)
+        <main class="payments-main">
+            <header class="payments-topbar">
+                <div>
+                    <h1>Encaissements</h1>
+                    <p>@PeriodLabel · suivi des paiements</p>
+                </div>
+                <div class="payments-period-toggle" aria-label="Periode">
+                    <button class="@GetPeriodClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
+                    <button class="@GetPeriodClass("month")" type="button" @onclick='() => LoadPaymentsAsync("month")'>Mois</button>
+                    <button class="@GetPeriodClass("year")" type="button" @onclick='() => LoadPaymentsAsync("year")'>Annee</button>
+                </div>
+            </header>
+
+            <section class="payments-body">
+                @if (Summary is null)
                 {
-                    <article class="mission-row">
-                        <div>
-                            <span class="status-pill @GetPaymentStatusClass(mission.PaymentStatus)">@GetPaymentStatusLabel(mission.PaymentStatus)</span>
-                            <h2>@mission.ServiceName</h2>
-                            <p>@mission.CustomerName - @(mission.ProviderName ?? "Prestataire")</p>
+                    <section class="payments-empty">
+                        <h2>Encaissements indisponibles</h2>
+                        <p>Les donnees de paiement ne sont pas disponibles pour le moment.</p>
+                    </section>
+                }
+                else
+                {
+                    <section class="payments-kpi-grid">
+                        <article class="payments-kpi-hero">
+                            <div>
+                                <span>CA encaisse</span>
+                                <strong>@Fmt(TotalPaid)</strong>
+                                <small>@PaidTransactions.Count transaction(s) confirmees</small>
+                            </div>
+                            <i>@Icon("card-large")</i>
+                        </article>
+
+                        <article class="payments-kpi-card">
+                            <header>
+                                <span>Mobile Money</span>
+                                <i class="blue">@Icon("phone")</i>
+                            </header>
+                            <strong>@Fmt(TotalMobileMoney)</strong>
+                            <small>@Percent(TotalMobileMoney, TotalPaid)% du total encaisse</small>
+                        </article>
+
+                        <article class="payments-kpi-card">
+                            <header>
+                                <span>Cash recupere</span>
+                                <i class="violet">@Icon("cash")</i>
+                            </header>
+                            <strong>@Fmt(TotalCashPaid)</strong>
+                            <small>@Percent(TotalCashPaid, TotalPaid)% du total encaisse</small>
+                        </article>
+
+                        <article class="payments-kpi-card warning">
+                            <header>
+                                <span>En attente</span>
+                                <i>@Icon("clock")</i>
+                            </header>
+                            <strong>@Fmt(TotalPending)</strong>
+                            <small>@PendingTransactions.Count paiement(s) non confirme(s)</small>
+                        </article>
+
+                        @if (TotalCashToCollect > 0)
+                        {
+                            <article class="payments-kpi-card orange">
+                                <header>
+                                    <span>Cash a recuperer</span>
+                                    <i>@Icon("cash")</i>
+                                </header>
+                                <strong>@Fmt(TotalCashToCollect)</strong>
+                                <small>@CashToCollectTransactions.Count paiement(s) terrain</small>
+                            </article>
+                        }
+
+                        <article class="payments-kpi-card danger">
+                            <header>
+                                <span>Litiges</span>
+                                <i>@Icon("alert")</i>
+                            </header>
+                            <strong>@Fmt(TotalDisputed)</strong>
+                            <small>@DisputedTransactions.Count paiement(s) a verifier</small>
+                        </article>
+
+                        <article class="payments-kpi-card">
+                            <header>
+                                <span>Taux d'encaissement</span>
+                                <i class="green">@Icon("trend")</i>
+                            </header>
+                            <strong>@CollectionRate%</strong>
+                            <small>@PaidTransactions.Count sur @NonDisputedTransactions.Count transaction(s)</small>
+                        </article>
+                    </section>
+
+                    <section class="payments-analytics-grid">
+                        <article class="payments-chart-card">
+                            <header>
+                                <h2>Evolution des encaissements</h2>
+                                <div>
+                                    <span><i class="blue"></i> Mobile Money</span>
+                                    <span><i class="violet"></i> Cash</span>
+                                </div>
+                            </header>
+                            <div class="payments-chart">
+                                @foreach (var point in ChartPoints)
+                                {
+                                    var max = Math.Max(1, ChartPoints.Max(item => item.Total));
+                                    var mmHeight = Math.Max(4, (int)Math.Round(point.MobileMoney * 160m / max));
+                                    var cashHeight = Math.Max(point.Cash > 0 ? 4 : 0, (int)Math.Round(point.Cash * 160m / max));
+                                    <div class="payments-bar-group" title="@($"{point.Label} - {Fmt(point.Total)}")">
+                                        <div class="payments-bar-stack">
+                                            <span class="payments-bar-cash" style="height: @(cashHeight)px"></span>
+                                            <span class="payments-bar-mm" style="height: @(mmHeight)px"></span>
+                                        </div>
+                                        <small>@point.Label</small>
+                                    </div>
+                                }
+                            </div>
+                        </article>
+
+                        <article class="payments-service-card">
+                            <h2>Repartition par service</h2>
+                            @if (ServiceBreakdown.Count == 0)
+                            {
+                                <p class="payments-muted">Aucun encaissement confirme pour cette periode.</p>
+                            }
+                            else
+                            {
+                                @foreach (var service in ServiceBreakdown)
+                                {
+                                    <div class="payments-service-row">
+                                        <div>
+                                            <span>@ServiceEmoji(service.ServiceName) @service.ServiceName</span>
+                                            <strong>@Fmt(service.Amount)</strong>
+                                        </div>
+                                        <div class="payments-progress">
+                                            <span style="width: @Percent(service.Amount, TotalPaid)%"></span>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </article>
+                    </section>
+
+                    <section class="payments-table-card">
+                        <header class="payments-table-header">
+                            <h2>Transactions</h2>
+                            <div class="payments-table-controls">
+                                <select @bind="StatusFilter" aria-label="Filtrer par statut">
+                                    <option value="all">Tous statuts</option>
+                                    <option value="paid">Encaisse</option>
+                                    <option value="pending">En attente</option>
+                                    <option value="disputed">Litige</option>
+                                </select>
+                                <select @bind="ModeFilter" aria-label="Filtrer par mode">
+                                    <option value="all">Tous modes</option>
+                                    <option value="MobileMoney">Mobile Money</option>
+                                    <option value="Cash">Cash</option>
+                                </select>
+                                <label class="payments-search">
+                                    @Icon("search")
+                                    <input @bind="Search" @bind:event="oninput" placeholder="Client, employe, reference" />
+                                </label>
+                            </div>
+                        </header>
+
+                        <div class="payments-table-columns" aria-hidden="true">
+                            <span></span>
+                            <span>Client / mission</span>
+                            <span>Reference</span>
+                            <span>Date</span>
+                            <span>Mode</span>
+                            <span>Statut</span>
+                            <span>Montant</span>
                         </div>
-                        <div>
-                            <strong>@GetPaymentLabel(mission.PaymentMethod)</strong>
-                            <span>@(mission.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")</span>
-                        </div>
-                        <div>
-                            <strong>@(mission.FinalTotalAmount?.ToString("N0") ?? "0") @mission.Currency</strong>
-                            <span>@mission.CustomerPhoneNumber</span>
-                        </div>
-                    </article>
+
+                        @if (FilteredTransactions.Count == 0)
+                        {
+                            <div class="payments-no-result">
+                                <strong>Aucune transaction</strong>
+                                <span>Essayez un autre filtre ou une autre periode.</span>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var transaction in FilteredTransactions)
+                            {
+                                <article class="payments-transaction-row">
+                                    <div class="payments-avatar @AvatarClass(transaction.CustomerName)">@Initials(transaction.CustomerName)</div>
+                                    <div>
+                                        <strong>@transaction.CustomerName</strong>
+                                        <small>@ServiceEmoji(transaction.ServiceName) @transaction.ServiceName · @(transaction.ProviderName ?? "Non affecte")</small>
+                                    </div>
+                                    <span class="payments-ref">@transaction.Reference</span>
+                                    <span class="payments-date">@FormatDate(transaction.Date)</span>
+                                    <span class="payments-mode @GetPaymentModeClass(transaction.PaymentMethod)">@Icon(transaction.PaymentMethod == "Cash" ? "cash" : "phone") @GetPaymentModeLabel(transaction.PaymentMethod)</span>
+                                    <span class="payments-status @GetPaymentStatusClass(transaction.PaymentStatus)">@Icon(GetPaymentStatusIcon(transaction.PaymentStatus)) @GetPaymentStatusLabel(transaction.PaymentStatus)</span>
+                                    <strong class="payments-amount @GetPaymentAmountClass(transaction.PaymentStatus)">@Fmt(transaction.Amount)</strong>
+                                </article>
+                            }
+                        }
+
+                        <footer class="payments-table-footer">
+                            <span>@FilteredTransactions.Count transaction(s) affichee(s)</span>
+                            <div>
+                                @if (FilteredPendingTotal > 0)
+                                {
+                                    <small>En attente @Fmt(FilteredPendingTotal)</small>
+                                }
+                                @if (FilteredPaidTotal > 0)
+                                {
+                                    <strong>Total encaisse @Fmt(FilteredPaidTotal)</strong>
+                                }
+                            </div>
+                        </footer>
+                    </section>
                 }
             </section>
-        }
-    }
-    </CompanyPortalShell>
+        </main>
+    </section>
 }
 
 @code {
     private CompanyPortalSessionResponse? Session { get; set; }
     private CompanyPortalPaymentSummaryResponse? Summary { get; set; }
     private string ActivePeriod { get; set; } = "month";
+    private string StatusFilter { get; set; } = "all";
+    private string ModeFilter { get; set; } = "all";
+    private string Search { get; set; } = string.Empty;
     private bool IsSessionLoading { get; set; } = true;
+
+    private IReadOnlyList<PaymentTransactionViewModel> Transactions => Summary?.Missions
+        .Select((mission, index) => PaymentTransactionViewModel.FromMission(mission, index))
+        .ToList() ?? [];
+
+    private IReadOnlyList<PaymentTransactionViewModel> PaidTransactions => Transactions
+        .Where(transaction => IsPaid(transaction.PaymentStatus))
+        .ToList();
+
+    private IReadOnlyList<PaymentTransactionViewModel> PendingTransactions => Transactions
+        .Where(transaction => IsPending(transaction.PaymentStatus))
+        .ToList();
+
+    private IReadOnlyList<PaymentTransactionViewModel> DisputedTransactions => Transactions
+        .Where(transaction => IsDisputed(transaction.PaymentStatus))
+        .ToList();
+
+    private IReadOnlyList<PaymentTransactionViewModel> CashToCollectTransactions => PendingTransactions
+        .Where(transaction => transaction.PaymentMethod == "Cash")
+        .ToList();
+
+    private IReadOnlyList<PaymentTransactionViewModel> NonDisputedTransactions => Transactions
+        .Where(transaction => !IsDisputed(transaction.PaymentStatus))
+        .ToList();
+
+    private int TotalPaid => PaidTransactions.Sum(transaction => transaction.Amount);
+    private int TotalMobileMoney => PaidTransactions.Where(transaction => transaction.PaymentMethod == "MobileMoney").Sum(transaction => transaction.Amount);
+    private int TotalCashPaid => PaidTransactions.Where(transaction => transaction.PaymentMethod == "Cash").Sum(transaction => transaction.Amount);
+    private int TotalPending => PendingTransactions.Sum(transaction => transaction.Amount);
+    private int TotalCashToCollect => CashToCollectTransactions.Sum(transaction => transaction.Amount);
+    private int TotalDisputed => DisputedTransactions.Sum(transaction => transaction.Amount);
+    private int CollectionRate => NonDisputedTransactions.Count == 0 ? 0 : (int)Math.Round(PaidTransactions.Count * 100m / NonDisputedTransactions.Count);
+    private int FilteredPaidTotal => FilteredTransactions.Where(transaction => IsPaid(transaction.PaymentStatus)).Sum(transaction => transaction.Amount);
+    private int FilteredPendingTotal => FilteredTransactions.Where(transaction => IsPending(transaction.PaymentStatus)).Sum(transaction => transaction.Amount);
+
+    private string PeriodLabel => ActivePeriod switch
+    {
+        "week" => "Cette semaine",
+        "year" => "Annee 2026",
+        _ => "Juillet 2026"
+    };
+
+    private IReadOnlyList<PaymentChartPoint> ChartPoints => BuildChartPoints(ActivePeriod, Transactions);
+
+    private IReadOnlyList<PaymentServiceBreakdown> ServiceBreakdown => PaidTransactions
+        .GroupBy(transaction => transaction.ServiceName)
+        .Select(group => new PaymentServiceBreakdown(group.Key, group.Sum(transaction => transaction.Amount)))
+        .OrderByDescending(item => item.Amount)
+        .ToList();
+
+    private IReadOnlyList<PaymentTransactionViewModel> FilteredTransactions
+    {
+        get
+        {
+            var query = Transactions.AsEnumerable();
+            query = StatusFilter switch
+            {
+                "paid" => query.Where(transaction => IsPaid(transaction.PaymentStatus)),
+                "pending" => query.Where(transaction => IsPending(transaction.PaymentStatus)),
+                "disputed" => query.Where(transaction => IsDisputed(transaction.PaymentStatus)),
+                _ => query
+            };
+
+            if (ModeFilter != "all")
+            {
+                query = query.Where(transaction => transaction.PaymentMethod == ModeFilter);
+            }
+
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                var search = Search.Trim();
+                query = query.Where(transaction =>
+                    transaction.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || transaction.ProviderName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || transaction.ServiceName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || transaction.Reference.Contains(search, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return query
+                .OrderByDescending(transaction => transaction.Date ?? DateTimeOffset.MinValue)
+                .ToList();
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -131,19 +401,13 @@ else
         StateHasChanged();
     }
 
-    private string GetTabClass(string period) => ActivePeriod == period ? "active" : string.Empty;
-
-    private static string GetPaymentLabel(string method) => method == "MobileMoney" ? "Mobile Money" : "Cash";
-
-    private static string GetPaymentStatusClass(string status) => status == "Paid" ? "status-ok" : "status-pending";
-
-    private static string GetPaymentStatusLabel(string status) => status switch
+    private async Task LogoutAsync()
     {
-        "Paid" => "Paye",
-        "Authorized" => "Autorise",
-        "Failed" => "Echec",
-        _ => "A suivre"
-    };
+        await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
+        Navigation.NavigateTo("");
+    }
+
+    private string GetPeriodClass(string period) => ActivePeriod == period ? "active" : string.Empty;
 
     private bool IsPreviewMode()
     {
@@ -153,17 +417,174 @@ else
 
     private string PortalLink(string path) => IsPreviewMode() ? $"{path}?preview=1" : path;
 
+    private static string Fmt(int amount) => $"{amount:N0} F".Replace(",", " ");
+
+    private static int Percent(int amount, int total) => total <= 0 ? 0 : (int)Math.Round(amount * 100m / total);
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+
+    private static string FormatDate(DateTimeOffset? date)
+    {
+        return date?.ToLocalTime().ToString("d MMM", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")) ?? "-";
+    }
+
+    private static string GetPaymentModeLabel(string mode) => mode == "MobileMoney" ? "Mobile Money" : "Cash";
+    private static string GetPaymentModeClass(string mode) => mode == "MobileMoney" ? "mobile-money" : "cash";
+
+    private static string GetPaymentStatusLabel(string status)
+    {
+        return status switch
+        {
+            "Paid" => "Encaisse",
+            "Authorized" => "En attente",
+            "Pending" => "En attente",
+            "Failed" => "Litige",
+            _ => "En attente"
+        };
+    }
+
+    private static string GetPaymentStatusClass(string status)
+    {
+        return IsPaid(status) ? "paid" : IsDisputed(status) ? "disputed" : "pending";
+    }
+
+    private static string GetPaymentStatusIcon(string status)
+    {
+        return IsPaid(status) ? "check" : IsDisputed(status) ? "alert" : "clock";
+    }
+
+    private static string GetPaymentAmountClass(string status)
+    {
+        return IsPaid(status) ? string.Empty : IsDisputed(status) ? "disputed" : "pending";
+    }
+
+    private static bool IsPaid(string status) => status == "Paid";
+    private static bool IsPending(string status) => status is "Pending" or "Authorized";
+    private static bool IsDisputed(string status) => status == "Failed";
+
+    private static string AvatarClass(string value)
+    {
+        var hash = 0;
+        foreach (var character in value)
+        {
+            hash = (hash * 31 + character) & 0xffff;
+        }
+
+        return $"tone-{hash % 5}";
+    }
+
+    private static string ServiceEmoji(string serviceName)
+    {
+        var normalized = serviceName.ToLowerInvariant();
+        if (normalized.Contains("menage") || normalized.Contains("nettoyage"))
+        {
+            return "ME";
+        }
+
+        if (normalized.Contains("jardin"))
+        {
+            return "JA";
+        }
+
+        if (normalized.Contains("electric"))
+        {
+            return "EL";
+        }
+
+        if (normalized.Contains("blanch"))
+        {
+            return "BL";
+        }
+
+        if (normalized.Contains("auto"))
+        {
+            return "AU";
+        }
+
+        return "SV";
+    }
+
+    private static MarkupString Icon(string name)
+    {
+        var svg = name switch
+        {
+            "dashboard" => "<svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/></svg>",
+            "info" => "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 16v-4\"/><path d=\"M12 8h.01\"/></svg>",
+            "users" => "<svg viewBox=\"0 0 24 24\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>",
+            "clock" => "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 6v6l4 2\"/></svg>",
+            "briefcase" => "<svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"7\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2\"/></svg>",
+            "card" or "card-large" => "<svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M2 10h20\"/></svg>",
+            "logout" => "<svg viewBox=\"0 0 24 24\"><path d=\"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4\"/><path d=\"m16 17 5-5-5-5\"/><path d=\"M21 12H9\"/></svg>",
+            "phone" => "<svg viewBox=\"0 0 24 24\"><rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"2\"/><path d=\"M12 18h.01\"/></svg>",
+            "cash" => "<svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M6 12h.01M18 12h.01\"/></svg>",
+            "alert" => "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 8v4\"/><path d=\"M12 16h.01\"/></svg>",
+            "trend" => "<svg viewBox=\"0 0 24 24\"><path d=\"m23 6-9.5 9.5-5-5L1 18\"/><path d=\"M17 6h6v6\"/></svg>",
+            "check" => "<svg viewBox=\"0 0 24 24\"><path d=\"M20 6 9 17l-5-5\"/></svg>",
+            "search" => "<svg viewBox=\"0 0 24 24\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg>",
+            _ => "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/></svg>"
+        };
+
+        return new MarkupString(svg);
+    }
+
+    private static IReadOnlyList<PaymentChartPoint> BuildChartPoints(string period, IReadOnlyList<PaymentTransactionViewModel> transactions)
+    {
+        if (period == "year")
+        {
+            var months = new[] { "Jan", "Fev", "Mar", "Avr", "Mai", "Jui", "Juil" };
+            return months.Select((label, index) =>
+            {
+                var month = index + 1;
+                var rows = transactions.Where(transaction => transaction.Date?.Month == month && IsPaid(transaction.PaymentStatus)).ToList();
+                return PaymentChartPoint.FromRows(label, rows);
+            }).ToList();
+        }
+
+        if (period == "week")
+        {
+            var today = DateTimeOffset.Now.Date;
+            return Enumerable.Range(0, 7)
+                .Select(offset => today.AddDays(offset - 6))
+                .Select(day =>
+                {
+                    var rows = transactions.Where(transaction => transaction.Date?.Date == day && IsPaid(transaction.PaymentStatus)).ToList();
+                    return PaymentChartPoint.FromRows(day.ToString("ddd d", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")), rows);
+                })
+                .ToList();
+        }
+
+        var buckets = new[]
+        {
+            ("1-7", 1, 7),
+            ("8-14", 8, 14),
+            ("15-21", 15, 21),
+            ("22-31", 22, 31)
+        };
+
+        return buckets.Select(bucket =>
+        {
+            var rows = transactions
+                .Where(transaction => transaction.Date?.Day >= bucket.Item2 && transaction.Date?.Day <= bucket.Item3 && IsPaid(transaction.PaymentStatus))
+                .ToList();
+            return PaymentChartPoint.FromRows(bucket.Item1, rows);
+        }).ToList();
+    }
+
     private static CompanyPortalSessionResponse DemoSession()
     {
         return new CompanyPortalSessionResponse(
             Guid.Parse("11111111-1111-1111-1111-111111111111"),
-            "Entreprise Demo CI",
+            "CI Home Service",
             "Direction Demo",
             "direction@entreprise.ci",
             DateTimeOffset.UtcNow,
             "demo-preview-token",
-            "PendingReview",
-            false);
+            "Approved",
+            true);
     }
 
     private static CompanyPortalPaymentSummaryResponse GetPreviewSummary(string period)
@@ -171,10 +592,10 @@ else
         var missions = GetPreviewPaidMissions(period);
         return new CompanyPortalPaymentSummaryResponse(
             period,
-            missions.Sum(mission => mission.FinalTotalAmount ?? 0),
-            missions.Where(mission => mission.PaymentMethod == "MobileMoney").Sum(mission => mission.FinalTotalAmount ?? 0),
-            missions.Where(mission => mission.PaymentMethod == "Cash").Sum(mission => mission.FinalTotalAmount ?? 0),
-            missions.Where(mission => mission.PaymentMethod == "Cash").Sum(mission => mission.FinalTotalAmount ?? 0),
+            missions.Where(mission => IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
+            missions.Where(mission => mission.PaymentMethod == "MobileMoney" && IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
+            missions.Where(mission => mission.PaymentMethod == "Cash" && IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
+            missions.Where(mission => mission.PaymentMethod == "Cash" && IsPending(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
             missions.Count,
             "XOF",
             missions);
@@ -183,24 +604,73 @@ else
     private static IReadOnlyList<CompanyPortalMissionResponse> GetPreviewPaidMissions(string period)
     {
         var now = DateTimeOffset.Now;
-        var extra = period == "week" ? 0 : 2;
         var missions = new List<CompanyPortalMissionResponse>
         {
-            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd01"), "Menage a domicile", "Mme Bamba", "+225 01 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-2), 240, 22000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone"),
-            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd02"), "Jardinage", "M. Kouassi", "+225 07 45 45 45 45", "Direct", "Completed", "Cash", "Paid", now.AddDays(-5), 180, 16000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri"),
-            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd03"), "Nounou", "Mme Traore", "+225 07 77 10 20 30", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-9), 300, 30000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone")
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd01"), "Menage a domicile", "Residence Belle Vue", "+225 01 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-2), 240, 15000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Traore Nadege", null, null, null, null, "cleaning", "Cocody"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd02"), "Electricite", "Famille Gbane", "+225 07 45 45 45 45", "Direct", "Completed", "MobileMoney", "Paid", now.AddDays(-3), 180, 30000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Sylla Yaya", null, null, null, null, "electricity", "Marcory"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd03"), "Plomberie", "M. Adama Sanogo", "+225 05 20 20 20 20", "Scheduled", "Completed", "Cash", "Paid", now.AddDays(-4), 180, 40000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Ouedraogo Koffi", null, null, null, null, "plumbing", "Plateau"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd04"), "Jardinage", "Famille Bah", "+225 07 77 10 20 30", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-5), 180, 12000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Diallo Bakary", null, null, null, null, "gardening", "Riviera"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd05"), "Menage a domicile", "Famille Konan", "+225 01 88 77 66 55", "Scheduled", "Completed", "MobileMoney", "Pending", now.AddDays(-1), 240, 15000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Traore Nadege", null, null, null, null, "cleaning", "Angre"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd06"), "Plomberie", "Societe Generale CI", "+225 05 89 12 33 44", "Scheduled", "Completed", "Cash", "Pending", now.AddDays(-1), 180, 35000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Ouedraogo Koffi", null, null, null, null, "plumbing", "Plateau"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd07"), "Blanchisserie", "Mme Ouattara", "+225 01 22 44 66 88", "Direct", "Completed", "MobileMoney", "Pending", now, 120, 10000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"), "Awa Konate", null, null, null, null, "laundry", "Bingerville"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd08"), "Menage a domicile", "M. Dembele", "+225 07 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Failed", now.AddDays(-6), 240, 15000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"), "Awa Konate", null, null, null, null, "cleaning", "Yopougon")
         };
 
-        if (extra > 0)
+        if (period != "week")
         {
-            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd04"), "Menage a domicile", "Residence Riviera", "+225 05 20 20 20 20", "Scheduled", "Completed", "Cash", "Paid", now.AddDays(-18), 360, 36000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Mariam Coulibaly"));
+            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd09"), "Blanchisserie", "Bureaux Koffi", "+225 05 44 33 22 11", "Scheduled", "Completed", "Cash", "Paid", now.AddDays(-12), 180, 25000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6"), "Kouame Aya", null, null, null, null, "laundry", "Cocody"));
         }
 
         if (period == "year")
         {
-            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd05"), "Jardinage", "Villa Angre", "+225 01 88 77 66 55", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddMonths(-2), 420, 52000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri"));
+            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd10"), "Jardinage", "Villa Angre", "+225 01 10 10 10 10", "Scheduled", "Completed", "Cash", "Paid", now.AddMonths(-2), 420, 52000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Diallo Bakary", null, null, null, null, "gardening", "Angre"));
         }
 
         return missions;
     }
+
+    private sealed record PaymentTransactionViewModel(
+        Guid Id,
+        string CustomerName,
+        string ProviderName,
+        string ServiceName,
+        DateTimeOffset? Date,
+        int Amount,
+        string PaymentMethod,
+        string PaymentStatus,
+        string Reference)
+    {
+        public static PaymentTransactionViewModel FromMission(CompanyPortalMissionResponse mission, int index)
+        {
+            return new PaymentTransactionViewModel(
+                mission.Id,
+                mission.CustomerName,
+                mission.ProviderName ?? "Prestataire",
+                mission.ServiceName,
+                mission.ScheduledFor,
+                mission.FinalTotalAmount ?? 0,
+                mission.PaymentMethod,
+                mission.PaymentStatus,
+                BuildReference(mission.PaymentMethod, mission.ScheduledFor, index));
+        }
+
+        private static string BuildReference(string paymentMethod, DateTimeOffset? scheduledFor, int index)
+        {
+            var prefix = paymentMethod == "Cash" ? "CA" : "MM";
+            var date = scheduledFor ?? DateTimeOffset.UtcNow;
+            return $"{prefix}-{date:yyMM}-{index + 1:000}";
+        }
+    }
+
+    private sealed record PaymentChartPoint(string Label, int Total, int MobileMoney, int Cash)
+    {
+        public static PaymentChartPoint FromRows(string label, IReadOnlyList<PaymentTransactionViewModel> rows)
+        {
+            var mobileMoney = rows.Where(row => row.PaymentMethod == "MobileMoney").Sum(row => row.Amount);
+            var cash = rows.Where(row => row.PaymentMethod == "Cash").Sum(row => row.Amount);
+            return new PaymentChartPoint(label, mobileMoney + cash, mobileMoney, cash);
+        }
+    }
+
+    private sealed record PaymentServiceBreakdown(string ServiceName, int Amount);
 }

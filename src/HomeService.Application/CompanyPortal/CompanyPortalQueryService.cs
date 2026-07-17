@@ -349,12 +349,19 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                       : null))
             .ToListAsync(cancellationToken);
 
+        var paidMissions = missions
+            .Where(mission => mission.PaymentStatus == PaymentStatus.Paid.ToString())
+            .ToList();
+        var pendingMissions = missions
+            .Where(mission => mission.PaymentStatus is nameof(PaymentStatus.Pending) or nameof(PaymentStatus.Authorized))
+            .ToList();
+
         return CompanyPortalPaymentsResult.Ok(new CompanyPortalPaymentSummaryResponse(
             normalizedPeriod,
-            missions.Sum(mission => mission.FinalTotalAmount ?? 0),
-            missions.Where(mission => mission.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
-            missions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
-            missions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+            paidMissions.Sum(mission => mission.FinalTotalAmount ?? 0),
+            paidMissions.Where(mission => mission.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+            paidMissions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+            pendingMissions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
             missions.Count,
             "XOF",
             missions));
