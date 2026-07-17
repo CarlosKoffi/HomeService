@@ -876,7 +876,7 @@ h3 {
     border-radius: 8px;
     display: grid;
     gap: 1rem;
-    grid-template-columns: minmax(0, 1fr) minmax(120px, auto) minmax(110px, auto);
+    grid-template-columns: minmax(0, 1fr) minmax(120px, auto) minmax(110px, auto) minmax(240px, auto);
     padding: 1rem;
 }
 
@@ -887,6 +887,7 @@ h3 {
 
 .notification-list small {
     color: #000000;
+    display: block;
 }
 
 .notification-list span {
@@ -895,6 +896,195 @@ h3 {
     font-weight: 800;
     padding: .25rem .55rem;
     text-align: center;
+}
+
+.notification-failure {
+    color: #991b1b !important;
+    font-weight: 750;
+    margin-top: .3rem;
+}
+
+.notification-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    justify-content: flex-end;
+}
+
+.notification-actions button {
+    background: #020617;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 850;
+    padding: .45rem .65rem;
+}
+
+.notification-actions button:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+}
+
+.audit-filters {
+    align-items: end;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: minmax(240px, 1.5fr) minmax(160px, .7fr) minmax(180px, .8fr) auto;
+    margin: 1.2rem 0;
+    padding: 1rem;
+}
+
+.audit-filters label {
+    color: #000000;
+    display: grid;
+    font-size: .78rem;
+    font-weight: 900;
+    gap: .35rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.audit-filters input,
+.audit-filters select {
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    color: #000000;
+    font-size: .95rem;
+    font-weight: 650;
+    letter-spacing: 0;
+    min-height: 44px;
+    padding: .7rem .85rem;
+    text-transform: none;
+}
+
+.audit-filters button,
+.audit-pagination button {
+    background: #020617;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 850;
+    min-height: 44px;
+    padding: .65rem 1.15rem;
+}
+
+.audit-filters button:disabled,
+.audit-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+}
+
+.audit-log-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.audit-log-panel > header {
+    align-items: center;
+    border-bottom: 1px solid #eef2f7;
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.1rem;
+}
+
+.audit-log-panel h2 {
+    margin: 0;
+}
+
+.audit-log-panel > header span,
+.audit-log-meta span {
+    background: #f3f4f6;
+    border-radius: 999px;
+    color: #000000;
+    font-size: .78rem;
+    font-weight: 800;
+    padding: .3rem .55rem;
+}
+
+.audit-log-list {
+    display: grid;
+}
+
+.audit-log-row {
+    align-items: start;
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: 42px minmax(0, 1fr);
+    padding: 1rem 1.1rem;
+}
+
+.audit-log-row + .audit-log-row {
+    border-top: 1px solid #eef2f7;
+}
+
+.audit-log-icon {
+    align-items: center;
+    background: #dbeafe;
+    border-radius: 12px;
+    color: #1d4ed8;
+    display: flex;
+    font-weight: 900;
+    height: 42px;
+    justify-content: center;
+    width: 42px;
+}
+
+.audit-log-main {
+    min-width: 0;
+}
+
+.audit-log-title {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+    justify-content: space-between;
+}
+
+.audit-log-title strong {
+    color: #000000;
+    font-size: .98rem;
+}
+
+.audit-log-title span {
+    color: #000000;
+    font-size: .82rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.audit-log-main p {
+    color: #000000;
+    margin: .25rem 0 .55rem;
+}
+
+.audit-log-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+}
+
+.audit-empty {
+    color: #000000;
+    font-weight: 750;
+    padding: 1.1rem;
+}
+
+.audit-pagination {
+    display: flex;
+    gap: .7rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.error-message {
+    border-color: #fecaca;
+    color: #991b1b;
 }
 
 .cms-header {
@@ -1430,6 +1620,89 @@ h3 {
     padding: .5rem .7rem;
 }
 
+.access-form {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    display: grid;
+    gap: .75rem;
+    margin: 1rem 0;
+    padding: .85rem;
+}
+
+.access-form.compact {
+    align-items: end;
+    grid-template-columns: minmax(220px, 1fr) auto;
+}
+
+.access-form label {
+    color: #000;
+    display: grid;
+    font-size: .8rem;
+    font-weight: 850;
+    gap: .3rem;
+}
+
+.access-form input,
+.access-form select,
+.translation-list article select {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #000;
+    font: inherit;
+    min-height: 40px;
+    padding: .55rem .7rem;
+}
+
+.access-form button,
+.translation-list article button {
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 8px;
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    padding: .55rem .75rem;
+}
+
+.access-form button:disabled,
+.translation-list article button:disabled {
+    cursor: not-allowed;
+    opacity: .5;
+}
+
+.admin-invite-form {
+    grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) minmax(130px, auto);
+}
+
+.admin-invite-form button,
+.role-checkboxes {
+    grid-column: 1 / -1;
+}
+
+.checkbox-line {
+    align-content: center;
+    display: flex !important;
+    flex-direction: row;
+    gap: .5rem;
+}
+
+.role-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .75rem;
+}
+
+.role-checkboxes label {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    display: flex;
+    flex-direction: row;
+    padding: .45rem .65rem;
+}
+
 .role-list {
     display: grid;
     gap: .75rem;
@@ -1496,8 +1769,11 @@ h3 {
 
     .access-layout,
     .permission-matrix,
+    .access-form.compact,
+    .admin-invite-form,
     .proposal-list article,
     .notification-list article,
+    .audit-filters,
     .service-catalog-card > header,
     .prestation-admin-grid,
     .prestation-row,
@@ -1550,6 +1826,20 @@ h3 {
 
     .cms-field-row button {
         justify-self: start;
+    }
+
+    .audit-log-title {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: .2rem;
+    }
+
+    .audit-pagination {
+        justify-content: stretch;
+    }
+
+    .audit-pagination button {
+        flex: 1;
     }
 }
 

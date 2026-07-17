@@ -3,6 +3,7 @@
 @using HomeService.Contracts.Companies
 @using System.Net.Http
 @inject PlatformApiClient ApiClient
+@inject IJSRuntime JsRuntime
 
 <PageTitle>Demandes entreprises</PageTitle>
 
@@ -30,21 +31,33 @@
 <section class="toolbar">
     <label>
         Statut
-        <select>
-            <option>A traiter</option>
-            <option>Soumis</option>
-            <option>En verification</option>
-            <option>Complement demande</option>
-            <option>Valide</option>
-            <option>Activation envoyee</option>
+        <select @bind="SelectedStatus">
+            <option value="">A traiter</option>
+            <option value="Submitted">Soumis</option>
+            <option value="UnderReview">En verification</option>
+            <option value="MoreInformationRequested">Complement demande</option>
+            <option value="Approved">Valide</option>
+            <option value="ActivationSent">Activation envoyee</option>
+            <option value="Rejected">Rejete</option>
+            <option value="Activated">Compte cree</option>
         </select>
     </label>
     <label>
         Recherche
-        <input type="search" placeholder="Entreprise, ville, email" />
+        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Entreprise, ville, email" />
     </label>
-    <button type="button">Relancer les validations dormantes</button>
+    <button type="button" @onclick="SendDormantActivationLinksAsync" disabled="@IsBulkBusy">Relancer les validations dormantes</button>
 </section>
+
+@if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <p class="admin-message">@SuccessMessage</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(ActionErrorMessage))
+{
+    <p class="admin-message error-message">@ActionErrorMessage</p>
+}
 
 <section class="work-queue">
     @if (IsLoading)
@@ -59,7 +72,7 @@
             <p>@ErrorMessage</p>
         </article>
     }
-    else if (Applications.Count == 0)
+    else if (VisibleApplications.Count == 0)
     {
         <article class="queue-item">
             <p>Aucune demande entreprise pour le moment.</p>
@@ -67,7 +80,7 @@
     }
     else
     {
-        @foreach (var item in Applications)
+        @foreach (var item in VisibleApplications)
         {
             <article class="queue-item @(item.StatusClass)">
                 <div>
@@ -87,9 +100,21 @@
                 </div>
                 <div class="easy-actions">
                     <a href="company-applications/@item.Id">Voir dossier</a>
-                    <button type="button">Demander complement</button>
-                    <button type="button">Valider</button>
-                    <button type="button">Relancer mail</button>
+                    <button type="button"
+                            disabled="@IsActionDisabled(item)"
+                            @onclick="() => RequestMoreInformationAsync(item)">
+                        Demander complement
+                    </button>
+                    <button type="button"
+                            disabled="@(!CanApprove(item) || IsActionDisabled(item))"
+                            @onclick="() => ApproveAndSendActivationLinkAsync(item)">
+                        Valider
+                    </button>
+                    <button type="button"
+                            disabled="@(!CanSendActivationLink(item) || IsActionDisabled(item))"
+                            @onclick="() => SendActivationLinkAsync(item)">
+                        Relancer mail
+                    </button>
                 </div>
             </article>
         }
@@ -99,10 +124,29 @@
 @code {
     private List<ApplicationRow> Applications { get; set; } = [];
     private bool IsLoading { get; set; } = true;
+    private bool IsBulkBusy { get; set; }
+    private Guid? BusyApplicationId { get; set; }
     private string? ErrorMessage { get; set; }
+    private string? ActionErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+    private string? SearchTerm { get; set; }
+    private string? SelectedStatus { get; set; }
+
+    private List<ApplicationRow> VisibleApplications => Applications
+        .Where(MatchesStatus)
+        .Where(MatchesSearch)
+        .ToList();
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadApplicationsAsync();
+    }
+
+    private async Task LoadApplicationsAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
         try
         {
             var rows = await ApiClient.GetCompanyApplicationsAsync();
@@ -124,6 +168,138 @@
         {
             IsLoading = false;
         }
+    }
+
+    private async Task RequestMoreInformationAsync(ApplicationRow item)
+    {
+        var note = await JsRuntime.InvokeAsync<string?>(
+            "prompt",
+            $"Note obligatoire pour demander un complement a {item.CompanyName} :");
+
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            ActionErrorMessage = "Action annulee: une note est obligatoire pour demander un complement.";
+            return;
+        }
+
+        await RunApplicationActionAsync(
+            item.Id,
+            async () => await ApiClient.RequestCompanyApplicationMoreInformationAsync(item.Id, note),
+            $"Complement demande a {item.CompanyName}.");
+    }
+
+    private async Task ApproveAndSendActivationLinkAsync(ApplicationRow item)
+    {
+        await RunApplicationActionAsync(
+            item.Id,
+            async () =>
+            {
+                await ApiClient.ApproveCompanyApplicationAsync(item.Id);
+                await ApiClient.SendCompanyApplicationActivationLinkAsync(item.Id);
+            },
+            $"{item.CompanyName} validee. Lien d'activation genere.");
+    }
+
+    private async Task SendActivationLinkAsync(ApplicationRow item)
+    {
+        await RunApplicationActionAsync(
+            item.Id,
+            async () => await ApiClient.SendCompanyApplicationActivationLinkAsync(item.Id),
+            $"Lien d'activation renvoye a {item.CompanyName}.");
+    }
+
+    private async Task SendDormantActivationLinksAsync()
+    {
+        IsBulkBusy = true;
+        ActionErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var candidates = Applications
+                .Where(item => CanSendActivationLink(item))
+                .ToList();
+
+            foreach (var candidate in candidates)
+            {
+                await ApiClient.SendCompanyApplicationActivationLinkAsync(candidate.Id);
+            }
+
+            SuccessMessage = candidates.Count == 0
+                ? "Aucune validation dormante a relancer."
+                : $"{candidates.Count} lien(s) d'activation relance(s).";
+
+            await LoadApplicationsAsync();
+        }
+        catch (Exception exception)
+        {
+            ActionErrorMessage = $"Relance impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBulkBusy = false;
+        }
+    }
+
+    private async Task RunApplicationActionAsync(Guid applicationId, Func<Task> action, string successMessage)
+    {
+        BusyApplicationId = applicationId;
+        ActionErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            await action();
+            SuccessMessage = successMessage;
+            await LoadApplicationsAsync();
+        }
+        catch (Exception exception)
+        {
+            ActionErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            BusyApplicationId = null;
+        }
+    }
+
+    private bool MatchesStatus(ApplicationRow item)
+    {
+        if (string.IsNullOrWhiteSpace(SelectedStatus))
+        {
+            return item.Status is not "Approved" and not "ActivationSent" and not "Activated";
+        }
+
+        return string.Equals(item.Status, SelectedStatus, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool MatchesSearch(ApplicationRow item)
+    {
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            return true;
+        }
+
+        var term = SearchTerm.Trim();
+        return item.CompanyName.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || item.City.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || item.ContactName.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || item.Email.Contains(term, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsActionDisabled(ApplicationRow item)
+    {
+        return BusyApplicationId == item.Id || IsBulkBusy;
+    }
+
+    private static bool CanApprove(ApplicationRow item)
+    {
+        return item.Status is "Submitted" or "UnderReview" or "MoreInformationRequested" or "Rejected";
+    }
+
+    private static bool CanSendActivationLink(ApplicationRow item)
+    {
+        return item.Status is "Approved" or "ActivationSent";
     }
 
     private static ApplicationRow MapRow(CompanyApplicationSummaryResponse item)

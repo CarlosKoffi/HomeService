@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Monitoring;
@@ -182,6 +183,60 @@ public sealed class AdminQueryService(IAppDbContext db)
                 notification.SentAt,
                 notification.FailureReason))
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse> GetAccessSnapshotAsync(CancellationToken cancellationToken)
+    {
+        var modules = await db.AdminModules
+            .AsNoTracking()
+            .OrderBy(module => module.DisplayOrder)
+            .Select(module => new AdminModuleSummaryResponse(
+                module.Id,
+                module.Key.ToString(),
+                module.Name,
+                module.Description,
+                module.DisplayOrder,
+                module.IsActive))
+            .ToListAsync(cancellationToken);
+
+        var roles = await db.AdminRoles
+            .AsNoTracking()
+            .OrderByDescending(role => role.IsSystemRole)
+            .ThenBy(role => role.Name)
+            .Select(role => new AdminRoleSummaryResponse(
+                role.Id,
+                role.Name,
+                role.Description,
+                role.IsSystemRole,
+                role.IsActive,
+                role.Permissions
+                    .OrderBy(permission => permission.Module!.DisplayOrder)
+                    .ThenBy(permission => permission.Action)
+                    .Select(permission => new AdminPermissionSummaryResponse(
+                        permission.ModuleId,
+                        permission.Module!.Name,
+                        permission.Action.ToString()))
+                    .ToList()))
+            .ToListAsync(cancellationToken);
+
+        var admins = await db.AdminUsers
+            .AsNoTracking()
+            .OrderByDescending(admin => admin.IsSuperAdmin)
+            .ThenBy(admin => admin.FullName)
+            .Select(admin => new AdminUserSummaryResponse(
+                admin.Id,
+                admin.FullName,
+                admin.Email,
+                admin.IsSuperAdmin,
+                admin.IsActive,
+                admin.LastLoginAt,
+                admin.Roles
+                    .OrderBy(userRole => userRole.Role!.Name)
+                    .Select(userRole => userRole.Role!.Name)
+                    .ToList()))
+            .ToListAsync(cancellationToken);
+
+        return new AdminAccessSnapshotResponse(roles, modules, admins);
     }
 
     public async Task<CountryBrandingResponse?> GetCountryBrandingAsync(string countryCode, CancellationToken cancellationToken)

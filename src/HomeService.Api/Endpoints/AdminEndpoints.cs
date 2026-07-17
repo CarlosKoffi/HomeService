@@ -5,6 +5,7 @@ using HomeService.Application.Branding;
 using HomeService.Application.Companies;
 using HomeService.Application.Notifications;
 using HomeService.Api.Auditing;
+using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
@@ -250,6 +251,255 @@ public static class AdminEndpoints
             return Results.Ok(notifications);
         })
         .WithName("ListNotificationOutboxMessages");
+
+        admin.MapGet("/access-control", async (
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var snapshot = await queryService.GetAccessSnapshotAsync(cancellationToken);
+            return Results.Ok(snapshot);
+        })
+        .WithName("GetAdminAccessControl")
+        .Produces<AdminAccessSnapshotResponse>();
+
+        admin.MapPost("/access-control/roles", async (
+            CreateAdminRoleRequest request,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            AdminQueryService queryService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.CreateRoleAsync(request, cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminRoleCreated",
+                "AdminRole",
+                null,
+                $"Role admin cree: {request.Name}.",
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+        })
+        .WithName("CreateAdminRole");
+
+        admin.MapPut("/access-control/roles/{roleId:guid}/permissions", async (
+            Guid roleId,
+            UpdateAdminRolePermissionsRequest request,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            AdminQueryService queryService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.UpdateRolePermissionsAsync(roleId, request, cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminRolePermissionsUpdated",
+                "AdminRole",
+                roleId,
+                "Permissions du role admin modifiees.",
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+        })
+        .WithName("UpdateAdminRolePermissions");
+
+        admin.MapPost("/access-control/admins", async (
+            CreateAdminUserRequest request,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            AdminQueryService queryService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.CreateAdminUserAsync(request, cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminUserInvited",
+                "AdminUser",
+                null,
+                $"Admin invite: {request.Email}.",
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+        })
+        .WithName("CreateAdminUser");
+
+        admin.MapPut("/access-control/admins/{adminUserId:guid}/roles", async (
+            Guid adminUserId,
+            UpdateAdminUserRolesRequest request,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            AdminQueryService queryService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.UpdateAdminUserRolesAsync(adminUserId, request, cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminUserRolesUpdated",
+                "AdminUser",
+                adminUserId,
+                "Roles de l'admin modifies.",
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+        })
+        .WithName("UpdateAdminUserRoles");
+
+        admin.MapPost("/access-control/admins/{adminUserId:guid}/deactivate", async (
+            Guid adminUserId,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            AdminQueryService queryService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.DeactivateAdminUserAsync(adminUserId, cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminUserDeactivated",
+                "AdminUser",
+                adminUserId,
+                "Admin desactive.");
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+        })
+        .WithName("DeactivateAdminUser");
+
+        admin.MapPost("/notifications/{id:guid}/retry", async (
+            Guid id,
+            HttpRequest httpRequest,
+            AdminNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.RetryAsync(id, cancellationToken);
+            var error = ToAdminNotificationActionError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminNotificationRetried",
+                "NotificationOutboxMessage",
+                id,
+                "Notification relancee.",
+                after: result.Response);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("RetryNotificationOutboxMessage");
+
+        admin.MapPost("/notifications/{id:guid}/cancel", async (
+            Guid id,
+            NotificationActionRequest request,
+            HttpRequest httpRequest,
+            AdminNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.CancelAsync(id, request.Reason, cancellationToken);
+            var error = ToAdminNotificationActionError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminNotificationCancelled",
+                "NotificationOutboxMessage",
+                id,
+                "Notification annulee.",
+                after: result.Response);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("CancelNotificationOutboxMessage");
+
+        admin.MapPost("/notifications/{id:guid}/mark-sent", async (
+            Guid id,
+            HttpRequest httpRequest,
+            AdminNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.MarkSentAsync(id, cancellationToken);
+            var error = ToAdminNotificationActionError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminNotificationMarkedSent",
+                "NotificationOutboxMessage",
+                id,
+                "Notification marquee envoyee.",
+                after: result.Response);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("MarkNotificationOutboxMessageSent");
         
         admin.MapGet("/country-brandings/{countryCode}", async (
             string countryCode,
@@ -1149,5 +1399,27 @@ public static class AdminEndpoints
     static AuditRequestContext GetAuditRequestContext(HttpRequest request)
     {
         return HttpAuditContextFactory.Create(request);
+    }
+
+    static IResult? ToAdminNotificationActionError(AdminNotificationActionResult result)
+    {
+        return result.Status switch
+        {
+            AdminNotificationActionStatus.Ok => null,
+            AdminNotificationActionStatus.NotFound => Results.NotFound(new { message = result.Message }),
+            AdminNotificationActionStatus.InvalidTransition => Results.BadRequest(new { message = result.Message }),
+            _ => Results.BadRequest(new { message = result.Message ?? "Action notification impossible." })
+        };
+    }
+
+    static IResult? ToAdminAccessControlError(AdminAccessControlResult result)
+    {
+        return result.Status switch
+        {
+            AdminAccessControlStatus.Ok => null,
+            AdminAccessControlStatus.NotFound => Results.NotFound(new { message = result.Message }),
+            AdminAccessControlStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+            _ => Results.BadRequest(new { message = result.Message ?? "Action acces admin impossible." })
+        };
     }
 }

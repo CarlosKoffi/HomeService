@@ -1,4 +1,7 @@
 @page "/access-control"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
 
 <PageTitle>Acces et roles</PageTitle>
 
@@ -51,17 +54,52 @@
                 <h2>Roles</h2>
                 <p class="section-help">Un role est un paquet de permissions metier, facile a attribuer a un admin.</p>
             </div>
-            <button type="button">Creer un role</button>
+        </div>
+
+        <div class="access-form">
+            <label>
+                Nom du role
+                <input type="text" @bind="NewRoleName" placeholder="Ex: Finance" />
+            </label>
+            <label>
+                Description
+                <input type="text" @bind="NewRoleDescription" placeholder="Ce que ce role peut faire" />
+            </label>
+            <button type="button" @onclick="CreateRoleAsync" disabled="@IsBusy">Creer le role</button>
         </div>
 
         <div class="role-list">
-            @foreach (var role in Roles)
+            @if (IsLoading)
             {
                 <div>
-                    <strong>@role.Name</strong>
-                    <p>@role.Description</p>
-                    <span>@role.Modules</span>
+                    <strong>Chargement...</strong>
+                    <p>Lecture des roles depuis la base.</p>
                 </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <div>
+                    <strong>Erreur</strong>
+                    <p>@ErrorMessage</p>
+                </div>
+            }
+            else if (Roles.Count == 0)
+            {
+                <div>
+                    <strong>Aucun role</strong>
+                    <p>Les roles admin seront initialises au prochain demarrage API.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var role in Roles)
+                {
+                    <div>
+                        <strong>@role.Name</strong>
+                        <p>@role.Description</p>
+                        <span>@GetRolePermissionSummary(role)</span>
+                    </div>
+                }
             }
         </div>
     </article>
@@ -72,7 +110,19 @@
                 <h2>Modules</h2>
                 <p class="section-help">Chaque module peut exposer des droits differents selon les equipes.</p>
             </div>
-            <button type="button">Configurer</button>
+        </div>
+
+        <div class="access-form compact">
+            <label>
+                Role a configurer
+                <select value="@SelectedRoleId" @onchange="OnSelectedRoleChanged">
+                    @foreach (var role in Roles)
+                    {
+                        <option value="@role.Id">@role.Name</option>
+                    }
+                </select>
+            </label>
+            <button type="button" @onclick="SaveSelectedRolePermissionsAsync" disabled="@IsBusy">Sauver les permissions</button>
         </div>
 
         <div class="permission-matrix">
@@ -82,10 +132,10 @@
             <div class="matrix-head">Valider</div>
             @foreach (var module in Modules)
             {
-                <div>@module</div>
-                <label><input type="checkbox" checked /> Voir</label>
-                <label><input type="checkbox" /> Editer</label>
-                <label><input type="checkbox" /> Valider</label>
+                <div>@module.Name</div>
+                <label><input type="checkbox" checked="@HasViewPermission(module.Id)" @onchange="args => ToggleViewPermission(module.Id, args)" /> Voir</label>
+                <label><input type="checkbox" checked="@HasEditPermission(module.Id)" @onchange="args => ToggleEditPermission(module.Id, args)" /> Editer</label>
+                <label><input type="checkbox" checked="@HasApprovePermission(module.Id)" @onchange="args => ToggleApprovePermission(module.Id, args)" /> Valider</label>
             }
         </div>
     </article>
@@ -97,47 +147,341 @@
             <h2>Administrateurs</h2>
             <p class="section-help">Liste des comptes internes. Plus tard, invitation par email et activation avec mot de passe.</p>
         </div>
-        <button type="button">Inviter un admin</button>
     </div>
+
+    <div class="access-form admin-invite-form">
+        <label>
+            Nom complet
+            <input type="text" @bind="NewAdminFullName" placeholder="Ex: Awa Traore" />
+        </label>
+        <label>
+            Email
+            <input type="email" @bind="NewAdminEmail" placeholder="admin@kaza.ci" />
+        </label>
+        <label class="checkbox-line">
+            <input type="checkbox" @bind="NewAdminIsSuperAdmin" />
+            Super admin
+        </label>
+        <div class="role-checkboxes">
+            @foreach (var role in Roles)
+            {
+                <label>
+                    <input type="checkbox" checked="@NewAdminRoleIds.Contains(role.Id)" @onchange="args => ToggleNewAdminRole(role.Id, args)" />
+                    @role.Name
+                </label>
+            }
+        </div>
+        <button type="button" @onclick="CreateAdminAsync" disabled="@IsBusy">Inviter un admin</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(SuccessMessage))
+    {
+        <p class="admin-message">@SuccessMessage</p>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(ActionErrorMessage))
+    {
+        <p class="admin-message error-message">@ActionErrorMessage</p>
+    }
+
     @foreach (var admin in Admins)
     {
         <article>
             <div>
-                <strong>@admin.Name</strong>
+                <strong>@admin.FullName</strong>
                 <p>@admin.Email</p>
             </div>
-            <span>@admin.Role</span>
-            <button type="button">Modifier les acces</button>
+            <span>@GetAdminRoleLabel(admin)</span>
+            <select value="@GetAdminRoleDraft(admin.Id)" @onchange="args => OnAdminRoleDraftChanged(admin.Id, args)">
+                <option value="">Aucun role</option>
+                @foreach (var role in Roles)
+                {
+                    <option value="@role.Id">@role.Name</option>
+                }
+            </select>
+            <button type="button" @onclick="() => SaveAdminRoleAsync(admin)" disabled="@IsBusy">Modifier les acces</button>
+            <button type="button" @onclick="() => DeactivateAdminAsync(admin)" disabled="@(!admin.IsActive || IsBusy)">Desactiver</button>
         </article>
     }
 </section>
 
 @code {
-    private static readonly IReadOnlyList<RoleRow> Roles =
-    [
-        new("Super admin", "Controle complet de la plateforme.", "Tous les modules"),
-        new("Validation entreprises", "Traite les dossiers et pieces des entreprises.", "Demandes entreprises"),
-        new("Localisation", "Gere les pays, langues et textes traduits.", "Pays & traductions"),
-        new("Preparation prestataires", "Module reserve pour la prochaine phase, quand les entreprises ajouteront leurs employes.", "Employes")
-    ];
+    private List<AdminRoleSummaryResponse> Roles { get; set; } = [];
+    private List<AdminModuleSummaryResponse> Modules { get; set; } = [];
+    private List<AdminUserSummaryResponse> Admins { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private bool IsBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? ActionErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+    private string? NewRoleName { get; set; }
+    private string? NewRoleDescription { get; set; }
+    private Guid? SelectedRoleId { get; set; }
+    private HashSet<string> PermissionDraft { get; set; } = [];
+    private string? NewAdminFullName { get; set; }
+    private string? NewAdminEmail { get; set; }
+    private bool NewAdminIsSuperAdmin { get; set; }
+    private HashSet<Guid> NewAdminRoleIds { get; set; } = [];
+    private Dictionary<Guid, Guid?> AdminRoleDrafts { get; set; } = [];
 
-    private static readonly IReadOnlyList<string> Modules =
-    [
-        "Demandes entreprises",
-        "Preparation prestataires",
-        "Pays & traductions",
-        "Services",
-        "Activation entreprises",
-        "Documents entreprise"
-    ];
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var snapshot = await ApiClient.GetAdminAccessSnapshotAsync();
+            Roles = snapshot?.Roles.ToList() ?? [];
+            Modules = snapshot?.Modules.ToList() ?? [];
+            Admins = snapshot?.Admins.ToList() ?? [];
+            HydrateDrafts();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les acces admin. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
 
-    private static readonly IReadOnlyList<AdminRow> Admins =
-    [
-        new("Bruce", "superadmin@homeservice.local", "Super admin"),
-        new("Equipe validation", "validation@homeservice.local", "Validation entreprises"),
-        new("Equipe contenu", "content@homeservice.local", "Localisation")
-    ];
+    private async Task CreateRoleAsync()
+    {
+        await RunAccessActionAsync(
+            async () => await ApiClient.CreateAdminRoleAsync(new CreateAdminRoleRequest(NewRoleName ?? string.Empty, NewRoleDescription ?? string.Empty)),
+            "Role cree.");
 
-    private sealed record RoleRow(string Name, string Description, string Modules);
-    private sealed record AdminRow(string Name, string Email, string Role);
+        NewRoleName = null;
+        NewRoleDescription = null;
+    }
+
+    private async Task SaveSelectedRolePermissionsAsync()
+    {
+        if (SelectedRoleId is null)
+        {
+            ActionErrorMessage = "Selectionnez un role a configurer.";
+            return;
+        }
+
+        var permissions = PermissionDraft
+            .Select(ParsePermissionKey)
+            .Where(permission => permission is not null)
+            .Select(permission => permission!)
+            .ToList();
+
+        await RunAccessActionAsync(
+            async () => await ApiClient.UpdateAdminRolePermissionsAsync(
+                SelectedRoleId.Value,
+                new UpdateAdminRolePermissionsRequest(permissions)),
+            "Permissions enregistrees.");
+    }
+
+    private async Task CreateAdminAsync()
+    {
+        await RunAccessActionAsync(
+            async () => await ApiClient.CreateAdminUserAsync(new CreateAdminUserRequest(
+                NewAdminFullName ?? string.Empty,
+                NewAdminEmail ?? string.Empty,
+                NewAdminIsSuperAdmin,
+                NewAdminRoleIds.ToList())),
+            "Admin invite.");
+
+        NewAdminFullName = null;
+        NewAdminEmail = null;
+        NewAdminIsSuperAdmin = false;
+        NewAdminRoleIds.Clear();
+    }
+
+    private async Task SaveAdminRoleAsync(AdminUserSummaryResponse admin)
+    {
+        AdminRoleDrafts.TryGetValue(admin.Id, out var roleId);
+        var roleIds = roleId.HasValue ? [roleId.Value] : new List<Guid>();
+
+        await RunAccessActionAsync(
+            async () => await ApiClient.UpdateAdminUserRolesAsync(admin.Id, new UpdateAdminUserRolesRequest(roleIds)),
+            "Acces admin modifies.");
+    }
+
+    private async Task DeactivateAdminAsync(AdminUserSummaryResponse admin)
+    {
+        await RunAccessActionAsync(
+            async () => await ApiClient.DeactivateAdminUserAsync(admin.Id),
+            "Admin desactive.");
+    }
+
+    private async Task RunAccessActionAsync(Func<Task<AdminAccessSnapshotResponse?>> action, string successMessage)
+    {
+        IsBusy = true;
+        ActionErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var snapshot = await action();
+            ApplySnapshot(snapshot);
+            SuccessMessage = successMessage;
+        }
+        catch (Exception exception)
+        {
+            ActionErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private void ApplySnapshot(AdminAccessSnapshotResponse? snapshot)
+    {
+        Roles = snapshot?.Roles.ToList() ?? [];
+        Modules = snapshot?.Modules.ToList() ?? [];
+        Admins = snapshot?.Admins.ToList() ?? [];
+        HydrateDrafts();
+    }
+
+    private void HydrateDrafts()
+    {
+        SelectedRoleId ??= Roles.FirstOrDefault()?.Id;
+        HydratePermissionDraft();
+
+        AdminRoleDrafts = Admins.ToDictionary(
+            admin => admin.Id,
+            admin => Roles.FirstOrDefault(role => admin.Roles.Contains(role.Name, StringComparer.OrdinalIgnoreCase))?.Id);
+    }
+
+    private void HydratePermissionDraft()
+    {
+        PermissionDraft.Clear();
+        var selectedRole = Roles.FirstOrDefault(role => role.Id == SelectedRoleId);
+        if (selectedRole is null)
+        {
+            return;
+        }
+
+        foreach (var permission in selectedRole.Permissions)
+        {
+            PermissionDraft.Add(BuildPermissionKey(permission.ModuleId, permission.Action));
+        }
+    }
+
+    private void OnSelectedRoleChanged(ChangeEventArgs args)
+    {
+        SelectedRoleId = Guid.TryParse(args.Value?.ToString(), out var roleId) ? roleId : null;
+        HydratePermissionDraft();
+    }
+
+    private void TogglePermission(Guid moduleId, string action, ChangeEventArgs args)
+    {
+        var key = BuildPermissionKey(moduleId, action);
+        var isChecked = args.Value is bool value && value;
+        if (isChecked)
+        {
+            PermissionDraft.Add(key);
+            return;
+        }
+
+        PermissionDraft.Remove(key);
+    }
+
+    private void ToggleViewPermission(Guid moduleId, ChangeEventArgs args)
+    {
+        TogglePermission(moduleId, "View", args);
+    }
+
+    private void ToggleEditPermission(Guid moduleId, ChangeEventArgs args)
+    {
+        TogglePermission(moduleId, "Edit", args);
+    }
+
+    private void ToggleApprovePermission(Guid moduleId, ChangeEventArgs args)
+    {
+        TogglePermission(moduleId, "Approve", args);
+    }
+
+    private void ToggleNewAdminRole(Guid roleId, ChangeEventArgs args)
+    {
+        var isChecked = args.Value is bool value && value;
+        if (isChecked)
+        {
+            NewAdminRoleIds.Add(roleId);
+            return;
+        }
+
+        NewAdminRoleIds.Remove(roleId);
+    }
+
+    private string GetAdminRoleDraft(Guid adminId)
+    {
+        return AdminRoleDrafts.TryGetValue(adminId, out var roleId) && roleId.HasValue ? roleId.Value.ToString() : string.Empty;
+    }
+
+    private void OnAdminRoleDraftChanged(Guid adminId, ChangeEventArgs args)
+    {
+        AdminRoleDrafts[adminId] = Guid.TryParse(args.Value?.ToString(), out var roleId) ? roleId : null;
+    }
+
+    private bool HasDraftPermission(Guid moduleId, string action)
+    {
+        return PermissionDraft.Contains(BuildPermissionKey(moduleId, action));
+    }
+
+    private bool HasViewPermission(Guid moduleId)
+    {
+        return HasDraftPermission(moduleId, "View");
+    }
+
+    private bool HasEditPermission(Guid moduleId)
+    {
+        return HasDraftPermission(moduleId, "Edit");
+    }
+
+    private bool HasApprovePermission(Guid moduleId)
+    {
+        return HasDraftPermission(moduleId, "Approve");
+    }
+
+    private static string BuildPermissionKey(Guid moduleId, string action)
+    {
+        return $"{moduleId:N}:{action}";
+    }
+
+    private static AdminPermissionAssignmentRequest? ParsePermissionKey(string key)
+    {
+        var parts = key.Split(':', 2);
+        if (parts.Length != 2 || !Guid.TryParse(parts[0], out var moduleId))
+        {
+            return null;
+        }
+
+        return new AdminPermissionAssignmentRequest(moduleId, parts[1]);
+    }
+
+    private static string GetRolePermissionSummary(AdminRoleSummaryResponse role)
+    {
+        if (!role.IsActive)
+        {
+            return "Role inactif";
+        }
+
+        if (role.Permissions.Count == 0)
+        {
+            return "Aucune permission configuree";
+        }
+
+        var modules = role.Permissions
+            .Select(permission => permission.ModuleName)
+            .Distinct()
+            .Take(4);
+
+        return string.Join(", ", modules);
+    }
+
+    private static string GetAdminRoleLabel(AdminUserSummaryResponse admin)
+    {
+        if (admin.IsSuperAdmin)
+        {
+            return "Super admin";
+        }
+
+        return admin.Roles.Count == 0 ? "Aucun role" : string.Join(", ", admin.Roles);
+    }
 }

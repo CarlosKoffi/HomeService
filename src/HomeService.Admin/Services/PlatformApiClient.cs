@@ -1,10 +1,12 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Localization;
+using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
 using Microsoft.AspNetCore.Components.Forms;
@@ -164,6 +166,92 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<NotificationOutboxMessageResponse>>("/api/admin/notifications", cancellationToken) ?? [];
     }
 
+    public async Task<NotificationOutboxMessageResponse?> RetryNotificationAsync(Guid notificationId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<NotificationOutboxMessageResponse>($"/api/admin/notifications/{notificationId}/retry", null, cancellationToken);
+    }
+
+    public async Task<NotificationOutboxMessageResponse?> CancelNotificationAsync(Guid notificationId, string? reason, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<NotificationOutboxMessageResponse>(
+            $"/api/admin/notifications/{notificationId}/cancel",
+            new NotificationActionRequest(reason),
+            cancellationToken);
+    }
+
+    public async Task<NotificationOutboxMessageResponse?> MarkNotificationSentAsync(Guid notificationId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<NotificationOutboxMessageResponse>($"/api/admin/notifications/{notificationId}/mark-sent", null, cancellationToken);
+    }
+
+    public async Task<AuditLogListResponse?> GetAuditLogsAsync(
+        string? actorType,
+        string? entityType,
+        string? search,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+
+        var query = new List<string>
+        {
+            $"skip={skip}",
+            $"take={take}"
+        };
+
+        AddQueryValue(query, "actorType", actorType);
+        AddQueryValue(query, "entityType", entityType);
+        AddQueryValue(query, "search", search);
+
+        return await GetJsonAsync<AuditLogListResponse>($"/api/admin/audit-logs?{string.Join('&', query)}", cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse?> GetAdminAccessSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminAccessSnapshotResponse>("/api/admin/access-control", cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse?> CreateAdminRoleAsync(CreateAdminRoleRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminAccessSnapshotResponse>("/api/admin/access-control/roles", request, cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse?> UpdateAdminRolePermissionsAsync(
+        Guid roleId,
+        UpdateAdminRolePermissionsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminAccessSnapshotResponse>($"/api/admin/access-control/roles/{roleId}/permissions", request, cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse?> CreateAdminUserAsync(CreateAdminUserRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminAccessSnapshotResponse>("/api/admin/access-control/admins", request, cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse?> UpdateAdminUserRolesAsync(
+        Guid adminUserId,
+        UpdateAdminUserRolesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminAccessSnapshotResponse>($"/api/admin/access-control/admins/{adminUserId}/roles", request, cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse?> DeactivateAdminUserAsync(Guid adminUserId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminAccessSnapshotResponse>($"/api/admin/access-control/admins/{adminUserId}/deactivate", null, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CmsSiteSummaryResponse>> GetCmsSitesAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -303,6 +391,14 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         throw new PlatformApiException(
             $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+    }
+
+    private static void AddQueryValue(List<string> query, string key, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            query.Add($"{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value.Trim())}");
+        }
     }
 
     private async Task<T?> PostJsonAsync<T>(string path, object? payload, CancellationToken cancellationToken)

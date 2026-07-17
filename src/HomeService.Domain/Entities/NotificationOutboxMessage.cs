@@ -55,4 +55,29 @@ public sealed class NotificationOutboxMessage : AuditableEntity
         FailureReason = reason.Trim();
         Touch();
     }
+
+    public void Retry()
+    {
+        if (Status is NotificationStatus.Sent)
+        {
+            throw new InvalidOperationException("Une notification deja envoyee ne peut pas etre relancee.");
+        }
+
+        Status = NotificationStatus.Pending;
+        FailureReason = null;
+        ScheduledAt = DateTimeOffset.UtcNow;
+        Touch();
+    }
+
+    public void Cancel(string? reason = null)
+    {
+        if (Status is NotificationStatus.Sent)
+        {
+            throw new InvalidOperationException("Une notification deja envoyee ne peut pas etre annulee.");
+        }
+
+        Status = NotificationStatus.Cancelled;
+        FailureReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        Touch();
+    }
 }

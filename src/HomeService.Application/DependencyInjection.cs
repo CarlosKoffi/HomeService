@@ -31,9 +31,11 @@ public static class DependencyInjection
         services.AddScoped<CompanyHomeCmsQueryService>();
         services.AddScoped<AdminConfigurationService>();
         services.AddScoped<AdminQueryService>();
+        services.AddScoped<AdminAccessControlService>();
         services.AddScoped<AdminCmsQueryService>();
         services.AddScoped<AdminCompanyApplicationReviewService>();
         services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
+        services.AddScoped<AdminNotificationService>();
 
         return services;
     }

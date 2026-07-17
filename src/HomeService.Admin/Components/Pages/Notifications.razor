@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Notifications
 @inject PlatformApiClient ApiClient
+@inject IJSRuntime JsRuntime
 
 <PageTitle>Notifications</PageTitle>
 
@@ -51,21 +52,57 @@
                     <strong>@notification.Subject</strong>
                     <p>@notification.Body</p>
                     <small>@notification.Recipient - @notification.ScheduledAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                    @if (!string.IsNullOrWhiteSpace(notification.FailureReason))
+                    {
+                        <small class="notification-failure">@notification.FailureReason</small>
+                    }
                 </div>
                 <span>@notification.Channel</span>
                 <span>@notification.Status</span>
+                <div class="notification-actions">
+                    <button type="button"
+                            disabled="@IsBusy(notification.Id)"
+                            @onclick="() => RetryAsync(notification)">
+                        Relancer
+                    </button>
+                    <button type="button"
+                            disabled="@(!CanCancel(notification) || IsBusy(notification.Id))"
+                            @onclick="() => CancelAsync(notification)">
+                        Annuler
+                    </button>
+                    <button type="button"
+                            disabled="@(!CanMarkSent(notification) || IsBusy(notification.Id))"
+                            @onclick="() => MarkSentAsync(notification)">
+                        Marquer envoye
+                    </button>
+                </div>
             </article>
         }
     }
 </section>
 
+@if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <p class="admin-message">@SuccessMessage</p>
+}
+
 @code {
     private List<NotificationOutboxMessageResponse> QueuedNotifications { get; set; } = [];
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+    private Guid? BusyNotificationId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
         try
         {
             QueuedNotifications = (await ApiClient.GetNotificationsAsync()).ToList();
@@ -78,6 +115,74 @@
         {
             IsLoading = false;
         }
+    }
+
+    private async Task RetryAsync(NotificationOutboxMessageResponse notification)
+    {
+        await RunNotificationActionAsync(
+            notification.Id,
+            () => ApiClient.RetryNotificationAsync(notification.Id),
+            "Notification relancee.");
+    }
+
+    private async Task CancelAsync(NotificationOutboxMessageResponse notification)
+    {
+        var reason = await JsRuntime.InvokeAsync<string?>(
+            "prompt",
+            $"Raison de l'annulation pour {notification.Recipient} :");
+
+        await RunNotificationActionAsync(
+            notification.Id,
+            () => ApiClient.CancelNotificationAsync(notification.Id, reason),
+            "Notification annulee.");
+    }
+
+    private async Task MarkSentAsync(NotificationOutboxMessageResponse notification)
+    {
+        await RunNotificationActionAsync(
+            notification.Id,
+            () => ApiClient.MarkNotificationSentAsync(notification.Id),
+            "Notification marquee envoyee.");
+    }
+
+    private async Task RunNotificationActionAsync(
+        Guid notificationId,
+        Func<Task<NotificationOutboxMessageResponse?>> action,
+        string successMessage)
+    {
+        BusyNotificationId = notificationId;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            await action();
+            SuccessMessage = successMessage;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action notification impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            BusyNotificationId = null;
+        }
+    }
+
+    private bool IsBusy(Guid notificationId)
+    {
+        return BusyNotificationId == notificationId;
+    }
+
+    private static bool CanCancel(NotificationOutboxMessageResponse notification)
+    {
+        return notification.Status is not "Sent" and not "Cancelled";
+    }
+
+    private static bool CanMarkSent(NotificationOutboxMessageResponse notification)
+    {
+        return notification.Status is "Pending" or "Failed";
     }
 
     private static string GetNotificationClass(string status)

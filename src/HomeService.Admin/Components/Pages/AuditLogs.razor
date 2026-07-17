@@ -1,0 +1,174 @@
+@page "/audit-logs"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Monitoring
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Logs admin</PageTitle>
+
+<section class="admin-page-heading">
+    <div>
+        <p class="eyebrow">Monitoring</p>
+        <h1>Logs d'activite</h1>
+        <p class="lead">Suivez les actions qui touchent la base: admin, entreprises, prestataires et systeme.</p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="RefreshAsync" disabled="@IsLoading">Actualiser</button>
+</section>
+
+<section class="audit-filters">
+    <label>
+        Recherche
+        <input type="search" @bind="Search" @bind:event="oninput" placeholder="Action, acteur, resume..." />
+    </label>
+    <label>
+        Acteur
+        <select @bind="ActorType">
+            <option value="">Tous</option>
+            <option value="Admin">Admin</option>
+            <option value="Company">Entreprise</option>
+            <option value="Provider">Prestataire</option>
+            <option value="Anonymous">Visiteur</option>
+            <option value="System">Systeme</option>
+        </select>
+    </label>
+    <label>
+        Entite
+        <input type="search" @bind="EntityType" @bind:event="oninput" placeholder="Company, Mission..." />
+    </label>
+    <button type="button" @onclick="ApplyFiltersAsync" disabled="@IsLoading">Filtrer</button>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+<section class="audit-log-panel">
+    <header>
+        <div>
+            <p class="eyebrow">Journal</p>
+            <h2>@TotalLabel</h2>
+        </div>
+        <span>@PageLabel</span>
+    </header>
+
+    @if (IsLoading)
+    {
+        <article class="audit-empty">Chargement des logs...</article>
+    }
+    else if (Entries.Count == 0)
+    {
+        <article class="audit-empty">Aucun log trouve avec ces filtres.</article>
+    }
+    else
+    {
+        <div class="audit-log-list">
+            @foreach (var entry in Entries)
+            {
+                <article class="audit-log-row">
+                    <div class="audit-log-icon">@GetActorInitial(entry.ActorType)</div>
+                    <div class="audit-log-main">
+                        <div class="audit-log-title">
+                            <strong>@entry.Action</strong>
+                            <span>@entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        </div>
+                        <p>@(entry.Summary ?? "Action enregistree.")</p>
+                        <div class="audit-log-meta">
+                            <span>@entry.ActorType</span>
+                            <span>@(entry.ActorDisplayName ?? "acteur non renseigne")</span>
+                            <span>@entry.EntityType</span>
+                            @if (entry.EntityId.HasValue)
+                            {
+                                <span>@entry.EntityId</span>
+                            }
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+<section class="audit-pagination">
+    <button type="button" @onclick="PreviousPageAsync" disabled="@(!CanPrevious || IsLoading)">Precedent</button>
+    <button type="button" @onclick="NextPageAsync" disabled="@(!CanNext || IsLoading)">Suivant</button>
+</section>
+
+@code {
+    private const int PageSize = 30;
+
+    private List<AuditLogEntryResponse> Entries { get; set; } = [];
+    private int Total { get; set; }
+    private int Skip { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+    private string? Search { get; set; }
+    private string? ActorType { get; set; }
+    private string? EntityType { get; set; }
+
+    private bool CanPrevious => Skip > 0;
+    private bool CanNext => Skip + PageSize < Total;
+    private string TotalLabel => Total == 0 ? "Aucune action" : $"{Total} action(s)";
+    private string PageLabel => Total == 0 ? "Page 0" : $"Page {(Skip / PageSize) + 1}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        Skip = 0;
+        await LoadAsync();
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        Skip = Math.Max(0, Skip - PageSize);
+        await LoadAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (!CanNext)
+        {
+            return;
+        }
+
+        Skip += PageSize;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var response = await ApiClient.GetAuditLogsAsync(ActorType, EntityType, Search, Skip, PageSize);
+            Entries = response?.Items.ToList() ?? [];
+            Total = response?.Total ?? 0;
+            Skip = response?.Skip ?? Skip;
+        }
+        catch (Exception exception)
+        {
+            Entries = [];
+            Total = 0;
+            ErrorMessage = $"Impossible de charger les logs. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static string GetActorInitial(string actorType)
+    {
+        return string.IsNullOrWhiteSpace(actorType) ? "?" : actorType[..1].ToUpperInvariant();
+    }
+}
