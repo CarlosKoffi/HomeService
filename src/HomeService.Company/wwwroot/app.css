@@ -8820,6 +8820,10 @@ h3 {
     display: grid;
     gap: 20px;
     color: var(--mission-text);
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+    letter-spacing: 0;
 }
 
 .missions-workspace svg {
@@ -8839,8 +8843,8 @@ h3 {
     gap: 16px;
     padding: 24px;
     border: 1px solid var(--mission-border);
-    border-radius: 28px;
-    background: linear-gradient(135deg, #ffffff 0%, #f6f9ff 100%);
+    border-radius: 16px;
+    background: #fff;
 }
 
 .missions-eyebrow,
@@ -8848,35 +8852,43 @@ h3 {
 .missions-kpi-card span,
 .missions-detail-grid span {
     display: block;
-    color: var(--mission-muted);
-    font-size: .75rem;
-    font-weight: 800;
-    letter-spacing: .08em;
+    color: #aaaaaa;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
     text-transform: uppercase;
 }
 
 .missions-topbar h2 {
-    margin: 6px 0 4px;
-    font-size: clamp(1.8rem, 3vw, 2.6rem);
-    line-height: 1;
+    margin: 0;
+    color: #111111;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -.02em;
 }
 
 .missions-topbar p {
-    margin: 0;
-    color: var(--mission-muted);
+    margin: 2px 0 0;
+    color: #aaaaaa;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.35;
 }
 
 .missions-primary-action {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    min-height: 44px;
-    padding: 0 18px;
+    min-height: 40px;
+    padding: 0 20px;
     border: 0;
-    border-radius: 999px;
+    border-radius: 12px;
     background: var(--mission-blue);
     color: #fff;
-    font-weight: 800;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
 }
 
 .missions-primary-action:disabled {
@@ -8886,43 +8898,51 @@ h3 {
 .missions-kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
+    gap: 16px;
 }
 
 .missions-kpi-card {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
-    min-height: 142px;
+    gap: 12px;
+    min-height: 0;
     padding: 20px;
-    border: 1px solid var(--mission-border);
-    border-radius: 24px;
+    border: 0;
+    border-radius: 16px;
     background: #fff;
 }
 
 .missions-kpi-card strong {
     display: block;
-    margin: 12px 0 8px;
-    font-size: 2rem;
+    margin: 4px 0 0;
+    color: #111111;
+    font-size: 24px;
+    font-weight: 700;
     line-height: 1;
+    letter-spacing: -.03em;
 }
 
 .missions-kpi-card strong.compact {
-    font-size: 1.55rem;
+    font-size: 18px;
 }
 
 .missions-kpi-card small {
-    color: var(--mission-muted);
+    display: block;
+    margin-top: 6px;
+    color: #aaaaaa;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.35;
 }
 
 .missions-kpi-card em {
     display: grid;
     place-items: center;
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     flex: 0 0 auto;
-    border-radius: 15px;
+    border-radius: 10px;
     font-style: normal;
 }
 
@@ -8951,25 +8971,28 @@ h3 {
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    padding: 24px;
-    border-radius: 30px;
+    padding: 20px 24px;
+    border-radius: 16px;
     background: #111;
     color: #fff;
 }
 
 .missions-today-banner span {
     display: block;
-    color: rgba(255, 255, 255, .62);
-    font-size: .75rem;
-    font-weight: 800;
+    color: rgba(255, 255, 255, .7);
+    font-size: 11px;
+    font-weight: 600;
     letter-spacing: .08em;
     text-transform: uppercase;
 }
 
 .missions-today-banner strong {
     display: block;
-    margin: 8px 0 18px;
-    font-size: 1.35rem;
+    margin: 4px 0 12px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
 }
 
 .missions-today-banner div div {
@@ -8982,11 +9005,13 @@ h3 {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 9px 12px;
-    border: 1px solid rgba(255,255,255,.16);
+    padding: 4px 12px;
+    border: 0;
     border-radius: 999px;
-    background: rgba(255,255,255,.08);
+    background: rgba(255,255,255,.15);
     color: #fff;
+    font-family: inherit;
+    font-size: 11px;
     cursor: pointer;
 }
 
@@ -8997,16 +9022,16 @@ h3 {
 .missions-today-banner > em {
     display: grid;
     place-items: center;
-    width: 58px;
-    height: 58px;
-    border-radius: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     background: var(--mission-blue);
     font-style: normal;
 }
 
 .missions-main-grid {
     display: grid;
-    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(280px, 352px) minmax(0, 1fr);
     gap: 18px;
     align-items: start;
 }
@@ -9015,13 +9040,13 @@ h3 {
 .missions-search-panel,
 .missions-detail-panel,
 .missions-assignment-panel {
-    border: 1px solid var(--mission-border);
-    border-radius: 26px;
+    border: 0;
+    border-radius: 16px;
     background: #fff;
 }
 
 .missions-calendar-card {
-    padding: 20px;
+    padding: 24px;
 }
 
 .missions-calendar-head {
@@ -9029,8 +9054,15 @@ h3 {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
     text-transform: capitalize;
+}
+
+.missions-calendar-head strong {
+    color: #111111;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
 }
 
 .missions-calendar-head span {
@@ -9039,13 +9071,14 @@ h3 {
 }
 
 .missions-calendar-head button {
-    width: 34px;
-    height: 34px;
-    border: 1px solid var(--mission-border);
-    border-radius: 999px;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 8px;
     background: #fff;
-    color: var(--mission-text);
-    font-size: 1.1rem;
+    color: #aaaaaa;
+    font-family: inherit;
+    font-size: 16px;
     cursor: pointer;
 }
 
@@ -9061,19 +9094,22 @@ h3 {
 }
 
 .missions-calendar-days span {
-    color: var(--mission-muted);
-    font-size: .72rem;
-    font-weight: 800;
+    color: #cccccc;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .05em;
     text-align: center;
+    text-transform: uppercase;
+    padding: 4px 0;
 }
 
 .missions-calendar-cell {
     position: relative;
     display: grid;
     place-items: center;
-    min-height: 42px;
+    min-height: 40px;
     border: 1px solid transparent;
-    border-radius: 14px;
+    border-radius: 10px;
     background: transparent;
     color: var(--mission-text);
     cursor: pointer;
@@ -9086,7 +9122,13 @@ h3 {
 }
 
 .missions-calendar-cell.today {
-    font-weight: 900;
+    font-weight: 700;
+}
+
+.missions-calendar-cell > span {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
 }
 
 .missions-calendar-cell.past {
@@ -9112,9 +9154,10 @@ h3 {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 18px;
-    color: var(--mission-muted);
-    font-size: .8rem;
+    margin-top: 16px;
+    color: #aaaaaa;
+    font-size: 10px;
+    font-weight: 400;
 }
 
 .missions-calendar-legend span {
@@ -9134,25 +9177,28 @@ h3 {
 
 .missions-list-column {
     display: grid;
-    gap: 14px;
+    gap: 12px;
 }
 
 .missions-search-panel {
     display: grid;
-    gap: 14px;
+    gap: 12px;
     padding: 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #fff;
 }
 
 .missions-search {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 48px;
+    gap: 8px;
+    min-height: 40px;
     padding: 0 14px;
-    border: 1px solid var(--mission-border);
-    border-radius: 16px;
-    background: var(--mission-soft);
-    color: var(--mission-muted);
+    border: 0;
+    border-radius: 12px;
+    background: #f5f6fa;
+    color: #aaaaaa;
 }
 
 .missions-search input {
@@ -9160,48 +9206,63 @@ h3 {
     border: 0;
     outline: 0;
     background: transparent;
-    color: var(--mission-text);
-    font: inherit;
+    color: #111111;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1;
+}
+
+.missions-search input::placeholder {
+    color: #c4c4c4;
 }
 
 .missions-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
 }
 
 .missions-tabs button {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-height: 38px;
-    padding: 0 13px;
-    border: 1px solid var(--mission-border);
-    border-radius: 999px;
-    background: #fff;
-    color: var(--mission-text);
-    font-weight: 800;
+    gap: 6px;
+    min-height: 30px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #9b9b9b;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
     cursor: pointer;
 }
 
 .missions-tabs button.active {
-    border-color: var(--mission-blue);
-    background: var(--mission-blue);
+    background: #000000;
     color: #fff;
 }
 
 .missions-tabs button span {
     display: grid;
     place-items: center;
-    min-width: 24px;
-    height: 24px;
+    min-width: 0;
+    height: auto;
+    padding: 2px 6px;
     border-radius: 999px;
-    background: rgba(17,17,17,.06);
-    font-size: .78rem;
+    background: #f0f0f0;
+    color: #9a9a9a;
+    font-size: 10px;
+    font-weight: 700;
 }
 
 .missions-tabs button.active span {
-    background: rgba(255,255,255,.22);
+    background: rgba(255,255,255,.18);
+    color: #fff;
 }
 
 .missions-card-list {
@@ -9212,10 +9273,11 @@ h3 {
 .missions-card {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 14px;
-    padding: 18px;
-    border: 1px solid var(--mission-border);
-    border-radius: 24px;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px;
+    border: 0;
+    border-radius: 16px;
     background: #fff;
     cursor: pointer;
     transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
@@ -9231,11 +9293,12 @@ h3 {
 .mission-avatar {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
     color: #111;
-    font-weight: 900;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .mission-avatar.blue { background: var(--mission-blue-soft); color: var(--mission-blue); }
@@ -9252,28 +9315,43 @@ h3 {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .missions-card-main p {
-    margin: 8px 0 12px;
-    font-weight: 800;
+    margin: 2px 0 12px;
+    color: #aaaaaa;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.35;
+}
+
+.missions-card-main > div > strong {
+    color: #111111;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
 }
 
 .missions-card-main footer {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px 14px;
+    gap: 12px;
+    margin-top: 12px;
 }
 
 .missions-card-main small {
-    color: var(--mission-muted);
+    color: #aaaaaa;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.3;
 }
 
 .missions-card-main small.cancel {
     color: var(--mission-red);
-    font-weight: 800;
+    font-weight: 400;
 }
 
 .missions-card aside {
@@ -9283,19 +9361,29 @@ h3 {
     align-content: center;
 }
 
+.missions-card aside strong {
+    color: #111111;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
 .missions-stars {
     color: #ffb800;
+    font-size: 11px;
     letter-spacing: 1px;
 }
 
 .mission-badge {
     display: inline-flex;
     align-items: center;
-    min-height: 28px;
-    padding: 0 10px;
+    gap: 4px;
+    min-height: 0;
+    padding: 4px 10px;
     border-radius: 999px;
-    font-size: .78rem;
-    font-weight: 900;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
 }
 
 .mission-badge.cours {
@@ -9322,20 +9410,26 @@ h3 {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(320px, .7fr);
     gap: 18px;
-    padding: 18px;
+    padding: 20px;
 }
 
 .missions-detail-panel h3,
 .missions-assignment-panel h3 {
-    margin: 10px 0 8px;
-    font-size: 1.35rem;
+    margin: 10px 0 6px;
+    color: #111111;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -.02em;
 }
 
 .missions-detail-panel p,
 .missions-assignment-panel p,
 .missions-muted {
     margin: 0;
-    color: var(--mission-muted);
+    color: #aaaaaa;
+    font-size: 12px;
+    line-height: 1.4;
 }
 
 .missions-detail-grid {
@@ -9347,14 +9441,18 @@ h3 {
 
 .missions-detail-grid article {
     padding: 14px;
-    border: 1px solid var(--mission-border);
-    border-radius: 18px;
-    background: var(--mission-soft);
+    border: 0;
+    border-radius: 12px;
+    background: #f5f6fa;
 }
 
 .missions-detail-grid strong {
     display: block;
     margin-top: 6px;
+    color: #111111;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
 }
 
 .missions-assignment-panel {
@@ -9369,27 +9467,38 @@ h3 {
     align-items: center;
     gap: 12px;
     padding: 12px;
-    border: 1px solid var(--mission-border);
-    border-radius: 18px;
-    background: var(--mission-soft);
+    border: 0;
+    border-radius: 12px;
+    background: #f5f6fa;
+}
+
+.missions-assignment-panel > article strong {
+    color: #111111;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
 }
 
 .missions-assignment-panel small,
 .missions-assignment-panel em {
     display: block;
     margin-top: 4px;
-    color: var(--mission-muted);
+    color: #aaaaaa;
+    font-size: 11px;
+    line-height: 1.35;
     font-style: normal;
 }
 
 .missions-assignment-panel button {
-    min-height: 36px;
+    min-height: 34px;
     padding: 0 13px;
     border: 0;
     border-radius: 999px;
     background: var(--mission-blue);
     color: #fff;
-    font-weight: 900;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
 }
 
