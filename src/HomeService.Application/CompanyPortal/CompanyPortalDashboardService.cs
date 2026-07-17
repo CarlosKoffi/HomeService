@@ -169,7 +169,12 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
             row.CompanyQuotedAmount,
             row.CompanyQuoteJustification,
             row.CompanyQuotedAt,
-            row.CustomerQuoteAcceptedAt);
+            row.CustomerQuoteAcceptedAt,
+            null,
+            null,
+            null,
+            null,
+            row.Status == MissionStatus.Cancelled ? "Annulation client" : null);
     }
 
     private static int GetProfileCompletionPercent(CompanyStatus companyStatus, int providerCount, int activityCount)

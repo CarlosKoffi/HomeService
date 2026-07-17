@@ -33,7 +33,7 @@
                 <PlatformIcon Name="locked" Tone="green" />
                 Interim
             </a>
-            <a class="@GetClass("operations")" href="@PortalLink("operations")">
+            <a class="@GetClass("missions")" href="@PortalLink("missions")">
                 <PlatformIcon Name="complete" Tone="green" />
                 Missions
             </a>
@@ -107,7 +107,7 @@
         new("Profil entreprise", true, null, null),
         new("Documents de conformite", false, "Completer", "company-profile"),
         new("Premier employe ajoute", false, "Ajouter", "employees"),
-        new("Premiere mission creee", false, "Voir", "operations")
+        new("Premiere mission creee", false, "Voir", "missions")
     ];
     [Parameter] public RenderFragment? ChildContent { get; set; }
 

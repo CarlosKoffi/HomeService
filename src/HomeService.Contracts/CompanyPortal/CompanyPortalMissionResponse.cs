@@ -18,4 +18,9 @@ public sealed record CompanyPortalMissionResponse(
     int? CompanyQuotedAmount = null,
     string? CompanyQuoteJustification = null,
     DateTimeOffset? CompanyQuotedAt = null,
-    DateTimeOffset? CustomerQuoteAcceptedAt = null);
+    DateTimeOffset? CustomerQuoteAcceptedAt = null,
+    string? ServiceIconName = null,
+    string? LocationLabel = null,
+    int? ActualDurationMinutes = null,
+    int? CustomerRating = null,
+    string? CancellationReason = null);

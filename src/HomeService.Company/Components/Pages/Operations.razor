@@ -1,4 +1,6 @@
+﻿@page "/missions"
 @page "/operations"
+@using System.Globalization
 @using System.Text.Json
 @inject IJSRuntime Js
 @inject PlatformApiClient ApiClient
@@ -24,151 +26,363 @@ else if (Session is null)
 }
 else
 {
-    <CompanyPortalShell Active="operations"
+    <CompanyPortalShell Active="missions"
                         Title="Missions"
-                        Subtitle="Live, rendez-vous et affectations"
+                        Subtitle="@($"{CurrentMonthLabel} - {AllMissions.Count} missions au total")"
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
 
-    @if (!Session.IsCompanyApproved)
-    {
-        <section class="compliance-banner">
-            <div>
-                <strong>Compte en attente de conformite</strong>
-                <span>Vous pouvez consulter les missions et preparer votre equipe. L'affectation et l'envoi en mission seront disponibles apres validation.</span>
-            </div>
-            <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
-        </section>
-    }
-
-    <section class="portal-tabs" aria-label="Vues missions">
-        <button class="@GetTabClass("live")" type="button" @onclick='() => LoadMissionsAsync("live")'>Live</button>
-        <button class="@GetTabClass("upcoming")" type="button" @onclick='() => LoadMissionsAsync("upcoming")'>A venir</button>
-        <button class="@GetTabClass("past")" type="button" @onclick='() => LoadMissionsAsync("past")'>Passees</button>
-    </section>
-
-    <section class="metric-strip">
-        <article><span>Live</span><strong>@LiveCount</strong></article>
-        <article><span>A venir</span><strong>@UpcomingCount</strong></article>
-        <article><span>Passees</span><strong>@PastCount</strong></article>
-    </section>
-
-    @if (IsLoading)
-    {
-        <section class="empty-state"><h2>Chargement...</h2><p>Recuperation des missions.</p></section>
-    }
-    else if (Missions.Count == 0)
-    {
-        <section class="empty-state">
-            <h2>Aucune mission pour cette vue</h2>
-            <p>Les demandes apparaitront ici quand la partie client commencera a creer des missions.</p>
-        </section>
-    }
-    else
-    {
-        <section class="mission-list">
-            @foreach (var mission in Missions)
-            {
-                <article class="mission-row @GetMissionRowClass(mission)" @onclick="() => SelectMissionAsync(mission)">
-                    <div>
-                        <span class="status-pill @GetStatusClass(mission.Status)">@GetStatusLabel(mission.Status)</span>
-                        <h2>@mission.ServiceName</h2>
-                        <p>@mission.CustomerName - @mission.CustomerPhoneNumber</p>
-                    </div>
-                    <div>
-                        <strong>@(mission.ProviderName ?? "A assigner")</strong>
-                        <span>@(mission.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Demande directe")</span>
-                    </div>
-                    <div>
-                        <strong>@(mission.FinalTotalAmount?.ToString("N0") ?? "-") @mission.Currency</strong>
-                        <span>@GetPaymentLabel(mission.PaymentMethod)</span>
-                    </div>
-                </article>
-            }
-        </section>
-
-        @if (SelectedMission is not null)
+        @if (!Session.IsCompanyApproved)
         {
-            <section class="mission-detail-panel">
-                <div class="mission-detail-main">
-                    <div class="mission-detail-heading">
-                        <div>
-                            <span class="status-pill @GetStatusClass(SelectedMission.Status)">@GetStatusLabel(SelectedMission.Status)</span>
-                            <h2>@SelectedMission.ServiceName</h2>
-                            <p>@SelectedMission.CustomerName - @SelectedMission.CustomerPhoneNumber</p>
-                        </div>
-                        <button type="button" @onclick="ClearSelectedMission">Fermer</button>
-                    </div>
-
-                    <div class="employee-detail-grid">
-                        <article>
-                            <span>Mode</span>
-                            <strong>@GetMissionModeLabel(SelectedMission.Mode)</strong>
-                            <p>@(SelectedMission.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Demande immediate")</p>
-                        </article>
-                        <article>
-                            <span>Prestataire</span>
-                            <strong>@(SelectedMission.ProviderName ?? "A assigner")</strong>
-                            <p>@GetAssignmentHelp(SelectedMission)</p>
-                        </article>
-                        <article>
-                            <span>Duree</span>
-                            <strong>@SelectedMission.EstimatedDurationMinutes min</strong>
-                            <p>Estimation client</p>
-                        </article>
-                        <article>
-                            <span>Paiement</span>
-                            <strong>@(SelectedMission.FinalTotalAmount?.ToString("N0") ?? "-") @SelectedMission.Currency</strong>
-                            <p>@GetPaymentLabel(SelectedMission.PaymentMethod) - @GetPaymentStatusLabel(SelectedMission.PaymentStatus)</p>
-                        </article>
-                    </div>
+            <section class="compliance-banner">
+                <div>
+                    <strong>Compte en attente de conformite</strong>
+                    <span>Vous pouvez consulter les missions et preparer votre equipe. L'affectation sera disponible apres validation.</span>
                 </div>
-
-                <aside class="assignment-panel">
-                    <div>
-                        <h3>Affecter un prestataire</h3>
-                        <p>@(Session.IsCompanyApproved ? "Liste filtree sur le service demande." : "Disponible apres validation de votre entreprise.")</p>
-                    </div>
-
-                    @if (!string.IsNullOrWhiteSpace(AssignmentMessage))
-                    {
-                        <p class="field-message">@AssignmentMessage</p>
-                    }
-
-                    @foreach (var candidate in AssignableProviders)
-                    {
-                        <article class="candidate-row">
-                            <div>
-                                <strong>@candidate.FullName</strong>
-                                <span>@GetEmploymentTypeLabel(candidate.EmploymentType) - @GetExperienceLabel(candidate.ExperienceLevel) - @(candidate.IsAvailable ? "Disponible" : "Occupe")</span>
-                            </div>
-                            <div>
-                                <strong>@GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</strong>
-                                <span>@(candidate.PriceTier == "Premium" ? "Profil premium" : "Fourchette autorisee")</span>
-                                <button type="button" disabled="@(!Session.IsCompanyApproved || !candidate.IsAvailable)" @onclick="() => AssignMissionAsync(candidate)">Affecter</button>
-                            </div>
-                        </article>
-                    }
-                </aside>
+                <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
             </section>
         }
-    }
+
+        <section class="missions-workspace">
+            <header class="missions-topbar">
+                <div>
+                    <span class="missions-eyebrow">Planning entreprise</span>
+                    <h2>Missions</h2>
+                    <p>@CurrentMonthLabel - @AllMissions.Count missions au total</p>
+                </div>
+                <button type="button" class="missions-primary-action" disabled>
+                    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                    Nouvelle mission
+                </button>
+            </header>
+
+            @if (IsLoading)
+            {
+                <section class="empty-state">
+                    <h2>Chargement...</h2>
+                    <p>Recuperation des missions.</p>
+                </section>
+            }
+            else
+            {
+                <section class="missions-kpi-grid" aria-label="Indicateurs missions">
+                    <article class="missions-kpi-card">
+                        <div>
+                            <span>En cours</span>
+                            <strong>@CurrentMissions.Count</strong>
+                            <small>missions actives maintenant</small>
+                        </div>
+                        <em class="blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></em>
+                    </article>
+                    <article class="missions-kpi-card">
+                        <div>
+                            <span>A venir</span>
+                            <strong>@UpcomingMissions.Count</strong>
+                            <small>dont @UpcomingNextSevenDaysCount dans les 7 prochains jours</small>
+                        </div>
+                        <em class="amber"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></em>
+                    </article>
+                    <article class="missions-kpi-card">
+                        <div>
+                            <span>Taux de completion</span>
+                            <strong>@CompletionRate%</strong>
+                            <small>@CompletedMissions.Count terminees / @ClosedMissionCount cloturees</small>
+                        </div>
+                        <em class="green"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></em>
+                    </article>
+                    <article class="missions-kpi-card">
+                        <div>
+                            <span>CA encaisse</span>
+                            <strong class="compact">@FormatCurrency(CompletedRevenue)</strong>
+                            <small>CA potentiel : @FormatCurrency(PotentialRevenue)</small>
+                        </div>
+                        <em class="violet"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></em>
+                    </article>
+                </section>
+
+                @if (TodayMissions.Count > 0)
+                {
+                    <section class="missions-today-banner">
+                        <div>
+                            <span>Aujourd'hui - @Today.ToString("dd MMMM", FrenchCulture)</span>
+                            <strong>@TodayMissions.Count mission(s) en cours ou a assurer</strong>
+                            <div>
+                                @foreach (var mission in TodayMissions.Take(4))
+                                {
+                                    <button type="button" @onclick="() => SelectMissionAsync(mission)">
+                                        @GetServiceEmoji(mission)
+                                        <b>@GetProviderShortName(mission)</b>
+                                        <small>@GetStartTime(mission)</small>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                        <em><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></em>
+                    </section>
+                }
+
+                <section class="missions-main-grid">
+                    <aside class="missions-calendar-card">
+                        <div class="missions-calendar-head">
+                            <strong>@CalendarMonth.ToString("MMMM yyyy", FrenchCulture)</strong>
+                            <span>
+                                <button type="button" @onclick="PreviousMonth" aria-label="Mois precedent">&lt;</button>
+                                <button type="button" @onclick="NextMonth" aria-label="Mois suivant">&gt;</button>
+                            </span>
+                        </div>
+                        <div class="missions-calendar-days">
+                            @foreach (var day in DayNames)
+                            {
+                                <span>@day</span>
+                            }
+                        </div>
+                        <div class="missions-calendar-grid">
+                            @foreach (var cell in CalendarCells)
+                            {
+                                if (cell is null)
+                                {
+                                    <span></span>
+                                }
+                                else
+                                {
+                                    var date = cell.Value;
+                                    var dayMissions = MissionsForDate(date);
+                                    <button type="button" class="@GetCalendarCellClass(date)" @onclick="() => SelectDay(date)">
+                                        <span>@date.Day</span>
+                                        @if (dayMissions.Count > 0)
+                                        {
+                                            <em>
+                                                @foreach (var mission in dayMissions.Take(3))
+                                                {
+                                                    <i class="@GetCalendarDotClass(mission)"></i>
+                                                }
+                                            </em>
+                                        }
+                                    </button>
+                                }
+                            }
+                        </div>
+                        <footer class="missions-calendar-legend">
+                            <span><i class="blue"></i>En cours</span>
+                            <span><i class="amber"></i>A venir</span>
+                            <span><i class="green"></i>Terminee</span>
+                            <span><i class="gray"></i>Annulee</span>
+                        </footer>
+                    </aside>
+
+                    <section class="missions-list-column">
+                        <div class="missions-search-panel">
+                            <label class="missions-search">
+                                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                                <input @bind="SearchTerm" @bind:event="oninput" placeholder="Rechercher client, service, employe, zone..." />
+                            </label>
+                            <div class="missions-tabs">
+                                @foreach (var tab in Tabs)
+                                {
+                                    <button type="button" class="@GetFilterClass(tab.Key)" @onclick="() => SetFilter(tab.Key)">
+                                        @tab.Label <span>@GetTabCount(tab.Key)</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        @if (FilteredMissions.Count == 0)
+                        {
+                            <section class="empty-state">
+                                <h2>Aucune mission</h2>
+                                <p>Ajustez le filtre, le calendrier ou la recherche.</p>
+                            </section>
+                        }
+                        else
+                        {
+                            <div class="missions-card-list">
+                                @foreach (var mission in FilteredMissions)
+                                {
+                                    <article class="@($"missions-card {(SelectedMission?.Id == mission.Id ? "selected" : string.Empty)}")" @onclick="() => SelectMissionAsync(mission)">
+                                        <span class="@GetAvatarClass(mission.CustomerName)">@GetInitials(mission.CustomerName)</span>
+                                        <div class="missions-card-main">
+                                            <div>
+                                                <strong>@mission.CustomerName</strong>
+                                                <span class="@GetMissionStatusBadgeClass(mission)">@GetMissionStatusLabel(mission)</span>
+                                            </div>
+                                            <p>@GetServiceEmoji(mission) @mission.ServiceName</p>
+                                            <footer>
+                                                <small>@GetProviderMeta(mission)</small>
+                                                <small>@GetLocation(mission)</small>
+                                                <small>@GetTimeRange(mission)</small>
+                                                @if (IsUpcomingStatus(mission.Status) || IsCancelledStatus(mission.Status))
+                                                {
+                                                    <small class="date">@GetMissionDateLabel(mission)</small>
+                                                }
+                                                @if (IsCancelledStatus(mission.Status) && !string.IsNullOrWhiteSpace(mission.CancellationReason))
+                                                {
+                                                    <small class="cancel">@mission.CancellationReason</small>
+                                                }
+                                            </footer>
+                                        </div>
+                                        <aside>
+                                            <strong>@FormatCurrency(mission.FinalTotalAmount ?? 0)</strong>
+                                            @if (IsCompletedStatus(mission.Status) && mission.CustomerRating is not null)
+                                            {
+                                                <span class="missions-stars">@BuildStars(mission.CustomerRating.Value)</span>
+                                            }
+                                        </aside>
+                                    </article>
+                                }
+                            </div>
+                        }
+                    </section>
+                </section>
+
+                @if (SelectedMission is not null)
+                {
+                    <section class="missions-detail-panel">
+                        <div>
+                            <span class="@GetMissionStatusBadgeClass(SelectedMission)">@GetMissionStatusLabel(SelectedMission)</span>
+                            <h3>@SelectedMission.ServiceName</h3>
+                            <p>@SelectedMission.CustomerName - @SelectedMission.CustomerPhoneNumber</p>
+                            <div class="missions-detail-grid">
+                                <article><span>Adresse</span><strong>@GetLocation(SelectedMission)</strong></article>
+                                <article><span>Horaire</span><strong>@GetTimeRange(SelectedMission)</strong></article>
+                                <article><span>Duree</span><strong>@SelectedMission.EstimatedDurationMinutes min</strong></article>
+                                <article><span>Paiement</span><strong>@GetPaymentLabel(SelectedMission.PaymentMethod)</strong></article>
+                                <article><span>Montant</span><strong>@FormatCurrency(SelectedMission.FinalTotalAmount ?? 0)</strong></article>
+                                <article><span>Prestataire</span><strong>@(SelectedMission.ProviderName ?? "A assigner")</strong></article>
+                            </div>
+                        </div>
+
+                        <aside class="missions-assignment-panel">
+                            <div>
+                                <h3>Affecter un prestataire</h3>
+                                <p>@(Session.IsCompanyApproved ? "Liste filtree par service et disponibilite." : "Disponible apres validation de votre entreprise.")</p>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(AssignmentMessage))
+                            {
+                                <p class="field-message">@AssignmentMessage</p>
+                            }
+
+                            @if (AssignableProviders.Count == 0)
+                            {
+                                <p class="missions-muted">Aucun prestataire compatible pour le moment.</p>
+                            }
+                            else
+                            {
+                                @foreach (var candidate in AssignableProviders)
+                                {
+                                    <article>
+                                        <span class="@GetAvatarClass(candidate.FullName)">@GetInitials(candidate.FullName)</span>
+                                        <div>
+                                            <strong>@candidate.FullName</strong>
+                                            <small>@GetEmploymentTypeLabel(candidate.EmploymentType) - @GetExperienceLabel(candidate.ExperienceLevel) - @(candidate.IsAvailable ? "Disponible" : "Occupe")</small>
+                                            <em>@GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</em>
+                                        </div>
+                                        <button type="button" disabled="@(!Session.IsCompanyApproved || !candidate.IsAvailable)" @onclick="() => AssignMissionAsync(candidate)">Affecter</button>
+                                    </article>
+                                }
+                            }
+                        </aside>
+                    </section>
+                }
+            }
+        </section>
     </CompanyPortalShell>
 }
 
 @code {
+    private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
+    private static readonly IReadOnlyList<(string Key, string Label)> Tabs =
+    [
+        ("all", "Toutes"),
+        ("current", "En cours"),
+        ("upcoming", "A venir"),
+        ("completed", "Terminees"),
+        ("cancelled", "Annulees")
+    ];
+
+    private static readonly IReadOnlyList<string> DayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
     private CompanyPortalSessionResponse? Session { get; set; }
-    private IReadOnlyList<CompanyPortalMissionResponse> Missions { get; set; } = [];
-    private string ActiveView { get; set; } = "live";
+    private IReadOnlyList<CompanyPortalMissionResponse> AllMissions { get; set; } = [];
+    private IReadOnlyList<CompanyPortalAssignableProviderResponse> AssignableProviders { get; set; } = [];
+    private CompanyPortalMissionResponse? SelectedMission { get; set; }
     private bool IsLoading { get; set; }
     private bool IsSessionLoading { get; set; } = true;
-    private int LiveCount { get; set; }
-    private int UpcomingCount { get; set; }
-    private int PastCount { get; set; }
-    private CompanyPortalMissionResponse? SelectedMission { get; set; }
-    private IReadOnlyList<CompanyPortalAssignableProviderResponse> AssignableProviders { get; set; } = [];
+    private string ActiveFilter { get; set; } = "all";
+    private string? SearchTerm { get; set; }
+    private DateOnly? SelectedDay { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly CalendarMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private string? AssignmentMessage { get; set; }
+
+    private DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private string CurrentMonthLabel => CalendarMonth.ToString("MMMM yyyy", FrenchCulture);
+    private IReadOnlyList<CompanyPortalMissionResponse> CurrentMissions => AllMissions.Where(IsCurrentStatus).ToList();
+    private IReadOnlyList<CompanyPortalMissionResponse> UpcomingMissions => AllMissions.Where(mission => IsUpcomingStatus(mission.Status)).ToList();
+    private IReadOnlyList<CompanyPortalMissionResponse> CompletedMissions => AllMissions.Where(mission => IsCompletedStatus(mission.Status)).ToList();
+    private IReadOnlyList<CompanyPortalMissionResponse> CancelledMissions => AllMissions.Where(mission => IsCancelledStatus(mission.Status)).ToList();
+    private IReadOnlyList<CompanyPortalMissionResponse> TodayMissions => AllMissions.Where(mission => GetMissionDate(mission) == Today && !IsCompletedStatus(mission.Status) && !IsCancelledStatus(mission.Status)).ToList();
+    private int UpcomingNextSevenDaysCount => UpcomingMissions.Count(mission => GetMissionDate(mission) <= Today.AddDays(7));
+    private int ClosedMissionCount => CompletedMissions.Count + CancelledMissions.Count;
+    private int CompletionRate => ClosedMissionCount == 0 ? 0 : (int)Math.Round(CompletedMissions.Count * 100m / ClosedMissionCount);
+    private int CompletedRevenue => CompletedMissions.Sum(mission => mission.FinalTotalAmount ?? 0);
+    private int PotentialRevenue => AllMissions.Where(mission => !IsCancelledStatus(mission.Status)).Sum(mission => mission.FinalTotalAmount ?? 0);
+
+    private IReadOnlyList<DateOnly?> CalendarCells
+    {
+        get
+        {
+            var daysInMonth = DateTime.DaysInMonth(CalendarMonth.Year, CalendarMonth.Month);
+            var firstDay = CalendarMonth.ToDateTime(TimeOnly.MinValue);
+            var startOffset = ((int)firstDay.DayOfWeek - 1 + 7) % 7;
+            var cells = new List<DateOnly?>();
+            cells.AddRange(Enumerable.Repeat<DateOnly?>(null, startOffset));
+            cells.AddRange(Enumerable.Range(1, daysInMonth).Select(day => (DateOnly?)new DateOnly(CalendarMonth.Year, CalendarMonth.Month, day)));
+            while (cells.Count % 7 != 0)
+            {
+                cells.Add(null);
+            }
+
+            return cells;
+        }
+    }
+
+    private IReadOnlyList<CompanyPortalMissionResponse> FilteredMissions
+    {
+        get
+        {
+            IEnumerable<CompanyPortalMissionResponse> query = AllMissions;
+            if (SelectedDay is not null)
+            {
+                query = query.Where(mission => GetMissionDate(mission) == SelectedDay.Value);
+            }
+
+            query = ActiveFilter switch
+            {
+                "current" => query.Where(IsCurrentStatus),
+                "upcoming" => query.Where(mission => IsUpcomingStatus(mission.Status)),
+                "completed" => query.Where(mission => IsCompletedStatus(mission.Status)),
+                "cancelled" => query.Where(mission => IsCancelledStatus(mission.Status)),
+                _ => query
+            };
+
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
+            {
+                var search = SearchTerm.Trim();
+                query = query.Where(mission =>
+                    mission.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || mission.ServiceName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || (mission.ProviderName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (mission.LocationLabel?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false));
+            }
+
+            return query
+                .OrderBy(GetSortWeight)
+                .ThenBy(mission => mission.ScheduledFor ?? DateTimeOffset.MaxValue)
+                .ThenBy(mission => mission.CustomerName)
+                .ToList();
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -180,8 +394,7 @@ else
         if (IsPreviewMode())
         {
             Session = DemoSession();
-            await RefreshCountsAsync();
-            await LoadMissionsAsync("live");
+            await LoadMissionsAsync();
             IsSessionLoading = false;
             StateHasChanged();
             return;
@@ -191,78 +404,41 @@ else
         if (!string.IsNullOrWhiteSpace(sessionJson))
         {
             Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
-            await RefreshCountsAsync();
-            await LoadMissionsAsync("live");
+            await LoadMissionsAsync();
         }
 
         IsSessionLoading = false;
         StateHasChanged();
     }
 
-    private async Task RefreshCountsAsync()
+    private async Task LoadMissionsAsync()
     {
         if (Session is null)
         {
             return;
         }
 
-        if (IsPreviewMode())
-        {
-            LiveCount = GetPreviewMissions("live").Count;
-            UpcomingCount = GetPreviewMissions("upcoming").Count;
-            PastCount = GetPreviewMissions("past").Count;
-            return;
-        }
-
-        LiveCount = (await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "live")).Count;
-        UpcomingCount = (await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "upcoming")).Count;
-        PastCount = (await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "past")).Count;
-    }
-
-    private async Task LoadMissionsAsync(string view)
-    {
-        if (Session is null)
-        {
-            return;
-        }
-
-        ActiveView = view;
         IsLoading = true;
+        AssignmentMessage = null;
         if (IsPreviewMode())
         {
-            Missions = GetPreviewMissions(view);
-            SelectedMission = Missions.FirstOrDefault();
-            LoadPreviewAssignableProviders();
-            IsLoading = false;
-            StateHasChanged();
-            return;
+            AllMissions = GetPreviewMissions();
+        }
+        else
+        {
+            AllMissions = await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "all");
         }
 
-        Missions = await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, view);
-        SelectedMission = Missions.FirstOrDefault();
+        SelectedMission = AllMissions.OrderBy(GetSortWeight).FirstOrDefault();
         await LoadAssignableProvidersAsync();
         IsLoading = false;
-        StateHasChanged();
     }
 
     private async Task SelectMissionAsync(CompanyPortalMissionResponse mission)
     {
         SelectedMission = mission;
         AssignmentMessage = null;
-        if (IsPreviewMode())
-        {
-            LoadPreviewAssignableProviders();
-            return;
-        }
-
         await LoadAssignableProvidersAsync();
-    }
-
-    private void ClearSelectedMission()
-    {
-        SelectedMission = null;
-        AssignableProviders = [];
-        AssignmentMessage = null;
     }
 
     private async Task AssignMissionAsync(CompanyPortalAssignableProviderResponse candidate)
@@ -294,10 +470,10 @@ else
             Status = SelectedMission.Status == "SearchingProvider" ? "Assigned" : SelectedMission.Status
         };
 
-        Missions = Missions.Select(mission => mission.Id == updatedMission.Id ? updatedMission : mission).ToList();
+        AllMissions = AllMissions.Select(mission => mission.Id == updatedMission.Id ? updatedMission : mission).ToList();
         SelectedMission = updatedMission;
         AssignmentMessage = "Mission affectee.";
-        await RefreshCountsAsync();
+        await LoadAssignableProvidersAsync();
     }
 
     private async Task LoadAssignableProvidersAsync()
@@ -308,76 +484,226 @@ else
             return;
         }
 
-        AssignableProviders = await ApiClient.GetAssignableProvidersAsync(Session.CompanyId, SelectedMission.Id);
+        AssignableProviders = IsPreviewMode()
+            ? GetCandidateProviders(SelectedMission)
+                .Select(candidate => new CompanyPortalAssignableProviderResponse(
+                    candidate.Id,
+                    candidate.Name,
+                    "+225 07 00 00 00 00",
+                    "Approved",
+                    true,
+                    candidate.TypeLabel,
+                    4,
+                    candidate.ExperienceLabel,
+                    "Normal",
+                    candidate.NormalPriceAmount,
+                    candidate.PremiumPriceAmount,
+                    "XOF",
+                    candidate.ReceivesDirectRequests,
+                    null,
+                    candidate.NormalPriceAmount,
+                    candidate.PremiumPriceAmount))
+                .ToList()
+            : await ApiClient.GetAssignableProvidersAsync(Session.CompanyId, SelectedMission.Id);
     }
 
-    private void LoadPreviewAssignableProviders()
+    private void PreviousMonth()
     {
-        if (SelectedMission is null)
+        CalendarMonth = CalendarMonth.AddMonths(-1);
+    }
+
+    private void NextMonth()
+    {
+        CalendarMonth = CalendarMonth.AddMonths(1);
+    }
+
+    private void SelectDay(DateOnly day)
+    {
+        SelectedDay = SelectedDay == day ? null : day;
+    }
+
+    private void SetFilter(string filter)
+    {
+        ActiveFilter = filter;
+    }
+
+    private int GetTabCount(string key)
+    {
+        return key switch
         {
-            AssignableProviders = [];
-            return;
+            "current" => CurrentMissions.Count,
+            "upcoming" => UpcomingMissions.Count,
+            "completed" => CompletedMissions.Count,
+            "cancelled" => CancelledMissions.Count,
+            _ => AllMissions.Count
+        };
+    }
+
+    private IReadOnlyList<CompanyPortalMissionResponse> MissionsForDate(DateOnly date)
+    {
+        return AllMissions.Where(mission => GetMissionDate(mission) == date).ToList();
+    }
+
+    private static DateOnly GetMissionDate(CompanyPortalMissionResponse mission)
+    {
+        return mission.ScheduledFor is null
+            ? DateOnly.FromDateTime(DateTime.Today)
+            : DateOnly.FromDateTime(mission.ScheduledFor.Value.LocalDateTime.Date);
+    }
+
+    private string GetCalendarCellClass(DateOnly date)
+    {
+        var parts = new List<string> { "missions-calendar-cell" };
+        if (date == Today)
+        {
+            parts.Add("today");
         }
 
-        AssignableProviders = GetCandidateProviders(SelectedMission)
-            .Select(candidate => new CompanyPortalAssignableProviderResponse(
-                candidate.Id,
-                candidate.Name,
-                "+225 07 00 00 00 00",
-                "Approved",
-                true,
-                candidate.TypeLabel,
-                4,
-                candidate.ExperienceLabel,
-                "Normal",
-                candidate.NormalPriceAmount,
-                candidate.PremiumPriceAmount,
-                "XOF",
-                candidate.ReceivesDirectRequests,
-                null,
-                candidate.NormalPriceAmount,
-                candidate.PremiumPriceAmount))
-            .ToList();
+        if (SelectedDay == date)
+        {
+            parts.Add("selected");
+        }
+
+        if (date < Today)
+        {
+            parts.Add("past");
+        }
+
+        return string.Join(' ', parts);
     }
 
-    private string GetTabClass(string view) => ActiveView == view ? "active" : string.Empty;
-
-    private static string GetStatusClass(string status) => status switch
+    private static string GetCalendarDotClass(CompanyPortalMissionResponse mission)
     {
-        "Completed" => "status-ok",
-        "Cancelled" or "Disputed" => "status-rejected",
-        _ => "status-pending"
-    };
+        return IsCompletedStatus(mission.Status)
+            ? "green"
+            : IsCancelledStatus(mission.Status)
+                ? "gray"
+                : IsUpcomingStatus(mission.Status)
+                    ? "amber"
+                    : "blue";
+    }
 
-    private static string GetStatusLabel(string status) => status switch
+    private static int GetSortWeight(CompanyPortalMissionResponse mission)
     {
-        "SearchingProvider" => "Recherche",
-        "Assigned" => "Assignee",
-        "Scheduled" => "Planifiee",
-        "OnTheWay" => "En route",
-        "Started" => "Demarree",
-        "Completed" => "Terminee",
-        "Cancelled" => "Annulee",
-        _ => status
-    };
+        if (IsCurrentStatus(mission))
+        {
+            return 0;
+        }
+
+        if (IsUpcomingStatus(mission.Status))
+        {
+            return 1;
+        }
+
+        if (IsCompletedStatus(mission.Status))
+        {
+            return 2;
+        }
+
+        return 3;
+    }
+
+    private string GetFilterClass(string filter) => ActiveFilter == filter ? "active" : string.Empty;
+
+    private static bool IsCurrentStatus(CompanyPortalMissionResponse mission) => IsCurrentStatus(mission.Status);
+
+    private static bool IsCurrentStatus(string status)
+    {
+        return status is "Created" or "SearchingProvider" or "Offered" or "Assigned" or "Accepted" or "OnTheWay" or "Started";
+    }
+
+    private static bool IsUpcomingStatus(string status) => status is "Scheduled";
+    private static bool IsCompletedStatus(string status) => status is "Completed";
+    private static bool IsCancelledStatus(string status) => status is "Cancelled" or "Disputed";
+
+    private static string GetMissionStatusLabel(CompanyPortalMissionResponse mission)
+    {
+        return mission.Status switch
+        {
+            "Completed" => "Terminee",
+            "Cancelled" => "Annulee",
+            "Scheduled" => "A venir",
+            _ => "En cours"
+        };
+    }
+
+    private static string GetMissionStatusBadgeClass(CompanyPortalMissionResponse mission)
+    {
+        return mission.Status switch
+        {
+            "Completed" => "mission-badge terminee",
+            "Cancelled" or "Disputed" => "mission-badge annulee",
+            "Scheduled" => "mission-badge avenir",
+            _ => "mission-badge cours"
+        };
+    }
+
+    private static string GetServiceEmoji(CompanyPortalMissionResponse mission)
+    {
+        var value = $"{mission.ServiceIconName} {mission.ServiceName}".ToUpperInvariant();
+        if (value.Contains("MENAGE") || value.Contains("NETTOYAGE")) return "MN";
+        if (value.Contains("JARDIN")) return "JA";
+        if (value.Contains("NOUNOU") || value.Contains("ENFANT")) return "NO";
+        if (value.Contains("PLOMB")) return "PL";
+        if (value.Contains("ELECT")) return "EL";
+        if (value.Contains("BLANCH")) return "BL";
+        if (value.Contains("AUTO")) return "AU";
+        return "OK";
+    }
+
+    private static string GetProviderShortName(CompanyPortalMissionResponse mission)
+    {
+        return string.IsNullOrWhiteSpace(mission.ProviderName)
+            ? "A assigner"
+            : mission.ProviderName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? mission.ProviderName;
+    }
+
+    private static string GetProviderMeta(CompanyPortalMissionResponse mission)
+    {
+        return string.IsNullOrWhiteSpace(mission.ProviderName)
+            ? "Prestataire a assigner"
+            : $"Employe - {mission.ProviderName}";
+    }
+
+    private static string GetLocation(CompanyPortalMissionResponse mission)
+    {
+        return string.IsNullOrWhiteSpace(mission.LocationLabel) ? "Zone a confirmer" : mission.LocationLabel;
+    }
+
+    private static string GetStartTime(CompanyPortalMissionResponse mission)
+    {
+        return mission.ScheduledFor?.ToLocalTime().ToString("HH'h'mm", FrenchCulture) ?? "Direct";
+    }
+
+    private static string GetTimeRange(CompanyPortalMissionResponse mission)
+    {
+        if (mission.ScheduledFor is null)
+        {
+            return "Demande directe";
+        }
+
+        var start = mission.ScheduledFor.Value.ToLocalTime();
+        var end = start.AddMinutes(mission.EstimatedDurationMinutes);
+        return $"{start:HH'h'mm} - {end:HH'h'mm}";
+    }
+
+    private static string GetMissionDateLabel(CompanyPortalMissionResponse mission)
+    {
+        return GetMissionDate(mission).ToString("dd MMM", FrenchCulture);
+    }
+
+    private static string FormatCurrency(int amount)
+    {
+        return string.Format(FrenchCulture, "{0:N0} F", amount);
+    }
+
+    private static string BuildStars(int note)
+    {
+        var rating = Math.Clamp(note, 0, 5);
+        return new string('*', rating) + new string('-', 5 - rating);
+    }
 
     private static string GetPaymentLabel(string method) => method == "MobileMoney" ? "Mobile Money" : "Cash";
-
-    private static string GetPaymentStatusLabel(string status) => status switch
-    {
-        "Paid" => "Paye",
-        "Authorized" => "Autorise",
-        "Pending" => "En attente",
-        "Failed" => "Echec",
-        _ => "A suivre"
-    };
-
-    private static string GetMissionModeLabel(string mode) => mode switch
-    {
-        "Scheduled" => "Rendez-vous",
-        "Direct" => "Demande directe",
-        _ => mode
-    };
 
     private static string GetEmploymentTypeLabel(string employmentType) => employmentType switch
     {
@@ -395,13 +721,6 @@ else
         _ => experienceLevel
     };
 
-    private static string GetAssignmentHelp(CompanyPortalMissionResponse mission)
-    {
-        return mission.ProviderName is null
-            ? "Selectionnez un prestataire compatible."
-            : "Prestataire deja affecte.";
-    }
-
     private static int GetPriceMin(CompanyPortalAssignableProviderResponse candidate)
     {
         return candidate.PriceMinAmount ?? candidate.NormalPriceAmount;
@@ -412,9 +731,17 @@ else
         return candidate.PriceMaxAmount ?? candidate.PremiumPriceAmount;
     }
 
-    private string GetMissionRowClass(CompanyPortalMissionResponse mission)
+    private static string GetInitials(string value)
     {
-        return SelectedMission?.Id == mission.Id ? "is-selected" : string.Empty;
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return string.Concat(parts.Take(2).Select(part => part[0])).ToUpperInvariant();
+    }
+
+    private static string GetAvatarClass(string value)
+    {
+        var colors = new[] { "blue", "violet", "green", "amber", "rose" };
+        var hash = value.Aggregate(0, (current, character) => ((current * 31) + character) & 0xffff);
+        return $"mission-avatar {colors[hash % colors.Length]}";
     }
 
     private bool IsPreviewMode()
@@ -438,37 +765,20 @@ else
             true);
     }
 
-    private static IReadOnlyList<CompanyPortalMissionResponse> GetPreviewMissions(string view)
+    private static IReadOnlyList<CompanyPortalMissionResponse> GetPreviewMissions()
     {
-        var now = DateTimeOffset.Now;
-        return view switch
-        {
-            "upcoming" =>
-            [
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), "Nounou", "Mme Traore", "+225 07 77 10 20 30", "Scheduled", "Scheduled", "MobileMoney", "Authorized", now.AddHours(5), 180, 18000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc4"), "Jardinage", "Residence Palm Club", "+225 05 12 34 56 78", "Scheduled", "Scheduled", "Cash", "Pending", now.AddDays(1).AddHours(2), 240, 26000, "XOF", null, null),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc7"), "Menage a domicile", "Cabinet N'Da", "+225 27 22 44 88 10", "Scheduled", "Scheduled", "MobileMoney", "Authorized", now.AddDays(1).AddHours(5), 300, 32000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Fatou Soro"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc8"), "Nounou", "Mme Amani", "+225 01 45 60 11 22", "Scheduled", "SearchingProvider", "Cash", "Pending", now.AddDays(2).AddHours(3), 360, 28000, "XOF", null, null),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc9"), "Menage apres travaux", "SCI Lagune", "+225 05 33 44 55 66", "Scheduled", "Scheduled", "MobileMoney", "Authorized", now.AddDays(3), 420, 48000, "XOF", null, null)
-            ],
-            "past" =>
-            [
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc5"), "Menage a domicile", "Mme Bamba", "+225 01 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-2), 240, 22000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc6"), "Jardinage", "M. Kouassi", "+225 07 45 45 45 45", "Direct", "Completed", "Cash", "Paid", now.AddDays(-5), 180, 16000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccc10"), "Nounou", "Mme Koffi", "+225 07 15 12 09 09", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-7), 360, 30000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"), "Aminata Bamba"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccc11"), "Menage apres travaux", "Atelier Riviera", "+225 05 71 22 10 00", "Scheduled", "Completed", "Cash", "Paid", now.AddDays(-9), 420, 45000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6"), "Jean Kouame"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccc12"), "Menage a domicile", "Mme Diaby", "+225 01 22 80 90 33", "Direct", "Cancelled", "MobileMoney", "Failed", now.AddDays(-11), 180, 15000, "XOF", null, null)
-            ],
-            _ =>
-            [
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc1"), "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", null, 180, 15000, "XOF", null, null),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), "Jardinage", "M. Diarra", "+225 05 90 80 70 60", "Direct", "OnTheWay", "Cash", "Pending", null, 120, 12000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccc13"), "Nounou", "Mme Sangare", "+225 01 09 88 77 66", "Direct", "SearchingProvider", "MobileMoney", "Authorized", null, 240, 22000, "XOF", null, null),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccc14"), "Menage apres travaux", "Agence Plateau", "+225 27 20 30 40 50", "Direct", "SearchingProvider", "Cash", "Pending", null, 360, 38000, "XOF", null, null),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccc15"), "Menage a domicile", "M. Toure", "+225 05 44 30 12 90", "Direct", "Started", "Cash", "Pending", null, 180, 15000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Fatou Soro"),
-                new(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccc16"), "Jardinage", "Villa Mermoz", "+225 07 91 20 20 20", "Direct", "SearchingProvider", "MobileMoney", "Authorized", null, 180, 21000, "XOF", null, null)
-            ]
-        };
+        var today = DateTimeOffset.Now.Date;
+        return
+        [
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc1"), "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", DateTimeOffset.Now, 180, 15000, "XOF", null, null, LocationLabel: "Cocody, Abidjan"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), "Jardinage", "M. Diarra", "+225 05 90 80 70 60", "Direct", "OnTheWay", "Cash", "Pending", DateTimeOffset.Now.AddHours(1), 120, 12000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri", LocationLabel: "Riviera 3"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), "Nounou", "Mme Traore", "+225 07 77 10 20 30", "Scheduled", "Scheduled", "MobileMoney", "Authorized", new DateTimeOffset(today.AddHours(15)), 180, 18000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", LocationLabel: "Marcory"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc4"), "Jardinage", "Residence Palm Club", "+225 05 12 34 56 78", "Scheduled", "Scheduled", "Cash", "Pending", DateTimeOffset.Now.AddDays(1).AddHours(2), 240, 26000, "XOF", null, null, LocationLabel: "Bingerville"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc5"), "Menage a domicile", "Mme Bamba", "+225 01 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Paid", DateTimeOffset.Now.AddDays(-2), 240, 22000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", LocationLabel: "Plateau", CustomerRating: 5),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc6"), "Jardinage", "M. Kouassi", "+225 07 45 45 45 45", "Direct", "Completed", "Cash", "Paid", DateTimeOffset.Now.AddDays(-5), 180, 16000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri", LocationLabel: "Angre", CustomerRating: 4),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc7"), "Menage apres travaux", "SCI Lagune", "+225 05 33 44 55 66", "Scheduled", "Scheduled", "MobileMoney", "Authorized", DateTimeOffset.Now.AddDays(3), 420, 48000, "XOF", null, null, LocationLabel: "Zone 4"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc8"), "Menage a domicile", "Mme Diaby", "+225 01 22 80 90 33", "Direct", "Cancelled", "MobileMoney", "Failed", DateTimeOffset.Now.AddDays(-11), 180, 15000, "XOF", null, null, LocationLabel: "Yopougon", CancellationReason: "Client indisponible")
+        ];
     }
 
     private static IReadOnlyList<PreviewProviderCandidate> GetCandidateProviders(CompanyPortalMissionResponse mission)
@@ -478,13 +788,9 @@ else
             new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", "Employe", "Senior", "Menage a domicile", 3500, 5000, 2.4m, false),
             new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", "Employe", "Confirme", "Nounou", 4000, 6500, 2.4m, false),
             new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri", "Interimaire", "Expert", "Jardinage", 4500, 6500, 3.1m, true),
-            new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Mariam Coulibaly", "Employe", "Junior", "Menage a domicile", 3500, 5000, 6.8m, false),
             new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Fatou Soro", "Employe", "Confirme", "Menage a domicile", 3500, 5500, 1.2m, false),
             new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Fatou Soro", "Employe", "Expert", "Menage apres travaux", 5500, 8000, 1.2m, false),
-            new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"), "Aminata Bamba", "Interimaire", "Senior", "Nounou", 4500, 7000, 4.6m, true),
-            new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6"), "Jean Kouame", "Employe", "Expert", "Menage apres travaux", 6000, 8500, 5.4m, false),
-            new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7"), "Serge Yapi", "Interimaire", "Confirme", "Jardinage", 4000, 6000, 1.9m, true),
-            new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8"), "Nadia Konan", "Employe", "Confirme", "Nounou", 4200, 6800, 7.2m, false)
+            new(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"), "Aminata Bamba", "Interimaire", "Senior", "Nounou", 4500, 7000, 4.6m, true)
         };
 
         return candidates
@@ -505,3 +811,5 @@ else
         decimal DistanceKm,
         bool ReceivesDirectRequests);
 }
+
+

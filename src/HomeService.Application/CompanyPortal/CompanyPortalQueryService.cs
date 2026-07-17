@@ -126,7 +126,14 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 row.mission.CompanyQuotedAmount,
                 row.mission.CompanyQuoteJustification,
                 row.mission.CompanyQuotedAt,
-                row.mission.CustomerQuoteAcceptedAt))
+                row.mission.CustomerQuoteAcceptedAt,
+                row.service.IconName,
+                row.mission.ServiceAddress,
+                row.mission.ActualDurationMinutes,
+                null,
+                row.mission.Status == MissionStatus.Cancelled
+                    ? (row.mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
+                    : null))
             .ToListAsync(cancellationToken);
 
         return CompanyPortalMissionsResult.Ok(missions);
@@ -332,7 +339,14 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   mission.CompanyQuotedAmount,
                                   mission.CompanyQuoteJustification,
                                   mission.CompanyQuotedAt,
-                                  mission.CustomerQuoteAcceptedAt))
+                                  mission.CustomerQuoteAcceptedAt,
+                                  service.IconName,
+                                  mission.ServiceAddress,
+                                  mission.ActualDurationMinutes,
+                                  null,
+                                  mission.Status == MissionStatus.Cancelled
+                                      ? (mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
+                                      : null))
             .ToListAsync(cancellationToken);
 
         return CompanyPortalPaymentsResult.Ok(new CompanyPortalPaymentSummaryResponse(
