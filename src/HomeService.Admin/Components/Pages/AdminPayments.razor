@@ -1,0 +1,199 @@
+@page "/payments"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Encaissements</PageTitle>
+
+<div class="admin-page-heading">
+    <div>
+        <p class="eyebrow">Finance</p>
+        <h1>Encaissements</h1>
+        <p class="lead">Suivez Mobile Money, cash terrain, commissions et paiements a verifier.</p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+</div>
+
+@if (Snapshot is not null)
+{
+    <section class="admin-metric-grid compact">
+        <article>
+            <span>Encaisse</span>
+            <strong>@Money(Snapshot.Stats.PaidAmount)</strong>
+        </article>
+        <article>
+            <span>En attente</span>
+            <strong>@Money(Snapshot.Stats.PendingAmount)</strong>
+        </article>
+        <article>
+            <span>Cash a recuperer</span>
+            <strong>@Money(Snapshot.Stats.CashToCollectAmount)</strong>
+        </article>
+        <article>
+            <span>Commission</span>
+            <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
+        </article>
+    </section>
+}
+
+<section class="toolbar operator-toolbar">
+    <label>
+        Periode
+        <select @bind="SelectedPeriod">
+            <option value="week">Semaine</option>
+            <option value="month">Mois</option>
+            <option value="year">Annee</option>
+        </select>
+    </label>
+    <label>
+        Statut paiement
+        <select @bind="SelectedPaymentStatus">
+            <option value="">Tous</option>
+            <option value="Paid">Encaisse</option>
+            <option value="Pending">En attente</option>
+            <option value="Authorized">Autorise</option>
+            <option value="Failed">Echec</option>
+            <option value="Refunded">Rembourse</option>
+        </select>
+    </label>
+    <label>
+        Mode
+        <select @bind="SelectedPaymentMethod">
+            <option value="">Tous</option>
+            <option value="MobileMoney">Mobile Money</option>
+            <option value="Cash">Cash</option>
+        </select>
+    </label>
+    <label>
+        Recherche
+        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Client, entreprise, prestataire, service" />
+    </label>
+    <button type="button" @onclick="LoadAsync" disabled="@IsLoading">Filtrer</button>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+<section class="operator-list">
+    <header>
+        <div>
+            <h2>Transactions missions</h2>
+            <p>@(Snapshot?.Items.Count ?? 0) ligne(s) affichee(s)</p>
+        </div>
+    </header>
+
+    @if (IsLoading)
+    {
+        <article class="operator-row">
+            <div>
+                <strong>Chargement...</strong>
+                <p>Lecture des encaissements depuis l'API.</p>
+            </div>
+        </article>
+    }
+    else if (Snapshot is null || Snapshot.Items.Count == 0)
+    {
+        <article class="operator-row">
+            <div>
+                <strong>Aucun encaissement</strong>
+                <p>Aucun resultat pour les filtres actuels.</p>
+            </div>
+        </article>
+    }
+    else
+    {
+        @foreach (var payment in Snapshot.Items)
+        {
+            <article class="operator-row payment-row">
+                <div>
+                    <strong>@payment.ServiceName</strong>
+                    <p>@payment.CustomerName - @payment.CustomerPhoneNumber</p>
+                    <small>@(payment.CompanyName ?? "Entreprise non affectee")</small>
+                </div>
+                <div class="operator-meta">
+                    <span class="@GetPaymentStatusClass(payment.PaymentStatus)">@TranslatePaymentStatus(payment.PaymentStatus)</span>
+                    <small>@TranslatePaymentMethod(payment.PaymentMethod)</small>
+                </div>
+                <div class="operator-kpis">
+                    <span>@(payment.ProviderName ?? "Prestataire non affecte")</span>
+                    <span>@Money(payment.Amount)</span>
+                    <span>Commission @Money(payment.PlatformCommissionAmount)</span>
+                </div>
+                <div class="payment-admin-side">
+                    <strong>@FormatDate(payment.ScheduledFor ?? payment.CreatedAt)</strong>
+                    @if (payment.CancellationFeeAmount > 0)
+                    {
+                        <small>Annulation @Money(payment.CancellationFeeAmount)</small>
+                    }
+                    @if (payment.TransportFeeAmount > 0)
+                    {
+                        <small>Transport @Money(payment.TransportFeeAmount)</small>
+                    }
+                </div>
+            </article>
+        }
+    }
+</section>
+
+@code {
+    private AdminPaymentListResponse? Snapshot { get; set; }
+    private string SelectedPeriod { get; set; } = "month";
+    private string? SelectedPaymentStatus { get; set; }
+    private string? SelectedPaymentMethod { get; set; }
+    private string? SearchTerm { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Snapshot = await ApiClient.GetAdminPaymentsAsync(SelectedPeriod, SelectedPaymentStatus, SelectedPaymentMethod, SearchTerm);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les encaissements. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static string Money(int amount) => $"{amount:N0} XOF";
+    private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+
+    private static string TranslatePaymentStatus(string status) => status switch
+    {
+        "Paid" => "Encaisse",
+        "Pending" => "En attente",
+        "Authorized" => "Autorise",
+        "Failed" => "Echec",
+        "Refunded" => "Rembourse",
+        _ => status
+    };
+
+    private static string TranslatePaymentMethod(string method) => method switch
+    {
+        "MobileMoney" => "Mobile Money",
+        "Cash" => "Cash",
+        _ => method
+    };
+
+    private static string GetPaymentStatusClass(string status) => status switch
+    {
+        "Paid" => "status-pill ok",
+        "Failed" or "Refunded" => "status-pill danger",
+        _ => "status-pill pending"
+    };
+}

@@ -335,6 +335,20 @@ public static class AdminEndpoints
         })
         .WithName("ListAdminProviders")
         .Produces<AdminProviderListResponse>();
+
+        admin.MapGet("/payments", async (
+            string? period,
+            string? paymentStatus,
+            string? paymentMethod,
+            string? search,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.ListPaymentsAsync(period, paymentStatus, paymentMethod, search, cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("ListAdminPayments")
+        .Produces<AdminPaymentListResponse>();
         
         admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {

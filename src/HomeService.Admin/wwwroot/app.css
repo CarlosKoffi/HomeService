@@ -962,6 +962,23 @@ h3 {
     color: #fff;
 }
 
+.payment-admin-side {
+    color: #000;
+    display: grid;
+    gap: .25rem;
+    justify-items: end;
+    text-align: right;
+}
+
+.payment-admin-side strong {
+    font-size: .88rem;
+}
+
+.payment-admin-side small {
+    color: #64748b;
+    font-weight: 750;
+}
+
 .company-control-strip {
     background: #fff;
     border: 1px solid #e5e7eb;

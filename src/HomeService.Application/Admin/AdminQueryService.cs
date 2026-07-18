@@ -388,6 +388,102 @@ public sealed class AdminQueryService(IAppDbContext db)
         return new AdminProviderListResponse(providers, stats);
     }
 
+    public async Task<AdminPaymentListResponse> ListPaymentsAsync(
+        string? period,
+        string? paymentStatus,
+        string? paymentMethod,
+        string? search,
+        CancellationToken cancellationToken)
+    {
+        var periodStart = GetPaymentPeriodStart(period);
+        var query =
+            from mission in db.Missions.AsNoTracking()
+            join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+            join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
+            join company in db.Companies.AsNoTracking() on mission.CompanyId equals company.Id into companyJoin
+            from company in companyJoin.DefaultIfEmpty()
+            join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
+            from provider in providerJoin.DefaultIfEmpty()
+            where mission.CreatedAt >= periodStart || (mission.ScheduledFor != null && mission.ScheduledFor >= periodStart)
+            select new
+            {
+                mission.Id,
+                ServiceName = service.Name,
+                CompanyName = company == null ? null : company.Name,
+                CustomerName = (customer.FirstName + " " + customer.LastName).Trim(),
+                CustomerPhoneNumber = customer.PhoneNumber,
+                ProviderName = provider == null ? null : (provider.FirstName + " " + provider.LastName).Trim(),
+                mission.Status,
+                mission.PaymentStatus,
+                mission.PaymentMethod,
+                Amount = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0,
+                mission.PlatformCommissionAmount,
+                mission.TransportFeeAmount,
+                mission.CancellationFeeAmount,
+                mission.Currency,
+                mission.ScheduledFor,
+                mission.CreatedAt
+            };
+
+        if (Enum.TryParse<PaymentStatus>(paymentStatus, true, out var parsedPaymentStatus))
+        {
+            query = query.Where(payment => payment.PaymentStatus == parsedPaymentStatus);
+        }
+
+        if (Enum.TryParse<PaymentMethod>(paymentMethod, true, out var parsedPaymentMethod))
+        {
+            query = query.Where(payment => payment.PaymentMethod == parsedPaymentMethod);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(payment =>
+                payment.ServiceName.ToLower().Contains(term)
+                || payment.CustomerName.ToLower().Contains(term)
+                || payment.CustomerPhoneNumber.ToLower().Contains(term)
+                || (payment.CompanyName != null && payment.CompanyName.ToLower().Contains(term))
+                || (payment.ProviderName != null && payment.ProviderName.ToLower().Contains(term)));
+        }
+
+        var items = await query
+            .OrderByDescending(payment => payment.ScheduledFor ?? payment.CreatedAt)
+            .Take(300)
+            .Select(payment => new AdminPaymentMissionResponse(
+                payment.Id,
+                payment.ServiceName,
+                payment.CompanyName,
+                payment.CustomerName,
+                payment.CustomerPhoneNumber,
+                payment.ProviderName,
+                payment.Status.ToString(),
+                payment.PaymentStatus.ToString(),
+                payment.PaymentMethod.ToString(),
+                payment.Amount,
+                payment.PlatformCommissionAmount,
+                payment.TransportFeeAmount,
+                payment.CancellationFeeAmount,
+                payment.Currency,
+                payment.ScheduledFor,
+                payment.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var paidItems = items.Where(item => item.PaymentStatus == PaymentStatus.Paid.ToString()).ToList();
+        var pendingItems = items.Where(item => item.PaymentStatus is nameof(PaymentStatus.Pending) or nameof(PaymentStatus.Authorized)).ToList();
+        var disputedItems = items.Where(item => item.PaymentStatus is nameof(PaymentStatus.Failed) or nameof(PaymentStatus.Refunded)).ToList();
+        var stats = new AdminPaymentStatsResponse(
+            items.Sum(item => item.Amount),
+            paidItems.Sum(item => item.Amount),
+            pendingItems.Sum(item => item.Amount),
+            pendingItems.Where(item => item.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(item => item.Amount),
+            paidItems.Where(item => item.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(item => item.Amount),
+            items.Sum(item => item.PlatformCommissionAmount),
+            disputedItems.Sum(item => item.Amount),
+            items.Count);
+
+        return new AdminPaymentListResponse(items, stats);
+    }
+
     public async Task<AdminProviderDocumentFile?> GetProviderDocumentFileAsync(Guid id, CancellationToken cancellationToken)
     {
         return await db.ProviderDocuments
@@ -398,6 +494,17 @@ public sealed class AdminQueryService(IAppDbContext db)
                 document.StoragePath,
                 document.ContentType))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private static DateTimeOffset GetPaymentPeriodStart(string? period)
+    {
+        var now = DateTimeOffset.UtcNow;
+        return period?.Trim().ToLowerInvariant() switch
+        {
+            "week" => now.AddDays(-7),
+            "year" => new DateTimeOffset(now.Year, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            _ => new DateTimeOffset(now.Year, now.Month, 1, 0, 0, 0, TimeSpan.Zero)
+        };
     }
 
     public async Task<AuditLogListResponse> ListAuditLogsAsync(AdminAuditLogQuery queryOptions, CancellationToken cancellationToken)

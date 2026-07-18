@@ -88,6 +88,25 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminProviderListResponse>($"/api/admin/providers{suffix}", cancellationToken);
     }
 
+    public async Task<AdminPaymentListResponse?> GetAdminPaymentsAsync(
+        string? period,
+        string? paymentStatus,
+        string? paymentMethod,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+
+        var query = new List<string>();
+        AddQueryValue(query, "period", period);
+        AddQueryValue(query, "paymentStatus", paymentStatus);
+        AddQueryValue(query, "paymentMethod", paymentMethod);
+        AddQueryValue(query, "search", search);
+
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
+        return await GetJsonAsync<AdminPaymentListResponse>($"/api/admin/payments{suffix}", cancellationToken);
+    }
+
     public async Task<CompanyApplicationDetailResponse?> GetCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
