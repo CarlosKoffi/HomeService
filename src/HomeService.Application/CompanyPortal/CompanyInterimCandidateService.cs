@@ -93,13 +93,19 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
     public async Task<CompanyInterimCandidateReviewResult> ApproveAsync(Guid companyId, Guid requestId, string? note, CancellationToken cancellationToken)
     {
         var request = await db.ProviderAffiliationRequests
+            .Include(request => request.Company)
             .Include(request => request.Provider)
                 .ThenInclude(provider => provider!.CandidateServices)
             .FirstOrDefaultAsync(request => request.Id == requestId && request.CompanyId == companyId, cancellationToken);
 
-        if (request?.Provider is null)
+        if (request?.Provider is null || request.Company is null || request.Company.Status == CompanyStatus.Suspended)
         {
             return CompanyInterimCandidateReviewResult.NotFound();
+        }
+
+        if (!request.Company.AcceptsInterimApplications)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked("Activez la reception des demandes interimaires avant de traiter cette candidature.");
         }
 
         var provider = request.Provider;
@@ -131,11 +137,17 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
     public async Task<CompanyInterimCandidateReviewResult> RejectAsync(Guid companyId, Guid requestId, string? note, CancellationToken cancellationToken)
     {
         var request = await db.ProviderAffiliationRequests
+            .Include(request => request.Company)
             .FirstOrDefaultAsync(request => request.Id == requestId && request.CompanyId == companyId, cancellationToken);
 
-        if (request is null)
+        if (request?.Company is null || request.Company.Status == CompanyStatus.Suspended)
         {
             return CompanyInterimCandidateReviewResult.NotFound();
+        }
+
+        if (!request.Company.AcceptsInterimApplications)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked("Activez la reception des demandes interimaires avant de traiter cette candidature.");
         }
 
         request.Reject(note);
@@ -153,10 +165,11 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
     }
 }
 
-public sealed record CompanyInterimCandidateReviewResult(bool IsSuccess, bool IsNotFound)
+public sealed record CompanyInterimCandidateReviewResult(bool IsSuccess, bool IsNotFound, bool IsBlocked, string? Message)
 {
-    public static CompanyInterimCandidateReviewResult Ok() => new(true, false);
-    public static CompanyInterimCandidateReviewResult NotFound() => new(false, true);
+    public static CompanyInterimCandidateReviewResult Ok() => new(true, false, false, null);
+    public static CompanyInterimCandidateReviewResult NotFound() => new(false, true, false, "Demande d'interim introuvable.");
+    public static CompanyInterimCandidateReviewResult Blocked(string message) => new(false, false, true, message);
 }
 
 public sealed record CompanyInterimSettingsResult(bool IsSuccess, bool IsNotFound, CompanyInterimSettingsResponse? Response, string? Message)

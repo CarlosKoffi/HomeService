@@ -122,6 +122,10 @@ public static class CompanyPortalEndpoints
             {
                 return Results.NotFound(new { message = "Demande d'interim introuvable." });
             }
+            if (result.IsBlocked)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
 
             db.AuditLogEntries.Add(AuditLogFactory.Create(
                 AuditActor.Company(companyId, "Entreprise"),
@@ -150,6 +154,10 @@ public static class CompanyPortalEndpoints
             if (result.IsNotFound)
             {
                 return Results.NotFound(new { message = "Demande d'interim introuvable." });
+            }
+            if (result.IsBlocked)
+            {
+                return Results.BadRequest(new { message = result.Message });
             }
 
             db.AuditLogEntries.Add(AuditLogFactory.Create(

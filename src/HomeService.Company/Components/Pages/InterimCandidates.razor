@@ -100,7 +100,9 @@ else
                     @foreach (var candidate in VisibleCandidates)
                     {
                         <article class="@GetCandidateRowClass(candidate)">
-                            <div class="interim-person-cell" @onclick="() => OpenCandidate(candidate)">
+                            <div class="interim-person-cell"
+                                 title="@GetCandidateActionTitle()"
+                                 @onclick="() => OpenCandidate(candidate)">
                                 <span class="@GetAvatarClass(candidate)">@GetInitials(candidate)</span>
                                 <div>
                                     <strong>@candidate.FirstName @candidate.LastName</strong>
@@ -137,10 +139,18 @@ else
                             </div>
 
                             <div class="interim-actions">
-                                <button type="button" class="interim-action-secondary" @onclick="() => OpenCandidate(candidate)">
+                                <button type="button"
+                                        class="interim-action-secondary"
+                                        disabled="@(!CanManageInterimCandidates)"
+                                        title="@GetCandidateActionTitle()"
+                                        @onclick="() => OpenCandidate(candidate)">
                                     Voir la fiche
                                 </button>
-                                <button type="button" class="interim-action-primary" disabled="@(!AcceptsInterimApplications || IsClosed(candidate.Status))" @onclick="() => ApproveAsync(candidate.RequestId)">
+                                <button type="button"
+                                        class="interim-action-primary"
+                                        disabled="@(!CanManageInterimCandidates || IsClosed(candidate.Status))"
+                                        title="@GetCandidateActionTitle()"
+                                        @onclick="() => ApproveAsync(candidate.RequestId)">
                                     Valider
                                 </button>
                             </div>
@@ -260,8 +270,8 @@ else
 
                     <footer class="interim-profile-footer">
                         <button type="button" class="secondary-action" @onclick="CloseCandidate">Fermer</button>
-                        <button type="button" class="secondary-action danger-action" disabled="@IsClosed(SelectedCandidate.Status)" @onclick="() => RejectAsync(SelectedCandidate.RequestId)">Refuser</button>
-                        <button type="button" class="primary-action" disabled="@(!AcceptsInterimApplications || IsClosed(SelectedCandidate.Status))" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
+                        <button type="button" class="secondary-action danger-action" disabled="@(!CanManageInterimCandidates || IsClosed(SelectedCandidate.Status))" @onclick="() => RejectAsync(SelectedCandidate.RequestId)">Refuser</button>
+                        <button type="button" class="primary-action" disabled="@(!CanManageInterimCandidates || IsClosed(SelectedCandidate.Status))" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
                     </footer>
                 </section>
             </div>
@@ -282,6 +292,7 @@ else
     private bool AcceptsInterimApplications { get; set; }
     private bool IsSavingInterimSettings { get; set; }
     private string InterimSettingsMessage { get; set; } = "Activez cette option si votre entreprise souhaite recevoir des candidatures interimaires.";
+    private bool CanManageInterimCandidates => AcceptsInterimApplications;
 
     private IReadOnlyList<CompanyInterimCandidateResponse> PendingCandidates => Candidates.Where(candidate => !IsClosed(candidate.Status)).ToList();
     private IReadOnlyList<CompanyInterimCandidateResponse> ApprovedCandidates => Candidates.Where(candidate => candidate.Status == "Approved").ToList();
@@ -358,12 +369,19 @@ else
     {
         AcceptsInterimApplications = settings.AcceptsInterimApplications;
         InterimSettingsMessage = settings.Message;
+        if (!CanManageInterimCandidates)
+        {
+            SelectedCandidate = null;
+        }
     }
 
     private async Task ApproveAsync(Guid requestId)
     {
-        if (Session is null)
+        if (Session is null || !CanManageInterimCandidates)
         {
+            Message = !CanManageInterimCandidates
+                ? "Activez la reception des demandes interimaires avant de valider une candidature."
+                : Message;
             return;
         }
 
@@ -383,8 +401,11 @@ else
 
     private async Task RejectAsync(Guid requestId)
     {
-        if (Session is null)
+        if (Session is null || !CanManageInterimCandidates)
         {
+            Message = !CanManageInterimCandidates
+                ? "Activez la reception des demandes interimaires avant de refuser une candidature."
+                : Message;
             return;
         }
 
@@ -410,6 +431,12 @@ else
 
     private void OpenCandidate(CompanyInterimCandidateResponse candidate)
     {
+        if (!CanManageInterimCandidates)
+        {
+            Message = "Activez la reception des demandes interimaires pour consulter et traiter les fiches.";
+            return;
+        }
+
         SelectedCandidate = candidate;
         ReviewNotes.TryAdd(candidate.RequestId, null);
     }
@@ -641,6 +668,13 @@ else
     }
 
     private static bool IsClosed(string status) => status is "Approved" or "Rejected" or "Cancelled";
+
+    private string GetCandidateActionTitle()
+    {
+        return CanManageInterimCandidates
+            ? "Consulter la candidature"
+            : "Activez la reception des demandes pour consulter et traiter cette candidature.";
+    }
 
     private static string Display(string? value) => string.IsNullOrWhiteSpace(value) ? "Adresse non renseignee" : value;
 

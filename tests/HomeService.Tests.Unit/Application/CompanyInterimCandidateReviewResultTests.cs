@@ -11,6 +11,8 @@ public sealed class CompanyInterimCandidateReviewResultTests
 
         Assert.True(result.IsSuccess);
         Assert.False(result.IsNotFound);
+        Assert.False(result.IsBlocked);
+        Assert.Null(result.Message);
     }
 
     [Fact]
@@ -20,5 +22,18 @@ public sealed class CompanyInterimCandidateReviewResultTests
 
         Assert.False(result.IsSuccess);
         Assert.True(result.IsNotFound);
+        Assert.False(result.IsBlocked);
+        Assert.Equal("Demande d'interim introuvable.", result.Message);
+    }
+
+    [Fact]
+    public void Blocked_ReturnsBusinessBlock()
+    {
+        var result = CompanyInterimCandidateReviewResult.Blocked("Action desactivee.");
+
+        Assert.False(result.IsSuccess);
+        Assert.False(result.IsNotFound);
+        Assert.True(result.IsBlocked);
+        Assert.Equal("Action desactivee.", result.Message);
     }
 }
