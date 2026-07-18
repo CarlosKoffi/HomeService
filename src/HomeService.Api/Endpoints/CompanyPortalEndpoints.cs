@@ -56,6 +56,46 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalInterimCandidates");
 
+        group.MapGet("/{companyId:guid}/interim-settings", async (
+            Guid companyId,
+            CompanyInterimCandidateService interimCandidateService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await interimCandidateService.GetSettingsAsync(companyId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("GetCompanyPortalInterimSettings");
+
+        group.MapPut("/{companyId:guid}/interim-settings", async (
+            Guid companyId,
+            UpdateCompanyInterimSettingsRequest request,
+            HttpRequest httpRequest,
+            CompanyInterimCandidateService interimCandidateService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await interimCandidateService.UpdateSettingsAsync(companyId, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, "Entreprise"),
+                "CompanyInterimSettingsUpdated",
+                nameof(Company),
+                companyId,
+                "Preference de reception des candidatures interimaires modifiee.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new { request.AcceptsInterimApplications }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("UpdateCompanyPortalInterimSettings");
+
         group.MapGet("/{companyId:guid}/dashboard", async (
             Guid companyId,
             CompanyPortalDashboardService dashboardService,

@@ -33,6 +33,7 @@ public sealed class Company : AuditableEntity
     public string? OrangeMoneyPaymentNumber { get; private set; }
     public CompanyStatus Status { get; private set; } = CompanyStatus.PendingReview;
     public CompanyAssignmentMode AssignmentMode { get; private set; } = CompanyAssignmentMode.SelfManaged;
+    public bool AcceptsInterimApplications { get; private set; }
     public IReadOnlyCollection<ProviderProfile> Providers => _providers;
     public IReadOnlyCollection<CompanyApplication> Applications => _applications;
 
@@ -51,6 +52,12 @@ public sealed class Company : AuditableEntity
     public void ChangeAssignmentMode(CompanyAssignmentMode assignmentMode)
     {
         AssignmentMode = assignmentMode;
+        Touch();
+    }
+
+    public void SetInterimApplications(bool acceptsInterimApplications)
+    {
+        AcceptsInterimApplications = acceptsInterimApplications;
         Touch();
     }
 

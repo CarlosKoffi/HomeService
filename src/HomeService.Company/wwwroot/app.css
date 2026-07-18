@@ -9870,6 +9870,126 @@ h3 {
     box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
 }
 
+.interim-affiliation-list {
+    display: grid;
+    gap: 10px;
+}
+
+.interim-toggle-panel {
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    border-radius: 22px;
+    display: grid;
+    gap: 8px;
+    min-width: 240px;
+    padding: 18px;
+}
+
+.interim-toggle-panel.enabled {
+    border-color: rgba(26, 106, 255, .28);
+}
+
+.interim-toggle-panel > span {
+    color: #777777;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.interim-toggle-panel strong {
+    color: #111111;
+    font-size: 18px;
+    font-weight: 750;
+}
+
+.interim-toggle-panel p {
+    color: #555555;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.interim-switch {
+    align-items: center;
+    border: 0;
+    border-radius: 999px;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 850;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 4px;
+    padding: 7px 12px 7px 7px;
+    width: max-content;
+}
+
+.interim-switch.on {
+    background: #1A6AFF;
+}
+
+.interim-switch.off {
+    background: #999999;
+}
+
+.interim-switch span {
+    background: #ffffff;
+    border-radius: 999px;
+    display: block;
+    height: 22px;
+    width: 22px;
+}
+
+.interim-affiliation-list div {
+    align-items: center;
+    background: #fafafa;
+    border: 1px solid #eeeeee;
+    border-radius: 16px;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 13px 14px;
+}
+
+.interim-affiliation-list div.current {
+    background: rgba(26, 106, 255, .07);
+    border-color: rgba(26, 106, 255, .22);
+}
+
+.interim-affiliation-list span {
+    display: grid;
+    gap: 3px;
+}
+
+.interim-affiliation-list strong {
+    color: #111111;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.interim-affiliation-list small {
+    color: #777777;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.interim-affiliation-list em {
+    border-radius: 999px;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 800;
+    padding: 7px 10px;
+    white-space: nowrap;
+}
+
+.status-neutral {
+    background: #eeeeee;
+    color: #555555;
+}
+
 @media (max-width: 720px) {
     .candidate-card-head,
     .candidate-actions {

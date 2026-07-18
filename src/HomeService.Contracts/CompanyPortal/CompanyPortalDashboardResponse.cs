@@ -5,6 +5,7 @@ public sealed record CompanyPortalDashboardResponse(
     string CompanyName,
     string CompanyEmail,
     string CompanyStatus,
+    bool AcceptsInterimApplications,
     string UserName,
     string UserEmail,
     int ProfileCompletionPercent,

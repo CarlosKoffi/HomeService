@@ -51,4 +51,17 @@ public sealed class ProviderAffiliationRequest : AuditableEntity
         ReviewedAt = DateTimeOffset.UtcNow;
         Touch();
     }
+
+    public void Cancel(string? reviewNote)
+    {
+        if (Status != ProviderAffiliationRequestStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending affiliation requests can be cancelled.");
+        }
+
+        Status = ProviderAffiliationRequestStatus.Cancelled;
+        ReviewNote = reviewNote?.Trim();
+        ReviewedAt = DateTimeOffset.UtcNow;
+        Touch();
+    }
 }

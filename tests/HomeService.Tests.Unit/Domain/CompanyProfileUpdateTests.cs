@@ -48,6 +48,20 @@ public sealed class CompanyProfileUpdateTests
         Assert.Null(company.OrangeMoneyPaymentNumber);
     }
 
+    [Fact]
+    public void Company_SetInterimApplications_StoresCompanyChoice()
+    {
+        var company = new Company("CI Home Service", "+2250700000000", "direction@entreprise.ci");
+
+        company.SetInterimApplications(true);
+
+        Assert.True(company.AcceptsInterimApplications);
+
+        company.SetInterimApplications(false);
+
+        Assert.False(company.AcceptsInterimApplications);
+    }
+
     private static CompanyApplication CreateApplication()
     {
         return new CompanyApplication(

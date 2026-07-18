@@ -99,7 +99,7 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
         var selectedOpportunityIds = request.OpportunityCompanyIds?
             .Where(id => id != Guid.Empty)
             .Distinct()
-            .Take(5)
+            .Take(1)
             .ToList() ?? [];
         var validOpportunityIds = await FindValidOpportunityCompanyIdsAsync(
             selectedOpportunityIds,
@@ -179,7 +179,9 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
 
         var companies = await db.Companies
             .AsNoTracking()
-            .Where(company => companyIds.Contains(company.Id) && company.Status == CompanyStatus.Approved)
+            .Where(company => companyIds.Contains(company.Id)
+                && company.Status == CompanyStatus.Approved
+                && company.AcceptsInterimApplications)
             .Select(company => new
             {
                 company.Id,

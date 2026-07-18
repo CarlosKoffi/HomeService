@@ -121,7 +121,7 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
 
         var rows = await db.Companies
             .AsNoTracking()
-            .Where(company => company.Status == CompanyStatus.Approved)
+            .Where(company => company.Status == CompanyStatus.Approved && company.AcceptsInterimApplications)
             .Select(company => new
             {
                 Company = company,
@@ -187,8 +187,8 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
 
         return rowsToDisplay
             .OrderByDescending(row => row.proximityScore)
-            .ThenBy(row => row.row.Company.Name)
-            .Take(12)
+            .ThenBy(_ => Guid.NewGuid())
+            .Take(5)
             .Select(row => new ProviderCompanyOpportunityResponse(
                 row.row.Company.Id,
                 row.row.Company.Name,
@@ -521,6 +521,11 @@ public static class ProviderAffiliationRequestPolicy
         if (company is null)
         {
             return ProviderAffiliationRequestEligibility.NotFound("Entreprise introuvable ou non active.");
+        }
+
+        if (!company.AcceptsInterimApplications)
+        {
+            return ProviderAffiliationRequestEligibility.ValidationFailed("Cette entreprise ne recoit pas de candidatures interimaires pour le moment.");
         }
 
         if (hasPendingRequest)

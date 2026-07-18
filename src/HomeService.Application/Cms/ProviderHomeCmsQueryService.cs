@@ -73,11 +73,11 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
             new CompanyHomeStepsCmsResponse(
                 GetText(steps, "label", "Fonctionnement"),
                 GetText(steps, "headline", "Trois etapes pour demarrer."),
-                GetText(steps, "subtitle", "Un parcours simple, pense pour les prestataires sur mobile."),
+                GetText(steps, "subtitle", "Un parcours simple pour proposer votre profil en interim a une entreprise partenaire."),
                 GetJsonList(steps, "steps", [
-                    new CmsStepResponse("01", "Profil", "Creez votre profil", "Indiquez vos services, votre experience, votre zone et votre telephone.", "images/kaza-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Validation", "Une entreprise vous valide", "Vous pouvez utiliser un code recu ou postuler comme interim aupres d'une entreprise proche.", "images/kaza-provider-step-2.svg"),
-                    new CmsStepResponse("03", "Missions", "Recevez vos missions", "Acceptez, discutez avec le client si besoin, puis signalez debut et fin de prestation.", "images/kaza-provider-step-3.svg")
+                    new CmsStepResponse("01", "Formulaire", "Creez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/kaza-provider-step-1.svg"),
+                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "Kaza vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/kaza-provider-step-2.svg"),
+                    new CmsStepResponse("03", "Validation", "L'entreprise etudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/kaza-provider-step-3.svg")
                 ])),
             new CompanyHomeTrustedCmsResponse(
                 GetText(trusted, "headline", "Des opportunites simples et suivies"),

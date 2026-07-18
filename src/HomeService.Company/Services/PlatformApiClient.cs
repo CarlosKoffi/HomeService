@@ -300,6 +300,38 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken) ?? [];
     }
 
+    public async Task<CompanyInterimSettingsResponse?> GetInterimSettingsAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<CompanyInterimSettingsResponse>(
+            $"/api/company-portal/{companyId:D}/interim-settings",
+            cancellationToken);
+    }
+
+    public async Task<CompanyInterimSettingsSaveResult> UpdateInterimSettingsAsync(
+        Guid companyId,
+        bool acceptsInterimApplications,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PutAsJsonAsync(
+            $"/api/company-portal/{companyId:D}/interim-settings",
+            new UpdateCompanyInterimSettingsRequest(acceptsInterimApplications),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return new CompanyInterimSettingsSaveResult(false, null, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Modification impossible.");
+        }
+
+        var value = JsonSerializer.Deserialize<CompanyInterimSettingsResponse>(body, JsonOptions);
+        return value is null
+            ? new CompanyInterimSettingsSaveResult(false, null, "Reponse API invalide.")
+            : new CompanyInterimSettingsSaveResult(true, value, null);
+    }
+
     public async Task<CompanyPortalDashboardResponse?> GetCompanyDashboardAsync(
         Guid companyId,
         CancellationToken cancellationToken = default)
@@ -682,6 +714,8 @@ public sealed record CompanyActivationResult(bool IsSuccess, string Message);
 public sealed record CompanyActivationPreviewResult(bool IsSuccess, CompanyActivationPreviewResponse? Preview, string? ErrorMessage);
 
 public sealed record CompanyPortalLoginResult(bool IsSuccess, CompanyPortalSessionResponse? Session, string? ErrorMessage);
+
+public sealed record CompanyInterimSettingsSaveResult(bool IsSuccess, CompanyInterimSettingsResponse? Settings, string? ErrorMessage);
 
 public sealed record EmployeeSaveResult(bool IsSuccess, string? ErrorMessage);
 

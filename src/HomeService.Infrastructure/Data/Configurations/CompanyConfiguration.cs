@@ -23,5 +23,6 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(company => company.OrangeMoneyPaymentNumber).HasMaxLength(32);
         builder.Property(company => company.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(company => company.AssignmentMode).HasConversion<string>().HasMaxLength(32);
+        builder.Property(company => company.AcceptsInterimApplications).HasDefaultValue(false);
     }
 }

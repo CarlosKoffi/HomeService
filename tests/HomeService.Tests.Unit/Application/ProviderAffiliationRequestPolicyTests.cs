@@ -75,8 +75,21 @@ public sealed class ProviderAffiliationRequestPolicyTests
     {
         var company = new Company("Kaza Partner", "0100000000", "contact@kaza.ci");
         company.Approve();
+        company.SetInterimApplications(true);
 
         var result = ProviderAffiliationRequestPolicy.EvaluateCompany(company, hasPendingRequest: true);
+
+        Assert.Equal(ProviderAffiliationRequestStatusCode.ValidationFailed, result.Status);
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
+    public void EvaluateCompany_ReturnsValidationFailed_WhenCompanyDoesNotAcceptInterim()
+    {
+        var company = new Company("Kaza Partner", "0100000000", "contact@kaza.ci");
+        company.Approve();
+
+        var result = ProviderAffiliationRequestPolicy.EvaluateCompany(company, hasPendingRequest: false);
 
         Assert.Equal(ProviderAffiliationRequestStatusCode.ValidationFailed, result.Status);
         Assert.False(result.IsSuccess);
@@ -87,6 +100,7 @@ public sealed class ProviderAffiliationRequestPolicyTests
     {
         var company = new Company("Kaza Partner", "0100000000", "contact@kaza.ci");
         company.Approve();
+        company.SetInterimApplications(true);
 
         var result = ProviderAffiliationRequestPolicy.EvaluateCompany(company, hasPendingRequest: false);
 

@@ -1,9 +1,8 @@
 @page "/onboarding"
 @inject ProviderApiClient Api
 @inject NavigationManager Navigation
-@inject IJSRuntime Js
 
-<PageTitle>Kaza Prestataire - Acces</PageTitle>
+<PageTitle>Kaza Prestataire - Interim</PageTitle>
 
 <main class="provider-onboarding-page">
     <section class="registration-header onboarding-hero-copy">
@@ -12,104 +11,7 @@
         <p>@PageSubtitle</p>
     </section>
 
-    <nav class="registration-steps onboarding-tabs onboarding-primary-tabs" aria-label="Choix du parcours prestataire">
-        <button type="button" class="@TabClass("login")" @onclick='() => SetMode("login")'>
-            <span>Se connecter</span>
-            <small>Code ou telephone</small>
-        </button>
-        <button type="button" class="@TabClass("register")" @onclick='() => SetMode("register")'>
-            <span>Creer un compte</span>
-            <small>Profil interim</small>
-        </button>
-    </nav>
-
-    @if (ActiveMode == "login")
-    {
-        <section class="registration-form onboarding-form-shell">
-        <div class="onboarding-choice-card highlighted">
-            <div class="onboarding-card-head">
-                <div class="onboarding-icon">
-                    <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3" /><path d="M6 11h12v9H6z" /><path d="M12 15v2" /></svg>
-                </div>
-                <div>
-                    <span>Connexion</span>
-                    <h2>Se connecter</h2>
-                    <p>Avec un code d'activation ou votre numero de telephone.</p>
-                </div>
-            </div>
-
-            <div class="login-method-tabs" role="tablist" aria-label="Mode de connexion">
-                <button type="button" class="@LoginMethodClass("code")" @onclick='() => SetLoginMethod("code")'>
-                    <strong>Code activation</strong>
-                </button>
-                <button type="button" class="@LoginMethodClass("password")" @onclick='() => SetLoginMethod("password")'>
-                    <strong>Acces</strong>
-                </button>
-            </div>
-
-            @if (LoginMethod == "code")
-            {
-                <div class="onboarding-form-block">
-                    <label>
-                        Code recu
-                        <input placeholder="Ex: KAZA-482135" @bind="InvitationCode" @bind:event="oninput" />
-                    </label>
-
-                    @if (Invitation is not null)
-                    {
-                        <div class="invitation-preview">
-                            <strong>@Invitation.ProviderName</strong>
-                            <span>@Invitation.CompanyName</span>
-                            <small>Valable jusqu'au @Invitation.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
-                        </div>
-                    }
-
-                    <div class="two-field-grid">
-                        <label>Mot de passe<input type="password" autocomplete="new-password" placeholder="Minimum 8 caracteres" @bind="ActivationPassword" /></label>
-                        <label>Confirmation<input type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" @bind="ActivationConfirmPassword" /></label>
-                    </div>
-
-                    <label class="remember-row">
-                        <input type="checkbox" @bind="RememberMe" />
-                        <span>Rester connecte sur ce telephone</span>
-                    </label>
-
-                    @if (!string.IsNullOrWhiteSpace(ActivationMessage))
-                    {
-                        <p class="field-message">@ActivationMessage</p>
-                    }
-
-                    <div class="action-row">
-                        <button type="button" class="ghost-action" @onclick="LoadInvitationAsync" disabled="@IsBusy">Verifier</button>
-                        <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsBusy">Activer</button>
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="onboarding-form-block">
-                    <label>Telephone<input type="tel" autocomplete="tel" placeholder="+225 07 00 00 00 00" @bind="PhoneNumber" /></label>
-                    <label>Mot de passe<input type="password" autocomplete="current-password" placeholder="Votre mot de passe" @bind="LoginPassword" /></label>
-
-                    <label class="remember-row">
-                        <input type="checkbox" @bind="RememberMe" />
-                        <span>Rester connecte sur ce telephone</span>
-                    </label>
-
-                    @if (!string.IsNullOrWhiteSpace(LoginMessage))
-                    {
-                        <p class="field-message">@LoginMessage</p>
-                    }
-
-                    <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
-                </div>
-            }
-        </div>
-        </section>
-    }
-    else
-    {
-        <section class="registration-form onboarding-form-shell">
+    <section class="registration-form onboarding-form-shell">
         <div class="onboarding-choice-card">
             <div class="onboarding-card-head">
                 <div class="onboarding-icon orange">
@@ -190,7 +92,7 @@
 
             <div class="register-fieldset opportunity-fieldset">
                 <span>Opportunites proches</span>
-                <p class="opportunity-help">Selectionnez une entreprise dans votre zone et votre domaine. Votre demande lui sera envoyee directement.</p>
+                <p class="opportunity-help">Kaza vous propose jusqu'a 5 entreprises qui acceptent les candidatures interimaires dans votre domaine. Une seule entreprise recevra votre demande : la premiere est selectionnee par defaut, vous pouvez en choisir une autre.</p>
                 @if (IsLoadingOpportunities)
                 {
                     <div class="opportunity-empty">Recherche des entreprises compatibles...</div>
@@ -209,9 +111,10 @@
                         @foreach (var opportunity in CompanyOpportunities)
                         {
                             <label class="opportunity-card @(SelectedOpportunityCompanyIds.Contains(opportunity.CompanyId) ? "selected" : string.Empty)">
-                                <input type="checkbox"
-                                       checked="@SelectedOpportunityCompanyIds.Contains(opportunity.CompanyId)"
-                                       @onchange="@(() => ToggleOpportunity(opportunity.CompanyId))" />
+                                    <input type="radio"
+                                           name="selected-company-opportunity"
+                                           checked="@SelectedOpportunityCompanyIds.Contains(opportunity.CompanyId)"
+                                           @onchange="@(() => SelectOpportunity(opportunity.CompanyId))" />
                                 <span>
                                     <strong>@opportunity.CompanyName</strong>
                                     <small>@opportunity.ProximityLabel</small>
@@ -238,8 +141,7 @@
 
             <button type="button" class="primary-action" @onclick="RegisterAsync" disabled="@IsBusy">Creer mon compte</button>
         </div>
-        </section>
-    }
+    </section>
 
     <section class="onboarding-note">
         <div>
@@ -251,17 +153,8 @@
 </main>
 
 @code {
-    private string ActiveMode { get; set; } = "login";
-    private string LoginMethod { get; set; } = "code";
-    private string PageHeadline => ActiveMode == "register" ? "Creer votre compte prestataire" : "Se connecter";
-    private string PageSubtitle => ActiveMode == "register"
-        ? "Renseignez vos informations, vos services et votre zone pour proposer votre profil aux entreprises."
-        : "Accedez a vos missions avec un code d'activation ou votre numero de telephone.";
-    private string InvitationCode { get; set; } = string.Empty;
-    private string ActivationPassword { get; set; } = string.Empty;
-    private string ActivationConfirmPassword { get; set; } = string.Empty;
-    private string PhoneNumber { get; set; } = string.Empty;
-    private string LoginPassword { get; set; } = string.Empty;
+    private string PageHeadline => "Creer votre compte interimaire";
+    private string PageSubtitle => "Renseignez vos informations, choisissez une entreprise compatible et envoyez votre candidature.";
     private string RegisterFirstName { get; set; } = string.Empty;
     private string RegisterLastName { get; set; } = string.Empty;
     private string RegisterPhoneNumber { get; set; } = string.Empty;
@@ -306,112 +199,12 @@
         "Yopougon - Selmer"
     ];
     private string ServiceEntry { get; set; } = string.Empty;
-    private bool RememberMe { get; set; } = true;
     private bool IsBusy { get; set; }
-    private string? ActivationMessage { get; set; }
-    private string? LoginMessage { get; set; }
     private string? RegisterMessage { get; set; }
-    private ProviderInvitationPreviewResponse? Invitation { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
-        if (query.TryGetValue("mode", out var mode) && string.Equals(mode.ToString(), "register", StringComparison.OrdinalIgnoreCase))
-        {
-            ActiveMode = "register";
-        }
-
-        if (query.TryGetValue("code", out var code))
-        {
-            ActiveMode = "login";
-            LoginMethod = "code";
-            InvitationCode = code.ToString();
-            await LoadInvitationAsync();
-        }
-
         OnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
-    }
-
-    private void SetMode(string mode)
-    {
-        ActiveMode = mode;
-        ActivationMessage = null;
-        LoginMessage = null;
-        RegisterMessage = null;
-        Navigation.NavigateTo($"/onboarding?mode={mode}", replace: true);
-    }
-
-    private string TabClass(string mode) => ActiveMode == mode ? "active" : string.Empty;
-
-    private void SetLoginMethod(string method)
-    {
-        LoginMethod = method;
-        ActivationMessage = null;
-        LoginMessage = null;
-    }
-
-    private string LoginMethodClass(string method) => LoginMethod == method ? "active" : string.Empty;
-
-    private async Task LoadInvitationAsync()
-    {
-        ActivationMessage = null;
-        Invitation = null;
-        if (string.IsNullOrWhiteSpace(InvitationCode))
-        {
-            ActivationMessage = "Saisissez le code recu.";
-            return;
-        }
-
-        IsBusy = true;
-        var result = await Api.GetInvitationAsync(InvitationCode);
-        IsBusy = false;
-
-        if (!result.IsSuccess || result.Value is null)
-        {
-            ActivationMessage = result.ErrorMessage ?? "Code introuvable.";
-            return;
-        }
-
-        Invitation = result.Value;
-        PhoneNumber = Invitation.PhoneNumber;
-    }
-
-    private async Task ActivateAsync()
-    {
-        ActivationMessage = null;
-        IsBusy = true;
-        var result = await Api.ActivateAsync(new ProviderInvitationActivationRequest(
-            InvitationCode,
-            ActivationPassword,
-            ActivationConfirmPassword,
-            RememberMe));
-        IsBusy = false;
-
-        if (!result.IsSuccess || result.Value is null)
-        {
-            ActivationMessage = result.ErrorMessage ?? "Activation impossible.";
-            return;
-        }
-
-        await StoreSessionAsync(result.Value);
-        Navigation.NavigateTo("/home");
-    }
-
-    private async Task LoginAsync()
-    {
-        LoginMessage = null;
-        IsBusy = true;
-        var result = await Api.LoginAsync(new ProviderPortalLoginRequest(PhoneNumber, LoginPassword, RememberMe));
-        IsBusy = false;
-
-        if (!result.IsSuccess || result.Value is null)
-        {
-            LoginMessage = result.ErrorMessage ?? "Connexion impossible.";
-            return;
-        }
-
-        await StoreSessionAsync(result.Value);
-        Navigation.NavigateTo("/home");
     }
 
     private async Task RegisterAsync()
@@ -437,7 +230,7 @@
 
         if (SelectedOpportunityCompanyIds.Count == 0)
         {
-            RegisterMessage = "Selectionnez au moins une entreprise proche pour envoyer votre demande.";
+            RegisterMessage = "Selectionnez une entreprise proche pour envoyer votre demande.";
             return;
         }
 
@@ -470,11 +263,6 @@
         Navigation.NavigateTo("/?candidate=submitted");
     }
 
-    private async Task StoreSessionAsync(ProviderPortalLoginResponse session)
-    {
-        await Js.InvokeVoidAsync("localStorage.setItem", "kaza.provider.session", System.Text.Json.JsonSerializer.Serialize(session));
-    }
-
     private async Task OnServiceEntryChanged(ChangeEventArgs args)
     {
         ServiceEntry = args.Value?.ToString() ?? string.Empty;
@@ -505,14 +293,16 @@
             SelectedOption.Id,
             RegisterAddress);
         IsLoadingOpportunities = false;
+        if (CompanyOpportunities.Count > 0)
+        {
+            SelectedOpportunityCompanyIds.Add(CompanyOpportunities[0].CompanyId);
+        }
     }
 
-    private void ToggleOpportunity(Guid companyId)
+    private void SelectOpportunity(Guid companyId)
     {
-        if (!SelectedOpportunityCompanyIds.Add(companyId))
-        {
-            SelectedOpportunityCompanyIds.Remove(companyId);
-        }
+        SelectedOpportunityCompanyIds.Clear();
+        SelectedOpportunityCompanyIds.Add(companyId);
     }
 
     private ProviderOnboardingOptionResponse? FindSelectedOption(string entry)

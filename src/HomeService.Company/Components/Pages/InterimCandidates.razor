@@ -31,6 +31,19 @@ else
                     <strong>@PendingCandidates.Count demande(s) a evaluer</strong>
                     <p>Consultez les profils, filtrez par service ou zone, puis validez uniquement les candidats que votre entreprise accepte.</p>
                 </div>
+                <div class="interim-toggle-panel @(AcceptsInterimApplications ? "enabled" : "disabled")">
+                    <span>Reception des demandes</span>
+                    <strong>@(AcceptsInterimApplications ? "Activee" : "Desactivee")</strong>
+                    <p>@InterimSettingsMessage</p>
+                    <button type="button"
+                            class="interim-switch @(AcceptsInterimApplications ? "on" : "off")"
+                            disabled="@IsSavingInterimSettings"
+                            @onclick="ToggleInterimSettingsAsync"
+                            aria-pressed="@AcceptsInterimApplications">
+                        <span></span>
+                        @(AcceptsInterimApplications ? "ON" : "OFF")
+                    </button>
+                </div>
                 <div class="interim-hero-stats">
                     <button type="button" class="@GetFilterButtonClass("A evaluer")" @onclick="@(() => SetFilter("A evaluer"))">
                         <strong>@PendingCandidates.Count</strong>
@@ -92,7 +105,7 @@ else
                                 <div>
                                     <strong>@candidate.FirstName @candidate.LastName</strong>
                                     <a href="tel:@candidate.PhoneNumber">@candidate.PhoneNumber</a>
-                                    <small>@GetGenderLabel(candidate.Gender) - candidature du @candidate.RequestedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                                    <small>@GetGenderLabel(candidate.Gender) - demande a @candidate.TargetCompanyName</small>
                                 </div>
                             </div>
 
@@ -127,7 +140,7 @@ else
                                 <button type="button" class="interim-action-secondary" @onclick="() => OpenCandidate(candidate)">
                                     Voir la fiche
                                 </button>
-                                <button type="button" class="interim-action-primary" disabled="@IsClosed(candidate.Status)" @onclick="() => ApproveAsync(candidate.RequestId)">
+                                <button type="button" class="interim-action-primary" disabled="@(!AcceptsInterimApplications || IsClosed(candidate.Status))" @onclick="() => ApproveAsync(candidate.RequestId)">
                                     Valider
                                 </button>
                             </div>
@@ -186,6 +199,10 @@ else
                                     <dt>Candidature recue</dt>
                                     <dd>@SelectedCandidate.RequestedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
                                 </div>
+                                <div>
+                                    <dt>Entreprise ciblee</dt>
+                                    <dd>@SelectedCandidate.TargetCompanyName</dd>
+                                </div>
                             </dl>
                         </article>
 
@@ -211,17 +228,40 @@ else
                                 <strong>Validation entreprise</strong>
                             </div>
                             <p class="interim-profile-note">@GetCandidateMessage(SelectedCandidate)</p>
+                            @if (!string.IsNullOrWhiteSpace(SelectedCandidate.ReviewNote))
+                            {
+                                <p class="interim-profile-note">@SelectedCandidate.ReviewNote</p>
+                            }
                             <label class="interim-review-field">
                                 Note interne
                                 <textarea @bind="ReviewNotes[SelectedCandidate.RequestId]" placeholder="Ex: Recu au bureau, test pratique OK, piece verifiee."></textarea>
                             </label>
+                        </article>
+
+                        <article class="interim-profile-card">
+                            <div class="interim-card-title">
+                                <span>Demandes</span>
+                                <strong>Entreprises sollicitees</strong>
+                            </div>
+                            <div class="interim-affiliation-list">
+                                @foreach (var application in SelectedCandidate.Applications)
+                                {
+                                    <div class="@(application.IsCurrentCompany ? "current" : string.Empty)">
+                                        <span>
+                                            <strong>@application.CompanyName</strong>
+                                            <small>@application.RequestedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                                        </span>
+                                        <em class="@GetAffiliationStatusClass(application.Status)">@GetAffiliationStatusLabel(application.Status)</em>
+                                    </div>
+                                }
+                            </div>
                         </article>
                     </div>
 
                     <footer class="interim-profile-footer">
                         <button type="button" class="secondary-action" @onclick="CloseCandidate">Fermer</button>
                         <button type="button" class="secondary-action danger-action" disabled="@IsClosed(SelectedCandidate.Status)" @onclick="() => RejectAsync(SelectedCandidate.RequestId)">Refuser</button>
-                        <button type="button" class="primary-action" disabled="@IsClosed(SelectedCandidate.Status)" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
+                        <button type="button" class="primary-action" disabled="@(!AcceptsInterimApplications || IsClosed(SelectedCandidate.Status))" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
                     </footer>
                 </section>
             </div>
@@ -239,6 +279,9 @@ else
     private string Search { get; set; } = string.Empty;
     private string ActiveFilter { get; set; } = "Tous";
     private CompanyInterimCandidateResponse? SelectedCandidate { get; set; }
+    private bool AcceptsInterimApplications { get; set; }
+    private bool IsSavingInterimSettings { get; set; }
+    private string InterimSettingsMessage { get; set; } = "Activez cette option si votre entreprise souhaite recevoir des candidatures interimaires.";
 
     private IReadOnlyList<CompanyInterimCandidateResponse> PendingCandidates => Candidates.Where(candidate => !IsClosed(candidate.Status)).ToList();
     private IReadOnlyList<CompanyInterimCandidateResponse> ApprovedCandidates => Candidates.Where(candidate => candidate.Status == "Approved").ToList();
@@ -278,11 +321,43 @@ else
             return;
         }
 
+        var settings = await ApiClient.GetInterimSettingsAsync(Session.CompanyId);
+        if (settings is not null)
+        {
+            ApplyInterimSettings(settings);
+        }
+
         Candidates = await ApiClient.GetInterimCandidatesAsync(Session.CompanyId);
         foreach (var candidate in Candidates)
         {
             ReviewNotes.TryAdd(candidate.RequestId, null);
         }
+    }
+
+    private async Task ToggleInterimSettingsAsync()
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        IsSavingInterimSettings = true;
+        var result = await ApiClient.UpdateInterimSettingsAsync(Session.CompanyId, !AcceptsInterimApplications);
+        IsSavingInterimSettings = false;
+        if (!result.IsSuccess || result.Settings is null)
+        {
+            Message = result.ErrorMessage ?? "Modification de la reception interim impossible.";
+            return;
+        }
+
+        ApplyInterimSettings(result.Settings);
+        Message = result.Settings.Message;
+    }
+
+    private void ApplyInterimSettings(CompanyInterimSettingsResponse settings)
+    {
+        AcceptsInterimApplications = settings.AcceptsInterimApplications;
+        InterimSettingsMessage = settings.Message;
     }
 
     private async Task ApproveAsync(Guid requestId)
@@ -398,10 +473,17 @@ else
                 5,
                 "Pending",
                 "Disponible rapidement. Peut passer au bureau pour un test.",
+                "Entreprise Demo CI",
+                null,
                 DateTimeOffset.UtcNow.AddHours(-5),
+                null,
                 [
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Menage a domicile", "Confirmed", 5),
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Nounou", "Junior", 2)
+                ],
+                [
+                    new CompanyInterimCandidateAffiliationResponse(Guid.Parse("11111111-1111-1111-1111-111111111101"), Guid.Parse("11111111-1111-1111-1111-111111111111"), "Entreprise Demo CI", "Pending", DateTimeOffset.UtcNow.AddHours(-5), null, true),
+                    new CompanyInterimCandidateAffiliationResponse(Guid.NewGuid(), Guid.NewGuid(), "Cocody Services", "Pending", DateTimeOffset.UtcNow.AddHours(-4), null, false)
                 ]),
             new CompanyInterimCandidateResponse(
                 Guid.Parse("11111111-1111-1111-1111-111111111102"),
@@ -415,9 +497,15 @@ else
                 8,
                 "Pending",
                 "Jardinier avec references disponibles.",
+                "Entreprise Demo CI",
+                null,
                 DateTimeOffset.UtcNow.AddDays(-1),
+                null,
                 [
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Jardinage", "Senior", 8)
+                ],
+                [
+                    new CompanyInterimCandidateAffiliationResponse(Guid.Parse("11111111-1111-1111-1111-111111111102"), Guid.Parse("11111111-1111-1111-1111-111111111111"), "Entreprise Demo CI", "Pending", DateTimeOffset.UtcNow.AddDays(-1), null, true)
                 ]),
             new CompanyInterimCandidateResponse(
                 Guid.Parse("11111111-1111-1111-1111-111111111103"),
@@ -431,10 +519,17 @@ else
                 9,
                 "Approved",
                 "Profil recu et valide apres entretien.",
+                "Entreprise Demo CI",
+                "Entretien realise, profil operationnel.",
                 DateTimeOffset.UtcNow.AddDays(-3),
+                DateTimeOffset.UtcNow.AddDays(-2),
                 [
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Electricite", "Expert", 9),
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Depannage auto", "Confirmed", 6)
+                ],
+                [
+                    new CompanyInterimCandidateAffiliationResponse(Guid.Parse("11111111-1111-1111-1111-111111111103"), Guid.Parse("11111111-1111-1111-1111-111111111111"), "Entreprise Demo CI", "Approved", DateTimeOffset.UtcNow.AddDays(-3), DateTimeOffset.UtcNow.AddDays(-2), true),
+                    new CompanyInterimCandidateAffiliationResponse(Guid.NewGuid(), Guid.NewGuid(), "Yop Services", "Cancelled", DateTimeOffset.UtcNow.AddDays(-3), DateTimeOffset.UtcNow.AddDays(-2), false)
                 ]),
             new CompanyInterimCandidateResponse(
                 Guid.Parse("11111111-1111-1111-1111-111111111104"),
@@ -448,9 +543,15 @@ else
                 3,
                 "Rejected",
                 "Zone trop eloignee pour les missions actuelles.",
+                "Entreprise Demo CI",
+                "Candidature refusee pour la zone actuelle.",
                 DateTimeOffset.UtcNow.AddDays(-4),
+                DateTimeOffset.UtcNow.AddDays(-3),
                 [
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Blanchisserie", "Junior", 3)
+                ],
+                [
+                    new CompanyInterimCandidateAffiliationResponse(Guid.Parse("11111111-1111-1111-1111-111111111104"), Guid.Parse("11111111-1111-1111-1111-111111111111"), "Entreprise Demo CI", "Rejected", DateTimeOffset.UtcNow.AddDays(-4), DateTimeOffset.UtcNow.AddDays(-3), true)
                 ])
         ];
 
@@ -458,6 +559,9 @@ else
         {
             ReviewNotes.TryAdd(candidate.RequestId, null);
         }
+
+        AcceptsInterimApplications = true;
+        InterimSettingsMessage = "Votre entreprise apparait aux candidats interimaires compatibles.";
     }
 
     private static int GetStatusSort(string status) => status switch
@@ -472,6 +576,7 @@ else
     {
         "Approved" => "Valide",
         "Rejected" => "Refuse",
+        "Cancelled" => "Cloture",
         _ => "A evaluer"
     };
 
@@ -491,7 +596,24 @@ else
     {
         "Approved" => "employee-status-badge available",
         "Rejected" => "employee-status-badge suspended",
+        "Cancelled" => "employee-status-badge unavailable",
         _ => "employee-status-badge mission"
+    };
+
+    private static string GetAffiliationStatusLabel(string status) => status switch
+    {
+        "Approved" => "Validee",
+        "Rejected" => "Refusee",
+        "Cancelled" => "Cloturee",
+        _ => "En attente"
+    };
+
+    private static string GetAffiliationStatusClass(string status) => status switch
+    {
+        "Approved" => "status-ok",
+        "Rejected" => "status-rejected",
+        "Cancelled" => "status-neutral",
+        _ => "status-pending"
     };
 
     private static string GetExperienceLabel(string value) => value switch
@@ -518,7 +640,7 @@ else
         return string.IsNullOrWhiteSpace(candidate.Message) ? "Aucune note candidat" : candidate.Message;
     }
 
-    private static bool IsClosed(string status) => status is "Approved" or "Rejected";
+    private static bool IsClosed(string status) => status is "Approved" or "Rejected" or "Cancelled";
 
     private static string Display(string? value) => string.IsNullOrWhiteSpace(value) ? "Adresse non renseignee" : value;
 

@@ -8,6 +8,37 @@ namespace HomeService.Application.CompanyPortal;
 
 public sealed class CompanyInterimCandidateService(IAppDbContext db)
 {
+    public async Task<CompanyInterimSettingsResult> GetSettingsAsync(Guid companyId, CancellationToken cancellationToken)
+    {
+        var company = await db.Companies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
+        if (company is null)
+        {
+            return CompanyInterimSettingsResult.NotFound();
+        }
+
+        return CompanyInterimSettingsResult.Ok(ToSettingsResponse(company));
+    }
+
+    public async Task<CompanyInterimSettingsResult> UpdateSettingsAsync(
+        Guid companyId,
+        UpdateCompanyInterimSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var company = await db.Companies
+            .FirstOrDefaultAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
+        if (company is null)
+        {
+            return CompanyInterimSettingsResult.NotFound();
+        }
+
+        company.SetInterimApplications(request.AcceptsInterimApplications);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return CompanyInterimSettingsResult.Ok(ToSettingsResponse(company));
+    }
+
     public async Task<IReadOnlyList<CompanyInterimCandidateResponse>> ListAsync(Guid companyId, CancellationToken cancellationToken)
     {
         return await db.ProviderAffiliationRequests
@@ -15,6 +46,7 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
             .Include(request => request.Provider)
                 .ThenInclude(provider => provider!.CandidateServices)
                     .ThenInclude(candidateService => candidateService.Service)
+            .Include(request => request.Company)
             .Where(request => request.CompanyId == companyId)
             .OrderBy(request => request.Status)
             .ThenByDescending(request => request.RequestedAt)
@@ -30,7 +62,10 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
                 request.Provider.YearsOfExperience,
                 request.Status.ToString(),
                 request.Message,
+                request.Company!.Name,
+                request.ReviewNote,
                 request.RequestedAt,
+                request.ReviewedAt,
                 request.Provider.CandidateServices
                     .Where(candidateService => candidateService.IsActive)
                     .OrderBy(candidateService => candidateService.Service!.Name)
@@ -39,6 +74,18 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
                         candidateService.Service!.Name,
                         candidateService.ExperienceLevel.ToString(),
                         candidateService.YearsOfExperience))
+                    .ToList(),
+                db.ProviderAffiliationRequests
+                    .Where(otherRequest => otherRequest.ProviderId == request.ProviderId)
+                    .OrderByDescending(otherRequest => otherRequest.RequestedAt)
+                    .Select(otherRequest => new CompanyInterimCandidateAffiliationResponse(
+                        otherRequest.Id,
+                        otherRequest.CompanyId,
+                        otherRequest.Company!.Name,
+                        otherRequest.Status.ToString(),
+                        otherRequest.RequestedAt,
+                        otherRequest.ReviewedAt,
+                        otherRequest.CompanyId == companyId))
                     .ToList()))
             .ToListAsync(cancellationToken);
     }
@@ -66,6 +113,17 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
                 candidateService.YearsOfExperience,
                 ProviderServicePriceTier.Normal)));
 
+        var otherPendingRequests = await db.ProviderAffiliationRequests
+            .Where(otherRequest =>
+                otherRequest.ProviderId == provider.Id
+                && otherRequest.Id != request.Id
+                && otherRequest.Status == ProviderAffiliationRequestStatus.Pending)
+            .ToListAsync(cancellationToken);
+        foreach (var otherRequest in otherPendingRequests)
+        {
+            otherRequest.Cancel("Candidature cloturee automatiquement apres validation par une autre entreprise.");
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return CompanyInterimCandidateReviewResult.Ok();
     }
@@ -84,10 +142,25 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         await db.SaveChangesAsync(cancellationToken);
         return CompanyInterimCandidateReviewResult.Ok();
     }
+
+    private static CompanyInterimSettingsResponse ToSettingsResponse(Company company)
+    {
+        var message = company.AcceptsInterimApplications
+            ? "Votre entreprise peut recevoir des candidatures interimaires compatibles avec vos services."
+            : "Votre entreprise ne recoit pas de nouvelles candidatures interimaires pour le moment.";
+
+        return new CompanyInterimSettingsResponse(company.Id, company.AcceptsInterimApplications, message);
+    }
 }
 
 public sealed record CompanyInterimCandidateReviewResult(bool IsSuccess, bool IsNotFound)
 {
     public static CompanyInterimCandidateReviewResult Ok() => new(true, false);
     public static CompanyInterimCandidateReviewResult NotFound() => new(false, true);
+}
+
+public sealed record CompanyInterimSettingsResult(bool IsSuccess, bool IsNotFound, CompanyInterimSettingsResponse? Response, string? Message)
+{
+    public static CompanyInterimSettingsResult Ok(CompanyInterimSettingsResponse response) => new(true, false, response, null);
+    public static CompanyInterimSettingsResult NotFound() => new(false, true, null, "Entreprise introuvable ou inactive.");
 }

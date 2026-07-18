@@ -154,6 +154,7 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
             company.Name,
             company.Email ?? string.Empty,
             company.Status.ToString(),
+            company.AcceptsInterimApplications,
             user?.FullName ?? "Responsable",
             user?.Email ?? company.Email ?? string.Empty,
             GetProfileCompletionPercent(progressSteps),
