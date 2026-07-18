@@ -274,6 +274,54 @@ public static class AdminEndpoints
             return Results.File(absolutePath, document.ContentType, document.OriginalFileName, enableRangeProcessing: true);
         })
         .WithName("PreviewAdminProviderDocument");
+
+        admin.MapGet("/missions", async (
+            string? status,
+            string? search,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.ListMissionsAsync(status, search, cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("ListAdminMissions")
+        .Produces<AdminMissionListResponse>();
+
+        admin.MapPost("/missions/{missionId:guid}/mark-disputed", async (
+            Guid missionId,
+            AdminMissionActionRequest request,
+            HttpRequest httpRequest,
+            AdminQueryService queryService,
+            AdminMissionOperationsService missionOperationsService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await missionOperationsService.MarkDisputedAsync(missionId, request.Note, cancellationToken);
+            if (result.Status == AdminMissionOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminMissionOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminMissionMarkedDisputed",
+                nameof(Mission),
+                missionId,
+                $"Mission marquee en litige. Note: {result.Note}",
+                before: new { Status = result.PreviousStatus?.ToString() },
+                after: new { Status = result.Mission!.Status.ToString(), result.Note });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await queryService.ListMissionsAsync("Disputed", null, cancellationToken));
+        })
+        .WithName("MarkAdminMissionDisputed");
         
         admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {

@@ -194,6 +194,28 @@ public sealed class MissionTests
         Assert.Equal(0, mission.CancellationFeeAmount);
     }
 
+    [Fact]
+    public void MarkDisputed_WhenMissionIsOpen_MovesToDispute()
+    {
+        var mission = CreateAssignedMission();
+
+        mission.MarkDisputed();
+
+        Assert.Equal(MissionStatus.Disputed, mission.Status);
+        Assert.NotNull(mission.UpdatedAt);
+    }
+
+    [Theory]
+    [InlineData(MissionStatus.Completed)]
+    [InlineData(MissionStatus.Cancelled)]
+    public void MarkDisputed_WhenMissionIsClosed_Throws(MissionStatus status)
+    {
+        var mission = CreateMission(60);
+        SetProperty(mission, nameof(Mission.Status), status);
+
+        Assert.Throws<InvalidOperationException>(mission.MarkDisputed);
+    }
+
     private static Mission CreateAssignedMission()
     {
         var mission = CreateMission(90);

@@ -44,6 +44,33 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminCompanyDetailResponse>($"/api/admin/companies/{companyId}", cancellationToken);
     }
 
+    public async Task<AdminMissionListResponse?> GetAdminMissionsAsync(
+        string? status,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+
+        var query = new List<string>();
+        AddQueryValue(query, "status", status);
+        AddQueryValue(query, "search", search);
+
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
+        return await GetJsonAsync<AdminMissionListResponse>($"/api/admin/missions{suffix}", cancellationToken);
+    }
+
+    public async Task<AdminMissionListResponse?> MarkAdminMissionDisputedAsync(
+        Guid missionId,
+        string note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminMissionListResponse>(
+            $"/api/admin/missions/{missionId}/mark-disputed",
+            new AdminMissionActionRequest(note),
+            cancellationToken);
+    }
+
     public async Task<CompanyApplicationDetailResponse?> GetCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

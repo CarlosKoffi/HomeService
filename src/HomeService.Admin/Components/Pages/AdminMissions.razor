@@ -1,0 +1,233 @@
+@page "/missions"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Missions</PageTitle>
+
+<div class="admin-page-heading">
+    <div>
+        <p class="eyebrow">Operations</p>
+        <h1>Missions</h1>
+        <p class="lead">Surveillez les missions, les paiements et les cas sensibles depuis l'admin.</p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+</div>
+
+@if (Snapshot is not null)
+{
+    <section class="admin-metric-grid compact">
+        <article>
+            <span>Total</span>
+            <strong>@Snapshot.Stats.TotalMissions</strong>
+        </article>
+        <article>
+            <span>Ouvertes</span>
+            <strong>@Snapshot.Stats.OpenMissions</strong>
+        </article>
+        <article>
+            <span>Rendez-vous</span>
+            <strong>@Snapshot.Stats.ScheduledMissions</strong>
+        </article>
+        <article>
+            <span>Litiges</span>
+            <strong>@Snapshot.Stats.DisputedMissions</strong>
+        </article>
+    </section>
+}
+
+<section class="toolbar operator-toolbar">
+    <label>
+        Statut
+        <select @bind="SelectedStatus">
+            <option value="">Toutes</option>
+            <option value="Created">Creees</option>
+            <option value="Assigned">Affectees</option>
+            <option value="Accepted">Acceptees</option>
+            <option value="Started">En cours</option>
+            <option value="Completed">Terminees</option>
+            <option value="Cancelled">Annulees</option>
+            <option value="Disputed">Litiges</option>
+        </select>
+    </label>
+    <label>
+        Recherche
+        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Client, entreprise, prestataire, service" />
+    </label>
+    <button type="button" @onclick="LoadAsync" disabled="@IsLoading">Rechercher</button>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message">@Message</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+<section class="operator-list">
+    <header>
+        <div>
+            <h2>Suivi missions</h2>
+            <p>@(Snapshot?.Items.Count ?? 0) mission(s) affichee(s)</p>
+        </div>
+    </header>
+
+    @if (IsLoading)
+    {
+        <article class="operator-row">
+            <div>
+                <strong>Chargement...</strong>
+                <p>Lecture des missions depuis l'API.</p>
+            </div>
+        </article>
+    }
+    else if (Snapshot is null || Snapshot.Items.Count == 0)
+    {
+        <article class="operator-row">
+            <div>
+                <strong>Aucune mission</strong>
+                <p>Aucun resultat pour les filtres actuels.</p>
+            </div>
+        </article>
+    }
+    else
+    {
+        @foreach (var mission in Snapshot.Items)
+        {
+            <article class="operator-row mission-row">
+                <div>
+                    <strong>@mission.ServiceName</strong>
+                    <p>@mission.CustomerName - @mission.CustomerPhoneNumber</p>
+                    <small>@(mission.CompanyName ?? "Entreprise non affectee")</small>
+                </div>
+                <div class="operator-meta">
+                    <span class="@GetMissionStatusClass(mission.Status)">@TranslateMissionStatus(mission.Status)</span>
+                    <small>@mission.PaymentMethod / @mission.PaymentStatus</small>
+                </div>
+                <div class="operator-kpis">
+                    <span>@(mission.ProviderName ?? "Prestataire non affecte")</span>
+                    <span>@FormatMoney(mission.Amount, mission.Currency)</span>
+                    <span>@FormatDate(mission.ScheduledFor)</span>
+                </div>
+                <div class="mission-admin-action">
+                    @if (SelectedMissionId == mission.Id)
+                    {
+                        <input type="text" @bind="DisputeNote" placeholder="Note litige obligatoire" />
+                        <button type="button" @onclick="() => ConfirmDisputeAsync(mission.Id)" disabled="@IsActionBusy">Confirmer</button>
+                        <button type="button" class="light-action" @onclick="CancelDispute">Annuler</button>
+                    }
+                    else if (mission.Status != "Disputed" && mission.Status != "Completed" && mission.Status != "Cancelled")
+                    {
+                        <button type="button" @onclick="() => StartDispute(mission.Id)">Signaler un litige</button>
+                    }
+                    else
+                    {
+                        <span class="muted-action">Aucune action</span>
+                    }
+                </div>
+            </article>
+        }
+    }
+</section>
+
+@code {
+    private AdminMissionListResponse? Snapshot { get; set; }
+    private string? SelectedStatus { get; set; }
+    private string? SearchTerm { get; set; }
+    private Guid? SelectedMissionId { get; set; }
+    private string? DisputeNote { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsActionBusy { get; set; }
+    private string? Message { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Snapshot = await ApiClient.GetAdminMissionsAsync(SelectedStatus, SearchTerm);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les missions. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void StartDispute(Guid missionId)
+    {
+        SelectedMissionId = missionId;
+        DisputeNote = null;
+        Message = null;
+        ErrorMessage = null;
+    }
+
+    private void CancelDispute()
+    {
+        SelectedMissionId = null;
+        DisputeNote = null;
+    }
+
+    private async Task ConfirmDisputeAsync(Guid missionId)
+    {
+        IsActionBusy = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            Snapshot = await ApiClient.MarkAdminMissionDisputedAsync(missionId, DisputeNote ?? string.Empty);
+            SelectedStatus = "Disputed";
+            SelectedMissionId = null;
+            DisputeNote = null;
+            Message = "Mission marquee en litige.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionBusy = false;
+        }
+    }
+
+    private static string FormatMoney(int? amount, string currency) => amount is null ? "Aucun prix" : $"{amount:N0} {currency}";
+    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non planifie";
+
+    private static string TranslateMissionStatus(string status) => status switch
+    {
+        "Created" => "Creee",
+        "SearchingProvider" => "Recherche",
+        "Offered" => "Proposee",
+        "Assigned" => "Affectee",
+        "Accepted" => "Acceptee",
+        "OnTheWay" => "En route",
+        "Started" => "En cours",
+        "Completed" => "Terminee",
+        "Cancelled" => "Annulee",
+        "Disputed" => "Litige",
+        _ => status
+    };
+
+    private static string GetMissionStatusClass(string status) => status switch
+    {
+        "Completed" => "status-pill ok",
+        "Cancelled" or "Disputed" => "status-pill danger",
+        _ => "status-pill pending"
+    };
+}

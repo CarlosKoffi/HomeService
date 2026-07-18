@@ -902,6 +902,39 @@ h3 {
     text-decoration: none;
 }
 
+.mission-admin-action {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    justify-content: end;
+}
+
+.mission-admin-action input {
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    font: inherit;
+    min-width: 210px;
+    padding: .55rem .8rem;
+}
+
+.mission-admin-action button {
+    background: #111827;
+    border: 1px solid #111827;
+    border-radius: 999px;
+    color: #fff;
+    font: inherit;
+    font-size: .84rem;
+    font-weight: 850;
+    padding: .58rem .8rem;
+}
+
+.muted-action {
+    color: #64748b;
+    font-size: .82rem;
+    font-weight: 750;
+}
+
 .company-control-strip {
     background: #fff;
     border: 1px solid #e5e7eb;

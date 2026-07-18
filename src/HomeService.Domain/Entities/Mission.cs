@@ -181,6 +181,17 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
+    public void MarkDisputed()
+    {
+        if (Status is MissionStatus.Completed or MissionStatus.Cancelled)
+        {
+            throw new InvalidOperationException("Completed or cancelled missions cannot be marked as disputed.");
+        }
+
+        Status = MissionStatus.Disputed;
+        Touch();
+    }
+
     public bool CanStartFor(Guid providerId, Guid companyId)
     {
         if (ProviderId is not null && ProviderId != providerId)

@@ -228,6 +228,84 @@ public sealed class AdminQueryService(IAppDbContext db)
             timeline);
     }
 
+    public async Task<AdminMissionListResponse> ListMissionsAsync(
+        string? status,
+        string? search,
+        CancellationToken cancellationToken)
+    {
+        var query =
+            from mission in db.Missions.AsNoTracking()
+            join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+            join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
+            join company in db.Companies.AsNoTracking() on mission.CompanyId equals company.Id into companyJoin
+            from company in companyJoin.DefaultIfEmpty()
+            join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
+            from provider in providerJoin.DefaultIfEmpty()
+            select new
+            {
+                mission.Id,
+                ServiceName = service.Name,
+                CompanyName = company == null ? null : company.Name,
+                CustomerName = (customer.FirstName + " " + customer.LastName).Trim(),
+                CustomerPhoneNumber = customer.PhoneNumber,
+                ProviderName = provider == null ? null : (provider.FirstName + " " + provider.LastName).Trim(),
+                mission.Status,
+                mission.PaymentStatus,
+                mission.PaymentMethod,
+                mission.ScheduledFor,
+                Amount = mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? mission.FinalTotalAmount,
+                mission.Currency,
+                mission.ServiceAddress,
+                mission.CreatedAt
+            };
+
+        if (Enum.TryParse<MissionStatus>(status, true, out var parsedStatus))
+        {
+            query = query.Where(mission => mission.Status == parsedStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(mission =>
+                mission.ServiceName.ToLower().Contains(term)
+                || mission.CustomerName.ToLower().Contains(term)
+                || mission.CustomerPhoneNumber.ToLower().Contains(term)
+                || (mission.CompanyName != null && mission.CompanyName.ToLower().Contains(term))
+                || (mission.ProviderName != null && mission.ProviderName.ToLower().Contains(term))
+                || (mission.ServiceAddress != null && mission.ServiceAddress.ToLower().Contains(term)));
+        }
+
+        var missions = await query
+            .OrderByDescending(mission => mission.ScheduledFor ?? mission.CreatedAt)
+            .Take(250)
+            .Select(mission => new AdminMissionSummaryResponse(
+                mission.Id,
+                mission.ServiceName,
+                mission.CompanyName,
+                mission.CustomerName,
+                mission.CustomerPhoneNumber,
+                mission.ProviderName,
+                mission.Status.ToString(),
+                mission.PaymentStatus.ToString(),
+                mission.PaymentMethod.ToString(),
+                mission.ScheduledFor,
+                mission.Amount,
+                mission.Currency,
+                mission.ServiceAddress,
+                mission.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var stats = new AdminMissionStatsResponse(
+            await db.Missions.CountAsync(cancellationToken),
+            await db.Missions.CountAsync(mission => mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.ScheduledFor != null && mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.Status == MissionStatus.Completed, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.Status == MissionStatus.Disputed, cancellationToken));
+
+        return new AdminMissionListResponse(missions, stats);
+    }
+
     public async Task<AdminProviderDocumentFile?> GetProviderDocumentFileAsync(Guid id, CancellationToken cancellationToken)
     {
         return await db.ProviderDocuments
