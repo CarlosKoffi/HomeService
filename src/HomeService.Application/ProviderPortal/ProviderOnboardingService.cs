@@ -106,7 +106,6 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
                 .Where(providerPrestation =>
                     providerPrestation.IsActive
                     && providerPrestation.ServicePrestation!.ServiceId == serviceId
-                    && (prestationId == null || providerPrestation.ServicePrestationId == prestationId)
                     && providerPrestation.ProviderService!.IsActive)
                 .Select(providerPrestation => providerPrestation.ProviderService!.CompanyId)
                 .Distinct()
@@ -143,7 +142,6 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
                     .Where(providerPrestation =>
                         providerPrestation.IsActive
                         && providerPrestation.ServicePrestation!.ServiceId == serviceId
-                        && (prestationId == null || providerPrestation.ServicePrestationId == prestationId)
                         && db.ProviderServices.Any(providerService =>
                             providerService.Id == providerPrestation.ProviderServiceId
                             && providerService.CompanyId == company.Id

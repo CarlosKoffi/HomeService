@@ -21,6 +21,22 @@ public sealed class ProviderCompanyOpportunityMatchingPolicyTests
     }
 
     [Fact]
+    public void Matches_ReturnsTrue_WhenCompanyHasAnyPrestationUnderParentService()
+    {
+        var companyId = Guid.NewGuid();
+        var input = new ProviderCompanyWorkMatchInput(
+            companyId,
+            null,
+            null,
+            new HashSet<Guid>(),
+            new HashSet<Guid> { companyId },
+            new HashSet<Guid>(),
+            ["blanchisserie", "repassage"]);
+
+        Assert.True(ProviderCompanyOpportunityMatchingPolicy.Matches(input));
+    }
+
+    [Fact]
     public void Matches_ReturnsTrue_WhenCompanyTextMentionsChildPrestation()
     {
         var companyId = Guid.NewGuid();
