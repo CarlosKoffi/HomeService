@@ -27,53 +27,18 @@ else if (Session is null)
 }
 else
 {
-    <section class="missions-page-shell">
-        <aside class="missions-sidebar" aria-label="Navigation portail entreprise">
-            <a class="missions-logo" href="@PortalLink("dashboard")">
-                <span>K</span>
-                <strong>Kaza</strong>
-            </a>
-
-            <nav class="missions-sidebar-nav">
-                <a href="@PortalLink("company-profile")">
-                    <svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-8h6v8"/></svg>
-                    Informations
-                </a>
-                <a href="@PortalLink("employees")">
-                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    Employes
-                </a>
-                <a href="@PortalLink("interim-candidates")">
-                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5 1.34 3.5 3 3.5Z"/><path d="M8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11Z"/><path d="M2 20c.55-3.4 2.55-5 6-5"/><path d="M22 20c-.55-3.4-2.55-5-6-5"/></svg>
-                    Interim
-                </a>
-                <a class="active" href="@PortalLink("missions")">
-                    <svg viewBox="0 0 24 24"><path d="M9 6h11"/><path d="M9 12h11"/><path d="M9 18h11"/><path d="M4 6h.01"/><path d="M4 12h.01"/><path d="M4 18h.01"/></svg>
-                    Missions
-                </a>
-                <a href="@PortalLink("accounts")">
-                    <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                    Encaissements
-                </a>
-            </nav>
-
-            <button type="button" class="missions-logout" @onclick="LogoutAsync">
-                <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
-                Sortir
-            </button>
-        </aside>
-
-        <main class="missions-app-main">
-            <header class="missions-app-topbar">
-                <div>
-                    <h1>Missions</h1>
-                    <p>@CurrentMonthLabel - @AllMissions.Count missions au total</p>
-                </div>
+    <CompanyPortalShell Active="missions"
+                        Title="Missions"
+                        Subtitle="@($"{CurrentMonthLabel} - {AllMissions.Count} missions au total")"
+                        CompanyName="@Session.CompanyName"
+                        Email="@Session.Email"
+                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
+            <div class="missions-shell-actions">
                 <button type="button" class="missions-primary-action" disabled>
                     <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                     Nouvelle mission
                 </button>
-            </header>
+            </div>
 
             <section class="missions-app-body">
                 @if (!Session.IsCompanyApproved)
@@ -320,8 +285,7 @@ else
             }
                 </section>
             </section>
-        </main>
-    </section>
+    </CompanyPortalShell>
 }
 
 @code {

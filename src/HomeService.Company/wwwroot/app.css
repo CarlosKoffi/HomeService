@@ -6501,7 +6501,6 @@ h3 {
     color: #111111;
     display: flex;
     font-family: "Plus Jakarta Sans", var(--company-font);
-    margin: -2rem;
     min-height: 100vh;
 }
 
@@ -6565,7 +6564,7 @@ h3 {
 .portal-sidebar-nav a {
     align-items: center;
     border-radius: 12px;
-    color: #666666;
+    color: #374151;
     display: flex;
     font-size: 14px;
     font-weight: 500;
@@ -6576,13 +6575,14 @@ h3 {
 }
 
 .portal-sidebar-nav a:hover {
-    background: #f5f5f5;
+    background: #f7f9fc;
     color: #111111;
 }
 
 .portal-sidebar-nav a.active {
-    background: var(--portal-blue-bg);
-    color: var(--portal-blue);
+    background: var(--portal-blue);
+    box-shadow: 0 10px 24px rgba(37, 99, 235, .2);
+    color: #ffffff;
 }
 
 .portal-sidebar-nav .platform-icon {

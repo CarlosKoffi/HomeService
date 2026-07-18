@@ -26,36 +26,17 @@ else if (Session is null)
 }
 else
 {
-    <section class="payments-page-shell">
-        <aside class="payments-sidebar" aria-label="Navigation portail entreprise">
-            <a class="payments-logo" href="@PortalLink("dashboard")">
-                <span>K</span>
-                <strong>Kaza</strong>
-            </a>
-
-            <nav class="payments-sidebar-nav">
-                <a href="@PortalLink("company-profile")">@Icon("info") Informations</a>
-                <a href="@PortalLink("employees")">@Icon("users") Employes</a>
-                <a href="@PortalLink("interim-candidates")">@Icon("clock") Interim</a>
-                <a href="@PortalLink("missions")">@Icon("briefcase") Missions</a>
-                <a class="active" href="@PortalLink("accounts")">@Icon("card") Encaissements</a>
-            </nav>
-
-            <button type="button" class="payments-logout" @onclick="LogoutAsync">@Icon("logout") Deconnexion</button>
-        </aside>
-
-        <main class="payments-main">
-            <header class="payments-topbar">
-                <div>
-                    <h1>Encaissements</h1>
-                    <p>@PeriodLabel · suivi des paiements</p>
-                </div>
-                <div class="payments-period-toggle" aria-label="Periode">
-                    <button class="@GetPeriodClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
-                    <button class="@GetPeriodClass("month")" type="button" @onclick='() => LoadPaymentsAsync("month")'>Mois</button>
-                    <button class="@GetPeriodClass("year")" type="button" @onclick='() => LoadPaymentsAsync("year")'>Annee</button>
-                </div>
-            </header>
+    <CompanyPortalShell Active="accounts"
+                        Title="Encaissements"
+                        Subtitle="@($"{PeriodLabel} - suivi des paiements")"
+                        CompanyName="@Session.CompanyName"
+                        Email="@Session.Email"
+                        ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
+            <div class="payments-period-toggle payments-period-toggle-inline" aria-label="Periode">
+                <button class="@GetPeriodClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
+                <button class="@GetPeriodClass("month")" type="button" @onclick='() => LoadPaymentsAsync("month")'>Mois</button>
+                <button class="@GetPeriodClass("year")" type="button" @onclick='() => LoadPaymentsAsync("year")'>Annee</button>
+            </div>
 
             <section class="payments-body">
                 @if (Summary is null)
@@ -259,8 +240,7 @@ else
                     </section>
                 }
             </section>
-        </main>
-    </section>
+    </CompanyPortalShell>
 }
 
 @code {
