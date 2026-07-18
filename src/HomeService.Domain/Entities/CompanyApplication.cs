@@ -95,16 +95,20 @@ public sealed class CompanyApplication : AuditableEntity
         string tokenHash,
         DateTimeOffset expiresAt,
         string activationLink,
-        string? changedBy = null)
+        string? changedBy = null,
+        bool revokeExistingTokens = true)
     {
         if (Status != CompanyApplicationStatus.Approved && Status != CompanyApplicationStatus.ActivationSent)
         {
             throw new InvalidOperationException("Seule une demande approuvee peut recevoir un token d'activation.");
         }
 
-        foreach (var existingToken in _activationTokens.Where(token => token.IsActive))
+        if (revokeExistingTokens)
         {
-            existingToken.Revoke("Remplace par un nouveau token d'activation.");
+            foreach (var existingToken in _activationTokens.Where(token => token.IsActive))
+            {
+                existingToken.Revoke("Remplace par un nouveau token d'activation.");
+            }
         }
 
         var activationToken = new CompanyActivationToken(Id, tokenHash, expiresAt, activationLink);

@@ -16,8 +16,8 @@ public sealed class CompanyActivationLinkGenerationService(IAppDbContext db)
         string changedBy,
         CancellationToken cancellationToken)
     {
+        var now = DateTimeOffset.UtcNow;
         var application = await db.CompanyApplications
-            .Include(application => application.ActivationTokens)
             .FirstOrDefaultAsync(application => application.Id == applicationId, cancellationToken);
         if (application is null)
         {
@@ -32,11 +32,22 @@ public sealed class CompanyActivationLinkGenerationService(IAppDbContext db)
         var previousStatus = application.Status;
         var rawToken = PortalTokenService.GenerateSecureToken();
         var tokenHash = PortalTokenService.HashToken(rawToken);
-        var expiresAt = DateTimeOffset.UtcNow.AddHours(tokenLifetimeHours);
+        var expiresAt = now.AddHours(tokenLifetimeHours);
         var activationLink = CompanyActivationLinkBuilder.Build(companyPortalBaseUrl, application.Id, rawToken);
         var reminderSentAt = application.ActivationEmailSentAt is null ? application.LastReminderSentAt : DateTimeOffset.UtcNow;
 
-        application.CreateActivationToken(tokenHash, expiresAt, activationLink, changedBy);
+        await db.CompanyActivationTokens
+            .Where(token =>
+                token.CompanyApplicationId == application.Id
+                && token.UsedAt == null
+                && token.RevokedAt == null
+                && token.ExpiresAt > now)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(token => token.RevokedAt, now)
+                .SetProperty(token => token.RevocationReason, "Remplace par un nouveau token d'activation."),
+                cancellationToken);
+
+        application.CreateActivationToken(tokenHash, expiresAt, activationLink, changedBy, revokeExistingTokens: false);
         if (previousStatus == CompanyApplicationStatus.ActivationSent)
         {
             application.MarkReminderSent();

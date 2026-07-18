@@ -50,6 +50,24 @@ public sealed class CompanyApplicationLifecycleTests
     }
 
     [Fact]
+    public void CreateActivationToken_WhenExistingTokensWereAlreadyRevoked_DoesNotTouchLoadedTokens()
+    {
+        var application = CreateApplication();
+        application.Approve("admin");
+        var first = application.CreateActivationToken("hash-1", DateTimeOffset.UtcNow.AddHours(24), "https://company/activate/1");
+
+        var second = application.CreateActivationToken(
+            "hash-2",
+            DateTimeOffset.UtcNow.AddHours(24),
+            "https://company/activate/2",
+            revokeExistingTokens: false);
+
+        Assert.True(first.IsActive);
+        Assert.True(second.IsActive);
+        Assert.Equal(CompanyApplicationStatus.ActivationSent, application.Status);
+    }
+
+    [Fact]
     public void Reopen_WhenApplicationIsRejected_MarksUnderReview()
     {
         var application = CreateApplication();
