@@ -41,4 +41,4 @@ public sealed record CompanyInterimCandidateAffiliationResponse(
     DateTimeOffset? ReviewedAt,
     bool IsCurrentCompany);
 
-public sealed record CompanyReviewInterimCandidateRequest(string? Note);
+public sealed record CompanyReviewInterimCandidateRequest(string? Note, bool CompetencyValidatedByCompany);

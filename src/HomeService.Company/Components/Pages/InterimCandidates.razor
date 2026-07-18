@@ -149,9 +149,9 @@ else
                                 <button type="button"
                                         class="interim-action-primary"
                                         disabled="@(!CanManageInterimCandidates || IsClosed(candidate.Status))"
-                                        title="@GetCandidateActionTitle()"
-                                        @onclick="() => ApproveAsync(candidate.RequestId)">
-                                    Valider
+                                        title="Ouvrir la fiche pour confirmer l'evaluation"
+                                        @onclick="() => OpenCandidate(candidate)">
+                                    Evaluer
                                 </button>
                             </div>
                         </article>
@@ -246,6 +246,13 @@ else
                                 Note interne
                                 <textarea @bind="ReviewNotes[SelectedCandidate.RequestId]" placeholder="Ex: Recu au bureau, test pratique OK, piece verifiee."></textarea>
                             </label>
+                            <label class="interim-competency-check">
+                                <input type="checkbox" @bind="CompetencyChecks[SelectedCandidate.RequestId]" />
+                                <span>
+                                    <strong>J'ai rencontre ce candidat et je valide ses competences.</strong>
+                                    <small>Il sera ajoute dans vos employes comme interimaire, avec un profil a completer avant activation.</small>
+                                </span>
+                            </label>
                         </article>
 
                         <article class="interim-profile-card">
@@ -271,7 +278,7 @@ else
                     <footer class="interim-profile-footer">
                         <button type="button" class="secondary-action" @onclick="CloseCandidate">Fermer</button>
                         <button type="button" class="secondary-action danger-action" disabled="@(!CanManageInterimCandidates || IsClosed(SelectedCandidate.Status))" @onclick="() => RejectAsync(SelectedCandidate.RequestId)">Refuser</button>
-                        <button type="button" class="primary-action" disabled="@(!CanManageInterimCandidates || IsClosed(SelectedCandidate.Status))" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
+                        <button type="button" class="primary-action" disabled="@(!CanApproveSelectedCandidate(SelectedCandidate))" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
                     </footer>
                 </section>
             </div>
@@ -285,6 +292,7 @@ else
     private CompanyPortalSessionResponse? Session { get; set; }
     private IReadOnlyList<CompanyInterimCandidateResponse> Candidates { get; set; } = [];
     private Dictionary<Guid, string?> ReviewNotes { get; } = [];
+    private Dictionary<Guid, bool> CompetencyChecks { get; } = [];
     private string? Message { get; set; }
     private string Search { get; set; } = string.Empty;
     private string ActiveFilter { get; set; } = "Tous";
@@ -342,6 +350,7 @@ else
         foreach (var candidate in Candidates)
         {
             ReviewNotes.TryAdd(candidate.RequestId, null);
+            CompetencyChecks.TryAdd(candidate.RequestId, false);
         }
     }
 
@@ -386,6 +395,13 @@ else
         }
 
         var note = ReviewNotes.GetValueOrDefault(requestId);
+        var competencyValidated = CompetencyChecks.GetValueOrDefault(requestId);
+        if (!competencyValidated)
+        {
+            Message = "Cochez la confirmation de competence dans la fiche avant de valider l'interimaire.";
+            return;
+        }
+
         if (IsPreviewMode())
         {
             Candidates = Candidates.Select(candidate => candidate.RequestId == requestId ? candidate with { Status = "Approved" } : candidate).ToList();
@@ -393,7 +409,7 @@ else
             return;
         }
 
-        var result = await ApiClient.ApproveInterimCandidateAsync(Session.CompanyId, requestId, note);
+        var result = await ApiClient.ApproveInterimCandidateAsync(Session.CompanyId, requestId, note, competencyValidated);
         Message = result.ErrorMessage;
         await LoadAsync();
         SelectedCandidate = Candidates.FirstOrDefault(candidate => candidate.RequestId == requestId);
@@ -439,6 +455,7 @@ else
 
         SelectedCandidate = candidate;
         ReviewNotes.TryAdd(candidate.RequestId, null);
+        CompetencyChecks.TryAdd(candidate.RequestId, false);
     }
 
     private void CloseCandidate()
@@ -668,6 +685,13 @@ else
     }
 
     private static bool IsClosed(string status) => status is "Approved" or "Rejected" or "Cancelled";
+
+    private bool CanApproveSelectedCandidate(CompanyInterimCandidateResponse candidate)
+    {
+        return CanManageInterimCandidates
+            && !IsClosed(candidate.Status)
+            && CompetencyChecks.GetValueOrDefault(candidate.RequestId);
+    }
 
     private string GetCandidateActionTitle()
     {

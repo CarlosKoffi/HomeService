@@ -113,7 +113,7 @@ public sealed class ProviderProfileTests
     }
 
     [Fact]
-    public void AttachToCompanyAsTemporaryWorker_ApprovesProviderAndAllowsCompanyServices()
+    public void AttachToCompanyAsTemporaryWorker_AttachesProviderAsIncompleteInterimWorker()
     {
         var provider = CreateSelfRegisteredProvider();
         var companyId = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -128,9 +128,10 @@ public sealed class ProviderProfileTests
             ProviderServicePriceTier.Normal)));
 
         Assert.Equal(companyId, provider.CompanyId);
-        Assert.Equal(ProviderStatus.Approved, provider.Status);
+        Assert.Equal(ProviderStatus.ProfileIncomplete, provider.Status);
         Assert.Equal(ProviderEmploymentType.TemporaryWorker, provider.EmploymentType);
         Assert.Single(provider.Services);
+        Assert.False(provider.IsAvailable);
     }
 
     [Fact]

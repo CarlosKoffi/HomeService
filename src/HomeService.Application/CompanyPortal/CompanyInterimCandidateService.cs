@@ -90,7 +90,12 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<CompanyInterimCandidateReviewResult> ApproveAsync(Guid companyId, Guid requestId, string? note, CancellationToken cancellationToken)
+    public async Task<CompanyInterimCandidateReviewResult> ApproveAsync(
+        Guid companyId,
+        Guid requestId,
+        string? note,
+        bool competencyValidatedByCompany,
+        CancellationToken cancellationToken)
     {
         var request = await db.ProviderAffiliationRequests
             .Include(request => request.Company)
@@ -106,6 +111,11 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         if (!request.Company.AcceptsInterimApplications)
         {
             return CompanyInterimCandidateReviewResult.Blocked("Activez la reception des demandes interimaires avant de traiter cette candidature.");
+        }
+
+        if (!competencyValidatedByCompany)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked("Confirmez que l'entreprise a rencontre le candidat et valide ses competences avant de l'ajouter.");
         }
 
         var provider = request.Provider;

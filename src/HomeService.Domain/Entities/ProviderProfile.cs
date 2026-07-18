@@ -269,7 +269,7 @@ public sealed class ProviderProfile : AuditableEntity
     {
         CompanyId = companyId;
         EmploymentType = ProviderEmploymentType.TemporaryWorker;
-        Status = ProviderStatus.Approved;
+        Status = ProviderStatus.ProfileIncomplete;
         IsAvailable = false;
         Touch();
     }

@@ -9870,6 +9870,46 @@ h3 {
     box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
 }
 
+.interim-competency-check {
+    align-items: flex-start;
+    background: #f5f8ff;
+    border: 1px solid rgba(26, 106, 255, .22);
+    border-radius: 16px;
+    color: #111111;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 14px;
+}
+
+.interim-competency-check input {
+    accent-color: #1A6AFF;
+    flex: 0 0 auto;
+    height: 18px;
+    margin-top: 2px;
+    width: 18px;
+}
+
+.interim-competency-check span {
+    display: grid;
+    gap: 4px;
+}
+
+.interim-competency-check strong {
+    color: #111111;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.interim-competency-check small {
+    color: #555555;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
 .interim-affiliation-list {
     display: grid;
     gap: 10px;

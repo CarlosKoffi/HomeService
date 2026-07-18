@@ -117,7 +117,12 @@ public static class CompanyPortalEndpoints
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await interimCandidateService.ApproveAsync(companyId, requestId, request.Note, cancellationToken);
+            var result = await interimCandidateService.ApproveAsync(
+                companyId,
+                requestId,
+                request.Note,
+                request.CompetencyValidatedByCompany,
+                cancellationToken);
             if (result.IsNotFound)
             {
                 return Results.NotFound(new { message = "Demande d'interim introuvable." });
@@ -137,7 +142,7 @@ public static class CompanyPortalEndpoints
                 after: new { companyId, requestId, request.Note }));
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(new { message = "Candidat valide comme interimaire. Il devient assignable apres rattachement entreprise." });
+            return Results.Ok(new { message = "Candidat ajoute comme interimaire. Completez ses informations et ses documents avant activation." });
         })
         .WithName("ApproveCompanyPortalInterimCandidate");
 
