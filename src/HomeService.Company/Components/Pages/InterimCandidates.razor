@@ -5,7 +5,7 @@
 @inject IJSRuntime Js
 @inject IWebHostEnvironment Environment
 
-<PageTitle>Demandes d'interim</PageTitle>
+<PageTitle>Interim</PageTitle>
 
 @if (Session is null)
 {
@@ -19,70 +19,236 @@ else
 {
     <CompanyPortalShell Active="interim-candidates"
                         Title="Interim"
-                        Subtitle="Candidatures a verifier"
+                        Subtitle="@($"{VisibleCandidates.Count} candidature(s) affichee(s)")"
                         CompanyId="@Session.CompanyId"
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
-
-    <section class="interim-advice">
-        <div>
-            <span>Process recommande</span>
-            <strong>Recevoir le candidat avant validation</strong>
-            <p>Avant toute mission, conseillez un entretien, une verification d'identite, un test pratique et une validation des references. Tant que vous ne validez pas, le candidat reste non assignable.</p>
-        </div>
-    </section>
-
-    @if (!string.IsNullOrWhiteSpace(Message))
-    {
-        <p class="field-message">@Message</p>
-    }
-
-    <section class="candidate-grid">
-        @foreach (var candidate in Candidates)
-        {
-            <article class="candidate-card @GetCandidateClass(candidate.Status)">
-                <div class="candidate-card-head">
-                    <div>
-                        <span>@GetStatusLabel(candidate.Status)</span>
-                        <h2>@candidate.FirstName @candidate.LastName</h2>
-                        <p>@candidate.PhoneNumber - @Display(candidate.Address)</p>
-                    </div>
-                    <strong>@candidate.YearsOfExperience an(s)</strong>
+        <section class="interim-workspace">
+            <section class="interim-hero-panel">
+                <div>
+                    <span>Viviers candidats</span>
+                    <strong>@PendingCandidates.Count demande(s) a evaluer</strong>
+                    <p>Consultez les profils, filtrez par service ou zone, puis validez uniquement les candidats que votre entreprise accepte.</p>
                 </div>
+                <div class="interim-hero-stats">
+                    <button type="button" class="@GetFilterButtonClass("A evaluer")" @onclick="@(() => SetFilter("A evaluer"))">
+                        <strong>@PendingCandidates.Count</strong>
+                        <span>A evaluer</span>
+                    </button>
+                    <button type="button" class="@GetFilterButtonClass("Valides")" @onclick="@(() => SetFilter("Valides"))">
+                        <strong>@ApprovedCandidates.Count</strong>
+                        <span>Valides</span>
+                    </button>
+                    <button type="button" class="@GetFilterButtonClass("Refuses")" @onclick="@(() => SetFilter("Refuses"))">
+                        <strong>@RejectedCandidates.Count</strong>
+                        <span>Refuses</span>
+                    </button>
+                </div>
+            </section>
 
-                <div class="candidate-services">
-                    @foreach (var service in candidate.Services)
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <p class="field-message">@Message</p>
+            }
+
+            <section class="interim-toolbar">
+                <label class="employee-search">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input @bind="Search" @bind:event="oninput" placeholder="Rechercher candidat, service ou zone..." />
+                </label>
+                <div class="employee-filter-tabs" role="tablist" aria-label="Filtres interim">
+                    @foreach (var filter in Filters)
                     {
-                        <span>@service.ServiceName - @GetExperienceLabel(service.ExperienceLevel)</span>
+                        <button type="button" class="@GetFilterTabClass(filter)" @onclick="@(() => SetFilter(filter))">@filter <span>@GetFilterCount(filter)</span></button>
                     }
                 </div>
+            </section>
 
-                @if (!string.IsNullOrWhiteSpace(candidate.Message))
-                {
-                    <p class="candidate-note">@candidate.Message</p>
-                }
-
-                <label class="candidate-review-note">
-                    Note interne
-                    <textarea @bind="ReviewNotes[candidate.RequestId]" placeholder="Ex: Recu au bureau, test menage OK, piece verifiee."></textarea>
-                </label>
-
-                <div class="candidate-actions">
-                    <button type="button" class="secondary-action" disabled="@IsClosed(candidate.Status)" @onclick="() => RejectAsync(candidate.RequestId)">Refuser</button>
-                    <button type="button" class="primary-action" disabled="@IsClosed(candidate.Status)" @onclick="() => ApproveAsync(candidate.RequestId)">Valider comme interimaire</button>
+            <section class="interim-modern-table">
+                <div class="interim-table-head">
+                    <span>Candidat</span>
+                    <span>Services</span>
+                    <span>Experience</span>
+                    <span>Zone</span>
+                    <span>Statut</span>
+                    <span>Actions</span>
                 </div>
-            </article>
+
+                @if (VisibleCandidates.Count == 0)
+                {
+                    <div class="interim-empty-line">
+                        <strong>Aucune candidature trouvee</strong>
+                        <span>Changez le filtre ou la recherche pour afficher d'autres profils.</span>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var candidate in VisibleCandidates)
+                    {
+                        <article class="@GetCandidateRowClass(candidate)">
+                            <div class="interim-person-cell" @onclick="() => OpenCandidate(candidate)">
+                                <span class="@GetAvatarClass(candidate)">@GetInitials(candidate)</span>
+                                <div>
+                                    <strong>@candidate.FirstName @candidate.LastName</strong>
+                                    <a href="tel:@candidate.PhoneNumber">@candidate.PhoneNumber</a>
+                                    <small>@GetGenderLabel(candidate.Gender) - candidature du @candidate.RequestedAt.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                                </div>
+                            </div>
+
+                            <div class="employee-service-tags">
+                                @foreach (var service in candidate.Services.Take(3))
+                                {
+                                    <span>@service.ServiceName</span>
+                                }
+                                @if (candidate.Services.Count > 3)
+                                {
+                                    <span>+@(candidate.Services.Count - 3)</span>
+                                }
+                            </div>
+
+                            <div class="employee-experience-cell">
+                                <strong>@candidate.YearsOfExperience an(s)</strong>
+                                <span>@GetMainExperience(candidate)</span>
+                                <small>@GetServiceSummary(candidate)</small>
+                            </div>
+
+                            <div class="employee-zone-cell">
+                                <svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                                <span>@Display(candidate.Address)</span>
+                            </div>
+
+                            <div class="employee-status-cell">
+                                <span class="@GetStatusBadgeClass(candidate.Status)">@GetStatusLabel(candidate.Status)</span>
+                                <small>@GetCandidateMessage(candidate)</small>
+                            </div>
+
+                            <div class="interim-actions">
+                                <button type="button" class="interim-action-secondary" @onclick="() => OpenCandidate(candidate)">
+                                    Voir la fiche
+                                </button>
+                                <button type="button" class="interim-action-primary" disabled="@IsClosed(candidate.Status)" @onclick="() => ApproveAsync(candidate.RequestId)">
+                                    Valider
+                                </button>
+                            </div>
+                        </article>
+                    }
+                }
+            </section>
+        </section>
+
+        @if (SelectedCandidate is not null)
+        {
+            <div class="modal-backdrop interim-profile-backdrop" @onclick="CloseCandidate">
+                <section class="interim-profile-modal" @onclick:stopPropagation>
+                    <header class="interim-profile-header">
+                        <div class="interim-profile-title">
+                            <span class="@GetAvatarClass(SelectedCandidate)">@GetInitials(SelectedCandidate)</span>
+                            <div>
+                                <small>Demande interimaire</small>
+                                <strong>@SelectedCandidate.FirstName @SelectedCandidate.LastName</strong>
+                                <em>@GetStatusLabel(SelectedCandidate.Status)</em>
+                            </div>
+                        </div>
+                        <button type="button" class="employee-upsert-close" @onclick="CloseCandidate" aria-label="Fermer">
+                            <svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                    </header>
+
+                    <div class="interim-profile-body">
+                        <article class="interim-profile-card">
+                            <div class="interim-card-title">
+                                <span>Identite</span>
+                                <strong>Informations principales</strong>
+                            </div>
+                            <dl class="interim-info-grid">
+                                <div>
+                                    <dt>Prenom nom</dt>
+                                    <dd>@SelectedCandidate.FirstName @SelectedCandidate.LastName</dd>
+                                </div>
+                                <div>
+                                    <dt>Sexe</dt>
+                                    <dd>@GetGenderLabel(SelectedCandidate.Gender)</dd>
+                                </div>
+                                <div>
+                                    <dt>Date de naissance</dt>
+                                    <dd>@FormatDate(SelectedCandidate.BirthDate)</dd>
+                                </div>
+                                <div>
+                                    <dt>Telephone</dt>
+                                    <dd><a href="tel:@SelectedCandidate.PhoneNumber">@SelectedCandidate.PhoneNumber</a></dd>
+                                </div>
+                                <div class="wide">
+                                    <dt>Adresse</dt>
+                                    <dd>@Display(SelectedCandidate.Address)</dd>
+                                </div>
+                                <div>
+                                    <dt>Candidature recue</dt>
+                                    <dd>@SelectedCandidate.RequestedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+                                </div>
+                            </dl>
+                        </article>
+
+                        <article class="interim-profile-card">
+                            <div class="interim-card-title">
+                                <span>Metier</span>
+                                <strong>Services proposes</strong>
+                            </div>
+                            <div class="interim-profile-services">
+                                @foreach (var service in SelectedCandidate.Services)
+                                {
+                                    <div>
+                                        <strong>@service.ServiceName</strong>
+                                        <span>@GetExperienceLabel(service.ExperienceLevel) - @service.YearsOfExperience an(s)</span>
+                                    </div>
+                                }
+                            </div>
+                        </article>
+
+                        <article class="interim-profile-card">
+                            <div class="interim-card-title">
+                                <span>Decision</span>
+                                <strong>Validation entreprise</strong>
+                            </div>
+                            <p class="interim-profile-note">@GetCandidateMessage(SelectedCandidate)</p>
+                            <label class="interim-review-field">
+                                Note interne
+                                <textarea @bind="ReviewNotes[SelectedCandidate.RequestId]" placeholder="Ex: Recu au bureau, test pratique OK, piece verifiee."></textarea>
+                            </label>
+                        </article>
+                    </div>
+
+                    <footer class="interim-profile-footer">
+                        <button type="button" class="secondary-action" @onclick="CloseCandidate">Fermer</button>
+                        <button type="button" class="secondary-action danger-action" disabled="@IsClosed(SelectedCandidate.Status)" @onclick="() => RejectAsync(SelectedCandidate.RequestId)">Refuser</button>
+                        <button type="button" class="primary-action" disabled="@IsClosed(SelectedCandidate.Status)" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
+                    </footer>
+                </section>
+            </div>
         }
-    </section>
     </CompanyPortalShell>
 }
 
 @code {
+    private static readonly IReadOnlyList<string> Filters = ["Tous", "A evaluer", "Valides", "Refuses"];
+
     private CompanyPortalSessionResponse? Session { get; set; }
     private IReadOnlyList<CompanyInterimCandidateResponse> Candidates { get; set; } = [];
     private Dictionary<Guid, string?> ReviewNotes { get; } = [];
     private string? Message { get; set; }
+    private string Search { get; set; } = string.Empty;
+    private string ActiveFilter { get; set; } = "Tous";
+    private CompanyInterimCandidateResponse? SelectedCandidate { get; set; }
+
+    private IReadOnlyList<CompanyInterimCandidateResponse> PendingCandidates => Candidates.Where(candidate => !IsClosed(candidate.Status)).ToList();
+    private IReadOnlyList<CompanyInterimCandidateResponse> ApprovedCandidates => Candidates.Where(candidate => candidate.Status == "Approved").ToList();
+    private IReadOnlyList<CompanyInterimCandidateResponse> RejectedCandidates => Candidates.Where(candidate => candidate.Status == "Rejected").ToList();
+    private IReadOnlyList<CompanyInterimCandidateResponse> VisibleCandidates => Candidates
+        .Where(MatchesFilter)
+        .Where(MatchesSearch)
+        .OrderBy(candidate => GetStatusSort(candidate.Status))
+        .ThenByDescending(candidate => candidate.RequestedAt)
+        .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -130,12 +296,14 @@ else
         if (IsPreviewMode())
         {
             Candidates = Candidates.Select(candidate => candidate.RequestId == requestId ? candidate with { Status = "Approved" } : candidate).ToList();
+            SelectedCandidate = Candidates.FirstOrDefault(candidate => candidate.RequestId == requestId);
             return;
         }
 
         var result = await ApiClient.ApproveInterimCandidateAsync(Session.CompanyId, requestId, note);
         Message = result.ErrorMessage;
         await LoadAsync();
+        SelectedCandidate = Candidates.FirstOrDefault(candidate => candidate.RequestId == requestId);
     }
 
     private async Task RejectAsync(Guid requestId)
@@ -155,13 +323,64 @@ else
         if (IsPreviewMode())
         {
             Candidates = Candidates.Select(candidate => candidate.RequestId == requestId ? candidate with { Status = "Rejected" } : candidate).ToList();
+            SelectedCandidate = Candidates.FirstOrDefault(candidate => candidate.RequestId == requestId);
             return;
         }
 
         var result = await ApiClient.RejectInterimCandidateAsync(Session.CompanyId, requestId, note);
         Message = result.ErrorMessage;
         await LoadAsync();
+        SelectedCandidate = Candidates.FirstOrDefault(candidate => candidate.RequestId == requestId);
     }
+
+    private void OpenCandidate(CompanyInterimCandidateResponse candidate)
+    {
+        SelectedCandidate = candidate;
+        ReviewNotes.TryAdd(candidate.RequestId, null);
+    }
+
+    private void CloseCandidate()
+    {
+        SelectedCandidate = null;
+    }
+
+    private void SetFilter(string filter)
+    {
+        ActiveFilter = filter;
+    }
+
+    private bool MatchesFilter(CompanyInterimCandidateResponse candidate)
+    {
+        return ActiveFilter switch
+        {
+            "A evaluer" => !IsClosed(candidate.Status),
+            "Valides" => candidate.Status == "Approved",
+            "Refuses" => candidate.Status == "Rejected",
+            _ => true
+        };
+    }
+
+    private bool MatchesSearch(CompanyInterimCandidateResponse candidate)
+    {
+        if (string.IsNullOrWhiteSpace(Search))
+        {
+            return true;
+        }
+
+        var text = $"{candidate.FirstName} {candidate.LastName} {candidate.PhoneNumber} {candidate.Address} {candidate.Message} {string.Join(' ', candidate.Services.Select(service => service.ServiceName))}";
+        return text.Contains(Search.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private int GetFilterCount(string filter) => filter switch
+    {
+        "A evaluer" => PendingCandidates.Count,
+        "Valides" => ApprovedCandidates.Count,
+        "Refuses" => RejectedCandidates.Count,
+        _ => Candidates.Count
+    };
+
+    private string GetFilterTabClass(string filter) => ActiveFilter == filter ? "active" : string.Empty;
+    private string GetFilterButtonClass(string filter) => ActiveFilter == filter ? "active" : string.Empty;
 
     private void LoadPreviewData()
     {
@@ -178,7 +397,7 @@ else
                 "Female",
                 5,
                 "Pending",
-                "Disponible rapidement. Je souhaite passer au bureau pour un test.",
+                "Disponible rapidement. Peut passer au bureau pour un test.",
                 DateTimeOffset.UtcNow.AddHours(-5),
                 [
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Menage a domicile", "Confirmed", 5),
@@ -199,6 +418,39 @@ else
                 DateTimeOffset.UtcNow.AddDays(-1),
                 [
                     new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Jardinage", "Senior", 8)
+                ]),
+            new CompanyInterimCandidateResponse(
+                Guid.Parse("11111111-1111-1111-1111-111111111103"),
+                Guid.Parse("22222222-2222-2222-2222-222222222203"),
+                "Yves",
+                "Bamba",
+                "+225 01 55 88 20 14",
+                new DateOnly(1988, 2, 20),
+                "Cocody, Abidjan",
+                "Male",
+                9,
+                "Approved",
+                "Profil recu et valide apres entretien.",
+                DateTimeOffset.UtcNow.AddDays(-3),
+                [
+                    new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Electricite", "Expert", 9),
+                    new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Depannage auto", "Confirmed", 6)
+                ]),
+            new CompanyInterimCandidateResponse(
+                Guid.Parse("11111111-1111-1111-1111-111111111104"),
+                Guid.Parse("22222222-2222-2222-2222-222222222204"),
+                "Nadia",
+                "Coulibaly",
+                "+225 07 72 00 41 10",
+                new DateOnly(1999, 7, 2),
+                "Marcory, Abidjan",
+                "Female",
+                3,
+                "Rejected",
+                "Zone trop eloignee pour les missions actuelles.",
+                DateTimeOffset.UtcNow.AddDays(-4),
+                [
+                    new CompanyInterimCandidateServiceResponse(Guid.NewGuid(), "Blanchisserie", "Junior", 3)
                 ])
         ];
 
@@ -208,6 +460,14 @@ else
         }
     }
 
+    private static int GetStatusSort(string status) => status switch
+    {
+        "Pending" => 0,
+        "Approved" => 1,
+        "Rejected" => 2,
+        _ => 3
+    };
+
     private static string GetStatusLabel(string status) => status switch
     {
         "Approved" => "Valide",
@@ -215,11 +475,23 @@ else
         _ => "A evaluer"
     };
 
+    private static string GetCandidateRowClass(CompanyInterimCandidateResponse candidate)
+    {
+        return $"interim-table-row {GetCandidateClass(candidate.Status)}";
+    }
+
     private static string GetCandidateClass(string status) => status switch
     {
         "Approved" => "is-approved",
         "Rejected" => "is-rejected",
         _ => "is-pending"
+    };
+
+    private static string GetStatusBadgeClass(string status) => status switch
+    {
+        "Approved" => "employee-status-badge available",
+        "Rejected" => "employee-status-badge suspended",
+        _ => "employee-status-badge mission"
     };
 
     private static string GetExperienceLabel(string value) => value switch
@@ -230,9 +502,46 @@ else
         _ => "Confirme"
     };
 
+    private static string GetMainExperience(CompanyInterimCandidateResponse candidate)
+    {
+        var service = candidate.Services.OrderByDescending(item => item.YearsOfExperience).FirstOrDefault();
+        return service is null ? "Experience a verifier" : GetExperienceLabel(service.ExperienceLevel);
+    }
+
+    private static string GetServiceSummary(CompanyInterimCandidateResponse candidate)
+    {
+        return candidate.Services.Count == 0 ? "Aucun service renseigne" : $"{candidate.Services.Count} service(s)";
+    }
+
+    private static string GetCandidateMessage(CompanyInterimCandidateResponse candidate)
+    {
+        return string.IsNullOrWhiteSpace(candidate.Message) ? "Aucune note candidat" : candidate.Message;
+    }
+
     private static bool IsClosed(string status) => status is "Approved" or "Rejected";
 
     private static string Display(string? value) => string.IsNullOrWhiteSpace(value) ? "Adresse non renseignee" : value;
+
+    private static string FormatDate(DateOnly? value) => value is null ? "Non renseignee" : value.Value.ToString("dd/MM/yyyy");
+
+    private static string GetGenderLabel(string gender) => gender switch
+    {
+        "Female" => "Femme",
+        "Male" => "Homme",
+        _ => "Sexe non renseigne"
+    };
+
+    private static string GetInitials(CompanyInterimCandidateResponse candidate)
+    {
+        var first = string.IsNullOrWhiteSpace(candidate.FirstName) ? string.Empty : candidate.FirstName.Trim()[0].ToString();
+        var last = string.IsNullOrWhiteSpace(candidate.LastName) ? string.Empty : candidate.LastName.Trim()[0].ToString();
+        return $"{first}{last}".ToUpperInvariant();
+    }
+
+    private static string GetAvatarClass(CompanyInterimCandidateResponse candidate)
+    {
+        return candidate.Gender == "Female" ? "employee-avatar-modern violet" : "employee-avatar-modern blue";
+    }
 
     private bool IsPreviewMode()
     {
