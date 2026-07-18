@@ -522,10 +522,10 @@ public static class DatabaseInitializer
             {
                 case "HeroStandard":
                     AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Kaza prestataire", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trouvez des missions. Travaillez avec des entreprises verifiees.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Creez votre profil, rattachez-vous a une entreprise partenaire ou proposez votre candidature en interim.", french.Id);
-                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Creer un compte", french.Id);
-                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "onboarding", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trouvez des missions. Travaillez depuis votre mobile.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Telechargez l'application Kaza, creez votre profil et recevez vos missions apres validation par une entreprise partenaire.", french.Id);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Telecharger l'application", french.Id);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/mobileappview", french.Id);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
                     AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-provider-hero.png", french.Id, replaceExisting: true);
@@ -536,12 +536,12 @@ public static class DatabaseInitializer
                 case "StepsTimeline":
                     AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Fonctionnement", french.Id);
                     AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trois etapes pour demarrer.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours simple, pense pour les prestataires sur mobile.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Tout se passe dans l'application mobile Kaza.", french.Id);
                     AddCmsJson(db, section, "steps", """
                     [
-                      {"number":"01","label":"Profil","title":"Creez votre profil","text":"Indiquez vos services, votre experience, votre zone et votre telephone.","image":"images/kaza-provider-step-1.svg"},
-                      {"number":"02","label":"Validation","title":"Une entreprise vous valide","text":"Utilisez un code recu ou postulez comme interim aupres d'une entreprise proche.","image":"images/kaza-provider-step-2.svg"},
-                      {"number":"03","label":"Missions","title":"Recevez vos missions","text":"Acceptez, echangez avec le client si besoin, puis signalez debut et fin.","image":"images/kaza-provider-step-3.svg"}
+                      {"number":"01","label":"Application","title":"Telechargez Kaza","text":"Installez l'application et creez votre profil prestataire.","image":"images/kaza-provider-step-1.svg"},
+                      {"number":"02","label":"Validation","title":"Une entreprise vous valide","text":"Activez votre profil avec un code ou postulez aupres d'une entreprise proche.","image":"images/kaza-provider-step-2.svg"},
+                      {"number":"03","label":"Missions","title":"Travaillez depuis le mobile","text":"Recevez les missions, acceptez-les et suivez chaque intervention dans l'application.","image":"images/kaza-provider-step-3.svg"}
                     ]
                     """, french.Id, replaceExisting: true);
                     break;

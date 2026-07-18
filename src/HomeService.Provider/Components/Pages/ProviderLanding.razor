@@ -18,7 +18,7 @@
             </h1>
             <p>@HomeContent.Hero.Subtitle</p>
             <div class="premium-actions">
-                <a class="premium-primary" href="@NormalizeCtaUrl(HomeContent.Hero.PrimaryCta.Url, "register")">@HomeContent.Hero.PrimaryCta.Label</a>
+                <a class="premium-primary" href="@NormalizeCtaUrl(HomeContent.Hero.PrimaryCta.Url)">@HomeContent.Hero.PrimaryCta.Label</a>
                 <a class="premium-secondary" href="@HomeContent.Hero.SecondaryCta.Url">@HomeContent.Hero.SecondaryCta.Label</a>
             </div>
             <div class="premium-proof" aria-label="Parcours prestataire Kaza">
@@ -210,10 +210,10 @@
         return Task.CompletedTask;
     }
 
-    private static string NormalizeCtaUrl(string url, string mode)
+    private static string NormalizeCtaUrl(string url)
     {
         return string.Equals(url.Trim('/'), "onboarding", StringComparison.OrdinalIgnoreCase)
-            ? $"/onboarding?mode={mode}"
+            ? "/mobileappview"
             : url;
     }
 
@@ -248,9 +248,9 @@
         return new CompanyHomeCmsResponse(
             new CompanyHomeHeroCmsResponse(
                 "Kaza prestataire",
-                "Trouvez des missions. Travaillez avec des entreprises verifiees.",
-                "Creez votre profil, rattachez-vous a une entreprise partenaire ou proposez votre candidature en interim.",
-                new CmsLinkResponse("Creer un compte", "onboarding"),
+                "Trouvez des missions. Travaillez depuis votre mobile.",
+                "Telechargez l'application Kaza, creez votre profil et recevez vos missions apres validation par une entreprise partenaire.",
+                new CmsLinkResponse("Telecharger l'application", "/mobileappview"),
                 new CmsLinkResponse("Voir le fonctionnement", "#how"),
                 "images/kaza-provider-hero.png",
                 "Prestataires de services a domicile Kaza",
@@ -258,11 +258,11 @@
             new CompanyHomeStepsCmsResponse(
                 "Fonctionnement",
                 "Trois etapes pour demarrer.",
-                "Un parcours simple, pense pour les prestataires sur mobile.",
+                "Tout se passe dans l'application mobile Kaza.",
                 [
-                    new CmsStepResponse("01", "Profil", "Creez votre profil", "Indiquez vos services, votre experience, votre zone et votre telephone.", "images/kaza-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Validation", "Une entreprise vous valide", "Utilisez un code recu ou postulez comme interim aupres d'une entreprise proche.", "images/kaza-provider-step-2.svg"),
-                    new CmsStepResponse("03", "Missions", "Recevez vos missions", "Acceptez, echangez avec le client si besoin, puis signalez debut et fin.", "images/kaza-provider-step-3.svg")
+                    new CmsStepResponse("01", "Application", "Telechargez Kaza", "Installez l'application et creez votre profil prestataire.", "images/kaza-provider-step-1.svg"),
+                    new CmsStepResponse("02", "Validation", "Une entreprise vous valide", "Activez votre profil avec un code ou postulez aupres d'une entreprise proche.", "images/kaza-provider-step-2.svg"),
+                    new CmsStepResponse("03", "Missions", "Travaillez depuis le mobile", "Recevez les missions, acceptez-les et suivez chaque intervention dans l'application.", "images/kaza-provider-step-3.svg")
                 ]),
             new CompanyHomeTrustedCmsResponse(
                 "Des opportunites simples et suivies",
