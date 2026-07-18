@@ -1,4 +1,4 @@
-﻿@page "/missions"
+@page "/missions"
 @page "/operations"
 @layout HomeService.Company.Components.Layout.EmptyLayout
 @using System.Globalization
@@ -33,13 +33,13 @@ else
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
-            <div class="missions-shell-actions">
-                <button type="button" class="missions-primary-action" disabled>
-                    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                    Nouvelle mission
-                </button>
-            </div>
-
+        <TopbarActions>
+            <button type="button" class="missions-primary-action" disabled>
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                Nouvelle mission
+            </button>
+        </TopbarActions>
+        <ChildContent>
             <section class="missions-app-body">
                 @if (!Session.IsCompanyApproved)
                 {
@@ -285,6 +285,7 @@ else
             }
                 </section>
             </section>
+        </ChildContent>
     </CompanyPortalShell>
 }
 

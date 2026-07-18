@@ -673,6 +673,7 @@
     min-width: 0;
     padding: 24px 32px;
     overflow-y: auto;
+    background: #f5f6fa;
 }
 
 .payments-kpi-grid {
@@ -706,7 +707,7 @@
     display: block;
     color: rgba(255, 255, 255, 0.72);
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -716,7 +717,7 @@
     margin-top: 8px;
     color: #fff;
     font-size: 32px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1;
 }
@@ -809,7 +810,7 @@
     margin-top: 12px;
     color: var(--payments-text);
     font-size: 22px;
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1;
 }
@@ -838,7 +839,7 @@
     margin: 0;
     color: var(--payments-text);
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: -0.01em;
 }
 
@@ -1027,7 +1028,7 @@
     border-bottom: 1px solid #f0f0f0;
     color: #c6c6c6;
     font-size: 10px;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -1079,7 +1080,7 @@
 .payments-transaction-row strong {
     color: var(--payments-text);
     font-size: 13px;
-    font-weight: 800;
+    font-weight: 600;
 }
 
 .payments-transaction-row small {
@@ -1110,7 +1111,7 @@
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 11px;
-    font-weight: 800;
+    font-weight: 600;
 }
 
 .payments-mode.mobile-money {
@@ -6809,6 +6810,43 @@ h3 {
     width: 100%;
 }
 
+.portal-shell-missions .portal-content,
+.portal-shell-accounts .portal-content {
+    max-width: none;
+    padding: 0;
+}
+
+.portal-shell-missions {
+    --mission-bg: #f5f6fa;
+    --mission-surface: #ffffff;
+    --mission-border: #ececec;
+    --mission-text: #111111;
+    --mission-muted: #aaaaaa;
+    --mission-blue: #1a6aff;
+    --mission-blue-soft: #eef4ff;
+    --mission-green: #059669;
+    --mission-green-soft: #ecfdf5;
+    --mission-orange: #d97706;
+    --mission-orange-soft: #fffbeb;
+    --mission-red: #ef4444;
+    --mission-red-soft: #fef2f2;
+}
+
+.portal-shell-accounts {
+    --payments-bg: #f5f6fa;
+    --payments-surface: #ffffff;
+    --payments-border: #ececec;
+    --payments-text: #111111;
+    --payments-muted: #aaaaaa;
+    --payments-blue: #1a6aff;
+    --payments-blue-soft: #eef4ff;
+}
+
+.portal-shell-missions .portal-topbar,
+.portal-shell-accounts .portal-topbar {
+    padding: 20px 32px;
+}
+
 .portal-alert {
     align-items: center;
     background: #ffffff;
@@ -9730,6 +9768,7 @@ h3 {
     display: grid;
     gap: 20px;
     padding: 24px 32px 32px;
+    background: #f5f6fa;
 }
 
 .missions-workspace {
@@ -9737,16 +9776,16 @@ h3 {
     --mission-surface: #ffffff;
     --mission-border: #ececec;
     --mission-text: #111111;
-    --mission-muted: #737373;
+    --mission-muted: #aaaaaa;
     --mission-soft: #f9fafb;
     --mission-blue: #1a6aff;
     --mission-blue-soft: #eef4ff;
-    --mission-green: #008a4c;
-    --mission-green-soft: #eaf8f1;
-    --mission-orange: #ff7a1a;
-    --mission-orange-soft: #fff3e8;
-    --mission-red: #e23d3d;
-    --mission-red-soft: #fff0f0;
+    --mission-green: #059669;
+    --mission-green-soft: #ecfdf5;
+    --mission-orange: #d97706;
+    --mission-orange-soft: #fffbeb;
+    --mission-red: #ef4444;
+    --mission-red-soft: #fef2f2;
     display: grid;
     gap: 20px;
     color: var(--mission-text);
@@ -9903,7 +9942,7 @@ h3 {
     gap: 20px;
     padding: 20px 24px;
     border-radius: 16px;
-    background: #111;
+    background: var(--mission-blue);
     color: #fff;
 }
 
@@ -9955,14 +9994,14 @@ h3 {
     width: 48px;
     height: 48px;
     border-radius: 14px;
-    background: var(--mission-blue);
+    background: rgba(255,255,255,.15);
     font-style: normal;
 }
 
 .missions-main-grid {
     display: grid;
-    grid-template-columns: minmax(280px, 352px) minmax(0, 1fr);
-    gap: 18px;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 24px;
     align-items: start;
 }
 
@@ -10037,7 +10076,7 @@ h3 {
     position: relative;
     display: grid;
     place-items: center;
-    min-height: 40px;
+    min-height: 46px;
     border: 1px solid transparent;
     border-radius: 10px;
     background: transparent;
@@ -10047,12 +10086,20 @@ h3 {
 
 .missions-calendar-cell:hover,
 .missions-calendar-cell.selected {
-    border-color: var(--mission-blue);
-    background: var(--mission-blue-soft);
+    border-color: transparent;
+    background: var(--mission-blue);
+    color: #ffffff;
 }
 
 .missions-calendar-cell.today {
+    background: var(--mission-blue-soft);
+    color: var(--mission-blue);
     font-weight: 700;
+}
+
+.missions-calendar-cell.selected.today,
+.missions-calendar-cell.selected > span {
+    color: #ffffff;
 }
 
 .missions-calendar-cell > span {
@@ -10104,6 +10151,10 @@ h3 {
 .missions-calendar-legend i.green { background: var(--mission-green); }
 .missions-calendar-cell i.gray,
 .missions-calendar-legend i.gray { background: #aaa; }
+
+.missions-calendar-cell.selected i {
+    background: rgba(255,255,255,.7);
+}
 
 .missions-list-column {
     display: grid;

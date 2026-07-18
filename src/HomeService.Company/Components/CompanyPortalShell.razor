@@ -2,7 +2,7 @@
 @inject IWebHostEnvironment Environment
 @inject IJSRuntime Js
 
-<div class="company-portal-shell">
+<div class="@ShellClass">
     <input id="portal-sidebar-toggle" class="portal-sidebar-toggle" type="checkbox" />
     <label for="portal-sidebar-toggle" class="portal-mobile-backdrop" aria-hidden="true"></label>
 
@@ -80,8 +80,15 @@
                 <p>@Subtitle</p>
             </div>
             <div class="portal-topbar-actions">
-                <button type="button" class="portal-bell" title="Notifications"><span></span></button>
-                <button type="button" class="portal-logout" @onclick="LogoutAsync">Sortir</button>
+                @if (TopbarActions is null)
+                {
+                    <button type="button" class="portal-bell" title="Notifications"><span></span></button>
+                    <button type="button" class="portal-logout" @onclick="LogoutAsync">Sortir</button>
+                }
+                else
+                {
+                    @TopbarActions
+                }
             </div>
         </header>
 
@@ -106,6 +113,7 @@
         new("Premiere mission creee", false, "Voir", "missions")
     ];
     [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? TopbarActions { get; set; }
 
     private string Initials
     {
@@ -115,6 +123,8 @@
             return string.Concat(parts.Take(2).Select(part => part[0])).ToUpperInvariant();
         }
     }
+
+    private string ShellClass => $"company-portal-shell portal-shell-{Active}";
 
     private string GetClass(string key)
     {

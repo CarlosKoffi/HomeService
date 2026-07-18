@@ -32,12 +32,15 @@ else
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
+        <TopbarActions>
             <div class="payments-period-toggle payments-period-toggle-inline" aria-label="Periode">
                 <button class="@GetPeriodClass("week")" type="button" @onclick='() => LoadPaymentsAsync("week")'>Semaine</button>
                 <button class="@GetPeriodClass("month")" type="button" @onclick='() => LoadPaymentsAsync("month")'>Mois</button>
                 <button class="@GetPeriodClass("year")" type="button" @onclick='() => LoadPaymentsAsync("year")'>Annee</button>
             </div>
+        </TopbarActions>
 
+        <ChildContent>
             <section class="payments-body">
                 @if (Summary is null)
                 {
@@ -240,6 +243,7 @@ else
                     </section>
                 }
             </section>
+        </ChildContent>
     </CompanyPortalShell>
 }
 
