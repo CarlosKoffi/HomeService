@@ -322,6 +322,19 @@ public static class AdminEndpoints
             return Results.Ok(await queryService.ListMissionsAsync("Disputed", null, cancellationToken));
         })
         .WithName("MarkAdminMissionDisputed");
+
+        admin.MapGet("/providers", async (
+            string? status,
+            string? employmentType,
+            string? search,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.ListProvidersAsync(status, employmentType, search, cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("ListAdminProviders")
+        .Produces<AdminProviderListResponse>();
         
         admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {

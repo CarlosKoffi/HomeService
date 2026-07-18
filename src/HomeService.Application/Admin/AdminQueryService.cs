@@ -306,6 +306,88 @@ public sealed class AdminQueryService(IAppDbContext db)
         return new AdminMissionListResponse(missions, stats);
     }
 
+    public async Task<AdminProviderListResponse> ListProvidersAsync(
+        string? status,
+        string? employmentType,
+        string? search,
+        CancellationToken cancellationToken)
+    {
+        var query = db.Providers.AsNoTracking();
+
+        if (Enum.TryParse<ProviderStatus>(status, true, out var parsedStatus))
+        {
+            query = query.Where(provider => provider.Status == parsedStatus);
+        }
+
+        if (Enum.TryParse<ProviderEmploymentType>(employmentType, true, out var parsedEmploymentType))
+        {
+            query = query.Where(provider => provider.EmploymentType == parsedEmploymentType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(provider =>
+                provider.FirstName.ToLower().Contains(term)
+                || provider.LastName.ToLower().Contains(term)
+                || provider.PhoneNumber.ToLower().Contains(term)
+                || provider.Address.ToLower().Contains(term)
+                || (provider.Email != null && provider.Email.ToLower().Contains(term))
+                || (provider.Company != null && provider.Company.Name.ToLower().Contains(term))
+                || provider.Services.Any(service => service.Service != null && service.Service.Name.ToLower().Contains(term)));
+        }
+
+        var providers = await query
+            .OrderByDescending(provider => provider.CreatedAt)
+            .Take(250)
+            .Select(provider => new AdminProviderSummaryResponse(
+                provider.Id,
+                provider.CompanyId,
+                provider.Company == null ? null : provider.Company.Name,
+                (provider.FirstName + " " + provider.LastName).Trim(),
+                provider.PhoneNumber,
+                provider.Email,
+                provider.Gender.ToString(),
+                provider.EmploymentType.ToString(),
+                provider.Status.ToString(),
+                provider.IsAvailable,
+                provider.YearsOfExperience,
+                provider.Address,
+                provider.Services
+                    .Where(service => service.IsActive)
+                    .OrderBy(service => service.Service!.Name)
+                    .Select(service => service.Service!.Name)
+                    .ToList(),
+                provider.Services
+                    .Where(service => service.IsActive)
+                    .SelectMany(service => service.Prestations)
+                    .Where(prestation => prestation.IsActive)
+                    .OrderBy(prestation => prestation.ServicePrestation!.Name)
+                    .Select(prestation => prestation.ServicePrestation!.Name)
+                    .ToList(),
+                provider.Documents
+                    .OrderBy(document => document.DocumentType)
+                    .Select(document => new AdminProviderDocumentSummaryResponse(
+                        document.Id,
+                        document.DocumentType.ToString(),
+                        document.OriginalFileName,
+                        document.ContentType,
+                        $"/api/admin/provider-documents/{document.Id}/preview",
+                        document.CreatedAt))
+                    .ToList(),
+                provider.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var stats = new AdminProviderStatsResponse(
+            await db.Providers.CountAsync(cancellationToken),
+            await db.Providers.CountAsync(provider => provider.Status == ProviderStatus.Approved, cancellationToken),
+            await db.Providers.CountAsync(provider => provider.Status == ProviderStatus.InterimCandidate, cancellationToken),
+            await db.Providers.CountAsync(provider => provider.Status == ProviderStatus.SuspendedByCompany || provider.Status == ProviderStatus.SuspendedByPlatform, cancellationToken),
+            await db.Providers.CountAsync(provider => provider.IsAvailable, cancellationToken));
+
+        return new AdminProviderListResponse(providers, stats);
+    }
+
     public async Task<AdminProviderDocumentFile?> GetProviderDocumentFileAsync(Guid id, CancellationToken cancellationToken)
     {
         return await db.ProviderDocuments

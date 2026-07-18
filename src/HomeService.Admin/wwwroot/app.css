@@ -935,6 +935,33 @@ h3 {
     font-weight: 750;
 }
 
+.provider-doc-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    justify-content: end;
+}
+
+.provider-doc-actions a,
+.provider-doc-actions button {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    color: #0f172a;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 850;
+    padding: .55rem .75rem;
+    text-decoration: none;
+}
+
+.provider-doc-actions button {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+}
+
 .company-control-strip {
     background: #fff;
     border: 1px solid #e5e7eb;

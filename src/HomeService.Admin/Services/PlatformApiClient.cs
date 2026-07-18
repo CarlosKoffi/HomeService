@@ -71,6 +71,23 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
+    public async Task<AdminProviderListResponse?> GetAdminProvidersAsync(
+        string? status,
+        string? employmentType,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+
+        var query = new List<string>();
+        AddQueryValue(query, "status", status);
+        AddQueryValue(query, "employmentType", employmentType);
+        AddQueryValue(query, "search", search);
+
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
+        return await GetJsonAsync<AdminProviderListResponse>($"/api/admin/providers{suffix}", cancellationToken);
+    }
+
     public async Task<CompanyApplicationDetailResponse?> GetCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
