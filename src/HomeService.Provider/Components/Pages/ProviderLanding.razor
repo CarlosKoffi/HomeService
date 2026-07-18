@@ -81,40 +81,61 @@
             <p>@HomeContent.Dashboard.Subtitle</p>
         </div>
 
-        <div class="premium-dashboard provider-app-preview">
-            <div class="premium-dashboard-top">
-                <div><span></span><strong>Kaza Prestataire</strong></div>
-                <small>Mobile</small>
+        <div class="provider-mobile-showcase">
+            <div class="provider-mobile-copy">
+                <span>Kaza mobile</span>
+                <strong>Un espace pense pour le terrain.</strong>
+                <p>Le prestataire voit l'essentiel: son profil, la prochaine mission, les messages et les services suivis.</p>
             </div>
-            <div class="premium-dashboard-stats">
-                @foreach (var stat in HomeContent.Dashboard.Stats)
-                {
-                    <article><span>@stat.Label</span><strong>@stat.Value</strong><small>@stat.Help</small></article>
-                }
-            </div>
-            <div class="premium-dashboard-body">
-                <section>
-                    <h3>Fil de mission</h3>
-                    @foreach (var request in HomeContent.Dashboard.Requests)
-                    {
-                        <p>@request</p>
-                    }
-                </section>
-                <section>
-                    <h3>Profil terrain</h3>
-                    @foreach (var provider in HomeContent.Dashboard.Providers)
-                    {
-                        <p>@provider</p>
-                    }
-                </section>
-            </div>
-            <div class="premium-floating-card mission-card">
-                <strong>Mission recue</strong>
-                <span>Reponse rapide</span>
-            </div>
-            <div class="premium-floating-card growth-card">
-                <strong>Profil clair</strong>
-                <span>Entreprise informee</span>
+
+            <div class="provider-phone-frame" aria-label="Apercu de l'application mobile Kaza Prestataire">
+                <div class="provider-phone-speaker"></div>
+                <div class="provider-phone-screen">
+                    <div class="provider-phone-status">
+                        <span>9:41</span>
+                        <strong>Kaza</strong>
+                    </div>
+
+                    <section class="provider-phone-hero-card">
+                        <small>Prochaine mission</small>
+                        <h3>@(HomeContent.Dashboard.Requests.FirstOrDefault() ?? "Mission menage a Cocody")</h3>
+                        <p>Reponse attendue rapidement</p>
+                    </section>
+
+                    <div class="provider-phone-stats">
+                        @foreach (var stat in HomeContent.Dashboard.Stats.Take(3))
+                        {
+                            <article>
+                                <span>@stat.Label</span>
+                                <strong>@stat.Value</strong>
+                                <small>@stat.Help</small>
+                            </article>
+                        }
+                    </div>
+
+                    <section class="provider-phone-list">
+                        <h4>Fil du jour</h4>
+                        @foreach (var request in HomeContent.Dashboard.Requests.Skip(1).Take(2))
+                        {
+                            <p>@request</p>
+                        }
+                    </section>
+
+                    <section class="provider-phone-list compact">
+                        <h4>Profil terrain</h4>
+                        @foreach (var provider in HomeContent.Dashboard.Providers.Take(2))
+                        {
+                            <p>@provider</p>
+                        }
+                    </section>
+
+                    <nav class="provider-phone-nav" aria-label="Navigation mobile">
+                        <span class="active">Accueil</span>
+                        <span>Services</span>
+                        <span>Chat</span>
+                        <span>Profil</span>
+                    </nav>
+                </div>
             </div>
         </div>
     </section>
