@@ -2949,6 +2949,61 @@ textarea {
     padding-top: 1.8rem;
 }
 
+.provider-submission-banner {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid rgba(26, 106, 255, .22);
+    border-radius: 20px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .08);
+    color: #111111;
+    display: flex;
+    gap: 1.2rem;
+    justify-content: space-between;
+    left: 50%;
+    max-width: min(980px, calc(100vw - 2rem));
+    padding: 1rem 1.1rem 1rem 1.25rem;
+    position: fixed;
+    top: 5.2rem;
+    transform: translateX(-50%);
+    width: 100%;
+    z-index: 60;
+}
+
+.provider-submission-banner span {
+    color: var(--premium-blue);
+    display: block;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+
+.provider-submission-banner strong {
+    display: block;
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -.02em;
+    margin-top: .25rem;
+}
+
+.provider-submission-banner p {
+    color: #4B5563;
+    font-size: .9rem;
+    line-height: 1.45;
+    margin: .2rem 0 0;
+}
+
+.provider-submission-banner a {
+    background: var(--premium-blue);
+    border-radius: 999px;
+    color: #ffffff;
+    flex: 0 0 auto;
+    font-size: .86rem;
+    font-weight: 700;
+    padding: .85rem 1.05rem;
+    text-decoration: none;
+}
+
 @media (max-width: 900px) {
     .provider-landing .premium-hero {
         min-height: 620px;
@@ -2981,6 +3036,12 @@ textarea {
     .provider-landing .premium-floating-card {
         position: static;
         margin: 1rem 1.4rem;
+    }
+
+    .provider-submission-banner {
+        align-items: flex-start;
+        flex-direction: column;
+        top: 4.8rem;
     }
 }
 

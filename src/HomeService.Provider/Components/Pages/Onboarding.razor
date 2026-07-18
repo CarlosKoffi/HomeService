@@ -460,26 +460,14 @@
             BuildSelectedCandidateSelections(),
             SelectedOpportunityCompanyIds.ToList());
         var result = await Api.RegisterSelfAsync(request);
+        IsBusy = false;
         if (!result.IsSuccess)
         {
-            IsBusy = false;
             RegisterMessage = result.ErrorMessage ?? "Creation impossible.";
             return;
         }
 
-        var login = await Api.LoginAsync(new ProviderPortalLoginRequest(RegisterPhoneNumber, RegisterPassword, true));
-        IsBusy = false;
-        if (!login.IsSuccess || login.Value is null)
-        {
-            RegisterMessage = "Profil cree. Connectez-vous avec votre telephone et mot de passe.";
-            ActiveMode = "login";
-            LoginMethod = "password";
-            PhoneNumber = RegisterPhoneNumber;
-            return;
-        }
-
-        await StoreSessionAsync(login.Value);
-        Navigation.NavigateTo("/home");
+        Navigation.NavigateTo("/?candidate=submitted");
     }
 
     private async Task StoreSessionAsync(ProviderPortalLoginResponse session)

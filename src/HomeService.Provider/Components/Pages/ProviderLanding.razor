@@ -1,9 +1,22 @@
 @page "/"
 @inject ProviderApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Kaza Prestataire</PageTitle>
 
 <div class="provider-landing premium-b2b">
+    @if (ShowCandidateSubmitted)
+    {
+        <section class="provider-submission-banner" role="status">
+            <div>
+                <span>Demande envoyee</span>
+                <strong>L'entreprise analyse votre dossier.</strong>
+                <p>Vous serez contacte apres verification. Vous n'avez rien d'autre a faire pour le moment.</p>
+            </div>
+            <a href="/#home">Retour accueil</a>
+        </section>
+    }
+
     <section id="home" class="premium-hero provider-premium-hero">
         <img class="premium-hero-image provider-hero-image" src="@ResolveContentUrl(HomeContent.Hero.ImageUrl)" alt="@HomeContent.Hero.ImageAlt" />
         <div class="premium-hero-overlay"></div>
@@ -191,9 +204,13 @@
     private string ContactArea { get; set; } = string.Empty;
     private string ContactBody { get; set; } = string.Empty;
     private string? ContactMessage { get; set; }
+    private bool ShowCandidateSubmitted { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
+        ShowCandidateSubmitted = query.TryGetValue("candidate", out var candidate)
+            && string.Equals(candidate.ToString(), "submitted", StringComparison.OrdinalIgnoreCase);
         HomeContent = await ApiClient.GetProviderHomeContentAsync() ?? CreateDefaultHomeContent();
     }
 
