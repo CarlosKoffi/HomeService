@@ -323,10 +323,10 @@ else
                         }
                     </div>
 
-                    <footer class="info-documents-footer">
-                        <span>Depot possible dans nos bureaux si vous preferez nous remettre les pieces en main propre.</span>
-                        <button type="button" class="info-send-button" disabled="@IsUploading" @onclick="UploadAsync">
-                            @(IsUploading ? "Envoi..." : "Envoyer les pieces")
+                    <footer class="info-documents-footer @GetDocumentFooterClass()">
+                        <span>@GetDocumentFooterMessage()</span>
+                        <button type="button" class="info-send-button" disabled="@IsUploadButtonDisabled()" @onclick="UploadAsync">
+                            @GetUploadButtonText()
                         </button>
                     </footer>
                     @if (!string.IsNullOrWhiteSpace(Message))
@@ -650,6 +650,81 @@ else
         var required = DocumentSlots.Where(slot => !slot.Optional).ToList();
         var approved = required.Count(slot => FindDocument(slot.Key)?.ReviewStatus == "Approved");
         return $"{approved}/{required.Count} obligatoires valides";
+    }
+
+    private bool HasAnySubmittedDocument()
+    {
+        return Profile?.Documents.Count > 0;
+    }
+
+    private bool HasDocumentNeedingAction()
+    {
+        return Profile?.Documents.Any(document => document.ReviewStatus is "Rejected" or "NeedsReplacement") == true;
+    }
+
+    private bool HasPendingDocuments()
+    {
+        return Profile?.Documents.Any(document => document.ReviewStatus == "Pending") == true;
+    }
+
+    private string GetDocumentFooterClass()
+    {
+        if (AreRequiredDocumentsApproved())
+        {
+            return "complete";
+        }
+
+        if (HasDocumentNeedingAction())
+        {
+            return "rejected";
+        }
+
+        return HasAnySubmittedDocument() ? "pending" : "missing";
+    }
+
+    private string GetDocumentFooterMessage()
+    {
+        if (AreRequiredDocumentsApproved())
+        {
+            return "Vos pieces obligatoires sont validees. Vous pouvez les remplacer si une information change.";
+        }
+
+        if (HasDocumentNeedingAction())
+        {
+            return "Une ou plusieurs pieces doivent etre corrigees. Consultez la note affichee sur le document concerne.";
+        }
+
+        if (HasPendingDocuments() || HasAnySubmittedDocument())
+        {
+            return "Nous verifions vos documents. Vous pouvez remplacer une piece si besoin.";
+        }
+
+        return "Depot possible en ligne ou dans nos bureaux si vous preferez nous remettre les pieces en main propre.";
+    }
+
+    private bool IsUploadButtonDisabled()
+    {
+        return IsUploading || Documents.Values.All(file => file is null) && HasAnySubmittedDocument() && !HasDocumentNeedingAction();
+    }
+
+    private string GetUploadButtonText()
+    {
+        if (IsUploading)
+        {
+            return "Envoi...";
+        }
+
+        if (HasDocumentNeedingAction())
+        {
+            return "Renvoyer les pieces corrigees";
+        }
+
+        if (HasPendingDocuments() || HasAnySubmittedDocument())
+        {
+            return "Nous verifions vos documents";
+        }
+
+        return "Envoyer les pieces";
     }
 
     private static string GetDocumentStatusClass(string? status) => status switch

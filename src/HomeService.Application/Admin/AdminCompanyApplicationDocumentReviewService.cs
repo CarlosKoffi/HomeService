@@ -1,15 +1,18 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext db)
+public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext db, CompanyPortalNotificationWriter portalNotifications)
 {
     public async Task<AdminCompanyApplicationDocumentReviewResult> ApproveAsync(Guid documentId, CancellationToken cancellationToken)
     {
-        var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == documentId, cancellationToken);
+        var document = await db.CompanyApplicationDocuments
+            .Include(document => document.CompanyApplication)
+            .FirstOrDefaultAsync(document => document.Id == documentId, cancellationToken);
         if (document is null)
         {
             return AdminCompanyApplicationDocumentReviewResult.NotFound();
@@ -17,6 +20,17 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
 
         var previousStatus = document.ReviewStatus;
         document.Approve();
+        if (document.CompanyApplication is not null)
+        {
+            portalNotifications.AddForDocument(
+                document.CompanyApplication,
+                document,
+                "CompanyDocumentApproved",
+                "Piece validee",
+                $"{GetDocumentLabel(document.DocumentType)} a ete validee.",
+                "success");
+        }
+
         return AdminCompanyApplicationDocumentReviewResult.Ok(document, previousStatus);
     }
 
@@ -71,7 +85,9 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
             return AdminCompanyApplicationDocumentReviewResult.ValidationFailed(reviewComment.ErrorMessage);
         }
 
-        var document = await db.CompanyApplicationDocuments.FirstOrDefaultAsync(document => document.Id == documentId, cancellationToken);
+        var document = await db.CompanyApplicationDocuments
+            .Include(document => document.CompanyApplication)
+            .FirstOrDefaultAsync(document => document.Id == documentId, cancellationToken);
         if (document is null)
         {
             return AdminCompanyApplicationDocumentReviewResult.NotFound();
@@ -88,6 +104,17 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
         }
 
         await QueueDocumentNotificationAsync(document.CompanyApplicationId, notificationSubject, notificationBody, cancellationToken);
+        if (document.CompanyApplication is not null)
+        {
+            portalNotifications.AddForDocument(
+                document.CompanyApplication,
+                document,
+                notificationSubject,
+                notificationSubject,
+                reviewComment.Value!,
+                GetTone(document.ReviewStatus));
+        }
+
         return AdminCompanyApplicationDocumentReviewResult.Ok(document, previousStatus);
     }
 
@@ -109,4 +136,20 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
             body,
             includeWhatsApp: true));
     }
+
+    private static string GetTone(HomeService.Domain.Enums.DocumentReviewStatus status) => status switch
+    {
+        HomeService.Domain.Enums.DocumentReviewStatus.Approved => "success",
+        HomeService.Domain.Enums.DocumentReviewStatus.Pending => "warning",
+        _ => "danger"
+    };
+
+    private static string GetDocumentLabel(HomeService.Domain.Enums.CompanyDocumentType documentType) => documentType switch
+    {
+        HomeService.Domain.Enums.CompanyDocumentType.FiscalExistenceDeclaration => "DFE",
+        HomeService.Domain.Enums.CompanyDocumentType.BusinessRegistration => "Registre de commerce",
+        HomeService.Domain.Enums.CompanyDocumentType.OwnerIdentity => "Identite du responsable",
+        HomeService.Domain.Enums.CompanyDocumentType.AddressProof => "Justificatif d'adresse",
+        _ => "Piece du dossier"
+    };
 }

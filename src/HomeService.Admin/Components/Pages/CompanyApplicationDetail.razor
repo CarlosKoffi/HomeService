@@ -138,25 +138,35 @@ else if (Application is not null)
     </section>
 
     <section class="document-list">
-        <h2>Pieces a verifier</h2>
-        @if (Application.Documents.Count == 0)
+        <div class="document-list-heading">
+            <div>
+                <h2>Pieces a verifier</h2>
+                <p class="section-help">
+                    Les pieces obligatoires doivent etre validees avant de pouvoir approuver le dossier.
+                    Les lignes manquantes restent visibles pour savoir exactement ce qui bloque.
+                </p>
+            </div>
+            <span class="document-readiness @GetRequiredDocumentsReadinessClass()">@GetRequiredDocumentsReadinessLabel()</span>
+        </div>
+
+        @foreach (var slot in RequiredDocumentSlots)
         {
-            <article>
-                <p>Aucune piece rattachee a ce dossier.</p>
-            </article>
-        }
-        else
-        {
-            @foreach (var document in Application.Documents)
-            {
-                <article class="@GetDocumentStatusClass(document.ReviewStatus)">
-                    <div>
-                        <strong>@GetDocumentLabel(document.DocumentType)</strong>
+            var document = FindLatestDocument(slot.Type);
+            <article class="@GetDocumentStatusClass(document?.ReviewStatus)">
+                <div>
+                    <strong>@slot.Label</strong>
+                    @if (document is null)
+                    {
+                        <p>Aucun fichier depose pour cette piece.</p>
+                        <p class="section-help">@slot.Help</p>
+                    }
+                    else
+                    {
                         <p>@document.OriginalFileName - @document.ContentType</p>
-                        <p class="section-help">@GetDocumentHelp(document.DocumentType)</p>
+                        <p class="section-help">@slot.Help</p>
                         @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
                         {
-                            <p class="section-help">Note piece: @document.ReviewNote</p>
+                            <p class="document-review-note">Note piece: @document.ReviewNote</p>
                         }
                         @if (CanPreviewDocument(document.ContentType))
                         {
@@ -166,13 +176,13 @@ else if (Application is not null)
                                 {
                                     <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
                                          loading="lazy"
-                                         alt="Previsualisation de @GetDocumentLabel(document.DocumentType)" />
+                                         alt="Previsualisation de @slot.Label" />
                                 }
                                 else
                                 {
                                     <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
                                             loading="lazy"
-                                            title="Previsualisation de @GetDocumentLabel(document.DocumentType)"></iframe>
+                                            title="Previsualisation de @slot.Label"></iframe>
                                 }
                             </details>
                         }
@@ -180,9 +190,12 @@ else if (Application is not null)
                         {
                             <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
                         }
-                    </div>
-                    <span class="document-status @GetDocumentStatusClass(document.ReviewStatus)">@document.ReviewStatus</span>
-                    <div class="document-actions">
+                    }
+                </div>
+                <span class="document-status @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
+                @if (document is not null)
+                {
+                    <div>
                         <textarea rows="2"
                                   placeholder="Commentaire obligatoire pour refus ou remplacement"
                                   @bind="DocumentNotes[document.Id]"></textarea>
@@ -197,8 +210,41 @@ else if (Application is not null)
                             }
                         </div>
                     </div>
-                </article>
-            }
+                }
+                else
+                {
+                    <div class="document-actions document-actions-empty">
+                        <p class="section-help">Demandez a l'entreprise d'ajouter cette piece depuis son portail.</p>
+                    </div>
+                }
+            </article>
+        }
+
+        @foreach (var document in GetAdditionalDocuments())
+        {
+            <article class="@GetDocumentStatusClass(document.ReviewStatus)">
+                <div>
+                    <strong>@GetDocumentLabel(document.DocumentType)</strong>
+                    <p>@document.OriginalFileName - @document.ContentType</p>
+                    <p class="section-help">@GetDocumentHelp(document.DocumentType)</p>
+                    @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                    {
+                        <p class="document-review-note">Note piece: @document.ReviewNote</p>
+                    }
+                </div>
+                <span class="document-status @GetDocumentStatusClass(document.ReviewStatus)">@GetDocumentStatusLabel(document.ReviewStatus)</span>
+                <div class="document-actions">
+                    <textarea rows="2"
+                              placeholder="Commentaire obligatoire pour refus ou remplacement"
+                              @bind="DocumentNotes[document.Id]"></textarea>
+                    <div class="easy-actions">
+                        <a href="@ApiClient.GetCompanyApplicationDocumentUrl(document.Id)" target="_blank" rel="noopener">Ouvrir</a>
+                        <button type="button" disabled="@IsBusy" @onclick="() => ApproveDocumentAsync(document.Id)">Valider piece</button>
+                        <button type="button" disabled="@IsBusy" @onclick="() => RequestDocumentReplacementAsync(document.Id)">Complement piece</button>
+                        <button type="button" disabled="@IsBusy" @onclick="() => RejectDocumentAsync(document.Id)">Refuser piece</button>
+                    </div>
+                </div>
+            </article>
         }
     </section>
 
@@ -234,6 +280,13 @@ else if (Application is not null)
     private string ReviewNote { get; set; } = string.Empty;
     private string SelectedAssignmentMode { get; set; } = "SelfManaged";
     private Dictionary<Guid, string> DocumentNotes { get; set; } = [];
+    private static readonly IReadOnlyList<DocumentSlot> RequiredDocumentSlots =
+    [
+        new("FiscalExistenceDeclaration", "DFE - Declaration Fiscale d'Existence", "Verifier le nom legal, le numero fiscal, la lisibilite et la coherence avec le registre."),
+        new("BusinessRegistration", "Registre de commerce", "Comparer la raison sociale, l'adresse et l'activite declaree avec le formulaire."),
+        new("OwnerIdentity", "Identite responsable", "Le nom doit correspondre au contact responsable ou a une personne autorisee."),
+        new("AddressProof", "Justificatif d'adresse", "Document recommande pour securiser les futures relations et relances.")
+    ];
 
     protected override async Task OnParametersSetAsync()
     {
@@ -505,6 +558,41 @@ else if (Application is not null)
         };
     }
 
+    private CompanyApplicationDocumentResponse? FindLatestDocument(string documentType)
+    {
+        return Application?.Documents
+            .Where(document => string.Equals(document.DocumentType, documentType, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(document => document.CreatedAt)
+            .FirstOrDefault();
+    }
+
+    private IReadOnlyList<CompanyApplicationDocumentResponse> GetAdditionalDocuments()
+    {
+        if (Application is null)
+        {
+            return [];
+        }
+
+        var required = RequiredDocumentSlots.Select(slot => slot.Type).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return Application.Documents
+            .Where(document => !required.Contains(document.DocumentType))
+            .OrderBy(document => document.DocumentType)
+            .ThenByDescending(document => document.CreatedAt)
+            .ToList();
+    }
+
+    private string GetRequiredDocumentsReadinessLabel()
+    {
+        var approved = RequiredDocumentSlots.Count(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
+        return $"{approved}/{RequiredDocumentSlots.Count} pieces obligatoires validees";
+    }
+
+    private string GetRequiredDocumentsReadinessClass()
+    {
+        var approved = RequiredDocumentSlots.Count(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
+        return approved == RequiredDocumentSlots.Count ? "status-done" : "status-review";
+    }
+
     private static string GetAssignmentModeHelp(string assignmentMode)
     {
         return assignmentMode == "PlatformManaged"
@@ -524,7 +612,7 @@ else if (Application is not null)
         };
     }
 
-    private static string GetDocumentStatusClass(string status)
+    private static string GetDocumentStatusClass(string? status)
     {
         return status switch
         {
@@ -532,6 +620,18 @@ else if (Application is not null)
             "NeedsReplacement" => "status-info",
             "Approved" => "status-done",
             _ => "status-new"
+        };
+    }
+
+    private static string GetDocumentStatusLabel(string? status)
+    {
+        return status switch
+        {
+            "Approved" => "Validee",
+            "Rejected" => "Refusee",
+            "NeedsReplacement" => "A remplacer",
+            "Pending" => "En verification",
+            _ => "A fournir"
         };
     }
 
@@ -549,4 +649,6 @@ else if (Application is not null)
     {
         return string.Equals(contentType, "application/pdf", StringComparison.OrdinalIgnoreCase);
     }
+
+    private sealed record DocumentSlot(string Type, string Label, string Help);
 }

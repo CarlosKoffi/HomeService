@@ -18,6 +18,8 @@ public sealed record CompanyPortalDashboardResponse(
     int CashToCollectAmount,
     string Currency,
     CompanyPortalMissionResponse? NextMission,
+    int UnreadNotificationCount,
+    IReadOnlyList<CompanyPortalNotificationResponse> Notifications,
     IReadOnlyList<CompanyPortalActivityResponse> RecentActivities,
     IReadOnlyList<CompanyPortalEmployeeDigestResponse> EmployeeDigest);
 
@@ -35,6 +37,17 @@ public sealed record CompanyPortalActivityResponse(
     string Tone,
     DateTimeOffset OccurredAt,
     bool IsRead);
+
+public sealed record CompanyPortalNotificationResponse(
+    Guid Id,
+    string Type,
+    string Title,
+    string Message,
+    string Tone,
+    string? ActionUrl,
+    DateTimeOffset OccurredAt,
+    bool IsRead,
+    Guid? CompanyApplicationDocumentId);
 
 public sealed record CompanyPortalEmployeeDigestResponse(
     Guid Id,

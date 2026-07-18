@@ -9,6 +9,7 @@ public interface IAppDbContext
     DbSet<CompanyPortalUser> CompanyPortalUsers { get; }
     DbSet<CompanyPortalSession> CompanyPortalSessions { get; }
     DbSet<CompanyPortalActivity> CompanyPortalActivities { get; }
+    DbSet<CompanyPortalNotification> CompanyPortalNotifications { get; }
     DbSet<CompanyApplication> CompanyApplications { get; }
     DbSet<CompanyApplicationDocument> CompanyApplicationDocuments { get; }
     DbSet<CompanyApplicationService> CompanyApplicationServices { get; }

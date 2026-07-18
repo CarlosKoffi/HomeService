@@ -184,10 +184,6 @@
             var services = await ApiClient.GetServicesAsync();
             CatalogServices = services.Where(service => service.IsActive).ToList();
             CatalogOptions = BuildCatalogOptions(CatalogServices);
-            foreach (var service in CatalogServices.Take(2))
-            {
-                SelectedServices.Add(ServiceSelection.ForService(service.Name, false));
-            }
         }
         catch
         {
@@ -198,7 +194,6 @@
                 new ServiceSummaryResponse(Guid.Empty, "Jardinage", null, "sprout", "Active", true, 4500, 6500, "XOF", [], 4500, 6500)
             ];
             CatalogOptions = BuildCatalogOptions(CatalogServices);
-            SelectedServices.AddRange(CatalogServices.Take(2).Select(service => ServiceSelection.ForService(service.Name, false)));
             FormMessage = "Connexion API indisponible: liste locale chargee temporairement.";
         }
     }

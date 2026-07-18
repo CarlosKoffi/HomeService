@@ -1,5 +1,6 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Companies;
+using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminCompanyApplicationReviewService(IAppDbContext db)
+public sealed class AdminCompanyApplicationReviewService(IAppDbContext db, CompanyPortalNotificationWriter portalNotifications)
 {
     private const string AdminActor = "admin";
 
@@ -82,6 +83,12 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db)
         application.Reject(reviewNote.Value!, AdminActor);
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
         db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.Rejected(application, reviewNote.Value!));
+        portalNotifications.AddForApplication(
+            application,
+            "CompanyApplicationRejected",
+            "Dossier entreprise refuse",
+            reviewNote.Value!,
+            "danger");
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
     }
 
@@ -111,6 +118,12 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db)
 
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
         db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.Reopened(application, reviewNote.Value!));
+        portalNotifications.AddForApplication(
+            application,
+            "CompanyApplicationReopened",
+            "Dossier reouvert",
+            reviewNote.Value!,
+            "info");
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
     }
 
@@ -132,6 +145,12 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db)
         application.RequestMoreInformation(reviewNote.Value!, AdminActor);
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
         db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.MoreInformationRequested(application, reviewNote.Value!));
+        portalNotifications.AddForApplication(
+            application,
+            "CompanyApplicationMoreInformationRequested",
+            "Complement demande",
+            reviewNote.Value!,
+            "warning");
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
     }
 

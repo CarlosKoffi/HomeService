@@ -83,7 +83,13 @@
             <div class="portal-topbar-actions">
                 @if (TopbarActions is null)
                 {
-                    <button type="button" class="portal-bell" title="Notifications"><span></span></button>
+                    <button type="button" class="portal-bell" title="Notifications">
+                        <span></span>
+                        @if (EffectiveUnreadNotificationCount > 0)
+                        {
+                            <em>@EffectiveUnreadNotificationCount</em>
+                        }
+                    </button>
                     <button type="button" class="portal-logout" @onclick="LogoutAsync">Sortir</button>
                 }
                 else
@@ -107,6 +113,7 @@
     [Parameter] public string CompanyName { get; set; } = "CI Home Service";
     [Parameter] public string Email { get; set; } = "mode.demo@kaza.ci";
     [Parameter] public int ProfileCompletionPercent { get; set; } = 25;
+    [Parameter] public int UnreadNotificationCount { get; set; }
     [Parameter] public IReadOnlyList<CompanyPortalProgressStepResponse> ProgressSteps { get; set; } =
     [
         new("Profil entreprise", true, null, null),
@@ -122,6 +129,7 @@
 
     private int EffectiveProfileCompletionPercent => PortalSummary?.ProfileCompletionPercent ?? ProfileCompletionPercent;
     private IReadOnlyList<CompanyPortalProgressStepResponse> EffectiveProgressSteps => PortalSummary?.ProgressSteps ?? ProgressSteps;
+    private int EffectiveUnreadNotificationCount => PortalSummary?.UnreadNotificationCount ?? UnreadNotificationCount;
 
     private string Initials
     {

@@ -111,6 +111,27 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
                 activity.IsRead))
             .ToListAsync(cancellationToken);
 
+        var unreadNotificationCount = await db.CompanyPortalNotifications
+            .AsNoTracking()
+            .CountAsync(notification => notification.CompanyId == companyId && !notification.IsRead, cancellationToken);
+
+        var notifications = await db.CompanyPortalNotifications
+            .AsNoTracking()
+            .Where(notification => notification.CompanyId == companyId)
+            .OrderByDescending(notification => notification.OccurredAt)
+            .Take(5)
+            .Select(notification => new CompanyPortalNotificationResponse(
+                notification.Id,
+                notification.Type,
+                notification.Title,
+                notification.Message,
+                notification.Tone,
+                notification.ActionUrl,
+                notification.OccurredAt,
+                notification.IsRead,
+                notification.CompanyApplicationDocumentId))
+            .ToListAsync(cancellationToken);
+
         var complianceDocuments = await db.CompanyApplicationDocuments
             .AsNoTracking()
             .Where(document => document.CompanyApplication != null
@@ -148,6 +169,8 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
                 .Sum(row => row.FinalTotalAmount ?? 0),
             "XOF",
             nextMission,
+            unreadNotificationCount,
+            notifications,
             activities,
             providers
                 .OrderByDescending(provider => provider.IsAvailable)

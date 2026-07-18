@@ -86,6 +86,7 @@ else
                         CompanyName="@PortalCompanyName"
                         Email="@PortalEmail"
                         ProfileCompletionPercent="@PortalCompletion"
+                        UnreadNotificationCount="@(DashboardData?.UnreadNotificationCount ?? 0)"
                         ProgressSteps="@PortalProgressSteps">
         @if (!Session.IsCompanyApproved)
         {
@@ -109,6 +110,35 @@ else
             </div>
             <a href="@PortalLink("operations")">Voir les missions</a>
         </section>
+
+        @if (PortalNotifications.Any())
+        {
+            <section class="portal-notification-strip">
+                <div class="portal-panel-heading">
+                    <div>
+                        <span>Notifications</span>
+                        <h2>Messages de l'equipe Kaza</h2>
+                    </div>
+                    @if ((DashboardData?.UnreadNotificationCount ?? 0) > 0)
+                    {
+                        <strong>@DashboardData!.UnreadNotificationCount non lue(s)</strong>
+                    }
+                </div>
+                <div class="portal-notification-list">
+                    @foreach (var notification in PortalNotifications)
+                    {
+                        <a class="@GetNotificationClass(notification)" href="@PortalLink(notification.ActionUrl ?? "company-profile")">
+                            <span></span>
+                            <div>
+                                <strong>@notification.Title</strong>
+                                <small>@notification.Message</small>
+                            </div>
+                            <time>@notification.OccurredAt.ToLocalTime().ToString("dd/MM HH:mm")</time>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
 
         <section class="portal-stats-grid" aria-label="Indicateurs du portail">
             <article>
@@ -231,6 +261,7 @@ else
     private int PortalCompletion => DashboardData?.ProfileCompletionPercent ?? (Session?.IsCompanyApproved == true ? 75 : 25);
     private IReadOnlyList<CompanyPortalProgressStepResponse> PortalProgressSteps => DashboardData?.ProgressSteps ?? DefaultProgressSteps;
     private IEnumerable<CompanyPortalActivityResponse> PortalActivities => DashboardData?.RecentActivities is { Count: > 0 } activities ? activities : DemoActivities();
+    private IEnumerable<CompanyPortalNotificationResponse> PortalNotifications => DashboardData?.Notifications is { Count: > 0 } notifications ? notifications : [];
     private IEnumerable<CompanyPortalEmployeeDigestResponse> PortalEmployees => DashboardData?.EmployeeDigest is { Count: > 0 } employees ? employees : DemoEmployees();
     private string NextMissionTitle => DashboardData?.NextMission is null ? "Aucune mission urgente" : DashboardData.NextMission.ServiceName;
     private string NextMissionScheduleText => DashboardData?.NextMission?.ScheduledFor?.ToLocalTime().ToString("dd/MM HH:mm") ?? "Demande directe";
@@ -367,6 +398,19 @@ else
         _ => "tone-info"
     };
 
+    private static string GetNotificationClass(CompanyPortalNotificationResponse notification)
+    {
+        var tone = notification.Tone switch
+        {
+            "success" => "success",
+            "warning" => "warning",
+            "danger" => "danger",
+            _ => "info"
+        };
+
+        return $"portal-notification-row {tone} {(notification.IsRead ? "read" : "unread")}";
+    }
+
     private static CompanyPortalDashboardResponse DemoDashboard(CompanyPortalSessionResponse session)
     {
         return new CompanyPortalDashboardResponse(
@@ -392,6 +436,11 @@ else
             42000,
             "XOF",
             new(Guid.NewGuid(), "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", null, 180, 15000, "XOF", null, null),
+            2,
+            [
+                new(Guid.NewGuid(), "CompanyDocumentRejected", "Piece a reprendre", "Le DFE envoye est illisible. Merci de deposer une version plus nette.", "danger", "company-profile#documents", DateTimeOffset.Now.AddMinutes(-25), false, Guid.NewGuid()),
+                new(Guid.NewGuid(), "CompanyApplicationMoreInformationRequested", "Complement demande", "Ajoutez votre zone d'intervention principale avant validation finale.", "warning", "company-profile", DateTimeOffset.Now.AddHours(-3), false, null)
+            ],
             DemoActivities().ToList(),
             DemoEmployees().ToList());
     }

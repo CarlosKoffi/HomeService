@@ -377,11 +377,68 @@ h3 {
     margin-top: 1.5rem;
 }
 
+.document-list-heading {
+    align-items: start;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.document-list-heading h2 {
+    margin: 0 0 .25rem;
+}
+
+.document-readiness {
+    border-radius: 999px;
+    font-size: .82rem;
+    font-weight: 900;
+    padding: .45rem .75rem;
+    white-space: nowrap;
+}
+
+.document-readiness.status-review {
+    background: #ffedd5;
+    color: #9a3412;
+}
+
+.document-readiness.status-done {
+    background: #dcfce7;
+    color: #166534;
+}
+
 .document-list article {
     align-items: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
     display: grid;
     gap: 1rem;
     grid-template-columns: minmax(0, 1fr) auto auto;
+    padding: 1rem;
+}
+
+.document-list article.status-new {
+    background: #f8fafc;
+    border-style: dashed;
+}
+
+.document-list article.status-info {
+    background: #fff7ed;
+    border-color: #fdba74;
+}
+
+.document-list article.status-rejected {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.document-list article.status-done {
+    background: #f0fdf4;
+    border-color: #86efac;
 }
 
 .document-status {
@@ -401,9 +458,24 @@ h3 {
     color: #9a3412;
 }
 
+.document-status.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .document-status.status-done {
     background: #dcfce7;
     color: #166534;
+}
+
+.document-review-note {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    color: #9a3412;
+    font-weight: 800;
+    margin: .65rem 0 0;
+    padding: .6rem .75rem;
 }
 
 .document-summary {
@@ -453,6 +525,10 @@ h3 {
     display: grid;
     gap: .55rem;
     min-width: 260px;
+}
+
+.document-actions-empty {
+    min-width: 220px;
 }
 
 .document-actions textarea {
