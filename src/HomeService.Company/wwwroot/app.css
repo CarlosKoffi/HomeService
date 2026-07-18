@@ -9910,6 +9910,71 @@ h3 {
     line-height: 1.45;
 }
 
+.portal-error-page {
+    align-items: center;
+    background: #f7f8fb;
+    display: flex;
+    min-height: 100vh;
+    padding: 32px;
+}
+
+.portal-error-card {
+    background: #ffffff;
+    border: 1px solid #e8ebf0;
+    border-radius: 28px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .08);
+    color: #111111;
+    display: grid;
+    gap: 16px;
+    margin: 0 auto;
+    max-width: 620px;
+    padding: 34px;
+    width: 100%;
+}
+
+.portal-error-card > span {
+    color: #1A6AFF;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.portal-error-card h1 {
+    color: #111111;
+    font-size: clamp(30px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.05;
+    margin: 0;
+}
+
+.portal-error-card p {
+    color: #333333;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.portal-error-reference {
+    background: #f4f6fa;
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.portal-error-reference code {
+    color: #111111;
+    font-size: 12px;
+    white-space: break-spaces;
+}
+
+.portal-error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 6px;
+}
+
 .interim-affiliation-list {
     display: grid;
     gap: 10px;

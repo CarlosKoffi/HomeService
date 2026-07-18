@@ -101,6 +101,8 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
             .Include(request => request.Company)
             .Include(request => request.Provider)
                 .ThenInclude(provider => provider!.CandidateServices)
+            .Include(request => request.Provider)
+                .ThenInclude(provider => provider!.Services)
             .FirstOrDefaultAsync(request => request.Id == requestId && request.CompanyId == companyId, cancellationToken);
 
         if (request?.Provider is null || request.Company is null || request.Company.Status == CompanyStatus.Suspended)
@@ -113,21 +115,33 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
             return CompanyInterimCandidateReviewResult.Blocked("Activez la reception des demandes interimaires avant de traiter cette candidature.");
         }
 
+        if (request.Status != ProviderAffiliationRequestStatus.Pending)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked("Cette candidature a deja ete traitee.");
+        }
+
         if (!competencyValidatedByCompany)
         {
             return CompanyInterimCandidateReviewResult.Blocked("Confirmez que l'entreprise a rencontre le candidat et valide ses competences avant de l'ajouter.");
         }
 
         var provider = request.Provider;
-        request.Approve(note);
-        provider.AttachToCompanyAsTemporaryWorker(companyId);
-        provider.SyncCompanyServices(provider.CandidateServices
-            .Where(candidateService => candidateService.IsActive)
-            .Select(candidateService => (
-                candidateService.ServiceId,
-                candidateService.ExperienceLevel,
-                candidateService.YearsOfExperience,
-                ProviderServicePriceTier.Normal)));
+        try
+        {
+            request.Approve(note);
+            provider.AttachToCompanyAsTemporaryWorker(companyId);
+            provider.SyncCompanyServices(provider.CandidateServices
+                .Where(candidateService => candidateService.IsActive)
+                .Select(candidateService => (
+                    candidateService.ServiceId,
+                    candidateService.ExperienceLevel,
+                    candidateService.YearsOfExperience,
+                    ProviderServicePriceTier.Normal)));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked(exception.Message);
+        }
 
         var otherPendingRequests = await db.ProviderAffiliationRequests
             .Where(otherRequest =>
@@ -160,7 +174,19 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
             return CompanyInterimCandidateReviewResult.Blocked("Activez la reception des demandes interimaires avant de traiter cette candidature.");
         }
 
-        request.Reject(note);
+        if (request.Status != ProviderAffiliationRequestStatus.Pending)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked("Cette candidature a deja ete traitee.");
+        }
+
+        try
+        {
+            request.Reject(note);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked(exception.Message);
+        }
         await db.SaveChangesAsync(cancellationToken);
         return CompanyInterimCandidateReviewResult.Ok();
     }

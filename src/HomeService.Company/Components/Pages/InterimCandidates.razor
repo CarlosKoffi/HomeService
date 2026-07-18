@@ -405,14 +405,23 @@ else
         if (IsPreviewMode())
         {
             Candidates = Candidates.Select(candidate => candidate.RequestId == requestId ? candidate with { Status = "Approved" } : candidate).ToList();
-            SelectedCandidate = Candidates.FirstOrDefault(candidate => candidate.RequestId == requestId);
+            SelectedCandidate = null;
+            Message = "Interimaire ajoute. Completez maintenant son profil depuis la liste des employes.";
+            Navigation.NavigateTo(PortalLink("employees"));
             return;
         }
 
         var result = await ApiClient.ApproveInterimCandidateAsync(Session.CompanyId, requestId, note, competencyValidated);
-        Message = result.ErrorMessage;
+        if (!result.IsSuccess)
+        {
+            Message = result.ErrorMessage ?? "Validation impossible.";
+            return;
+        }
+
         await LoadAsync();
-        SelectedCandidate = Candidates.FirstOrDefault(candidate => candidate.RequestId == requestId);
+        SelectedCandidate = null;
+        Message = "Interimaire ajoute. Completez maintenant son profil depuis la liste des employes.";
+        Navigation.NavigateTo(PortalLink("employees"));
     }
 
     private async Task RejectAsync(Guid requestId)
