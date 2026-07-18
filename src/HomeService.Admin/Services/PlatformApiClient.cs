@@ -23,6 +23,27 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<CompanyApplicationSummaryResponse>>("/api/admin/company-applications", cancellationToken) ?? [];
     }
 
+    public async Task<AdminCompanyListResponse?> GetCompaniesAsync(
+        string? status,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+
+        var query = new List<string>();
+        AddQueryValue(query, "status", status);
+        AddQueryValue(query, "search", search);
+
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
+        return await GetJsonAsync<AdminCompanyListResponse>($"/api/admin/companies{suffix}", cancellationToken);
+    }
+
+    public async Task<AdminCompanyDetailResponse?> GetCompanyAsync(Guid companyId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminCompanyDetailResponse>($"/api/admin/companies/{companyId}", cancellationToken);
+    }
+
     public async Task<CompanyApplicationDetailResponse?> GetCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -381,6 +402,11 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     public string GetCompanyApplicationDocumentPreviewUrl(Guid documentId)
     {
         return $"/admin-documents/{documentId}/preview";
+    }
+
+    public string GetProviderDocumentPreviewUrl(Guid documentId)
+    {
+        return ToApiUrl($"/api/admin/provider-documents/{documentId}/preview");
     }
 
     public async Task<CompanyApplicationDocumentFile> GetCompanyApplicationDocumentFileAsync(Guid documentId, CancellationToken cancellationToken = default)

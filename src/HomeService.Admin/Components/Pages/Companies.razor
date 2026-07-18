@@ -1,0 +1,190 @@
+@page "/companies"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Entreprises</PageTitle>
+
+<div class="admin-page-heading">
+    <div>
+        <p class="eyebrow">Pilotage</p>
+        <h1>Entreprises</h1>
+        <p class="lead">Retrouvez les entreprises actives, leurs equipes, missions et documents depuis un seul endroit.</p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+</div>
+
+@if (Snapshot is not null)
+{
+    <section class="admin-metric-grid compact">
+        <article>
+            <span>Total entreprises</span>
+            <strong>@Snapshot.Stats.TotalCompanies</strong>
+        </article>
+        <article>
+            <span>Entreprises actives</span>
+            <strong>@Snapshot.Stats.ApprovedCompanies</strong>
+        </article>
+        <article>
+            <span>Prestataires suivis</span>
+            <strong>@Snapshot.Stats.TotalProviders</strong>
+        </article>
+        <article>
+            <span>Missions ouvertes</span>
+            <strong>@Snapshot.Stats.OpenMissions</strong>
+        </article>
+    </section>
+}
+
+<section class="toolbar operator-toolbar">
+    <label>
+        Statut
+        <select @bind="SelectedStatus">
+            <option value="">Toutes</option>
+            <option value="Approved">Actives</option>
+            <option value="PendingReview">A verifier</option>
+            <option value="Suspended">Suspendues</option>
+            <option value="Rejected">Refusees</option>
+        </select>
+    </label>
+    <label>
+        Recherche
+        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Nom, ville, email, telephone" />
+    </label>
+    <button type="button" @onclick="LoadAsync" disabled="@IsLoading">Rechercher</button>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+<section class="operator-list">
+    <header>
+        <div>
+            <h2>Liste des entreprises</h2>
+            <p>@(Snapshot?.Items.Count ?? 0) entreprise(s) affichee(s)</p>
+        </div>
+    </header>
+
+    @if (IsLoading)
+    {
+        <article class="operator-row">
+            <div>
+                <strong>Chargement...</strong>
+                <p>Lecture des entreprises depuis l'API.</p>
+            </div>
+        </article>
+    }
+    else if (Snapshot is null || Snapshot.Items.Count == 0)
+    {
+        <article class="operator-row">
+            <div>
+                <strong>Aucune entreprise</strong>
+                <p>Aucun resultat pour les filtres actuels.</p>
+            </div>
+        </article>
+    }
+    else
+    {
+        @foreach (var company in Snapshot.Items)
+        {
+            <article class="operator-row company-row">
+                <div class="company-identity">
+                    <span class="avatar-token">@GetInitials(company.Name)</span>
+                    <div>
+                        <strong>@company.Name</strong>
+                        <p>@(company.City ?? "Ville non renseignee") - @company.PhoneNumber</p>
+                    </div>
+                </div>
+                <div class="operator-meta">
+                    <span class="@GetStatusClass(company.Status)">@TranslateStatus(company.Status)</span>
+                    <small>@TranslateAssignmentMode(company.AssignmentMode)</small>
+                </div>
+                <div class="operator-kpis">
+                    <span>@company.ActiveProviderCount / @company.ProviderCount prestataires</span>
+                    <span>@company.OpenMissionCount mission(s) ouvertes</span>
+                    <span>@company.DocumentCount document(s)</span>
+                </div>
+                <div class="operator-actions">
+                    <button type="button" @onclick="() => OpenCompany(company.Id)">Ouvrir le dossier</button>
+                </div>
+            </article>
+        }
+    }
+</section>
+
+@code {
+    private AdminCompanyListResponse? Snapshot { get; set; }
+    private string? SelectedStatus { get; set; }
+    private string? SearchTerm { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Snapshot = await ApiClient.GetCompaniesAsync(SelectedStatus, SearchTerm);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les entreprises. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void OpenCompany(Guid companyId)
+    {
+        Navigation.NavigateTo($"/companies/{companyId}");
+    }
+
+    private static string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+
+    private static string TranslateAssignmentMode(string status)
+    {
+        return status switch
+        {
+            "PlatformManaged" => "Affectation Kaza",
+            _ => "Affectation entreprise"
+        };
+    }
+
+    private static string TranslateStatus(string status)
+    {
+        return status switch
+        {
+            "Approved" => "Active",
+            "Suspended" => "Suspendue",
+            "Rejected" => "Refusee",
+            "PendingReview" => "A verifier",
+            _ => status
+        };
+    }
+
+    private static string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Approved" => "status-pill ok",
+            "Suspended" or "Rejected" => "status-pill danger",
+            _ => "status-pill pending"
+        };
+    }
+}

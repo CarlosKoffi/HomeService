@@ -11,6 +11,235 @@ namespace HomeService.Application.Admin;
 
 public sealed class AdminQueryService(IAppDbContext db)
 {
+    public async Task<AdminCompanyListResponse> ListCompaniesAsync(
+        string? status,
+        string? search,
+        CancellationToken cancellationToken)
+    {
+        var companiesQuery = db.Companies.AsNoTracking();
+
+        if (Enum.TryParse<CompanyStatus>(status, true, out var parsedStatus))
+        {
+            companiesQuery = companiesQuery.Where(company => company.Status == parsedStatus);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            companiesQuery = companiesQuery.Where(company =>
+                company.Name.ToLower().Contains(term)
+                || company.PhoneNumber.ToLower().Contains(term)
+                || (company.Email != null && company.Email.ToLower().Contains(term))
+                || (company.City != null && company.City.ToLower().Contains(term)));
+        }
+
+        var companies = await companiesQuery
+            .OrderByDescending(company => company.CreatedAt)
+            .Take(200)
+            .Select(company => new
+            {
+                company.Id,
+                company.Name,
+                company.Email,
+                company.PhoneNumber,
+                company.City,
+                Status = company.Status.ToString(),
+                AssignmentMode = company.AssignmentMode.ToString(),
+                company.CreatedAt,
+                ProviderCount = db.Providers.Count(provider => provider.CompanyId == company.Id),
+                ActiveProviderCount = db.Providers.Count(provider => provider.CompanyId == company.Id && provider.Status == ProviderStatus.Approved),
+                MissionCount = db.Missions.Count(mission => mission.CompanyId == company.Id),
+                OpenMissionCount = db.Missions.Count(mission => mission.CompanyId == company.Id
+                    && mission.Status != MissionStatus.Completed
+                    && mission.Status != MissionStatus.Cancelled),
+                DocumentCount = db.ProviderDocuments.Count(document => document.Provider!.CompanyId == company.Id)
+            })
+            .ToListAsync(cancellationToken);
+
+        var stats = new AdminCompanyStatsResponse(
+            await db.Companies.CountAsync(cancellationToken),
+            await db.Companies.CountAsync(company => company.Status == CompanyStatus.Approved, cancellationToken),
+            await db.Companies.CountAsync(company => company.Status == CompanyStatus.Suspended, cancellationToken),
+            await db.Providers.CountAsync(cancellationToken),
+            await db.Providers.CountAsync(provider => provider.Status == ProviderStatus.Approved, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.Status == MissionStatus.Disputed, cancellationToken));
+
+        return new AdminCompanyListResponse(
+            companies
+                .Select(company => new AdminCompanySummaryResponse(
+                    company.Id,
+                    company.Name,
+                    company.Email,
+                    company.PhoneNumber,
+                    company.City,
+                    company.Status,
+                    company.AssignmentMode,
+                    company.ProviderCount,
+                    company.ActiveProviderCount,
+                    company.MissionCount,
+                    company.OpenMissionCount,
+                    company.DocumentCount,
+                    company.CreatedAt))
+                .ToList(),
+            stats);
+    }
+
+    public async Task<AdminCompanyDetailResponse?> GetCompanyAsync(Guid companyId, CancellationToken cancellationToken)
+    {
+        var company = await db.Companies
+            .AsNoTracking()
+            .Where(company => company.Id == companyId)
+            .Select(company => new
+            {
+                company.Id,
+                company.Name,
+                company.Email,
+                company.PhoneNumber,
+                company.LegalForm,
+                company.RegistrationNumber,
+                company.TaxIdentificationNumber,
+                company.City,
+                company.Address,
+                company.InterventionZones,
+                company.PlannedServices,
+                company.WavePaymentNumber,
+                company.OrangeMoneyPaymentNumber,
+                Status = company.Status.ToString(),
+                AssignmentMode = company.AssignmentMode.ToString(),
+                company.CreatedAt
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (company is null)
+        {
+            return null;
+        }
+
+        var providers = await db.Providers
+            .AsNoTracking()
+            .Where(provider => provider.CompanyId == companyId)
+            .OrderBy(provider => provider.LastName)
+            .ThenBy(provider => provider.FirstName)
+            .Select(provider => new AdminCompanyProviderResponse(
+                provider.Id,
+                (provider.FirstName + " " + provider.LastName).Trim(),
+                provider.PhoneNumber,
+                provider.Email,
+                provider.Gender.ToString(),
+                provider.EmploymentType.ToString(),
+                provider.Status.ToString(),
+                provider.IsAvailable,
+                provider.YearsOfExperience,
+                provider.Address,
+                provider.Services
+                    .Where(service => service.IsActive)
+                    .OrderBy(service => service.Service!.Name)
+                    .Select(service => service.Service!.Name)
+                    .ToList(),
+                provider.Services
+                    .Where(service => service.IsActive)
+                    .SelectMany(service => service.Prestations)
+                    .Where(prestation => prestation.IsActive)
+                    .OrderBy(prestation => prestation.ServicePrestation!.Name)
+                    .Select(prestation => prestation.ServicePrestation!.Name)
+                    .ToList(),
+                provider.Documents.Count,
+                provider.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var missions = await (
+            from mission in db.Missions.AsNoTracking()
+            join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+            join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
+            join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
+            from provider in providerJoin.DefaultIfEmpty()
+            where mission.CompanyId == companyId
+            orderby mission.ScheduledFor ?? mission.CreatedAt descending
+            select new AdminCompanyMissionResponse(
+                mission.Id,
+                service.Name,
+                null,
+                (customer.FirstName + " " + customer.LastName).Trim(),
+                customer.PhoneNumber,
+                provider == null ? null : provider.FirstName + " " + provider.LastName,
+                mission.Status.ToString(),
+                mission.PaymentStatus.ToString(),
+                mission.PaymentMethod.ToString(),
+                mission.ScheduledFor,
+                mission.EstimatedTotalAmount,
+                mission.CompanyQuotedAmount,
+                mission.Currency,
+                mission.ServiceAddress,
+                mission.CreatedAt))
+            .Take(100)
+            .ToListAsync(cancellationToken);
+
+        var documents = await db.ProviderDocuments
+            .AsNoTracking()
+            .Where(document => document.Provider != null && document.Provider.CompanyId == companyId)
+            .OrderBy(document => document.Provider!.LastName)
+            .ThenBy(document => document.DocumentType)
+            .Select(document => new AdminCompanyDocumentResponse(
+                document.Id,
+                document.ProviderId,
+                (document.Provider!.FirstName + " " + document.Provider.LastName).Trim(),
+                document.DocumentType.ToString(),
+                document.OriginalFileName,
+                document.ContentType,
+                $"/api/admin/provider-documents/{document.Id}/preview",
+                document.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var timeline = await db.CompanyApplicationStatusHistories
+            .AsNoTracking()
+            .Where(history => history.CompanyApplication!.CompanyId == companyId)
+            .OrderByDescending(history => history.ChangedAt)
+            .Select(history => new AdminCompanyApplicationTimelineResponse(
+                history.Id,
+                history.PreviousStatus == null ? null : history.PreviousStatus.ToString(),
+                history.NewStatus.ToString(),
+                history.Note,
+                history.ChangedBy,
+                history.ChangedAt))
+            .Take(50)
+            .ToListAsync(cancellationToken);
+
+        return new AdminCompanyDetailResponse(
+            company.Id,
+            company.Name,
+            company.Email,
+            company.PhoneNumber,
+            company.LegalForm,
+            company.RegistrationNumber,
+            company.TaxIdentificationNumber,
+            company.City,
+            company.Address,
+            company.InterventionZones,
+            company.PlannedServices,
+            company.WavePaymentNumber,
+            company.OrangeMoneyPaymentNumber,
+            company.Status,
+            company.AssignmentMode,
+            company.CreatedAt,
+            providers,
+            missions,
+            documents,
+            timeline);
+    }
+
+    public async Task<AdminProviderDocumentFile?> GetProviderDocumentFileAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await db.ProviderDocuments
+            .AsNoTracking()
+            .Where(document => document.Id == id)
+            .Select(document => new AdminProviderDocumentFile(
+                document.OriginalFileName,
+                document.StoragePath,
+                document.ContentType))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<AuditLogListResponse> ListAuditLogsAsync(AdminAuditLogQuery queryOptions, CancellationToken cancellationToken)
     {
         var pageSize = AdminAuditLogQuery.NormalizePageSize(queryOptions.Take);
@@ -330,6 +559,11 @@ public sealed class AdminQueryService(IAppDbContext db)
 }
 
 public sealed record AdminCompanyApplicationDocumentFile(
+    string OriginalFileName,
+    string StoragePath,
+    string ContentType);
+
+public sealed record AdminProviderDocumentFile(
     string OriginalFileName,
     string StoragePath,
     string ContentType);

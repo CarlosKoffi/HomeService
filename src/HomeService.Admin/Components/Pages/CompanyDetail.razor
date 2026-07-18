@@ -1,0 +1,240 @@
+@page "/companies/{CompanyId:guid}"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Entreprise</PageTitle>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+@if (IsLoading)
+{
+    <section class="info-panel">
+        <div>
+            <h1>Chargement...</h1>
+            <p>Ouverture du dossier entreprise.</p>
+        </div>
+    </section>
+}
+else if (Company is null)
+{
+    <section class="info-panel">
+        <div>
+            <h1>Entreprise introuvable</h1>
+            <p>Le dossier demande n'existe plus ou n'est pas accessible.</p>
+        </div>
+        <button type="button" class="secondary-action" @onclick="BackToList">Retour entreprises</button>
+    </section>
+}
+else
+{
+    <div class="admin-page-heading">
+        <div>
+            <button type="button" class="link-action" @onclick="BackToList">Retour aux entreprises</button>
+            <h1>@Company.Name</h1>
+            <p class="lead">@Company.PhoneNumber - @(Company.Email ?? "Email non renseigne")</p>
+        </div>
+        <span class="@GetStatusClass(Company.Status)">@TranslateStatus(Company.Status)</span>
+    </div>
+
+    <section class="company-control-strip">
+        <button type="button" class='@GetTabClass("summary")' @onclick='() => SelectTab("summary")'>Resume</button>
+        <button type="button" class='@GetTabClass("providers")' @onclick='() => SelectTab("providers")'>Employes</button>
+        <button type="button" class='@GetTabClass("missions")' @onclick='() => SelectTab("missions")'>Missions</button>
+        <button type="button" class='@GetTabClass("documents")' @onclick='() => SelectTab("documents")'>Documents</button>
+        <button type="button" class='@GetTabClass("timeline")' @onclick='() => SelectTab("timeline")'>Historique</button>
+    </section>
+
+    @if (SelectedTab == "summary")
+    {
+        <section class="company-detail-grid">
+            <article>
+                <h2>Informations entreprise</h2>
+                <dl class="detail-list">
+                    <div><dt>Statut</dt><dd>@TranslateStatus(Company.Status)</dd></div>
+                    <div><dt>Mode affectation</dt><dd>@TranslateAssignmentMode(Company.AssignmentMode)</dd></div>
+                    <div><dt>Ville</dt><dd>@(Company.City ?? "Non renseignee")</dd></div>
+                    <div><dt>Adresse</dt><dd>@(Company.Address ?? "Non renseignee")</dd></div>
+                    <div><dt>RCCM</dt><dd>@(Company.RegistrationNumber ?? "Non renseigne")</dd></div>
+                    <div><dt>DFE</dt><dd>@(Company.TaxIdentificationNumber ?? "Non renseigne")</dd></div>
+                </dl>
+            </article>
+            <article>
+                <h2>Operations</h2>
+                <dl class="detail-list">
+                    <div><dt>Zones</dt><dd>@(Company.InterventionZones ?? "Non renseigne")</dd></div>
+                    <div><dt>Services</dt><dd>@(Company.PlannedServices ?? "Non renseigne")</dd></div>
+                    <div><dt>Wave</dt><dd>@(Company.WavePaymentNumber ?? "Non renseigne")</dd></div>
+                    <div><dt>Orange Money</dt><dd>@(Company.OrangeMoneyPaymentNumber ?? "Non renseigne")</dd></div>
+                </dl>
+            </article>
+        </section>
+    }
+    else if (SelectedTab == "providers")
+    {
+        <section class="operator-list">
+            <header>
+                <div>
+                    <h2>Employes et interimaires</h2>
+                    <p>@Company.Providers.Count profil(s) rattache(s)</p>
+                </div>
+            </header>
+            @foreach (var provider in Company.Providers)
+            {
+                <article class="operator-row provider-row">
+                    <div class="company-identity">
+                        <span class="avatar-token">@GetInitials(provider.FullName)</span>
+                        <div>
+                            <strong>@provider.FullName</strong>
+                            <p>@provider.PhoneNumber - @provider.EmploymentType</p>
+                        </div>
+                    </div>
+                    <div class="operator-meta">
+                        <span class="@GetProviderStatusClass(provider.Status)">@TranslateProviderStatus(provider.Status)</span>
+                        <small>@(provider.IsAvailable ? "Disponible" : "Non disponible")</small>
+                    </div>
+                    <div class="operator-kpis">
+                        <span>@provider.YearsOfExperience an(s)</span>
+                        <span>@string.Join(", ", provider.Services.Take(3))</span>
+                        <span>@provider.DocumentCount document(s)</span>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "missions")
+    {
+        <section class="operator-list">
+            <header>
+                <div>
+                    <h2>Missions</h2>
+                    <p>@Company.Missions.Count derniere(s) mission(s)</p>
+                </div>
+            </header>
+            @foreach (var mission in Company.Missions)
+            {
+                <article class="operator-row mission-row">
+                    <div>
+                        <strong>@mission.ServiceName</strong>
+                        <p>@mission.CustomerName - @(mission.ServiceAddress ?? "Adresse non renseignee")</p>
+                    </div>
+                    <div class="operator-meta">
+                        <span class="@GetMissionStatusClass(mission.Status)">@TranslateMissionStatus(mission.Status)</span>
+                        <small>@mission.PaymentMethod / @mission.PaymentStatus</small>
+                    </div>
+                    <div class="operator-kpis">
+                        <span>@(mission.ProviderName ?? "Prestataire non affecte")</span>
+                        <span>@FormatMoney(mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount, mission.Currency)</span>
+                        <span>@FormatDate(mission.ScheduledFor)</span>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "documents")
+    {
+        <section class="operator-list">
+            <header>
+                <div>
+                    <h2>Documents prestataires</h2>
+                    <p>@Company.Documents.Count piece(s) rattachee(s) aux employes</p>
+                </div>
+            </header>
+            @foreach (var document in Company.Documents)
+            {
+                <article class="operator-row document-row">
+                    <div>
+                        <strong>@document.ProviderName</strong>
+                        <p>@TranslateDocumentType(document.DocumentType) - @document.OriginalFileName</p>
+                    </div>
+                    <div class="operator-actions">
+                        <a href="@ApiClient.GetProviderDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">Voir la piece</a>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "timeline")
+    {
+        <section class="timeline-panel">
+            @foreach (var item in Company.Timeline)
+            {
+                <article>
+                    <strong>@TranslateApplicationStatus(item.NewStatus)</strong>
+                    <p>@(item.Note ?? "Aucune note")</p>
+                    <small>@FormatDate(item.ChangedAt) - @(item.ChangedBy ?? "Systeme")</small>
+                </article>
+            }
+        </section>
+    }
+}
+
+@code {
+    [Parameter] public Guid CompanyId { get; set; }
+
+    private AdminCompanyDetailResponse? Company { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+    private string SelectedTab { get; set; } = "summary";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Company = await ApiClient.GetCompanyAsync(CompanyId);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger l'entreprise. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void BackToList()
+    {
+        Navigation.NavigateTo("/companies");
+    }
+
+    private void SelectTab(string tab)
+    {
+        SelectedTab = tab;
+    }
+
+    private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
+
+    private static string GetInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    }
+
+    private static string FormatMoney(int? amount, string currency) => amount is null ? "Aucun prix" : $"{amount:N0} {currency}";
+    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non planifie";
+    private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+
+    private static string TranslateAssignmentMode(string status) => status == "PlatformManaged" ? "Affectation Kaza" : "Affectation entreprise";
+    private static string TranslateStatus(string status) => status switch { "Approved" => "Active", "Suspended" => "Suspendue", "Rejected" => "Refusee", "PendingReview" => "A verifier", _ => status };
+    private static string TranslateProviderStatus(string status) => status switch { "Approved" => "Valide", "Invited" => "Invite", "SuspendedByCompany" => "Suspendu entreprise", "SuspendedByPlatform" => "Suspendu plateforme", "InterimCandidate" => "Candidat interim", _ => status };
+    private static string TranslateMissionStatus(string status) => status switch { "Created" => "Creee", "Assigned" => "Affectee", "Accepted" => "Acceptee", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", "Disputed" => "Litige", _ => status };
+    private static string TranslateApplicationStatus(string status) => status switch { "Approved" => "Validee", "ActivationSent" => "Lien envoye", "Activated" => "Compte active", "Rejected" => "Refusee", _ => status };
+    private static string TranslateDocumentType(string type) => type switch { "Photo" => "Photo", "IdentityDocument" => "Piece d'identite", "Diploma" => "Diplome", _ => type };
+
+    private static string GetStatusClass(string status) => status switch { "Approved" => "status-pill ok", "Suspended" or "Rejected" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetProviderStatusClass(string status) => status switch { "Approved" => "status-pill ok", "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetMissionStatusClass(string status) => status switch { "Completed" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
+}

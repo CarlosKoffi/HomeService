@@ -227,6 +227,53 @@ public static class AdminEndpoints
         })
         .WithName("ListAdminCmsComponentDefinitions")
         .Produces<IReadOnlyList<CmsComponentDefinitionResponse>>();
+
+        admin.MapGet("/companies", async (
+            string? status,
+            string? search,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.ListCompaniesAsync(status, search, cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("ListAdminCompanies")
+        .Produces<AdminCompanyListResponse>();
+
+        admin.MapGet("/companies/{companyId:guid}", async (
+            Guid companyId,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.GetCompanyAsync(companyId, cancellationToken);
+            return response is null
+                ? Results.NotFound(new { message = "Entreprise introuvable." })
+                : Results.Ok(response);
+        })
+        .WithName("GetAdminCompany")
+        .Produces<AdminCompanyDetailResponse>();
+
+        admin.MapGet("/provider-documents/{id:guid}/preview", async (
+            Guid id,
+            AdminQueryService queryService,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var document = await queryService.GetProviderDocumentFileAsync(id, cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound(new { message = "Document prestataire introuvable." });
+            }
+
+            var absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "Le fichier prestataire n'existe plus sur le serveur." });
+            }
+
+            return Results.File(absolutePath, document.ContentType, document.OriginalFileName, enableRangeProcessing: true);
+        })
+        .WithName("PreviewAdminProviderDocument");
         
         admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {
