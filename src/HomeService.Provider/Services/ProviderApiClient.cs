@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using HomeService.Contracts.Cms;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Contracts.Services;
 
@@ -19,7 +20,97 @@ public sealed class ProviderApiClient(HttpClient httpClient)
 
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
     {
-        return await httpClient.GetFromJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", JsonOptions, cancellationToken) ?? [];
+        try
+        {
+            return await httpClient.GetFromJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", JsonOptions, cancellationToken) ?? [];
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            return [];
+        }
+    }
+
+    public async Task<IReadOnlyList<ProviderOnboardingOptionResponse>> GetOnboardingOptionsAsync(
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = string.IsNullOrWhiteSpace(search)
+                ? "/api/provider-onboarding/options"
+                : $"/api/provider-onboarding/options?search={Uri.EscapeDataString(search)}";
+            return await httpClient.GetFromJsonAsync<IReadOnlyList<ProviderOnboardingOptionResponse>>(
+                url,
+                JsonOptions,
+                cancellationToken) ?? [];
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            return [];
+        }
+    }
+
+    public async Task<IReadOnlyList<ProviderCompanyOpportunityResponse>> GetOnboardingOpportunitiesAsync(
+        string selectionType,
+        Guid selectionId,
+        string? address,
+        CancellationToken cancellationToken = default)
+    {
+        if (selectionId == Guid.Empty)
+        {
+            return [];
+        }
+
+        try
+        {
+            var url = $"/api/provider-onboarding/opportunities?selectionType={Uri.EscapeDataString(selectionType)}&selectionId={selectionId}";
+            if (!string.IsNullOrWhiteSpace(address))
+            {
+                url += $"&address={Uri.EscapeDataString(address)}";
+            }
+
+            return await httpClient.GetFromJsonAsync<IReadOnlyList<ProviderCompanyOpportunityResponse>>(
+                url,
+                JsonOptions,
+                cancellationToken) ?? [];
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            return [];
+        }
+    }
+
+    public string ToApiUrl(string? relativeUrl)
+    {
+        if (string.IsNullOrWhiteSpace(relativeUrl))
+        {
+            return string.Empty;
+        }
+
+        if (Uri.TryCreate(relativeUrl, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        return new Uri(httpClient.BaseAddress!, relativeUrl.TrimStart('/')).ToString();
+    }
+
+    public async Task<CompanyHomeCmsResponse?> GetProviderHomeContentAsync(
+        string language = "fr",
+        string country = "CI",
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<CompanyHomeCmsResponse>(
+                $"/api/cms/provider/home?language={Uri.EscapeDataString(language)}&country={Uri.EscapeDataString(country)}",
+                JsonOptions,
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     public async Task<ApiResult<ProviderPortalLoginResponse>> ActivateAsync(

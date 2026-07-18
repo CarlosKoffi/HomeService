@@ -13,16 +13,6 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
         ProviderSelfRegistrationRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
-        {
-            return new ProviderSelfRegistrationResponse(Guid.Empty, "ValidationFailed", "Le mot de passe doit contenir au moins 8 caracteres.");
-        }
-
-        if (request.Password != request.ConfirmPassword)
-        {
-            return new ProviderSelfRegistrationResponse(Guid.Empty, "ValidationFailed", "Les deux mots de passe ne correspondent pas.");
-        }
-
         var provider = new ProviderProfile(
             request.FirstName,
             request.LastName,
@@ -38,16 +28,58 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
         provider.SetPortalPassword(Sha256PasswordHasher.Hash(request.Password));
 
         var requestedServiceIds = request.Services.Select(service => service.ServiceId).Distinct().ToList();
+        var selectionIds = request.Selections?
+            .Where(selection => selection.Id != Guid.Empty)
+            .Select(selection => selection.Id)
+            .Distinct()
+            .ToList() ?? [];
+
+        List<(Guid Id, Guid ServiceId)> selectedPrestations = selectionIds.Count == 0
+            ? []
+            : (await db.ServicePrestations
+                .AsNoTracking()
+                .Where(prestation => selectionIds.Contains(prestation.Id) && prestation.IsActive && prestation.Service!.IsActive)
+                .Select(prestation => new { prestation.Id, prestation.ServiceId })
+                .ToListAsync(cancellationToken))
+                .Select(prestation => (prestation.Id, prestation.ServiceId))
+                .ToList();
+
+        requestedServiceIds.AddRange(request.Selections?
+            .Where(selection => string.Equals(selection.Type, "Service", StringComparison.OrdinalIgnoreCase))
+            .Select(selection => selection.Id) ?? []);
+        requestedServiceIds.AddRange(selectedPrestations.Select(prestation => prestation.ServiceId));
+        requestedServiceIds = requestedServiceIds.Distinct().ToList();
+
         var activeServiceIds = await db.Services
             .Where(service => requestedServiceIds.Contains(service.Id) && service.IsActive)
             .Select(service => service.Id)
             .ToListAsync(cancellationToken);
-        var requestedCandidateServices = request.Services
+        var legacyCandidateServices = request.Services
             .Where(service => activeServiceIds.Contains(service.ServiceId))
             .Select(service => (
-                service.ServiceId,
-                ParseExperienceLevel(service.ExperienceLevel),
-                Math.Max(0, service.YearsOfExperience)))
+                ServiceId: service.ServiceId,
+                ExperienceLevel: ParseExperienceLevel(service.ExperienceLevel),
+                YearsOfExperience: Math.Max(0, service.YearsOfExperience)))
+            .ToList();
+        var selectionCandidateServices = request.Selections?
+            .Select(selection =>
+            {
+                var serviceId = string.Equals(selection.Type, "Prestation", StringComparison.OrdinalIgnoreCase)
+                    ? selectedPrestations
+                        .Where(prestation => prestation.Id == selection.Id)
+                        .Select(prestation => prestation.ServiceId)
+                        .FirstOrDefault()
+                    : selection.Id;
+
+                return (
+                    ServiceId: serviceId,
+                    ExperienceLevel: ParseExperienceLevel(selection.ExperienceLevel),
+                    YearsOfExperience: Math.Max(0, selection.YearsOfExperience));
+            })
+            .Where(selection => selection.ServiceId != Guid.Empty && activeServiceIds.Contains(selection.ServiceId))
+            .ToList() ?? [];
+        var requestedCandidateServices = legacyCandidateServices
+            .Concat(selectionCandidateServices)
             .ToList();
 
         foreach (var proposedName in NormalizeProposedServiceNames(request.ProposedServices))
@@ -61,23 +93,69 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
                 db.Services.Add(service);
             }
 
-            requestedCandidateServices.Add((service.Id, ExperienceLevel.Confirmed, Math.Max(0, request.YearsOfExperience)));
+            requestedCandidateServices.Add((ServiceId: service.Id, ExperienceLevel: ExperienceLevel.Confirmed, YearsOfExperience: Math.Max(0, request.YearsOfExperience)));
         }
 
-        if (requestedCandidateServices.Count == 0)
+        var selectedOpportunityIds = request.OpportunityCompanyIds?
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .Take(5)
+            .ToList() ?? [];
+        var validOpportunityIds = await FindValidOpportunityCompanyIdsAsync(
+            selectedOpportunityIds,
+            requestedCandidateServices.Select(service => service.ServiceId).Distinct().ToList(),
+            cancellationToken);
+
+        var validationErrors = ProviderSelfRegistrationValidator.Validate(
+            request,
+            requestedCandidateServices.Count(),
+            validOpportunityIds.Count());
+        if (validationErrors.Count > 0)
         {
-            return new ProviderSelfRegistrationResponse(Guid.Empty, "ValidationFailed", "Selectionnez ou proposez au moins un service.");
+            return new ProviderSelfRegistrationResponse(Guid.Empty, "ValidationFailed", validationErrors[0]);
         }
 
         provider.SyncCandidateServices(requestedCandidateServices);
 
         db.Providers.Add(provider);
+        var affiliationRequests = validOpportunityIds
+            .Select(companyId => new ProviderAffiliationRequest(
+                provider.Id,
+                companyId,
+                "Candidature envoyee depuis l'inscription prestataire."))
+            .ToList();
+        foreach (var affiliationRequest in affiliationRequests)
+        {
+            db.ProviderAffiliationRequests.Add(affiliationRequest);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
 
         return new ProviderSelfRegistrationResponse(
             provider.Id,
             provider.Status.ToString(),
-            "Profil cree. Candidatez a une entreprise pour devenir interimaire assignable.");
+            "Profil cree. Votre demande a ete envoyee aux entreprises selectionnees.",
+            affiliationRequests.Select(request => request.Id).ToList());
+    }
+
+    private async Task<IReadOnlyList<Guid>> FindValidOpportunityCompanyIdsAsync(
+        IReadOnlyList<Guid> companyIds,
+        IReadOnlyList<Guid> serviceIds,
+        CancellationToken cancellationToken)
+    {
+        if (companyIds.Count == 0 || serviceIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.Companies
+            .Where(company => companyIds.Contains(company.Id) && company.Status == CompanyStatus.Approved)
+            .Where(company => db.ProviderServices.Any(providerService =>
+                providerService.CompanyId == company.Id
+                && providerService.IsActive
+                && serviceIds.Contains(providerService.ServiceId)))
+            .Select(company => company.Id)
+            .ToListAsync(cancellationToken);
     }
 
     private static ExperienceLevel ParseExperienceLevel(string? value)

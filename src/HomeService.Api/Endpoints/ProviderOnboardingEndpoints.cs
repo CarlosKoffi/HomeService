@@ -9,6 +9,32 @@ public static class ProviderOnboardingEndpoints
     {
         var group = app.MapGroup("/api/provider-onboarding");
 
+        group.MapGet("/options", async (
+            string? search,
+            ProviderOnboardingService onboardingService,
+            CancellationToken cancellationToken) =>
+        {
+            var options = await onboardingService.SearchOptionsAsync(search, cancellationToken);
+            return Results.Ok(options);
+        })
+        .WithName("SearchProviderOnboardingOptions");
+
+        group.MapGet("/opportunities", async (
+            string? selectionType,
+            Guid selectionId,
+            string? address,
+            ProviderOnboardingService onboardingService,
+            CancellationToken cancellationToken) =>
+        {
+            var opportunities = await onboardingService.SearchOpportunitiesAsync(
+                selectionType,
+                selectionId,
+                address,
+                cancellationToken);
+            return Results.Ok(opportunities);
+        })
+        .WithName("SearchProviderOnboardingOpportunities");
+
         group.MapPost("/self-registration", async (
             ProviderSelfRegistrationRequest request,
             ProviderSelfRegistrationService registrationService,

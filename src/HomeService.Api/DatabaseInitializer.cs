@@ -22,6 +22,7 @@ public static class DatabaseInitializer
         await SeedTranslationsAsync(db, cancellationToken);
         await SeedCmsFoundationAsync(db, cancellationToken);
         await SeedCompanyEditorialContentAsync(db, cancellationToken);
+        await SeedProviderEditorialContentAsync(db, cancellationToken);
     }
 
     private static async Task SeedCountriesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
@@ -473,6 +474,159 @@ public static class DatabaseInitializer
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    private static async Task SeedProviderEditorialContentAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var french = await db.Languages.FirstAsync(language => language.Code == "fr", cancellationToken);
+        var homePage = await db.CmsPages
+            .Include(page => page.Site)
+            .Include(page => page.Versions)
+                .ThenInclude(version => version.Sections)
+                    .ThenInclude(section => section.ComponentDefinition)
+            .Include(page => page.Versions)
+                .ThenInclude(version => version.Sections)
+                    .ThenInclude(section => section.ContentValues)
+            .Where(page => page.Site!.Code == "provider-public" && page.Code == "home")
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var version = homePage?.Versions.OrderByDescending(item => item.VersionNumber).FirstOrDefault();
+        if (version is null)
+        {
+            return;
+        }
+
+        await EnsureCmsSectionsAsync(
+            db,
+            version,
+            "Accueil prestataires",
+            cancellationToken,
+            "HeroStandard",
+            "StepsTimeline",
+            "TrustedLogos",
+            "DashboardPreview",
+            "FaqAccordion",
+            "ContactForm",
+            "FooterLinks");
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        await db.Entry(version)
+            .Collection(item => item.Sections)
+            .Query()
+            .Include(section => section.ComponentDefinition)
+            .Include(section => section.ContentValues)
+            .LoadAsync(cancellationToken);
+
+        foreach (var section in version.Sections)
+        {
+            switch (section.ComponentDefinition?.Key)
+            {
+                case "HeroStandard":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Kaza prestataire", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trouvez des missions. Travaillez avec des entreprises verifiees.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Creez votre profil, rattachez-vous a une entreprise partenaire ou proposez votre candidature en interim.", french.Id);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Creer un compte", french.Id);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "onboarding", french.Id);
+                    AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
+                    AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-provider-hero.png", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Prestataires de services a domicile Kaza", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "proofItems", "[\"Code entreprise\",\"Profil interim\",\"Missions proches\"]", french.Id, replaceExisting: true);
+                    break;
+
+                case "StepsTimeline":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Fonctionnement", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trois etapes pour demarrer.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours simple, pense pour les prestataires sur mobile.", french.Id);
+                    AddCmsJson(db, section, "steps", """
+                    [
+                      {"number":"01","label":"Profil","title":"Creez votre profil","text":"Indiquez vos services, votre experience, votre zone et votre telephone.","image":"images/kaza-provider-step-1.svg"},
+                      {"number":"02","label":"Validation","title":"Une entreprise vous valide","text":"Utilisez un code recu ou postulez comme interim aupres d'une entreprise proche.","image":"images/kaza-provider-step-2.svg"},
+                      {"number":"03","label":"Missions","title":"Recevez vos missions","text":"Acceptez, echangez avec le client si besoin, puis signalez debut et fin.","image":"images/kaza-provider-step-3.svg"}
+                    ]
+                    """, french.Id, replaceExisting: true);
+                    break;
+
+                case "TrustedLogos":
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Des opportunites simples et suivies", french.Id);
+                    AddCmsJson(db, section, "items", "[\"Entreprises partenaires\",\"Missions proches\",\"Profil mobile\",\"Suivi terrain\",\"Chat client\"]", french.Id);
+                    break;
+
+                case "DashboardPreview":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Application", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Tout tient dans votre telephone.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Vos missions, vos services, vos messages et votre profil restent clairs, meme avec peu de connexion.", french.Id);
+                    AddCmsJson(db, section, "stats", "[{\"label\":\"Mission\",\"value\":\"1\",\"help\":\"A traiter a la fois\"},{\"label\":\"Distance\",\"value\":\"2 km\",\"help\":\"Zone proche\"},{\"label\":\"Profil\",\"value\":\"92%\",\"help\":\"Presque complet\"}]", french.Id);
+                    AddCmsJson(db, section, "requests", "[\"Mission menage a Cocody\",\"Demande jardinage a Marcory\",\"Rendez-vous electricite demain\"]", french.Id);
+                    AddCmsJson(db, section, "providers", "[\"Disponible maintenant\",\"Code entreprise actif\",\"Book photo a completer\"]", french.Id);
+                    break;
+
+                case "FaqAccordion":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "FAQ", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Foire aux questions", french.Id);
+                    AddCmsJson(db, section, "questions", """
+                    [
+                      {"question":"Je peux m'inscrire sans entreprise ?","answer":"Oui. Vous creez un profil interim. Une entreprise devra ensuite vous valider avant les missions."},
+                      {"question":"A quoi sert le code entreprise ?","answer":"Il permet d'activer le profil que votre entreprise a deja cree pour vous."},
+                      {"question":"Quand vois-je le numero du client ?","answer":"Apres acceptation et confirmation de la mission, les contacts utiles deviennent visibles."},
+                      {"question":"Pourquoi ajouter des photos ?","answer":"Pour certains services, un book aide l'entreprise a valider votre profil et vos prestations."}
+                    ]
+                    """, french.Id);
+                    break;
+
+                case "ContactForm":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Contact", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Besoin d'aide pour demarrer ?", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnees. Nous vous orientons vers le bon parcours: code entreprise ou profil interim.", french.Id);
+                    AddCmsJson(db, section, "tags", "[\"Abidjan\",\"Interim\",\"Services a domicile\"]", french.Id);
+                    break;
+
+                case "FooterLinks":
+                    AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme qui rapproche les prestataires serieux des entreprises de services.", french.Id);
+                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 Kaza Technologies. Tous droits reserves.", french.Id);
+                    AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Concu pour l'Afrique de l'Ouest", french.Id);
+                    AddCmsJson(db, section, "columns", """
+                    [
+                      {"title":"Produit","links":["Application","Fonctionnement","Securite","Support"]},
+                      {"title":"Prestataire","links":["Creer un profil","Activer un code","Missions","Profil interim"]},
+                      {"title":"Ressources","links":["Centre d'aide","FAQ","Contact","WhatsApp"]},
+                      {"title":"Legal","links":["CGU","Confidentialite","Mentions legales"]}
+                    ]
+                    """, french.Id);
+                    break;
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task EnsureCmsSectionsAsync(
+        HomeServiceDbContext db,
+        CmsPageVersion version,
+        string pageName,
+        CancellationToken cancellationToken,
+        params string[] componentKeys)
+    {
+        var existingKeys = version.Sections
+            .Select(section => section.ComponentDefinition?.Key)
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var definitions = await db.CmsComponentDefinitions
+            .Where(component => componentKeys.Contains(component.Key))
+            .ToDictionaryAsync(component => component.Key, component => component.Id, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        var nextPosition = version.Sections.Count == 0 ? 1 : version.Sections.Max(section => section.Position) + 1;
+        foreach (var componentKey in componentKeys)
+        {
+            if (existingKeys.Contains(componentKey) || !definitions.TryGetValue(componentKey, out var definitionId))
+            {
+                continue;
+            }
+
+            db.CmsSections.Add(new CmsSection(version.Id, definitionId, $"{pageName} - {componentKey}", "main", nextPosition++));
+        }
+    }
+
     private static void AddSeedPage(
         HomeServiceDbContext db,
         CmsSite site,
@@ -509,10 +663,17 @@ public static class DatabaseInitializer
         string fieldKey,
         CmsContentValueType valueType,
         string value,
-        Guid languageId)
+        Guid languageId,
+        bool replaceExisting = false)
     {
-        if (section.ContentValues.Any(item => item.FieldKey == fieldKey && item.LanguageId == languageId))
+        var existing = section.ContentValues.FirstOrDefault(item => item.FieldKey == fieldKey && item.LanguageId == languageId);
+        if (existing is not null)
         {
+            if (replaceExisting)
+            {
+                existing.SetText(value);
+            }
+
             return;
         }
 
@@ -526,10 +687,17 @@ public static class DatabaseInitializer
         CmsSection section,
         string fieldKey,
         string value,
-        Guid languageId)
+        Guid languageId,
+        bool replaceExisting = false)
     {
-        if (section.ContentValues.Any(item => item.FieldKey == fieldKey && item.LanguageId == languageId))
+        var existing = section.ContentValues.FirstOrDefault(item => item.FieldKey == fieldKey && item.LanguageId == languageId);
+        if (existing is not null)
         {
+            if (replaceExisting)
+            {
+                existing.SetJson(value);
+            }
+
             return;
         }
 

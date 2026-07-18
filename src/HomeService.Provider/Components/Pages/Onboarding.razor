@@ -5,14 +5,14 @@
 
 <PageTitle>Kaza Prestataire - Acces</PageTitle>
 
-<main class="provider-mobile-shell onboarding-shell">
-    <section class="screen-heading compact-heading onboarding-hero-copy">
-        <span>Kaza prestataire</span>
-        <h1>Se connecter</h1>
-        <p>Accedez a vos missions ou creez votre compte prestataire.</p>
+<main class="provider-onboarding-page">
+    <section class="registration-header onboarding-hero-copy">
+        <p class="eyebrow">Kaza prestataire</p>
+        <h1>@PageHeadline</h1>
+        <p>@PageSubtitle</p>
     </section>
 
-    <nav class="onboarding-tabs onboarding-primary-tabs" aria-label="Choix du parcours prestataire">
+    <nav class="registration-steps onboarding-tabs onboarding-primary-tabs" aria-label="Choix du parcours prestataire">
         <button type="button" class="@TabClass("login")" @onclick='() => SetMode("login")'>
             <span>Se connecter</span>
             <small>Code ou telephone</small>
@@ -25,7 +25,8 @@
 
     @if (ActiveMode == "login")
     {
-        <section class="onboarding-choice-card highlighted">
+        <section class="registration-form onboarding-form-shell">
+        <div class="onboarding-choice-card highlighted">
             <div class="onboarding-card-head">
                 <div class="onboarding-icon">
                     <svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3" /><path d="M6 11h12v9H6z" /><path d="M12 15v2" /></svg>
@@ -103,11 +104,13 @@
                     <button type="button" class="primary-action orange-action" @onclick="LoginAsync" disabled="@IsBusy">Se connecter</button>
                 </div>
             }
+        </div>
         </section>
     }
     else
     {
-        <section class="onboarding-choice-card">
+        <section class="registration-form onboarding-form-shell">
+        <div class="onboarding-choice-card">
             <div class="onboarding-card-head">
                 <div class="onboarding-icon orange">
                     <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M19 8v6" /><path d="M16 11h6" /></svg>
@@ -124,25 +127,25 @@
                 <label>
                     Service propose
                     <input list="provider-services"
-                           placeholder="Ex: Menage a domicile"
-                           @bind="ServiceEntry"
-                           @bind:event="oninput" />
+                           placeholder="Ex: Menage, tondre gazon, repassage"
+                           value="@ServiceEntry"
+                           @oninput="OnServiceEntryChanged" />
                     <datalist id="provider-services">
-                        @foreach (var service in ExistingServices)
+                        @foreach (var option in OnboardingOptions)
                         {
-                            <option value="@service.Name"></option>
+                            <option value="@option.Label"></option>
                         }
                     </datalist>
-                    <small>Si le service n'existe pas encore, il sera cree comme nouveau service a verifier.</small>
+                    <small>Choisissez un service ou une prestation. Si cela n'existe pas encore, le service sera propose a Kaza.</small>
                 </label>
                 <label>Annee d'experience<input type="number" min="0" placeholder="Ex: 3" @bind="RegisterYearsOfExperience" /></label>
                 @if (!string.IsNullOrWhiteSpace(ServiceEntry))
                 {
                     <div class="service-autocomplete-preview">
-                        @if (FindExistingService(ServiceEntry) is not null)
+                        @if (FindSelectedOption(ServiceEntry) is not null)
                         {
-                            <span>Service existant</span>
-                            <strong>@FindExistingService(ServiceEntry)!.Name</strong>
+                            <span>@FindSelectedOption(ServiceEntry)!.Type existant</span>
+                            <strong>@FindSelectedOption(ServiceEntry)!.Label</strong>
                         }
                         else
                         {
@@ -175,7 +178,7 @@
                 <span>Contact</span>
                 <label>Tel<input type="tel" placeholder="+225 07 00 00 00 00" @bind="RegisterPhoneNumber" /></label>
                 <label>Adresse
-                    <input list="abidjan-neighborhoods" placeholder="Ex: Cocody Angre" @bind="RegisterAddress" />
+                    <input list="abidjan-neighborhoods" placeholder="Ex: Cocody Angre" value="@RegisterAddress" @oninput="OnAddressChanged" />
                     <datalist id="abidjan-neighborhoods">
                         @foreach (var area in AbidjanAreas)
                         {
@@ -183,6 +186,41 @@
                         }
                     </datalist>
                 </label>
+            </div>
+
+            <div class="register-fieldset opportunity-fieldset">
+                <span>Opportunites proches</span>
+                <p class="opportunity-help">Selectionnez une entreprise dans votre zone et votre domaine. Votre demande lui sera envoyee directement.</p>
+                @if (IsLoadingOpportunities)
+                {
+                    <div class="opportunity-empty">Recherche des entreprises compatibles...</div>
+                }
+                else if (SelectedOption is null)
+                {
+                    <div class="opportunity-empty">Choisissez d'abord un service ou une prestation.</div>
+                }
+                else if (CompanyOpportunities.Count == 0)
+                {
+                    <div class="opportunity-empty">Aucune entreprise compatible trouvee pour le moment. Essayez une zone plus large ou un service proche.</div>
+                }
+                else
+                {
+                    <div class="opportunity-list">
+                        @foreach (var opportunity in CompanyOpportunities)
+                        {
+                            <label class="opportunity-card @(SelectedOpportunityCompanyIds.Contains(opportunity.CompanyId) ? "selected" : string.Empty)">
+                                <input type="checkbox"
+                                       checked="@SelectedOpportunityCompanyIds.Contains(opportunity.CompanyId)"
+                                       @onchange="@(() => ToggleOpportunity(opportunity.CompanyId))" />
+                                <span>
+                                    <strong>@opportunity.CompanyName</strong>
+                                    <small>@opportunity.ProximityLabel</small>
+                                </span>
+                                <em>@string.Join(", ", opportunity.MatchingPrestations.Count > 0 ? opportunity.MatchingPrestations : opportunity.MatchingServices)</em>
+                            </label>
+                        }
+                    </div>
+                }
             </div>
 
             <div class="register-fieldset">
@@ -199,10 +237,11 @@
             }
 
             <button type="button" class="primary-action" @onclick="RegisterAsync" disabled="@IsBusy">Creer mon compte</button>
+        </div>
         </section>
     }
 
-    <section class="profile-completion-banner onboarding-note">
+    <section class="onboarding-note">
         <div>
             <span>Opportunites</span>
             <strong>Interim</strong>
@@ -214,6 +253,10 @@
 @code {
     private string ActiveMode { get; set; } = "login";
     private string LoginMethod { get; set; } = "code";
+    private string PageHeadline => ActiveMode == "register" ? "Creer votre compte prestataire" : "Se connecter";
+    private string PageSubtitle => ActiveMode == "register"
+        ? "Renseignez vos informations, vos services et votre zone pour proposer votre profil aux entreprises."
+        : "Accedez a vos missions avec un code d'activation ou votre numero de telephone.";
     private string InvitationCode { get; set; } = string.Empty;
     private string ActivationPassword { get; set; } = string.Empty;
     private string ActivationConfirmPassword { get; set; } = string.Empty;
@@ -228,7 +271,11 @@
     private int RegisterYearsOfExperience { get; set; }
     private string RegisterPassword { get; set; } = string.Empty;
     private string RegisterConfirmPassword { get; set; } = string.Empty;
-    private IReadOnlyList<ServiceSummaryResponse> ExistingServices { get; set; } = [];
+    private IReadOnlyList<ProviderOnboardingOptionResponse> OnboardingOptions { get; set; } = [];
+    private IReadOnlyList<ProviderCompanyOpportunityResponse> CompanyOpportunities { get; set; } = [];
+    private ProviderOnboardingOptionResponse? SelectedOption { get; set; }
+    private HashSet<Guid> SelectedOpportunityCompanyIds { get; } = [];
+    private bool IsLoadingOpportunities { get; set; }
     private static readonly string[] AbidjanAreas =
     [
         "Abobo - Abobo Baoule",
@@ -268,8 +315,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ExistingServices = (await Api.GetServicesAsync()).Where(service => service.IsActive).ToList();
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Navigation.ToAbsoluteUri(Navigation.Uri).Query);
+        if (query.TryGetValue("mode", out var mode) && string.Equals(mode.ToString(), "register", StringComparison.OrdinalIgnoreCase))
+        {
+            ActiveMode = "register";
+        }
+
         if (query.TryGetValue("code", out var code))
         {
             ActiveMode = "login";
@@ -277,6 +328,8 @@
             InvitationCode = code.ToString();
             await LoadInvitationAsync();
         }
+
+        OnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
     }
 
     private void SetMode(string mode)
@@ -381,6 +434,12 @@
             return;
         }
 
+        if (SelectedOpportunityCompanyIds.Count == 0)
+        {
+            RegisterMessage = "Selectionnez au moins une entreprise proche pour envoyer votre demande.";
+            return;
+        }
+
         IsBusy = true;
         var request = new ProviderSelfRegistrationRequest(
             RegisterFirstName,
@@ -396,7 +455,9 @@
             RegisterPassword,
             RegisterConfirmPassword,
             BuildSelectedServiceRequests(),
-            BuildProposedServiceNames());
+            BuildProposedServiceNames(),
+            BuildSelectedCandidateSelections(),
+            SelectedOpportunityCompanyIds.ToList());
         var result = await Api.RegisterSelfAsync(request);
         if (!result.IsSuccess)
         {
@@ -425,22 +486,70 @@
         await Js.InvokeVoidAsync("localStorage.setItem", "kaza.provider.session", System.Text.Json.JsonSerializer.Serialize(session));
     }
 
-    private ServiceSummaryResponse? FindExistingService(string serviceName)
+    private async Task OnServiceEntryChanged(ChangeEventArgs args)
     {
-        return ExistingServices.FirstOrDefault(service => IsSameCompletionValue(service.Name, serviceName));
+        ServiceEntry = args.Value?.ToString() ?? string.Empty;
+        OnboardingOptions = await Api.GetOnboardingOptionsAsync(ServiceEntry);
+        SelectedOption = FindSelectedOption(ServiceEntry);
+        SelectedOpportunityCompanyIds.Clear();
+        await LoadOpportunitiesAsync();
+    }
+
+    private async Task OnAddressChanged(ChangeEventArgs args)
+    {
+        RegisterAddress = args.Value?.ToString() ?? string.Empty;
+        SelectedOpportunityCompanyIds.Clear();
+        await LoadOpportunitiesAsync();
+    }
+
+    private async Task LoadOpportunitiesAsync()
+    {
+        CompanyOpportunities = [];
+        if (SelectedOption is null)
+        {
+            return;
+        }
+
+        IsLoadingOpportunities = true;
+        CompanyOpportunities = await Api.GetOnboardingOpportunitiesAsync(
+            SelectedOption.Type,
+            SelectedOption.Id,
+            RegisterAddress);
+        IsLoadingOpportunities = false;
+    }
+
+    private void ToggleOpportunity(Guid companyId)
+    {
+        if (!SelectedOpportunityCompanyIds.Add(companyId))
+        {
+            SelectedOpportunityCompanyIds.Remove(companyId);
+        }
+    }
+
+    private ProviderOnboardingOptionResponse? FindSelectedOption(string entry)
+    {
+        return OnboardingOptions.FirstOrDefault(option => IsSameCompletionValue(option.Label, entry));
     }
 
     private IReadOnlyList<ProviderCandidateServiceRequest> BuildSelectedServiceRequests()
     {
-        var existing = FindExistingService(ServiceEntry);
-        return existing is null
+        var selected = SelectedOption ?? FindSelectedOption(ServiceEntry);
+        return selected is null
             ? []
-            : [new ProviderCandidateServiceRequest(existing.Id, "Confirmed", RegisterYearsOfExperience)];
+            : [new ProviderCandidateServiceRequest(selected.ServiceId, "Confirmed", RegisterYearsOfExperience)];
+    }
+
+    private IReadOnlyList<ProviderCandidateSelectionRequest> BuildSelectedCandidateSelections()
+    {
+        var selected = SelectedOption ?? FindSelectedOption(ServiceEntry);
+        return selected is null
+            ? []
+            : [new ProviderCandidateSelectionRequest(selected.Type, selected.Id, "Confirmed", RegisterYearsOfExperience)];
     }
 
     private IReadOnlyList<string> BuildProposedServiceNames()
     {
-        return FindExistingService(ServiceEntry) is null
+        return (SelectedOption ?? FindSelectedOption(ServiceEntry)) is null
             ? [ServiceEntry.Trim()]
             : [];
     }

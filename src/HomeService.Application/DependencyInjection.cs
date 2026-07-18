@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<ProviderOnboardingService>();
         services.AddScoped<ProviderPortalAuthService>();
         services.AddScoped<CompanyHomeCmsQueryService>();
+        services.AddScoped<ProviderHomeCmsQueryService>();
         services.AddScoped<AdminConfigurationService>();
         services.AddScoped<AdminQueryService>();
         services.AddScoped<AdminAccessControlService>();

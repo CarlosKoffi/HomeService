@@ -1,16 +1,29 @@
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject IJSRuntime Js
+@inject NavigationManager Navigation
 
 <div class="provider-page">
-    <header class="provider-topbar">
-        <a href="">Kaza</a>
-        <nav aria-label="Navigation prestataire">
-            <a href="/#home">Accueil</a>
-            <a href="/#fonctionnement">Fonctionnement</a>
-            <a href="/#avantages">Avantages</a>
-            <a href="/#faq">FAQ</a>
-            <a href="/#contact">Contact</a>
-            <a href="/mobileappview">Application</a>
-            <a href="/onboarding">Connexion</a>
+    <header class="site-header theme-premium public-mode">
+        <a class="brand" href="/#home">Kaza</a>
+
+        <input type="checkbox" id="menu-toggle" class="menu-toggle" />
+        <label for="menu-toggle" class="menu-button" title="Menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </label>
+
+        <nav class="site-nav public-nav" aria-label="Navigation prestataire">
+            <a href="/#home" data-section-nav="home">Accueil</a>
+            <a href="/#how" data-section-nav="how">Fonctionnement</a>
+            <a href="/#benefits" data-section-nav="benefits">Avantages</a>
+            <a href="/#app" data-section-nav="app">Application</a>
+            <a href="/#faq" data-section-nav="faq">FAQ</a>
+            <a href="/#contact" data-section-nav="contact">Contact</a>
+            <div class="header-actions">
+                <a class="header-primary" href="/onboarding?mode=register">Creer un compte</a>
+            </div>
         </nav>
     </header>
 
@@ -22,3 +35,34 @@
     <a href="." class="reload">Recharger</a>
     <span class="dismiss">x</span>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += HandleLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Js.InvokeVoidAsync("kazaProviderNavigation.init");
+        }
+    }
+
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        try
+        {
+            await Js.InvokeVoidAsync("kazaProviderNavigation.init");
+        }
+        catch
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
+    }
+}

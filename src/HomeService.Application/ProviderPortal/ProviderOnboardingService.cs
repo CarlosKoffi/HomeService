@@ -8,6 +8,165 @@ namespace HomeService.Application.ProviderPortal;
 
 public sealed class ProviderOnboardingService(IAppDbContext db)
 {
+    public async Task<IReadOnlyList<ProviderOnboardingOptionResponse>> SearchOptionsAsync(
+        string? search,
+        CancellationToken cancellationToken)
+    {
+        var normalizedSearch = NormalizeSearch(search);
+        var services = await db.Services
+            .AsNoTracking()
+            .Where(service => service.IsActive)
+            .OrderBy(service => service.Name)
+            .Select(service => new
+            {
+                service.Id,
+                service.Name,
+                service.NormalizedName
+            })
+            .ToListAsync(cancellationToken);
+        var prestations = await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => prestation.IsActive && prestation.Service!.IsActive)
+            .OrderBy(prestation => prestation.Service!.Name)
+            .ThenBy(prestation => prestation.SortOrder)
+            .ThenBy(prestation => prestation.Name)
+            .Select(prestation => new
+            {
+                prestation.Id,
+                prestation.Name,
+                prestation.NormalizedName,
+                prestation.ServiceId,
+                ServiceName = prestation.Service!.Name,
+                ServiceNormalizedName = prestation.Service.NormalizedName
+            })
+            .ToListAsync(cancellationToken);
+
+        var serviceOptions = services
+            .Where(service => MatchesSearch(service.Name, normalizedSearch))
+            .Select(service => new ProviderOnboardingOptionResponse(
+                service.Id,
+                "Service",
+                service.Name,
+                service.Id,
+                service.Name,
+                null,
+                null));
+        var prestationOptions = prestations
+            .Where(prestation => MatchesSearch(prestation.Name, normalizedSearch)
+                || MatchesSearch(prestation.ServiceName, normalizedSearch)
+                || MatchesSearch($"{prestation.ServiceName} {prestation.Name}", normalizedSearch))
+            .Select(prestation => new ProviderOnboardingOptionResponse(
+                prestation.Id,
+                "Prestation",
+                $"{prestation.ServiceName} - {prestation.Name}",
+                prestation.ServiceId,
+                prestation.ServiceName,
+                prestation.Id,
+                prestation.Name));
+
+        return serviceOptions
+            .Concat(prestationOptions)
+            .OrderBy(option => option.ServiceName)
+            .ThenBy(option => option.Type)
+            .ThenBy(option => option.Label)
+            .Take(50)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<ProviderCompanyOpportunityResponse>> SearchOpportunitiesAsync(
+        string? selectionType,
+        Guid selectionId,
+        string? address,
+        CancellationToken cancellationToken)
+    {
+        if (selectionId == Guid.Empty)
+        {
+            return [];
+        }
+
+        var serviceId = selectionId;
+        Guid? prestationId = null;
+        if (string.Equals(selectionType, "Prestation", StringComparison.OrdinalIgnoreCase))
+        {
+            var prestation = await db.ServicePrestations
+                .AsNoTracking()
+                .Where(prestation => prestation.Id == selectionId && prestation.IsActive)
+                .Select(prestation => new { prestation.Id, prestation.ServiceId })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (prestation is null)
+            {
+                return [];
+            }
+
+            serviceId = prestation.ServiceId;
+            prestationId = prestation.Id;
+        }
+
+        var normalizedAddress = NormalizeSearch(address);
+        var rows = await db.Companies
+            .AsNoTracking()
+            .Where(company => company.Status == CompanyStatus.Approved)
+            .Select(company => new
+            {
+                Company = company,
+                LatestApplication = db.CompanyApplications
+                    .Where(application => application.CompanyId == company.Id)
+                    .OrderByDescending(application => application.CreatedAt)
+                    .FirstOrDefault(),
+                Services = db.ProviderServices
+                    .Where(providerService =>
+                        providerService.CompanyId == company.Id
+                        && providerService.IsActive
+                        && providerService.ServiceId == serviceId)
+                    .Select(providerService => providerService.Service!.Name)
+                    .Distinct()
+                    .OrderBy(name => name)
+                    .ToList(),
+                Prestations = db.ProviderServicePrestations
+                    .Where(providerPrestation =>
+                        providerPrestation.IsActive
+                        && providerPrestation.ServicePrestation!.ServiceId == serviceId
+                        && (prestationId == null || providerPrestation.ServicePrestationId == prestationId)
+                        && db.ProviderServices.Any(providerService =>
+                            providerService.Id == providerPrestation.ProviderServiceId
+                            && providerService.CompanyId == company.Id
+                            && providerService.IsActive))
+                    .Select(providerPrestation => providerPrestation.ServicePrestation!.Name)
+                    .Distinct()
+                    .OrderBy(name => name)
+                    .ToList()
+            })
+            .Where(row => row.Services.Count > 0)
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .Select(row =>
+            {
+                var city = row.Company.City ?? row.LatestApplication?.City;
+                var companyAddress = row.Company.Address ?? row.LatestApplication?.Address;
+                var proximityScore = ComputeProximityScore(normalizedAddress, city, companyAddress, row.Company.InterventionZones);
+                return new
+                {
+                    row,
+                    proximityScore,
+                    ProximityLabel = BuildProximityLabel(proximityScore, city, companyAddress)
+                };
+            })
+            .OrderByDescending(row => row.proximityScore)
+            .ThenBy(row => row.row.Company.Name)
+            .Take(12)
+            .Select(row => new ProviderCompanyOpportunityResponse(
+                row.row.Company.Id,
+                row.row.Company.Name,
+                row.row.Company.City ?? row.row.LatestApplication?.City,
+                row.row.Company.Address ?? row.row.LatestApplication?.Address,
+                row.row.Services,
+                row.row.Prestations,
+                row.ProximityLabel,
+                row.row.Company.Status.ToString()))
+            .ToList();
+    }
+
     public async Task<IReadOnlyList<ProviderCompanySearchResponse>> SearchCompaniesAsync(
         string? serviceIds,
         CancellationToken cancellationToken)
@@ -105,6 +264,73 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
             .Where(id => id != Guid.Empty)
             .Distinct()
             .ToList();
+    }
+
+    private static bool MatchesSearch(string value, string normalizedSearch)
+    {
+        return string.IsNullOrWhiteSpace(normalizedSearch)
+            || NormalizeSearch(value).Contains(normalizedSearch, StringComparison.Ordinal);
+    }
+
+    private static int ComputeProximityScore(string normalizedAddress, params string?[] companyLocations)
+    {
+        if (string.IsNullOrWhiteSpace(normalizedAddress))
+        {
+            return 0;
+        }
+
+        var tokens = normalizedAddress
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(token => token.Length >= 3)
+            .Distinct()
+            .ToList();
+        if (tokens.Count == 0)
+        {
+            return 0;
+        }
+
+        var normalizedLocations = companyLocations
+            .Where(location => !string.IsNullOrWhiteSpace(location))
+            .Select(NormalizeSearch)
+            .ToList();
+
+        return tokens.Count(token => normalizedLocations.Any(location => location.Contains(token, StringComparison.Ordinal)));
+    }
+
+    private static string BuildProximityLabel(int proximityScore, string? city, string? address)
+    {
+        if (proximityScore > 0)
+        {
+            return "Proche de votre zone";
+        }
+
+        if (!string.IsNullOrWhiteSpace(address))
+        {
+            return address;
+        }
+
+        return string.IsNullOrWhiteSpace(city) ? "Zone a confirmer" : city;
+    }
+
+    private static string NormalizeSearch(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Trim().Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder(normalized.Length);
+        foreach (var character in normalized)
+        {
+            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character);
+            if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(char.ToLowerInvariant(character));
+            }
+        }
+
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
     }
 }
 
