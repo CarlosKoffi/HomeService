@@ -302,6 +302,8 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         string? search,
         int skip,
         int take,
+        string? contextType = null,
+        Guid? contextId = null,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -315,6 +317,11 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         AddQueryValue(query, "actorType", actorType);
         AddQueryValue(query, "entityType", entityType);
         AddQueryValue(query, "search", search);
+        AddQueryValue(query, "contextType", contextType);
+        if (contextId.HasValue)
+        {
+            AddQueryValue(query, "contextId", contextId.Value.ToString());
+        }
 
         return await GetJsonAsync<AuditLogListResponse>($"/api/admin/audit-logs?{string.Join('&', query)}", cancellationToken);
     }

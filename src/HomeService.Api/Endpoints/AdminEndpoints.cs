@@ -34,6 +34,8 @@ public static class AdminEndpoints
             string? search,
             DateTimeOffset? from,
             DateTimeOffset? to,
+            string? contextType,
+            Guid? contextId,
             int? skip,
             int? take,
             AdminQueryService queryService,
@@ -49,7 +51,9 @@ public static class AdminEndpoints
                 from,
                 to,
                 skip,
-                take), cancellationToken);
+                take,
+                contextType,
+                contextId), cancellationToken);
 
             return Results.Ok(result);
         })

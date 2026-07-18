@@ -550,6 +550,15 @@ public sealed class AdminQueryService(IAppDbContext db)
             query = query.Where(entry => entry.OccurredAt <= queryOptions.To.Value);
         }
 
+        if (queryOptions.ContextId.HasValue && !string.IsNullOrWhiteSpace(queryOptions.ContextType))
+        {
+            query = await ApplyAuditContextAsync(
+                query,
+                queryOptions.ContextType,
+                queryOptions.ContextId.Value,
+                cancellationToken);
+        }
+
         if (!string.IsNullOrWhiteSpace(queryOptions.Search))
         {
             var term = queryOptions.Search.Trim().ToLowerInvariant();
@@ -583,6 +592,75 @@ public sealed class AdminQueryService(IAppDbContext db)
             .ToListAsync(cancellationToken);
 
         return new AuditLogListResponse(total, offset, pageSize, items);
+    }
+
+    private async Task<IQueryable<Domain.Entities.AuditLogEntry>> ApplyAuditContextAsync(
+        IQueryable<Domain.Entities.AuditLogEntry> query,
+        string contextType,
+        Guid contextId,
+        CancellationToken cancellationToken)
+    {
+        return contextType.Trim().ToLowerInvariant() switch
+        {
+            "company" => await ApplyCompanyAuditContextAsync(query, contextId, cancellationToken),
+            "provider" => await ApplyProviderAuditContextAsync(query, contextId, cancellationToken),
+            _ => query
+        };
+    }
+
+    private async Task<IQueryable<Domain.Entities.AuditLogEntry>> ApplyCompanyAuditContextAsync(
+        IQueryable<Domain.Entities.AuditLogEntry> query,
+        Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        var providerIds = await db.Providers
+            .AsNoTracking()
+            .Where(provider => provider.CompanyId == companyId)
+            .Select(provider => provider.Id)
+            .ToListAsync(cancellationToken);
+
+        var missionIds = await db.Missions
+            .AsNoTracking()
+            .Where(mission => mission.CompanyId == companyId)
+            .Select(mission => mission.Id)
+            .ToListAsync(cancellationToken);
+
+        var applicationIds = await db.CompanyApplications
+            .AsNoTracking()
+            .Where(application => application.CompanyId == companyId)
+            .Select(application => application.Id)
+            .ToListAsync(cancellationToken);
+
+        return query.Where(entry =>
+            (entry.ActorType == AuditActorType.Company && entry.ActorId == companyId)
+            || (entry.EntityType == "Company" && entry.EntityId == companyId)
+            || (entry.EntityType == "CompanyApplication" && entry.EntityId != null && applicationIds.Contains(entry.EntityId.Value))
+            || (entry.EntityType == "ProviderProfile" && entry.EntityId != null && providerIds.Contains(entry.EntityId.Value))
+            || (entry.EntityType == "Mission" && entry.EntityId != null && missionIds.Contains(entry.EntityId.Value)));
+    }
+
+    private async Task<IQueryable<Domain.Entities.AuditLogEntry>> ApplyProviderAuditContextAsync(
+        IQueryable<Domain.Entities.AuditLogEntry> query,
+        Guid providerId,
+        CancellationToken cancellationToken)
+    {
+        var assignmentIds = await db.ProviderMissionAssignments
+            .AsNoTracking()
+            .Where(assignment => assignment.ProviderId == providerId)
+            .Select(assignment => assignment.Id)
+            .ToListAsync(cancellationToken);
+
+        var affiliationRequestIds = await db.ProviderAffiliationRequests
+            .AsNoTracking()
+            .Where(request => request.ProviderId == providerId)
+            .Select(request => request.Id)
+            .ToListAsync(cancellationToken);
+
+        return query.Where(entry =>
+            (entry.ActorType == AuditActorType.Provider && entry.ActorId == providerId)
+            || (entry.EntityType == "ProviderProfile" && entry.EntityId == providerId)
+            || (entry.EntityType == "ProviderMissionAssignment" && entry.EntityId != null && assignmentIds.Contains(entry.EntityId.Value))
+            || (entry.EntityType == "ProviderAffiliationRequest" && entry.EntityId != null && affiliationRequestIds.Contains(entry.EntityId.Value)));
     }
 
     public async Task<IReadOnlyList<CompanyApplicationSummaryResponse>> ListCompanyApplicationsAsync(CancellationToken cancellationToken)
@@ -845,7 +923,9 @@ public sealed record AdminAuditLogQuery(
     DateTimeOffset? From,
     DateTimeOffset? To,
     int? Skip,
-    int? Take)
+    int? Take,
+    string? ContextType = null,
+    Guid? ContextId = null)
 {
     public static int NormalizePageSize(int? take) => Math.Clamp(take ?? 50, 1, 200);
     public static int NormalizeOffset(int? skip) => Math.Max(skip ?? 0, 0);

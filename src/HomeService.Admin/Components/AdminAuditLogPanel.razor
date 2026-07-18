@@ -1,0 +1,205 @@
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Monitoring
+@inject PlatformApiClient ApiClient
+
+<section class="audit-context-panel">
+    <header>
+        <div>
+            <p class="eyebrow">@Eyebrow</p>
+            <h2>@Title</h2>
+            <p>@Subtitle</p>
+        </div>
+        <button type="button" class="secondary-action" @onclick="RefreshAsync" disabled="@IsLoading">Actualiser</button>
+    </header>
+
+    <div class="audit-context-filters">
+        <label>
+            Recherche
+            <input type="search" @bind="Search" @bind:event="oninput" placeholder="Action, acteur, resume..." />
+        </label>
+        <button type="button" @onclick="ApplyFiltersAsync" disabled="@IsLoading">Filtrer</button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <p class="admin-message error-message">@ErrorMessage</p>
+    }
+
+    @if (IsLoading)
+    {
+        <article class="audit-context-empty">Chargement du journal...</article>
+    }
+    else if (Entries.Count == 0)
+    {
+        <article class="audit-context-empty">Aucune action trouvee pour ce contexte.</article>
+    }
+    else
+    {
+        <div class="audit-context-list">
+            @foreach (var entry in Entries)
+            {
+                <article class="audit-context-row">
+                    <span class="audit-context-icon">@GetActorInitial(entry.ActorType)</span>
+                    <div>
+                        <div class="audit-context-title">
+                            <strong>@TranslateAction(entry.Action)</strong>
+                            <small>@entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                        <p>@(entry.Summary ?? "Action enregistree.")</p>
+                        <div class="audit-context-meta">
+                            <span>@TranslateActor(entry.ActorType)</span>
+                            <span>@(entry.ActorDisplayName ?? "acteur non renseigne")</span>
+                            <span>@TranslateEntity(entry.EntityType)</span>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+
+    <footer>
+        <span>@Total action(s)</span>
+        <div>
+            <button type="button" @onclick="PreviousPageAsync" disabled="@(!CanPrevious || IsLoading)">Precedent</button>
+            <button type="button" @onclick="NextPageAsync" disabled="@(!CanNext || IsLoading)">Suivant</button>
+        </div>
+    </footer>
+</section>
+
+@code {
+    private const int PageSize = 20;
+
+    [Parameter] public string ContextType { get; set; } = string.Empty;
+    [Parameter] public Guid ContextId { get; set; }
+    [Parameter] public string Title { get; set; } = "Journal d'activite";
+    [Parameter] public string Subtitle { get; set; } = "Actions recentes liees a ce dossier.";
+    [Parameter] public string Eyebrow { get; set; } = "Monitoring";
+
+    private List<AuditLogEntryResponse> Entries { get; set; } = [];
+    private int Total { get; set; }
+    private int Skip { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+    private string? Search { get; set; }
+
+    private bool CanPrevious => Skip > 0;
+    private bool CanNext => Skip + PageSize < Total;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Skip = 0;
+        await LoadAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        Skip = 0;
+        await LoadAsync();
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        Skip = Math.Max(0, Skip - PageSize);
+        await LoadAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (!CanNext)
+        {
+            return;
+        }
+
+        Skip += PageSize;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (ContextId == Guid.Empty || string.IsNullOrWhiteSpace(ContextType))
+        {
+            Entries = [];
+            Total = 0;
+            IsLoading = false;
+            return;
+        }
+
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var response = await ApiClient.GetAuditLogsAsync(
+                actorType: null,
+                entityType: null,
+                search: Search,
+                skip: Skip,
+                take: PageSize,
+                contextType: ContextType,
+                contextId: ContextId);
+
+            Entries = response?.Items.ToList() ?? [];
+            Total = response?.Total ?? 0;
+            Skip = response?.Skip ?? Skip;
+        }
+        catch (Exception exception)
+        {
+            Entries = [];
+            Total = 0;
+            ErrorMessage = $"Impossible de charger le journal. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private static string GetActorInitial(string actorType)
+    {
+        return string.IsNullOrWhiteSpace(actorType) ? "?" : actorType[..1].ToUpperInvariant();
+    }
+
+    private static string TranslateActor(string actorType) => actorType switch
+    {
+        "Company" => "Entreprise",
+        "Provider" => "Prestataire",
+        "Admin" => "Admin",
+        "System" => "Systeme",
+        "Anonymous" => "Visiteur",
+        _ => actorType
+    };
+
+    private static string TranslateEntity(string entityType) => entityType switch
+    {
+        "Company" => "Entreprise",
+        "CompanyApplication" => "Dossier entreprise",
+        "ProviderProfile" => "Prestataire",
+        "ProviderMissionAssignment" => "Affectation",
+        "ProviderAffiliationRequest" => "Demande interim",
+        "Mission" => "Mission",
+        _ => entityType
+    };
+
+    private static string TranslateAction(string action) => action switch
+    {
+        "CompanyPortalLoginSucceeded" => "Connexion entreprise",
+        "CompanyEmployeeCreated" => "Employe ajoute",
+        "CompanyEmployeeUpdated" => "Employe modifie",
+        "CompanyEmployeeSuspended" => "Employe suspendu",
+        "CompanyEmployeeAvailabilityUpdated" => "Disponibilite modifiee",
+        "CompanyMissionAssigned" => "Mission affectee",
+        "InterimCandidateApproved" => "Interim valide",
+        "InterimCandidateRejected" => "Interim refuse",
+        "ProviderPortalActivated" => "Compte prestataire active",
+        "ProviderPortalLogin" => "Connexion prestataire",
+        "ProviderMissionAccepted" => "Mission acceptee",
+        "ProviderMissionRefused" => "Mission refusee",
+        "ProviderMissionStarted" => "Mission demarree",
+        _ => action
+    };
+}

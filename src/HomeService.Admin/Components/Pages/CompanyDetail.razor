@@ -47,6 +47,7 @@ else
         <button type="button" class='@GetTabClass("missions")' @onclick='() => SelectTab("missions")'>Missions</button>
         <button type="button" class='@GetTabClass("documents")' @onclick='() => SelectTab("documents")'>Documents</button>
         <button type="button" class='@GetTabClass("timeline")' @onclick='() => SelectTab("timeline")'>Historique</button>
+        <button type="button" class='@GetTabClass("logs")' @onclick='() => SelectTab("logs")'>Journal</button>
     </section>
 
     @if (SelectedTab == "summary")
@@ -170,6 +171,15 @@ else
                 </article>
             }
         </section>
+    }
+    else if (SelectedTab == "logs")
+    {
+        <AdminAuditLogPanel
+            ContextType="Company"
+            ContextId="Company.Id"
+            Eyebrow="Journal entreprise"
+            Title="Activite du dossier"
+            Subtitle="Actions admin, portail entreprise, employes et missions rattachees." />
     }
 }
 

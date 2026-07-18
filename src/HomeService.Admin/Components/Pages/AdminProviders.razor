@@ -135,14 +135,26 @@
                     {
                         <button type="button" @onclick="() => OpenCompany(provider.CompanyId.Value)">Entreprise</button>
                     }
+                    <button type="button" @onclick="() => ShowProviderLogs(provider)">Journal</button>
                 </div>
             </article>
         }
     }
 </section>
 
+@if (SelectedProviderForLogs is not null)
+{
+    <AdminAuditLogPanel
+        ContextType="Provider"
+        ContextId="SelectedProviderForLogs.Id"
+        Eyebrow="Journal prestataire"
+        Title="@SelectedProviderForLogs.FullName"
+        Subtitle="Connexions, affectations, disponibilite, missions et actions rattachees." />
+}
+
 @code {
     private AdminProviderListResponse? Snapshot { get; set; }
+    private AdminProviderSummaryResponse? SelectedProviderForLogs { get; set; }
     private string? SelectedStatus { get; set; }
     private string? SelectedEmploymentType { get; set; }
     private string? SearchTerm { get; set; }
@@ -176,6 +188,11 @@
     private void OpenCompany(Guid companyId)
     {
         Navigation.NavigateTo($"/companies/{companyId}");
+    }
+
+    private void ShowProviderLogs(AdminProviderSummaryResponse provider)
+    {
+        SelectedProviderForLogs = provider;
     }
 
     private static string GetInitials(string name)
