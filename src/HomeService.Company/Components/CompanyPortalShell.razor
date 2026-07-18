@@ -1,6 +1,7 @@
 @inject NavigationManager Navigation
 @inject IWebHostEnvironment Environment
 @inject IJSRuntime Js
+@inject PlatformApiClient ApiClient
 
 <div class="@ShellClass">
     <input id="portal-sidebar-toggle" class="portal-sidebar-toggle" type="checkbox" />
@@ -42,13 +43,13 @@
         <div class="portal-sidebar-progress">
             <div class="portal-progress-head">
                 <span>Profil complete</span>
-                <strong>@ProfileCompletionPercent%</strong>
+                <strong>@EffectiveProfileCompletionPercent%</strong>
             </div>
             <div class="portal-progress-track">
-                <span style="width: @ProfileCompletionPercent%"></span>
+                <span style="width: @EffectiveProfileCompletionPercent%"></span>
             </div>
             <div class="portal-progress-steps">
-                @foreach (var step in ProgressSteps)
+                @foreach (var step in EffectiveProgressSteps)
                 {
                     <div>
                         <span class="@(step.IsDone ? "done" : "todo")">@(step.IsDone ? "OK" : "+")</span>
@@ -102,6 +103,7 @@
     [Parameter] public string Active { get; set; } = "dashboard";
     [Parameter] public string Title { get; set; } = "Tableau de bord";
     [Parameter] public string Subtitle { get; set; } = "Portail connecte";
+    [Parameter] public Guid? CompanyId { get; set; }
     [Parameter] public string CompanyName { get; set; } = "CI Home Service";
     [Parameter] public string Email { get; set; } = "mode.demo@kaza.ci";
     [Parameter] public int ProfileCompletionPercent { get; set; } = 25;
@@ -115,6 +117,12 @@
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public RenderFragment? TopbarActions { get; set; }
 
+    private Guid? LoadedCompanyId { get; set; }
+    private CompanyPortalDashboardResponse? PortalSummary { get; set; }
+
+    private int EffectiveProfileCompletionPercent => PortalSummary?.ProfileCompletionPercent ?? ProfileCompletionPercent;
+    private IReadOnlyList<CompanyPortalProgressStepResponse> EffectiveProgressSteps => PortalSummary?.ProgressSteps ?? ProgressSteps;
+
     private string Initials
     {
         get
@@ -125,6 +133,28 @@
     }
 
     private string ShellClass => $"company-portal-shell portal-shell-{Active}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CompanyId is null
+            || CompanyId == Guid.Empty
+            || LoadedCompanyId == CompanyId
+            || Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        LoadedCompanyId = CompanyId;
+
+        try
+        {
+            PortalSummary = await ApiClient.GetCompanyDashboardAsync(CompanyId.Value);
+        }
+        catch
+        {
+            PortalSummary = null;
+        }
+    }
 
     private string GetClass(string key)
     {

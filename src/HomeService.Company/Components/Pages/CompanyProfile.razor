@@ -31,6 +31,7 @@ else
     <CompanyPortalShell Active="company-profile"
                         Title="Informations"
                         Subtitle="Profil, documents et conformite"
+                        CompanyId="@Session.CompanyId"
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(IsCompanyApproved() ? 75 : 35)">

@@ -30,6 +30,7 @@ else
     <CompanyPortalShell Active="employees"
                         Title="Employes"
                         Subtitle="Equipe et prestataires"
+                        CompanyId="@Session.CompanyId"
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">

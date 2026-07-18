@@ -29,6 +29,7 @@ else
     <CompanyPortalShell Active="accounts"
                         Title="Encaissements"
                         Subtitle="@($"{PeriodLabel} - suivi des paiements")"
+                        CompanyId="@Session.CompanyId"
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">

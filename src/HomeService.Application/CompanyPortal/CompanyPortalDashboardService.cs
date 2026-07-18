@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Companies;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -110,6 +111,23 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
                 activity.IsRead))
             .ToListAsync(cancellationToken);
 
+        var complianceDocuments = await db.CompanyApplicationDocuments
+            .AsNoTracking()
+            .Where(document => document.CompanyApplication != null
+                && document.CompanyApplication.CompanyId == companyId)
+            .Select(document => new
+            {
+                document.DocumentType,
+                document.ReviewStatus,
+                document.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        var hasRequiredComplianceDocuments = HasRequiredComplianceDocuments(complianceDocuments
+            .Select(document => new ComplianceDocumentProgressRow(document.DocumentType, document.ReviewStatus, document.CreatedAt)));
+
+        var progressSteps = BuildProgressSteps(hasRequiredComplianceDocuments, providers.Count, missionRows.Count);
+
         var response = new CompanyPortalDashboardResponse(
             company.Id,
             company.Name,
@@ -117,8 +135,8 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
             company.Status.ToString(),
             user?.FullName ?? "Responsable",
             user?.Email ?? company.Email ?? string.Empty,
-            GetProfileCompletionPercent(company.Status, providers.Count, activities.Count),
-            BuildProgressSteps(company.Status, providers.Count, missionRows.Count),
+            GetProfileCompletionPercent(progressSteps),
+            progressSteps,
             providers.Count(provider => provider.Status != ProviderStatus.Inactive),
             providers.Count(provider => provider.IsAvailable),
             missionRows.Count(row => row.ScheduledFor >= now && row.Status != MissionStatus.Completed && row.Status != MissionStatus.Cancelled),
@@ -177,33 +195,28 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
             row.Status == MissionStatus.Cancelled ? "Annulation client" : null);
     }
 
-    private static int GetProfileCompletionPercent(CompanyStatus companyStatus, int providerCount, int activityCount)
+    private static bool HasRequiredComplianceDocuments(IEnumerable<ComplianceDocumentProgressRow> documents)
     {
-        var score = 25;
-        if (companyStatus == CompanyStatus.Approved)
-        {
-            score += 35;
-        }
+        var latestUsableDocumentTypes = documents
+            .Where(document => document.ReviewStatus is DocumentReviewStatus.Pending or DocumentReviewStatus.Approved)
+            .GroupBy(document => document.DocumentType)
+            .Select(group => group.OrderByDescending(document => document.CreatedAt).First().DocumentType)
+            .ToHashSet();
 
-        if (providerCount > 0)
-        {
-            score += 25;
-        }
-
-        if (activityCount > 0)
-        {
-            score += 15;
-        }
-
-        return Math.Clamp(score, 0, 100);
+        return RequiredCompanyDocumentsPolicy.RequiredDocumentTypes.All(latestUsableDocumentTypes.Contains);
     }
 
-    private static IReadOnlyList<CompanyPortalProgressStepResponse> BuildProgressSteps(CompanyStatus companyStatus, int providerCount, int missionCount)
+    private static int GetProfileCompletionPercent(IReadOnlyList<CompanyPortalProgressStepResponse> progressSteps)
+    {
+        return progressSteps.Count(step => step.IsDone) * 25;
+    }
+
+    private static IReadOnlyList<CompanyPortalProgressStepResponse> BuildProgressSteps(bool hasRequiredComplianceDocuments, int providerCount, int missionCount)
     {
         return
         [
             new CompanyPortalProgressStepResponse("Profil entreprise", true, null, null),
-            new CompanyPortalProgressStepResponse("Documents de conformite", companyStatus == CompanyStatus.Approved, "Completer", "company-profile"),
+            new CompanyPortalProgressStepResponse("Documents de conformite", hasRequiredComplianceDocuments, "Completer", "company-profile"),
             new CompanyPortalProgressStepResponse("Premier employe ajoute", providerCount > 0, "Ajouter", "employees"),
             new CompanyPortalProgressStepResponse("Premiere mission creee", missionCount > 0, "Voir", "operations")
         ];
@@ -238,6 +251,11 @@ internal sealed record DashboardMissionRow(
     string? CompanyQuoteJustification,
     DateTimeOffset? CompanyQuotedAt,
     DateTimeOffset? CustomerQuoteAcceptedAt);
+
+internal sealed record ComplianceDocumentProgressRow(
+    CompanyDocumentType DocumentType,
+    DocumentReviewStatus ReviewStatus,
+    DateTimeOffset CreatedAt);
 
 public sealed record CompanyPortalDashboardResult(bool IsSuccess, CompanyPortalDashboardResponse? Response, string? Message)
 {

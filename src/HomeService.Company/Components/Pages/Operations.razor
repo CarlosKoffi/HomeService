@@ -30,6 +30,7 @@ else
     <CompanyPortalShell Active="missions"
                         Title="Missions"
                         Subtitle="@($"{CurrentMonthLabel} - {AllMissions.Count} missions au total")"
+                        CompanyId="@Session.CompanyId"
                         CompanyName="@Session.CompanyName"
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
