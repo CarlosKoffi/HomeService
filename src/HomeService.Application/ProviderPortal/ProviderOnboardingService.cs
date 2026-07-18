@@ -84,35 +84,14 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
             return [];
         }
 
-        var serviceId = selectionId;
-        Guid? prestationId = null;
-        var selectedService = await db.Services
-            .AsNoTracking()
-            .Where(service => service.Id == serviceId && service.IsActive)
-            .Select(service => new { service.Id, service.Name })
-            .FirstOrDefaultAsync(cancellationToken);
-        if (string.Equals(selectionType, "Prestation", StringComparison.OrdinalIgnoreCase))
-        {
-            var prestation = await db.ServicePrestations
-                .AsNoTracking()
-                .Where(prestation => prestation.Id == selectionId && prestation.IsActive && prestation.Service!.IsActive)
-                .Select(prestation => new { prestation.Id, prestation.ServiceId, prestation.Name, ServiceName = prestation.Service!.Name })
-                .FirstOrDefaultAsync(cancellationToken);
-            if (prestation is null)
-            {
-                return [];
-            }
-
-            serviceId = prestation.ServiceId;
-            prestationId = prestation.Id;
-            selectedService = new { Id = prestation.ServiceId, Name = prestation.ServiceName };
-        }
-
-        if (selectedService is null)
+        var selectedWork = await ResolveSelectedWorkAsync(selectionType, selectionId, cancellationToken);
+        if (selectedWork is null)
         {
             return [];
         }
 
+        var serviceId = selectedWork.ServiceId;
+        var prestationId = selectedWork.PrestationId;
         var normalizedAddress = NormalizeSearch(address);
         var companyIdsWithProviderService = await db.ProviderServices
             .AsNoTracking()
@@ -122,13 +101,12 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
             .Select(providerService => providerService.CompanyId)
             .Distinct()
             .ToListAsync(cancellationToken);
-        var companyIdsWithExactPrestation = prestationId is null
-            ? []
-            : await db.ProviderServicePrestations
+        var companyIdsWithRelevantPrestation = await db.ProviderServicePrestations
                 .AsNoTracking()
                 .Where(providerPrestation =>
                     providerPrestation.IsActive
-                    && providerPrestation.ServicePrestationId == prestationId
+                    && providerPrestation.ServicePrestation!.ServiceId == serviceId
+                    && (prestationId == null || providerPrestation.ServicePrestationId == prestationId)
                     && providerPrestation.ProviderService!.IsActive)
                 .Select(providerPrestation => providerPrestation.ProviderService!.CompanyId)
                 .Distinct()
@@ -178,18 +156,19 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
             .ToListAsync(cancellationToken);
 
         var providerServiceCompanyIds = companyIdsWithProviderService.ToHashSet();
-        var exactPrestationCompanyIds = companyIdsWithExactPrestation.ToHashSet();
+        var relevantPrestationCompanyIds = companyIdsWithRelevantPrestation.ToHashSet();
         var applicationCompanyIds = companyIdsFromApplications.ToHashSet();
-        var selectedServiceName = NormalizeSearch(selectedService.Name);
+        var selectedWorkTerms = BuildSelectedWorkTerms(selectedWork);
 
         var matchedRows = rows
-            .Where(row => CompanyMatchesRequestedWork(
-                row.Company,
-                row.LatestApplication,
+            .Where(row => ProviderCompanyOpportunityMatchingPolicy.Matches(new ProviderCompanyWorkMatchInput(
+                row.Company.Id,
+                row.Company.PlannedServices,
+                row.LatestApplication?.PlannedServices,
                 providerServiceCompanyIds,
-                exactPrestationCompanyIds,
+                relevantPrestationCompanyIds,
                 applicationCompanyIds,
-                selectedServiceName))
+                selectedWorkTerms)))
             .Select(row =>
             {
                 var city = row.Company.City ?? row.LatestApplication?.City;
@@ -329,29 +308,49 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
             || NormalizeSearch(value).Contains(normalizedSearch, StringComparison.Ordinal);
     }
 
-    private static bool CompanyMatchesRequestedWork(
-        Company company,
-        CompanyApplication? latestApplication,
-        IReadOnlySet<Guid> providerServiceCompanyIds,
-        IReadOnlySet<Guid> exactPrestationCompanyIds,
-        IReadOnlySet<Guid> applicationCompanyIds,
-        string selectedServiceName)
+    private async Task<SelectedProviderWork?> ResolveSelectedWorkAsync(
+        string? selectionType,
+        Guid selectionId,
+        CancellationToken cancellationToken)
     {
-        if (providerServiceCompanyIds.Contains(company.Id)
-            || exactPrestationCompanyIds.Contains(company.Id)
-            || applicationCompanyIds.Contains(company.Id))
+        if (string.Equals(selectionType, "Prestation", StringComparison.OrdinalIgnoreCase))
         {
-            return true;
+            return await ResolvePrestationAsync(selectionId, cancellationToken);
         }
 
-        return TextContainsService(company.PlannedServices, selectedServiceName)
-            || TextContainsService(latestApplication?.PlannedServices, selectedServiceName);
+        var service = await db.Services
+            .AsNoTracking()
+            .Where(service => service.Id == selectionId && service.IsActive)
+            .Select(service => new SelectedProviderWork(service.Id, service.Name, null, null))
+            .FirstOrDefaultAsync(cancellationToken);
+        if (service is not null)
+        {
+            return service;
+        }
+
+        return await ResolvePrestationAsync(selectionId, cancellationToken);
     }
 
-    private static bool TextContainsService(string? value, string selectedServiceName)
+    private async Task<SelectedProviderWork?> ResolvePrestationAsync(Guid prestationId, CancellationToken cancellationToken)
     {
-        return !string.IsNullOrWhiteSpace(selectedServiceName)
-            && NormalizeSearch(value).Contains(selectedServiceName, StringComparison.Ordinal);
+        return await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => prestation.Id == prestationId && prestation.IsActive && prestation.Service!.IsActive)
+            .Select(prestation => new SelectedProviderWork(
+                prestation.ServiceId,
+                prestation.Service!.Name,
+                prestation.Id,
+                prestation.Name))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private static IReadOnlyList<string> BuildSelectedWorkTerms(SelectedProviderWork selectedWork)
+    {
+        return new[] { selectedWork.ServiceName, selectedWork.PrestationName }
+            .Select(NormalizeSearch)
+            .Where(term => !string.IsNullOrWhiteSpace(term))
+            .Distinct()
+            .ToList();
     }
 
     private static int ComputeProximityScore(string normalizedAddress, params string?[] companyLocations)
@@ -401,6 +400,64 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
             return string.Empty;
         }
 
+        var normalized = value.Trim().Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder(normalized.Length);
+        foreach (var character in normalized)
+        {
+            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character);
+            if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(char.ToLowerInvariant(character));
+            }
+        }
+
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
+}
+
+public sealed record SelectedProviderWork(
+    Guid ServiceId,
+    string ServiceName,
+    Guid? PrestationId,
+    string? PrestationName);
+
+public sealed record ProviderCompanyWorkMatchInput(
+    Guid CompanyId,
+    string? CompanyPlannedServices,
+    string? ApplicationPlannedServices,
+    IReadOnlySet<Guid> ProviderServiceCompanyIds,
+    IReadOnlySet<Guid> RelevantPrestationCompanyIds,
+    IReadOnlySet<Guid> ApplicationCompanyIds,
+    IReadOnlyCollection<string> NormalizedSelectedWorkTerms);
+
+public static class ProviderCompanyOpportunityMatchingPolicy
+{
+    public static bool Matches(ProviderCompanyWorkMatchInput input)
+    {
+        if (input.ProviderServiceCompanyIds.Contains(input.CompanyId)
+            || input.RelevantPrestationCompanyIds.Contains(input.CompanyId)
+            || input.ApplicationCompanyIds.Contains(input.CompanyId))
+        {
+            return true;
+        }
+
+        return TextContainsAnyWorkTerm(input.CompanyPlannedServices, input.NormalizedSelectedWorkTerms)
+            || TextContainsAnyWorkTerm(input.ApplicationPlannedServices, input.NormalizedSelectedWorkTerms);
+    }
+
+    private static bool TextContainsAnyWorkTerm(string? value, IReadOnlyCollection<string> normalizedSelectedWorkTerms)
+    {
+        if (string.IsNullOrWhiteSpace(value) || normalizedSelectedWorkTerms.Count == 0)
+        {
+            return false;
+        }
+
+        var normalizedValue = NormalizeSearch(value);
+        return normalizedSelectedWorkTerms.Any(term => normalizedValue.Contains(term, StringComparison.Ordinal));
+    }
+
+    private static string NormalizeSearch(string value)
+    {
         var normalized = value.Trim().Normalize(System.Text.NormalizationForm.FormD);
         var builder = new System.Text.StringBuilder(normalized.Length);
         foreach (var character in normalized)
