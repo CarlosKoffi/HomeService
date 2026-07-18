@@ -405,11 +405,14 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
             var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character);
             if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
             {
-                builder.Append(char.ToLowerInvariant(character));
+                builder.Append(char.IsLetterOrDigit(character) ? char.ToLowerInvariant(character) : ' ');
             }
         }
 
-        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+        return string.Join(' ', builder
+            .ToString()
+            .Normalize(System.Text.NormalizationForm.FormC)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 }
 
@@ -463,11 +466,14 @@ public static class ProviderCompanyOpportunityMatchingPolicy
             var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character);
             if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
             {
-                builder.Append(char.ToLowerInvariant(character));
+                builder.Append(char.IsLetterOrDigit(character) ? char.ToLowerInvariant(character) : ' ');
             }
         }
 
-        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+        return string.Join(' ', builder
+            .ToString()
+            .Normalize(System.Text.NormalizationForm.FormC)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
     }
 }
 

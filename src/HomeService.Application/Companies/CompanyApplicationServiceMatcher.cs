@@ -46,7 +46,7 @@ public static class CompanyApplicationServiceMatcher
             var category = CharUnicodeInfo.GetUnicodeCategory(character);
             if (category != UnicodeCategory.NonSpacingMark)
             {
-                builder.Append(char.ToLowerInvariant(character));
+                builder.Append(char.IsLetterOrDigit(character) ? char.ToLowerInvariant(character) : ' ');
             }
         }
 

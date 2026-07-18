@@ -30,6 +30,30 @@ public sealed class CompanyApplicationServiceMatcherTests
     }
 
     [Fact]
+    public void FindBestCandidate_ReturnsPrestation_WhenRawNameUsesServicePrestationLabelWithDash()
+    {
+        var serviceId = Guid.NewGuid();
+        var prestationId = Guid.NewGuid();
+        var catalog = new[]
+        {
+            new CompanyApplicationServiceCatalogItem(
+                serviceId,
+                "Blanchisserie",
+                "blanchisserie",
+                prestationId,
+                "Repassage",
+                "repassage")
+        };
+
+        var candidate = CompanyApplicationServiceMatcher.FindBestCandidate("Blanchisserie - Repassage", catalog);
+
+        Assert.NotNull(candidate);
+        Assert.Equal(serviceId, candidate.ServiceId);
+        Assert.Equal(prestationId, candidate.ServicePrestationId);
+        Assert.Equal("Prestation", candidate.Kind);
+    }
+
+    [Fact]
     public void FindBestCandidate_IsAccentAndCaseTolerant()
     {
         var serviceId = Guid.NewGuid();
