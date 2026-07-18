@@ -20,6 +20,7 @@
             <div class="premium-actions">
                 <a class="premium-primary" href="@NormalizeCtaUrl(HomeContent.Hero.PrimaryCta.Url)">@HomeContent.Hero.PrimaryCta.Label</a>
                 <a class="premium-secondary" href="@HomeContent.Hero.SecondaryCta.Url">@HomeContent.Hero.SecondaryCta.Label</a>
+                <a class="premium-secondary" href="/mobileappview">Telecharger l'application</a>
             </div>
             <div class="premium-proof" aria-label="Parcours prestataire Kaza">
                 @foreach (var proof in HomeContent.Hero.ProofItems)
@@ -213,7 +214,7 @@
     private static string NormalizeCtaUrl(string url)
     {
         return string.Equals(url.Trim('/'), "onboarding", StringComparison.OrdinalIgnoreCase)
-            ? "/mobileappview"
+            ? "/onboarding?mode=register"
             : url;
     }
 
@@ -249,8 +250,8 @@
             new CompanyHomeHeroCmsResponse(
                 "Kaza prestataire",
                 "Trouvez des missions. Travaillez depuis votre mobile.",
-                "Telechargez l'application Kaza, creez votre profil et recevez vos missions apres validation par une entreprise partenaire.",
-                new CmsLinkResponse("Telecharger l'application", "/mobileappview"),
+                "Creez votre profil Kaza, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.",
+                new CmsLinkResponse("Creer un compte", "/onboarding?mode=register"),
                 new CmsLinkResponse("Voir le fonctionnement", "#how"),
                 "images/kaza-provider-hero.png",
                 "Prestataires de services a domicile Kaza",

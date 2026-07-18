@@ -523,9 +523,9 @@ public static class DatabaseInitializer
                 case "HeroStandard":
                     AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Kaza prestataire", french.Id);
                     AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trouvez des missions. Travaillez depuis votre mobile.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Telechargez l'application Kaza, creez votre profil et recevez vos missions apres validation par une entreprise partenaire.", french.Id);
-                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Telecharger l'application", french.Id);
-                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/mobileappview", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Creez votre profil Kaza, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.", french.Id);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Creer un compte", french.Id);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/onboarding?mode=register", french.Id);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
                     AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-provider-hero.png", french.Id, replaceExisting: true);

@@ -62,8 +62,8 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 GetText(hero, "headline", "Trouvez des missions. Travaillez avec des entreprises verifiees."),
                 GetText(hero, "subtitle", "Creez votre profil, rattachez-vous a une entreprise partenaire ou proposez votre candidature en interim."),
                 new CmsLinkResponse(
-                    GetText(hero, "primaryCta.label", "Telecharger l'application"),
-                    GetText(hero, "primaryCta.url", "/mobileappview")),
+                    GetText(hero, "primaryCta.label", "Creer un compte"),
+                    GetText(hero, "primaryCta.url", "/onboarding?mode=register")),
                 new CmsLinkResponse(
                     GetText(hero, "secondaryCta.label", "Voir le fonctionnement"),
                     GetText(hero, "secondaryCta.url", "#how")),
