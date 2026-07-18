@@ -100,9 +100,6 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         var request = await db.ProviderAffiliationRequests
             .Include(request => request.Company)
             .Include(request => request.Provider)
-                .ThenInclude(provider => provider!.CandidateServices)
-            .Include(request => request.Provider)
-                .ThenInclude(provider => provider!.Services)
             .FirstOrDefaultAsync(request => request.Id == requestId && request.CompanyId == companyId, cancellationToken);
 
         if (request?.Provider is null || request.Company is null || request.Company.Status == CompanyStatus.Suspended)
@@ -130,13 +127,6 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         {
             request.Approve(note);
             provider.AttachToCompanyAsTemporaryWorker(companyId);
-            provider.SyncCompanyServices(provider.CandidateServices
-                .Where(candidateService => candidateService.IsActive)
-                .Select(candidateService => (
-                    candidateService.ServiceId,
-                    candidateService.ExperienceLevel,
-                    candidateService.YearsOfExperience,
-                    ProviderServicePriceTier.Normal)));
         }
         catch (InvalidOperationException exception)
         {
@@ -154,7 +144,15 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
             otherRequest.Cancel("Candidature cloturee automatiquement apres validation par une autre entreprise.");
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked("Cette candidature vient d'etre modifiee. Rechargez la page avant de continuer.");
+        }
+
         return CompanyInterimCandidateReviewResult.Ok();
     }
 
@@ -187,7 +185,15 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         {
             return CompanyInterimCandidateReviewResult.Blocked(exception.Message);
         }
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return CompanyInterimCandidateReviewResult.Blocked("Cette candidature vient d'etre modifiee. Rechargez la page avant de continuer.");
+        }
+
         return CompanyInterimCandidateReviewResult.Ok();
     }
 

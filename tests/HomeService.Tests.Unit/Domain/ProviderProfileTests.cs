@@ -121,16 +121,11 @@ public sealed class ProviderProfileTests
         provider.SyncCandidateServices([(serviceId, ExperienceLevel.Senior, 6)]);
 
         provider.AttachToCompanyAsTemporaryWorker(companyId);
-        provider.SyncCompanyServices(provider.CandidateServices.Select(service => (
-            service.ServiceId,
-            service.ExperienceLevel,
-            service.YearsOfExperience,
-            ProviderServicePriceTier.Normal)));
 
         Assert.Equal(companyId, provider.CompanyId);
         Assert.Equal(ProviderStatus.ProfileIncomplete, provider.Status);
         Assert.Equal(ProviderEmploymentType.TemporaryWorker, provider.EmploymentType);
-        Assert.Single(provider.Services);
+        Assert.Empty(provider.Services);
         Assert.False(provider.IsAvailable);
     }
 
