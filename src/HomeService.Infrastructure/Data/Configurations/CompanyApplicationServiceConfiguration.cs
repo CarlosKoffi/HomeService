@@ -16,6 +16,10 @@ public sealed class CompanyApplicationServiceConfiguration : IEntityTypeConfigur
         builder.HasOne(service => service.MatchedService)
             .WithMany()
             .HasForeignKey(service => service.MatchedServiceId);
+        builder.HasOne(service => service.MatchedServicePrestation)
+            .WithMany()
+            .HasForeignKey(service => service.MatchedServicePrestationId);
         builder.HasIndex(service => new { service.CompanyApplicationId, service.NormalizedName }).IsUnique();
+        builder.HasIndex(service => service.MatchedServicePrestationId);
     }
 }

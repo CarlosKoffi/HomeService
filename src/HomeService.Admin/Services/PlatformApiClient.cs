@@ -173,6 +173,36 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
     }
 
+    public async Task<CompanyServiceProposalListResponse?> GetCompanyServiceProposalsAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<CompanyServiceProposalListResponse>("/api/admin/company-service-proposals", cancellationToken);
+    }
+
+    public async Task<CompanyServiceProposalListResponse?> AttachCompanyServiceProposalAsync(
+        Guid proposalId,
+        AttachCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyServiceProposalListResponse>(
+            $"/api/admin/company-service-proposals/{proposalId}/attach",
+            request,
+            cancellationToken);
+    }
+
+    public async Task<CompanyServiceProposalListResponse?> CreatePrestationFromCompanyServiceProposalAsync(
+        Guid proposalId,
+        CreatePrestationFromCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyServiceProposalListResponse>(
+            $"/api/admin/company-service-proposals/{proposalId}/create-prestation",
+            request,
+            cancellationToken);
+    }
+
     public async Task<ServiceSummaryResponse?> CreateServiceAsync(
         UpsertServiceRequest request,
         CancellationToken cancellationToken = default)

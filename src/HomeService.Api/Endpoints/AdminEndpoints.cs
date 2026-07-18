@@ -933,6 +933,78 @@ public static class AdminEndpoints
         })
         .WithName("GenerateCompanyApplicationActivationLink");
 
+        admin.MapGet("/company-service-proposals", async (
+            AdminCompanyServiceProposalService serviceProposalService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await serviceProposalService.ListAsync(cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("ListCompanyServiceProposals")
+        .Produces<CompanyServiceProposalListResponse>();
+
+        admin.MapPost("/company-service-proposals/{id:guid}/attach", async (
+            Guid id,
+            AttachCompanyServiceProposalRequest request,
+            HttpRequest httpRequest,
+            AdminCompanyServiceProposalService serviceProposalService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await serviceProposalService.AttachAsync(id, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return ToCompanyServiceProposalActionError(result);
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyServiceProposalAttached",
+                nameof(CompanyApplicationService),
+                id,
+                result.Message,
+                before: null,
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
+        })
+        .WithName("AttachCompanyServiceProposal")
+        .Produces<CompanyServiceProposalListResponse>();
+
+        admin.MapPost("/company-service-proposals/{id:guid}/create-prestation", async (
+            Guid id,
+            CreatePrestationFromCompanyServiceProposalRequest request,
+            HttpRequest httpRequest,
+            AdminCompanyServiceProposalService serviceProposalService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await serviceProposalService.CreatePrestationAsync(id, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return ToCompanyServiceProposalActionError(result);
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyServiceProposalPrestationCreated",
+                nameof(CompanyApplicationService),
+                id,
+                result.Message,
+                before: null,
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
+        })
+        .WithName("CreatePrestationFromCompanyServiceProposal")
+        .Produces<CompanyServiceProposalListResponse>();
+
         admin.MapPost("/services", async (
             UpsertServiceRequest request,
             HttpRequest httpRequest,
@@ -1587,6 +1659,16 @@ public static class AdminEndpoints
             AdminAccessControlStatus.NotFound => Results.NotFound(new { message = result.Message }),
             AdminAccessControlStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
             _ => Results.BadRequest(new { message = result.Message ?? "Action acces admin impossible." })
+        };
+    }
+
+    static IResult ToCompanyServiceProposalActionError(CompanyServiceProposalActionResult result)
+    {
+        return result.Status switch
+        {
+            CompanyServiceProposalActionStatus.NotFound => Results.NotFound(new { message = result.Message }),
+            CompanyServiceProposalActionStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+            _ => Results.BadRequest(new { message = result.Message })
         };
     }
 }

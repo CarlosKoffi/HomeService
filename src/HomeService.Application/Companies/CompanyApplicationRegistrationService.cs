@@ -63,9 +63,26 @@ public sealed class CompanyApplicationRegistrationService(IAppDbContext db)
             "Compte entreprise cree. Documents de conformite en attente.",
             null));
 
+        var serviceCatalog = await GetServiceCatalogAsync(cancellationToken);
         foreach (var serviceName in plan.ServiceNames)
         {
-            db.CompanyApplicationServices.Add(new CompanyApplicationService(application.Id, serviceName));
+            var applicationService = new CompanyApplicationService(application.Id, serviceName);
+            var match = CompanyApplicationServiceMatcher.FindBestCandidate(serviceName, serviceCatalog);
+            if (match is null)
+            {
+                var bestReviewCandidate = CompanyApplicationServiceMatcher.FindCandidates(serviceName, serviceCatalog).FirstOrDefault();
+                applicationService.MarkForReview(bestReviewCandidate?.Score);
+            }
+            else if (match.ServicePrestationId.HasValue)
+            {
+                applicationService.MarkAsMatchedPrestation(match.ServiceId, match.ServicePrestationId.Value, match.Score);
+            }
+            else
+            {
+                applicationService.MarkAsMatched(match.ServiceId, match.Score);
+            }
+
+            db.CompanyApplicationServices.Add(applicationService);
         }
 
         foreach (var document in documents)
@@ -79,5 +96,49 @@ public sealed class CompanyApplicationRegistrationService(IAppDbContext db)
         }
 
         return CompanyApplicationRegistrationResult.Created(application, company, plan.ServiceNames.Count, documents.Count);
+    }
+
+    private async Task<IReadOnlyList<CompanyApplicationServiceCatalogItem>> GetServiceCatalogAsync(CancellationToken cancellationToken)
+    {
+        var services = await db.Services
+            .AsNoTracking()
+            .Where(service => service.IsActive)
+            .Select(service => new
+            {
+                service.Id,
+                service.Name,
+                service.NormalizedName
+            })
+            .ToListAsync(cancellationToken);
+        var prestations = await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => prestation.IsActive && prestation.Service!.IsActive)
+            .Select(prestation => new
+            {
+                prestation.Id,
+                prestation.Name,
+                prestation.NormalizedName,
+                prestation.ServiceId,
+                ServiceName = prestation.Service!.Name,
+                ServiceNormalizedName = prestation.Service.NormalizedName
+            })
+            .ToListAsync(cancellationToken);
+
+        return services
+            .Select(service => new CompanyApplicationServiceCatalogItem(
+                service.Id,
+                service.Name,
+                CompanyApplicationServiceMatcher.Normalize(service.NormalizedName),
+                null,
+                null,
+                null))
+            .Concat(prestations.Select(prestation => new CompanyApplicationServiceCatalogItem(
+                prestation.ServiceId,
+                prestation.ServiceName,
+                CompanyApplicationServiceMatcher.Normalize(prestation.ServiceNormalizedName),
+                prestation.Id,
+                prestation.Name,
+                CompanyApplicationServiceMatcher.Normalize(prestation.NormalizedName))))
+            .ToList();
     }
 }

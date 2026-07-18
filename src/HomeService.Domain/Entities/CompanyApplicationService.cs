@@ -20,6 +20,8 @@ public sealed class CompanyApplicationService : AuditableEntity
     public CompanyApplication? CompanyApplication { get; private set; }
     public Guid? MatchedServiceId { get; private set; }
     public Service? MatchedService { get; private set; }
+    public Guid? MatchedServicePrestationId { get; private set; }
+    public ServicePrestation? MatchedServicePrestation { get; private set; }
     public string RawName { get; private set; } = string.Empty;
     public string NormalizedName { get; private set; } = string.Empty;
     public int? MatchScore { get; private set; }
@@ -29,6 +31,16 @@ public sealed class CompanyApplicationService : AuditableEntity
     public void MarkAsMatched(Guid serviceId, int score)
     {
         MatchedServiceId = serviceId;
+        MatchedServicePrestationId = null;
+        MatchScore = score;
+        MatchStatus = CompanyApplicationServiceMatchStatus.MatchedExisting;
+        Touch();
+    }
+
+    public void MarkAsMatchedPrestation(Guid serviceId, Guid servicePrestationId, int score)
+    {
+        MatchedServiceId = serviceId;
+        MatchedServicePrestationId = servicePrestationId;
         MatchScore = score;
         MatchStatus = CompanyApplicationServiceMatchStatus.MatchedExisting;
         Touch();
@@ -44,6 +56,7 @@ public sealed class CompanyApplicationService : AuditableEntity
     public void MarkCreatedAsNewService(Guid serviceId)
     {
         MatchedServiceId = serviceId;
+        MatchedServicePrestationId = null;
         MatchStatus = CompanyApplicationServiceMatchStatus.CreatedAsNewService;
         Touch();
     }
