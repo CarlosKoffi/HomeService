@@ -148,14 +148,59 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
             return [];
         }
 
-        return await db.Companies
-            .Where(company => companyIds.Contains(company.Id) && company.Status == CompanyStatus.Approved)
-            .Where(company => db.ProviderServices.Any(providerService =>
-                providerService.CompanyId == company.Id
-                && providerService.IsActive
-                && serviceIds.Contains(providerService.ServiceId)))
-            .Select(company => company.Id)
+        var serviceNames = await db.Services
+            .AsNoTracking()
+            .Where(service => serviceIds.Contains(service.Id) && service.IsActive)
+            .Select(service => service.Name)
             .ToListAsync(cancellationToken);
+        var providerServiceCompanyIds = await db.ProviderServices
+            .AsNoTracking()
+            .Where(providerService =>
+                companyIds.Contains(providerService.CompanyId)
+                && providerService.IsActive
+                && serviceIds.Contains(providerService.ServiceId))
+            .Select(providerService => providerService.CompanyId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var applicationCompanyIds = await db.CompanyApplicationServices
+            .AsNoTracking()
+            .Where(applicationService =>
+                applicationService.MatchedServiceId != null
+                && serviceIds.Contains(applicationService.MatchedServiceId.Value)
+                && applicationService.CompanyApplication!.CompanyId != null
+                && companyIds.Contains(applicationService.CompanyApplication.CompanyId.Value))
+            .Select(applicationService => applicationService.CompanyApplication!.CompanyId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var providerServiceCompanyIdSet = providerServiceCompanyIds.ToHashSet();
+        var applicationCompanyIdSet = applicationCompanyIds.ToHashSet();
+        var normalizedServiceNames = serviceNames.Select(NormalizeSearch).Where(name => name.Length > 0).ToList();
+
+        var companies = await db.Companies
+            .AsNoTracking()
+            .Where(company => companyIds.Contains(company.Id) && company.Status == CompanyStatus.Approved)
+            .Select(company => new
+            {
+                company.Id,
+                company.PlannedServices,
+                LatestPlannedServices = db.CompanyApplications
+                    .Where(application => application.CompanyId == company.Id)
+                    .OrderByDescending(application => application.CreatedAt)
+                    .Select(application => application.PlannedServices)
+                    .FirstOrDefault()
+            })
+            .ToListAsync(cancellationToken);
+
+        return companies
+            .Where(company =>
+                providerServiceCompanyIdSet.Contains(company.Id)
+                || applicationCompanyIdSet.Contains(company.Id)
+                || normalizedServiceNames.Any(serviceName =>
+                    TextContainsService(company.PlannedServices, serviceName)
+                    || TextContainsService(company.LatestPlannedServices, serviceName)))
+            .Select(company => company.Id)
+            .ToList();
     }
 
     private static ExperienceLevel ParseExperienceLevel(string? value)
@@ -181,5 +226,32 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .Take(10)
             .ToList();
+    }
+
+    private static bool TextContainsService(string? value, string selectedServiceName)
+    {
+        return !string.IsNullOrWhiteSpace(selectedServiceName)
+            && NormalizeSearch(value).Contains(selectedServiceName, StringComparison.Ordinal);
+    }
+
+    private static string NormalizeSearch(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Trim().Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder(normalized.Length);
+        foreach (var character in normalized)
+        {
+            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character);
+            if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(char.ToLowerInvariant(character));
+            }
+        }
+
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
     }
 }

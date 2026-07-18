@@ -86,12 +86,17 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
 
         var serviceId = selectionId;
         Guid? prestationId = null;
+        var selectedService = await db.Services
+            .AsNoTracking()
+            .Where(service => service.Id == serviceId && service.IsActive)
+            .Select(service => new { service.Id, service.Name })
+            .FirstOrDefaultAsync(cancellationToken);
         if (string.Equals(selectionType, "Prestation", StringComparison.OrdinalIgnoreCase))
         {
             var prestation = await db.ServicePrestations
                 .AsNoTracking()
-                .Where(prestation => prestation.Id == selectionId && prestation.IsActive)
-                .Select(prestation => new { prestation.Id, prestation.ServiceId })
+                .Where(prestation => prestation.Id == selectionId && prestation.IsActive && prestation.Service!.IsActive)
+                .Select(prestation => new { prestation.Id, prestation.ServiceId, prestation.Name, ServiceName = prestation.Service!.Name })
                 .FirstOrDefaultAsync(cancellationToken);
             if (prestation is null)
             {
@@ -100,9 +105,43 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
 
             serviceId = prestation.ServiceId;
             prestationId = prestation.Id;
+            selectedService = new { Id = prestation.ServiceId, Name = prestation.ServiceName };
+        }
+
+        if (selectedService is null)
+        {
+            return [];
         }
 
         var normalizedAddress = NormalizeSearch(address);
+        var companyIdsWithProviderService = await db.ProviderServices
+            .AsNoTracking()
+            .Where(providerService =>
+                providerService.IsActive
+                && providerService.ServiceId == serviceId)
+            .Select(providerService => providerService.CompanyId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var companyIdsWithExactPrestation = prestationId is null
+            ? []
+            : await db.ProviderServicePrestations
+                .AsNoTracking()
+                .Where(providerPrestation =>
+                    providerPrestation.IsActive
+                    && providerPrestation.ServicePrestationId == prestationId
+                    && providerPrestation.ProviderService!.IsActive)
+                .Select(providerPrestation => providerPrestation.ProviderService!.CompanyId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+        var companyIdsFromApplications = await db.CompanyApplicationServices
+            .AsNoTracking()
+            .Where(applicationService =>
+                applicationService.MatchedServiceId == serviceId
+                && applicationService.CompanyApplication!.CompanyId != null)
+            .Select(applicationService => applicationService.CompanyApplication!.CompanyId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
         var rows = await db.Companies
             .AsNoTracking()
             .Where(company => company.Status == CompanyStatus.Approved)
@@ -136,10 +175,21 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
                     .OrderBy(name => name)
                     .ToList()
             })
-            .Where(row => row.Services.Count > 0)
             .ToListAsync(cancellationToken);
 
-        return rows
+        var providerServiceCompanyIds = companyIdsWithProviderService.ToHashSet();
+        var exactPrestationCompanyIds = companyIdsWithExactPrestation.ToHashSet();
+        var applicationCompanyIds = companyIdsFromApplications.ToHashSet();
+        var selectedServiceName = NormalizeSearch(selectedService.Name);
+
+        var matchedRows = rows
+            .Where(row => CompanyMatchesRequestedWork(
+                row.Company,
+                row.LatestApplication,
+                providerServiceCompanyIds,
+                exactPrestationCompanyIds,
+                applicationCompanyIds,
+                selectedServiceName))
             .Select(row =>
             {
                 var city = row.Company.City ?? row.LatestApplication?.City;
@@ -152,6 +202,13 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
                     ProximityLabel = BuildProximityLabel(proximityScore, city, companyAddress)
                 };
             })
+            .ToList();
+
+        var rowsToDisplay = matchedRows.Count(row => row.proximityScore > 0) >= 3
+            ? matchedRows.Where(row => row.proximityScore > 0)
+            : matchedRows;
+
+        return rowsToDisplay
             .OrderByDescending(row => row.proximityScore)
             .ThenBy(row => row.row.Company.Name)
             .Take(12)
@@ -270,6 +327,31 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
     {
         return string.IsNullOrWhiteSpace(normalizedSearch)
             || NormalizeSearch(value).Contains(normalizedSearch, StringComparison.Ordinal);
+    }
+
+    private static bool CompanyMatchesRequestedWork(
+        Company company,
+        CompanyApplication? latestApplication,
+        IReadOnlySet<Guid> providerServiceCompanyIds,
+        IReadOnlySet<Guid> exactPrestationCompanyIds,
+        IReadOnlySet<Guid> applicationCompanyIds,
+        string selectedServiceName)
+    {
+        if (providerServiceCompanyIds.Contains(company.Id)
+            || exactPrestationCompanyIds.Contains(company.Id)
+            || applicationCompanyIds.Contains(company.Id))
+        {
+            return true;
+        }
+
+        return TextContainsService(company.PlannedServices, selectedServiceName)
+            || TextContainsService(latestApplication?.PlannedServices, selectedServiceName);
+    }
+
+    private static bool TextContainsService(string? value, string selectedServiceName)
+    {
+        return !string.IsNullOrWhiteSpace(selectedServiceName)
+            && NormalizeSearch(value).Contains(selectedServiceName, StringComparison.Ordinal);
     }
 
     private static int ComputeProximityScore(string normalizedAddress, params string?[] companyLocations)

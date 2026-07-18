@@ -528,7 +528,22 @@
 
     private ProviderOnboardingOptionResponse? FindSelectedOption(string entry)
     {
-        return OnboardingOptions.FirstOrDefault(option => IsSameCompletionValue(option.Label, entry));
+        if (string.IsNullOrWhiteSpace(entry))
+        {
+            return null;
+        }
+
+        var normalizedEntry = NormalizeCompletionValue(entry);
+        return OnboardingOptions.FirstOrDefault(option =>
+                NormalizeCompletionValue(option.Label) == normalizedEntry
+                || NormalizeCompletionValue(option.ServiceName) == normalizedEntry
+                || (!string.IsNullOrWhiteSpace(option.PrestationName) && NormalizeCompletionValue(option.PrestationName) == normalizedEntry))
+            ?? OnboardingOptions.FirstOrDefault(option =>
+                NormalizeCompletionValue(option.Label).Contains(normalizedEntry, StringComparison.Ordinal)
+                || normalizedEntry.Contains(NormalizeCompletionValue(option.Label), StringComparison.Ordinal)
+                || NormalizeCompletionValue(option.ServiceName).Contains(normalizedEntry, StringComparison.Ordinal)
+                || (!string.IsNullOrWhiteSpace(option.PrestationName)
+                    && NormalizeCompletionValue(option.PrestationName).Contains(normalizedEntry, StringComparison.Ordinal)));
     }
 
     private IReadOnlyList<ProviderCandidateServiceRequest> BuildSelectedServiceRequests()
@@ -566,6 +581,11 @@
 
     private static string NormalizeCompletionValue(string value)
     {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
         var normalized = value.Trim().Normalize(System.Text.NormalizationForm.FormD);
         var builder = new System.Text.StringBuilder(normalized.Length);
         foreach (var character in normalized)
