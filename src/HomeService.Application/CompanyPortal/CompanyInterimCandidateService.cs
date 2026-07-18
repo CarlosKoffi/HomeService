@@ -100,6 +100,7 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         var request = await db.ProviderAffiliationRequests
             .Include(request => request.Company)
             .Include(request => request.Provider)
+                .ThenInclude(provider => provider!.CandidateServices)
             .FirstOrDefaultAsync(request => request.Id == requestId && request.CompanyId == companyId, cancellationToken);
 
         if (request?.Provider is null || request.Company is null || request.Company.Status == CompanyStatus.Suspended)
@@ -123,6 +124,12 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         }
 
         var provider = request.Provider;
+        var candidateServices = provider.CandidateServices
+            .Where(candidateService => candidateService.IsActive)
+            .GroupBy(candidateService => candidateService.ServiceId)
+            .Select(group => group.Last())
+            .ToList();
+
         try
         {
             request.Approve(note);
@@ -143,6 +150,8 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         {
             otherRequest.Cancel("Candidature cloturee automatiquement apres validation par une autre entreprise.");
         }
+
+        await SyncApprovedInterimServicesAsync(companyId, provider.Id, candidateServices, cancellationToken);
 
         try
         {
@@ -204,6 +213,46 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
             : "Votre entreprise ne recoit pas de nouvelles candidatures interimaires pour le moment.";
 
         return new CompanyInterimSettingsResponse(company.Id, company.AcceptsInterimApplications, message);
+    }
+
+    private async Task SyncApprovedInterimServicesAsync(
+        Guid companyId,
+        Guid providerId,
+        IReadOnlyCollection<ProviderCandidateService> candidateServices,
+        CancellationToken cancellationToken)
+    {
+        if (candidateServices.Count == 0)
+        {
+            return;
+        }
+
+        var candidateServiceIds = candidateServices.Select(candidateService => candidateService.ServiceId).ToList();
+        var existingServices = await db.ProviderServices
+            .Where(providerService =>
+                providerService.ProviderId == providerId
+                && candidateServiceIds.Contains(providerService.ServiceId))
+            .ToListAsync(cancellationToken);
+
+        foreach (var candidateService in candidateServices)
+        {
+            var existingService = existingServices.FirstOrDefault(providerService => providerService.ServiceId == candidateService.ServiceId);
+            if (existingService is not null)
+            {
+                existingService.UpdateCompanyExperience(
+                    candidateService.ExperienceLevel,
+                    candidateService.YearsOfExperience,
+                    ProviderServicePriceTier.Normal);
+                continue;
+            }
+
+            db.ProviderServices.Add(new ProviderService(
+                providerId,
+                companyId,
+                candidateService.ServiceId,
+                candidateService.ExperienceLevel,
+                candidateService.YearsOfExperience,
+                ProviderServicePriceTier.Normal));
+        }
     }
 }
 
