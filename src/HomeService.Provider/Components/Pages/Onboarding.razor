@@ -338,6 +338,7 @@
         ActivationMessage = null;
         LoginMessage = null;
         RegisterMessage = null;
+        Navigation.NavigateTo($"/onboarding?mode={mode}", replace: true);
     }
 
     private string TabClass(string mode) => ActiveMode == mode ? "active" : string.Empty;
