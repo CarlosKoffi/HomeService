@@ -23,4 +23,10 @@ public sealed class TranslationValue : AuditableEntity
     public Guid? CountryId { get; private set; }
     public Country? Country { get; private set; }
     public string Value { get; private set; } = string.Empty;
+
+    public void UpdateValue(string value)
+    {
+        Value = value.Trim();
+        Touch();
+    }
 }

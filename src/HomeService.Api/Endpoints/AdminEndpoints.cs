@@ -9,6 +9,7 @@ using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
+using HomeService.Contracts.Localization;
 using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
@@ -261,6 +262,46 @@ public static class AdminEndpoints
         })
         .WithName("GetAdminAccessControl")
         .Produces<AdminAccessSnapshotResponse>();
+
+        admin.MapGet("/translations", async (
+            string? scope,
+            string? search,
+            string? language,
+            AdminTranslationService translationService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await translationService.ListAsync(scope, search, language, cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("ListAdminTranslations");
+
+        admin.MapPost("/translations", async (
+            UpsertAdminTranslationRequest request,
+            HttpRequest httpRequest,
+            AdminTranslationService translationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await translationService.UpsertAsync(request, cancellationToken);
+            if (result.Status == AdminTranslationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminTranslationSaved",
+                "TranslationKey",
+                null,
+                $"Traduction sauvegardee: {request.Key}.",
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await translationService.ListAsync(request.Scope, request.Key, request.Language, cancellationToken));
+        })
+        .WithName("UpsertAdminTranslation");
 
         admin.MapPost("/access-control/roles", async (
             CreateAdminRoleRequest request,

@@ -236,7 +236,7 @@ public static class DatabaseInitializer
                 new AdminModule(AdminModuleKey.Dashboard, "Tableau de bord", "Vue de synthese du back-office entreprise.", 10),
                 new AdminModule(AdminModuleKey.CompanyApplications, "Demandes entreprises", "Validation des inscriptions, documents et activation des entreprises.", 20),
                 new AdminModule(AdminModuleKey.Services, "Services", "Gestion du catalogue plat et des services proposes par les entreprises.", 30),
-                new AdminModule(AdminModuleKey.Localization, "Pays et traductions", "Gestion des pays, langues et textes traduisibles.", 40),
+                new AdminModule(AdminModuleKey.Localization, "Traductions", "Gestion des langues et textes traduisibles.", 40),
                 new AdminModule(AdminModuleKey.AdminAccess, "Acces et roles", "Gestion des roles, modules et permissions admin.", 50));
 
             await db.SaveChangesAsync(cancellationToken);
@@ -277,7 +277,7 @@ public static class DatabaseInitializer
             new TranslationSeed("admin.dashboard.title", "Admin", "Titre dashboard admin", "Centre de controle entreprise"),
             new TranslationSeed("admin.companyApplications.title", "Admin", "Titre file demandes entreprise", "Demandes entreprises"),
             new TranslationSeed("admin.companyApplications.empty", "Admin", "Message liste vide", "Aucune demande entreprise pour le moment."),
-            new TranslationSeed("admin.localization.title", "Admin", "Titre page traductions", "Pays & traductions"),
+            new TranslationSeed("admin.localization.title", "Admin", "Titre page traductions", "Traductions"),
             new TranslationSeed("admin.access.title", "Admin", "Titre acces roles", "Acces & roles"),
             new TranslationSeed("common.loading", "Common", "Message chargement generique", "Chargement en cours..."),
             new TranslationSeed("common.save", "Common", "Action sauvegarder", "Sauver"),

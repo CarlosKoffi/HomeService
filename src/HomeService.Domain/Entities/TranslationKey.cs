@@ -22,4 +22,11 @@ public sealed class TranslationKey : AuditableEntity
     public string Scope { get; private set; } = string.Empty;
     public bool IsActive { get; private set; } = true;
     public IReadOnlyCollection<TranslationValue> Values => _values;
+
+    public void Update(string description, string scope)
+    {
+        Description = description.Trim();
+        Scope = scope.Trim();
+        Touch();
+    }
 }

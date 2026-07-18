@@ -7,7 +7,7 @@ VALUES
     (gen_random_uuid(), 'Dashboard', 'Tableau de bord', 'Vue de synthese du back-office entreprise.', 10, true, now()),
     (gen_random_uuid(), 'CompanyApplications', 'Demandes entreprises', 'Validation des inscriptions, documents et activation des entreprises.', 20, true, now()),
     (gen_random_uuid(), 'Services', 'Services', 'Gestion du catalogue plat et des services proposes par les entreprises.', 30, true, now()),
-    (gen_random_uuid(), 'Localization', 'Pays et traductions', 'Gestion des pays, langues et textes traduisibles.', 40, true, now()),
+    (gen_random_uuid(), 'Localization', 'Traductions', 'Gestion des langues et textes traduisibles.', 40, true, now()),
     (gen_random_uuid(), 'AdminAccess', 'Acces et roles', 'Gestion des roles, modules et permissions admin.', 50, true, now())
 ON CONFLICT ("Key") DO NOTHING;
 
@@ -15,5 +15,5 @@ INSERT INTO "AdminRoles" ("Id", "Name", "Description", "IsSystemRole", "IsActive
 VALUES
     (gen_random_uuid(), 'Super admin', 'Acces complet a tous les modules et aux permissions.', true, true, now()),
     (gen_random_uuid(), 'Validation entreprises', 'Peut traiter les demandes d''inscription entreprise.', true, true, now()),
-    (gen_random_uuid(), 'Contenu et traduction', 'Peut gerer les textes, pays et langues.', true, true, now())
+    (gen_random_uuid(), 'Contenu et traduction', 'Peut gerer les textes et les langues.', true, true, now())
 ON CONFLICT DO NOTHING;

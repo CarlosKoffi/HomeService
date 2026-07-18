@@ -1,272 +1,266 @@
 @page "/localization"
 @using HomeService.Admin.Services
-@using HomeService.Contracts.Branding
+@using HomeService.Contracts.Localization
 @inject PlatformApiClient ApiClient
 
-<PageTitle>Pays et traductions</PageTitle>
+<PageTitle>Traductions</PageTitle>
 
-<h1>Pays & traductions</h1>
+<h1>Traductions</h1>
 <p class="lead">
-    Preparation multi-pays et multilingue. La Cote d'Ivoire est le premier marche, mais les textes,
-    devises et variantes pays doivent etre gerables sans redeployer.
+    Centralisez les textes affiches dans les portails et l'admin. On garde une base simple: une cle,
+    un scope, une langue et le texte editable.
 </p>
 
 <section class="info-panel">
     <div>
-        <h2>Pourquoi cette page est importante</h2>
+        <h2>Objectif</h2>
         <p>
-            Pour l'instant, cette page concerne surtout le portail entreprise et l'admin qui le valide:
-            textes d'inscription, pieces demandees, emails d'activation, messages de complement et
-            libelles de statut. Les futurs portails client et prestataire auront leurs propres blocs
-            quand on attaquera ces scopes.
+            Aucun texte important ne doit rester bloque dans le code. Les textes du site entreprise,
+            du portail connecte et du back-office doivent pouvoir etre ajustes depuis l'admin.
         </p>
     </div>
     <div class="check-list">
-        <span>Texte modifiable sans redeploiement</span>
-        <span>Base entreprise Cote d'Ivoire</span>
-        <span>Preparation multi-pays sans melanger les scopes</span>
-        <span>Validation par role contenu admin</span>
+        <span>Textes modifiables</span>
+        <span>Scopes par portail</span>
+        <span>Francais au lancement</span>
+        <span>Audit des modifications</span>
     </div>
 </section>
 
 <section class="toolbar">
     <label>
-        Pays
-        <select>
-            <option>Cote d'Ivoire - XOF</option>
-            <option>Senegal - XOF</option>
-            <option>Benin - XOF</option>
+        Scope
+        <select @bind="SelectedScope">
+            <option value="">Tous les scopes</option>
+            @foreach (var scope in Scopes)
+            {
+                <option value="@scope">@scope</option>
+            }
         </select>
     </label>
     <label>
         Langue
-        <select>
-            <option>Francais</option>
-            <option>Anglais</option>
-            <option>Langue locale a definir</option>
+        <select @bind="SelectedLanguage">
+            @foreach (var language in Languages)
+            {
+                <option value="@language">@language</option>
+            }
         </select>
     </label>
     <label>
         Recherche
-        <input type="search" placeholder="Cle, page, texte" />
+        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Cle, scope, texte" />
     </label>
-    <button type="button">Ajouter une cle</button>
+    <button type="button" @onclick="LoadTranslationsAsync" disabled="@IsLoading">Filtrer</button>
 </section>
 
-<section class="country-branding-editor">
+<section class="translation-create-panel">
     <div class="section-heading">
         <div>
-            <h2>Identite pays</h2>
-            <p class="section-help">
-                Ces elements pilotent le rendu public par pays. Pour la Cote d'Ivoire, on garde une base legere:
-                orange pour l'action, blanc pour la clarte, vert pour la confiance.
-            </p>
+            <h2>Ajouter une cle</h2>
+            <p class="section-help">Creez une nouvelle entree traduisible, avec son contexte pour eviter les textes hors sujet.</p>
         </div>
-        <button type="button" @onclick="SaveBrandingAsync">Sauver l'identite CI</button>
     </div>
-
-    @if (!string.IsNullOrWhiteSpace(BrandingMessage))
-    {
-        <p class="field-message">@BrandingMessage</p>
-    }
-
-    <div class="branding-grid">
+    <div class="translation-create-grid">
         <label>
-            Marque affichee
-            <input type="text" @bind="BrandName" />
+            Cle
+            <input type="text" @bind="NewKey" placeholder="company.home.hero.title" />
         </label>
         <label>
-            Couleur confiance
-            <input type="text" @bind="PrimaryColor" />
+            Scope
+            <input type="text" @bind="NewScope" placeholder="Company" />
         </label>
         <label>
-            Couleur fond
-            <input type="text" @bind="SecondaryColor" />
-        </label>
-        <label>
-            Couleur action
-            <input type="text" @bind="AccentColor" />
-        </label>
-        <label>
-            Titre accueil entreprise
-            <input type="text" @bind="HeroTitle" />
-        </label>
-        <label>
-            Image hero optionnelle
-            <input type="url" @bind="HeroImageUrl" placeholder="https://..." />
+            Description
+            <input type="text" @bind="NewDescription" placeholder="Titre principal de la page entreprise" />
         </label>
         <label class="wide-field">
-            Sous-titre accueil entreprise
-            <textarea rows="3" @bind="HeroSubtitle"></textarea>
+            Texte
+            <textarea rows="3" @bind="NewValue"></textarea>
         </label>
-        <label>
-            Motif
-            <select @bind="MotifStyle">
-                <option value="flag-ribbon">Ruban CI</option>
-                <option value="minimal">Minimal</option>
-            </select>
-        </label>
+        <button type="button" @onclick="CreateTranslationAsync" disabled="@IsSaving">Ajouter</button>
     </div>
-
-    <article class="branding-preview"
-             style="@BrandPreviewStyle">
-        <span>Cote d'Ivoire - entreprises verifiees</span>
-        <h3>@BrandName</h3>
-        <p>@HeroTitle</p>
-    </article>
 </section>
 
-<section class="localization-grid">
-    <article>
-        <h2>Pays actifs</h2>
-        <p class="section-help">
-            Un pays actif devient disponible dans les parcours publics. Un pays en preparation permet
-            de saisir les textes et parametres avant lancement officiel.
-        </p>
-        <div class="table-lite">
-            <div class="config-row">
-                <strong>CI</strong>
-                <span>Cote d'Ivoire - marche pilote, Abidjan en priorite</span>
-                <em>XOF</em>
-                <button>Configurer</button>
-            </div>
-            <div class="config-row">
-                <strong>SN</strong>
-                <span>Senegal - preparation future expansion</span>
-                <em>XOF</em>
-                <button>Preparer</button>
-            </div>
-            <div class="config-row">
-                <strong>BJ</strong>
-                <span>Benin - preparation future expansion</span>
-                <em>XOF</em>
-                <button>Preparer</button>
-            </div>
-        </div>
-    </article>
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message">@Message</p>
+}
 
-    <article>
-        <h2>Langues</h2>
-        <p class="section-help">
-            Le francais reste la langue de depart. Les langues locales ou variantes pays seront ajoutees
-            quand les textes, supports et operations terrain seront prets.
-        </p>
-        <div class="table-lite">
-            <div class="config-row">
-                <strong>fr</strong>
-                <span>Francais - langue par defaut pour la Cote d'Ivoire</span>
-                <em>Defaut</em>
-                <button>Editer</button>
-            </div>
-            <div class="config-row">
-                <strong>en</strong>
-                <span>Anglais - option utile pour entreprises internationales</span>
-                <em>Prepare</em>
-                <button>Editer</button>
-            </div>
-        </div>
-    </article>
-</section>
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
 
 <section class="translation-list">
     <div class="section-heading">
         <div>
-            <h2>Textes produit</h2>
-            <p class="section-help">
-                Chaque cle correspond a un texte affiche dans un portail. Les descriptions expliquent
-                le contexte pour eviter les traductions hors sujet. Dans cette phase, on privilegie
-                les textes du site entreprise et du back-office de validation.
-            </p>
+            <h2>Textes editables</h2>
+            <p class="section-help">@Items.Count texte(s) charge(s). Sauvegarde ligne par ligne pour eviter les erreurs de masse.</p>
         </div>
-        <button type="button">Exporter les textes manquants</button>
+        <button type="button" @onclick="LoadTranslationsAsync" disabled="@IsLoading">Actualiser</button>
     </div>
-    @foreach (var item in TranslationRows)
+
+    @if (IsLoading)
     {
         <article>
             <div>
-                <strong>@item.Key</strong>
-                <p>@item.Scope - @item.Description</p>
+                <strong>Chargement...</strong>
+                <p>Lecture des textes depuis la base.</p>
             </div>
-            <textarea rows="2">@item.Value</textarea>
-            <button type="button">Sauver</button>
         </article>
+    }
+    else if (Items.Count == 0)
+    {
+        <article>
+            <div>
+                <strong>Aucun texte</strong>
+                <p>Aucune traduction ne correspond aux filtres actuels.</p>
+            </div>
+        </article>
+    }
+    else
+    {
+        @foreach (var item in Items)
+        {
+            <article>
+                <div>
+                    <strong>@item.Key</strong>
+                    <p>@item.Scope - @item.Description</p>
+                </div>
+                <textarea rows="2" @bind="item.Value"></textarea>
+                <button type="button" @onclick="() => SaveTranslationAsync(item)" disabled="@IsSaving">Sauver</button>
+            </article>
+        }
     }
 </section>
 
 @code {
-    private string BrandName { get; set; } = "ProxiPro CI";
-    private string PrimaryColor { get; set; } = "#0f9f7a";
-    private string SecondaryColor { get; set; } = "#ffffff";
-    private string AccentColor { get; set; } = "#f97316";
-    private string HeroTitle { get; set; } = "Le service a domicile en toute confiance";
-    private string HeroSubtitle { get; set; } = "Une plateforme pensee pour la Cote d'Ivoire: entreprises verifiees, prestataires suivis et services a domicile plus fiables.";
-    private string? HeroImageUrl { get; set; }
-    private string MotifStyle { get; set; } = "flag-ribbon";
-    private string? BrandingMessage { get; set; }
-
-    private string BrandPreviewStyle =>
-        $"--country-primary:{PrimaryColor}; --country-secondary:{SecondaryColor}; --country-accent:{AccentColor};";
+    private List<TranslationDraft> Items { get; set; } = [];
+    private List<string> Scopes { get; set; } = [];
+    private List<string> Languages { get; set; } = ["fr"];
+    private string? SelectedScope { get; set; }
+    private string SelectedLanguage { get; set; } = "fr";
+    private string? SearchTerm { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsSaving { get; set; }
+    private string? Message { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? NewKey { get; set; }
+    private string? NewScope { get; set; } = "Company";
+    private string? NewDescription { get; set; }
+    private string? NewValue { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            var branding = await ApiClient.GetCountryBrandingAsync("CI");
-            if (branding is not null)
-            {
-                BrandName = branding.BrandName;
-                PrimaryColor = branding.PrimaryColor;
-                SecondaryColor = branding.SecondaryColor;
-                AccentColor = branding.AccentColor;
-                HeroTitle = branding.HeroTitle;
-                HeroSubtitle = branding.HeroSubtitle;
-                HeroImageUrl = branding.HeroImageUrl;
-                MotifStyle = branding.MotifStyle;
-            }
-        }
-        catch (Exception exception)
-        {
-            BrandingMessage = $"Impossible de charger l'identite pays: {exception.Message}";
-        }
+        await LoadTranslationsAsync();
     }
 
-    private async Task SaveBrandingAsync()
+    private async Task LoadTranslationsAsync()
     {
-        BrandingMessage = null;
+        IsLoading = true;
+        ErrorMessage = null;
 
         try
         {
-            await ApiClient.UpdateCountryBrandingAsync("CI", new UpdateCountryBrandingRequest(
-                BrandName,
-                PrimaryColor,
-                SecondaryColor,
-                AccentColor,
-                HeroTitle,
-                HeroSubtitle,
-                HeroImageUrl,
-                MotifStyle));
-
-            BrandingMessage = "Identite Cote d'Ivoire sauvegardee.";
+            var response = await ApiClient.GetAdminTranslationsAsync(SelectedScope, SearchTerm, SelectedLanguage);
+            ApplyResponse(response);
         }
         catch (Exception exception)
         {
-            BrandingMessage = $"Sauvegarde impossible: {exception.Message}";
+            ErrorMessage = $"Impossible de charger les traductions. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
-    private static readonly IReadOnlyList<TranslationRow> TranslationRows =
-    [
-        new("company.home.hero.title", "Company", "Titre principal du portail entreprise", "Faites intervenir vos equipes a domicile en toute confiance"),
-        new("company.home.hero.subtitle", "Company", "Texte d'introduction", "ProxiPro connecte les clients a des prestataires recommandes par des entreprises verifiees."),
-        new("company.concept.security", "Company", "Explication du modele de confiance", "Chaque prestataire est rattache a une entreprise validee, avec un suivi des missions et des encaissements."),
-        new("company.register.documents", "Company", "Introduction de la zone documents", "Ajoutez les pieces necessaires pour permettre a notre equipe de verifier votre entreprise rapidement."),
-        new("company.register.submit", "Company", "Bouton de demande inscription", "Envoyer la demande"),
-        new("admin.companyApplications.title", "Admin", "Titre de la file de validation", "Demandes entreprises"),
-        new("admin.companyApplications.help", "Admin", "Aide affichable aux admins validation", "Controlez les pieces legales, demandez les complements manquants puis envoyez le lien d'activation."),
-        new("company.activation.email.subject", "Company", "Sujet email apres validation", "Votre espace entreprise ProxiPro est pret"),
-        new("company.activation.email.body", "Company", "Email envoye avec lien de creation de mot de passe", "Votre dossier entreprise a ete valide. Creez votre mot de passe pour acceder au portail et ajouter vos prestataires."),
-        new("company.complement.email.body", "Company", "Email quand un document manque", "Nous avons besoin d'un complement pour finaliser votre inscription. Merci d'ajouter le document demande depuis votre espace.")
-    ];
+    private async Task CreateTranslationAsync()
+    {
+        await SaveAsync(new UpsertAdminTranslationRequest(
+            NewKey ?? string.Empty,
+            NewScope ?? string.Empty,
+            NewDescription ?? string.Empty,
+            SelectedLanguage,
+            NewValue ?? string.Empty));
 
-    private sealed record TranslationRow(string Key, string Scope, string Description, string Value);
+        NewKey = null;
+        NewDescription = null;
+        NewValue = null;
+    }
+
+    private async Task SaveTranslationAsync(TranslationDraft item)
+    {
+        await SaveAsync(new UpsertAdminTranslationRequest(
+            item.Key,
+            item.Scope,
+            item.Description,
+            item.Language,
+            item.Value));
+    }
+
+    private async Task SaveAsync(UpsertAdminTranslationRequest request)
+    {
+        IsSaving = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            var response = await ApiClient.UpsertAdminTranslationAsync(request);
+            ApplyResponse(response);
+            Message = "Traduction sauvegardee.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Sauvegarde impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private void ApplyResponse(AdminTranslationListResponse? response)
+    {
+        Items = response?.Items
+            .Select(item => new TranslationDraft(
+                item.KeyId,
+                item.ValueId,
+                item.Key,
+                item.Scope,
+                item.Description,
+                item.Language,
+                item.Value,
+                item.IsActive))
+            .ToList() ?? [];
+
+        Scopes = response?.Scopes.ToList() ?? [];
+        Languages = response?.Languages.Count > 0 ? response.Languages.ToList() : ["fr"];
+        if (!Languages.Contains(SelectedLanguage, StringComparer.OrdinalIgnoreCase))
+        {
+            SelectedLanguage = Languages[0];
+        }
+    }
+
+    private sealed class TranslationDraft(
+        Guid keyId,
+        Guid? valueId,
+        string key,
+        string scope,
+        string description,
+        string language,
+        string value,
+        bool isActive)
+    {
+        public Guid KeyId { get; } = keyId;
+        public Guid? ValueId { get; } = valueId;
+        public string Key { get; } = key;
+        public string Scope { get; } = scope;
+        public string Description { get; } = description;
+        public string Language { get; } = language;
+        public string Value { get; set; } = value;
+        public bool IsActive { get; } = isActive;
+    }
 }

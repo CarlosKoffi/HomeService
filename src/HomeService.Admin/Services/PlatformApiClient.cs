@@ -160,6 +160,31 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<TranslationValueResponse>>($"/api/translations?scope={Uri.EscapeDataString(scope)}", cancellationToken) ?? [];
     }
 
+    public async Task<AdminTranslationListResponse?> GetAdminTranslationsAsync(
+        string? scope,
+        string? search,
+        string? language,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+
+        var query = new List<string>();
+        AddQueryValue(query, "scope", scope);
+        AddQueryValue(query, "search", search);
+        AddQueryValue(query, "language", language);
+
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
+        return await GetJsonAsync<AdminTranslationListResponse>($"/api/admin/translations{suffix}", cancellationToken);
+    }
+
+    public async Task<AdminTranslationListResponse?> UpsertAdminTranslationAsync(
+        UpsertAdminTranslationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminTranslationListResponse>("/api/admin/translations", request, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<NotificationOutboxMessageResponse>> GetNotificationsAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

@@ -503,6 +503,52 @@ h3 {
     margin-top: 1rem;
 }
 
+.translation-create-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+    padding: 1rem;
+}
+
+.translation-create-grid {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-top: 1rem;
+}
+
+.translation-create-grid label {
+    color: #000;
+    display: grid;
+    font-size: .82rem;
+    font-weight: 850;
+    gap: .35rem;
+}
+
+.translation-create-grid input,
+.translation-create-grid textarea {
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    color: #000;
+    font: inherit;
+    min-height: 40px;
+    padding: .55rem .7rem;
+}
+
+.translation-create-grid button {
+    align-self: end;
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 8px;
+    color: #fff;
+    font: inherit;
+    font-weight: 850;
+    min-height: 42px;
+    padding: .55rem .8rem;
+}
+
 .country-branding-editor {
     background: #fff;
     border: 1px solid #e5e7eb;

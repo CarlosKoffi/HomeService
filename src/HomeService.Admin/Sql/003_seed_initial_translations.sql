@@ -33,7 +33,7 @@ BEGIN
         ('admin.dashboard.title', 'Admin', 'Titre dashboard admin', 'Centre de controle entreprise'),
         ('admin.companyApplications.title', 'Admin', 'Titre file demandes entreprise', 'Demandes entreprises'),
         ('admin.companyApplications.empty', 'Admin', 'Message liste vide', 'Aucune demande entreprise pour le moment.'),
-        ('admin.localization.title', 'Admin', 'Titre page traductions', 'Pays & traductions'),
+        ('admin.localization.title', 'Admin', 'Titre page traductions', 'Traductions'),
         ('admin.access.title', 'Admin', 'Titre acces roles', 'Acces & roles'),
         ('common.loading', 'Common', 'Message chargement generique', 'Chargement en cours...'),
         ('common.save', 'Common', 'Action sauvegarder', 'Sauver'),
