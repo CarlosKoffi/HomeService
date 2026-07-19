@@ -600,33 +600,38 @@ else
                                 </label>
                             </div>
 
-                            <div class="service-picker employee-skill-picker">
-                                <strong>Services et prestations</strong>
-                                <p>Ajoutez les services, cochez les prestations autorisees et indiquez le niveau du prestataire.</p>
-                                <div class="service-editor-toolbar figma-service-toolbar">
-                                    <select @bind="ServiceToAddId">
-                                        <option value="">Ajouter un service</option>
-                                        @foreach (var service in Services.Where(service => EditableServices.All(item => item.ServiceId != service.Id)))
-                                        {
-                                            <option value="@service.Id">@service.Name</option>
-                                        }
-                                    </select>
+                            <div class="service-picker employee-skill-picker clean-skill-picker">
+                                <div class="skill-picker-heading">
+                                    <strong>Services et prestations</strong>
+                                    <p>Ajoutez un service puis, si besoin, les prestations que ce prestataire peut assurer.</p>
+                                </div>
+                                <div class="service-editor-toolbar figma-service-toolbar clean-service-toolbar">
+                                    <label>
+                                        Service
+                                        <select @bind="ServiceToAddId">
+                                            <option value="">Choisir un service</option>
+                                            @foreach (var service in Services.Where(service => EditableServices.All(item => item.ServiceId != service.Id)))
+                                            {
+                                                <option value="@service.Id">@service.Name</option>
+                                            }
+                                        </select>
+                                    </label>
                                     <button type="button" @onclick="AddEditableService">Ajouter</button>
                                 </div>
 
                                 @if (EditableServices.Count == 0)
                                 {
-                                    <p>Aucun service rattache. Ajoutez au moins un service avant de rendre le profil exploitable.</p>
+                                    <p class="skill-empty-state">Aucun service rattache. Ajoutez au moins un service avant de rendre le profil exploitable.</p>
                                 }
                                 else
                                 {
-                                    <div class="service-edit-list">
+                                    <div class="service-edit-list clean-service-list">
                                         @foreach (var service in EditableServices)
                                         {
                                             var activePrestations = GetActivePrestations(service.ServiceId);
                                             var hasPrestations = activePrestations.Count > 0;
-                                            <div class="@($"service-edit-row figma-service-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
-                                                <div class="service-edit-name">
+                                            <div class="@($"service-edit-row figma-service-row clean-service-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
+                                                <div class="service-edit-name clean-service-name">
                                                     <div class="service-profile-title">
                                                         <span class="service-check-emoji">@GetServiceEmoji(service.ServiceName)</span>
                                                         <strong>@service.ServiceName</strong>
@@ -634,21 +639,18 @@ else
                                                     @if (hasPrestations)
                                                     {
                                                         <small>Prestations autorisees pour ce prestataire</small>
-                                                        <div class="service-prestation-picker figma-prestation-picker">
+                                                        <div class="service-prestation-picker clean-prestation-row">
                                                             <label>
-                                                                Prestations
-                                                                <input list="@GetPrestationDatalistId("edit", service.ServiceId)"
-                                                                       @bind="service.PrestationSearchTerm"
-                                                                       @bind:event="oninput"
-                                                                       placeholder="Rechercher une prestation" />
+                                                                Prestation
+                                                                <select @bind="service.PrestationSearchTerm">
+                                                                    <option value="">Choisir une prestation</option>
+                                                                    @foreach (var prestation in activePrestations)
+                                                                    {
+                                                                        <option value="@prestation.Name">@prestation.Name - @FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</option>
+                                                                    }
+                                                                </select>
                                                             </label>
-                                                            <datalist id="@GetPrestationDatalistId("edit", service.ServiceId)">
-                                                                @foreach (var prestation in activePrestations)
-                                                                {
-                                                                    <option value="@prestation.Name">@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</option>
-                                                                }
-                                                            </datalist>
-                                                            <button type="button" @onclick="() => AddEditablePrestation(service)">Ajouter</button>
+                                                            <button type="button" @onclick="() => AddEditablePrestation(service)">Ajouter prestation</button>
                                                             @if (service.ServicePrestationIds.Count > 0)
                                                             {
                                                                 <div class="selected-prestation-list">
