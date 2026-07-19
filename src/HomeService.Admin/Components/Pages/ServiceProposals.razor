@@ -1,8 +1,7 @@
 @page "/service-proposals"
-@using System.Globalization
-@using System.Text
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Services
+@using HomeService.Domain.Common
 @inject PlatformApiClient ApiClient
 
 <PageTitle>Catalogue services</PageTitle>
@@ -1065,28 +1064,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
 
     private static string NormalizeCatalogName(string value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        var normalized = value.Trim().Normalize(NormalizationForm.FormD);
-        var builder = new StringBuilder(normalized.Length);
-        foreach (var character in normalized)
-        {
-            var category = CharUnicodeInfo.GetUnicodeCategory(character);
-            if (category == UnicodeCategory.NonSpacingMark)
-            {
-                continue;
-            }
-
-            builder.Append(char.IsLetterOrDigit(character) ? char.ToLowerInvariant(character) : ' ');
-        }
-
-        return string.Join(' ', builder
-            .ToString()
-            .Normalize(NormalizationForm.FormC)
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        return CatalogNameNormalizer.Normalize(value);
     }
 
     private static string FormatAmount(int amount, string currency)
