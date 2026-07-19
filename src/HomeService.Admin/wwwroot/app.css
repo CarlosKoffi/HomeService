@@ -1427,6 +1427,25 @@ h3 {
     color: #111827;
 }
 
+.payment-admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    justify-content: flex-end;
+    margin-top: .55rem;
+}
+
+.payment-admin-actions button {
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 999px;
+    color: #111827;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 850;
+    padding: .4rem .65rem;
+}
+
 .service-catalog {
     display: grid;
     gap: 1rem;

@@ -331,7 +331,9 @@ public sealed class AdminQueryService(IAppDbContext db)
             {
                 mission.Id,
                 ServiceName = service.Name,
+                mission.CompanyId,
                 CompanyName = company == null ? null : company.Name,
+                mission.ProviderId,
                 CustomerName = (customer.FirstName + " " + customer.LastName).Trim(),
                 CustomerPhoneNumber = customer.PhoneNumber,
                 ProviderName = provider == null ? null : (provider.FirstName + " " + provider.LastName).Trim(),
@@ -778,7 +780,9 @@ public sealed class AdminQueryService(IAppDbContext db)
             {
                 mission.Id,
                 ServiceName = service.Name,
+                mission.CompanyId,
                 CompanyName = company == null ? null : company.Name,
+                mission.ProviderId,
                 CustomerName = (customer.FirstName + " " + customer.LastName).Trim(),
                 CustomerPhoneNumber = customer.PhoneNumber,
                 ProviderName = provider == null ? null : (provider.FirstName + " " + provider.LastName).Trim(),
@@ -821,7 +825,9 @@ public sealed class AdminQueryService(IAppDbContext db)
             .Select(payment => new AdminPaymentMissionResponse(
                 payment.Id,
                 payment.ServiceName,
+                payment.CompanyId,
                 payment.CompanyName,
+                payment.ProviderId,
                 payment.CustomerName,
                 payment.CustomerPhoneNumber,
                 payment.ProviderName,

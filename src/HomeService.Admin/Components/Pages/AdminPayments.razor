@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Admin
 @inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Encaissements</PageTitle>
 
@@ -131,6 +132,17 @@
                     {
                         <small>Transport @Money(payment.TransportFeeAmount)</small>
                     }
+                    <div class="payment-admin-actions">
+                        <button type="button" @onclick="() => OpenMission(payment.MissionId)">Mission</button>
+                        @if (payment.CompanyId is not null)
+                        {
+                            <button type="button" @onclick="() => OpenCompany(payment.CompanyId.Value)">Entreprise</button>
+                        }
+                        @if (payment.ProviderId is not null)
+                        {
+                            <button type="button" @onclick="() => OpenProvider(payment.ProviderId.Value)">Prestataire</button>
+                        }
+                    </div>
                 </div>
             </article>
         }
@@ -172,6 +184,10 @@
 
     private static string Money(int amount) => $"{amount:N0} XOF";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+
+    private void OpenMission(Guid missionId) => Navigation.NavigateTo($"/missions/{missionId}");
+    private void OpenCompany(Guid companyId) => Navigation.NavigateTo($"/companies/{companyId}");
+    private void OpenProvider(Guid providerId) => Navigation.NavigateTo($"/providers/{providerId}");
 
     private static string TranslatePaymentStatus(string status) => status switch
     {
