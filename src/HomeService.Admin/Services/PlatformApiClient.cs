@@ -44,6 +44,38 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminCompanyDetailResponse>($"/api/admin/companies/{companyId}", cancellationToken);
     }
 
+    public async Task<ApiActionResult> SuspendAdminCompanyAsync(
+        Guid companyId,
+        string? note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/admin/companies/{companyId}/suspend",
+            new AdminCompanyActionRequest(note),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Suspension impossible.");
+    }
+
+    public async Task<ApiActionResult> ReactivateAdminCompanyAsync(
+        Guid companyId,
+        string? note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/admin/companies/{companyId}/reactivate",
+            new AdminCompanyActionRequest(note),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Reactivation impossible.");
+    }
+
     public async Task<AdminMissionListResponse?> GetAdminMissionsAsync(
         string? status,
         string? search,

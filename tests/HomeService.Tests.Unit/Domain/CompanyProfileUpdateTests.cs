@@ -1,4 +1,5 @@
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 
 namespace HomeService.Tests.Unit.Domain;
 
@@ -60,6 +61,21 @@ public sealed class CompanyProfileUpdateTests
         company.SetInterimApplications(false);
 
         Assert.False(company.AcceptsInterimApplications);
+    }
+
+    [Fact]
+    public void Company_SuspendAndApprove_UpdatesOperationalStatus()
+    {
+        var company = new Company("CI Home Service", "+2250700000000", "direction@entreprise.ci");
+        company.Approve();
+
+        company.Suspend();
+
+        Assert.Equal(CompanyStatus.Suspended, company.Status);
+
+        company.Approve();
+
+        Assert.Equal(CompanyStatus.Approved, company.Status);
     }
 
     private static CompanyApplication CreateApplication()

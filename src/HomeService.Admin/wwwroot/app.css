@@ -1323,6 +1323,64 @@ h3 {
     font-weight: 750;
 }
 
+.company-admin-actions {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, .05);
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, .75fr);
+    margin: 1rem 0;
+    padding: 1rem;
+}
+
+.company-admin-actions span {
+    color: #64748b;
+    display: block;
+    font-size: .75rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.company-admin-actions strong {
+    color: #000;
+    display: block;
+    font-size: 1.05rem;
+    margin-top: .15rem;
+}
+
+.company-admin-actions p {
+    color: #000;
+    margin: .25rem 0 0;
+}
+
+.admin-action-form {
+    align-items: center;
+    display: grid;
+    gap: .7rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.admin-action-form input {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 999px;
+    color: #000;
+    font: inherit;
+    min-height: 42px;
+    padding: .65rem .9rem;
+    width: 100%;
+}
+
+.admin-action-form button {
+    border-radius: 999px;
+    min-height: 42px;
+    white-space: nowrap;
+}
+
 .company-admin-kpis {
     display: grid;
     gap: .85rem;

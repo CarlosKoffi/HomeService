@@ -901,6 +901,88 @@ public static class AdminEndpoints
             return Results.Ok(result.Response);
         })
         .WithName("UpdateCompanyAssignmentMode");
+
+        admin.MapPost("/companies/{id:guid}/suspend", async (
+            Guid id,
+            AdminCompanyActionRequest? request,
+            HttpRequest httpRequest,
+            AdminCompanyOperationsService companyOperationsService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await companyOperationsService.SuspendAsync(id, cancellationToken);
+            if (result.Status == AdminCompanyOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminCompanyOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            var company = result.Company!;
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanySuspended",
+                nameof(Company),
+                company.Id,
+                string.IsNullOrWhiteSpace(request?.Note)
+                    ? "Entreprise suspendue par l'administration."
+                    : request.Note.Trim(),
+                result.PreviousStatus is null ? null : new { Status = result.PreviousStatus.ToString() },
+                new { company.Status });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("SuspendAdminCompany")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPost("/companies/{id:guid}/reactivate", async (
+            Guid id,
+            AdminCompanyActionRequest? request,
+            HttpRequest httpRequest,
+            AdminCompanyOperationsService companyOperationsService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await companyOperationsService.ReactivateAsync(id, cancellationToken);
+            if (result.Status == AdminCompanyOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminCompanyOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            var company = result.Company!;
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyReactivated",
+                nameof(Company),
+                company.Id,
+                string.IsNullOrWhiteSpace(request?.Note)
+                    ? "Entreprise reactivee par l'administration."
+                    : request.Note.Trim(),
+                result.PreviousStatus is null ? null : new { Status = result.PreviousStatus.ToString() },
+                new { company.Status });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("ReactivateAdminCompany")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
         
         admin.MapPost("/company-applications/{id:guid}/approve", async (
             Guid id,

@@ -28,6 +28,8 @@ public sealed record AdminCompanySummaryResponse(
     int DocumentCount,
     DateTimeOffset CreatedAt);
 
+public sealed record AdminCompanyActionRequest(string? Note);
+
 public sealed record AdminCompanyDetailResponse(
     Guid Id,
     string Name,

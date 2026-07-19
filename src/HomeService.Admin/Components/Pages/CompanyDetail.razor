@@ -44,6 +44,27 @@ else
         </div>
     </div>
 
+    <section class="admin-action-panel company-admin-actions">
+        <div>
+            <span>Action plateforme</span>
+            <strong>@GetCompanyActionTitle()</strong>
+            <p>@GetCompanyActionHelp()</p>
+        </div>
+        <div class="admin-action-form">
+            <input @bind="CompanyActionNote"
+                   placeholder="Note interne visible dans le journal"
+                   disabled="@IsCompanyActionBusy" />
+            @if (Company.Status == "Suspended")
+            {
+                <button type="button" class="primary-action" disabled="@IsCompanyActionBusy" @onclick="ReactivateCompanyAsync">Reactiver</button>
+            }
+            else
+            {
+                <button type="button" class="danger-action" disabled="@IsCompanyActionBusy" @onclick="SuspendCompanyAsync">Suspendre</button>
+            }
+        </div>
+    </section>
+
     <section class="company-admin-kpis">
         <article>
             <span>Equipe</span>
@@ -308,6 +329,8 @@ else
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
     private string SelectedTab { get; set; } = "summary";
+    private string? CompanyActionNote { get; set; }
+    private bool IsCompanyActionBusy { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -353,6 +376,59 @@ else
         Navigation.NavigateTo($"/missions/{missionId:D}");
     }
 
+    private async Task SuspendCompanyAsync()
+    {
+        if (Company is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(CompanyActionNote))
+        {
+            ErrorMessage = "Ajoutez une note avant de suspendre l'entreprise.";
+            return;
+        }
+
+        await RunCompanyActionAsync(() => ApiClient.SuspendAdminCompanyAsync(Company.Id, CompanyActionNote));
+    }
+
+    private async Task ReactivateCompanyAsync()
+    {
+        if (Company is null)
+        {
+            return;
+        }
+
+        await RunCompanyActionAsync(() => ApiClient.ReactivateAdminCompanyAsync(Company.Id, CompanyActionNote));
+    }
+
+    private async Task RunCompanyActionAsync(Func<Task<ApiActionResult>> action)
+    {
+        IsCompanyActionBusy = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var result = await action();
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            CompanyActionNote = null;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsCompanyActionBusy = false;
+        }
+    }
+
     private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
 
     private static string GetInitials(string name)
@@ -382,6 +458,14 @@ else
     private static string TranslateCompanyDocumentType(string type) => type switch { "TaxDeclaration" => "DFE", "BusinessRegistration" => "Registre de commerce", "RepresentativeId" => "Identite responsable", _ => type };
     private static string TranslateDocumentStatus(string status) => status switch { "Approved" => "Valide", "Rejected" => "Refuse", "NeedsReplacement" => "A remplacer", "Pending" => "A verifier", _ => status };
     private static string TranslateNotificationTone(string tone) => tone switch { "success" => "Information validee", "danger" or "error" => "Attention", "warning" => "A traiter", _ => "Information" };
+
+    private string GetCompanyActionTitle()
+        => Company?.Status == "Suspended" ? "Entreprise suspendue" : "Entreprise active";
+
+    private string GetCompanyActionHelp()
+        => Company?.Status == "Suspended"
+            ? "Reactivez l'acces portail quand le dossier peut reprendre."
+            : "Suspendez l'acces portail en cas de risque, litige ou controle.";
 
     private static string GetStatusClass(string status) => status switch { "Approved" => "status-pill ok", "Suspended" or "Rejected" => "status-pill danger", _ => "status-pill pending" };
     private static string GetProviderStatusClass(string status) => status switch { "Approved" => "status-pill ok", "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-pill danger", _ => "status-pill pending" };
