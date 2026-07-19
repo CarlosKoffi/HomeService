@@ -341,6 +341,42 @@ public static class AdminEndpoints
         })
         .WithName("MarkAdminMissionDisputed");
 
+        admin.MapPost("/missions/{missionId:guid}/resolve-dispute", async (
+            Guid missionId,
+            AdminMissionActionRequest request,
+            HttpRequest httpRequest,
+            AdminQueryService queryService,
+            AdminMissionOperationsService missionOperationsService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await missionOperationsService.ResolveDisputeAsync(missionId, request.Note, cancellationToken);
+            if (result.Status == AdminMissionOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminMissionOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminMissionDisputeResolved",
+                nameof(Mission),
+                missionId,
+                $"Litige mission resolu. Note: {result.Note}",
+                before: new { Status = result.PreviousStatus?.ToString() },
+                after: new { Status = result.Mission!.Status.ToString(), result.Note });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await queryService.GetMissionAsync(missionId, cancellationToken));
+        })
+        .WithName("ResolveAdminMissionDispute");
+
         admin.MapGet("/providers", async (
             string? status,
             string? employmentType,

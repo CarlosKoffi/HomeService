@@ -96,7 +96,7 @@ public sealed class Mission : AuditableEntity
 
     public void Assign(Guid providerId, Guid companyId, int hourlyRateAmount)
     {
-        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed)
+        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed or MissionStatus.Resolved)
         {
             throw new InvalidOperationException("Mission cannot be assigned in its current state.");
         }
@@ -120,7 +120,7 @@ public sealed class Mission : AuditableEntity
         MissionAssignmentSource assignmentSource = MissionAssignmentSource.Company,
         bool isInterimProvider = false)
     {
-        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed)
+        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed or MissionStatus.Resolved)
         {
             throw new InvalidOperationException("Mission cannot be assigned in its current state.");
         }
@@ -215,7 +215,7 @@ public sealed class Mission : AuditableEntity
 
     public void CancelByCustomer(int cancellationFeeAmount)
     {
-        if (Status is MissionStatus.Completed or MissionStatus.Cancelled)
+        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
         {
             throw new InvalidOperationException("Mission cannot be cancelled in its current state.");
         }
@@ -227,12 +227,23 @@ public sealed class Mission : AuditableEntity
 
     public void MarkDisputed()
     {
-        if (Status is MissionStatus.Completed or MissionStatus.Cancelled)
+        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
         {
             throw new InvalidOperationException("Completed or cancelled missions cannot be marked as disputed.");
         }
 
         Status = MissionStatus.Disputed;
+        Touch();
+    }
+
+    public void ResolveDispute()
+    {
+        if (Status != MissionStatus.Disputed)
+        {
+            throw new InvalidOperationException("Only disputed missions can be resolved.");
+        }
+
+        Status = MissionStatus.Resolved;
         Touch();
     }
 

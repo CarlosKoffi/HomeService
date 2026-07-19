@@ -49,6 +49,7 @@
             <option value="Completed">Terminees</option>
             <option value="Cancelled">Annulees</option>
             <option value="Disputed">Litiges</option>
+            <option value="Resolved">Resolues</option>
         </select>
     </label>
     <label>
@@ -123,7 +124,7 @@
                     else
                     {
                         <button type="button" @onclick="() => OpenMission(mission.Id)">Voir dossier</button>
-                        @if (mission.Status != "Disputed" && mission.Status != "Completed" && mission.Status != "Cancelled")
+                        @if (mission.Status != "Disputed" && mission.Status != "Completed" && mission.Status != "Cancelled" && mission.Status != "Resolved")
                         {
                             <button type="button" class="light-action" @onclick="() => StartDispute(mission.Id)">Litige</button>
                         }
@@ -227,12 +228,13 @@
         "Completed" => "Terminee",
         "Cancelled" => "Annulee",
         "Disputed" => "Litige",
+        "Resolved" => "Resolue",
         _ => status
     };
 
     private static string GetMissionStatusClass(string status) => status switch
     {
-        "Completed" => "status-pill ok",
+        "Completed" or "Resolved" => "status-pill ok",
         "Cancelled" or "Disputed" => "status-pill danger",
         _ => "status-pill pending"
     };

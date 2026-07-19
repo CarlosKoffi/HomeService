@@ -32,6 +32,32 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
 
         return AdminMissionOperationResult.Ok(mission, previousStatus, note.Trim());
     }
+
+    public async Task<AdminMissionOperationResult> ResolveDisputeAsync(Guid missionId, string? note, CancellationToken cancellationToken)
+    {
+        var mission = await db.Missions.FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
+        if (mission is null)
+        {
+            return AdminMissionOperationResult.NotFound();
+        }
+
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            return AdminMissionOperationResult.ValidationFailed("Ajoutez une note courte pour expliquer la resolution du litige.");
+        }
+
+        var previousStatus = mission.Status;
+        try
+        {
+            mission.ResolveDispute();
+        }
+        catch (InvalidOperationException exception)
+        {
+            return AdminMissionOperationResult.ValidationFailed(exception.Message);
+        }
+
+        return AdminMissionOperationResult.Ok(mission, previousStatus, note.Trim());
+    }
 }
 
 public sealed record AdminMissionOperationResult(

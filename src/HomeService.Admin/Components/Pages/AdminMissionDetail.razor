@@ -120,6 +120,16 @@ else
                         <button type="button" @onclick="MarkDisputedAsync" disabled="@IsActionBusy">Signaler un litige</button>
                     </div>
                 }
+                else if (Mission.Status == "Disputed")
+                {
+                    <div class="mission-dispute-box">
+                        <label>
+                            Note de resolution
+                            <textarea @bind="ResolutionNote" placeholder="Expliquez la decision prise avant de cloturer le litige."></textarea>
+                        </label>
+                        <button type="button" @onclick="ResolveDisputeAsync" disabled="@IsActionBusy">Cloturer le litige</button>
+                    </div>
+                }
                 else
                 {
                     <p class="muted-action">Aucune action sensible disponible pour ce statut.</p>
@@ -197,6 +207,7 @@ else
     private string? ErrorMessage { get; set; }
     private string? Message { get; set; }
     private string? DisputeNote { get; set; }
+    private string? ResolutionNote { get; set; }
     private string SelectedTab { get; set; } = "summary";
 
     protected override async Task OnParametersSetAsync()
@@ -251,6 +262,34 @@ else
         }
     }
 
+    private async Task ResolveDisputeAsync()
+    {
+        if (Mission is null)
+        {
+            return;
+        }
+
+        IsActionBusy = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            Mission = await ApiClient.ResolveAdminMissionDisputeAsync(Mission.Id, ResolutionNote ?? string.Empty);
+            Message = "Litige cloture.";
+            ResolutionNote = null;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionBusy = false;
+        }
+    }
+
     private void BackToList() => Navigation.NavigateTo("/missions");
     private void SelectTab(string tab) => SelectedTab = tab;
     private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
@@ -263,13 +302,13 @@ else
     private static string FormatDistance(int? distance, int tolerance) => distance is null ? $"Tolerance {tolerance} m" : $"{distance} m / tolerance {tolerance} m";
 
     private static string TranslateMissionMode(string mode) => mode switch { "Instant" => "Direct", "Scheduled" => "Rendez-vous", _ => mode };
-    private static string TranslateMissionStatus(string status) => status switch { "Created" => "Creee", "SearchingProvider" => "Recherche", "Offered" => "Proposee", "Assigned" => "Affectee", "Accepted" => "Acceptee", "OnTheWay" => "En route", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", "Disputed" => "Litige", _ => status };
+    private static string TranslateMissionStatus(string status) => status switch { "Created" => "Creee", "SearchingProvider" => "Recherche", "Offered" => "Proposee", "Assigned" => "Affectee", "Accepted" => "Acceptee", "OnTheWay" => "En route", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", "Disputed" => "Litige", "Resolved" => "Resolue", _ => status };
     private static string TranslatePaymentStatus(string status) => status switch { "Paid" => "Encaisse", "Pending" => "En attente", "Authorized" => "Autorise", "Failed" => "Echec", "Refunded" => "Rembourse", _ => status };
     private static string TranslatePaymentMethod(string method) => method switch { "MobileMoney" => "Mobile Money", "Cash" => "Cash", _ => method };
     private static string TranslateAssignmentStatus(string status) => status switch { "Offered" => "Proposee", "Accepted" => "Acceptee", "Refused" => "Refusee", "Expired" => "Expiree", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", _ => status };
     private static string TranslateLocationStatus(string status) => status switch { "Verified" => "verifiee", "OutsideTolerance" => "hors zone", "MissingProviderLocation" => "position manquante", "MissingMissionLocation" => "mission sans position", "LowAccuracy" => "precision faible", "InvalidProviderLocation" => "position invalide", _ => "non verifiee" };
     private static string TranslateSenderType(string senderType) => senderType switch { "Customer" => "Client", "Provider" => "Prestataire", "Company" => "Entreprise", "Platform" => "Kaza", _ => senderType };
 
-    private static string GetMissionStatusClass(string status) => status switch { "Completed" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetMissionStatusClass(string status) => status switch { "Completed" or "Resolved" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
 }

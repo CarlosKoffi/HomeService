@@ -11,5 +11,6 @@ public enum MissionStatus
     Started = 6,
     Completed = 7,
     Cancelled = 8,
-    Disputed = 9
+    Disputed = 9,
+    Resolved = 10
 }

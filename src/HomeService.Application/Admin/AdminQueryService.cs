@@ -51,7 +51,8 @@ public sealed class AdminQueryService(IAppDbContext db)
                 MissionCount = db.Missions.Count(mission => mission.CompanyId == company.Id),
                 OpenMissionCount = db.Missions.Count(mission => mission.CompanyId == company.Id
                     && mission.Status != MissionStatus.Completed
-                    && mission.Status != MissionStatus.Cancelled),
+                    && mission.Status != MissionStatus.Cancelled
+                    && mission.Status != MissionStatus.Resolved),
                 DocumentCount = db.ProviderDocuments.Count(document => document.Provider!.CompanyId == company.Id)
             })
             .ToListAsync(cancellationToken);
@@ -62,7 +63,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             await db.Companies.CountAsync(company => company.Status == CompanyStatus.Suspended, cancellationToken),
             await db.Providers.CountAsync(cancellationToken),
             await db.Providers.CountAsync(provider => provider.Status == ProviderStatus.Approved, cancellationToken),
-            await db.Missions.CountAsync(mission => mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled && mission.Status != MissionStatus.Resolved, cancellationToken),
             await db.Missions.CountAsync(mission => mission.Status == MissionStatus.Disputed, cancellationToken));
 
         return new AdminCompanyListResponse(
@@ -273,7 +274,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             providers.Count(provider => provider.Status == ProviderStatus.Approved.ToString()),
             providers.Count(provider => provider.EmploymentType == ProviderEmploymentType.TemporaryWorker.ToString()),
             interimRequests.Count(request => request.Status == ProviderAffiliationRequestStatus.Pending.ToString()),
-            missions.Count(mission => mission.Status is not "Completed" and not "Cancelled"),
+            missions.Count(mission => mission.Status is not "Completed" and not "Cancelled" and not "Resolved"),
             missions.Count(mission => mission.Status == MissionStatus.Completed.ToString()),
             missions.Count(mission => mission.Status == MissionStatus.Disputed.ToString()),
             applicationDocuments.Count,
@@ -386,8 +387,8 @@ public sealed class AdminQueryService(IAppDbContext db)
 
         var stats = new AdminMissionStatsResponse(
             await db.Missions.CountAsync(cancellationToken),
-            await db.Missions.CountAsync(mission => mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled, cancellationToken),
-            await db.Missions.CountAsync(mission => mission.ScheduledFor != null && mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled && mission.Status != MissionStatus.Resolved, cancellationToken),
+            await db.Missions.CountAsync(mission => mission.ScheduledFor != null && mission.Status != MissionStatus.Completed && mission.Status != MissionStatus.Cancelled && mission.Status != MissionStatus.Resolved, cancellationToken),
             await db.Missions.CountAsync(mission => mission.Status == MissionStatus.Completed, cancellationToken),
             await db.Missions.CountAsync(mission => mission.Status == MissionStatus.Disputed, cancellationToken));
 

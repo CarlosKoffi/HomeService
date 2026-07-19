@@ -74,6 +74,7 @@ public sealed class MissionTests
     [InlineData(MissionStatus.Completed)]
     [InlineData(MissionStatus.Cancelled)]
     [InlineData(MissionStatus.Disputed)]
+    [InlineData(MissionStatus.Resolved)]
     public void Assign_WhenMissionIsClosed_Throws(MissionStatus status)
     {
         var mission = CreateMission(60);
@@ -257,12 +258,34 @@ public sealed class MissionTests
     [Theory]
     [InlineData(MissionStatus.Completed)]
     [InlineData(MissionStatus.Cancelled)]
+    [InlineData(MissionStatus.Resolved)]
     public void MarkDisputed_WhenMissionIsClosed_Throws(MissionStatus status)
     {
         var mission = CreateMission(60);
         SetProperty(mission, nameof(Mission.Status), status);
 
         Assert.Throws<InvalidOperationException>(mission.MarkDisputed);
+    }
+
+    [Fact]
+    public void ResolveDispute_WhenMissionIsDisputed_MarksResolved()
+    {
+        var mission = CreateAssignedMission();
+        mission.MarkDisputed();
+
+        mission.ResolveDispute();
+
+        Assert.Equal(MissionStatus.Resolved, mission.Status);
+        Assert.NotNull(mission.UpdatedAt);
+    }
+
+    [Fact]
+    public void ResolveDispute_WhenMissionIsNotDisputed_Throws()
+    {
+        var mission = CreateAssignedMission();
+
+        Assert.Throws<InvalidOperationException>(mission.ResolveDispute);
+        Assert.Equal(MissionStatus.Assigned, mission.Status);
     }
 
     private static Mission CreateAssignedMission()
