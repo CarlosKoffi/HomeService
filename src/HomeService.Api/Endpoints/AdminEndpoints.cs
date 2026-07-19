@@ -971,6 +971,35 @@ public static class AdminEndpoints
         .WithName("ListCompanyServiceProposals")
         .Produces<CompanyServiceProposalListResponse>();
 
+        admin.MapPost("/company-service-proposals/reanalyse", async (
+            HttpRequest httpRequest,
+            AdminCompanyServiceProposalService serviceProposalService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await serviceProposalService.ReanalyseAsync(cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return ToCompanyServiceProposalActionError(result);
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyServiceProposalsReanalysed",
+                nameof(CompanyApplicationService),
+                null,
+                result.Message,
+                before: null,
+                after: null);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
+        })
+        .WithName("ReanalyseCompanyServiceProposals")
+        .Produces<CompanyServiceProposalListResponse>();
+
         admin.MapPost("/company-service-proposals/{id:guid}/attach", async (
             Guid id,
             AttachCompanyServiceProposalRequest request,

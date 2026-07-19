@@ -17,6 +17,9 @@
     <button type="button" class="secondary-action" @onclick="LoadServicesAsync" disabled="@IsLoading">
         Actualiser
     </button>
+    <button type="button" class="secondary-action" @onclick="ReanalyseProposalsAsync" disabled="@(IsLoading || IsSaving)">
+        Reanalyser les libelles
+    </button>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(Message))
@@ -471,6 +474,16 @@ else
                 proposalId,
                 new AttachCompanyServiceProposalRequest(selection.ServiceId, selection.ServicePrestationId));
             Message = "Libelle rattache au catalogue.";
+        });
+    }
+
+    private Task ReanalyseProposalsAsync()
+    {
+        return RunMutationAsync(async () =>
+        {
+            var response = await ApiClient.ReanalyseCompanyServiceProposalsAsync();
+            CompanyServiceProposals = response?.Items ?? [];
+            Message = "Les libelles ont ete compares au catalogue actuel.";
         });
     }
 

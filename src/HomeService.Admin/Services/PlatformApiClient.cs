@@ -191,6 +191,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<CompanyServiceProposalListResponse>("/api/admin/company-service-proposals", cancellationToken);
     }
 
+    public async Task<CompanyServiceProposalListResponse?> ReanalyseCompanyServiceProposalsAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyServiceProposalListResponse>("/api/admin/company-service-proposals/reanalyse", null, cancellationToken);
+    }
+
     public async Task<CompanyServiceProposalListResponse?> AttachCompanyServiceProposalAsync(
         Guid proposalId,
         AttachCompanyServiceProposalRequest request,

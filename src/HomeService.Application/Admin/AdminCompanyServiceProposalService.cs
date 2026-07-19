@@ -17,6 +17,7 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             .Where(proposal =>
                 proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
                 || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
+                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.CreatedAsNewService
                 || proposal.MatchedServiceId == null)
             .OrderByDescending(proposal => proposal.CreatedAt)
             .Select(proposal => new
@@ -60,6 +61,57 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
                         .ToList()))
                 .ToList(),
             proposals.Count);
+    }
+
+    public async Task<CompanyServiceProposalActionResult> ReanalyseAsync(CancellationToken cancellationToken)
+    {
+        var catalog = await GetCatalogAsync(cancellationToken);
+        var proposals = await db.CompanyApplicationServices
+            .Where(proposal =>
+                proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
+                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
+                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.CreatedAsNewService
+                || proposal.MatchedServiceId == null)
+            .ToListAsync(cancellationToken);
+
+        var updatedCount = 0;
+        foreach (var proposal in proposals)
+        {
+            var previousStatus = proposal.MatchStatus;
+            var previousServiceId = proposal.MatchedServiceId;
+            var previousPrestationId = proposal.MatchedServicePrestationId;
+            var previousScore = proposal.MatchScore;
+            var match = CompanyApplicationServiceMatcher.FindBestCandidate(proposal.RawName, catalog);
+
+            if (match is null)
+            {
+                var bestReviewCandidate = CompanyApplicationServiceMatcher.FindCandidates(proposal.RawName, catalog).FirstOrDefault();
+                proposal.MarkForReview(bestReviewCandidate?.Score);
+            }
+            else if (match.ServicePrestationId.HasValue)
+            {
+                proposal.MarkAsMatchedPrestation(match.ServiceId, match.ServicePrestationId.Value, match.Score);
+            }
+            else
+            {
+                proposal.MarkAsMatched(match.ServiceId, match.Score);
+            }
+
+            if (proposal.MatchStatus != previousStatus
+                || proposal.MatchedServiceId != previousServiceId
+                || proposal.MatchedServicePrestationId != previousPrestationId
+                || proposal.MatchScore != previousScore)
+            {
+                updatedCount++;
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return CompanyServiceProposalActionResult.Ok(
+            updatedCount == 0
+                ? "Aucun libelle n'a change apres reanalyse."
+                : $"{updatedCount} libelle(s) rattache(s) ou remis a verifier.");
     }
 
     public async Task<CompanyServiceProposalActionResult> AttachAsync(
