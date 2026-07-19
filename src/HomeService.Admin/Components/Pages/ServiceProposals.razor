@@ -60,6 +60,28 @@
     </article>
 </section>
 
+<nav class="service-admin-tabs" aria-label="Navigation catalogue services">
+    <button type="button" class="@GetTabClass(ServiceAdminTab.Proposals)" @onclick="() => ActiveTab = ServiceAdminTab.Proposals">
+        Propositions
+        @if (CompanyServiceProposals.Count > 0)
+        {
+            <span>@CompanyServiceProposals.Count</span>
+        }
+    </button>
+    <button type="button" class="@GetTabClass(ServiceAdminTab.Catalog)" @onclick="() => ActiveTab = ServiceAdminTab.Catalog">
+        Catalogue
+        <span>@Services.Count</span>
+    </button>
+    <button type="button" class="@GetTabClass(ServiceAdminTab.Create)" @onclick="() => ActiveTab = ServiceAdminTab.Create">
+        Creer
+    </button>
+    <button type="button" class="@GetTabClass(ServiceAdminTab.Insights)" @onclick="() => ActiveTab = ServiceAdminTab.Insights">
+        Chiffres
+    </button>
+</nav>
+
+@if (ActiveTab == ServiceAdminTab.Proposals)
+{
 <section class="service-admin-create orphan-proposals">
     <div>
         <p class="eyebrow">Controle catalogue</p>
@@ -161,7 +183,10 @@
         </div>
     }
 </section>
+}
 
+@if (ActiveTab == ServiceAdminTab.Create)
+{
 <section class="service-admin-create">
     <div>
         <p class="eyebrow">Nouveau service</p>
@@ -196,6 +221,7 @@
         <button type="button" @onclick="CreateServiceAsync" disabled="@IsSaving">Ajouter le service</button>
     </div>
 </section>
+}
 
 @if (IsLoading)
 {
@@ -206,7 +232,7 @@
         </div>
     </section>
 }
-else if (FilteredServices.Count == 0)
+else if (ActiveTab == ServiceAdminTab.Catalog && FilteredServices.Count == 0)
 {
     <section class="info-panel">
         <div>
@@ -215,7 +241,7 @@ else if (FilteredServices.Count == 0)
         </div>
     </section>
 }
-else
+else if (ActiveTab == ServiceAdminTab.Catalog)
 {
     <section class="service-catalog">
         @foreach (var service in FilteredServices)
@@ -402,6 +428,39 @@ else
         }
     </section>
 }
+else if (ActiveTab == ServiceAdminTab.Insights)
+{
+    <section class="service-insights-panel">
+        <div class="service-insights-heading">
+            <div>
+                <p class="eyebrow">Pilotage</p>
+                <h2>Chiffres par service</h2>
+                <p>Classement rapide du catalogue pour voir ce qui est pret, ce qui manque et ce qui doit etre complete.</p>
+            </div>
+            <span class="status-pill pending">Missions et revenus a brancher</span>
+        </div>
+
+        <div class="service-insights-table">
+            <div class="service-insights-row head">
+                <span>Service</span>
+                <span>Prestations</span>
+                <span>Actives</span>
+                <span>Propositions</span>
+                <span>Prix catalogue</span>
+            </div>
+            @foreach (var service in ServiceInsights)
+            {
+                <div class="service-insights-row">
+                    <strong>@service.Name</strong>
+                    <span>@service.TotalPrestations</span>
+                    <span>@service.ActivePrestations</span>
+                    <span>@service.PendingProposalCount</span>
+                    <span>@service.PriceRange</span>
+                </div>
+            }
+        </div>
+    </section>
+}
 
 @code {
     private readonly Dictionary<Guid, PrestationDraft> Drafts = [];
@@ -418,6 +477,24 @@ else
     private Guid? EditingServiceId { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSaving { get; set; }
+    private ServiceAdminTab ActiveTab { get; set; } = ServiceAdminTab.Proposals;
+
+    private IReadOnlyList<ServiceInsight> ServiceInsights
+    {
+        get
+        {
+            return Services
+                .OrderByDescending(service => service.Prestations.Count)
+                .ThenBy(service => service.Name)
+                .Select(service => new ServiceInsight(
+                    service.Name,
+                    service.Prestations.Count,
+                    service.Prestations.Count(prestation => prestation.IsActive),
+                    CountPendingProposalsFor(service),
+                    FormatPriceRange(service.PriceMinAmount ?? service.NormalPriceAmount, service.PriceMaxAmount ?? service.PremiumPriceAmount, service.Currency)))
+                .ToList();
+        }
+    }
 
     private IReadOnlyList<ServiceSummaryResponse> FilteredServices
     {
@@ -875,6 +952,24 @@ else
             : $"{priceMinAmount:N0} - {max:N0} {currency}";
     }
 
+    private string GetTabClass(ServiceAdminTab tab)
+    {
+        return ActiveTab == tab ? "active" : string.Empty;
+    }
+
+    private int CountPendingProposalsFor(ServiceSummaryResponse service)
+    {
+        var normalizedServiceName = NormalizeCatalogName(service.Name);
+        return CompanyServiceProposals.Count(proposal =>
+            NormalizeCatalogName(proposal.RawName).Contains(normalizedServiceName, StringComparison.OrdinalIgnoreCase)
+            || service.Prestations.Any(prestation => NormalizeCatalogName(proposal.RawName).Contains(NormalizeCatalogName(prestation.Name), StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static string NormalizeCatalogName(string value)
+    {
+        return value.Trim().ToLowerInvariant();
+    }
+
     private sealed class PrestationDraft
     {
         public string Name { get; set; } = string.Empty;
@@ -902,6 +997,21 @@ else
         public string Selection { get; set; } = string.Empty;
         public string CreateUnderServiceId { get; set; } = string.Empty;
     }
+
+    private enum ServiceAdminTab
+    {
+        Proposals,
+        Catalog,
+        Create,
+        Insights
+    }
+
+    private sealed record ServiceInsight(
+        string Name,
+        int TotalPrestations,
+        int ActivePrestations,
+        int PendingProposalCount,
+        string PriceRange);
 
     private sealed record ProposalSelection(Guid? ServiceId, Guid? ServicePrestationId);
 }

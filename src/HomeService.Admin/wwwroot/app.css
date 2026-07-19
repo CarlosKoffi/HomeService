@@ -1553,6 +1553,55 @@ h3 {
     margin: 0;
 }
 
+.service-admin-tabs {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, .05);
+    display: inline-flex;
+    gap: .35rem;
+    margin-top: 1rem;
+    padding: .35rem;
+}
+
+.service-admin-tabs button {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    color: #111827;
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 850;
+    gap: .45rem;
+    min-height: 2.45rem;
+    padding: .65rem 1rem;
+}
+
+.service-admin-tabs button.active {
+    background: #111827;
+    color: #fff;
+}
+
+.service-admin-tabs span {
+    align-items: center;
+    background: rgba(148, 163, 184, .18);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: .75rem;
+    height: 1.35rem;
+    justify-content: center;
+    min-width: 1.35rem;
+    padding: 0 .4rem;
+}
+
+.service-admin-tabs button.active span {
+    background: rgba(255, 255, 255, .18);
+}
+
 .service-admin-create {
     align-items: start;
     background: #fff;
@@ -1718,6 +1767,75 @@ h3 {
 .status-pill.rejected {
     background: #fee2e2;
     color: #b91c1c;
+}
+
+.status-pill.pending {
+    background: #ffedd5;
+    color: #c2410c;
+}
+
+.service-insights-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, .05);
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+.service-insights-heading {
+    align-items: start;
+    border-bottom: 1px solid #eef2f7;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.service-insights-heading h2 {
+    font-size: 1.3rem;
+    letter-spacing: -.01em;
+    margin: .1rem 0 .35rem;
+}
+
+.service-insights-heading p {
+    color: #111827;
+    margin: 0;
+}
+
+.service-insights-table {
+    display: grid;
+}
+
+.service-insights-row {
+    align-items: center;
+    border-bottom: 1px solid #eef2f7;
+    display: grid;
+    gap: .8rem;
+    grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(110px, .75fr));
+    padding: .85rem 1rem;
+}
+
+.service-insights-row:last-child {
+    border-bottom: 0;
+}
+
+.service-insights-row.head {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.service-insights-row strong {
+    color: #0f172a;
+}
+
+.service-insights-row span {
+    color: #111827;
+    font-weight: 750;
 }
 
 .prestation-admin-grid {
@@ -2727,6 +2845,7 @@ h3 {
     .access-form.compact,
     .admin-invite-form,
     .service-admin-overview,
+    .service-admin-tabs,
     .proposal-review-card,
     .proposal-list article,
     .notification-list article,
@@ -2734,6 +2853,7 @@ h3 {
     .service-catalog-card > header,
     .prestation-admin-grid,
     .prestation-row,
+    .service-insights-row,
     .prestation-edit,
     .cms-workspace,
     .cms-table > div,
@@ -2744,6 +2864,7 @@ h3 {
     .cms-header,
     .cms-detail-heading,
     .cms-editor-heading,
+    .service-insights-heading,
     .admin-page-heading {
         align-items: stretch;
         flex-direction: column;
