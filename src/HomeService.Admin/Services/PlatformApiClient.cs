@@ -568,7 +568,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
     public string GetProviderDocumentPreviewUrl(Guid documentId)
     {
-        return ToApiUrl($"/api/admin/provider-documents/{documentId}/preview");
+        return $"/admin-provider-documents/{documentId}/preview";
     }
 
     public async Task<CompanyApplicationDocumentFile> GetCompanyApplicationDocumentFileAsync(Guid documentId, CancellationToken cancellationToken = default)
@@ -589,6 +589,28 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
             ?? response.Content.Headers.ContentDisposition?.FileName
             ?? "document";
+
+        return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
+    }
+
+    public async Task<CompanyApplicationDocumentFile> GetProviderDocumentFileAsync(Guid documentId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/admin/provider-documents/{documentId}/preview";
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new PlatformApiException(
+                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName
+            ?? "document-prestataire";
 
         return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
     }
