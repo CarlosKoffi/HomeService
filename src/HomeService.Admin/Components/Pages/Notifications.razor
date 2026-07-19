@@ -2,26 +2,64 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Notifications
 @inject PlatformApiClient ApiClient
-@inject IJSRuntime JsRuntime
 
 <PageTitle>Notifications</PageTitle>
 
-<h1>Notifications</h1>
-<p class="lead">File d'attente des messages prevus pour les entreprises: email, WhatsApp et notifications mobiles.</p>
-
-<section class="info-panel">
+<div class="admin-page-heading">
     <div>
-        <h2>Canaux prevus</h2>
-        <p>
-            Les decisions admin creent des messages dans cette file. Le branchement final pourra ensuite envoyer
-            via email transactionnel, WhatsApp Business API et push mobile quand les apps seront pretes.
-        </p>
+        <h1>Notifications</h1>
+        <p class="lead">Suivez les messages email, WhatsApp et mobile avant branchement des envois automatiques.</p>
     </div>
-    <div class="check-list">
-        <span>Email transactionnel</span>
-        <span>WhatsApp Business</span>
-        <span>Notification mobile</span>
-    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync">Actualiser</button>
+</div>
+
+<section class="notification-command-center">
+    <article>
+        <span>A envoyer</span>
+        <strong>@CountByStatus("Pending")</strong>
+        <small>messages en attente</small>
+    </article>
+    <article>
+        <span>Envoyees</span>
+        <strong>@CountByStatus("Sent")</strong>
+        <small>messages confirmes</small>
+    </article>
+    <article>
+        <span>En erreur</span>
+        <strong>@CountByStatus("Failed")</strong>
+        <small>a relancer</small>
+    </article>
+    <article>
+        <span>Annulees</span>
+        <strong>@CountByStatus("Cancelled")</strong>
+        <small>hors file active</small>
+    </article>
+</section>
+
+<section class="notification-filters">
+    <label>
+        Recherche
+        <input @bind="SearchTerm" @bind:event="oninput" placeholder="Destinataire, sujet, contenu..." />
+    </label>
+    <label>
+        Statut
+        <select @bind="StatusFilter">
+            <option value="">Tous</option>
+            <option value="Pending">A envoyer</option>
+            <option value="Failed">En erreur</option>
+            <option value="Sent">Envoyees</option>
+            <option value="Cancelled">Annulees</option>
+        </select>
+    </label>
+    <label>
+        Canal
+        <select @bind="ChannelFilter">
+            <option value="">Tous</option>
+            <option value="Email">Email</option>
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="MobilePush">Mobile</option>
+        </select>
+    </label>
 </section>
 
 <section class="notification-list">
@@ -37,15 +75,15 @@
             <p>@ErrorMessage</p>
         </article>
     }
-    else if (QueuedNotifications.Count == 0)
+    else if (FilteredNotifications.Count == 0)
     {
         <article>
-            <p>Aucune notification en attente.</p>
+            <p>Aucune notification ne correspond aux filtres.</p>
         </article>
     }
     else
     {
-        @foreach (var notification in QueuedNotifications)
+        @foreach (var notification in FilteredNotifications)
         {
             <article class="@GetNotificationClass(notification.Status)">
                 <div>
@@ -57,17 +95,17 @@
                         <small class="notification-failure">@notification.FailureReason</small>
                     }
                 </div>
-                <span>@notification.Channel</span>
-                <span>@notification.Status</span>
+                <span>@TranslateChannel(notification.Channel)</span>
+                <span>@TranslateStatus(notification.Status)</span>
                 <div class="notification-actions">
                     <button type="button"
-                            disabled="@IsBusy(notification.Id)"
+                            disabled="@(!CanRetry(notification) || IsBusy(notification.Id))"
                             @onclick="() => RetryAsync(notification)">
                         Relancer
                     </button>
                     <button type="button"
                             disabled="@(!CanCancel(notification) || IsBusy(notification.Id))"
-                            @onclick="() => CancelAsync(notification)">
+                            @onclick="() => ToggleCancel(notification.Id)">
                         Annuler
                     </button>
                     <button type="button"
@@ -76,6 +114,19 @@
                         Marquer envoye
                     </button>
                 </div>
+                @if (CancelNotificationId == notification.Id)
+                {
+                    <div class="notification-cancel-row">
+                        <input @bind="CancelReason"
+                               @bind:event="oninput"
+                               placeholder="Raison de l'annulation" />
+                        <button type="button"
+                                disabled="@IsBusy(notification.Id)"
+                                @onclick="() => CancelAsync(notification)">
+                            Confirmer
+                        </button>
+                    </div>
+                }
             </article>
         }
     }
@@ -92,6 +143,18 @@
     private string? ErrorMessage { get; set; }
     private string? SuccessMessage { get; set; }
     private Guid? BusyNotificationId { get; set; }
+    private Guid? CancelNotificationId { get; set; }
+    private string? CancelReason { get; set; }
+    private string? SearchTerm { get; set; }
+    private string? StatusFilter { get; set; }
+    private string? ChannelFilter { get; set; }
+
+    private IReadOnlyList<NotificationOutboxMessageResponse> FilteredNotifications
+        => QueuedNotifications
+            .Where(MatchesFilters)
+            .OrderBy(notification => notification.Status == "Failed" ? 0 : notification.Status == "Pending" ? 1 : 2)
+            .ThenByDescending(notification => notification.ScheduledAt)
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,13 +190,15 @@
 
     private async Task CancelAsync(NotificationOutboxMessageResponse notification)
     {
-        var reason = await JsRuntime.InvokeAsync<string?>(
-            "prompt",
-            $"Raison de l'annulation pour {notification.Recipient} :");
+        if (string.IsNullOrWhiteSpace(CancelReason))
+        {
+            ErrorMessage = "Ajoutez une raison avant d'annuler la notification.";
+            return;
+        }
 
         await RunNotificationActionAsync(
             notification.Id,
-            () => ApiClient.CancelNotificationAsync(notification.Id, reason),
+            () => ApiClient.CancelNotificationAsync(notification.Id, CancelReason),
             "Notification annulee.");
     }
 
@@ -158,6 +223,8 @@
         {
             await action();
             SuccessMessage = successMessage;
+            CancelNotificationId = null;
+            CancelReason = null;
             await LoadAsync();
         }
         catch (Exception exception)
@@ -180,10 +247,78 @@
         return notification.Status is not "Sent" and not "Cancelled";
     }
 
+    private static bool CanRetry(NotificationOutboxMessageResponse notification)
+    {
+        return notification.Status is "Failed" or "Cancelled";
+    }
+
     private static bool CanMarkSent(NotificationOutboxMessageResponse notification)
     {
         return notification.Status is "Pending" or "Failed";
     }
+
+    private void ToggleCancel(Guid notificationId)
+    {
+        if (CancelNotificationId == notificationId)
+        {
+            CancelNotificationId = null;
+            CancelReason = null;
+            return;
+        }
+
+        CancelNotificationId = notificationId;
+        CancelReason = null;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
+    private int CountByStatus(string status)
+    {
+        return QueuedNotifications.Count(notification => notification.Status == status);
+    }
+
+    private bool MatchesFilters(NotificationOutboxMessageResponse notification)
+    {
+        if (!string.IsNullOrWhiteSpace(StatusFilter)
+            && !string.Equals(notification.Status, StatusFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ChannelFilter)
+            && !string.Equals(notification.Channel, ChannelFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            return true;
+        }
+
+        var search = SearchTerm.Trim();
+        return notification.Recipient.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || notification.Subject.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || notification.Body.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || (notification.RelatedEntityType?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private static string TranslateChannel(string channel) => channel switch
+    {
+        "Email" => "Email",
+        "WhatsApp" => "WhatsApp",
+        "MobilePush" => "Mobile",
+        _ => channel
+    };
+
+    private static string TranslateStatus(string status) => status switch
+    {
+        "Pending" => "A envoyer",
+        "Failed" => "En erreur",
+        "Sent" => "Envoyee",
+        "Cancelled" => "Annulee",
+        _ => status
+    };
 
     private static string GetNotificationClass(string status)
     {

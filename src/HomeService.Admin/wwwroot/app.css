@@ -2072,6 +2072,70 @@ h3 {
     grid-template-columns: minmax(160px, 1fr) 110px minmax(220px, 1.4fr);
 }
 
+.notification-command-center {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin: 1rem 0;
+}
+
+.notification-command-center article {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, .05);
+    display: grid;
+    gap: .2rem;
+    padding: .95rem 1rem;
+}
+
+.notification-command-center span,
+.notification-command-center small {
+    color: #64748b;
+    font-size: .75rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.notification-command-center strong {
+    color: #000;
+    font-size: 1.55rem;
+    line-height: 1;
+}
+
+.notification-filters {
+    align-items: end;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: minmax(240px, 1.4fr) minmax(160px, .7fr) minmax(160px, .7fr);
+    margin: 1rem 0;
+    padding: 1rem;
+}
+
+.notification-filters label {
+    color: #000;
+    display: grid;
+    font-size: .8rem;
+    font-weight: 850;
+    gap: .35rem;
+}
+
+.notification-filters input,
+.notification-filters select,
+.notification-cancel-row input {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 999px;
+    color: #000;
+    font: inherit;
+    min-height: 42px;
+    padding: .65rem .85rem;
+    width: 100%;
+}
+
 .notification-list {
     display: grid;
     gap: .75rem;
@@ -2133,6 +2197,25 @@ h3 {
 .notification-actions button:disabled {
     cursor: not-allowed;
     opacity: .45;
+}
+
+.notification-cancel-row {
+    align-items: center;
+    display: grid;
+    gap: .65rem;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.notification-cancel-row button {
+    background: #b91c1c;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    font: inherit;
+    font-weight: 850;
+    min-height: 42px;
+    padding: .55rem .9rem;
 }
 
 .audit-filters {
