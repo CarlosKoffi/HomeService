@@ -42,13 +42,31 @@
     </label>
 </section>
 
+<section class="service-admin-overview">
+    <article>
+        <span>A verifier</span>
+        <strong>@CompanyServiceProposals.Count</strong>
+        <p>Libelles envoyes par les entreprises a rattacher au bon service.</p>
+    </article>
+    <article>
+        <span>Catalogue</span>
+        <strong>@Services.Count</strong>
+        <p>Services principaux disponibles pour les sites et les workflows.</p>
+    </article>
+    <article>
+        <span>Prestations</span>
+        <strong>@Services.Sum(service => service.Prestations.Count)</strong>
+        <p>Details operationnels rattaches a un service parent.</p>
+    </article>
+</section>
+
 <section class="service-admin-create orphan-proposals">
     <div>
-        <p class="eyebrow">A rattacher</p>
+        <p class="eyebrow">Controle catalogue</p>
         <h2>Services saisis par les entreprises</h2>
         <p>
-            Tout libelle non reconnu arrive ici. Rattachez-le a un service existant, a une prestation,
-            ou creez une prestation sous le bon service parent.
+            Chaque libelle doit finir soit sur un service existant, soit sur une prestation existante,
+            soit devenir une nouvelle prestation sous le bon service parent.
         </p>
     </div>
 
@@ -67,25 +85,35 @@
                 var draft = GetProposalDraft(proposal);
 
                 <article class="proposal-review-card" @key="proposal.Id">
-                    <div>
-                        <span class="status-pill pending">@proposal.MatchStatus</span>
-                        <h3>@proposal.RawName</h3>
-                        <p>@proposal.CompanyName - dossier @proposal.CompanyApplicationId.ToString()[..8]</p>
+                    <div class="proposal-review-main">
+                        <div class="proposal-review-title">
+                            <span class="status-pill pending">@GetProposalStatusLabel(proposal.MatchStatus)</span>
+                            <h3>@proposal.RawName</h3>
+                        </div>
+                        <p>@proposal.CompanyName</p>
+                        <small>Dossier @proposal.CompanyApplicationId.ToString()[..8] - score actuel @(proposal.MatchScore?.ToString() ?? "non calcule")</small>
                         @if (proposal.Suggestions.Count > 0)
                         {
                             <div class="proposal-suggestions">
+                                <span>Suggestions</span>
                                 @foreach (var suggestion in proposal.Suggestions.Take(3))
                                 {
                                     <button type="button" class="light-action" @onclick="() => ApplySuggestion(proposal.Id, suggestion)">
-                                        @FormatSuggestion(suggestion) (@suggestion.Score)
+                                        @FormatSuggestion(suggestion)
                                     </button>
                                 }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="proposal-suggestions empty">
+                                <span>Aucune suggestion fiable</span>
                             </div>
                         }
                     </div>
                     <div class="service-admin-form proposal-actions">
                         <label>
-                            Rattachement
+                            Rattacher a
                             <select @bind="draft.Selection">
                                 <option value="">Choisir un service ou une prestation</option>
                                 @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
@@ -99,7 +127,7 @@
                             </select>
                         </label>
                         <label>
-                            Creer prestation sous
+                            Ou creer une prestation sous
                             <select @bind="draft.CreateUnderServiceId">
                                 <option value="">Ne pas creer</option>
                                 @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
@@ -544,6 +572,18 @@ else
         return suggestion.ServicePrestationId.HasValue
             ? $"{suggestion.ServiceName} - {suggestion.ServicePrestationName}"
             : suggestion.ServiceName;
+    }
+
+    private static string GetProposalStatusLabel(string status)
+    {
+        return status switch
+        {
+            "PendingMatch" => "A analyser",
+            "NeedsAdminReview" => "A verifier",
+            "CreatedAsNewService" => "A reclasser",
+            "MatchedExisting" => "Rattache",
+            _ => status
+        };
     }
 
     private PrestationDraft GetDraft(Guid serviceId)
