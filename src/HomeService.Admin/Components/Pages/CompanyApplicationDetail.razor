@@ -254,10 +254,17 @@ else if (Application is not null)
             La note est obligatoire pour demander un complement ou refuser le dossier.
             La validation envoie ou regenere un lien d'activation pour creation du mot de passe.
         </p>
+        @if (!CanApproveApplication())
+        {
+            <div class="decision-blockers">
+                <strong>Validation bloquee</strong>
+                <p>@GetApprovalBlockerMessage()</p>
+            </div>
+        }
         <textarea rows="4" placeholder="Note interne ou message de complement" @bind="ReviewNote"></textarea>
         <div class="easy-actions">
             <button type="button" disabled="@IsBusy" @onclick="RequestMoreInformationAsync">Demander complement</button>
-            <button type="button" disabled="@IsBusy" @onclick="ApproveAndSendActivationLinkAsync">Valider et envoyer lien</button>
+            <button type="button" disabled="@(IsBusy || !CanApproveApplication())" @onclick="ApproveAndSendActivationLinkAsync">Valider et envoyer lien</button>
             <button type="button" disabled="@IsBusy" @onclick="SendActivationLinkAsync">Renvoyer lien</button>
             <button type="button" disabled="@IsBusy" @onclick="RejectApplicationAsync">Rejeter</button>
             @if (Application.Status == "Rejected")
@@ -265,6 +272,40 @@ else if (Application is not null)
                 <button type="button" disabled="@IsBusy" @onclick="ReopenApplicationAsync">Reouvrir dossier</button>
             }
         </div>
+    </section>
+
+    <section class="status-history-panel">
+        <div>
+            <p class="eyebrow">Journal du dossier</p>
+            <h2>Historique et notes</h2>
+            <p class="section-help">
+                Toutes les notes importantes restent visibles ici pour comprendre les decisions prises sur le dossier.
+            </p>
+        </div>
+
+        @if (Application.StatusHistory.Count == 0)
+        {
+            <p class="section-help">Aucun evenement enregistre pour le moment.</p>
+        }
+        else
+        {
+            <div class="status-history-list">
+                @foreach (var item in Application.StatusHistory.OrderByDescending(item => item.ChangedAt))
+                {
+                    <article>
+                        <span class="detail-status @GetStatusClass(item.NewStatus)">@GetApplicationStatusLabel(item.NewStatus)</span>
+                        <div>
+                            <strong>@GetHistoryTransition(item)</strong>
+                            @if (!string.IsNullOrWhiteSpace(item.Note))
+                            {
+                                <p>@item.Note</p>
+                            }
+                            <small>@FormatDate(item.ChangedAt) - @(string.IsNullOrWhiteSpace(item.ChangedBy) ? "Equipe Kaza" : item.ChangedBy)</small>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
     </section>
 }
 
@@ -587,6 +628,23 @@ else if (Application is not null)
         return $"{approved}/{RequiredDocumentSlots.Count} pieces obligatoires validees";
     }
 
+    private bool CanApproveApplication()
+    {
+        return RequiredDocumentSlots.All(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
+    }
+
+    private string GetApprovalBlockerMessage()
+    {
+        var missing = RequiredDocumentSlots
+            .Where(slot => FindLatestDocument(slot.Type)?.ReviewStatus != "Approved")
+            .Select(slot => slot.Label)
+            .ToList();
+
+        return missing.Count == 0
+            ? "Le dossier peut etre valide."
+            : $"Pieces a valider avant approval: {string.Join(", ", missing)}.";
+    }
+
     private string GetRequiredDocumentsReadinessClass()
     {
         var approved = RequiredDocumentSlots.Count(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
@@ -610,6 +668,31 @@ else if (Application is not null)
             "UnderReview" => "status-review",
             _ => "status-new"
         };
+    }
+
+    private static string GetApplicationStatusLabel(string status)
+    {
+        return status switch
+        {
+            "Submitted" => "Depose",
+            "UnderReview" => "En revue",
+            "MoreInformationRequested" => "Complement demande",
+            "Approved" => "Valide",
+            "Rejected" => "Refuse",
+            "ActivationSent" => "Lien envoye",
+            "Activated" => "Compte active",
+            _ => status
+        };
+    }
+
+    private static string GetHistoryTransition(CompanyApplicationStatusHistoryResponse item)
+    {
+        if (string.IsNullOrWhiteSpace(item.PreviousStatus))
+        {
+            return GetApplicationStatusLabel(item.NewStatus);
+        }
+
+        return $"{GetApplicationStatusLabel(item.PreviousStatus)} vers {GetApplicationStatusLabel(item.NewStatus)}";
     }
 
     private static string GetDocumentStatusClass(string? status)
