@@ -811,14 +811,11 @@ public static class CompanyPortalEndpoints
             }
 
             var oldDocuments = await db.ProviderDocuments
-                .AsNoTracking()
                 .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
-                .Select(document => new { document.Id, document.StoragePath })
                 .ToListAsync(cancellationToken);
-            foreach (var oldDocument in oldDocuments)
-            {
-                TryDeleteProviderFile(uploadService, oldDocument.StoragePath);
-            }
+            var oldStoragePaths = oldDocuments
+                .Select(document => document.StoragePath)
+                .ToList();
 
             StoredCompanyProviderDocument stored;
             try
@@ -830,10 +827,7 @@ public static class CompanyPortalEndpoints
                 return Results.BadRequest(new { message = exception.Message });
             }
 
-            await db.ProviderDocuments
-                .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
-                .ExecuteDeleteAsync(cancellationToken);
-
+            db.ProviderDocuments.RemoveRange(oldDocuments);
             db.ProviderDocuments.Add(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
             db.AuditLogEntries.Add(AuditLogFactory.Create(
                 AuditActor.Company(companyId, null),
@@ -847,6 +841,10 @@ public static class CompanyPortalEndpoints
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
+                foreach (var oldStoragePath in oldStoragePaths)
+                {
+                    TryDeleteProviderFile(uploadService, oldStoragePath);
+                }
             }
             catch (DbUpdateException exception)
             {

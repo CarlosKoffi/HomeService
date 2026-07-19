@@ -741,9 +741,9 @@ else
                                         @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
                                         {
                                             <div class="document-preview">
-                                                @if (slot.IsImagePreview)
+                                                @if (slot.IsInlineImagePreview)
                                                 {
-                                                    <img src="@ToPreviewUrl(slot.PreviewUrl)" alt="@slot.Label" />
+                                                    <img src="@ToPreviewUrl(slot.PreviewUrl)" alt="@slot.Label" loading="lazy" />
                                                 }
                                                 else
                                                 {
@@ -2068,7 +2068,7 @@ else
             document?.OriginalFileName ?? (string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "Manquant" : "Optionnel") : "Piece deposee"),
             previewUrl,
             document?.ContentType,
-            IsImageDocument(documentType, document?.ContentType, document?.OriginalFileName),
+            documentType == "Photo" && IsImageDocument(documentType, document?.ContentType, document?.OriginalFileName),
             string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "missing" : "optional") : "ready");
     }
 
@@ -2443,6 +2443,6 @@ else
         string FileName,
         string? PreviewUrl,
         string? ContentType,
-        bool IsImagePreview,
+        bool IsInlineImagePreview,
         string StatusClass);
 }
