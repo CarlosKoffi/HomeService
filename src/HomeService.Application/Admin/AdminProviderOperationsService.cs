@@ -23,7 +23,7 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
             return AdminProviderOperationResult.ValidationFailed(provider, "Le prestataire doit etre rattache a une entreprise avant validation.");
         }
 
-        if (provider.Status is ProviderStatus.Inactive or ProviderStatus.SuspendedByCompany or ProviderStatus.SuspendedByPlatform)
+        if (provider.Status is ProviderStatus.Inactive or ProviderStatus.SuspendedByCompany)
         {
             return AdminProviderOperationResult.ValidationFailed(provider, "Ce prestataire est suspendu ou inactif.");
         }
@@ -40,6 +40,30 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
 
         var previousStatus = provider.Status;
         provider.Approve();
+        return AdminProviderOperationResult.Ok(provider, previousStatus);
+    }
+
+    public async Task<AdminProviderOperationResult> SuspendAsync(Guid providerId, CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers
+            .FirstOrDefaultAsync(provider => provider.Id == providerId, cancellationToken);
+        if (provider is null)
+        {
+            return AdminProviderOperationResult.NotFound();
+        }
+
+        if (provider.Status == ProviderStatus.SuspendedByPlatform)
+        {
+            return AdminProviderOperationResult.ValidationFailed(provider, "Ce prestataire est deja suspendu par la plateforme.");
+        }
+
+        if (provider.Status == ProviderStatus.Inactive)
+        {
+            return AdminProviderOperationResult.ValidationFailed(provider, "Ce prestataire est inactif.");
+        }
+
+        var previousStatus = provider.Status;
+        provider.SuspendByPlatform();
         return AdminProviderOperationResult.Ok(provider, previousStatus);
     }
 }

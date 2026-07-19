@@ -281,6 +281,13 @@ public sealed class ProviderProfile : AuditableEntity
         Touch();
     }
 
+    public void SuspendByPlatform()
+    {
+        Status = ProviderStatus.SuspendedByPlatform;
+        IsAvailable = false;
+        Touch();
+    }
+
     public void SetAvailability(bool isAvailable, decimal? latitude, decimal? longitude)
     {
         if (Status != ProviderStatus.Approved)

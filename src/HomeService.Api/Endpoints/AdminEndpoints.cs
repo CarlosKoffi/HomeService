@@ -405,6 +405,46 @@ public static class AdminEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
+        admin.MapPost("/providers/{providerId:guid}/suspend", async (
+            Guid providerId,
+            AdminProviderActionRequest? request,
+            HttpRequest httpRequest,
+            AdminProviderOperationsService providerOperationsService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await providerOperationsService.SuspendAsync(providerId, cancellationToken);
+            if (result.Status == AdminProviderOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminProviderOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            var provider = result.Provider!;
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Admin(),
+                "AdminProviderSuspended",
+                nameof(ProviderProfile),
+                provider.Id,
+                string.IsNullOrWhiteSpace(request?.Note)
+                    ? "Prestataire suspendu par l'administration."
+                    : request.Note.Trim(),
+                HttpAuditContextFactory.Create(httpRequest),
+                before: new { Status = result.PreviousStatus?.ToString() },
+                after: new { provider.Status, provider.CompanyId }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("SuspendAdminProvider")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapGet("/payments", async (
             string? period,
             string? paymentStatus,

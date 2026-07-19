@@ -99,3 +99,5 @@ public sealed record AdminProviderMissionAssignmentDetailResponse(
     string? RefusalComment,
     string ArrivalVerificationStatus,
     int? ArrivalDistanceMeters);
+
+public sealed record AdminProviderActionRequest(string? Note);

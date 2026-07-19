@@ -39,6 +39,17 @@ public sealed class ProviderProfileTests
     }
 
     [Fact]
+    public void SuspendByPlatform_ClearsAvailability()
+    {
+        var provider = CreateApprovedAvailableProvider();
+
+        provider.SuspendByPlatform();
+
+        Assert.Equal(ProviderStatus.SuspendedByPlatform, provider.Status);
+        Assert.False(provider.IsAvailable);
+    }
+
+    [Fact]
     public void Deactivate_ClearsAvailability()
     {
         var provider = CreateApprovedAvailableProvider();

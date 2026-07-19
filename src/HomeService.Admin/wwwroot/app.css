@@ -889,6 +889,16 @@ h3 {
     padding: .8rem 1rem;
 }
 
+.admin-message.success-message {
+    background: #ecfdf5;
+    border-color: #bbf7d0;
+}
+
+.danger-action {
+    border-color: #fecaca !important;
+    color: #b91c1c !important;
+}
+
 .admin-metric-grid {
     display: grid;
     gap: .75rem;

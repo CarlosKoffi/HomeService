@@ -110,6 +110,22 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Validation impossible.");
     }
 
+    public async Task<ApiActionResult> SuspendAdminProviderAsync(
+        Guid providerId,
+        string? note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/admin/providers/{providerId}/suspend",
+            new AdminProviderActionRequest(note),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Suspension impossible.");
+    }
+
     public async Task<AdminPaymentListResponse?> GetAdminPaymentsAsync(
         string? period,
         string? paymentStatus,

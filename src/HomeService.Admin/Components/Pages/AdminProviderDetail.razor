@@ -10,6 +10,10 @@
 {
     <p class="admin-message error-message">@ErrorMessage</p>
 }
+else if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message success-message">@Message</p>
+}
 
 @if (IsLoading)
 {
@@ -45,7 +49,13 @@ else
             @if (CanApproveProvider(Provider))
             {
                 <button type="button" class="primary-action compact-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
-                    @(IsActionRunning ? "Validation..." : "Valider prestataire")
+                    @(IsActionRunning ? "Validation..." : GetApproveButtonLabel(Provider))
+                </button>
+            }
+            @if (CanSuspendProvider(Provider))
+            {
+                <button type="button" class="secondary-action compact-action danger-action" disabled="@IsActionRunning" @onclick="SuspendProviderAsync">
+                    @(IsActionRunning ? "Suspension..." : "Suspendre")
                 </button>
             }
         </div>
@@ -109,6 +119,31 @@ else
                     <div><dt>Rayon</dt><dd>@Provider.MissionRadiusKm km</dd></div>
                     <div><dt>Position actuelle</dt><dd>@FormatLocation(Provider.CurrentLatitude, Provider.CurrentLongitude)</dd></div>
                 </dl>
+            </article>
+            <article>
+                <h2>Action admin</h2>
+                @if (CanSuspendProvider(Provider))
+                {
+                    <p>Suspendre bloque les affectations et coupe la disponibilite terrain.</p>
+                    <label class="form-field">
+                        <span>Note interne</span>
+                        <textarea rows="3" @bind="SuspendNote" placeholder="Ex: documents a reverifier, incident client, demande entreprise..."></textarea>
+                    </label>
+                    <button type="button" class="secondary-action danger-action" disabled="@IsActionRunning" @onclick="SuspendProviderAsync">
+                        @(IsActionRunning ? "Suspension..." : "Suspendre le prestataire")
+                    </button>
+                }
+                else if (CanApproveProvider(Provider))
+                {
+                    <p>@(Provider.Status == "SuspendedByPlatform" ? "Ce prestataire est suspendu par Kaza. Vous pouvez le reactiver apres controle." : "Le dossier peut etre valide apres verification des informations.")</p>
+                    <button type="button" class="primary-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
+                        @(IsActionRunning ? "Validation..." : GetApproveButtonLabel(Provider))
+                    </button>
+                }
+                else
+                {
+                    <p>Aucune action directe disponible pour ce statut.</p>
+                }
             </article>
         </section>
     }
@@ -254,6 +289,8 @@ else
     private bool IsLoading { get; set; } = true;
     private bool IsActionRunning { get; set; }
     private string? ErrorMessage { get; set; }
+    private string? Message { get; set; }
+    private string? SuspendNote { get; set; }
     private string SelectedTab { get; set; } = "summary";
 
     protected override async Task OnParametersSetAsync()
@@ -294,6 +331,8 @@ else
 
         IsActionRunning = true;
         ErrorMessage = null;
+        Message = null;
+        var wasSuspendedByPlatform = Provider.Status == "SuspendedByPlatform";
         try
         {
             var result = await ApiClient.ApproveAdminProviderAsync(Provider.Id);
@@ -304,10 +343,45 @@ else
             }
 
             await LoadAsync();
+            Message = wasSuspendedByPlatform ? "Prestataire reactive." : "Prestataire valide pour mission.";
         }
         catch (Exception exception)
         {
             ErrorMessage = $"Validation impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionRunning = false;
+        }
+    }
+
+    private async Task SuspendProviderAsync()
+    {
+        if (Provider is null)
+        {
+            return;
+        }
+
+        IsActionRunning = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            var result = await ApiClient.SuspendAdminProviderAsync(Provider.Id, SuspendNote);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            SuspendNote = null;
+            await LoadAsync();
+            Message = "Prestataire suspendu par Kaza.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Suspension impossible. Detail: {exception.Message}";
         }
         finally
         {
@@ -334,8 +408,10 @@ else
     private static string GetProviderStatusClass(string status) => status switch { "Approved" => "status-pill ok", "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-pill danger", _ => "status-pill pending" };
     private static string GetInterimStatusClass(string status) => status switch { "Approved" => "status-pill ok", "Rejected" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetApproveButtonLabel(AdminProviderDetailResponse provider) => provider.Status == "SuspendedByPlatform" ? "Reactiver prestataire" : "Valider prestataire";
+    private static bool CanSuspendProvider(AdminProviderDetailResponse provider) => provider.Status == "Approved";
     private static bool CanApproveProvider(AdminProviderDetailResponse provider)
     {
-        return provider.Status is not ("Approved" or "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" or "InterimCandidate");
+        return provider.Status is not ("Approved" or "SuspendedByCompany" or "Inactive" or "InterimCandidate");
     }
 }
