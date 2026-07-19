@@ -616,7 +616,7 @@ else
                                             }
                                         </select>
                                     </label>
-                                    <button type="button" @onclick="AddEditableService">Ajouter</button>
+                                    <button type="button" @onclick="AddEditableServiceAsync">Ajouter</button>
                                 </div>
 
                                 @if (EditableServices.Count == 0)
@@ -699,7 +699,7 @@ else
                                                         <button type="button"
                                                                 class="add-prestation-action"
                                                                 disabled="@string.IsNullOrWhiteSpace(service.PrestationSearchTerm)"
-                                                                @onclick="() => AddEditablePrestation(service)">
+                                                                @onclick="() => AddEditablePrestationAsync(service)">
                                                             Ajouter prestation
                                                         </button>
                                                     }
@@ -1205,16 +1205,18 @@ else
         Message = "Nouveau code d'acces prestataire genere.";
     }
 
-    private void AddEditableService()
+    private async Task AddEditableServiceAsync()
     {
         if (!Guid.TryParse(ServiceToAddId, out var serviceId) || EditableServices.Any(service => service.ServiceId == serviceId))
         {
+            Message = "Choisissez un service qui n'est pas deja rattache.";
             return;
         }
 
         var service = Services.FirstOrDefault(service => service.Id == serviceId);
         if (service is null)
         {
+            Message = "Service introuvable.";
             return;
         }
 
@@ -1233,6 +1235,11 @@ else
             ServicePrestationIds = []
         });
         ServiceToAddId = null;
+        var saved = await PersistEditableServicesAsync("Service ajoute au profil.");
+        if (!saved)
+        {
+            EditableServices.RemoveAll(item => item.ServiceId == service.Id);
+        }
     }
 
     private void RemoveEditableService(Guid serviceId)
@@ -1900,16 +1907,60 @@ else
         service.ServicePrestationIds.Remove(prestationId);
     }
 
-    private void AddEditablePrestation(CompanyEmployeeServiceEditModel service)
+    private async Task AddEditablePrestationAsync(CompanyEmployeeServiceEditModel service)
     {
         var prestation = FindPrestation(service.ServiceId, service.PrestationSearchTerm);
-        if (prestation is null || service.ServicePrestationIds.Contains(prestation.Id))
+        if (prestation is null)
         {
+            Message = "Choisissez une prestation dans la liste.";
+            return;
+        }
+
+        if (service.ServicePrestationIds.Contains(prestation.Id))
+        {
+            Message = "Cette prestation est deja ajoutee.";
             return;
         }
 
         service.ServicePrestationIds.Add(prestation.Id);
         service.PrestationSearchTerm = null;
+        var saved = await PersistEditableServicesAsync("Prestation ajoutee au profil.");
+        if (!saved)
+        {
+            service.ServicePrestationIds.Remove(prestation.Id);
+        }
+        StateHasChanged();
+    }
+
+    private async Task<bool> PersistEditableServicesAsync(string successMessage)
+    {
+        Message = null;
+        if (SelectedEmployee is null || Session is null || IsPreviewMode())
+        {
+            Message = IsPreviewMode() ? successMessage : Message;
+            return true;
+        }
+
+        var servicesResult = await ApiClient.UpdateCompanyEmployeeServicesAsync(
+            Session.CompanyId,
+            SelectedEmployee.Id,
+            new UpdateCompanyEmployeeServicesRequest(EditableServices
+                .Select(service => new UpsertCompanyEmployeeServiceRequest(
+                    service.ServiceId,
+                    service.ExperienceLevel,
+                    service.YearsOfExperience,
+                    service.PriceTier,
+                    service.ServicePrestationIds))
+                .ToList()));
+
+        if (!servicesResult.IsSuccess)
+        {
+            Message = servicesResult.ErrorMessage;
+            return false;
+        }
+
+        Message = successMessage;
+        return true;
     }
 
     private static void RemoveEditablePrestation(CompanyEmployeeServiceEditModel service, Guid prestationId)
