@@ -282,7 +282,7 @@ else
                                                 {
                                                     <span>
                                                         @prestation.Name
-                                                        <button type="button" @onclick="() => RemoveFormPrestation(selection, prestation.Id)" aria-label="Retirer la prestation">×</button>
+                                                        <button type="button" @onclick="() => RemoveFormPrestation(selection, prestation.Id)" aria-label="Retirer la prestation">x</button>
                                                     </span>
                                                 }
                                             </div>
@@ -630,72 +630,93 @@ else
                                         {
                                             var activePrestations = GetActivePrestations(service.ServiceId);
                                             var hasPrestations = activePrestations.Count > 0;
-                                            <div class="@($"service-edit-row figma-service-row clean-service-row service-line-editor {(hasPrestations ? "has-prestations" : "simple-service")}")">
-                                                <div class="service-edit-name clean-service-name">
-                                                    <div class="service-profile-title">
-                                                        <span class="service-check-emoji">@GetServiceEmoji(service.ServiceName)</span>
+                                            <div class="employee-service-card-simple">
+                                                <div class="employee-service-card-title">
+                                                    <span class="service-check-emoji">@GetServiceEmoji(service.ServiceName)</span>
+                                                    <div>
                                                         <strong>@service.ServiceName</strong>
+                                                        <small>@(hasPrestations ? "Choisissez les prestations maitrisees." : "Tarif applique au service.")</small>
                                                     </div>
+                                                </div>
+
+                                                <div class="employee-service-line">
+                                                    <label class="employee-service-field wide">
+                                                        <span>Prestation</span>
+                                                        @if (hasPrestations)
+                                                        {
+                                                            <select @bind="service.PrestationSearchTerm">
+                                                                <option value="">Choisir une prestation</option>
+                                                                @foreach (var prestation in activePrestations)
+                                                                {
+                                                                    <option value="@prestation.Name">@prestation.Name</option>
+                                                                }
+                                                            </select>
+                                                        }
+                                                        else
+                                                        {
+                                                            <select disabled>
+                                                                <option>Aucune prestation</option>
+                                                            </select>
+                                                        }
+                                                    </label>
+
+                                                    <label class="employee-service-field">
+                                                        <span>Niveau</span>
+                                                        <select @bind="service.ExperienceLevel">
+                                                            <option value="Junior">Junior</option>
+                                                            <option value="Confirmed">Confirme</option>
+                                                            <option value="Senior">Senior</option>
+                                                            <option value="Expert">Expert</option>
+                                                        </select>
+                                                    </label>
+
+                                                    <label class="employee-service-field compact">
+                                                        <span>Experience</span>
+                                                        <InputNumber @bind-Value="service.YearsOfExperience" />
+                                                    </label>
+
+                                                    <label class="employee-premium-inline">
+                                                        <input type="checkbox"
+                                                               checked="@(service.PriceTier == "Premium")"
+                                                               @onchange="eventArgs => TogglePremium(service, eventArgs)" />
+                                                        <span>Premium</span>
+                                                    </label>
+
+                                                    <div class="employee-price-inline">
+                                                        <span>Min</span>
+                                                        <strong>@GetEffectiveMinPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
+                                                    </div>
+
+                                                    <div class="employee-price-inline">
+                                                        <span>Max</span>
+                                                        <strong>@GetEffectiveMaxPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
+                                                    </div>
+                                                </div>
+
+                                                <div class="employee-service-actions-row">
                                                     @if (hasPrestations)
                                                     {
-                                                        <small>Prestations autorisees pour ce prestataire</small>
-                                                        <div class="service-prestation-picker clean-prestation-row">
-                                                            <label>
-                                                                Prestation
-                                                                <select @bind="service.PrestationSearchTerm">
-                                                                    <option value="">Choisir une prestation</option>
-                                                                    @foreach (var prestation in activePrestations)
-                                                                    {
-                                                                        <option value="@prestation.Name">@prestation.Name - @FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</option>
-                                                                    }
-                                                                </select>
-                                                            </label>
-                                                            <button type="button" @onclick="() => AddEditablePrestation(service)">Ajouter prestation</button>
-                                                            @if (service.ServicePrestationIds.Count > 0)
+                                                        <button type="button"
+                                                                class="add-prestation-action"
+                                                                disabled="@string.IsNullOrWhiteSpace(service.PrestationSearchTerm)"
+                                                                @onclick="() => AddEditablePrestation(service)">
+                                                            Ajouter prestation
+                                                        </button>
+                                                    }
+
+                                                    @if (service.ServicePrestationIds.Count > 0)
+                                                    {
+                                                        <div class="selected-prestation-list">
+                                                            @foreach (var prestation in GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds))
                                                             {
-                                                                <div class="selected-prestation-list">
-                                                                    @foreach (var prestation in GetSelectedPrestations(service.ServiceId, service.ServicePrestationIds))
-                                                                    {
-                                                                        <span>
-                                                                            @prestation.Name
-                                                                            <button type="button" @onclick="() => RemoveEditablePrestation(service, prestation.Id)" aria-label="Retirer la prestation">×</button>
-                                                                        </span>
-                                                                    }
-                                                                </div>
+                                                                <span>
+                                                                    @prestation.Name
+                                                                    <button type="button" @onclick="() => RemoveEditablePrestation(service, prestation.Id)" aria-label="Retirer la prestation">x</button>
+                                                                </span>
                                                             }
                                                         </div>
                                                     }
-                                                    else
-                                                    {
-                                                        <small>Aucune prestation specifique configuree</small>
-                                                    }
                                                 </div>
-                                                <label>Niveau
-                                                    <select @bind="service.ExperienceLevel">
-                                                        <option value="Junior">Junior</option>
-                                                        <option value="Confirmed">Confirme</option>
-                                                        <option value="Senior">Senior</option>
-                                                        <option value="Expert">Expert</option>
-                                                    </select>
-                                                </label>
-                                                <label>Experience
-                                                    <InputNumber @bind-Value="service.YearsOfExperience" />
-                                                </label>
-                                                <label class="service-premium-toggle">
-                                                    <input type="checkbox"
-                                                           checked="@(service.PriceTier == "Premium")"
-                                                           @onchange="eventArgs => TogglePremium(service, eventArgs)" />
-                                                    <span>Profil premium</span>
-                                                </label>
-                                                <div class="service-price-readonly">
-                                                    <span>Prix minimum</span>
-                                                    <strong>@GetEffectiveMinPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
-                                                </div>
-                                                <div class="service-price-readonly premium">
-                                                    <span>Prix maximum</span>
-                                                    <strong>@GetEffectiveMaxPrice(service).ToString("N0") @GetEffectiveCurrency(service)</strong>
-                                                </div>
-                                                <button type="button" class="danger-action" @onclick="() => RemoveEditableService(service.ServiceId)">Retirer</button>
                                             </div>
                                         }
                                     </div>
