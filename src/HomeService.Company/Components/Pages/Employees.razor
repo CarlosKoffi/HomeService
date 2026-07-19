@@ -435,6 +435,13 @@ else
                                     <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                                     Voir le profil
                                 </button>
+                                @if (CanApproveEmployee(employee))
+                                {
+                                    <button type="button" @onclick="() => ApproveEmployeeAsync(employee.Id)">
+                                        <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                                        Valider pour mission
+                                    </button>
+                                }
                                 @if (CanChangeAvailability(employee))
                                 {
                                     <button type="button" @onclick="() => ToggleEmployeeAvailabilityAsync(employee)">
@@ -750,7 +757,21 @@ else
 
                         <article class="employee-profile-card employee-access-card">
                             <div>
-                                <span>Acces prestataire</span>
+                                <span>Validation prestataire</span>
+                                <strong>@GetEmployeeValidationTitle(SelectedEmployee)</strong>
+                                <p>@GetEmployeeValidationText(SelectedEmployee)</p>
+                            </div>
+                            @if (CanApproveEmployee(SelectedEmployee))
+                            {
+                                <button type="button" class="primary-action compact-action" disabled="@IsSaving" @onclick="() => ApproveEmployeeAsync(SelectedEmployee.Id)">
+                                    Valider pour mission
+                                </button>
+                            }
+                        </article>
+
+                        <article class="employee-profile-card employee-access-card">
+                            <div>
+                                <span>Acces application</span>
                                 @if (!string.IsNullOrWhiteSpace(SelectedEmployee.InvitationCode))
                                 {
                                     <strong>@SelectedEmployee.InvitationCode</strong>
@@ -1421,6 +1442,46 @@ else
         await LoadAsync();
     }
 
+    private async Task ApproveEmployeeAsync(Guid employeeId)
+    {
+        OpenEmployeeActionMenuId = null;
+        if (Session is null)
+        {
+            return;
+        }
+
+        Message = null;
+        IsSaving = true;
+        if (IsPreviewMode())
+        {
+            EmployeeRows = EmployeeRows.Select(employee => employee.Id == employeeId
+                ? employee with { Status = "Approved", IsAvailable = false }
+                : employee).ToList();
+            var updatedPreview = EmployeeRows.FirstOrDefault(employee => employee.Id == employeeId);
+            if (updatedPreview is not null)
+            {
+                SelectEmployee(updatedPreview);
+            }
+            IsSaving = false;
+            return;
+        }
+
+        var result = await ApiClient.ApproveCompanyEmployeeAsync(Session.CompanyId, employeeId);
+        IsSaving = false;
+        if (!result.IsSuccess)
+        {
+            Message = result.ErrorMessage;
+            return;
+        }
+
+        await LoadAsync();
+        var updated = EmployeeRows.FirstOrDefault(employee => employee.Id == employeeId);
+        if (updated is not null)
+        {
+            SelectEmployee(updated);
+        }
+    }
+
     private async Task ToggleEmployeeAvailabilityAsync(CompanyEmployeeResponse employee)
     {
         OpenEmployeeActionMenuId = null;
@@ -1475,8 +1536,39 @@ else
 
     private static bool CanChangeAvailability(CompanyEmployeeResponse employee)
     {
-        return employee.Status is not ("SuspendedByCompany" or "Inactive")
+        return employee.Status == "Approved"
             && employee.CurrentMission is null;
+    }
+
+    private static bool CanApproveEmployee(CompanyEmployeeResponse employee)
+    {
+        return employee.Status is not ("Approved" or "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" or "InterimCandidate");
+    }
+
+    private static string GetEmployeeValidationTitle(CompanyEmployeeResponse employee)
+    {
+        return employee.Status switch
+        {
+            "Approved" => "Prestataire valide",
+            "ProfileIncomplete" => "Profil a completer",
+            "PendingPlatformReview" => "En attente de revue",
+            "Invited" => "Invitation envoyee",
+            "SuspendedByCompany" or "SuspendedByPlatform" => "Prestataire suspendu",
+            _ => "Validation a finaliser"
+        };
+    }
+
+    private static string GetEmployeeValidationText(CompanyEmployeeResponse employee)
+    {
+        return employee.Status switch
+        {
+            "Approved" => "Ce prestataire peut recevoir une affectation si ses services correspondent a la mission.",
+            "ProfileIncomplete" => "Ajoutez ses informations, au moins un service et sa piece d'identite avant validation.",
+            "PendingPlatformReview" => "Le dossier est pret pour verification. Vous pouvez le valider si les pieces sont conformes.",
+            "Invited" => "Le prestataire doit activer son acces ou l'entreprise peut finaliser le dossier.",
+            "SuspendedByCompany" or "SuspendedByPlatform" => "Le prestataire ne peut pas etre affecte tant que la suspension est active.",
+            _ => "Verifiez le profil avant de le rendre disponible pour les missions."
+        };
     }
 
     private static string GetInitials(CompanyEmployeeResponse employee)

@@ -14,4 +14,7 @@ public sealed record CompanyEmployeeOperationResult(
 
     public static CompanyEmployeeOperationResult NotFound(string message = "Employe introuvable.")
         => new(CompanyEmployeeOperationStatus.NotFound, null, null, null, message);
+
+    public static CompanyEmployeeOperationResult ValidationFailed(ProviderProfile provider, string message)
+        => new(CompanyEmployeeOperationStatus.ValidationFailed, provider, null, null, message);
 }

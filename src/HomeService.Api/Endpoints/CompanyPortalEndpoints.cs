@@ -651,6 +651,39 @@ public static class CompanyPortalEndpoints
         })
         .WithName("SuspendCompanyPortalEmployee");
 
+        group.MapPost("/{companyId:guid}/employees/{employeeId:guid}/approve", async (
+            Guid companyId,
+            Guid employeeId,
+            HttpRequest httpRequest,
+            CompanyEmployeeManagementService employeeManagementService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await employeeManagementService.ApproveAsync(companyId, employeeId, cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == CompanyEmployeeOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            AddCompanyEmployeeAudit(
+                db,
+                httpRequest,
+                companyId,
+                "CompanyEmployeeApproved",
+                result.Provider!.Id,
+                "Prestataire valide par l'entreprise.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("ApproveCompanyPortalEmployee");
+
         group.MapDelete("/{companyId:guid}/employees/{employeeId:guid}", async (
             Guid companyId,
             Guid employeeId,

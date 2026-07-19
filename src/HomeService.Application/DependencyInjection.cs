@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<AdminNotificationService>();
         services.AddScoped<AdminTranslationService>();
         services.AddScoped<AdminMissionOperationsService>();
+        services.AddScoped<AdminProviderOperationsService>();
 
         return services;
     }

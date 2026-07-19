@@ -113,6 +113,37 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         return CompanyEmployeeOperationResult.Ok(provider, before, new { provider.Status });
     }
 
+    public async Task<CompanyEmployeeOperationResult> ApproveAsync(Guid companyId, Guid employeeId, CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers
+            .Include(provider => provider.Services)
+            .Include(provider => provider.Documents)
+            .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+        if (provider is null)
+        {
+            return CompanyEmployeeOperationResult.NotFound();
+        }
+
+        if (provider.Status is ProviderStatus.Inactive or ProviderStatus.SuspendedByCompany or ProviderStatus.SuspendedByPlatform)
+        {
+            return CompanyEmployeeOperationResult.ValidationFailed(provider, "Ce prestataire est suspendu ou inactif. Reouvrez son dossier avant validation.");
+        }
+
+        if (!provider.Services.Any(service => service.IsActive))
+        {
+            return CompanyEmployeeOperationResult.ValidationFailed(provider, "Ajoutez au moins un service actif avant de valider ce prestataire.");
+        }
+
+        if (!provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.IdentityDocument))
+        {
+            return CompanyEmployeeOperationResult.ValidationFailed(provider, "Ajoutez une piece d'identite avant de valider ce prestataire.");
+        }
+
+        var before = new { provider.Status, provider.IsAvailable };
+        provider.Approve();
+        return CompanyEmployeeOperationResult.Ok(provider, before, new { provider.Status, provider.IsAvailable });
+    }
+
     public async Task<CompanyEmployeeOperationResult> UpdateAvailabilityAsync(
         Guid companyId,
         Guid employeeId,

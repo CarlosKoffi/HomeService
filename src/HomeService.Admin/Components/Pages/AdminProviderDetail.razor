@@ -42,6 +42,12 @@ else
         <div class="company-admin-status">
             <span class="@GetProviderStatusClass(Provider.Status)">@TranslateProviderStatus(Provider.Status)</span>
             <small>@TranslateEmploymentType(Provider.EmploymentType) - @(Provider.IsAvailable ? "Disponible" : "Non disponible")</small>
+            @if (CanApproveProvider(Provider))
+            {
+                <button type="button" class="primary-action compact-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
+                    @(IsActionRunning ? "Validation..." : "Valider prestataire")
+                </button>
+            }
         </div>
     </div>
 
@@ -246,6 +252,7 @@ else
 
     private AdminProviderDetailResponse? Provider { get; set; }
     private bool IsLoading { get; set; } = true;
+    private bool IsActionRunning { get; set; }
     private string? ErrorMessage { get; set; }
     private string SelectedTab { get; set; } = "summary";
 
@@ -278,6 +285,36 @@ else
     private void SelectTab(string tab) => SelectedTab = tab;
     private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
 
+    private async Task ApproveProviderAsync()
+    {
+        if (Provider is null)
+        {
+            return;
+        }
+
+        IsActionRunning = true;
+        ErrorMessage = null;
+        try
+        {
+            var result = await ApiClient.ApproveAdminProviderAsync(Provider.Id);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Validation impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionRunning = false;
+        }
+    }
+
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non renseigne";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
     private static string FormatLocation(decimal? latitude, decimal? longitude) => latitude is null || longitude is null ? "Non renseignee" : $"{latitude}, {longitude}";
@@ -297,4 +334,8 @@ else
     private static string GetProviderStatusClass(string status) => status switch { "Approved" => "status-pill ok", "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-pill danger", _ => "status-pill pending" };
     private static string GetInterimStatusClass(string status) => status switch { "Approved" => "status-pill ok", "Rejected" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
+    private static bool CanApproveProvider(AdminProviderDetailResponse provider)
+    {
+        return provider.Status is not ("Approved" or "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" or "InterimCandidate");
+    }
 }

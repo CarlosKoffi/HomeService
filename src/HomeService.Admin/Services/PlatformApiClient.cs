@@ -100,6 +100,16 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminProviderDetailResponse>($"/api/admin/providers/{providerId}", cancellationToken);
     }
 
+    public async Task<ApiActionResult> ApproveAdminProviderAsync(Guid providerId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsync($"/api/admin/providers/{providerId}/approve", null, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Validation impossible.");
+    }
+
     public async Task<AdminPaymentListResponse?> GetAdminPaymentsAsync(
         string? period,
         string? paymentStatus,
@@ -636,8 +646,38 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static string? ExtractErrorMessage(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(body);
+            if (document.RootElement.TryGetProperty("message", out var message))
+            {
+                return message.GetString();
+            }
+
+            if (document.RootElement.TryGetProperty("detail", out var detail))
+            {
+                return detail.GetString();
+            }
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return body;
+        }
+
+        return body;
+    }
 }
 
 public sealed class PlatformApiException(string message) : Exception(message);
+
+public sealed record ApiActionResult(bool IsSuccess, string? ErrorMessage);
 
 public sealed record CompanyApplicationDocumentFile(byte[] Content, string ContentType, string FileName);

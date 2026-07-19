@@ -368,6 +368,43 @@ public static class AdminEndpoints
         .Produces<AdminProviderDetailResponse>()
         .Produces(StatusCodes.Status404NotFound);
 
+        admin.MapPost("/providers/{providerId:guid}/approve", async (
+            Guid providerId,
+            HttpRequest httpRequest,
+            AdminProviderOperationsService providerOperationsService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await providerOperationsService.ApproveAsync(providerId, cancellationToken);
+            if (result.Status == AdminProviderOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminProviderOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            var provider = result.Provider!;
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Admin(),
+                "AdminProviderApproved",
+                nameof(ProviderProfile),
+                provider.Id,
+                "Prestataire valide par l'administration.",
+                HttpAuditContextFactory.Create(httpRequest),
+                before: new { Status = result.PreviousStatus?.ToString() },
+                after: new { provider.Status, provider.CompanyId }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("ApproveAdminProvider")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapGet("/payments", async (
             string? period,
             string? paymentStatus,

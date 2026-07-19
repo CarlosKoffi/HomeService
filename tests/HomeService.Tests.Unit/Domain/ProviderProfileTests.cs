@@ -141,6 +141,27 @@ public sealed class ProviderProfileTests
         Assert.False(provider.IsAvailable);
     }
 
+    [Fact]
+    public void SubmitForReview_MarksProviderAsPendingPlatformReview()
+    {
+        var provider = CreateProvider();
+
+        provider.SubmitForReview();
+
+        Assert.Equal(ProviderStatus.PendingPlatformReview, provider.Status);
+    }
+
+    [Fact]
+    public void Approve_MarksProviderAsApprovedWithoutMakingAvailable()
+    {
+        var provider = CreateProvider();
+
+        provider.Approve();
+
+        Assert.Equal(ProviderStatus.Approved, provider.Status);
+        Assert.False(provider.IsAvailable);
+    }
+
     private static ProviderProfile CreateApprovedAvailableProvider()
     {
         var provider = CreateProvider();
