@@ -783,6 +783,7 @@ public static class CompanyPortalEndpoints
             HttpRequest httpRequest,
             IAppDbContext db,
             CompanyProviderUploadService uploadService,
+            ILogger<CompanyProviderUploadService> logger,
             CancellationToken cancellationToken) =>
         {
             if (!httpRequest.HasFormContentType)
@@ -791,7 +792,6 @@ public static class CompanyPortalEndpoints
             }
 
             var provider = await db.Providers
-                .Include(provider => provider.Documents)
                 .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
             if (provider is null)
             {
@@ -810,11 +810,14 @@ public static class CompanyPortalEndpoints
                 return Results.BadRequest(new { message = "Aucun fichier recu." });
             }
 
-            var oldDocuments = provider.Documents.Where(document => document.DocumentType == documentType).ToList();
+            var oldDocuments = await db.ProviderDocuments
+                .AsNoTracking()
+                .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
+                .Select(document => new { document.Id, document.StoragePath })
+                .ToListAsync(cancellationToken);
             foreach (var oldDocument in oldDocuments)
             {
                 TryDeleteProviderFile(uploadService, oldDocument.StoragePath);
-                db.ProviderDocuments.Remove(oldDocument);
             }
 
             StoredCompanyProviderDocument stored;
@@ -827,7 +830,11 @@ public static class CompanyPortalEndpoints
                 return Results.BadRequest(new { message = exception.Message });
             }
 
-            provider.AttachDocument(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
+            await db.ProviderDocuments
+                .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            db.ProviderDocuments.Add(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
             db.AuditLogEntries.Add(AuditLogFactory.Create(
                 AuditActor.Company(companyId, null),
                 "CompanyEmployeeDocumentUploaded",
@@ -837,7 +844,19 @@ public static class CompanyPortalEndpoints
                 HttpAuditContextFactory.Create(httpRequest),
                 before: new { ReplacedDocumentCount = oldDocuments.Count, DocumentType = documentType },
                 after: new { stored.DocumentType, stored.OriginalFileName, stored.ContentType }));
-            await db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception)
+            {
+                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                logger.LogError(exception, "Company employee document upload failed for company {CompanyId} and provider {ProviderId}.", companyId, employeeId);
+                return Results.Problem(
+                    title: "Upload de la piece impossible.",
+                    detail: exception.GetBaseException().Message,
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
 
             return Results.NoContent();
         })
