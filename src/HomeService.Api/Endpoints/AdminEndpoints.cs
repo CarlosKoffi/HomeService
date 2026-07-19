@@ -276,7 +276,7 @@ public static class AdminEndpoints
                 return Results.NotFound(new { message = "Le fichier prestataire n'existe plus sur le serveur." });
             }
 
-            return Results.File(absolutePath, document.ContentType, document.OriginalFileName, enableRangeProcessing: true);
+            return Results.File(absolutePath, document.ContentType, enableRangeProcessing: true);
         })
         .WithName("PreviewAdminProviderDocument");
 
