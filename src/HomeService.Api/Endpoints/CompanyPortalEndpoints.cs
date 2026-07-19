@@ -955,7 +955,6 @@ public static class CompanyPortalEndpoints
             return Results.File(
                 absolutePath,
                 string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType,
-                fileDownloadName: document.OriginalFileName,
                 enableRangeProcessing: true);
         })
         .WithName("PreviewCompanyPortalProviderDocument");
