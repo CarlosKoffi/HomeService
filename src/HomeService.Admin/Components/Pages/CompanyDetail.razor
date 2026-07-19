@@ -291,9 +291,21 @@ else
             @foreach (var notification in Company.Notifications)
             {
                 <article class="@GetNotificationClass(notification)">
-                    <strong>@notification.Title</strong>
-                    <p>@notification.Message</p>
-                    <small>@TranslateNotificationTone(notification.Tone) - @FormatDate(notification.OccurredAt)</small>
+                    <div>
+                        <strong>@notification.Title</strong>
+                        <p>@notification.Message</p>
+                        <small>@TranslateNotificationTone(notification.Tone) - @FormatDate(notification.OccurredAt)</small>
+                    </div>
+                    <div class="operator-actions">
+                        @if (notification.IsRead)
+                        {
+                            <button type="button" disabled="@(BusyNotificationId == notification.Id)" @onclick="() => MarkCompanyNotificationUnreadAsync(notification.Id)">Remettre non lue</button>
+                        }
+                        else
+                        {
+                            <button type="button" disabled="@(BusyNotificationId == notification.Id)" @onclick="() => MarkCompanyNotificationReadAsync(notification.Id)">Marquer lue</button>
+                        }
+                    </div>
                 </article>
             }
         </section>
@@ -331,6 +343,7 @@ else
     private string SelectedTab { get; set; } = "summary";
     private string? CompanyActionNote { get; set; }
     private bool IsCompanyActionBusy { get; set; }
+    private Guid? BusyNotificationId { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -426,6 +439,57 @@ else
         finally
         {
             IsCompanyActionBusy = false;
+        }
+    }
+
+    private async Task MarkCompanyNotificationReadAsync(Guid notificationId)
+    {
+        if (Company is null)
+        {
+            return;
+        }
+
+        await RunNotificationActionAsync(
+            notificationId,
+            () => ApiClient.MarkCompanyNotificationReadAsync(Company.Id, notificationId));
+    }
+
+    private async Task MarkCompanyNotificationUnreadAsync(Guid notificationId)
+    {
+        if (Company is null)
+        {
+            return;
+        }
+
+        await RunNotificationActionAsync(
+            notificationId,
+            () => ApiClient.MarkCompanyNotificationUnreadAsync(Company.Id, notificationId));
+    }
+
+    private async Task RunNotificationActionAsync(Guid notificationId, Func<Task<ApiActionResult>> action)
+    {
+        BusyNotificationId = notificationId;
+        ErrorMessage = null;
+
+        try
+        {
+            var result = await action();
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            await LoadAsync();
+            SelectedTab = "notifications";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action notification impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            BusyNotificationId = null;
         }
     }
 

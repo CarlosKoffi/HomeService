@@ -45,4 +45,23 @@ public sealed class CompanyPortalNotificationTests
         Assert.True(notification.IsRead);
         Assert.NotNull(notification.UpdatedAt);
     }
+
+    [Fact]
+    public void MarkUnread_WhenRead_MarksNotificationUnread()
+    {
+        var notification = new CompanyPortalNotification(
+            Guid.NewGuid(),
+            null,
+            null,
+            "CompanyDocumentRejected",
+            "Piece a reprendre",
+            "Le document doit etre remplace.",
+            "danger");
+        notification.MarkRead();
+
+        notification.MarkUnread();
+
+        Assert.False(notification.IsRead);
+        Assert.NotNull(notification.UpdatedAt);
+    }
 }

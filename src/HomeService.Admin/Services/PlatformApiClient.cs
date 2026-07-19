@@ -76,6 +76,38 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Reactivation impossible.");
     }
 
+    public async Task<ApiActionResult> MarkCompanyNotificationReadAsync(
+        Guid companyId,
+        Guid notificationId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsync(
+            $"/api/admin/companies/{companyId:D}/notifications/{notificationId:D}/mark-read",
+            null,
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
+    }
+
+    public async Task<ApiActionResult> MarkCompanyNotificationUnreadAsync(
+        Guid companyId,
+        Guid notificationId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsync(
+            $"/api/admin/companies/{companyId:D}/notifications/{notificationId:D}/mark-unread",
+            null,
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
+    }
+
     public async Task<AdminMissionListResponse?> GetAdminMissionsAsync(
         string? status,
         string? search,

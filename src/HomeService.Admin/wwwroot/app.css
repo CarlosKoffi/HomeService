@@ -1479,7 +1479,11 @@ h3 {
 }
 
 .company-notification-list article {
+    align-items: center;
     border-left: 4px solid #2563eb;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .company-notification-list article.warning,
@@ -3077,6 +3081,11 @@ h3 {
     .cms-workspace,
     .cms-table > div,
     .cms-menu-table > div {
+        grid-template-columns: 1fr;
+    }
+
+    .company-notification-list article {
+        align-items: stretch;
         grid-template-columns: 1fr;
     }
 

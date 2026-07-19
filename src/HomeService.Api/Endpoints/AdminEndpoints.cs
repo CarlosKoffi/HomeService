@@ -983,6 +983,72 @@ public static class AdminEndpoints
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPost("/companies/{companyId:guid}/notifications/{notificationId:guid}/mark-read", async (
+            Guid companyId,
+            Guid notificationId,
+            HttpRequest httpRequest,
+            AdminCompanyNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.MarkReadAsync(companyId, notificationId, cancellationToken);
+            if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            var notification = result.Notification!;
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyNotificationMarkedRead",
+                nameof(CompanyPortalNotification),
+                notification.Id,
+                "Notification entreprise marquee comme lue par l'administration.",
+                new { IsRead = result.PreviousIsRead },
+                new { notification.IsRead, notification.CompanyId });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("MarkAdminCompanyNotificationRead")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPost("/companies/{companyId:guid}/notifications/{notificationId:guid}/mark-unread", async (
+            Guid companyId,
+            Guid notificationId,
+            HttpRequest httpRequest,
+            AdminCompanyNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.MarkUnreadAsync(companyId, notificationId, cancellationToken);
+            if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            var notification = result.Notification!;
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyNotificationMarkedUnread",
+                nameof(CompanyPortalNotification),
+                notification.Id,
+                "Notification entreprise remise en non lue par l'administration.",
+                new { IsRead = result.PreviousIsRead },
+                new { notification.IsRead, notification.CompanyId });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("MarkAdminCompanyNotificationUnread")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound);
         
         admin.MapPost("/company-applications/{id:guid}/approve", async (
             Guid id,

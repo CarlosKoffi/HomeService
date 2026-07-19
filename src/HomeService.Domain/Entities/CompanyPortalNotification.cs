@@ -53,6 +53,17 @@ public sealed class CompanyPortalNotification : AuditableEntity
         Touch();
     }
 
+    public void MarkUnread()
+    {
+        if (!IsRead)
+        {
+            return;
+        }
+
+        IsRead = false;
+        Touch();
+    }
+
     private static string CleanRequired(string value)
     {
         var cleaned = Clean(value);
