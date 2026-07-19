@@ -760,9 +760,9 @@ else
                                             <small>@slot.FileName</small>
                                         </div>
                                         <div class="document-actions">
-                                            @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
+                                            @if (CanOpenDocument(slot))
                                             {
-                                                <a href="@ToPreviewUrl(slot.PreviewUrl)" target="_blank" rel="noopener">Ouvrir</a>
+                                                <a href="@GetDocumentOpenUrl(slot)" target="_blank" rel="noopener">Ouvrir</a>
                                                 <button type="button" class="danger-action" @onclick="() => DeleteEmployeeDocumentAsync(slot.DocumentId!.Value)">Supprimer</button>
                                             }
                                             <label class="replace-document">
@@ -2047,8 +2047,9 @@ else
 
     private EmployeeDocumentSlot ToDocumentSlot(CompanyEmployeeResponse employee, string documentType, string shortCode, string label, bool isRequired)
     {
+        var normalizedType = NormalizeProviderDocumentType(documentType);
         var document = employee.Documents
-            .Where(document => document.DocumentType == documentType)
+            .Where(document => NormalizeProviderDocumentType(document.DocumentType) == normalizedType)
             .OrderByDescending(document => document.CreatedAt)
             .FirstOrDefault();
 
@@ -2068,13 +2069,37 @@ else
             document?.OriginalFileName ?? (string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "Manquant" : "Optionnel") : "Piece deposee"),
             previewUrl,
             document?.ContentType,
-            documentType == "Photo" && IsImageDocument(documentType, document?.ContentType, document?.OriginalFileName),
+            normalizedType == "Photo" && IsImageDocument(normalizedType, document?.ContentType, document?.OriginalFileName),
             string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "missing" : "optional") : "ready");
     }
 
     private string ToPreviewUrl(string previewUrl)
     {
         return previewUrl == "#" ? previewUrl : ApiClient.ToProviderDocumentPreviewUrl(previewUrl);
+    }
+
+    private static bool CanOpenDocument(EmployeeDocumentSlot slot)
+    {
+        return slot.DocumentId is not null && !string.IsNullOrWhiteSpace(slot.PreviewUrl) && slot.PreviewUrl != "#";
+    }
+
+    private static string GetDocumentOpenUrl(EmployeeDocumentSlot slot)
+    {
+        return slot.DocumentId is null
+            ? "#"
+            : $"/provider-documents/{slot.DocumentId.Value:D}/preview";
+    }
+
+    private static string NormalizeProviderDocumentType(string? documentType)
+    {
+        var value = (documentType ?? string.Empty).Trim();
+        return value.ToLowerInvariant() switch
+        {
+            "photo" or "picture" or "profilephoto" or "profile_photo" => "Photo",
+            "identitydocument" or "identity" or "id" or "pieceid" or "piece_id" or "piece d'identite" or "piece d'identité" or "cni" => "IdentityDocument",
+            "diploma" or "diplome" or "diplôme" or "certificate" or "certificat" => "Diploma",
+            _ => value
+        };
     }
 
     private static bool IsImageDocument(string documentType, string? contentType, string? fileName)
