@@ -1373,6 +1373,60 @@ h3 {
     box-shadow: 0 14px 34px rgba(37, 99, 235, .12);
 }
 
+.mission-admin-hero h1 {
+    max-width: 780px;
+}
+
+.mission-dispute-box {
+    display: grid;
+    gap: .8rem;
+    margin-top: .8rem;
+}
+
+.mission-dispute-box label {
+    color: #000;
+    display: grid;
+    font-weight: 850;
+    gap: .45rem;
+}
+
+.mission-dispute-box textarea {
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    font: inherit;
+    min-height: 120px;
+    padding: .85rem 1rem;
+    resize: vertical;
+}
+
+.mission-dispute-box button,
+.mission-admin-action button {
+    align-items: center;
+    background: #111827;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 850;
+    justify-content: center;
+    padding: .65rem 1rem;
+}
+
+.mission-admin-action {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    justify-content: flex-end;
+}
+
+.mission-admin-action .light-action {
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    color: #111827;
+}
+
 .service-catalog {
     display: grid;
     gap: 1rem;

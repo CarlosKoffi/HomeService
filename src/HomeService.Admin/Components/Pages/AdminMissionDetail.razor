@@ -1,0 +1,275 @@
+@page "/missions/{MissionId:guid}"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Dossier mission</PageTitle>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message">@Message</p>
+}
+
+@if (IsLoading)
+{
+    <section class="info-panel">
+        <div>
+            <h1>Chargement...</h1>
+            <p>Ouverture du dossier mission.</p>
+        </div>
+    </section>
+}
+else if (Mission is null)
+{
+    <section class="info-panel">
+        <div>
+            <h1>Mission introuvable</h1>
+            <p>La mission n'existe plus ou n'est pas accessible.</p>
+        </div>
+        <button type="button" class="secondary-action" @onclick="BackToList">Retour missions</button>
+    </section>
+}
+else
+{
+    <div class="admin-page-heading mission-admin-hero">
+        <div>
+            <button type="button" class="link-action" @onclick="BackToList">Retour aux missions</button>
+            <p class="eyebrow">Dossier mission</p>
+            <h1>@Mission.ServiceName</h1>
+            <p class="lead">@Mission.CustomerName - @(Mission.ServiceAddress ?? "Adresse non renseignee")</p>
+        </div>
+        <div class="company-admin-status">
+            <span class="@GetMissionStatusClass(Mission.Status)">@TranslateMissionStatus(Mission.Status)</span>
+            <small>@TranslateMissionMode(Mission.Mode) - @FormatDate(Mission.ScheduledFor)</small>
+        </div>
+    </div>
+
+    <section class="admin-metric-grid compact">
+        <article>
+            <span>Prix client</span>
+            <strong>@FormatMoney(Mission.CompanyQuotedAmount ?? Mission.EstimatedTotalAmount ?? Mission.FinalTotalAmount, Mission.Currency)</strong>
+        </article>
+        <article>
+            <span>Paiement</span>
+            <strong>@TranslatePaymentStatus(Mission.PaymentStatus)</strong>
+        </article>
+        <article>
+            <span>Commission</span>
+            <strong>@FormatMoney(Mission.PlatformCommissionAmount, Mission.Currency)</strong>
+        </article>
+        <article>
+            <span>Contact</span>
+            <strong>@(Mission.CanRevealContactDetails ? "Libre" : "Masque")</strong>
+        </article>
+    </section>
+
+    <section class="company-control-strip">
+        <button type="button" class='@GetTabClass("summary")' @onclick='() => SelectTab("summary")'>Resume</button>
+        <button type="button" class='@GetTabClass("assignments")' @onclick='() => SelectTab("assignments")'>Affectations</button>
+        <button type="button" class='@GetTabClass("messages")' @onclick='() => SelectTab("messages")'>Messages</button>
+        <button type="button" class='@GetTabClass("logs")' @onclick='() => SelectTab("logs")'>Journal</button>
+    </section>
+
+    @if (SelectedTab == "summary")
+    {
+        <section class="company-detail-grid">
+            <article>
+                <h2>Client</h2>
+                <dl class="detail-list">
+                    <div><dt>Nom</dt><dd>@Mission.CustomerName</dd></div>
+                    <div><dt>Telephone</dt><dd>@Mission.CustomerPhoneNumber</dd></div>
+                    <div><dt>Adresse</dt><dd>@(Mission.ServiceAddress ?? "Non renseignee")</dd></div>
+                    <div><dt>Coordonnees</dt><dd>@FormatLocation(Mission.ServiceLatitude, Mission.ServiceLongitude)</dd></div>
+                </dl>
+            </article>
+            <article>
+                <h2>Entreprise et prestataire</h2>
+                <dl class="detail-list">
+                    <div><dt>Entreprise</dt><dd>@(Mission.CompanyName ?? "Non affectee")</dd></div>
+                    <div><dt>Prestataire</dt><dd>@(Mission.ProviderName ?? "Non affecte")</dd></div>
+                    <div><dt>Acceptation presta</dt><dd>@FormatDate(Mission.ProviderAcceptedAt)</dd></div>
+                    <div><dt>Confirmation client</dt><dd>@FormatDate(Mission.CustomerConfirmedAt)</dd></div>
+                </dl>
+            </article>
+            <article>
+                <h2>Prix et paiement</h2>
+                <dl class="detail-list">
+                    <div><dt>Mode</dt><dd>@TranslatePaymentMethod(Mission.PaymentMethod)</dd></div>
+                    <div><dt>Statut</dt><dd>@TranslatePaymentStatus(Mission.PaymentStatus)</dd></div>
+                    <div><dt>Devis entreprise</dt><dd>@FormatMoney(Mission.CompanyQuotedAmount, Mission.Currency)</dd></div>
+                    <div><dt>Justification</dt><dd>@(Mission.CompanyQuoteJustification ?? "Aucune")</dd></div>
+                    <div><dt>Transport</dt><dd>@FormatMoney(Mission.TransportFeeAmount, Mission.Currency)</dd></div>
+                    <div><dt>Annulation</dt><dd>@FormatMoney(Mission.CancellationFeeAmount, Mission.Currency)</dd></div>
+                </dl>
+            </article>
+            <article>
+                <h2>Action admin</h2>
+                @if (Mission.Status is not ("Disputed" or "Completed" or "Cancelled"))
+                {
+                    <div class="mission-dispute-box">
+                        <label>
+                            Note litige
+                            <textarea @bind="DisputeNote" placeholder="Expliquez le probleme avant de passer la mission en litige."></textarea>
+                        </label>
+                        <button type="button" @onclick="MarkDisputedAsync" disabled="@IsActionBusy">Signaler un litige</button>
+                    </div>
+                }
+                else
+                {
+                    <p class="muted-action">Aucune action sensible disponible pour ce statut.</p>
+                }
+            </article>
+        </section>
+    }
+    else if (SelectedTab == "assignments")
+    {
+        <section class="operator-list">
+            <header>
+                <div>
+                    <h2>Affectations prestataires</h2>
+                    <p>@Mission.Assignments.Count tentative(s) ou affectation(s)</p>
+                </div>
+            </header>
+            @foreach (var assignment in Mission.Assignments)
+            {
+                <article class="operator-row mission-assignment-row">
+                    <div>
+                        <strong>@assignment.ProviderName</strong>
+                        <p>@assignment.CompanyName</p>
+                        <small>Expire le @FormatDate(assignment.ExpiresAt)</small>
+                    </div>
+                    <div class="operator-meta">
+                        <span class="@GetAssignmentStatusClass(assignment.Status)">@TranslateAssignmentStatus(assignment.Status)</span>
+                        <small>@(assignment.RefusalReason ?? "Pas de refus")</small>
+                    </div>
+                    <div class="operator-kpis">
+                        <span>Arrivee @TranslateLocationStatus(assignment.ArrivalVerificationStatus)</span>
+                        <span>@FormatDistance(assignment.ArrivalDistanceMeters, assignment.ArrivalToleranceMeters)</span>
+                        <span>@FormatDate(assignment.ArrivalVerifiedAt)</span>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "messages")
+    {
+        <section class="timeline-panel">
+            @if (Mission.Messages.Count == 0)
+            {
+                <article>
+                    <strong>Aucun message</strong>
+                    <p>Le chat mission n'a pas encore de message rattache.</p>
+                </article>
+            }
+            @foreach (var message in Mission.Messages)
+            {
+                <article>
+                    <strong>@TranslateSenderType(message.SenderType)</strong>
+                    <p>@message.Body</p>
+                    <small>@FormatDate(message.CreatedAt) - @(message.ReadAt is null ? "Non lu" : "Lu")</small>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "logs")
+    {
+        <AdminAuditLogPanel
+            ContextType="Mission"
+            ContextId="Mission.Id"
+            Eyebrow="Journal mission"
+            Title="@Mission.ServiceName"
+            Subtitle="Actions, affectations, paiements, position et evenements rattaches a cette mission." />
+    }
+}
+
+@code {
+    [Parameter] public Guid MissionId { get; set; }
+
+    private AdminMissionDetailResponse? Mission { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsActionBusy { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? Message { get; set; }
+    private string? DisputeNote { get; set; }
+    private string SelectedTab { get; set; } = "summary";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Mission = await ApiClient.GetAdminMissionAsync(MissionId);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger la mission. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task MarkDisputedAsync()
+    {
+        if (Mission is null)
+        {
+            return;
+        }
+
+        IsActionBusy = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            await ApiClient.MarkAdminMissionDisputedAsync(Mission.Id, DisputeNote ?? string.Empty);
+            Message = "Mission marquee en litige.";
+            DisputeNote = null;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionBusy = false;
+        }
+    }
+
+    private void BackToList() => Navigation.NavigateTo("/missions");
+    private void SelectTab(string tab) => SelectedTab = tab;
+    private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
+
+    private static string FormatMoney(int? amount, string currency) => amount is null ? "Aucun prix" : $"{amount:N0} {currency}";
+    private static string FormatMoney(int amount, string currency) => $"{amount:N0} {currency}";
+    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non renseigne";
+    private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    private static string FormatLocation(decimal? latitude, decimal? longitude) => latitude is null || longitude is null ? "Non renseignees" : $"{latitude}, {longitude}";
+    private static string FormatDistance(int? distance, int tolerance) => distance is null ? $"Tolerance {tolerance} m" : $"{distance} m / tolerance {tolerance} m";
+
+    private static string TranslateMissionMode(string mode) => mode switch { "Instant" => "Direct", "Scheduled" => "Rendez-vous", _ => mode };
+    private static string TranslateMissionStatus(string status) => status switch { "Created" => "Creee", "SearchingProvider" => "Recherche", "Offered" => "Proposee", "Assigned" => "Affectee", "Accepted" => "Acceptee", "OnTheWay" => "En route", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", "Disputed" => "Litige", _ => status };
+    private static string TranslatePaymentStatus(string status) => status switch { "Paid" => "Encaisse", "Pending" => "En attente", "Authorized" => "Autorise", "Failed" => "Echec", "Refunded" => "Rembourse", _ => status };
+    private static string TranslatePaymentMethod(string method) => method switch { "MobileMoney" => "Mobile Money", "Cash" => "Cash", _ => method };
+    private static string TranslateAssignmentStatus(string status) => status switch { "Offered" => "Proposee", "Accepted" => "Acceptee", "Refused" => "Refusee", "Expired" => "Expiree", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", _ => status };
+    private static string TranslateLocationStatus(string status) => status switch { "Verified" => "verifiee", "OutsideTolerance" => "hors zone", "MissingProviderLocation" => "position manquante", "MissingMissionLocation" => "mission sans position", "LowAccuracy" => "precision faible", "InvalidProviderLocation" => "position invalide", _ => "non verifiee" };
+    private static string TranslateSenderType(string senderType) => senderType switch { "Customer" => "Client", "Provider" => "Prestataire", "Company" => "Entreprise", "Platform" => "Kaza", _ => senderType };
+
+    private static string GetMissionStatusClass(string status) => status switch { "Completed" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
+}

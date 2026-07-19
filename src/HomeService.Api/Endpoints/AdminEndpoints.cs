@@ -291,6 +291,20 @@ public static class AdminEndpoints
         .WithName("ListAdminMissions")
         .Produces<AdminMissionListResponse>();
 
+        admin.MapGet("/missions/{missionId:guid}", async (
+            Guid missionId,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.GetMissionAsync(missionId, cancellationToken);
+            return response is null
+                ? Results.NotFound(new { message = "Mission introuvable." })
+                : Results.Ok(response);
+        })
+        .WithName("GetAdminMission")
+        .Produces<AdminMissionDetailResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapPost("/missions/{missionId:guid}/mark-disputed", async (
             Guid missionId,
             AdminMissionActionRequest request,

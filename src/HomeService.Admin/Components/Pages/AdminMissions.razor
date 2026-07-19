@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Admin
 @inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Missions</PageTitle>
 
@@ -119,13 +120,13 @@
                         <button type="button" @onclick="() => ConfirmDisputeAsync(mission.Id)" disabled="@IsActionBusy">Confirmer</button>
                         <button type="button" class="light-action" @onclick="CancelDispute">Annuler</button>
                     }
-                    else if (mission.Status != "Disputed" && mission.Status != "Completed" && mission.Status != "Cancelled")
-                    {
-                        <button type="button" @onclick="() => StartDispute(mission.Id)">Signaler un litige</button>
-                    }
                     else
                     {
-                        <span class="muted-action">Aucune action</span>
+                        <button type="button" @onclick="() => OpenMission(mission.Id)">Voir dossier</button>
+                        @if (mission.Status != "Disputed" && mission.Status != "Completed" && mission.Status != "Cancelled")
+                        {
+                            <button type="button" class="light-action" @onclick="() => StartDispute(mission.Id)">Litige</button>
+                        }
                     }
                 </div>
             </article>
@@ -180,6 +181,11 @@
     {
         SelectedMissionId = null;
         DisputeNote = null;
+    }
+
+    private void OpenMission(Guid missionId)
+    {
+        Navigation.NavigateTo($"/missions/{missionId}");
     }
 
     private async Task ConfirmDisputeAsync(Guid missionId)

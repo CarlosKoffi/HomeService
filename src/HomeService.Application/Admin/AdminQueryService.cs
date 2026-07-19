@@ -392,6 +392,139 @@ public sealed class AdminQueryService(IAppDbContext db)
         return new AdminMissionListResponse(missions, stats);
     }
 
+    public async Task<AdminMissionDetailResponse?> GetMissionAsync(Guid missionId, CancellationToken cancellationToken)
+    {
+        var mission = await (
+            from item in db.Missions.AsNoTracking()
+            join service in db.Services.AsNoTracking() on item.ServiceId equals service.Id
+            join customer in db.Customers.AsNoTracking() on item.CustomerId equals customer.Id
+            join company in db.Companies.AsNoTracking() on item.CompanyId equals company.Id into companyJoin
+            from company in companyJoin.DefaultIfEmpty()
+            join provider in db.Providers.AsNoTracking() on item.ProviderId equals provider.Id into providerJoin
+            from provider in providerJoin.DefaultIfEmpty()
+            where item.Id == missionId
+            select new
+            {
+                item.Id,
+                ServiceName = service.Name,
+                CompanyName = company == null ? null : company.Name,
+                item.CompanyId,
+                CustomerName = (customer.FirstName + " " + customer.LastName).Trim(),
+                CustomerPhoneNumber = customer.PhoneNumber,
+                ProviderName = provider == null ? null : (provider.FirstName + " " + provider.LastName).Trim(),
+                item.ProviderId,
+                item.Status,
+                item.Mode,
+                item.PaymentStatus,
+                item.PaymentMethod,
+                item.ScheduledFor,
+                item.EstimatedDurationMinutes,
+                item.ActualDurationMinutes,
+                item.EstimatedTotalAmount,
+                item.FinalTotalAmount,
+                item.CompanyQuotedAmount,
+                item.CompanyQuoteJustification,
+                item.CompanyQuotedAt,
+                item.CustomerQuoteAcceptedAt,
+                item.PlatformCommissionAmount,
+                item.TransportFeeAmount,
+                item.CancellationFeeAmount,
+                item.Currency,
+                item.ServiceAddress,
+                item.ServiceLatitude,
+                item.ServiceLongitude,
+                item.ArrivalToleranceMeters,
+                item.ProviderAcceptedAt,
+                item.CustomerConfirmedAt,
+                item.ContactDetailsReleasedAt,
+                item.CanRevealContactDetails,
+                item.CreatedAt
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (mission is null)
+        {
+            return null;
+        }
+
+        var assignments = await db.ProviderMissionAssignments
+            .AsNoTracking()
+            .Where(assignment => assignment.MissionId == missionId)
+            .OrderByDescending(assignment => assignment.CreatedAt)
+            .Select(assignment => new AdminMissionAssignmentResponse(
+                assignment.Id,
+                assignment.ProviderId,
+                (assignment.Provider!.FirstName + " " + assignment.Provider.LastName).Trim(),
+                assignment.CompanyId,
+                assignment.Company!.Name,
+                assignment.Status.ToString(),
+                assignment.ExpiresAt,
+                assignment.RespondedAt,
+                assignment.StartedAt,
+                assignment.CompletedAt,
+                assignment.RefusalReason == null ? null : assignment.RefusalReason.ToString(),
+                assignment.RefusalComment,
+                assignment.CompletionNote,
+                assignment.ArrivalDistanceMeters,
+                assignment.ArrivalToleranceMeters,
+                assignment.ArrivalVerificationStatus.ToString(),
+                assignment.ArrivalVerifiedAt))
+            .ToListAsync(cancellationToken);
+
+        var messages = await db.MissionMessages
+            .AsNoTracking()
+            .Where(message => message.Conversation != null && message.Conversation.MissionId == missionId)
+            .OrderByDescending(message => message.CreatedAt)
+            .Select(message => new AdminMissionConversationMessageResponse(
+                message.Id,
+                message.SenderType.ToString(),
+                message.SenderId,
+                message.Body,
+                message.AttachmentContentType,
+                message.ReadAt,
+                message.CreatedAt))
+            .Take(100)
+            .ToListAsync(cancellationToken);
+
+        return new AdminMissionDetailResponse(
+            mission.Id,
+            mission.ServiceName,
+            mission.CompanyName,
+            mission.CompanyId,
+            mission.CustomerName,
+            mission.CustomerPhoneNumber,
+            mission.ProviderName,
+            mission.ProviderId,
+            mission.Status.ToString(),
+            mission.Mode.ToString(),
+            mission.PaymentStatus.ToString(),
+            mission.PaymentMethod.ToString(),
+            mission.ScheduledFor,
+            mission.EstimatedDurationMinutes,
+            mission.ActualDurationMinutes,
+            mission.EstimatedTotalAmount,
+            mission.FinalTotalAmount,
+            mission.CompanyQuotedAmount,
+            mission.CompanyQuoteJustification,
+            mission.CompanyQuotedAt,
+            mission.CustomerQuoteAcceptedAt,
+            mission.PlatformCommissionAmount,
+            mission.TransportFeeAmount,
+            mission.CancellationFeeAmount,
+            mission.Currency,
+            mission.ServiceAddress,
+            mission.ServiceLatitude,
+            mission.ServiceLongitude,
+            mission.ArrivalToleranceMeters,
+            mission.ProviderAcceptedAt,
+            mission.CustomerConfirmedAt,
+            mission.ContactDetailsReleasedAt,
+            mission.CanRevealContactDetails,
+            mission.CreatedAt,
+            assignments,
+            messages);
+    }
+
     public async Task<AdminProviderListResponse> ListProvidersAsync(
         string? status,
         string? employmentType,
@@ -690,6 +823,7 @@ public sealed class AdminQueryService(IAppDbContext db)
         {
             "company" => await ApplyCompanyAuditContextAsync(query, contextId, cancellationToken),
             "provider" => await ApplyProviderAuditContextAsync(query, contextId, cancellationToken),
+            "mission" => await ApplyMissionAuditContextAsync(query, contextId, cancellationToken),
             _ => query
         };
     }
@@ -747,6 +881,29 @@ public sealed class AdminQueryService(IAppDbContext db)
             || (entry.EntityType == "ProviderProfile" && entry.EntityId == providerId)
             || (entry.EntityType == "ProviderMissionAssignment" && entry.EntityId != null && assignmentIds.Contains(entry.EntityId.Value))
             || (entry.EntityType == "ProviderAffiliationRequest" && entry.EntityId != null && affiliationRequestIds.Contains(entry.EntityId.Value)));
+    }
+
+    private async Task<IQueryable<Domain.Entities.AuditLogEntry>> ApplyMissionAuditContextAsync(
+        IQueryable<Domain.Entities.AuditLogEntry> query,
+        Guid missionId,
+        CancellationToken cancellationToken)
+    {
+        var assignmentIds = await db.ProviderMissionAssignments
+            .AsNoTracking()
+            .Where(assignment => assignment.MissionId == missionId)
+            .Select(assignment => assignment.Id)
+            .ToListAsync(cancellationToken);
+
+        var conversationIds = await db.MissionConversations
+            .AsNoTracking()
+            .Where(conversation => conversation.MissionId == missionId)
+            .Select(conversation => conversation.Id)
+            .ToListAsync(cancellationToken);
+
+        return query.Where(entry =>
+            (entry.EntityType == "Mission" && entry.EntityId == missionId)
+            || (entry.EntityType == "ProviderMissionAssignment" && entry.EntityId != null && assignmentIds.Contains(entry.EntityId.Value))
+            || (entry.EntityType == "MissionConversation" && entry.EntityId != null && conversationIds.Contains(entry.EntityId.Value)));
     }
 
     public async Task<IReadOnlyList<CompanyApplicationSummaryResponse>> ListCompanyApplicationsAsync(CancellationToken cancellationToken)
