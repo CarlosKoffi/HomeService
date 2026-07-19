@@ -204,7 +204,16 @@ public static class CompanyPortalEndpoints
             }
 
             var form = await httpRequest.ReadFormAsync(cancellationToken);
-            var documents = await uploadService.SaveAsync(target.ApplicationId.Value, form.Files, cancellationToken);
+            IReadOnlyList<StoredCompanyApplicationDocument> documents;
+            try
+            {
+                documents = await uploadService.SaveAsync(target.ApplicationId.Value, form.Files, cancellationToken);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+
             var result = await complianceDocumentService.AttachDocumentsAsync(
                 companyId,
                 documents.Select(document => new CompanyApplicationUploadedDocument(
@@ -498,7 +507,16 @@ public static class CompanyPortalEndpoints
                 configuration["PROVIDER_PORTAL_BASE_URL"],
                 cancellationToken);
 
-            var documents = await uploadService.SaveAsync(companyId, provider.Id, form.Files, cancellationToken);
+            IReadOnlyList<StoredCompanyProviderDocument> documents;
+            try
+            {
+                documents = await uploadService.SaveAsync(companyId, provider.Id, form.Files, cancellationToken);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+
             foreach (var document in documents)
             {
                 provider.AttachDocument(new ProviderDocument(
@@ -786,7 +804,16 @@ public static class CompanyPortalEndpoints
                 db.ProviderDocuments.Remove(oldDocument);
             }
 
-            var stored = await uploadService.SaveOneAsync(companyId, provider.Id, documentType, file, cancellationToken);
+            StoredCompanyProviderDocument stored;
+            try
+            {
+                stored = await uploadService.SaveOneAsync(companyId, provider.Id, documentType, file, cancellationToken);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+
             provider.AttachDocument(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
             db.AuditLogEntries.Add(AuditLogFactory.Create(
                 AuditActor.Company(companyId, null),

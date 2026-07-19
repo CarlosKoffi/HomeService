@@ -10,7 +10,11 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
     {
         "application/pdf",
         "image/jpeg",
+        "image/pjpeg",
         "image/png",
+        "image/webp",
+        "image/heic",
+        "image/heif",
         "application/octet-stream"
     };
 
@@ -19,7 +23,10 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
         ".pdf",
         ".jpg",
         ".jpeg",
-        ".png"
+        ".png",
+        ".webp",
+        ".heic",
+        ".heif"
     };
 
     private static readonly Dictionary<string, CompanyDocumentType> DocumentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -59,7 +66,7 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
 
             var originalFileName = Path.GetFileName(file.FileName);
             var extension = Path.GetExtension(originalFileName);
-            if (!AllowedContentTypes.Contains(file.ContentType) || !AllowedExtensions.Contains(extension))
+            if (!IsAllowedFile(file, extension))
             {
                 throw new InvalidOperationException($"Le format du fichier {file.FileName} n'est pas accepte.");
             }
@@ -108,7 +115,7 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
 
         var originalFileName = Path.GetFileName(file.FileName);
         var extension = Path.GetExtension(originalFileName);
-        if (!AllowedContentTypes.Contains(file.ContentType) || !AllowedExtensions.Contains(extension))
+        if (!IsAllowedFile(file, extension))
         {
             throw new InvalidOperationException($"Le format du fichier {file.FileName} n'est pas accepte.");
         }
@@ -190,6 +197,13 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
             .ToArray());
 
         return string.IsNullOrWhiteSpace(sanitized) ? "document" : sanitized;
+    }
+
+    private static bool IsAllowedFile(IFormFile file, string extension)
+    {
+        return AllowedExtensions.Contains(extension)
+            && (AllowedContentTypes.Contains(file.ContentType)
+                || file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
     }
 }
 

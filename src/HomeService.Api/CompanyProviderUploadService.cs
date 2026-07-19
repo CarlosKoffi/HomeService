@@ -8,9 +8,24 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "image/jpeg",
+        "image/pjpeg",
         "image/png",
         "image/webp",
+        "image/heic",
+        "image/heif",
+        "application/octet-stream",
         "application/pdf"
+    };
+
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".heic",
+        ".heif",
+        ".pdf"
     };
 
     private readonly string _rootPath = configuration["Storage:RootPath"]
@@ -38,12 +53,13 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
                 throw new InvalidOperationException("Chaque fichier employe doit faire moins de 10 Mo.");
             }
 
-            if (!AllowedContentTypes.Contains(file.ContentType))
+            if (!IsAllowedFile(file))
             {
-                throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG ou WEBP.");
+                throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
             }
 
-            var extension = Path.GetExtension(file.FileName);
+            var originalFileName = Path.GetFileName(file.FileName);
+            var extension = Path.GetExtension(originalFileName);
             var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".bin" : extension.ToLowerInvariant();
             var relativePath = Path.Combine(
                 "providers",
@@ -59,7 +75,7 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
 
             documents.Add(new StoredCompanyProviderDocument(
                 documentType,
-                file.FileName,
+                originalFileName,
                 relativePath.Replace('\\', '/'),
                 file.ContentType));
         }
@@ -84,12 +100,13 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
             throw new InvalidOperationException("Chaque fichier employe doit faire moins de 10 Mo.");
         }
 
-        if (!AllowedContentTypes.Contains(file.ContentType))
+        if (!IsAllowedFile(file))
         {
-            throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG ou WEBP.");
+            throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
         }
 
-        var extension = Path.GetExtension(file.FileName);
+        var originalFileName = Path.GetFileName(file.FileName);
+        var extension = Path.GetExtension(originalFileName);
         var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".bin" : extension.ToLowerInvariant();
         var relativePath = Path.Combine(
             "providers",
@@ -105,7 +122,7 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
 
         return new StoredCompanyProviderDocument(
             documentType,
-            file.FileName,
+            originalFileName,
             relativePath.Replace('\\', '/'),
             file.ContentType);
     }
@@ -129,6 +146,14 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
         yield return ("photo", ProviderDocumentType.Photo);
         yield return ("identityDocument", ProviderDocumentType.IdentityDocument);
         yield return ("diplomaDocument", ProviderDocumentType.Diploma);
+    }
+
+    private static bool IsAllowedFile(IFormFile file)
+    {
+        var extension = Path.GetExtension(Path.GetFileName(file.FileName));
+        return AllowedExtensions.Contains(extension)
+            && (AllowedContentTypes.Contains(file.ContentType)
+                || file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
     }
 }
 
