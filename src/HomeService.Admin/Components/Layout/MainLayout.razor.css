@@ -9,40 +9,42 @@ main {
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background: #ffffff;
+    border-right: 1px solid #e6e9ef;
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    background-color: rgba(255, 255, 255, .92);
+    border-bottom: 1px solid #e6e9ef;
     justify-content: flex-end;
     height: 3.5rem;
     display: flex;
     align-items: center;
+    backdrop-filter: blur(14px);
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
+.top-row > div {
+    align-items: flex-end;
+    display: grid;
+    gap: .1rem;
+    justify-items: end;
+}
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
+.top-row strong {
+    color: #111827;
+    font-size: .92rem;
+    font-weight: 800;
+}
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+.top-row span {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 650;
+}
 
 @media (max-width: 640.98px) {
     .top-row {
         justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
     }
 }
 
