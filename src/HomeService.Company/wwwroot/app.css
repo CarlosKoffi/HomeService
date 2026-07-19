@@ -2147,6 +2147,103 @@
     }
 }
 
+.employee-upsert-modal .service-edit-list .service-line-editor,
+.employee-upsert-modal .service-edit-list .figma-service-row.service-line-editor,
+.employee-upsert-modal .service-edit-list .figma-service-row.service-line-editor.has-prestations {
+    align-items: end !important;
+    grid-template-columns: minmax(150px, .95fr) minmax(170px, 1.15fr) minmax(108px, .62fr) minmax(82px, .45fr) minmax(112px, .58fr) minmax(104px, .56fr) minmax(104px, .56fr) !important;
+    overflow: hidden !important;
+}
+
+.employee-upsert-modal .service-line-editor .clean-service-name {
+    display: contents !important;
+}
+
+.employee-upsert-modal .service-line-editor .service-profile-title {
+    align-self: center !important;
+    grid-column: 1 !important;
+    min-width: 0 !important;
+}
+
+.employee-upsert-modal .service-line-editor .clean-service-name > small {
+    display: none !important;
+}
+
+.employee-upsert-modal .service-line-editor .clean-service-name .clean-prestation-row {
+    display: contents !important;
+}
+
+.employee-upsert-modal .service-line-editor .clean-service-name .clean-prestation-row > label {
+    grid-column: 2 !important;
+}
+
+.employee-upsert-modal .service-line-editor > label:nth-of-type(1) {
+    grid-column: 3 !important;
+}
+
+.employee-upsert-modal .service-line-editor > label:nth-of-type(2) {
+    grid-column: 4 !important;
+}
+
+.employee-upsert-modal .service-line-editor > .service-premium-toggle {
+    grid-column: 5 !important;
+}
+
+.employee-upsert-modal .service-line-editor > .service-price-readonly:not(.premium) {
+    grid-column: 6 !important;
+}
+
+.employee-upsert-modal .service-line-editor > .service-price-readonly.premium {
+    grid-column: 7 !important;
+}
+
+.employee-upsert-modal .service-line-editor > .danger-action {
+    display: none !important;
+}
+
+.employee-upsert-modal .service-line-editor .clean-prestation-row > button {
+    grid-column: 1 / -1 !important;
+    justify-self: start !important;
+    margin-top: .65rem !important;
+    min-width: 190px !important;
+}
+
+.employee-upsert-modal .service-line-editor .selected-prestation-list {
+    grid-column: 1 / -1 !important;
+    margin-top: .55rem !important;
+}
+
+.employee-upsert-modal .service-line-editor .service-price-readonly {
+    min-width: 0 !important;
+    padding: .45rem .55rem !important;
+}
+
+.employee-upsert-modal .service-line-editor .service-price-readonly span {
+    font-size: .58rem !important;
+}
+
+.employee-upsert-modal .service-line-editor .service-price-readonly strong {
+    font-size: .76rem !important;
+}
+
+@media (max-width: 1180px) {
+    .employee-upsert-modal .service-edit-list .service-line-editor,
+    .employee-upsert-modal .service-edit-list .figma-service-row.service-line-editor,
+    .employee-upsert-modal .service-edit-list .figma-service-row.service-line-editor.has-prestations {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .employee-upsert-modal .service-line-editor .clean-service-name .clean-prestation-row,
+    .employee-upsert-modal .service-line-editor .clean-service-name .clean-prestation-row > label,
+    .employee-upsert-modal .service-line-editor > label:nth-of-type(1),
+    .employee-upsert-modal .service-line-editor > label:nth-of-type(2),
+    .employee-upsert-modal .service-line-editor > .service-premium-toggle,
+    .employee-upsert-modal .service-line-editor > .service-price-readonly:not(.premium),
+    .employee-upsert-modal .service-line-editor > .service-price-readonly.premium {
+        grid-column: auto !important;
+    }
+}
+
 .employee-upsert-modal .figma-prestation-picker {
     background: #ffffff;
     border: 1px solid #ECECEC;

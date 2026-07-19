@@ -630,7 +630,7 @@ else
                                         {
                                             var activePrestations = GetActivePrestations(service.ServiceId);
                                             var hasPrestations = activePrestations.Count > 0;
-                                            <div class="@($"service-edit-row figma-service-row clean-service-row {(hasPrestations ? "has-prestations" : "simple-service")}")">
+                                            <div class="@($"service-edit-row figma-service-row clean-service-row service-line-editor {(hasPrestations ? "has-prestations" : "simple-service")}")">
                                                 <div class="service-edit-name clean-service-name">
                                                     <div class="service-profile-title">
                                                         <span class="service-check-emoji">@GetServiceEmoji(service.ServiceName)</span>
