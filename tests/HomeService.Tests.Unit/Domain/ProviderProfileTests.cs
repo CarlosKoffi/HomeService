@@ -121,6 +121,25 @@ public sealed class ProviderProfileTests
     }
 
     [Fact]
+    public void SyncPrestations_ReactivatesExistingPrestationWithoutDuplicating()
+    {
+        var provider = CreateProvider();
+        var serviceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var prestationId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        provider.SyncCompanyServices([
+            (serviceId, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)
+        ]);
+        var service = Assert.Single(provider.Services);
+
+        service.SyncPrestations([prestationId]);
+        service.SyncPrestations([]);
+        service.SyncPrestations([prestationId]);
+
+        Assert.Single(service.Prestations);
+        Assert.Contains(service.Prestations, prestation => prestation.ServicePrestationId == prestationId && prestation.IsActive);
+    }
+
+    [Fact]
     public void SelfRegisteredProvider_StartsAsInterimCandidateWithoutCompany()
     {
         var provider = CreateSelfRegisteredProvider();
