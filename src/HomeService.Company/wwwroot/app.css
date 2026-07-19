@@ -2057,6 +2057,96 @@
     }
 }
 
+.employee-upsert-modal .service-edit-list .clean-service-row,
+.employee-upsert-modal .service-edit-list .clean-service-row.has-prestations,
+.employee-upsert-modal .service-edit-list .figma-service-row.clean-service-row,
+.employee-upsert-modal .service-edit-list .figma-service-row.clean-service-row.has-prestations {
+    align-items: start !important;
+    gap: .75rem !important;
+    grid-template-columns: minmax(180px, 1fr) minmax(118px, .55fr) minmax(96px, .42fr) minmax(126px, .6fr) minmax(168px, .75fr) auto !important;
+}
+
+.employee-upsert-modal .service-edit-list .clean-service-row > label,
+.employee-upsert-modal .service-edit-list .clean-service-row > .service-premium-toggle,
+.employee-upsert-modal .service-edit-list .clean-service-row > .service-price-readonly,
+.employee-upsert-modal .service-edit-list .clean-service-row > .danger-action {
+    margin-top: 0 !important;
+}
+
+.employee-upsert-modal .service-edit-list .clean-service-name {
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+
+.employee-upsert-modal .service-edit-list .service-profile-title strong {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.employee-upsert-modal .service-edit-list .service-premium-toggle {
+    align-items: center !important;
+    align-self: stretch !important;
+    flex-direction: row !important;
+    font-size: .72rem !important;
+    justify-content: flex-start !important;
+    letter-spacing: .02em !important;
+    line-height: 1.2 !important;
+    min-height: 44px !important;
+    text-transform: none !important;
+}
+
+.employee-upsert-modal .service-edit-list .service-premium-toggle input {
+    flex: 0 0 auto !important;
+    height: 18px !important;
+    width: 18px !important;
+}
+
+.employee-upsert-modal .service-edit-list .service-price-readonly {
+    align-self: stretch !important;
+    border-radius: 13px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+    padding: .5rem .65rem !important;
+}
+
+.employee-upsert-modal .service-edit-list .service-price-readonly span {
+    font-size: .62rem !important;
+    letter-spacing: .06em !important;
+    line-height: 1 !important;
+}
+
+.employee-upsert-modal .service-edit-list .service-price-readonly strong {
+    font-size: .82rem !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+}
+
+.employee-upsert-modal .service-edit-list .clean-prestation-row {
+    grid-column: 1 / -1 !important;
+    margin-top: .1rem !important;
+}
+
+@media (max-width: 1120px) {
+    .employee-upsert-modal .service-edit-list .clean-service-row,
+    .employee-upsert-modal .service-edit-list .clean-service-row.has-prestations,
+    .employee-upsert-modal .service-edit-list .figma-service-row.clean-service-row,
+    .employee-upsert-modal .service-edit-list .figma-service-row.clean-service-row.has-prestations {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 620px) {
+    .employee-upsert-modal .service-edit-list .clean-service-row,
+    .employee-upsert-modal .service-edit-list .clean-service-row.has-prestations,
+    .employee-upsert-modal .service-edit-list .figma-service-row.clean-service-row,
+    .employee-upsert-modal .service-edit-list .figma-service-row.clean-service-row.has-prestations {
+        grid-template-columns: 1fr !important;
+    }
+}
+
 .employee-upsert-modal .figma-prestation-picker {
     background: #ffffff;
     border: 1px solid #ECECEC;
