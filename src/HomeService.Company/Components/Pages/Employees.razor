@@ -1238,8 +1238,9 @@ else
         var saved = await PersistEditableServicesAsync("Service ajoute au profil.");
         if (!saved)
         {
-            EditableServices.RemoveAll(item => item.ServiceId == service.Id);
+            Message = $"Service ajoute a l'ecran, mais pas encore enregistre: {Message}";
         }
+        StateHasChanged();
     }
 
     private void RemoveEditableService(Guid serviceId)
@@ -1927,7 +1928,7 @@ else
         var saved = await PersistEditableServicesAsync("Prestation ajoutee au profil.");
         if (!saved)
         {
-            service.ServicePrestationIds.Remove(prestation.Id);
+            Message = $"Prestation ajoutee a l'ecran, mais pas encore enregistree: {Message}";
         }
         StateHasChanged();
     }
