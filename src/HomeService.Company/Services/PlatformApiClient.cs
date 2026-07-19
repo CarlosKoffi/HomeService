@@ -33,6 +33,37 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return new Uri(httpClient.BaseAddress!, relativeUrl.TrimStart('/')).ToString();
     }
 
+    public string ToProviderDocumentPreviewUrl(string? previewUrl)
+    {
+        if (TryExtractProviderDocumentId(previewUrl, out var documentId))
+        {
+            return $"/provider-documents/{documentId:D}/preview";
+        }
+
+        return ToApiUrl(previewUrl);
+    }
+
+    public async Task<ProviderDocumentPreviewResult?> GetProviderDocumentPreviewAsync(
+        Guid documentId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        using var response = await httpClient.GetAsync(
+            $"/api/company-portal/provider-documents/{documentId:D}/preview",
+            cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+
+        return new ProviderDocumentPreviewResult(content, contentType);
+    }
+
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -716,6 +747,29 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
         return body;
     }
+
+    private static bool TryExtractProviderDocumentId(string? previewUrl, out Guid documentId)
+    {
+        documentId = Guid.Empty;
+        if (string.IsNullOrWhiteSpace(previewUrl))
+        {
+            return false;
+        }
+
+        var cleanUrl = previewUrl.Split('?', StringSplitOptions.TrimEntries)[0].TrimEnd('/');
+        const string marker = "/provider-documents/";
+        var markerIndex = cleanUrl.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+        {
+            return false;
+        }
+
+        var idStart = markerIndex + marker.Length;
+        var idEnd = cleanUrl.IndexOf('/', idStart);
+        var idText = idEnd < 0 ? cleanUrl[idStart..] : cleanUrl[idStart..idEnd];
+
+        return Guid.TryParse(idText, out documentId);
+    }
 }
 
 public sealed record RegisterCompanyResult(bool IsSuccess, string? ErrorMessage);
@@ -731,6 +785,8 @@ public sealed record CompanyInterimSettingsSaveResult(bool IsSuccess, CompanyInt
 public sealed record EmployeeSaveResult(bool IsSuccess, string? ErrorMessage);
 
 public sealed record EmployeeInvitationCodeResult(bool IsSuccess, CreateCompanyEmployeeResult? Invitation, string? ErrorMessage);
+
+public sealed record ProviderDocumentPreviewResult(byte[] Content, string ContentType);
 
 public sealed class CompanyEmployeeFormModel
 {

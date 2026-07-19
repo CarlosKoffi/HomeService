@@ -762,7 +762,7 @@ else
                                         <div class="document-actions">
                                             @if (!string.IsNullOrWhiteSpace(slot.PreviewUrl))
                                             {
-                                                <a href="@ApiClient.ToApiUrl(slot.PreviewUrl)" target="_blank">Ouvrir</a>
+                                                <a href="@ToPreviewUrl(slot.PreviewUrl)" target="_blank" rel="noopener">Ouvrir</a>
                                                 <button type="button" class="danger-action" @onclick="() => DeleteEmployeeDocumentAsync(slot.DocumentId!.Value)">Supprimer</button>
                                             }
                                             <label class="replace-document">
@@ -2074,7 +2074,7 @@ else
 
     private string ToPreviewUrl(string previewUrl)
     {
-        return previewUrl == "#" ? previewUrl : ApiClient.ToApiUrl(previewUrl);
+        return previewUrl == "#" ? previewUrl : ApiClient.ToProviderDocumentPreviewUrl(previewUrl);
     }
 
     private static bool IsImageDocument(string documentType, string? contentType, string? fileName)
