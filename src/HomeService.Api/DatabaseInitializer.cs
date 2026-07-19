@@ -13,6 +13,7 @@ public static class DatabaseInitializer
         var db = scope.ServiceProvider.GetRequiredService<HomeServiceDbContext>();
 
         await db.Database.MigrateAsync(cancellationToken);
+        await EnsureProviderServiceSchemaAsync(db, cancellationToken);
         await SeedCountriesAsync(db, cancellationToken);
         await SeedCountryBrandingAsync(db, cancellationToken);
         await SeedLanguagesAsync(db, cancellationToken);
@@ -23,6 +24,38 @@ public static class DatabaseInitializer
         await SeedCmsFoundationAsync(db, cancellationToken);
         await SeedCompanyEditorialContentAsync(db, cancellationToken);
         await SeedProviderEditorialContentAsync(db, cancellationToken);
+    }
+
+    private static async Task EnsureProviderServiceSchemaAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "ProviderServices"
+                ADD COLUMN IF NOT EXISTS "CompanyId" uuid,
+                ADD COLUMN IF NOT EXISTS "PriceTier" character varying(32) NOT NULL DEFAULT 'Normal',
+                ADD COLUMN IF NOT EXISTS "PricingUnit" character varying(32) NOT NULL DEFAULT 'Hourly';
+
+            UPDATE "ProviderServices" AS provider_service
+            SET "CompanyId" = provider."CompanyId"
+            FROM "Providers" AS provider
+            WHERE provider_service."ProviderId" = provider."Id"
+              AND provider_service."CompanyId" IS NULL
+              AND provider."CompanyId" IS NOT NULL;
+
+            ALTER TABLE "ProviderServices"
+                DROP COLUMN IF EXISTS "HourlyRateAmount",
+                DROP COLUMN IF EXISTS "Currency";
+
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM "ProviderServices"
+                    WHERE "CompanyId" IS NULL
+                ) THEN
+                    ALTER TABLE "ProviderServices" ALTER COLUMN "CompanyId" SET NOT NULL;
+                END IF;
+            END $$;
+            """, cancellationToken);
     }
 
     private static async Task SeedCountriesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
