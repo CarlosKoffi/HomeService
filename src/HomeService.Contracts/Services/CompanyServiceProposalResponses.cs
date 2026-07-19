@@ -39,3 +39,12 @@ public sealed record CreatePrestationFromCompanyServiceProposalRequest(
     string? Description = null,
     int SortOrder = 0,
     string? Note = null);
+
+public sealed record CreateServiceFromCompanyServiceProposalRequest(
+    string? Name = null,
+    string? Description = null,
+    string? IconName = null,
+    int PriceMinAmount = 0,
+    int PriceMaxAmount = 0,
+    string Currency = "XOF",
+    string? Note = null);

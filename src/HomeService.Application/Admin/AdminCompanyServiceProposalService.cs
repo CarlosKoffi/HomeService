@@ -190,6 +190,47 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
         return CompanyServiceProposalActionResult.Ok("Prestation creee et service propose rattache.");
     }
 
+    public async Task<CompanyServiceProposalActionResult> CreateServiceAsync(
+        Guid proposalId,
+        CreateServiceFromCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken)
+    {
+        var proposal = await db.CompanyApplicationServices.FirstOrDefaultAsync(item => item.Id == proposalId, cancellationToken);
+        if (proposal is null)
+        {
+            return CompanyServiceProposalActionResult.NotFound("Service propose introuvable.");
+        }
+
+        var serviceName = string.IsNullOrWhiteSpace(request.Name) ? proposal.RawName : request.Name.Trim();
+        if (string.IsNullOrWhiteSpace(serviceName))
+        {
+            return CompanyServiceProposalActionResult.ValidationFailed("Le nom du nouveau service est obligatoire.");
+        }
+
+        var normalizedName = serviceName.Trim().ToLowerInvariant();
+        var existingService = await db.Services.FirstOrDefaultAsync(
+            service => service.NormalizedName == normalizedName,
+            cancellationToken);
+        if (existingService is not null)
+        {
+            proposal.MarkAsMatched(existingService.Id, 100);
+            await db.SaveChangesAsync(cancellationToken);
+            return CompanyServiceProposalActionResult.Ok("Un service existait deja avec ce nom. Le libelle y a ete rattache.");
+        }
+
+        var service = new Service(serviceName, request.Description, createdByCompanyId: null);
+        service.UpdateDetails(serviceName, request.Description, request.IconName);
+        var priceMinAmount = request.PriceMinAmount > 0 ? request.PriceMinAmount : service.PriceMinAmount;
+        var priceMaxAmount = request.PriceMaxAmount > 0 ? request.PriceMaxAmount : Math.Max(priceMinAmount, service.PriceMaxAmount);
+        service.UpdatePriceRange(priceMinAmount, priceMaxAmount, request.Currency);
+
+        db.Services.Add(service);
+        proposal.MarkCreatedAsNewService(service.Id);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return CompanyServiceProposalActionResult.Ok("Service cree et proposition rattachee.");
+    }
+
     private async Task<IReadOnlyList<CompanyApplicationServiceCatalogItem>> GetCatalogAsync(CancellationToken cancellationToken)
     {
         var services = await db.Services

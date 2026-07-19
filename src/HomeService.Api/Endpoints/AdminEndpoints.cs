@@ -1062,6 +1062,37 @@ public static class AdminEndpoints
         .WithName("CreatePrestationFromCompanyServiceProposal")
         .Produces<CompanyServiceProposalListResponse>();
 
+        admin.MapPost("/company-service-proposals/{id:guid}/create-service", async (
+            Guid id,
+            CreateServiceFromCompanyServiceProposalRequest request,
+            HttpRequest httpRequest,
+            AdminCompanyServiceProposalService serviceProposalService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await serviceProposalService.CreateServiceAsync(id, request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return ToCompanyServiceProposalActionError(result);
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyServiceProposalServiceCreated",
+                nameof(CompanyApplicationService),
+                id,
+                result.Message,
+                before: null,
+                after: request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
+        })
+        .WithName("CreateServiceFromCompanyServiceProposal")
+        .Produces<CompanyServiceProposalListResponse>();
+
         admin.MapPost("/services", async (
             UpsertServiceRequest request,
             HttpRequest httpRequest,
