@@ -11,16 +11,17 @@
         <p class="eyebrow">Catalogue operationnel</p>
         <h1>Services et prestations</h1>
         <p class="lead">
-            Un service reste le metier principal. Les prestations servent a detailler ce que le client peut demander,
-            par exemple tondre le gazon dans Jardinage.
+            Validez les libelles envoyes par les entreprises, rattachez-les au bon service ou creez un nouvel element catalogue.
         </p>
     </div>
-    <button type="button" class="secondary-action" @onclick="LoadServicesAsync" disabled="@IsLoading">
-        Actualiser
-    </button>
-    <button type="button" class="secondary-action" @onclick="ReanalyseProposalsAsync" disabled="@(IsLoading || IsSaving)">
-        Reanalyser les libelles
-    </button>
+    <div class="page-heading-actions">
+        <button type="button" class="secondary-action" @onclick="LoadServicesAsync" disabled="@IsLoading">
+            Actualiser
+        </button>
+        <button type="button" class="secondary-action" @onclick="ReanalyseProposalsAsync" disabled="@(IsLoading || IsSaving)">
+            Reanalyser
+        </button>
+    </div>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(Message))
@@ -84,13 +85,10 @@
 @if (ActiveTab == ServiceAdminTab.Proposals)
 {
 <section class="service-admin-create orphan-proposals">
-    <div>
-        <p class="eyebrow">Controle catalogue</p>
-        <h2>Services saisis par les entreprises</h2>
-        <p>
-            Corrigez le libelle si besoin, puis choisissez la bonne action : rattacher, creer une prestation,
-            ou creer un service complet.
-        </p>
+    <div class="proposal-panel-heading">
+        <p class="eyebrow">A verifier</p>
+        <h2>Libelles a classer</h2>
+        <p>Chaque libelle doit finir rattache a un service ou une prestation. Aucun service saisi par une entreprise ne reste orphelin.</p>
     </div>
 
     @if (CompanyServiceProposals.Count == 0)
@@ -114,11 +112,11 @@
                             <h3>@proposal.RawName</h3>
                         </div>
                         <p>@proposal.CompanyName</p>
-                        <small>Dossier @proposal.CompanyApplicationId.ToString()[..8] - score actuel @(proposal.MatchScore?.ToString() ?? "non calcule")</small>
+                        <small>Score @(proposal.MatchScore?.ToString() ?? "non calcule")</small>
                         @if (proposal.Suggestions.Count > 0)
                         {
                             <div class="proposal-suggestions">
-                                <span>Suggestions</span>
+                                <span>Suggestion rapide</span>
                                 @foreach (var suggestion in proposal.Suggestions.Take(3))
                                 {
                                     <button type="button" class="light-action" @onclick="() => ApplySuggestion(proposal.Id, suggestion)">
@@ -136,7 +134,7 @@
                     </div>
                     <div class="proposal-decision-panel">
                         <label class="wide">
-                            Libelle propre
+                            Libelle a utiliser
                             <input type="text" @bind="draft.ProposedName" placeholder="Nom a utiliser dans le catalogue" />
                         </label>
                         <label>
@@ -608,16 +606,31 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     {
         if (!ProposalDrafts.TryGetValue(proposal.Id, out var draft))
         {
+            var firstSuggestion = proposal.Suggestions
+                .OrderByDescending(suggestion => suggestion.Score)
+                .FirstOrDefault();
+
             draft = new ProposalDraft
             {
-                ProposedName = proposal.RawName,
-                Action = proposal.MatchedServiceId.HasValue ? ProposalAction.Attach : ProposalAction.CreatePrestation,
+                ProposedName = BuildDefaultProposalName(proposal, firstSuggestion),
+                Action = proposal.MatchedServiceId.HasValue || firstSuggestion is not null
+                    ? ProposalAction.Attach
+                    : ProposalAction.CreatePrestation,
                 Selection = proposal.MatchedServicePrestationId.HasValue
                     ? BuildPrestationSelection(proposal.MatchedServiceId!.Value, proposal.MatchedServicePrestationId.Value)
                     : proposal.MatchedServiceId.HasValue
                         ? BuildServiceSelection(proposal.MatchedServiceId.Value)
+                        : firstSuggestion is not null
+                            ? firstSuggestion.ServicePrestationId.HasValue
+                                ? BuildPrestationSelection(firstSuggestion.ServiceId, firstSuggestion.ServicePrestationId.Value)
+                                : BuildServiceSelection(firstSuggestion.ServiceId)
                         : string.Empty
             };
+
+            draft.CreateUnderServiceId = proposal.MatchedServiceId?.ToString()
+                ?? firstSuggestion?.ServiceId.ToString()
+                ?? string.Empty;
+
             ProposalDrafts[proposal.Id] = draft;
         }
 
@@ -633,6 +646,30 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             : BuildServiceSelection(suggestion.ServiceId);
         draft.CreateUnderServiceId = suggestion.ServiceId.ToString();
         ProposalDrafts[proposalId] = draft;
+    }
+
+    private static string BuildDefaultProposalName(
+        CompanyServiceProposalResponse proposal,
+        CompanyServiceProposalSuggestionResponse? suggestion)
+    {
+        if (proposal.MatchedServicePrestationName is not null)
+        {
+            return proposal.MatchedServicePrestationName;
+        }
+
+        if (suggestion?.ServicePrestationName is not null)
+        {
+            return suggestion.ServicePrestationName;
+        }
+
+        if (suggestion?.ServiceName is not null && proposal.RawName.Contains('-', StringComparison.Ordinal))
+        {
+            var parts = proposal.RawName.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return parts.LastOrDefault(part => !part.Equals(suggestion.ServiceName, StringComparison.OrdinalIgnoreCase))
+                ?? proposal.RawName;
+        }
+
+        return proposal.RawName;
     }
 
     private Task ExecuteProposalActionAsync(CompanyServiceProposalResponse proposal)
