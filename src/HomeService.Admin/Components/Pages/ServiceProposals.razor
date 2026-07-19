@@ -133,48 +133,74 @@
                             </div>
                         }
                     </div>
-                    <div class="service-admin-form proposal-actions">
+                    <div class="proposal-decision-panel">
                         <label class="wide">
                             Libelle propre
                             <input type="text" @bind="draft.ProposedName" placeholder="Nom a utiliser dans le catalogue" />
+                        </label>
+                        <label>
+                            Action
+                            <select @bind="draft.Action">
+                                <option value="@ProposalAction.Attach">Rattacher a l'existant</option>
+                                <option value="@ProposalAction.CreatePrestation">Creer une prestation</option>
+                                <option value="@ProposalAction.CreateService">Creer un service</option>
+                            </select>
                         </label>
                         <label class="wide">
                             Description courte
                             <input type="text" @bind="draft.Description" placeholder="Optionnel, utile si vous creez un service ou une prestation" />
                         </label>
-                        <label>
-                            Rattacher a
-                            <select @bind="draft.Selection">
-                                <option value="">Choisir un service ou une prestation</option>
-                                @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
-                                {
-                                    <option value="@BuildServiceSelection(service.Id)">@service.Name</option>
-                                    @foreach (var prestation in service.Prestations.Where(item => item.IsActive).OrderBy(item => item.Name))
+
+                        @if (draft.Action == ProposalAction.Attach)
+                        {
+                            <label class="wide">
+                                Element du catalogue
+                                <select @bind="draft.Selection">
+                                    <option value="">Choisir un service ou une prestation</option>
+                                    @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
                                     {
-                                        <option value="@BuildPrestationSelection(service.Id, prestation.Id)">@service.Name - @prestation.Name</option>
+                                        <option value="@BuildServiceSelection(service.Id)">@service.Name</option>
+                                        @foreach (var prestation in service.Prestations.Where(item => item.IsActive).OrderBy(item => item.Name))
+                                        {
+                                            <option value="@BuildPrestationSelection(service.Id, prestation.Id)">@service.Name - @prestation.Name</option>
+                                        }
                                     }
-                                }
-                            </select>
-                        </label>
-                        <label>
-                            Creer prestation sous
-                            <select @bind="draft.CreateUnderServiceId">
-                                <option value="">Ne pas creer</option>
-                                @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
-                                {
-                                    <option value="@service.Id">@service.Name</option>
-                                }
-                            </select>
-                        </label>
-                        <div class="easy-actions">
-                            <button type="button" @onclick="() => AttachProposalAsync(proposal.Id)" disabled="@IsSaving">
-                                Rattacher
-                            </button>
-                            <button type="button" class="light-action" @onclick="() => CreatePrestationFromProposalAsync(proposal)" disabled="@IsSaving">
-                                Creer prestation
-                            </button>
-                            <button type="button" class="light-action" @onclick="() => CreateServiceFromProposalAsync(proposal)" disabled="@IsSaving">
-                                Creer service
+                                </select>
+                            </label>
+                        }
+                        else if (draft.Action == ProposalAction.CreatePrestation)
+                        {
+                            <label class="wide">
+                                Service parent
+                                <select @bind="draft.CreateUnderServiceId">
+                                    <option value="">Choisir le service parent</option>
+                                    @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
+                                    {
+                                        <option value="@service.Id">@service.Name</option>
+                                    }
+                                </select>
+                            </label>
+                        }
+                        else
+                        {
+                            <label>
+                                Icone
+                                <input type="text" @bind="draft.IconName" placeholder="Ex: briefcase" />
+                            </label>
+                            <label>
+                                Prix min
+                                <input type="number" min="0" step="100" @bind="draft.PriceMinAmount" />
+                            </label>
+                            <label>
+                                Prix max
+                                <input type="number" min="0" step="100" @bind="draft.PriceMaxAmount" />
+                            </label>
+                        }
+
+                        <div class="proposal-primary-action">
+                            <p>@GetProposalActionHelp(draft.Action)</p>
+                            <button type="button" @onclick="() => ExecuteProposalActionAsync(proposal)" disabled="@IsSaving">
+                                @GetProposalActionLabel(draft.Action)
                             </button>
                         </div>
                     </div>
@@ -584,6 +610,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             draft = new ProposalDraft
             {
                 ProposedName = proposal.RawName,
+                Action = proposal.MatchedServiceId.HasValue ? ProposalAction.Attach : ProposalAction.CreatePrestation,
                 Selection = proposal.MatchedServicePrestationId.HasValue
                     ? BuildPrestationSelection(proposal.MatchedServiceId!.Value, proposal.MatchedServicePrestationId.Value)
                     : proposal.MatchedServiceId.HasValue
@@ -599,11 +626,23 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private void ApplySuggestion(Guid proposalId, CompanyServiceProposalSuggestionResponse suggestion)
     {
         var draft = ProposalDrafts.TryGetValue(proposalId, out var existing) ? existing : new ProposalDraft();
+        draft.Action = ProposalAction.Attach;
         draft.Selection = suggestion.ServicePrestationId.HasValue
             ? BuildPrestationSelection(suggestion.ServiceId, suggestion.ServicePrestationId.Value)
             : BuildServiceSelection(suggestion.ServiceId);
         draft.CreateUnderServiceId = suggestion.ServiceId.ToString();
         ProposalDrafts[proposalId] = draft;
+    }
+
+    private Task ExecuteProposalActionAsync(CompanyServiceProposalResponse proposal)
+    {
+        var draft = GetProposalDraft(proposal);
+        return draft.Action switch
+        {
+            ProposalAction.CreateService => CreateServiceFromProposalAsync(proposal),
+            ProposalAction.CreatePrestation => CreatePrestationFromProposalAsync(proposal),
+            _ => AttachProposalAsync(proposal.Id)
+        };
     }
 
     private async Task AttachProposalAsync(Guid proposalId)
@@ -670,12 +709,32 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 new CreateServiceFromCompanyServiceProposalRequest(
                     serviceName,
                     draft.Description,
-                    "sparkles",
-                    0,
-                    0,
+                    draft.IconName,
+                    draft.PriceMinAmount,
+                    draft.PriceMaxAmount,
                     "XOF"));
             Message = "Service cree et proposition rattachee.";
         });
+    }
+
+    private static string GetProposalActionLabel(ProposalAction action)
+    {
+        return action switch
+        {
+            ProposalAction.CreateService => "Creer le service",
+            ProposalAction.CreatePrestation => "Creer la prestation",
+            _ => "Rattacher au catalogue"
+        };
+    }
+
+    private static string GetProposalActionHelp(ProposalAction action)
+    {
+        return action switch
+        {
+            ProposalAction.CreateService => "A utiliser si ce metier n'existe pas encore dans le catalogue.",
+            ProposalAction.CreatePrestation => "A utiliser si le metier existe deja mais que la demande precise une prestation.",
+            _ => "A utiliser quand le libelle correspond deja a un service ou une prestation existante."
+        };
     }
 
     private static string CleanProposalName(ProposalDraft draft, CompanyServiceProposalResponse proposal)
@@ -1049,6 +1108,10 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         public string Description { get; set; } = string.Empty;
         public string Selection { get; set; } = string.Empty;
         public string CreateUnderServiceId { get; set; } = string.Empty;
+        public string IconName { get; set; } = "briefcase";
+        public int PriceMinAmount { get; set; }
+        public int PriceMaxAmount { get; set; }
+        public ProposalAction Action { get; set; } = ProposalAction.Attach;
     }
 
     private enum ServiceAdminTab
@@ -1057,6 +1120,13 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         Catalog,
         Create,
         Insights
+    }
+
+    private enum ProposalAction
+    {
+        Attach,
+        CreatePrestation,
+        CreateService
     }
 
     private sealed record ProposalSelection(Guid? ServiceId, Guid? ServicePrestationId);
