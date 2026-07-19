@@ -32,30 +32,7 @@ app.UseSiteAccessGate();
 
 app.UseAntiforgery();
 
-app.MapGet("/admin-documents/{documentId:guid}/preview", async (
-    Guid documentId,
-    PlatformApiClient apiClient,
-    HttpContext context,
-    CancellationToken cancellationToken) =>
-{
-    var document = await apiClient.GetCompanyApplicationDocumentFileAsync(documentId, cancellationToken);
-    context.Response.Headers.ContentDisposition = $"inline; filename=\"{document.FileName.Replace("\"", string.Empty)}\"";
-
-    return Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
-});
-
-app.MapGet("/admin-provider-documents/{documentId:guid}/preview", async (
-    Guid documentId,
-    PlatformApiClient apiClient,
-    HttpContext context,
-    CancellationToken cancellationToken) =>
-{
-    var document = await apiClient.GetProviderDocumentFileAsync(documentId, cancellationToken);
-    context.Response.Headers.ContentDisposition = $"inline; filename=\"{document.FileName.Replace("\"", string.Empty)}\"";
-
-    return Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
-});
-
+app.MapAdminDocumentProxyEndpoints();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
