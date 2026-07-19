@@ -27,6 +27,10 @@
     --portal-muted: #AAAAAA;
 }
 
+#blazor-error-ui {
+    display: none;
+}
+
 /* Connected company portal color discipline:
    blue is the only brand accent; green/orange/red are reserved for statuses. */
 :root {
