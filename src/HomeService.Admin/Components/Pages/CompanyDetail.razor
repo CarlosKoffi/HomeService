@@ -455,7 +455,17 @@ else
     private static string TranslateMissionStatus(string status) => status switch { "Created" => "Creee", "Assigned" => "Affectee", "Accepted" => "Acceptee", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", "Disputed" => "Litige", _ => status };
     private static string TranslateApplicationStatus(string status) => status switch { "Approved" => "Validee", "ActivationSent" => "Lien envoye", "Activated" => "Compte active", "Rejected" => "Refusee", "MoreInformationRequested" => "Complement demande", "UnderReview" => "Analyse", _ => status };
     private static string TranslateDocumentType(string type) => type switch { "Photo" => "Photo", "IdentityDocument" => "Piece d'identite", "Diploma" => "Diplome", _ => type };
-    private static string TranslateCompanyDocumentType(string type) => type switch { "TaxDeclaration" => "DFE", "BusinessRegistration" => "Registre de commerce", "RepresentativeId" => "Identite responsable", _ => type };
+    private static string TranslateCompanyDocumentType(string type) => type switch
+    {
+        "FiscalExistenceDeclaration" => "DFE - Declaration Fiscale d'Existence",
+        "BusinessRegistration" => "Registre de commerce",
+        "OwnerIdentity" => "Identite responsable",
+        "AddressProof" => "Justificatif d'adresse",
+        "SupportingDocument" => "Document complementaire",
+        "TaxDeclaration" => "DFE - Declaration Fiscale d'Existence",
+        "RepresentativeId" => "Identite responsable",
+        _ => type
+    };
     private static string TranslateDocumentStatus(string status) => status switch { "Approved" => "Valide", "Rejected" => "Refuse", "NeedsReplacement" => "A remplacer", "Pending" => "A verifier", _ => status };
     private static string TranslateNotificationTone(string tone) => tone switch { "success" => "Information validee", "danger" or "error" => "Attention", "warning" => "A traiter", _ => "Information" };
 
