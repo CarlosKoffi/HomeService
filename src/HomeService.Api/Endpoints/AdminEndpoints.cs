@@ -1008,6 +1008,16 @@ public static class AdminEndpoints
         .WithName("ListCompanyServiceProposals")
         .Produces<CompanyServiceProposalListResponse>();
 
+        admin.MapGet("/service-insights", async (
+            AdminServiceCatalogInsightsService insightsService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await insightsService.GetAsync(cancellationToken);
+            return Results.Ok(result);
+        })
+        .WithName("GetAdminServiceCatalogInsights")
+        .Produces<ServiceCatalogInsightListResponse>();
+
         admin.MapPost("/company-service-proposals/reanalyse", async (
             HttpRequest httpRequest,
             AdminCompanyServiceProposalService serviceProposalService,

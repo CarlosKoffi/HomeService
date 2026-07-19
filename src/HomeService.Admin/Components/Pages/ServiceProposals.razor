@@ -435,27 +435,65 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             <div>
                 <p class="eyebrow">Pilotage</p>
                 <h2>Chiffres par service</h2>
-                <p>Classement rapide du catalogue pour voir ce qui est pret, ce qui manque et ce qui doit etre complete.</p>
+                <p>Classement rapide pour comprendre la demande, l'offre disponible, les interimaires et le revenu genere.</p>
             </div>
-            <span class="status-pill pending">Missions et revenus a brancher</span>
+            <span class="status-pill accepted">Donnees API</span>
         </div>
+
+        @if (InsightSnapshot is not null)
+        {
+            <div class="service-admin-overview insights-summary">
+                <article>
+                    <span>Services</span>
+                    <strong>@InsightSnapshot.Totals.ServiceCount</strong>
+                    <p>Metiers principaux suivis dans le catalogue.</p>
+                </article>
+                <article>
+                    <span>Prestataires</span>
+                    <strong>@InsightSnapshot.Totals.ActiveProviderCount</strong>
+                    <p>Profils valides rattaches aux services.</p>
+                </article>
+                <article>
+                    <span>Interimaires</span>
+                    <strong>@InsightSnapshot.Totals.InterimProviderCount</strong>
+                    <p>Ressources interimaires exploitables par service.</p>
+                </article>
+                <article>
+                    <span>CA termine</span>
+                    <strong>@FormatAmount(InsightSnapshot.Totals.RevenueAmount, InsightSnapshot.Totals.Currency)</strong>
+                    <p>Montant des missions terminees.</p>
+                </article>
+            </div>
+        }
 
         <div class="service-insights-table">
             <div class="service-insights-row head">
                 <span>Service</span>
-                <span>Prestations</span>
-                <span>Actives</span>
+                <span>Prestataires</span>
+                <span>Interim</span>
+                <span>Missions</span>
+                <span>Terminees</span>
+                <span>Litiges</span>
+                <span>CA termine</span>
                 <span>Propositions</span>
-                <span>Prix catalogue</span>
             </div>
             @foreach (var service in ServiceInsights)
             {
                 <div class="service-insights-row">
-                    <strong>@service.Name</strong>
-                    <span>@service.TotalPrestations</span>
-                    <span>@service.ActivePrestations</span>
-                    <span>@service.PendingProposalCount</span>
-                    <span>@service.PriceRange</span>
+                    <strong>@service.ServiceName</strong>
+                    <span>@service.ActiveProviderCount</span>
+                    <span>@service.InterimProviderCount</span>
+                    <span>@service.MissionCount</span>
+                    <span>@service.CompletedMissionCount</span>
+                    <span class="@(service.DisputedMissionCount > 0 ? "danger-text" : string.Empty)">@service.DisputedMissionCount</span>
+                    <span>@FormatAmount(service.RevenueAmount, service.Currency)</span>
+                    <span>@CountPendingProposalsFor(service.ServiceId)</span>
+                    @if (service.Prestations.Count > 0)
+                    {
+                        <small class="service-insights-prestations">
+                            @FormatPrestationInsights(service.Prestations)
+                        </small>
+                    }
                 </div>
             }
         </div>
@@ -469,6 +507,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private readonly Dictionary<Guid, ProposalDraft> ProposalDrafts = [];
     private IReadOnlyList<ServiceSummaryResponse> Services = [];
     private IReadOnlyList<CompanyServiceProposalResponse> CompanyServiceProposals = [];
+    private ServiceCatalogInsightListResponse? InsightSnapshot { get; set; }
     private ServiceDraft NewServiceDraft { get; set; } = new();
     private string Search { get; set; } = string.Empty;
     private string StatusFilter { get; set; } = "all";
@@ -479,20 +518,11 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private bool IsSaving { get; set; }
     private ServiceAdminTab ActiveTab { get; set; } = ServiceAdminTab.Proposals;
 
-    private IReadOnlyList<ServiceInsight> ServiceInsights
+    private IReadOnlyList<ServiceCatalogInsightResponse> ServiceInsights
     {
         get
         {
-            return Services
-                .OrderByDescending(service => service.Prestations.Count)
-                .ThenBy(service => service.Name)
-                .Select(service => new ServiceInsight(
-                    service.Name,
-                    service.Prestations.Count,
-                    service.Prestations.Count(prestation => prestation.IsActive),
-                    CountPendingProposalsFor(service),
-                    FormatPriceRange(service.PriceMinAmount ?? service.NormalPriceAmount, service.PriceMaxAmount ?? service.PremiumPriceAmount, service.Currency)))
-                .ToList();
+            return InsightSnapshot?.Items ?? [];
         }
     }
 
@@ -535,6 +565,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         {
             Services = await ApiClient.GetServicesAsync();
             CompanyServiceProposals = (await ApiClient.GetCompanyServiceProposalsAsync())?.Items ?? [];
+            InsightSnapshot = await ApiClient.GetServiceCatalogInsightsAsync();
         }
         catch (PlatformApiException exception)
         {
@@ -957,6 +988,12 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         return ActiveTab == tab ? "active" : string.Empty;
     }
 
+    private int CountPendingProposalsFor(Guid serviceId)
+    {
+        var service = Services.FirstOrDefault(item => item.Id == serviceId);
+        return service is null ? 0 : CountPendingProposalsFor(service);
+    }
+
     private int CountPendingProposalsFor(ServiceSummaryResponse service)
     {
         var normalizedServiceName = NormalizeCatalogName(service.Name);
@@ -968,6 +1005,22 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private static string NormalizeCatalogName(string value)
     {
         return value.Trim().ToLowerInvariant();
+    }
+
+    private static string FormatAmount(int amount, string currency)
+    {
+        return $"{amount:N0} {currency}";
+    }
+
+    private static string FormatPrestationInsights(IReadOnlyList<ServicePrestationCatalogInsightResponse> prestations)
+    {
+        var top = prestations
+            .OrderByDescending(prestation => prestation.MissionCount)
+            .ThenByDescending(prestation => prestation.ActiveProviderCount)
+            .Take(3)
+            .Select(prestation => $"{prestation.ServicePrestationName}: {prestation.ActiveProviderCount} presta, {prestation.MissionCount} mission(s)");
+
+        return string.Join(" | ", top);
     }
 
     private sealed class PrestationDraft
@@ -1005,13 +1058,6 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         Create,
         Insights
     }
-
-    private sealed record ServiceInsight(
-        string Name,
-        int TotalPrestations,
-        int ActivePrestations,
-        int PendingProposalCount,
-        string PriceRange);
 
     private sealed record ProposalSelection(Guid? ServiceId, Guid? ServicePrestationId);
 }

@@ -1812,7 +1812,7 @@ h3 {
     border-bottom: 1px solid #eef2f7;
     display: grid;
     gap: .8rem;
-    grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(110px, .75fr));
+    grid-template-columns: minmax(180px, 1.35fr) repeat(7, minmax(82px, .65fr));
     padding: .85rem 1rem;
 }
 
@@ -1836,6 +1836,23 @@ h3 {
 .service-insights-row span {
     color: #111827;
     font-weight: 750;
+}
+
+.service-insights-row .danger-text {
+    color: #b91c1c;
+}
+
+.service-insights-prestations {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 700;
+    grid-column: 1 / -1;
+    line-height: 1.45;
+}
+
+.insights-summary {
+    margin: 0;
+    padding: 1rem;
 }
 
 .prestation-admin-grid {
