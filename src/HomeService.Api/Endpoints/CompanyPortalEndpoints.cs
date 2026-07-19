@@ -825,6 +825,14 @@ public static class CompanyPortalEndpoints
             {
                 return Results.BadRequest(new { message = exception.Message });
             }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                logger.LogError(exception, "Company employee document storage failed for company {CompanyId} and provider {ProviderId}.", companyId, employeeId);
+                return Results.Problem(
+                    title: "Stockage de la piece impossible.",
+                    detail: "Le fichier n'a pas pu etre enregistre sur le serveur. Verifiez le volume /app/storage et ses droits d'ecriture.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
 
             await db.ProviderDocuments
                 .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
@@ -929,13 +937,26 @@ public static class CompanyPortalEndpoints
                 return Results.NotFound();
             }
 
-            var absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+            string absolutePath;
+            try
+            {
+                absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.NotFound(new { message = "Le chemin du fichier employe est invalide." });
+            }
+
             if (!File.Exists(absolutePath))
             {
                 return Results.NotFound(new { message = "Le fichier employe n'existe plus sur le serveur." });
             }
 
-            return Results.File(absolutePath, document.ContentType, enableRangeProcessing: true);
+            return Results.File(
+                absolutePath,
+                string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType,
+                fileDownloadName: document.OriginalFileName,
+                enableRangeProcessing: true);
         })
         .WithName("PreviewCompanyPortalProviderDocument");
 

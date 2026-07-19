@@ -743,7 +743,11 @@ else
                                             <div class="document-preview">
                                                 @if (slot.IsInlineImagePreview)
                                                 {
-                                                    <img src="@ToPreviewUrl(slot.PreviewUrl)" alt="@slot.Label" loading="lazy" />
+                                                    <img src="@ToPreviewUrl(slot.PreviewUrl)" alt="@slot.Label" loading="lazy" onerror="this.parentElement.classList.add('is-broken'); this.remove();" />
+                                                    <div class="document-preview-file document-preview-fallback">
+                                                        <span>@GetDocumentPreviewCode(slot)</span>
+                                                        <strong>Apercu indisponible</strong>
+                                                    </div>
                                                 }
                                                 else
                                                 {
@@ -2069,7 +2073,7 @@ else
             document?.OriginalFileName ?? (string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "Manquant" : "Optionnel") : "Piece deposee"),
             previewUrl,
             document?.ContentType,
-            normalizedType == "Photo" && IsImageDocument(normalizedType, document?.ContentType, document?.OriginalFileName),
+            document?.Id is not null && IsImageDocument(normalizedType, document?.ContentType, document?.OriginalFileName),
             string.IsNullOrWhiteSpace(previewUrl) ? (isRequired ? "missing" : "optional") : "ready");
     }
 

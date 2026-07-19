@@ -4162,6 +4162,14 @@
     line-height: 1.15;
 }
 
+.document-preview-fallback {
+    display: none;
+}
+
+.document-preview.is-broken .document-preview-fallback {
+    display: grid;
+}
+
 .danger-action {
     background: #ffffff !important;
     border: 1px solid #fecaca !important;

@@ -16,7 +16,11 @@ public static class CompanyDocumentProxyEndpoints
                 var document = await apiClient.GetProviderDocumentPreviewAsync(documentId, cancellationToken);
                 return document is null
                     ? Results.NotFound(new { message = "Le fichier n'existe plus sur le serveur." })
-                    : Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
+                    : Results.File(
+                        document.Content,
+                        document.ContentType,
+                        fileDownloadName: document.FileName,
+                        enableRangeProcessing: true);
             }
             catch (HttpRequestException exception)
             {
