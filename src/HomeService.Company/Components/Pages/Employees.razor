@@ -51,9 +51,9 @@ else
                     <strong class="blue">@LiveEmployees.Count</strong>
                     <span>En mission</span>
                 </button>
-                <button type="button" class="@GetFilterButtonClass("Indisponible")" @onclick="@(() => SetEmployeeFilter("Indisponible"))">
-                    <strong>@UnavailableEmployees.Count</strong>
-                    <span>Indisponibles</span>
+                <button type="button" class="@GetFilterButtonClass("Non actif")" @onclick="@(() => SetEmployeeFilter("Non actif"))">
+                    <strong>@InactiveEmployees.Count</strong>
+                    <span>A activer</span>
                 </button>
             </div>
         </div>
@@ -416,6 +416,7 @@ else
                     </div>
                     <div class="employee-status-cell">
                         <span class="@GetEmployeeStatusBadgeClass(employee)">@GetEmployeeOperationalStatus(employee)</span>
+                        <small class="@GetEmployeeLifecycleClass(employee)">@GetEmployeeLifecycleStatus(employee)</small>
                         <small>@GetDocumentsText(employee)</small>
                     </div>
                     <div class="employee-row-menu" @onclick:stopPropagation>
@@ -435,13 +436,6 @@ else
                                     <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                                     Voir le profil
                                 </button>
-                                @if (CanApproveEmployee(employee))
-                                {
-                                    <button type="button" @onclick="() => ApproveEmployeeAsync(employee.Id)">
-                                        <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
-                                        Valider pour mission
-                                    </button>
-                                }
                                 @if (CanChangeAvailability(employee))
                                 {
                                     <button type="button" @onclick="() => ToggleEmployeeAvailabilityAsync(employee)">
@@ -449,10 +443,13 @@ else
                                         @(employee.IsAvailable ? "Marquer indisponible" : "Marquer disponible")
                                     </button>
                                 }
-                                <button type="button" @onclick="() => SuspendEmployeeAsync(employee.Id)">
-                                    <svg viewBox="0 0 24 24"><path d="M12 3v6"/><path d="M8 7 4 11v5l4 4h8l4-4v-5l-4-4Z"/></svg>
-                                    Suspendre
-                                </button>
+                                @if (CanSuspendEmployee(employee))
+                                {
+                                    <button type="button" @onclick="() => SuspendEmployeeAsync(employee.Id)">
+                                        <svg viewBox="0 0 24 24"><path d="M12 3v6"/><path d="M8 7 4 11v5l4 4h8l4-4v-5l-4-4Z"/></svg>
+                                        Suspendre
+                                    </button>
+                                }
                                 <button type="button" class="danger" @onclick="() => DeleteEmployeeAsync(employee.Id)">
                                     <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/></svg>
                                     Supprimer
@@ -761,12 +758,6 @@ else
                                 <strong>@GetEmployeeValidationTitle(SelectedEmployee)</strong>
                                 <p>@GetEmployeeValidationText(SelectedEmployee)</p>
                             </div>
-                            @if (CanApproveEmployee(SelectedEmployee))
-                            {
-                                <button type="button" class="primary-action compact-action" disabled="@IsSaving" @onclick="() => ApproveEmployeeAsync(SelectedEmployee.Id)">
-                                    Valider pour mission
-                                </button>
-                            }
                         </article>
 
                         <article class="employee-profile-card employee-access-card">
@@ -798,6 +789,18 @@ else
 
                     <footer class="employee-upsert-footer">
                         <button type="button" class="secondary-action" @onclick="ClearSelectedEmployee">Annuler</button>
+                        @if (CanApproveEmployee(SelectedEmployee))
+                        {
+                            <button type="button" class="secondary-action employee-footer-validation" disabled="@IsSaving" @onclick="() => ApproveEmployeeAsync(SelectedEmployee.Id)">
+                                Valider pour mission
+                            </button>
+                        }
+                        else if (CanSuspendEmployee(SelectedEmployee))
+                        {
+                            <button type="button" class="secondary-action danger-outline employee-footer-validation" disabled="@IsSaving" @onclick="() => SuspendEmployeeAsync(SelectedEmployee.Id)">
+                                Suspendre
+                            </button>
+                        }
                         <button type="submit" class="primary-action" disabled="@IsSaving">
                             @(IsSaving ? "Enregistrement..." : "Enregistrer les modifications")
                         </button>
@@ -833,7 +836,7 @@ else
     private string? EmployeeSortKey { get; set; } = "name";
     private bool EmployeeSortAscending { get; set; } = true;
     private Guid? OpenEmployeeActionMenuId { get; set; }
-    private static readonly IReadOnlyList<string> EmployeeFilters = ["Tous", "Disponible", "En mission", "Indisponible"];
+    private static readonly IReadOnlyList<string> EmployeeFilters = ["Tous", "Disponible", "En mission", "Hors ligne", "Non actif"];
 
     private IReadOnlyList<CompanyEmployeeResponse> AvailableEmployees => EmployeeRows
         .Where(employee => GetEmployeeOperationalStatus(employee) == "Disponible")
@@ -843,8 +846,8 @@ else
         .Where(employee => GetEmployeeOperationalStatus(employee) == "En mission")
         .ToList();
 
-    private IReadOnlyList<CompanyEmployeeResponse> UnavailableEmployees => EmployeeRows
-        .Where(employee => GetEmployeeOperationalStatus(employee) == "Indisponible")
+    private IReadOnlyList<CompanyEmployeeResponse> InactiveEmployees => EmployeeRows
+        .Where(employee => GetEmployeeOperationalStatus(employee) == "Non actif")
         .ToList();
 
     private IReadOnlyList<CompanyEmployeeResponse> VisibleEmployees
@@ -1435,11 +1438,22 @@ else
             EmployeeRows = EmployeeRows.Select(employee => employee.Id == employeeId
                 ? employee with { Status = "SuspendedByCompany", IsAvailable = false }
                 : employee).ToList();
+            var updatedPreview = EmployeeRows.FirstOrDefault(employee => employee.Id == employeeId);
+            if (updatedPreview is not null)
+            {
+                SelectEmployee(updatedPreview);
+            }
+
             return;
         }
 
         await ApiClient.SuspendCompanyEmployeeAsync(Session.CompanyId, employeeId);
         await LoadAsync();
+        var updated = EmployeeRows.FirstOrDefault(employee => employee.Id == employeeId);
+        if (updated is not null)
+        {
+            SelectEmployee(updated);
+        }
     }
 
     private async Task ApproveEmployeeAsync(Guid employeeId)
@@ -1545,11 +1559,16 @@ else
         return employee.Status is not ("Approved" or "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" or "InterimCandidate");
     }
 
+    private static bool CanSuspendEmployee(CompanyEmployeeResponse employee)
+    {
+        return employee.Status == "Approved";
+    }
+
     private static string GetEmployeeValidationTitle(CompanyEmployeeResponse employee)
     {
         return employee.Status switch
         {
-            "Approved" => "Prestataire valide",
+            "Approved" => "Actif plateforme",
             "ProfileIncomplete" => "Profil a completer",
             "PendingPlatformReview" => "En attente de revue",
             "Invited" => "Invitation envoyee",
@@ -1562,7 +1581,7 @@ else
     {
         return employee.Status switch
         {
-            "Approved" => "Ce prestataire peut recevoir une affectation si ses services correspondent a la mission.",
+            "Approved" => "Ce prestataire est valide. Vous pouvez le rendre disponible, l'affecter ou le suspendre si besoin.",
             "ProfileIncomplete" => "Ajoutez ses informations, au moins un service et sa piece d'identite avant validation.",
             "PendingPlatformReview" => "Le dossier est pret pour verification. Vous pouvez le valider si les pieces sont conformes.",
             "Invited" => "Le prestataire doit activer son acces ou l'entreprise peut finaliser le dossier.",
@@ -1580,7 +1599,7 @@ else
     {
         if (employee.Status is "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" or "PendingPlatformReview" or "ProfileIncomplete")
         {
-            return "Indisponible";
+            return "Non actif";
         }
 
         if (employee.CurrentMission is not null)
@@ -1588,7 +1607,7 @@ else
             return "En mission";
         }
 
-        return employee.IsAvailable ? "Disponible" : "En mission";
+        return employee.IsAvailable ? "Disponible" : "Hors ligne";
     }
 
     private string GetEmployeeStatusBadgeClass(CompanyEmployeeResponse employee)
@@ -1597,7 +1616,34 @@ else
         {
             "Disponible" => "employee-status-badge available",
             "En mission" => "employee-status-badge live",
+            "Hors ligne" => "employee-status-badge offline",
             _ => "employee-status-badge unavailable"
+        };
+    }
+
+    private static string GetEmployeeLifecycleStatus(CompanyEmployeeResponse employee)
+    {
+        return employee.Status switch
+        {
+            "Approved" => "Actif plateforme",
+            "SuspendedByCompany" => "Suspendu entreprise",
+            "SuspendedByPlatform" => "Suspendu plateforme",
+            "Inactive" => "Inactif",
+            "PendingPlatformReview" => "En revue",
+            "ProfileIncomplete" => "Profil a completer",
+            "Invited" => "Invitation envoyee",
+            "InterimCandidate" => "Candidat interim",
+            _ => "A verifier"
+        };
+    }
+
+    private static string GetEmployeeLifecycleClass(CompanyEmployeeResponse employee)
+    {
+        return employee.Status switch
+        {
+            "Approved" => "employee-lifecycle active",
+            "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "employee-lifecycle blocked",
+            _ => "employee-lifecycle pending"
         };
     }
 
@@ -1609,7 +1655,7 @@ else
             classes.Add("selected");
         }
 
-        if (GetEmployeeOperationalStatus(employee) == "Indisponible")
+        if (GetEmployeeOperationalStatus(employee) == "Non actif")
         {
             classes.Add("muted");
         }
@@ -1994,7 +2040,7 @@ else
             "Senior" => "Senior",
             "Expert" => "Expert",
             "Junior" => "Junior",
-            _ => "Niveau a verifier"
+            _ => employee.Services.Count == 0 ? "Service a renseigner" : "Profil metier a completer"
         };
     }
 

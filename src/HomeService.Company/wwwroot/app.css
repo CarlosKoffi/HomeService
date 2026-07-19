@@ -1351,6 +1351,16 @@
     justify-content: center;
 }
 
+.employee-upsert-footer .employee-footer-validation {
+    justify-content: center;
+    min-width: 180px;
+}
+
+.employee-upsert-footer .danger-outline {
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
 .employee-upsert-title {
     align-items: center;
     display: flex;
@@ -8482,6 +8492,7 @@ h3 {
 }
 
 .employee-level,
+.employee-lifecycle,
 .employee-experience-cell small,
 .employee-status-cell small {
     font-size: 10px;
@@ -8503,6 +8514,22 @@ h3 {
 .employee-experience-cell small,
 .employee-status-cell small {
     color: #aaaaaa;
+}
+
+.employee-lifecycle {
+    display: block;
+}
+
+.employee-lifecycle.active {
+    color: #16a34a;
+}
+
+.employee-lifecycle.pending {
+    color: #f59e0b;
+}
+
+.employee-lifecycle.blocked {
+    color: #dc2626;
 }
 
 .employee-zone-cell {
@@ -8546,6 +8573,11 @@ h3 {
 .employee-status-badge.live {
     background: var(--portal-blue-bg);
     color: var(--portal-blue);
+}
+
+.employee-status-badge.offline {
+    background: #f5f5f5;
+    color: #555555;
 }
 
 .employee-status-badge.unavailable {
