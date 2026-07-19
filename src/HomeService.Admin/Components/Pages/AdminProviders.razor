@@ -125,6 +125,7 @@
                     }
                 </div>
                 <div class="provider-doc-actions">
+                    <button type="button" @onclick="() => OpenProvider(provider.Id)">Voir fiche</button>
                     @foreach (var document in provider.Documents.Take(3))
                     {
                         <a href="@ApiClient.GetProviderDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">
@@ -188,6 +189,11 @@
     private void OpenCompany(Guid companyId)
     {
         Navigation.NavigateTo($"/companies/{companyId}");
+    }
+
+    private void OpenProvider(Guid providerId)
+    {
+        Navigation.NavigateTo($"/providers/{providerId}");
     }
 
     private void ShowProviderLogs(AdminProviderSummaryResponse provider)

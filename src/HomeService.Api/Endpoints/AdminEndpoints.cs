@@ -354,6 +354,20 @@ public static class AdminEndpoints
         .WithName("ListAdminProviders")
         .Produces<AdminProviderListResponse>();
 
+        admin.MapGet("/providers/{providerId:guid}", async (
+            Guid providerId,
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.GetProviderAsync(providerId, cancellationToken);
+            return response is null
+                ? Results.NotFound(new { message = "Prestataire introuvable." })
+                : Results.Ok(response);
+        })
+        .WithName("GetAdminProvider")
+        .Produces<AdminProviderDetailResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapGet("/payments", async (
             string? period,
             string? paymentStatus,

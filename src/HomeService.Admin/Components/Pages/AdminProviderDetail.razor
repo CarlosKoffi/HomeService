@@ -1,0 +1,300 @@
+@page "/providers/{ProviderId:guid}"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Prestataire</PageTitle>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+@if (IsLoading)
+{
+    <section class="info-panel">
+        <div>
+            <h1>Chargement...</h1>
+            <p>Ouverture du dossier prestataire.</p>
+        </div>
+    </section>
+}
+else if (Provider is null)
+{
+    <section class="info-panel">
+        <div>
+            <h1>Prestataire introuvable</h1>
+            <p>Le profil n'existe plus ou n'est pas accessible.</p>
+        </div>
+        <button type="button" class="secondary-action" @onclick="BackToList">Retour prestataires</button>
+    </section>
+}
+else
+{
+    <div class="admin-page-heading company-admin-hero">
+        <div>
+            <button type="button" class="link-action" @onclick="BackToList">Retour aux prestataires</button>
+            <p class="eyebrow">Dossier prestataire</p>
+            <h1>@Provider.FullName</h1>
+            <p class="lead">@Provider.PhoneNumber - @(Provider.Email ?? "Email non renseigne")</p>
+        </div>
+        <div class="company-admin-status">
+            <span class="@GetProviderStatusClass(Provider.Status)">@TranslateProviderStatus(Provider.Status)</span>
+            <small>@TranslateEmploymentType(Provider.EmploymentType) - @(Provider.IsAvailable ? "Disponible" : "Non disponible")</small>
+        </div>
+    </div>
+
+    <section class="admin-metric-grid compact">
+        <article>
+            <span>Experience</span>
+            <strong>@Provider.YearsOfExperience an(s)</strong>
+        </article>
+        <article>
+            <span>Services</span>
+            <strong>@Provider.Services.Count</strong>
+        </article>
+        <article>
+            <span>Candidatures</span>
+            <strong>@Provider.AffiliationRequests.Count</strong>
+        </article>
+        <article>
+            <span>Missions</span>
+            <strong>@Provider.MissionAssignments.Count</strong>
+        </article>
+    </section>
+
+    <section class="company-control-strip">
+        <button type="button" class='@GetTabClass("summary")' @onclick='() => SelectTab("summary")'>Resume</button>
+        <button type="button" class='@GetTabClass("services")' @onclick='() => SelectTab("services")'>Services</button>
+        <button type="button" class='@GetTabClass("documents")' @onclick='() => SelectTab("documents")'>Documents</button>
+        <button type="button" class='@GetTabClass("interim")' @onclick='() => SelectTab("interim")'>Interim</button>
+        <button type="button" class='@GetTabClass("missions")' @onclick='() => SelectTab("missions")'>Missions</button>
+        <button type="button" class='@GetTabClass("logs")' @onclick='() => SelectTab("logs")'>Journal</button>
+    </section>
+
+    @if (SelectedTab == "summary")
+    {
+        <section class="company-detail-grid">
+            <article>
+                <h2>Identite</h2>
+                <dl class="detail-list">
+                    <div><dt>Nom</dt><dd>@Provider.FullName</dd></div>
+                    <div><dt>Sexe</dt><dd>@TranslateGender(Provider.Gender)</dd></div>
+                    <div><dt>Naissance</dt><dd>@(Provider.DateOfBirth?.ToString("dd/MM/yyyy") ?? "Non renseignee")</dd></div>
+                    <div><dt>Telephone</dt><dd>@Provider.PhoneNumber</dd></div>
+                    <div><dt>Email</dt><dd>@(Provider.Email ?? "Non renseigne")</dd></div>
+                </dl>
+            </article>
+            <article>
+                <h2>Rattachement</h2>
+                <dl class="detail-list">
+                    <div><dt>Entreprise</dt><dd>@(Provider.CompanyName ?? "Non rattache")</dd></div>
+                    <div><dt>Type</dt><dd>@TranslateEmploymentType(Provider.EmploymentType)</dd></div>
+                    <div><dt>Source</dt><dd>@TranslateRegistrationSource(Provider.RegistrationSource)</dd></div>
+                    <div><dt>Statut</dt><dd>@TranslateProviderStatus(Provider.Status)</dd></div>
+                </dl>
+            </article>
+            <article>
+                <h2>Zone terrain</h2>
+                <dl class="detail-list">
+                    <div><dt>Adresse</dt><dd>@Provider.Address</dd></div>
+                    <div><dt>Zone mission</dt><dd>@FormatLocation(Provider.MissionLatitude, Provider.MissionLongitude)</dd></div>
+                    <div><dt>Rayon</dt><dd>@Provider.MissionRadiusKm km</dd></div>
+                    <div><dt>Position actuelle</dt><dd>@FormatLocation(Provider.CurrentLatitude, Provider.CurrentLongitude)</dd></div>
+                </dl>
+            </article>
+        </section>
+    }
+    else if (SelectedTab == "services")
+    {
+        <section class="company-documents-grid">
+            <article class="operator-list">
+                <header>
+                    <div>
+                        <h2>Services valides entreprise</h2>
+                        <p>@Provider.Services.Count service(s)</p>
+                    </div>
+                </header>
+                @foreach (var service in Provider.Services)
+                {
+                    <article class="operator-row">
+                        <div>
+                            <strong>@service.ServiceName</strong>
+                            <p>@TranslateExperience(service.ExperienceLevel) - @service.YearsOfExperience an(s)</p>
+                            <small>@FormatPrestations(service.Prestations)</small>
+                        </div>
+                        <div class="operator-meta">
+                            <span class="status-pill ok">@TranslatePriceTier(service.PriceTier)</span>
+                            <small>@(service.IsActive ? "Actif" : "Inactif")</small>
+                        </div>
+                    </article>
+                }
+            </article>
+            <article class="operator-list">
+                <header>
+                    <div>
+                        <h2>Services declares candidat</h2>
+                        <p>@Provider.CandidateServices.Count service(s)</p>
+                    </div>
+                </header>
+                @foreach (var service in Provider.CandidateServices)
+                {
+                    <article class="operator-row">
+                        <div>
+                            <strong>@service.ServiceName</strong>
+                            <p>@TranslateExperience(service.ExperienceLevel) - @service.YearsOfExperience an(s)</p>
+                        </div>
+                        <div class="operator-meta">
+                            <span class="status-pill pending">Declare</span>
+                            <small>@(service.IsActive ? "Actif" : "Inactif")</small>
+                        </div>
+                    </article>
+                }
+            </article>
+        </section>
+    }
+    else if (SelectedTab == "documents")
+    {
+        <section class="operator-list">
+            <header>
+                <div>
+                    <h2>Pieces prestataire</h2>
+                    <p>@Provider.Documents.Count document(s)</p>
+                </div>
+            </header>
+            @foreach (var document in Provider.Documents)
+            {
+                <article class="operator-row document-row">
+                    <div>
+                        <strong>@TranslateDocumentType(document.DocumentType)</strong>
+                        <p>@document.OriginalFileName</p>
+                    </div>
+                    <div class="operator-actions">
+                        <a href="@ApiClient.GetProviderDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">Voir la piece</a>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "interim")
+    {
+        <section class="operator-list">
+            <header>
+                <div>
+                    <h2>Demandes d'affiliation</h2>
+                    <p>@Provider.AffiliationRequests.Count demande(s)</p>
+                </div>
+            </header>
+            @foreach (var request in Provider.AffiliationRequests)
+            {
+                <article class="operator-row">
+                    <div>
+                        <strong>@request.CompanyName</strong>
+                        <p>@(request.Message ?? "Aucun message")</p>
+                        <small>@(request.ReviewNote ?? "Pas de note de revue")</small>
+                    </div>
+                    <div class="operator-meta">
+                        <span class="@GetInterimStatusClass(request.Status)">@TranslateInterimStatus(request.Status)</span>
+                        <small>@FormatDate(request.RequestedAt)</small>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "missions")
+    {
+        <section class="operator-list">
+            <header>
+                <div>
+                    <h2>Affectations mission</h2>
+                    <p>@Provider.MissionAssignments.Count ligne(s)</p>
+                </div>
+            </header>
+            @foreach (var assignment in Provider.MissionAssignments)
+            {
+                <article class="operator-row">
+                    <div>
+                        <strong>@assignment.ServiceName</strong>
+                        <p>@assignment.CompanyName</p>
+                        <small>@(assignment.RefusalComment ?? "Aucun commentaire")</small>
+                    </div>
+                    <div class="operator-meta">
+                        <span class="@GetAssignmentStatusClass(assignment.Status)">@TranslateAssignmentStatus(assignment.Status)</span>
+                        <small>@TranslateLocationStatus(assignment.ArrivalVerificationStatus)</small>
+                    </div>
+                    <div class="operator-actions">
+                        <button type="button" @onclick="() => OpenMission(assignment.MissionId)">Voir mission</button>
+                    </div>
+                </article>
+            }
+        </section>
+    }
+    else if (SelectedTab == "logs")
+    {
+        <AdminAuditLogPanel
+            ContextType="Provider"
+            ContextId="Provider.Id"
+            Eyebrow="Journal prestataire"
+            Title="@Provider.FullName"
+            Subtitle="Connexions, disponibilite, documents, affiliations et missions rattachees." />
+    }
+}
+
+@code {
+    [Parameter] public Guid ProviderId { get; set; }
+
+    private AdminProviderDetailResponse? Provider { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+    private string SelectedTab { get; set; } = "summary";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Provider = await ApiClient.GetAdminProviderAsync(ProviderId);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger le prestataire. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void BackToList() => Navigation.NavigateTo("/providers");
+    private void OpenMission(Guid missionId) => Navigation.NavigateTo($"/missions/{missionId}");
+    private void SelectTab(string tab) => SelectedTab = tab;
+    private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
+
+    private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non renseigne";
+    private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    private static string FormatLocation(decimal? latitude, decimal? longitude) => latitude is null || longitude is null ? "Non renseignee" : $"{latitude}, {longitude}";
+    private static string FormatPrestations(IReadOnlyList<string> prestations) => prestations.Count == 0 ? "Toutes les prestations du service" : string.Join(", ", prestations);
+
+    private static string TranslateGender(string gender) => gender switch { "Male" => "Homme", "Female" => "Femme", "Unspecified" => "Non renseigne", _ => gender };
+    private static string TranslateEmploymentType(string value) => value switch { "TemporaryWorker" => "Interimaire", "CompanyEmployee" => "Employe", _ => value };
+    private static string TranslateRegistrationSource(string value) => value switch { "SelfRegistration" => "Inscription libre", "CompanyInvitation" => "Invitation entreprise", _ => value };
+    private static string TranslateProviderStatus(string status) => status switch { "Approved" => "Valide", "Invited" => "Invite", "SuspendedByCompany" => "Suspendu entreprise", "SuspendedByPlatform" => "Suspendu plateforme", "InterimCandidate" => "Candidat interim", "Inactive" => "Inactif", _ => status };
+    private static string TranslateExperience(string value) => value switch { "Beginner" => "Debutant", "Confirmed" => "Confirme", "Expert" => "Expert", _ => value };
+    private static string TranslatePriceTier(string value) => value switch { "Premium" => "Premium", "Normal" => "Normal", _ => value };
+    private static string TranslateDocumentType(string type) => type switch { "Photo" => "Photo", "IdentityDocument" => "Piece ID", "Diploma" => "Diplome", _ => type };
+    private static string TranslateInterimStatus(string status) => status switch { "Pending" => "A evaluer", "Approved" => "Validee", "Rejected" => "Refusee", "Cancelled" => "Annulee", _ => status };
+    private static string TranslateAssignmentStatus(string status) => status switch { "Offered" => "Proposee", "Accepted" => "Acceptee", "Refused" => "Refusee", "Expired" => "Expiree", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", _ => status };
+    private static string TranslateLocationStatus(string status) => status switch { "Verified" => "Arrivee verifiee", "OutsideTolerance" => "Hors zone", "MissingProviderLocation" => "Position manquante", "MissingMissionLocation" => "Mission sans position", "LowAccuracy" => "Precision faible", "InvalidProviderLocation" => "Position invalide", _ => "Non verifiee" };
+
+    private static string GetProviderStatusClass(string status) => status switch { "Approved" => "status-pill ok", "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetInterimStatusClass(string status) => status switch { "Approved" => "status-pill ok", "Rejected" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
+}

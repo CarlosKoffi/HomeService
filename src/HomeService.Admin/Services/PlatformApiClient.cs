@@ -94,6 +94,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminProviderListResponse>($"/api/admin/providers{suffix}", cancellationToken);
     }
 
+    public async Task<AdminProviderDetailResponse?> GetAdminProviderAsync(Guid providerId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminProviderDetailResponse>($"/api/admin/providers/{providerId}", cancellationToken);
+    }
+
     public async Task<AdminPaymentListResponse?> GetAdminPaymentsAsync(
         string? period,
         string? paymentStatus,

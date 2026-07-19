@@ -607,6 +607,156 @@ public sealed class AdminQueryService(IAppDbContext db)
         return new AdminProviderListResponse(providers, stats);
     }
 
+    public async Task<AdminProviderDetailResponse?> GetProviderAsync(Guid providerId, CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers
+            .AsNoTracking()
+            .Where(provider => provider.Id == providerId)
+            .Select(provider => new
+            {
+                provider.Id,
+                provider.CompanyId,
+                CompanyName = provider.Company == null ? null : provider.Company.Name,
+                provider.FirstName,
+                provider.LastName,
+                provider.PhoneNumber,
+                provider.Email,
+                provider.DateOfBirth,
+                provider.Gender,
+                provider.EmploymentType,
+                provider.Status,
+                provider.RegistrationSource,
+                provider.IsAvailable,
+                provider.YearsOfExperience,
+                provider.Address,
+                provider.MissionLatitude,
+                provider.MissionLongitude,
+                provider.MissionRadiusKm,
+                provider.CurrentLatitude,
+                provider.CurrentLongitude,
+                provider.CreatedAt
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (provider is null)
+        {
+            return null;
+        }
+
+        var services = await db.ProviderServices
+            .AsNoTracking()
+            .Where(service => service.ProviderId == providerId)
+            .OrderBy(service => service.Service!.Name)
+            .Select(service => new AdminProviderServiceDetailResponse(
+                service.ServiceId,
+                service.Service!.Name,
+                service.ExperienceLevel.ToString(),
+                service.YearsOfExperience,
+                service.PriceTier.ToString(),
+                service.IsActive,
+                service.Prestations
+                    .Where(prestation => prestation.IsActive)
+                    .OrderBy(prestation => prestation.ServicePrestation!.Name)
+                    .Select(prestation => prestation.ServicePrestation!.Name)
+                    .ToList()))
+            .ToListAsync(cancellationToken);
+
+        var candidateServices = await db.ProviderCandidateServices
+            .AsNoTracking()
+            .Where(service => service.ProviderId == providerId)
+            .OrderBy(service => service.Service!.Name)
+            .Select(service => new AdminProviderServiceDetailResponse(
+                service.ServiceId,
+                service.Service!.Name,
+                service.ExperienceLevel.ToString(),
+                service.YearsOfExperience,
+                "Normal",
+                service.IsActive,
+                Array.Empty<string>()))
+            .ToListAsync(cancellationToken);
+
+        var documents = await db.ProviderDocuments
+            .AsNoTracking()
+            .Where(document => document.ProviderId == providerId)
+            .OrderBy(document => document.DocumentType)
+            .Select(document => new AdminProviderDocumentSummaryResponse(
+                document.Id,
+                document.DocumentType.ToString(),
+                document.OriginalFileName,
+                document.ContentType,
+                $"/api/admin/provider-documents/{document.Id}/preview",
+                document.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var affiliationRequests = await db.ProviderAffiliationRequests
+            .AsNoTracking()
+            .Where(request => request.ProviderId == providerId)
+            .OrderByDescending(request => request.RequestedAt)
+            .Select(request => new AdminProviderAffiliationRequestDetailResponse(
+                request.Id,
+                request.CompanyId,
+                request.Company!.Name,
+                request.Status.ToString(),
+                request.Message,
+                request.ReviewNote,
+                request.RequestedAt,
+                request.ReviewedAt))
+            .ToListAsync(cancellationToken);
+
+        var assignments = await (
+            from assignment in db.ProviderMissionAssignments.AsNoTracking()
+            join mission in db.Missions.AsNoTracking() on assignment.MissionId equals mission.Id
+            join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+            join company in db.Companies.AsNoTracking() on assignment.CompanyId equals company.Id
+            where assignment.ProviderId == providerId
+            orderby assignment.CreatedAt descending
+            select new AdminProviderMissionAssignmentDetailResponse(
+                assignment.Id,
+                assignment.MissionId,
+                service.Name,
+                company.Name,
+                assignment.Status.ToString(),
+                assignment.ExpiresAt,
+                assignment.RespondedAt,
+                assignment.StartedAt,
+                assignment.CompletedAt,
+                assignment.RefusalReason == null ? null : assignment.RefusalReason.ToString(),
+                assignment.RefusalComment,
+                assignment.ArrivalVerificationStatus.ToString(),
+                assignment.ArrivalDistanceMeters))
+            .Take(100)
+            .ToListAsync(cancellationToken);
+
+        return new AdminProviderDetailResponse(
+            provider.Id,
+            provider.CompanyId,
+            provider.CompanyName,
+            $"{provider.FirstName} {provider.LastName}".Trim(),
+            provider.FirstName,
+            provider.LastName,
+            provider.PhoneNumber,
+            provider.Email,
+            provider.DateOfBirth,
+            provider.Gender.ToString(),
+            provider.EmploymentType.ToString(),
+            provider.Status.ToString(),
+            provider.RegistrationSource.ToString(),
+            provider.IsAvailable,
+            provider.YearsOfExperience,
+            provider.Address,
+            provider.MissionLatitude,
+            provider.MissionLongitude,
+            provider.MissionRadiusKm,
+            provider.CurrentLatitude,
+            provider.CurrentLongitude,
+            provider.CreatedAt,
+            services,
+            candidateServices,
+            documents,
+            affiliationRequests,
+            assignments);
+    }
+
     public async Task<AdminPaymentListResponse> ListPaymentsAsync(
         string? period,
         string? paymentStatus,
