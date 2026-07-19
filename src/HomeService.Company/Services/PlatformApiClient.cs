@@ -60,8 +60,10 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
         var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"');
 
-        return new ProviderDocumentPreviewResult(content, contentType);
+        return new ProviderDocumentPreviewResult(content, contentType, fileName);
     }
 
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(CancellationToken cancellationToken = default)
@@ -786,7 +788,7 @@ public sealed record EmployeeSaveResult(bool IsSuccess, string? ErrorMessage);
 
 public sealed record EmployeeInvitationCodeResult(bool IsSuccess, CreateCompanyEmployeeResult? Invitation, string? ErrorMessage);
 
-public sealed record ProviderDocumentPreviewResult(byte[] Content, string ContentType);
+public sealed record ProviderDocumentPreviewResult(byte[] Content, string ContentType, string? FileName);
 
 public sealed class CompanyEmployeeFormModel
 {
