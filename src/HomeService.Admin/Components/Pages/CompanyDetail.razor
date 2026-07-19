@@ -137,6 +137,9 @@ else
                         <span>@FormatSkills(provider.Services, provider.Prestations)</span>
                         <span>@provider.DocumentCount document(s)</span>
                     </div>
+                    <div class="operator-actions">
+                        <button type="button" @onclick="() => OpenProvider(provider.Id)">Ouvrir</button>
+                    </div>
                 </article>
             }
         </section>
@@ -169,6 +172,9 @@ else
                         <span>@(request.Message ?? "Aucun message")</span>
                         <span>@(request.ReviewNote ?? "Pas de note")</span>
                     </div>
+                    <div class="operator-actions">
+                        <button type="button" @onclick="() => OpenProvider(request.ProviderId)">Voir le profil</button>
+                    </div>
                 </article>
             }
         </section>
@@ -197,6 +203,9 @@ else
                         <span>@(mission.ProviderName ?? "Prestataire non affecte")</span>
                         <span>@FormatMoney(mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount, mission.Currency)</span>
                         <span>@FormatDate(mission.ScheduledFor)</span>
+                    </div>
+                    <div class="operator-actions">
+                        <button type="button" @onclick="() => OpenMission(mission.Id)">Ouvrir</button>
                     </div>
                 </article>
             }
@@ -248,6 +257,7 @@ else
                         </div>
                         <div class="operator-actions">
                             <a href="@ApiClient.GetProviderDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">Voir la piece</a>
+                            <button type="button" @onclick="() => OpenProvider(document.ProviderId)">Voir prestataire</button>
                         </div>
                     </article>
                 }
@@ -331,6 +341,16 @@ else
     private void SelectTab(string tab)
     {
         SelectedTab = tab;
+    }
+
+    private void OpenProvider(Guid providerId)
+    {
+        Navigation.NavigateTo($"/providers/{providerId:D}");
+    }
+
+    private void OpenMission(Guid missionId)
+    {
+        Navigation.NavigateTo($"/missions/{missionId:D}");
     }
 
     private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
