@@ -1234,6 +1234,53 @@ h3 {
     color: #fff;
 }
 
+.company-admin-hero {
+    align-items: end;
+}
+
+.company-admin-status {
+    align-items: flex-end;
+    display: grid;
+    gap: .4rem;
+    justify-items: end;
+}
+
+.company-admin-status small {
+    color: #64748b;
+    font-weight: 750;
+}
+
+.company-admin-kpis {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    margin: 1rem 0 1.1rem;
+}
+
+.company-admin-kpis article {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, .06);
+    display: grid;
+    gap: .2rem;
+    padding: .95rem 1rem;
+}
+
+.company-admin-kpis span,
+.company-admin-kpis small {
+    color: #64748b;
+    font-size: .75rem;
+    font-weight: 850;
+    text-transform: uppercase;
+}
+
+.company-admin-kpis strong {
+    color: #000;
+    font-size: 1.45rem;
+    line-height: 1.05;
+}
+
 .company-detail-grid {
     display: grid;
     gap: 1rem;
@@ -1292,6 +1339,38 @@ h3 {
 
 .timeline-panel small {
     color: #64748b;
+}
+
+.company-documents-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+.company-notification-list article {
+    border-left: 4px solid #2563eb;
+}
+
+.company-notification-list article.warning,
+.company-notification-list article.pending {
+    border-left-color: #f97316;
+}
+
+.company-notification-list article.danger,
+.company-notification-list article.error {
+    border-left-color: #dc2626;
+}
+
+.company-notification-list article.success {
+    border-left-color: #00813c;
+}
+
+.company-notification-list article.read {
+    opacity: .76;
+}
+
+.company-notification-list article.unread {
+    box-shadow: 0 14px 34px rgba(37, 99, 235, .12);
 }
 
 .service-catalog {

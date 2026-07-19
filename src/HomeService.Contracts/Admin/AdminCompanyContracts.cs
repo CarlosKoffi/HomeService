@@ -48,7 +48,44 @@ public sealed record AdminCompanyDetailResponse(
     IReadOnlyList<AdminCompanyProviderResponse> Providers,
     IReadOnlyList<AdminCompanyMissionResponse> Missions,
     IReadOnlyList<AdminCompanyDocumentResponse> Documents,
-    IReadOnlyList<AdminCompanyApplicationTimelineResponse> Timeline);
+    IReadOnlyList<AdminCompanyApplicationTimelineResponse> Timeline)
+{
+    public AdminCompanyOperationsSummaryResponse Summary { get; init; } = AdminCompanyOperationsSummaryResponse.Empty;
+    public IReadOnlyList<AdminCompanyInterimRequestResponse> InterimRequests { get; init; } = [];
+    public IReadOnlyList<AdminCompanyApplicationDocumentResponse> ApplicationDocuments { get; init; } = [];
+    public IReadOnlyList<AdminCompanyNotificationResponse> Notifications { get; init; } = [];
+}
+
+public sealed record AdminCompanyOperationsSummaryResponse(
+    int ProviderCount,
+    int ActiveProviderCount,
+    int InterimProviderCount,
+    int PendingInterimRequestCount,
+    int OpenMissionCount,
+    int CompletedMissionCount,
+    int DisputedMissionCount,
+    int CompanyDocumentCount,
+    int ValidCompanyDocumentCount,
+    int ProviderDocumentCount,
+    int UnreadNotificationCount,
+    int PendingPaymentAmount,
+    string Currency)
+{
+    public static AdminCompanyOperationsSummaryResponse Empty { get; } = new(
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        "XOF");
+}
 
 public sealed record AdminCompanyProviderResponse(
     Guid Id,
@@ -83,6 +120,31 @@ public sealed record AdminCompanyMissionResponse(
     string? ServiceAddress,
     DateTimeOffset CreatedAt);
 
+public sealed record AdminCompanyInterimRequestResponse(
+    Guid Id,
+    Guid ProviderId,
+    string ProviderName,
+    string PhoneNumber,
+    string? Email,
+    string Gender,
+    string Status,
+    string? Message,
+    string? ReviewNote,
+    IReadOnlyList<string> Services,
+    IReadOnlyList<string> Prestations,
+    DateTimeOffset RequestedAt,
+    DateTimeOffset? ReviewedAt);
+
+public sealed record AdminCompanyApplicationDocumentResponse(
+    Guid Id,
+    string DocumentType,
+    string OriginalFileName,
+    string ContentType,
+    string ReviewStatus,
+    string? ReviewNote,
+    string PreviewUrl,
+    DateTimeOffset CreatedAt);
+
 public sealed record AdminCompanyDocumentResponse(
     Guid Id,
     Guid ProviderId,
@@ -92,6 +154,16 @@ public sealed record AdminCompanyDocumentResponse(
     string ContentType,
     string PreviewUrl,
     DateTimeOffset CreatedAt);
+
+public sealed record AdminCompanyNotificationResponse(
+    Guid Id,
+    string Type,
+    string Title,
+    string Message,
+    string Tone,
+    bool IsRead,
+    string? ActionUrl,
+    DateTimeOffset OccurredAt);
 
 public sealed record AdminCompanyApplicationTimelineResponse(
     Guid Id,

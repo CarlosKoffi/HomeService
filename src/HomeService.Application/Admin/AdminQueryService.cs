@@ -148,6 +148,37 @@ public sealed class AdminQueryService(IAppDbContext db)
                 provider.CreatedAt))
             .ToListAsync(cancellationToken);
 
+        var interimRequests = await db.ProviderAffiliationRequests
+            .AsNoTracking()
+            .Where(request => request.CompanyId == companyId)
+            .OrderByDescending(request => request.RequestedAt)
+            .Select(request => new AdminCompanyInterimRequestResponse(
+                request.Id,
+                request.ProviderId,
+                (request.Provider!.FirstName + " " + request.Provider.LastName).Trim(),
+                request.Provider.PhoneNumber,
+                request.Provider.Email,
+                request.Provider.Gender.ToString(),
+                request.Status.ToString(),
+                request.Message,
+                request.ReviewNote,
+                request.Provider.Services
+                    .Where(service => service.IsActive)
+                    .OrderBy(service => service.Service!.Name)
+                    .Select(service => service.Service!.Name)
+                    .ToList(),
+                request.Provider.Services
+                    .Where(service => service.IsActive)
+                    .SelectMany(service => service.Prestations)
+                    .Where(prestation => prestation.IsActive)
+                    .OrderBy(prestation => prestation.ServicePrestation!.Name)
+                    .Select(prestation => prestation.ServicePrestation!.Name)
+                    .ToList(),
+                request.RequestedAt,
+                request.ReviewedAt))
+            .Take(100)
+            .ToListAsync(cancellationToken);
+
         var missions = await (
             from mission in db.Missions.AsNoTracking()
             join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
@@ -175,6 +206,22 @@ public sealed class AdminQueryService(IAppDbContext db)
             .Take(100)
             .ToListAsync(cancellationToken);
 
+        var applicationDocuments = await db.CompanyApplicationDocuments
+            .AsNoTracking()
+            .Where(document => document.CompanyApplication != null && document.CompanyApplication.CompanyId == companyId)
+            .OrderBy(document => document.DocumentType)
+            .ThenByDescending(document => document.CreatedAt)
+            .Select(document => new AdminCompanyApplicationDocumentResponse(
+                document.Id,
+                document.DocumentType.ToString(),
+                document.OriginalFileName,
+                document.ContentType,
+                document.ReviewStatus.ToString(),
+                document.ReviewNote,
+                $"/api/admin/company-application-documents/{document.Id}/preview",
+                document.CreatedAt))
+            .ToListAsync(cancellationToken);
+
         var documents = await db.ProviderDocuments
             .AsNoTracking()
             .Where(document => document.Provider != null && document.Provider.CompanyId == companyId)
@@ -191,6 +238,22 @@ public sealed class AdminQueryService(IAppDbContext db)
                 document.CreatedAt))
             .ToListAsync(cancellationToken);
 
+        var notifications = await db.CompanyPortalNotifications
+            .AsNoTracking()
+            .Where(notification => notification.CompanyId == companyId)
+            .OrderByDescending(notification => notification.OccurredAt)
+            .Select(notification => new AdminCompanyNotificationResponse(
+                notification.Id,
+                notification.Type,
+                notification.Title,
+                notification.Message,
+                notification.Tone,
+                notification.IsRead,
+                notification.ActionUrl,
+                notification.OccurredAt))
+            .Take(50)
+            .ToListAsync(cancellationToken);
+
         var timeline = await db.CompanyApplicationStatusHistories
             .AsNoTracking()
             .Where(history => history.CompanyApplication!.CompanyId == companyId)
@@ -204,6 +267,23 @@ public sealed class AdminQueryService(IAppDbContext db)
                 history.ChangedAt))
             .Take(50)
             .ToListAsync(cancellationToken);
+
+        var summary = new AdminCompanyOperationsSummaryResponse(
+            providers.Count,
+            providers.Count(provider => provider.Status == ProviderStatus.Approved.ToString()),
+            providers.Count(provider => provider.EmploymentType == ProviderEmploymentType.TemporaryWorker.ToString()),
+            interimRequests.Count(request => request.Status == ProviderAffiliationRequestStatus.Pending.ToString()),
+            missions.Count(mission => mission.Status is not "Completed" and not "Cancelled"),
+            missions.Count(mission => mission.Status == MissionStatus.Completed.ToString()),
+            missions.Count(mission => mission.Status == MissionStatus.Disputed.ToString()),
+            applicationDocuments.Count,
+            applicationDocuments.Count(document => document.ReviewStatus == DocumentReviewStatus.Approved.ToString()),
+            documents.Count,
+            notifications.Count(notification => !notification.IsRead),
+            missions
+                .Where(mission => mission.PaymentStatus != PaymentStatus.Paid.ToString())
+                .Sum(mission => mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0),
+            missions.FirstOrDefault()?.Currency ?? "XOF");
 
         return new AdminCompanyDetailResponse(
             company.Id,
@@ -225,7 +305,13 @@ public sealed class AdminQueryService(IAppDbContext db)
             providers,
             missions,
             documents,
-            timeline);
+            timeline)
+        {
+            Summary = summary,
+            InterimRequests = interimRequests,
+            ApplicationDocuments = applicationDocuments,
+            Notifications = notifications
+        };
     }
 
     public async Task<AdminMissionListResponse> ListMissionsAsync(
