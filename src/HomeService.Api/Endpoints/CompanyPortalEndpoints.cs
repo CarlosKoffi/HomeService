@@ -810,12 +810,11 @@ public static class CompanyPortalEndpoints
                 return Results.BadRequest(new { message = "Aucun fichier recu." });
             }
 
-            var oldDocuments = await db.ProviderDocuments
+            var oldStoragePaths = await db.ProviderDocuments
+                .AsNoTracking()
                 .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
-                .ToListAsync(cancellationToken);
-            var oldStoragePaths = oldDocuments
                 .Select(document => document.StoragePath)
-                .ToList();
+                .ToListAsync(cancellationToken);
 
             StoredCompanyProviderDocument stored;
             try
@@ -827,7 +826,10 @@ public static class CompanyPortalEndpoints
                 return Results.BadRequest(new { message = exception.Message });
             }
 
-            db.ProviderDocuments.RemoveRange(oldDocuments);
+            await db.ProviderDocuments
+                .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
+                .ExecuteDeleteAsync(cancellationToken);
+
             db.ProviderDocuments.Add(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
             db.AuditLogEntries.Add(AuditLogFactory.Create(
                 AuditActor.Company(companyId, null),
@@ -836,7 +838,7 @@ public static class CompanyPortalEndpoints
                 null,
                 "Piece prestataire ajoutee ou remplacee.",
                 HttpAuditContextFactory.Create(httpRequest),
-                before: new { ReplacedDocumentCount = oldDocuments.Count, DocumentType = documentType },
+                before: new { ReplacedDocumentCount = oldStoragePaths.Count, DocumentType = documentType },
                 after: new { stored.DocumentType, stored.OriginalFileName, stored.ContentType }));
             try
             {
