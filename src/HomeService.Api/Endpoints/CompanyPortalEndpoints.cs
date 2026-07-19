@@ -783,19 +783,13 @@ public static class CompanyPortalEndpoints
             HttpRequest httpRequest,
             IAppDbContext db,
             CompanyProviderUploadService uploadService,
+            CompanyEmployeeManagementService employeeManagementService,
             ILogger<CompanyProviderUploadService> logger,
             CancellationToken cancellationToken) =>
         {
             if (!httpRequest.HasFormContentType)
             {
                 return Results.BadRequest(new { message = "La piece doit etre envoyee au format multipart/form-data." });
-            }
-
-            var provider = await db.Providers
-                .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
-            if (provider is null)
-            {
-                return Results.NotFound(new { message = "Employe introuvable." });
             }
 
             var form = await httpRequest.ReadFormAsync(cancellationToken);
@@ -810,16 +804,10 @@ public static class CompanyPortalEndpoints
                 return Results.BadRequest(new { message = "Aucun fichier recu." });
             }
 
-            var oldStoragePaths = await db.ProviderDocuments
-                .AsNoTracking()
-                .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
-                .Select(document => document.StoragePath)
-                .ToListAsync(cancellationToken);
-
             StoredCompanyProviderDocument stored;
             try
             {
-                stored = await uploadService.SaveOneAsync(companyId, provider.Id, documentType, file, cancellationToken);
+                stored = await uploadService.SaveOneAsync(companyId, employeeId, documentType, file, cancellationToken);
             }
             catch (InvalidOperationException exception)
             {
@@ -834,24 +822,33 @@ public static class CompanyPortalEndpoints
                     statusCode: StatusCodes.Status500InternalServerError);
             }
 
-            await db.ProviderDocuments
-                .Where(document => document.ProviderId == provider.Id && document.DocumentType == documentType)
-                .ExecuteDeleteAsync(cancellationToken);
+            var result = await employeeManagementService.ReplaceDocumentAsync(
+                companyId,
+                employeeId,
+                stored.DocumentType,
+                stored.OriginalFileName,
+                stored.StoragePath,
+                stored.ContentType,
+                cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                return Results.NotFound(new { message = result.Message });
+            }
 
-            db.ProviderDocuments.Add(new ProviderDocument(provider.Id, stored.DocumentType, stored.OriginalFileName, stored.StoragePath, stored.ContentType));
             db.AuditLogEntries.Add(AuditLogFactory.Create(
                 AuditActor.Company(companyId, null),
                 "CompanyEmployeeDocumentUploaded",
                 nameof(ProviderDocument),
-                null,
+                result.Document!.Id,
                 "Piece prestataire ajoutee ou remplacee.",
                 HttpAuditContextFactory.Create(httpRequest),
-                before: new { ReplacedDocumentCount = oldStoragePaths.Count, DocumentType = documentType },
-                after: new { stored.DocumentType, stored.OriginalFileName, stored.ContentType }));
+                before: result.Before,
+                after: result.After));
             try
             {
                 await db.SaveChangesAsync(cancellationToken);
-                foreach (var oldStoragePath in oldStoragePaths)
+                foreach (var oldStoragePath in result.ReplacedStoragePaths.Where(path => !string.Equals(path, stored.StoragePath, StringComparison.OrdinalIgnoreCase)))
                 {
                     TryDeleteProviderFile(uploadService, oldStoragePath);
                 }

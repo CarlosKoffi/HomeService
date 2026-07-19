@@ -29,4 +29,12 @@ public sealed class ProviderDocument : AuditableEntity
     public string OriginalFileName { get; private set; } = string.Empty;
     public string StoragePath { get; private set; } = string.Empty;
     public string ContentType { get; private set; } = string.Empty;
+
+    public void ReplaceFile(string originalFileName, string storagePath, string contentType)
+    {
+        OriginalFileName = originalFileName.Trim();
+        StoragePath = storagePath.Trim();
+        ContentType = contentType.Trim();
+        Touch();
+    }
 }
