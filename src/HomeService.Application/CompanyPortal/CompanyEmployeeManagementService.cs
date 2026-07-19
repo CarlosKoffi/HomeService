@@ -112,8 +112,10 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             var allowedPrestationIds = activePrestationsByService.TryGetValue(providerService.ServiceId, out var ids)
                 ? ids
                 : new HashSet<Guid>();
-            providerService.SyncPrestations(requestedService.ServicePrestationIds
-                .Where(allowedPrestationIds.Contains));
+            await SyncProviderServicePrestationsAsync(
+                providerService,
+                requestedService.ServicePrestationIds.Where(allowedPrestationIds.Contains),
+                cancellationToken);
         }
 
         return CompanyEmployeeOperationResult.Ok(
@@ -242,5 +244,30 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         return Enum.TryParse<ProviderServicePriceTier>(value, true, out var tier)
             ? tier
             : ProviderServicePriceTier.Normal;
+    }
+
+    private async Task SyncProviderServicePrestationsAsync(
+        ProviderService providerService,
+        IEnumerable<Guid> requestedPrestationIds,
+        CancellationToken cancellationToken)
+    {
+        var requestedIds = requestedPrestationIds
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList();
+
+        if (providerService.Id == Guid.Empty)
+        {
+            return;
+        }
+
+        await db.ProviderServicePrestations
+            .Where(prestation => prestation.ProviderServiceId == providerService.Id)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        foreach (var requestedId in requestedIds)
+        {
+            db.ProviderServicePrestations.Add(new ProviderServicePrestation(providerService.Id, requestedId));
+        }
     }
 }
