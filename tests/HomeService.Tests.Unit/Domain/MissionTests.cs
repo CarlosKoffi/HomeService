@@ -87,7 +87,16 @@ public sealed class MissionTests
     {
         var mission = CreateMission(60);
 
-        mission.AssignWithCompanyQuote(ProviderId, CompanyId, quotedAmount: 7500, maxAllowedAmount: 10000, overMaxJustification: null);
+        mission.AssignWithCompanyQuote(
+            ProviderId,
+            CompanyId,
+            quotedAmount: 7500,
+            maxAllowedAmount: 10000,
+            overMaxJustification: null,
+            partsEstimateAmount: 2000,
+            partsDescription: "Joint et flexible",
+            assignmentSource: MissionAssignmentSource.Kaza,
+            isInterimProvider: true);
 
         Assert.Equal(ProviderId, mission.ProviderId);
         Assert.Equal(CompanyId, mission.CompanyId);
@@ -95,6 +104,11 @@ public sealed class MissionTests
         Assert.Equal(7500, mission.EstimatedTotalAmount);
         Assert.Null(mission.HourlyRateAmount);
         Assert.Null(mission.CompanyQuoteJustification);
+        Assert.Equal(2000, mission.PartsEstimateAmount);
+        Assert.Equal("Joint et flexible", mission.PartsDescription);
+        Assert.Equal(MissionAssignmentSource.Kaza, mission.AssignmentSource);
+        Assert.True(mission.IsInterimProviderSnapshot);
+        Assert.Equal(MissionQuoteStatus.Submitted, mission.QuoteStatus);
         Assert.NotNull(mission.CompanyQuotedAt);
         Assert.Equal(MissionStatus.Assigned, mission.Status);
     }
@@ -128,6 +142,7 @@ public sealed class MissionTests
         mission.AcceptCompanyQuote();
 
         Assert.NotNull(mission.CustomerQuoteAcceptedAt);
+        Assert.Equal(MissionQuoteStatus.Accepted, mission.QuoteStatus);
     }
 
     [Fact]
@@ -149,14 +164,48 @@ public sealed class MissionTests
         var mission = CreateAssignedMission();
         mission.MarkProviderAccepted(ProviderId, CompanyId);
 
-        mission.ConfirmByCustomer(platformCommissionAmount: 1200, transportFeeAmount: 800);
+        mission.ConfirmByCustomer(
+            platformCommissionAmount: 1200,
+            transportFeeAmount: 800,
+            platformCommissionRateBasisPoints: 1500,
+            kazaAssignmentCommissionRateBasisPoints: 500);
 
         Assert.Equal(PaymentStatus.Authorized, mission.PaymentStatus);
         Assert.Equal(1200, mission.PlatformCommissionAmount);
+        Assert.Equal(1500, mission.PlatformCommissionRateBasisPoints);
+        Assert.Equal(500, mission.KazaAssignmentCommissionRateBasisPoints);
+        Assert.Equal(300, mission.CompanyPayoutAmount);
         Assert.Equal(800, mission.TransportFeeAmount);
         Assert.NotNull(mission.CustomerConfirmedAt);
         Assert.NotNull(mission.ContactDetailsReleasedAt);
         Assert.True(mission.CanRevealContactDetails);
+    }
+
+    [Fact]
+    public void Complete_WhenMissionHasCompanyQuote_KeepsQuotedAmountAsFinalTotal()
+    {
+        var mission = CreateMission(90);
+        mission.AssignWithCompanyQuote(ProviderId, CompanyId, quotedAmount: 9000, maxAllowedAmount: 10000, overMaxJustification: null);
+        mission.MarkProviderAccepted(ProviderId, CompanyId);
+        mission.ConfirmByCustomer(platformCommissionAmount: 1800, transportFeeAmount: 0, platformCommissionRateBasisPoints: 2000);
+        mission.Start(ProviderId, CompanyId);
+
+        mission.Complete(actualDurationMinutes: 30);
+
+        Assert.Equal(9000, mission.FinalTotalAmount);
+        Assert.Equal(7200, mission.CompanyPayoutAmount);
+    }
+
+    [Fact]
+    public void UpdateCustomerRequest_WhenQuoteRequired_MarksQuoteAsRequested()
+    {
+        var mission = CreateMission(60);
+
+        mission.UpdateCustomerRequest(" Robinet qui fuit ", requiresCompanyQuote: true);
+
+        Assert.Equal("Robinet qui fuit", mission.Description);
+        Assert.True(mission.RequiresCompanyQuote);
+        Assert.Equal(MissionQuoteStatus.Requested, mission.QuoteStatus);
     }
 
     [Fact]

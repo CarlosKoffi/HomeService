@@ -51,6 +51,12 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 027 | `027_add_provider_email_for_company_employees.sql` | Provider email field for company employee management |
 | 028 | `028_add_service_price_ranges_and_mission_quotes.sql` | Service/prestation price ranges and company mission quote fields |
 | 029 | `029_update_translation_admin_labels.sql` | Simplify admin localization wording to translations only |
+| 030 | `030_add_company_portal_notifications.sql` | Company portal notifications |
+| 031 | `031_add_company_application_service_prestation_match.sql` | Company requested service matching to services/prestations |
+| 032 | `032_add_company_interim_applications_flag.sql` | Company opt-in flag for interim applications |
+| 033 | `033_backfill_interim_affiliation_requests.sql` | Backfill interim affiliation requests |
+| 034 | `034_update_provider_interim_cms_steps.sql` | Provider interim CMS steps update |
+| 035 | `035_add_mission_finance_foundation.sql` | Mission quote, attachments, payment milestones and commission foundation |
 
 ## Notes
 

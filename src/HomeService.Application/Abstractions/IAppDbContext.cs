@@ -28,6 +28,11 @@ public interface IAppDbContext
     DbSet<ProviderServicePortfolioItem> ProviderServicePortfolioItems { get; }
     DbSet<CustomerProfile> Customers { get; }
     DbSet<Mission> Missions { get; }
+    DbSet<MissionAttachment> MissionAttachments { get; }
+    DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns { get; }
+    DbSet<MissionPaymentMilestone> MissionPaymentMilestones { get; }
+    DbSet<MissionStatusHistory> MissionStatusHistories { get; }
+    DbSet<CommissionRule> CommissionRules { get; }
     DbSet<ProviderMissionAssignment> ProviderMissionAssignments { get; }
     DbSet<MissionConversation> MissionConversations { get; }
     DbSet<MissionMessage> MissionMessages { get; }

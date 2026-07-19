@@ -15,22 +15,34 @@ public sealed class Mission : AuditableEntity
         MissionMode mode,
         PaymentMethod paymentMethod,
         DateTimeOffset? scheduledFor,
-        int estimatedDurationMinutes)
+        int estimatedDurationMinutes,
+        Guid? servicePrestationId = null,
+        string? description = null,
+        bool requiresCompanyQuote = false)
     {
         CustomerId = customerId;
         ServiceId = serviceId;
+        ServicePrestationId = servicePrestationId;
         Mode = mode;
         PaymentMethod = paymentMethod;
         ScheduledFor = scheduledFor;
         EstimatedDurationMinutes = estimatedDurationMinutes;
+        Description = Clean(description);
+        RequiresCompanyQuote = requiresCompanyQuote;
+        QuoteStatus = requiresCompanyQuote ? MissionQuoteStatus.Requested : MissionQuoteStatus.NotRequired;
     }
 
     public Guid CustomerId { get; private set; }
     public Guid ServiceId { get; private set; }
+    public Guid? ServicePrestationId { get; private set; }
+    public ServicePrestation? ServicePrestation { get; private set; }
     public Guid? ProviderId { get; private set; }
     public Guid? CompanyId { get; private set; }
     public MissionMode Mode { get; private set; }
     public MissionStatus Status { get; private set; } = MissionStatus.Created;
+    public string? Description { get; private set; }
+    public bool RequiresCompanyQuote { get; private set; }
+    public MissionQuoteStatus QuoteStatus { get; private set; } = MissionQuoteStatus.NotRequired;
     public PaymentMethod PaymentMethod { get; private set; }
     public PaymentStatus PaymentStatus { get; private set; } = PaymentStatus.Pending;
     public DateTimeOffset? ScheduledFor { get; private set; }
@@ -41,11 +53,18 @@ public sealed class Mission : AuditableEntity
     public int? FinalTotalAmount { get; private set; }
     public int? CompanyQuotedAmount { get; private set; }
     public string? CompanyQuoteJustification { get; private set; }
+    public int? PartsEstimateAmount { get; private set; }
+    public string? PartsDescription { get; private set; }
     public DateTimeOffset? CompanyQuotedAt { get; private set; }
     public DateTimeOffset? CustomerQuoteAcceptedAt { get; private set; }
     public int PlatformCommissionAmount { get; private set; }
+    public int PlatformCommissionRateBasisPoints { get; private set; }
+    public int KazaAssignmentCommissionRateBasisPoints { get; private set; }
+    public int CompanyPayoutAmount { get; private set; }
     public int TransportFeeAmount { get; private set; }
     public int CancellationFeeAmount { get; private set; }
+    public MissionAssignmentSource AssignmentSource { get; private set; } = MissionAssignmentSource.Company;
+    public bool IsInterimProviderSnapshot { get; private set; }
     public string Currency { get; private set; } = "XOF";
     public string? ServiceAddress { get; private set; }
     public decimal? ServiceLatitude { get; private set; }
@@ -64,6 +83,14 @@ public sealed class Mission : AuditableEntity
         ServiceLatitude = latitude;
         ServiceLongitude = longitude;
         ArrivalToleranceMeters = Math.Clamp(arrivalToleranceMeters, 50, 2000);
+        Touch();
+    }
+
+    public void UpdateCustomerRequest(string? description, bool requiresCompanyQuote)
+    {
+        Description = Clean(description);
+        RequiresCompanyQuote = requiresCompanyQuote;
+        QuoteStatus = requiresCompanyQuote ? MissionQuoteStatus.Requested : MissionQuoteStatus.NotRequired;
         Touch();
     }
 
@@ -87,7 +114,11 @@ public sealed class Mission : AuditableEntity
         Guid companyId,
         int quotedAmount,
         int maxAllowedAmount,
-        string? overMaxJustification)
+        string? overMaxJustification,
+        int? partsEstimateAmount = null,
+        string? partsDescription = null,
+        MissionAssignmentSource assignmentSource = MissionAssignmentSource.Company,
+        bool isInterimProvider = false)
     {
         if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed)
         {
@@ -102,14 +133,19 @@ public sealed class Mission : AuditableEntity
 
         ProviderId = providerId;
         CompanyId = companyId;
+        AssignmentSource = assignmentSource;
+        IsInterimProviderSnapshot = isInterimProvider;
         CompanyQuotedAmount = normalizedQuote;
         CompanyQuoteJustification = string.IsNullOrWhiteSpace(overMaxJustification)
             ? null
             : overMaxJustification.Trim();
+        PartsEstimateAmount = partsEstimateAmount.HasValue ? Math.Max(0, partsEstimateAmount.Value) : null;
+        PartsDescription = Clean(partsDescription);
         CompanyQuotedAt = DateTimeOffset.UtcNow;
         EstimatedTotalAmount = normalizedQuote;
         HourlyRateAmount = null;
         CustomerQuoteAcceptedAt = null;
+        QuoteStatus = MissionQuoteStatus.Submitted;
         Status = MissionStatus.Assigned;
         Touch();
     }
@@ -127,6 +163,7 @@ public sealed class Mission : AuditableEntity
         }
 
         CustomerQuoteAcceptedAt = DateTimeOffset.UtcNow;
+        QuoteStatus = MissionQuoteStatus.Accepted;
         Touch();
     }
 
@@ -154,7 +191,11 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
-    public void ConfirmByCustomer(int platformCommissionAmount, int transportFeeAmount)
+    public void ConfirmByCustomer(
+        int platformCommissionAmount,
+        int transportFeeAmount,
+        int platformCommissionRateBasisPoints = 0,
+        int kazaAssignmentCommissionRateBasisPoints = 0)
     {
         if (Status != MissionStatus.Accepted)
         {
@@ -162,7 +203,10 @@ public sealed class Mission : AuditableEntity
         }
 
         PlatformCommissionAmount = Math.Max(0, platformCommissionAmount);
+        PlatformCommissionRateBasisPoints = Math.Clamp(platformCommissionRateBasisPoints, 0, 10000);
+        KazaAssignmentCommissionRateBasisPoints = Math.Clamp(kazaAssignmentCommissionRateBasisPoints, 0, 10000);
         TransportFeeAmount = Math.Max(0, transportFeeAmount);
+        CompanyPayoutAmount = Math.Max(0, (CompanyQuotedAmount ?? EstimatedTotalAmount ?? FinalTotalAmount ?? 0) - PlatformCommissionAmount);
         PaymentStatus = PaymentStatus.Authorized;
         CustomerConfirmedAt = DateTimeOffset.UtcNow;
         ContactDetailsReleasedAt = CustomerConfirmedAt;
@@ -228,9 +272,15 @@ public sealed class Mission : AuditableEntity
         }
 
         ActualDurationMinutes = actualDurationMinutes;
-        FinalTotalAmount = CalculateAmount(actualDurationMinutes, HourlyRateAmount ?? 0);
+        FinalTotalAmount = CompanyQuotedAmount ?? CalculateAmount(actualDurationMinutes, HourlyRateAmount ?? 0);
+        CompanyPayoutAmount = Math.Max(0, FinalTotalAmount.Value - PlatformCommissionAmount);
         Status = MissionStatus.Completed;
         Touch();
+    }
+
+    private static string? Clean(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static int CalculateAmount(int durationMinutes, int hourlyRateAmount)
