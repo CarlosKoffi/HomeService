@@ -6,6 +6,29 @@ ALTER TABLE "ProviderServices"
     ADD COLUMN IF NOT EXISTS "PriceTier" character varying(32) NOT NULL DEFAULT 'Normal',
     ADD COLUMN IF NOT EXISTS "PricingUnit" character varying(32) NOT NULL DEFAULT 'Hourly';
 
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'ProviderServices'
+          AND column_name = 'HourlyRateAmount'
+    ) THEN
+        ALTER TABLE "ProviderServices" ALTER COLUMN "HourlyRateAmount" SET DEFAULT 0;
+        ALTER TABLE "ProviderServices" ALTER COLUMN "HourlyRateAmount" DROP NOT NULL;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'ProviderServices'
+          AND column_name = 'Currency'
+    ) THEN
+        ALTER TABLE "ProviderServices" ALTER COLUMN "Currency" SET DEFAULT 'XOF';
+        ALTER TABLE "ProviderServices" ALTER COLUMN "Currency" DROP NOT NULL;
+    END IF;
+END $$;
+
 UPDATE "ProviderServices" AS provider_service
 SET "CompanyId" = provider."CompanyId"
 FROM "Providers" AS provider

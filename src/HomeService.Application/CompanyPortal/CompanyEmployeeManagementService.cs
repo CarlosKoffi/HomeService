@@ -45,8 +45,6 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         CancellationToken cancellationToken)
     {
         var provider = await db.Providers
-            .Include(provider => provider.Services)
-                .ThenInclude(providerService => providerService.Prestations)
             .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
         if (provider is null)
         {
@@ -70,27 +68,51 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
                 group => group.Key,
                 group => group.Select(prestation => prestation.Id).ToHashSet());
 
-        var existingServiceCount = provider.Services.Count;
-        provider.SyncCompanyServices(request.Services
-            .Where(service => activeServiceIds.Contains(service.ServiceId))
-            .Select(service => (
-                service.ServiceId,
-                ParseExperienceLevel(service.ExperienceLevel),
-                Math.Max(0, service.YearsOfExperience),
-                ParseProviderServicePriceTier(service.PriceTier))));
+        var existingServices = await db.ProviderServices
+            .Include(providerService => providerService.Prestations)
+            .Where(providerService => providerService.ProviderId == employeeId)
+            .ToListAsync(cancellationToken);
+        var existingServiceCount = existingServices.Count;
 
-        foreach (var providerService in provider.Services.Where(service => service.IsActive))
+        var requestedServices = request.Services
+            .Where(service => activeServiceIds.Contains(service.ServiceId))
+            .GroupBy(service => service.ServiceId)
+            .Select(group => group.Last())
+            .ToList();
+        var requestedActiveIds = requestedServices.Select(service => service.ServiceId).ToHashSet();
+
+        foreach (var existingService in existingServices.Where(service => service.IsActive && !requestedActiveIds.Contains(service.ServiceId)))
         {
-            var requestService = request.Services.LastOrDefault(service => service.ServiceId == providerService.ServiceId);
-            if (requestService is null)
+            existingService.Deactivate();
+        }
+
+        foreach (var requestedService in requestedServices)
+        {
+            var providerService = existingServices.FirstOrDefault(service => service.ServiceId == requestedService.ServiceId);
+            if (providerService is null)
             {
-                continue;
+                providerService = new ProviderService(
+                    employeeId,
+                    companyId,
+                    requestedService.ServiceId,
+                    ParseExperienceLevel(requestedService.ExperienceLevel),
+                    Math.Max(0, requestedService.YearsOfExperience),
+                    ParseProviderServicePriceTier(requestedService.PriceTier));
+                db.ProviderServices.Add(providerService);
+                existingServices.Add(providerService);
+            }
+            else
+            {
+                providerService.UpdateCompanyExperience(
+                    ParseExperienceLevel(requestedService.ExperienceLevel),
+                    Math.Max(0, requestedService.YearsOfExperience),
+                    ParseProviderServicePriceTier(requestedService.PriceTier));
             }
 
             var allowedPrestationIds = activePrestationsByService.TryGetValue(providerService.ServiceId, out var ids)
                 ? ids
                 : new HashSet<Guid>();
-            providerService.SyncPrestations(requestService.ServicePrestationIds
+            providerService.SyncPrestations(requestedService.ServicePrestationIds
                 .Where(allowedPrestationIds.Contains));
         }
 

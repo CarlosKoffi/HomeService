@@ -88,6 +88,28 @@ public sealed class ProviderProfileTests
     }
 
     [Fact]
+    public void SyncPrestations_AddsAndDeactivatesProviderServicePrestations()
+    {
+        var provider = CreateProvider();
+        var serviceId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var prestationA = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var prestationB = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        provider.SyncCompanyServices([
+            (serviceId, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)
+        ]);
+        var service = Assert.Single(provider.Services);
+
+        service.SyncPrestations([prestationA, prestationB]);
+
+        Assert.Equal(2, service.Prestations.Count(prestation => prestation.IsActive));
+
+        service.SyncPrestations([prestationB]);
+
+        Assert.Contains(service.Prestations, prestation => prestation.ServicePrestationId == prestationA && !prestation.IsActive);
+        Assert.Contains(service.Prestations, prestation => prestation.ServicePrestationId == prestationB && prestation.IsActive);
+    }
+
+    [Fact]
     public void SelfRegisteredProvider_StartsAsInterimCandidateWithoutCompany()
     {
         var provider = CreateSelfRegisteredProvider();

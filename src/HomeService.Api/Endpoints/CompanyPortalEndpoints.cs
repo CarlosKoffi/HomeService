@@ -590,6 +590,7 @@ public static class CompanyPortalEndpoints
             HttpRequest httpRequest,
             CompanyEmployeeManagementService employeeManagementService,
             IAppDbContext db,
+            ILogger<CompanyEmployeeManagementService> logger,
             CancellationToken cancellationToken) =>
         {
             var result = await employeeManagementService.UpdateServicesAsync(companyId, employeeId, request, cancellationToken);
@@ -607,7 +608,19 @@ public static class CompanyPortalEndpoints
                 "Services prestataire mis a jour.",
                 result.Before,
                 result.After);
-            await db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception)
+            {
+                logger.LogError(exception, "Company employee service update failed for company {CompanyId} and provider {ProviderId}.", companyId, employeeId);
+                return Results.Problem(
+                    title: "Mise a jour des services impossible.",
+                    detail: exception.GetBaseException().Message,
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
             return Results.NoContent();
         })
         .WithName("UpdateCompanyPortalEmployeeServices");
