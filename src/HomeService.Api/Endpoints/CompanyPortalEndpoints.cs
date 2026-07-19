@@ -935,7 +935,7 @@ public static class CompanyPortalEndpoints
                 return Results.NotFound(new { message = "Le fichier employe n'existe plus sur le serveur." });
             }
 
-            return Results.File(absolutePath, document.ContentType, document.OriginalFileName, enableRangeProcessing: true);
+            return Results.File(absolutePath, document.ContentType, enableRangeProcessing: true);
         })
         .WithName("PreviewCompanyPortalProviderDocument");
 

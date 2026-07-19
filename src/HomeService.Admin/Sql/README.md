@@ -58,6 +58,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 034 | `034_update_provider_interim_cms_steps.sql` | Provider interim CMS steps update |
 | 035 | `035_add_mission_finance_foundation.sql` | Mission quote, attachments, payment milestones and commission foundation |
 | 036 | `036_repair_provider_services_schema.sql` | Provider service schema guard for employee service assignments |
+| 037 | `037_normalize_catalog_names.sql` | Normalize existing service, prestation and proposal labels for accent-tolerant matching |
 
 ## Notes
 

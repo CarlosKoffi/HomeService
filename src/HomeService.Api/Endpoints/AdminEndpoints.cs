@@ -13,6 +13,7 @@ using HomeService.Contracts.Localization;
 using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
+using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -1375,7 +1376,7 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = "Le nom du service est obligatoire." });
             }
 
-            var normalizedName = request.Name.Trim().ToLowerInvariant();
+            var normalizedName = CatalogNameNormalizer.Normalize(request.Name);
             var existing = await db.Services
                 .Include(service => service.Prestations)
                 .FirstOrDefaultAsync(service => service.NormalizedName == normalizedName, cancellationToken);
@@ -1422,7 +1423,7 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = "Le nom du service est obligatoire." });
             }
 
-            var normalizedName = request.Name.Trim().ToLowerInvariant();
+            var normalizedName = CatalogNameNormalizer.Normalize(request.Name);
             var duplicate = await db.Services.AnyAsync(
                 service => service.Id != serviceId && service.NormalizedName == normalizedName,
                 cancellationToken);

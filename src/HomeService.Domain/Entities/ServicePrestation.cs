@@ -81,6 +81,6 @@ public sealed class ServicePrestation : AuditableEntity
 
     private static string Normalize(string value)
     {
-        return value.Trim().ToLowerInvariant();
+        return CatalogNameNormalizer.Normalize(value);
     }
 }

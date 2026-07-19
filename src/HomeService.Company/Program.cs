@@ -42,7 +42,7 @@ app.MapGet("/provider-documents/{documentId:guid}/preview", async (
     var document = await apiClient.GetProviderDocumentPreviewAsync(documentId, cancellationToken);
     return document is null
         ? Results.NotFound(new { message = "Le fichier n'existe plus sur le serveur." })
-        : Results.File(document.Content, document.ContentType, document.FileName, enableRangeProcessing: true);
+        : Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
 });
 
 app.MapRazorComponents<App>()

@@ -17,4 +17,12 @@ public sealed class CompanyApplicationServiceTests
         Assert.Null(proposal.MatchedServicePrestationId);
         Assert.Equal(CompanyApplicationServiceMatchStatus.CreatedAsNewService, proposal.MatchStatus);
     }
+
+    [Fact]
+    public void Constructor_NormalizesProposalLikeCatalogNames()
+    {
+        var proposal = new CompanyApplicationService(Guid.NewGuid(), " Blanchisserie - Repassage ");
+
+        Assert.Equal("blanchisserie repassage", proposal.NormalizedName);
+    }
 }

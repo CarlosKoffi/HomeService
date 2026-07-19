@@ -1,6 +1,7 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Companies;
 using HomeService.Contracts.Services;
+using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -207,7 +208,7 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             return CompanyServiceProposalActionResult.ValidationFailed("Le nom du nouveau service est obligatoire.");
         }
 
-        var normalizedName = serviceName.Trim().ToLowerInvariant();
+        var normalizedName = CatalogNameNormalizer.Normalize(serviceName);
         var existingService = await db.Services.FirstOrDefaultAsync(
             service => service.NormalizedName == normalizedName,
             cancellationToken);

@@ -16,6 +16,14 @@ public sealed class ServiceTests
     }
 
     [Fact]
+    public void Constructor_NormalizesAccentsAndSeparatorsForCatalogMatching()
+    {
+        var service = new Service("  Électricité / dépannage  ", null, null);
+
+        Assert.Equal("electricite depannage", service.NormalizedName);
+    }
+
+    [Fact]
     public void Constructor_WhenCreatedByCompany_StartsPendingReview()
     {
         var service = new Service("Coiffure", null, Guid.NewGuid());
@@ -139,14 +147,14 @@ public sealed class ServiceTests
     public void AddPrestation_WhenNameAlreadyExists_UpdatesExistingPrestation()
     {
         var service = new Service("Jardinage", null, null);
-        var first = service.AddPrestation("Tondre le gazon", "Coupe simple.", 10);
+        var first = service.AddPrestation("Repassage", "Repassage simple.", 10);
 
-        var second = service.AddPrestation(" Tondre le gazon ", "Coupe complete.", 20);
+        var second = service.AddPrestation(" Repassage! ", "Repassage complet.", 20);
 
         Assert.Same(first, second);
         Assert.Single(service.Prestations);
-        Assert.Equal("Tondre le gazon", second.Name);
-        Assert.Equal("Coupe complete.", second.Description);
+        Assert.Equal("Repassage!", second.Name);
+        Assert.Equal("Repassage complet.", second.Description);
         Assert.Equal(20, second.SortOrder);
     }
 

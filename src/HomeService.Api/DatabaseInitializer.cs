@@ -1,3 +1,4 @@
+using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using HomeService.Infrastructure.Data;
@@ -14,6 +15,7 @@ public static class DatabaseInitializer
 
         await db.Database.MigrateAsync(cancellationToken);
         await EnsureProviderServiceSchemaAsync(db, cancellationToken);
+        await NormalizeCatalogNamesAsync(db, cancellationToken);
         await SeedCountriesAsync(db, cancellationToken);
         await SeedCountryBrandingAsync(db, cancellationToken);
         await SeedLanguagesAsync(db, cancellationToken);
@@ -78,6 +80,83 @@ public static class DatabaseInitializer
                     ALTER TABLE "ProviderServices" ALTER COLUMN "CompanyId" SET NOT NULL;
                 END IF;
             END $$;
+            """, cancellationToken);
+    }
+
+    private static async Task NormalizeCatalogNamesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE OR REPLACE FUNCTION kaza_normalize_catalog_name(value text)
+            RETURNS text
+            LANGUAGE sql
+            IMMUTABLE
+            AS $$
+                SELECT trim(regexp_replace(
+                    translate(
+                        lower(coalesce(value, '')),
+                        'àáâäãåçèéêëìíîïñòóôöõùúûüýÿ',
+                        'aaaaaaceeeeiiiinooooouuuuyy'
+                    ),
+                    '[^a-z0-9]+',
+                    ' ',
+                    'g'
+                ));
+            $$;
+
+            WITH normalized_services AS (
+                SELECT
+                    "Id",
+                    kaza_normalize_catalog_name("Name") AS "NextNormalizedName"
+                FROM "Services"
+            ),
+            safe_services AS (
+                SELECT item."Id", item."NextNormalizedName"
+                FROM normalized_services item
+                WHERE item."NextNormalizedName" <> ''
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM normalized_services duplicate
+                      WHERE duplicate."Id" <> item."Id"
+                        AND duplicate."NextNormalizedName" = item."NextNormalizedName"
+                  )
+            )
+            UPDATE "Services" service
+            SET "NormalizedName" = safe."NextNormalizedName"
+            FROM safe_services safe
+            WHERE service."Id" = safe."Id"
+              AND service."NormalizedName" <> safe."NextNormalizedName";
+
+            WITH normalized_prestations AS (
+                SELECT
+                    "Id",
+                    "ServiceId",
+                    kaza_normalize_catalog_name("Name") AS "NextNormalizedName"
+                FROM "ServicePrestations"
+            ),
+            safe_prestations AS (
+                SELECT item."Id", item."NextNormalizedName"
+                FROM normalized_prestations item
+                WHERE item."NextNormalizedName" <> ''
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM normalized_prestations duplicate
+                      WHERE duplicate."Id" <> item."Id"
+                        AND duplicate."ServiceId" = item."ServiceId"
+                        AND duplicate."NextNormalizedName" = item."NextNormalizedName"
+                  )
+            )
+            UPDATE "ServicePrestations" prestation
+            SET "NormalizedName" = safe."NextNormalizedName"
+            FROM safe_prestations safe
+            WHERE prestation."Id" = safe."Id"
+              AND prestation."NormalizedName" <> safe."NextNormalizedName";
+
+            UPDATE "CompanyApplicationServices"
+            SET "NormalizedName" = kaza_normalize_catalog_name("RawName")
+            WHERE kaza_normalize_catalog_name("RawName") <> ''
+              AND "NormalizedName" <> kaza_normalize_catalog_name("RawName");
+
+            DROP FUNCTION kaza_normalize_catalog_name(text);
             """, cancellationToken);
     }
 
@@ -265,7 +344,7 @@ public static class DatabaseInitializer
 
     private static string NormalizeSeedValue(string value)
     {
-        return value.Trim().ToLowerInvariant();
+        return CatalogNameNormalizer.Normalize(value);
     }
 
     private sealed record SeededService(
