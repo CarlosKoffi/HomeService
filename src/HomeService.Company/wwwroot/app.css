@@ -503,6 +503,20 @@
     }
 }
 
+.employee-upsert-modal .service-edit-list.clean-service-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+.employee-upsert-modal .service-edit-list.clean-service-list .employee-service-card-simple {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
 .employee-upsert-modal .employee-service-card-simple {
     display: grid;
     gap: 14px;
@@ -12130,5 +12144,41 @@ h3 {
     .missions-assignment-panel button {
         grid-column: 2;
         justify-self: start;
+    }
+}
+
+.employee-upsert-modal .employee-upsert-body {
+    overflow-x: hidden !important;
+    padding-bottom: 120px !important;
+}
+
+.employee-upsert-modal .service-picker.employee-skill-picker .service-edit-list.clean-service-list {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+}
+
+.employee-upsert-modal .service-picker.employee-skill-picker .employee-service-card-simple {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.employee-upsert-modal .service-picker.employee-skill-picker .employee-service-line {
+    grid-template-columns: minmax(150px, 1fr) 106px 82px 88px 82px 82px !important;
+}
+
+@media (max-width: 980px) {
+    .employee-upsert-modal .service-picker.employee-skill-picker .employee-service-line {
+        grid-template-columns: minmax(180px, 1fr) 118px 92px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .employee-upsert-modal .service-picker.employee-skill-picker .employee-service-line {
+        grid-template-columns: 1fr !important;
     }
 }
