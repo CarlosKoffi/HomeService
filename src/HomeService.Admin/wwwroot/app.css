@@ -2082,6 +2082,121 @@ h3 {
     grid-template-columns: minmax(160px, 1fr) 110px minmax(220px, 1.4fr);
 }
 
+.notification-rules-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .055);
+    display: grid;
+    gap: .75rem;
+    margin: 1rem 0;
+    padding: 1rem;
+}
+
+.notification-rules-head,
+.notification-rule-row {
+    align-items: center;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.notification-rules-head span,
+.notification-rule-copy span {
+    color: #64748b;
+    display: block;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.notification-rules-head strong {
+    color: #000;
+    display: block;
+    font-size: 1.05rem;
+    margin-top: .1rem;
+}
+
+.notification-rules-head p {
+    color: #000;
+    margin: .25rem 0 0;
+}
+
+.notification-rules-head small {
+    background: #eff4ff;
+    border-radius: 999px;
+    color: #1a6aff;
+    font-weight: 900;
+    padding: .45rem .75rem;
+}
+
+.notification-rule-row {
+    border-top: 1px solid #eef2f7;
+    padding-top: .8rem;
+}
+
+.notification-rule-copy strong {
+    color: #000;
+    display: block;
+    font-size: .96rem;
+    margin-top: .2rem;
+}
+
+.notification-rule-copy small {
+    color: #64748b;
+    display: block;
+    font-size: .76rem;
+    font-weight: 750;
+    margin-top: .15rem;
+}
+
+.notification-channel-grid {
+    display: grid;
+    gap: .45rem;
+    grid-template-columns: repeat(4, minmax(118px, 1fr));
+}
+
+.notification-channel-card {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: grid;
+    gap: .1rem;
+    grid-template-columns: auto 1fr;
+    min-height: 58px;
+    padding: .55rem .7rem;
+}
+
+.notification-channel-card input {
+    accent-color: #1a6aff;
+    grid-row: span 2;
+    height: 18px;
+    width: 18px;
+}
+
+.notification-channel-card span {
+    color: #000;
+    font-size: .82rem;
+    font-weight: 900;
+}
+
+.notification-channel-card small {
+    color: #64748b;
+    font-size: .68rem;
+    font-weight: 750;
+}
+
+.notification-channel-card.enabled {
+    background: #eff4ff;
+    border-color: #b9d2ff;
+}
+
+.notification-channel-card.locked {
+    opacity: .55;
+}
+
 .notification-command-center {
     display: grid;
     gap: .85rem;
@@ -3077,6 +3192,9 @@ h3 {
     .service-admin-tabs,
     .proposal-review-card,
     .proposal-list article,
+    .notification-rules-head,
+    .notification-rule-row,
+    .notification-channel-grid,
     .notification-list article,
     .audit-filters,
     .service-catalog-card > header,

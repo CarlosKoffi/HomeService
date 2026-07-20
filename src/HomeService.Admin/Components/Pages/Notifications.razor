@@ -8,10 +8,73 @@
 <div class="admin-page-heading">
     <div>
         <h1>Notifications</h1>
-        <p class="lead">Suivez les messages email, WhatsApp et mobile avant branchement des envois automatiques.</p>
+        <p class="lead">Configurez les canaux internes et externes par type de notification, puis suivez les envois email et WhatsApp.</p>
     </div>
     <button type="button" class="secondary-action" @onclick="LoadAsync">Actualiser</button>
 </div>
+
+<section class="notification-rules-panel">
+    <div class="notification-rules-head">
+        <div>
+            <span>Regles de diffusion</span>
+            <strong>Ou chaque notification doit apparaitre</strong>
+            <p>Portail entreprise et applications sont des notifications internes. Email et WhatsApp restent configurables selon le type.</p>
+        </div>
+        <small>@DeliveryRules.Count type(s)</small>
+    </div>
+
+    @if (DeliveryRules.Count == 0 && IsLoading)
+    {
+        <article class="notification-rule-row">
+            <p>Chargement des regles...</p>
+        </article>
+    }
+    else
+    {
+        @foreach (var rule in DeliveryRules)
+        {
+            <article class="notification-rule-row">
+                <div class="notification-rule-copy">
+                    <span>@TranslateAudience(rule.Audience)</span>
+                    <strong>@rule.Label</strong>
+                    <small>@rule.EventKey</small>
+                </div>
+                <div class="notification-channel-grid">
+                    <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company")">
+                        <input type="checkbox"
+                               checked="@rule.PortalEnabled"
+                               disabled="@(rule.Audience != "Company" && rule.Audience != "Mixed")"
+                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "Portal", eventArgs)' />
+                        <span>Portail</span>
+                        <small>Entreprise</small>
+                    </label>
+                    <label class="@GetRuleChannelClass(rule.MobileAppEnabled, rule.Audience != "Company")">
+                        <input type="checkbox"
+                               checked="@rule.MobileAppEnabled"
+                               disabled="@(rule.Audience == "Company")"
+                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "MobileApp", eventArgs)' />
+                        <span>Application</span>
+                        <small>Client / prestataire</small>
+                    </label>
+                    <label class="@GetRuleChannelClass(rule.EmailEnabled, true)">
+                        <input type="checkbox"
+                               checked="@rule.EmailEnabled"
+                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "Email", eventArgs)' />
+                        <span>Email</span>
+                        <small>Configurable</small>
+                    </label>
+                    <label class="@GetRuleChannelClass(rule.WhatsAppEnabled, true)">
+                        <input type="checkbox"
+                               checked="@rule.WhatsAppEnabled"
+                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "WhatsApp", eventArgs)' />
+                        <span>WhatsApp</span>
+                        <small>Configurable</small>
+                    </label>
+                </div>
+            </article>
+        }
+    }
+</section>
 
 <section class="notification-command-center">
     <article>
@@ -139,6 +202,7 @@
 
 @code {
     private List<NotificationOutboxMessageResponse> QueuedNotifications { get; set; } = [];
+    private List<NotificationDeliveryRuleResponse> DeliveryRules { get; set; } = [];
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
     private string? SuccessMessage { get; set; }
@@ -169,6 +233,7 @@
         try
         {
             QueuedNotifications = (await ApiClient.GetNotificationsAsync()).ToList();
+            DeliveryRules = (await ApiClient.GetNotificationDeliveryRulesAsync()).ToList();
         }
         catch (Exception exception)
         {
@@ -208,6 +273,41 @@
             notification.Id,
             () => ApiClient.MarkNotificationSentAsync(notification.Id),
             "Notification marquee envoyee.");
+    }
+
+    private async Task ToggleRuleChannelAsync(NotificationDeliveryRuleResponse rule, string channel, ChangeEventArgs eventArgs)
+    {
+        var isEnabled = eventArgs.Value is true || string.Equals(eventArgs.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+        var request = channel switch
+        {
+            "Portal" => ToRuleRequest(rule, portalEnabled: isEnabled),
+            "MobileApp" => ToRuleRequest(rule, mobileAppEnabled: isEnabled),
+            "Email" => ToRuleRequest(rule, emailEnabled: isEnabled),
+            "WhatsApp" => ToRuleRequest(rule, whatsAppEnabled: isEnabled),
+            _ => ToRuleRequest(rule)
+        };
+
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var updated = await ApiClient.UpdateNotificationDeliveryRuleAsync(rule.Id, request);
+            if (updated is not null)
+            {
+                var index = DeliveryRules.FindIndex(item => item.Id == rule.Id);
+                if (index >= 0)
+                {
+                    DeliveryRules[index] = updated;
+                }
+            }
+
+            SuccessMessage = "Regle de notification mise a jour.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Modification de la regle impossible. Detail: {exception.Message}";
+        }
     }
 
     private async Task RunNotificationActionAsync(
@@ -320,6 +420,15 @@
         _ => status
     };
 
+    private static string TranslateAudience(string audience) => audience switch
+    {
+        "Company" => "Entreprise",
+        "Provider" => "Prestataire",
+        "Customer" => "Client",
+        "Mixed" => "Mixte",
+        _ => audience
+    };
+
     private static string GetNotificationClass(string status)
     {
         return status switch
@@ -328,5 +437,24 @@
             "Sent" => "status-done",
             _ => "status-new"
         };
+    }
+
+    private static string GetRuleChannelClass(bool isEnabled, bool isAllowed)
+        => $"notification-channel-card {(isEnabled ? "enabled" : "disabled")} {(!isAllowed ? "locked" : string.Empty)}";
+
+    private static UpdateNotificationDeliveryRuleRequest ToRuleRequest(
+        NotificationDeliveryRuleResponse rule,
+        bool? portalEnabled = null,
+        bool? mobileAppEnabled = null,
+        bool? emailEnabled = null,
+        bool? whatsAppEnabled = null)
+    {
+        return new UpdateNotificationDeliveryRuleRequest(
+            rule.Label,
+            rule.Audience,
+            portalEnabled ?? rule.PortalEnabled,
+            mobileAppEnabled ?? rule.MobileAppEnabled,
+            emailEnabled ?? rule.EmailEnabled,
+            whatsAppEnabled ?? rule.WhatsAppEnabled);
     }
 }

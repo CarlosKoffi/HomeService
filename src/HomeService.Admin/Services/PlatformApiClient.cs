@@ -443,6 +443,24 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<NotificationOutboxMessageResponse>>("/api/admin/notifications", cancellationToken) ?? [];
     }
 
+    public async Task<IReadOnlyList<NotificationDeliveryRuleResponse>> GetNotificationDeliveryRulesAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<NotificationDeliveryRuleResponse>>("/api/admin/notification-delivery-rules", cancellationToken) ?? [];
+    }
+
+    public async Task<NotificationDeliveryRuleResponse?> UpdateNotificationDeliveryRuleAsync(
+        Guid ruleId,
+        UpdateNotificationDeliveryRuleRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<NotificationDeliveryRuleResponse>(
+            $"/api/admin/notification-delivery-rules/{ruleId:D}",
+            request,
+            cancellationToken);
+    }
+
     public async Task<NotificationOutboxMessageResponse?> RetryNotificationAsync(Guid notificationId, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

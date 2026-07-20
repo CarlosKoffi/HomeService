@@ -521,6 +521,16 @@ public static class AdminEndpoints
         })
         .WithName("ListNotificationOutboxMessages");
 
+        admin.MapGet("/notification-delivery-rules", async (
+            AdminNotificationDeliveryRuleService ruleService,
+            CancellationToken cancellationToken) =>
+        {
+            var rules = await ruleService.ListAsync(cancellationToken);
+            return Results.Ok(rules);
+        })
+        .WithName("ListNotificationDeliveryRules")
+        .Produces<IReadOnlyList<NotificationDeliveryRuleResponse>>();
+
         admin.MapGet("/access-control", async (
             AdminQueryService queryService,
             CancellationToken cancellationToken) =>
@@ -809,6 +819,41 @@ public static class AdminEndpoints
             return Results.Ok(result.Response);
         })
         .WithName("MarkNotificationOutboxMessageSent");
+
+        admin.MapPut("/notification-delivery-rules/{id:guid}", async (
+            Guid id,
+            UpdateNotificationDeliveryRuleRequest request,
+            HttpRequest httpRequest,
+            AdminNotificationDeliveryRuleService ruleService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await ruleService.UpdateAsync(id, request, cancellationToken);
+            if (result.Status == AdminNotificationDeliveryRuleStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminNotificationDeliveryRuleStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminNotificationDeliveryRuleUpdated",
+                "NotificationDeliveryRule",
+                id,
+                "Regle de diffusion notification modifiee.",
+                after: result.Response);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("UpdateNotificationDeliveryRule")
+        .Produces<NotificationDeliveryRuleResponse>();
         
         admin.MapGet("/country-brandings/{countryCode}", async (
             string countryCode,
