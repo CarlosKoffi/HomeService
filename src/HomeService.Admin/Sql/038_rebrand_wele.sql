@@ -7,22 +7,40 @@ SET "BrandName" = 'wélé',
 WHERE "BrandName" IN ('Kaza', 'ProxiPro', 'ProxiPro CI', 'Kaza CI');
 
 UPDATE "CmsSites"
-SET "Name" = CASE "Code"
-    WHEN 'company-public' THEN 'wélé entreprises'
-    WHEN 'provider-public' THEN 'wélé prestataires'
-    WHEN 'client-public' THEN 'wélé clients'
+SET "Name" = CASE
+    WHEN "Code" = 'company' THEN 'wélé entreprises'
+    WHEN "Code" = 'provider' THEN 'wélé prestataires'
+    WHEN "Code" = 'client' THEN 'wélé clients'
     ELSE replace(replace("Name", 'Kaza', 'wélé'), 'ProxiPro', 'wélé')
 END,
     "UpdatedAt" = now()
 WHERE "Name" LIKE '%Kaza%'
    OR "Name" LIKE '%ProxiPro%'
-   OR "Code" IN ('company-public', 'provider-public', 'client-public');
+   OR "Code" IN ('company', 'provider', 'client');
 
 UPDATE "CmsPages"
-SET "SeoTitle" = replace(replace("SeoTitle", 'Kaza', 'wélé'), 'ProxiPro', 'wélé'),
+SET "InternalName" = replace(replace("InternalName", 'Kaza', 'wélé'), 'ProxiPro', 'wélé'),
     "UpdatedAt" = now()
-WHERE "SeoTitle" LIKE '%Kaza%'
-   OR "SeoTitle" LIKE '%ProxiPro%';
+WHERE "InternalName" LIKE '%Kaza%'
+   OR "InternalName" LIKE '%ProxiPro%';
+
+UPDATE "CmsPageTranslations"
+SET "Title" = replace(replace("Title", 'Kaza', 'wélé'), 'ProxiPro', 'wélé'),
+    "SeoTitle" = CASE
+        WHEN "SeoTitle" IS NULL THEN NULL
+        ELSE replace(replace("SeoTitle", 'Kaza', 'wélé'), 'ProxiPro', 'wélé')
+    END,
+    "MetaDescription" = CASE
+        WHEN "MetaDescription" IS NULL THEN NULL
+        ELSE replace(replace("MetaDescription", 'Kaza', 'wélé'), 'ProxiPro', 'wélé')
+    END,
+    "UpdatedAt" = now()
+WHERE "Title" LIKE '%Kaza%'
+   OR "Title" LIKE '%ProxiPro%'
+   OR "SeoTitle" LIKE '%Kaza%'
+   OR "SeoTitle" LIKE '%ProxiPro%'
+   OR "MetaDescription" LIKE '%Kaza%'
+   OR "MetaDescription" LIKE '%ProxiPro%';
 
 UPDATE "CmsContentValues"
 SET "TextValue" = replace(
