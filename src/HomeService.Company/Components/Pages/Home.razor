@@ -14,7 +14,7 @@
 
 <div class="company-landing premium-b2b">
     <section id="home" class="premium-hero">
-        <img class="premium-hero-image" src="@ApiClient.ToApiUrl(HomeContent.Hero.ImageUrl)" alt="@HomeContent.Hero.ImageAlt" />
+        <img class="premium-hero-image" src="@ResolveContentUrl(HomeContent.Hero.ImageUrl)" alt="@HomeContent.Hero.ImageAlt" />
         <div class="premium-hero-overlay"></div>
         <div class="premium-hero-content">
             <p class="premium-label">@HomeContent.Hero.Label</p>
@@ -50,7 +50,7 @@
             @foreach (var step in HomeContent.Steps.Items)
             {
                 <article>
-                    <figure><img src="@step.Image" alt="@step.Title" loading="lazy" /></figure>
+                    <figure><img src="@ResolveContentUrl(step.Image)" alt="@step.Title" loading="lazy" /></figure>
                     <div class="premium-step-meta"><span>@step.Number</span><strong>@step.Label</strong></div>
                     <h3>@step.Title</h3>
                     <p>@step.Text</p>
@@ -232,6 +232,23 @@
 
         ContactMessage = "Message pret a etre transmis. Le branchement email/API sera ajoute a la prochaine etape.";
         return Task.CompletedTask;
+    }
+
+    private string ResolveContentUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return string.Empty;
+        }
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        return url.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
+            ? ApiClient.ToApiUrl(url)
+            : url.TrimStart('/');
     }
 
     private static HeroHeadlineParts SplitHeroHeadline(string headline)
