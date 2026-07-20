@@ -558,19 +558,7 @@ else
 
     private string GetMediaPreviewUrl(string value)
     {
-        if (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-            || value.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
-        {
-            return ApiClient.ToApiUrl(value);
-        }
-
-        if (value.StartsWith("/", StringComparison.Ordinal))
-        {
-            return value;
-        }
-
-        return $"/{value.TrimStart('/')}";
+        return ApiClient.ToCmsMediaPreviewUrl(value, SelectedSite?.Surface);
     }
 
     private static void ToggleRawJson(CmsValueDraft draft)

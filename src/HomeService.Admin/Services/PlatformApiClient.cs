@@ -687,6 +687,48 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return new Uri(httpClient.BaseAddress!, relativeUrl.TrimStart('/')).ToString();
     }
 
+    public string ToCmsMediaPreviewUrl(string? mediaUrl, string? surface)
+    {
+        if (string.IsNullOrWhiteSpace(mediaUrl))
+        {
+            return string.Empty;
+        }
+
+        var value = mediaUrl.Trim();
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        if (value.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("api/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/storage/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("storage/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
+        {
+            return ToApiUrl(value);
+        }
+
+        var publicBaseUrl = ResolvePublicBaseUrl(surface);
+        return new Uri(publicBaseUrl ?? httpClient.BaseAddress!, value.TrimStart('/')).ToString();
+    }
+
+    private Uri? ResolvePublicBaseUrl(string? surface)
+    {
+        var key = surface switch
+        {
+            "PublicCompany" => configuration["COMPANY_PUBLIC_BASE_URL"] ?? configuration["CompanyPublicBaseUrl"],
+            "PublicProvider" => configuration["PROVIDER_PUBLIC_BASE_URL"] ?? configuration["ProviderPublicBaseUrl"],
+            "PublicClient" => configuration["CLIENT_PUBLIC_BASE_URL"] ?? configuration["ClientPublicBaseUrl"],
+            _ => null
+        };
+
+        return string.IsNullOrWhiteSpace(key)
+            ? null
+            : new Uri(key.TrimEnd('/') + "/");
+    }
+
     public async Task<IReadOnlyList<CmsComponentDefinitionResponse>> GetCmsComponentDefinitionsAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
