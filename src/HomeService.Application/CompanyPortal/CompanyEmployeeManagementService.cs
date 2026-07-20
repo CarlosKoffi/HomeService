@@ -138,37 +138,18 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             return CompanyEmployeeDocumentOperationResult.NotFound();
         }
 
-        var existingDocuments = await db.ProviderDocuments
+        var existingDocumentCount = await db.ProviderDocuments
             .Where(document => document.ProviderId == employeeId && document.DocumentType == documentType)
-            .OrderByDescending(document => document.CreatedAt)
-            .ToListAsync(cancellationToken);
+            .CountAsync(cancellationToken);
 
-        var replacedPaths = existingDocuments.Select(existing => existing.StoragePath).ToList();
-        var existingDocument = existingDocuments.FirstOrDefault();
-        if (existingDocument is null)
-        {
-            var document = new ProviderDocument(employeeId, documentType, originalFileName, storagePath, contentType);
-            db.ProviderDocuments.Add(document);
-
-            return CompanyEmployeeDocumentOperationResult.Ok(
-                provider,
-                document,
-                replacedPaths,
-                new { ReplacedDocumentCount = replacedPaths.Count, DocumentType = documentType },
-                new { DocumentType = documentType, OriginalFileName = originalFileName, ContentType = contentType });
-        }
-
-        existingDocument.ReplaceFile(originalFileName, storagePath, contentType);
-        foreach (var duplicateDocument in existingDocuments.Skip(1))
-        {
-            db.ProviderDocuments.Remove(duplicateDocument);
-        }
+        var document = new ProviderDocument(employeeId, documentType, originalFileName, storagePath, contentType);
+        db.ProviderDocuments.Add(document);
 
         return CompanyEmployeeDocumentOperationResult.Ok(
             provider,
-            existingDocument,
-            replacedPaths,
-            new { ReplacedDocumentCount = replacedPaths.Count, DocumentType = documentType },
+            document,
+            [],
+            new { ExistingDocumentCount = existingDocumentCount, DocumentType = documentType },
             new { DocumentType = documentType, OriginalFileName = originalFileName, ContentType = contentType });
     }
 

@@ -19,7 +19,6 @@ public static class CompanyDocumentProxyEndpoints
                     : Results.File(
                         document.Content,
                         document.ContentType,
-                        document.FileName,
                         enableRangeProcessing: true);
             }
             catch (HttpRequestException exception)

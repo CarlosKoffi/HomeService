@@ -86,6 +86,43 @@ public sealed class CompanyEmployeeManagementServiceTests
         Assert.Contains(providerService.Prestations, item => item.ServicePrestationId == lawn.Id && item.IsActive);
     }
 
+    [Fact]
+    public async Task ReplaceDocumentAsync_AddsNewDocumentVersionWithoutRemovingPreviousFile()
+    {
+        await using var db = CreateDbContext();
+        var companyId = Guid.NewGuid();
+        var provider = CreateProvider(companyId);
+        var existingDocument = new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.IdentityDocument,
+            "old-id.png",
+            "providers/company/provider/old-id.png",
+            "image/png");
+        db.Providers.Add(provider);
+        db.ProviderDocuments.Add(existingDocument);
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyEmployeeManagementService(db).ReplaceDocumentAsync(
+            companyId,
+            provider.Id,
+            ProviderDocumentType.IdentityDocument,
+            "new-id.png",
+            "providers/company/provider/new-id.png",
+            "image/png",
+            CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        Assert.Equal(CompanyEmployeeOperationStatus.Ok, result.Status);
+        Assert.Empty(result.ReplacedStoragePaths);
+        var documents = await db.ProviderDocuments
+            .Where(document => document.ProviderId == provider.Id && document.DocumentType == ProviderDocumentType.IdentityDocument)
+            .OrderBy(document => document.CreatedAt)
+            .ToListAsync();
+        Assert.Equal(2, documents.Count);
+        Assert.Contains(documents, document => document.StoragePath == "providers/company/provider/old-id.png");
+        Assert.Contains(documents, document => document.StoragePath == "providers/company/provider/new-id.png");
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
