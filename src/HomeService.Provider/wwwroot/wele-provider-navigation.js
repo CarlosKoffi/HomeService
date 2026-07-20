@@ -1,4 +1,4 @@
-window.kazaProviderNavigation = (() => {
+window.weleProviderNavigation = (() => {
     let observer;
     let trackedLinks = [];
     let headerScrollBound = false;

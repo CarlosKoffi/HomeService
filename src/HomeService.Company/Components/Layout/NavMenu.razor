@@ -81,7 +81,7 @@
         if (firstRender)
         {
             await RefreshSessionAsync();
-            await Js.InvokeVoidAsync("kazaCompanyNavigation.init");
+            await Js.InvokeVoidAsync("weleCompanyNavigation.init");
         }
     }
 
@@ -99,7 +99,7 @@
                 ? null
                 : JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
             StateHasChanged();
-            await Js.InvokeVoidAsync("kazaCompanyNavigation.init");
+            await Js.InvokeVoidAsync("weleCompanyNavigation.init");
         }
         catch
         {

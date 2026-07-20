@@ -1,4 +1,4 @@
-window.kazaCompanyNavigation = (() => {
+window.weleCompanyNavigation = (() => {
     let observer;
     let trackedLinks = [];
     let headerScrollBound = false;
