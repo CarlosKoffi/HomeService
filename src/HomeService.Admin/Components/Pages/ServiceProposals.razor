@@ -615,7 +615,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 ProposedName = BuildDefaultProposalName(proposal, firstSuggestion),
                 Action = proposal.MatchedServiceId.HasValue || firstSuggestion is not null
                     ? ProposalAction.Attach
-                    : ProposalAction.CreatePrestation,
+                    : ProposalAction.CreateService,
                 Selection = proposal.MatchedServicePrestationId.HasValue
                     ? BuildPrestationSelection(proposal.MatchedServiceId!.Value, proposal.MatchedServicePrestationId.Value)
                     : proposal.MatchedServiceId.HasValue
