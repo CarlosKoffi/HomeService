@@ -368,7 +368,7 @@ else
             <span>Services</span>
             <button type="button" @onclick="@(() => ToggleEmployeeSort("experience"))">Experience @GetSortMarker("experience")</button>
             <span>Zone</span>
-            <button type="button" @onclick="@(() => ToggleEmployeeSort("status"))">Statut @GetSortMarker("status")</button>
+            <button type="button" @onclick="@(() => ToggleEmployeeSort("status"))">Etat @GetSortMarker("status")</button>
             <span></span>
         </div>
         @if (VisibleEmployees.Count == 0)
@@ -415,8 +415,14 @@ else
                         <span>@Display(employee.Address)</span>
                     </div>
                     <div class="employee-status-cell">
-                        <span class="@GetEmployeeStatusBadgeClass(employee)">@GetEmployeeOperationalStatus(employee)</span>
-                        <small class="@GetEmployeeLifecycleClass(employee)">@GetEmployeeLifecycleStatus(employee)</small>
+                        <div>
+                            <small>Disponibilite</small>
+                            <span class="@GetEmployeeStatusBadgeClass(employee)">@GetEmployeeOperationalStatus(employee)</span>
+                        </div>
+                        <div>
+                            <small>Validation</small>
+                            <span class="@GetEmployeeLifecycleClass(employee)">@GetEmployeeLifecycleStatus(employee)</span>
+                        </div>
                         <small>@GetDocumentsText(employee)</small>
                     </div>
                     <div class="employee-row-menu" @onclick:stopPropagation>
@@ -782,6 +788,7 @@ else
                         <article class="employee-profile-card employee-access-card">
                             <div>
                                 <span>Validation prestataire</span>
+                                <em class="@GetEmployeeLifecycleClass(SelectedEmployee)">@GetEmployeeLifecycleStatus(SelectedEmployee)</em>
                                 <strong>@GetEmployeeValidationTitle(SelectedEmployee)</strong>
                                 <p>@GetEmployeeValidationText(SelectedEmployee)</p>
                             </div>

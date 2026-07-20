@@ -9048,7 +9048,7 @@ h3 {
 .employee-experience-cell,
 .employee-status-cell {
     display: grid;
-    gap: 3px;
+    gap: 7px;
 }
 
 .employee-experience-cell strong {
@@ -9082,19 +9082,43 @@ h3 {
     color: #aaaaaa;
 }
 
+.employee-status-cell > div {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.employee-status-cell > div small {
+    color: #9a9a9a;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
 .employee-lifecycle {
-    display: block;
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 800;
+    padding: 5px 10px;
+    width: fit-content;
 }
 
 .employee-lifecycle.active {
+    background: #f0fdf4;
     color: #16a34a;
 }
 
 .employee-lifecycle.pending {
+    background: #fffbeb;
     color: #f59e0b;
 }
 
 .employee-lifecycle.blocked {
+    background: #fef2f2;
     color: #dc2626;
 }
 
