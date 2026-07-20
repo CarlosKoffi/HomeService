@@ -217,6 +217,11 @@ public static class DatabaseInitializer
                OR "TextValue" LIKE '%ProxiPro%';
 
             UPDATE "CmsContentValues"
+            SET "TextValue" = replace("TextValue", 'images/kaza-', 'images/wele-'),
+                "UpdatedAt" = now()
+            WHERE "TextValue" LIKE '%images/kaza-%';
+
+            UPDATE "CmsContentValues"
             SET "JsonValue" = replace(
                     replace(
                         replace("JsonValue"::text, 'Kaza Technologies', 'wélé Technologies'),
@@ -227,6 +232,11 @@ public static class DatabaseInitializer
                 "UpdatedAt" = now()
             WHERE "JsonValue"::text LIKE '%Kaza%'
                OR "JsonValue"::text LIKE '%ProxiPro%';
+
+            UPDATE "CmsContentValues"
+            SET "JsonValue" = replace("JsonValue"::text, 'images/kaza-', 'images/wele-')::jsonb,
+                "UpdatedAt" = now()
+            WHERE "JsonValue"::text LIKE '%images/kaza-%';
 
             UPDATE "TranslationValues"
             SET "Value" = replace(replace("Value", 'Kaza', 'wélé'), 'ProxiPro', 'wélé'),
@@ -612,7 +622,7 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "register", french.Id);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
-                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-premium-hero.png", french.Id);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/wele-premium-hero.png", french.Id);
                     AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Equipe wélé en intervention chez un client", french.Id);
                     AddCmsJson(db, section, "proofItems", "[\"Inscription gratuite\",\"Validation dossier\",\"Portail entreprise\"]", french.Id);
                     break;
@@ -623,9 +633,9 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours court pour verifier l'entreprise et demarrer avec une base claire.", french.Id);
                     AddCmsJson(db, section, "steps", """
                     [
-                      {"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/kaza-how-step-1.png"},
-                      {"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/kaza-how-step-2.png"},
-                      {"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/kaza-how-step-3.png"}
+                      {"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/wele-how-step-1.png"},
+                      {"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/wele-how-step-2.png"},
+                      {"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/wele-how-step-3.png"}
                     ]
                     """, french.Id);
                     break;
@@ -739,7 +749,7 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/onboarding", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
-                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-provider-hero.png", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/wele-provider-hero.png", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Prestataires de services a domicile wélé", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "proofItems", "[\"Code entreprise\",\"Profil interim\",\"Missions proches\"]", french.Id, replaceExisting: true);
                     break;
@@ -750,9 +760,9 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours simple pour proposer votre profil en interim a une entreprise partenaire.", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "steps", """
                     [
-                      {"number":"01","label":"Formulaire","title":"Creez votre compte en ligne","text":"Renseignez vos informations, votre service principal et votre zone.","image":"images/kaza-provider-step-1.svg"},
-                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.","image":"images/kaza-provider-step-2.svg"},
-                      {"number":"03","label":"Validation","title":"L'entreprise etudie votre demande","text":"Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.","image":"images/kaza-provider-step-3.svg"}
+                      {"number":"01","label":"Formulaire","title":"Creez votre compte en ligne","text":"Renseignez vos informations, votre service principal et votre zone.","image":"images/wele-provider-step-1.svg"},
+                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.","image":"images/wele-provider-step-2.svg"},
+                      {"number":"03","label":"Validation","title":"L'entreprise etudie votre demande","text":"Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.","image":"images/wele-provider-step-3.svg"}
                     ]
                     """, french.Id, replaceExisting: true);
                     break;

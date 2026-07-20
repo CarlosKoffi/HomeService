@@ -67,7 +67,7 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 new CmsLinkResponse(
                     GetText(hero, "secondaryCta.label", "Voir le fonctionnement"),
                     GetText(hero, "secondaryCta.url", "#how")),
-                GetText(hero, "image.url", "images/kaza-provider-hero.png"),
+                GetText(hero, "image.url", "images/wele-provider-hero.png"),
                 GetText(hero, "image.alt", "Prestataires de services a domicile wélé"),
                 GetJsonList(hero, "proofItems", ["Code entreprise", "Profil interim", "Missions proches"])),
             new CompanyHomeStepsCmsResponse(
@@ -75,9 +75,9 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 GetText(steps, "headline", "Trois etapes pour demarrer."),
                 GetText(steps, "subtitle", "Un parcours simple pour proposer votre profil en interim a une entreprise partenaire."),
                 GetJsonList(steps, "steps", [
-                    new CmsStepResponse("01", "Formulaire", "Creez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/kaza-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/kaza-provider-step-2.svg"),
-                    new CmsStepResponse("03", "Validation", "L'entreprise etudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/kaza-provider-step-3.svg")
+                    new CmsStepResponse("01", "Formulaire", "Creez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/wele-provider-step-1.svg"),
+                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/wele-provider-step-2.svg"),
+                    new CmsStepResponse("03", "Validation", "L'entreprise etudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/wele-provider-step-3.svg")
                 ])),
             new CompanyHomeTrustedCmsResponse(
                 GetText(trusted, "headline", "Des opportunites simples et suivies"),

@@ -32,7 +32,7 @@ text_seed AS (
             ('HeroStandard', 'primaryCta.url', 'InternalLink', 'register'),
             ('HeroStandard', 'secondaryCta.label', 'ShortText', 'Voir le fonctionnement'),
             ('HeroStandard', 'secondaryCta.url', 'InternalLink', '#how'),
-            ('HeroStandard', 'image.url', 'Media', 'images/kaza-premium-hero.png'),
+            ('HeroStandard', 'image.url', 'Media', 'images/wele-premium-hero.png'),
             ('HeroStandard', 'image.alt', 'ShortText', 'Equipe wélé en intervention chez un client'),
             ('StepsTimeline', 'label', 'ShortText', 'Comment ca marche'),
             ('StepsTimeline', 'headline', 'ShortText', 'Trois etapes, puis votre portail est pret.'),
@@ -56,7 +56,7 @@ json_seed AS (
     FROM (
         VALUES
             ('HeroStandard', 'proofItems', '["Inscription gratuite","Validation dossier","Portail entreprise"]'),
-            ('StepsTimeline', 'steps', '[{"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/kaza-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/kaza-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/kaza-how-step-3.png"}]'),
+            ('StepsTimeline', 'steps', '[{"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/wele-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/wele-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/wele-how-step-3.png"}]'),
             ('TrustedLogos', 'items', '["Services verifies","Entreprises locales","Prestataires suivis","Paiements traces","Support partenaire"]'),
             ('DashboardPreview', 'stats', '[{"label":"Demandes","value":"12","help":"+4 cette semaine"},{"label":"Assignees","value":"8","help":"Equipe mobilisee"},{"label":"Paiements","value":"185k","help":"XOF suivis"}]'),
             ('DashboardPreview', 'requests', '["Menage a Cocody Riviera","Jardinage a Marcory","Nounou aux Deux Plateaux"]'),
@@ -107,7 +107,7 @@ json_seed AS (
     FROM (
         VALUES
             ('HeroStandard', 'proofItems', '["Inscription gratuite","Validation dossier","Portail entreprise"]'),
-            ('StepsTimeline', 'steps', '[{"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/kaza-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/kaza-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/kaza-how-step-3.png"}]'),
+            ('StepsTimeline', 'steps', '[{"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/wele-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/wele-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/wele-how-step-3.png"}]'),
             ('TrustedLogos', 'items', '["Services verifies","Entreprises locales","Prestataires suivis","Paiements traces","Support partenaire"]'),
             ('DashboardPreview', 'stats', '[{"label":"Demandes","value":"12","help":"+4 cette semaine"},{"label":"Assignees","value":"8","help":"Equipe mobilisee"},{"label":"Paiements","value":"185k","help":"XOF suivis"}]'),
             ('DashboardPreview', 'requests', '["Menage a Cocody Riviera","Jardinage a Marcory","Nounou aux Deux Plateaux"]'),

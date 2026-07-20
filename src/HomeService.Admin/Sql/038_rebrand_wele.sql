@@ -57,6 +57,11 @@ WHERE "TextValue" LIKE '%Kaza%'
    OR "TextValue" LIKE '%ProxiPro%';
 
 UPDATE "CmsContentValues"
+SET "TextValue" = replace("TextValue", 'images/kaza-', 'images/wele-'),
+    "UpdatedAt" = now()
+WHERE "TextValue" LIKE '%images/kaza-%';
+
+UPDATE "CmsContentValues"
 SET "JsonValue" = replace(
         replace(
             replace("JsonValue"::text, 'Kaza Technologies', 'wélé Technologies'),
@@ -69,6 +74,11 @@ SET "JsonValue" = replace(
     "UpdatedAt" = now()
 WHERE "JsonValue"::text LIKE '%Kaza%'
    OR "JsonValue"::text LIKE '%ProxiPro%';
+
+UPDATE "CmsContentValues"
+SET "JsonValue" = replace("JsonValue"::text, 'images/kaza-', 'images/wele-')::jsonb,
+    "UpdatedAt" = now()
+WHERE "JsonValue"::text LIKE '%images/kaza-%';
 
 UPDATE "TranslationValues"
 SET "Value" = replace(replace("Value", 'Kaza', 'wélé'), 'ProxiPro', 'wélé'),

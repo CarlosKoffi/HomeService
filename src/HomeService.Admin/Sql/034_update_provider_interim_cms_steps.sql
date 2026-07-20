@@ -81,21 +81,21 @@ BEGIN
             "label": "Formulaire",
             "title": "Creez votre compte en ligne",
             "text": "Renseignez vos informations, votre service principal et votre zone.",
-            "image": "images/kaza-provider-step-1.svg"
+            "image": "images/wele-provider-step-1.svg"
         },
         {
             "number": "02",
             "label": "Entreprise",
             "title": "Choisissez une entreprise",
             "text": "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.",
-            "image": "images/kaza-provider-step-2.svg"
+            "image": "images/wele-provider-step-2.svg"
         },
         {
             "number": "03",
             "label": "Validation",
             "title": "L''entreprise etudie votre demande",
             "text": "Si elle vous valide, vous pourrez recevoir des missions dans l''application mobile.",
-            "image": "images/kaza-provider-step-3.svg"
+            "image": "images/wele-provider-step-3.svg"
         }
     ]'::jsonb,
     "UpdatedAt" = now()
@@ -110,21 +110,21 @@ BEGIN
             "label": "Formulaire",
             "title": "Creez votre compte en ligne",
             "text": "Renseignez vos informations, votre service principal et votre zone.",
-            "image": "images/kaza-provider-step-1.svg"
+            "image": "images/wele-provider-step-1.svg"
         },
         {
             "number": "02",
             "label": "Entreprise",
             "title": "Choisissez une entreprise",
             "text": "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.",
-            "image": "images/kaza-provider-step-2.svg"
+            "image": "images/wele-provider-step-2.svg"
         },
         {
             "number": "03",
             "label": "Validation",
             "title": "L''entreprise etudie votre demande",
             "text": "Si elle vous valide, vous pourrez recevoir des missions dans l''application mobile.",
-            "image": "images/kaza-provider-step-3.svg"
+            "image": "images/wele-provider-step-3.svg"
         }
     ]'::jsonb, now()
     WHERE NOT EXISTS (

@@ -67,7 +67,7 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                 new CmsLinkResponse(
                     GetText(hero, "secondaryCta.label", "Voir le fonctionnement"),
                     GetText(hero, "secondaryCta.url", "#how")),
-                GetText(hero, "image.url", "images/kaza-premium-hero.png"),
+                GetText(hero, "image.url", "images/wele-premium-hero.png"),
                 GetText(hero, "image.alt", "Equipe wélé en intervention chez un client"),
                 GetJsonList(hero, "proofItems", ["Inscription gratuite", "Validation dossier", "Portail entreprise"])),
             new CompanyHomeStepsCmsResponse(
@@ -75,9 +75,9 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                 GetText(steps, "headline", "Trois etapes, puis votre portail est pret."),
                 GetText(steps, "subtitle", "Un parcours court pour verifier l'entreprise et demarrer avec une base claire."),
                 GetJsonList(steps, "steps", [
-                    new CmsStepResponse("01", "Compte", "Creez votre compte", "Renseignez votre entreprise, vos services et le contact responsable.", "images/kaza-how-step-1.png"),
-                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "wélé controle les informations pour securiser les clients et les missions.", "images/kaza-how-step-2.png"),
-                    new CmsStepResponse("03", "Portail", "Travaillez depuis votre portail", "Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.", "images/kaza-how-step-3.png")
+                    new CmsStepResponse("01", "Compte", "Creez votre compte", "Renseignez votre entreprise, vos services et le contact responsable.", "images/wele-how-step-1.png"),
+                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "wélé controle les informations pour securiser les clients et les missions.", "images/wele-how-step-2.png"),
+                    new CmsStepResponse("03", "Portail", "Travaillez depuis votre portail", "Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.", "images/wele-how-step-3.png")
                 ])),
             new CompanyHomeTrustedCmsResponse(
                 GetText(trusted, "headline", "Ils font confiance a wélé"),

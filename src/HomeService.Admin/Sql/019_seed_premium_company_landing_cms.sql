@@ -132,13 +132,13 @@ BEGIN
             ('Hero premium entreprises', 'primaryCtaUrl', 'InternalLink', 'register', NULL::jsonb),
             ('Hero premium entreprises', 'secondaryCtaLabel', 'ShortText', 'Voir le fonctionnement', NULL::jsonb),
             ('Hero premium entreprises', 'secondaryCtaUrl', 'InternalLink', '#how', NULL::jsonb),
-            ('Hero premium entreprises', 'imagePath', 'Media', 'images/kaza-premium-hero.png', NULL::jsonb),
+            ('Hero premium entreprises', 'imagePath', 'Media', 'images/wele-premium-hero.png', NULL::jsonb),
             ('Hero premium entreprises', 'proofItems', 'Json', NULL, '["Inscription gratuite","Validation dossier","Portail entreprise"]'::jsonb),
 
             ('Fonctionnement entreprises', 'label', 'ShortText', 'Comment ca marche', NULL::jsonb),
             ('Fonctionnement entreprises', 'title', 'ShortText', 'Trois etapes, puis votre portail est pret.', NULL::jsonb),
             ('Fonctionnement entreprises', 'body', 'LongText', 'Un parcours court pour verifier l''entreprise et demarrer avec une base claire.', NULL::jsonb),
-            ('Fonctionnement entreprises', 'steps', 'Json', NULL, '[{"number":"01","label":"Compte","title":"Creez votre compte","body":"Renseignez votre entreprise, vos services et le contact responsable.","imagePath":"images/kaza-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","body":"wélé controle les informations pour securiser les clients et les missions.","imagePath":"images/kaza-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","body":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","imagePath":"images/kaza-how-step-3.png"}]'::jsonb),
+            ('Fonctionnement entreprises', 'steps', 'Json', NULL, '[{"number":"01","label":"Compte","title":"Creez votre compte","body":"Renseignez votre entreprise, vos services et le contact responsable.","imagePath":"images/wele-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","body":"wélé controle les informations pour securiser les clients et les missions.","imagePath":"images/wele-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","body":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","imagePath":"images/wele-how-step-3.png"}]'::jsonb),
 
             ('Preuve sociale entreprises', 'title', 'ShortText', 'Ils font confiance a wélé', NULL::jsonb),
             ('Preuve sociale entreprises', 'items', 'Json', NULL, '["Services verifies","Entreprises locales","Prestataires suivis","Paiements traces","Support partenaire"]'::jsonb),
