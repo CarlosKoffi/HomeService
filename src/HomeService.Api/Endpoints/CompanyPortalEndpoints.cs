@@ -108,6 +108,45 @@ public static class CompanyPortalEndpoints
         })
         .WithName("GetCompanyPortalDashboard");
 
+        group.MapGet("/{companyId:guid}/notifications", async (
+            Guid companyId,
+            CompanyPortalNotificationService notificationService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.ListAsync(companyId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("ListCompanyPortalNotifications");
+
+        group.MapPost("/{companyId:guid}/notifications/mark-read", async (
+            Guid companyId,
+            HttpRequest httpRequest,
+            CompanyPortalNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.MarkAllReadAsync(companyId, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, "Entreprise"),
+                "CompanyPortalNotificationsMarkedRead",
+                nameof(CompanyPortalNotification),
+                companyId,
+                "Notifications entreprise marquees comme lues.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new { result.UpdatedCount }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new { result.UpdatedCount });
+        })
+        .WithName("MarkCompanyPortalNotificationsRead");
+
         group.MapPost("/{companyId:guid}/interim-candidates/{requestId:guid}/approve", async (
             Guid companyId,
             Guid requestId,

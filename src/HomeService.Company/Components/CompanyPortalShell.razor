@@ -82,13 +82,13 @@
             <div class="portal-topbar-actions">
                 @if (TopbarActions is null)
                 {
-                    <button type="button" class="portal-bell" title="Notifications">
+                    <a class="portal-bell" href="@PortalLink("notifications")" title="Notifications" aria-label="Ouvrir les notifications">
                         <span></span>
                         @if (EffectiveUnreadNotificationCount > 0)
                         {
                             <em>@EffectiveUnreadNotificationCount</em>
                         }
-                    </button>
+                    </a>
                     <button type="button" class="portal-logout" @onclick="LogoutAsync">Sortir</button>
                 }
                 else

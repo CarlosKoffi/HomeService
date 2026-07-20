@@ -269,7 +269,12 @@
 
         return url.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
             ? ApiClient.ToApiUrl(url)
-            : url.TrimStart('/');
+            : NormalizeLegacyMediaUrl(url.TrimStart('/'));
+    }
+
+    private static string NormalizeLegacyMediaUrl(string url)
+    {
+        return url.Replace("images/kaza-", "images/wele-", StringComparison.OrdinalIgnoreCase);
     }
 
     private static HeroHeadlineParts SplitHeroHeadline(string headline)
