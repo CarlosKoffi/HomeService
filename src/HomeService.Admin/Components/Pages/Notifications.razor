@@ -30,7 +30,13 @@
             class="@GetSectionButtonClass("external")"
             @onclick='() => SetSection("external")'>
         Email / WhatsApp
-        <span>@QueuedNotifications.Count</span>
+        <span>@ExternalNotifications.Count</span>
+    </button>
+    <button type="button"
+            class="@GetSectionButtonClass("app")"
+            @onclick='() => SetSection("app")'>
+        Application
+        <span>@AppNotifications.Count</span>
     </button>
     <button type="button"
             class="@GetSectionButtonClass("rules")"
@@ -54,24 +60,29 @@
             <small>entreprises</small>
         </article>
         <article>
-            <span>A envoyer</span>
-            <strong>@CountByStatus("Pending")</strong>
+            <span>Externes a envoyer</span>
+            <strong>@ExternalNotifications.Count(notification => notification.Status == "Pending")</strong>
             <small>email / WhatsApp</small>
+        </article>
+        <article>
+            <span>Application</span>
+            <strong>@AppNotifications.Count(notification => notification.Status is "Pending" or "Failed")</strong>
+            <small>clients / prestataires</small>
         </article>
         <article>
             <span>Envoyees</span>
             <strong>@CountByStatus("Sent")</strong>
-            <small>email / WhatsApp</small>
+            <small>tous canaux</small>
         </article>
         <article>
             <span>En erreur</span>
             <strong>@CountByStatus("Failed")</strong>
-            <small>email / WhatsApp</small>
+            <small>tous canaux</small>
         </article>
         <article>
             <span>Annulees</span>
             <strong>@CountByStatus("Cancelled")</strong>
-            <small>email / WhatsApp</small>
+            <small>tous canaux</small>
         </article>
     </section>
 
@@ -87,6 +98,12 @@
             <strong>Files email et WhatsApp</strong>
             <p>Renvoyez, annulez ou marquez comme envoyees les notifications externes en attente.</p>
             <button type="button" @onclick='() => SetSection("external")'>Voir les envois</button>
+        </article>
+        <article>
+            <span>Application</span>
+            <strong>Messages client et prestataire</strong>
+            <p>Suivez les messages qui partiront vers l'application mobile quand le canal sera branche.</p>
+            <button type="button" @onclick='() => SetSection("app")'>Voir l'application</button>
         </article>
         <article>
             <span>Parametrage</span>
@@ -255,7 +272,6 @@
                 <option value="">Tous</option>
                 <option value="Email">Email</option>
                 <option value="WhatsApp">WhatsApp</option>
-                <option value="MobilePush">Application</option>
             </select>
         </label>
     </section>
@@ -325,6 +341,90 @@
     </section>
 }
 
+@if (ActiveNotificationSection == "app")
+{
+    <section class="notification-filters">
+        <label>
+            Recherche application
+            <input @bind="SearchTerm" @bind:event="oninput" placeholder="Destinataire, sujet, contenu..." />
+        </label>
+        <label>
+            Statut
+            <select @bind="StatusFilter">
+                <option value="">Tous</option>
+                <option value="Pending">A envoyer</option>
+                <option value="Failed">En erreur</option>
+                <option value="Sent">Envoyees</option>
+                <option value="Cancelled">Annulees</option>
+            </select>
+        </label>
+    </section>
+
+    <section class="notification-list">
+        @if (IsLoading)
+        {
+            <article>
+                <p>Chargement des notifications application...</p>
+            </article>
+        }
+        else if (FilteredAppNotifications.Count == 0)
+        {
+            <article>
+                <p>Aucune notification application ne correspond aux filtres.</p>
+            </article>
+        }
+        else
+        {
+            @foreach (var notification in FilteredAppNotifications)
+            {
+                <article class="@GetNotificationClass(notification.Status)">
+                    <div>
+                        <strong>@notification.Subject</strong>
+                        <p>@notification.Body</p>
+                        <small>@notification.Recipient - @notification.ScheduledAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                        @if (!string.IsNullOrWhiteSpace(notification.FailureReason))
+                        {
+                            <small class="notification-failure">@notification.FailureReason</small>
+                        }
+                    </div>
+                    <span>Application</span>
+                    <span>@TranslateStatus(notification.Status)</span>
+                    <div class="notification-actions">
+                        <button type="button"
+                                disabled="@(!CanRetry(notification) || IsBusy(notification.Id))"
+                                @onclick="() => RetryAsync(notification)">
+                            @GetRetryLabel(notification)
+                        </button>
+                        <button type="button"
+                                disabled="@(!CanCancel(notification) || IsBusy(notification.Id))"
+                                @onclick="() => ToggleCancel(notification.Id)">
+                            Annuler
+                        </button>
+                        <button type="button"
+                                disabled="@(!CanMarkSent(notification) || IsBusy(notification.Id))"
+                                @onclick="() => MarkSentAsync(notification)">
+                            Marquer envoyee
+                        </button>
+                    </div>
+                    @if (CancelNotificationId == notification.Id)
+                    {
+                        <div class="notification-cancel-row">
+                            <input @bind="CancelReason"
+                                   @bind:event="oninput"
+                                   placeholder="Raison de l'annulation" />
+                            <button type="button"
+                                    disabled="@IsBusy(notification.Id)"
+                                    @onclick="() => CancelAsync(notification)">
+                                Confirmer
+                            </button>
+                        </div>
+                    }
+                </article>
+            }
+        }
+    </section>
+}
+
 @if (!string.IsNullOrWhiteSpace(SuccessMessage))
 {
     <p class="admin-message">@SuccessMessage</p>
@@ -346,10 +446,27 @@
     private string ActiveNotificationSection { get; set; } = "overview";
 
     private IReadOnlyList<NotificationOutboxMessageResponse> FilteredNotifications
-        => QueuedNotifications
+        => ExternalNotifications
             .Where(MatchesFilters)
             .OrderBy(notification => notification.Status == "Failed" ? 0 : notification.Status == "Pending" ? 1 : 2)
             .ThenByDescending(notification => notification.ScheduledAt)
+            .ToList();
+
+    private IReadOnlyList<NotificationOutboxMessageResponse> FilteredAppNotifications
+        => AppNotifications
+            .Where(MatchesFilters)
+            .OrderBy(notification => notification.Status == "Failed" ? 0 : notification.Status == "Pending" ? 1 : 2)
+            .ThenByDescending(notification => notification.ScheduledAt)
+            .ToList();
+
+    private IReadOnlyList<NotificationOutboxMessageResponse> ExternalNotifications
+        => QueuedNotifications
+            .Where(notification => notification.Channel is "Email" or "WhatsApp")
+            .ToList();
+
+    private IReadOnlyList<NotificationOutboxMessageResponse> AppNotifications
+        => QueuedNotifications
+            .Where(notification => notification.Channel == "MobilePush")
             .ToList();
 
     private IReadOnlyList<AdminCompanyPortalNotificationResponse> FilteredCompanyPortalNotifications
