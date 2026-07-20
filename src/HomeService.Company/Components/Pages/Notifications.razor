@@ -50,6 +50,29 @@ else
                 <div class="notifications-message">@Message</div>
             }
 
+            <nav class="notifications-section-menu" aria-label="Navigation notifications">
+                <button class="@GetCategoryClass("all")" type="button" @onclick='() => ActiveCategory = "all"'>
+                    <span>Toutes</span>
+                    <em>@NotificationItems.Count</em>
+                </button>
+                <button class="@GetCategoryClass("action")" type="button" @onclick='() => ActiveCategory = "action"'>
+                    <span>A traiter</span>
+                    <em>@CountByCategory("action")</em>
+                </button>
+                <button class="@GetCategoryClass("documents")" type="button" @onclick='() => ActiveCategory = "documents"'>
+                    <span>Dossier</span>
+                    <em>@CountByCategory("documents")</em>
+                </button>
+                <button class="@GetCategoryClass("missions")" type="button" @onclick='() => ActiveCategory = "missions"'>
+                    <span>Missions</span>
+                    <em>@CountByCategory("missions")</em>
+                </button>
+                <button class="@GetCategoryClass("account")" type="button" @onclick='() => ActiveCategory = "account"'>
+                    <span>Compte</span>
+                    <em>@CountByCategory("account")</em>
+                </button>
+            </nav>
+
             <div class="notifications-toolbar">
                 <label>
                     <span>Recherche</span>
@@ -107,6 +130,7 @@ else
     private bool IsSessionLoading { get; set; } = true;
     private bool IsMarkingRead { get; set; }
     private string Search { get; set; } = string.Empty;
+    private string ActiveCategory { get; set; } = "all";
     private string ActiveFilter { get; set; } = "all";
     private string? Message { get; set; }
 
@@ -118,6 +142,11 @@ else
         get
         {
             var query = NotificationItems.AsEnumerable();
+            if (ActiveCategory != "all")
+            {
+                query = query.Where(notification => GetNotificationCategory(notification) == ActiveCategory);
+            }
+
             query = ActiveFilter switch
             {
                 "unread" => query.Where(notification => !notification.IsRead),
@@ -139,6 +168,11 @@ else
                 .ThenByDescending(notification => notification.OccurredAt)
                 .ToList();
         }
+    }
+
+    private int CountByCategory(string category)
+    {
+        return NotificationItems.Count(notification => GetNotificationCategory(notification) == category);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -224,6 +258,11 @@ else
         return string.Equals(ActiveFilter, filter, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
     }
 
+    private string GetCategoryClass(string category)
+    {
+        return string.Equals(ActiveCategory, category, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+    }
+
     private string PortalLink(string? path)
     {
         var cleanPath = string.IsNullOrWhiteSpace(path) ? "dashboard" : path.TrimStart('/');
@@ -271,6 +310,32 @@ else
             "CompanyApplicationMoreInformationRequested" => "Complement demande",
             _ => "Notification"
         };
+    }
+
+    private static string GetNotificationCategory(CompanyPortalNotificationResponse notification)
+    {
+        if (notification.CompanyApplicationDocumentId is not null
+            || notification.Type.Contains("Document", StringComparison.OrdinalIgnoreCase)
+            || (notification.ActionUrl?.Contains("documents", StringComparison.OrdinalIgnoreCase) ?? false))
+        {
+            return "documents";
+        }
+
+        if (notification.Type.Contains("Mission", StringComparison.OrdinalIgnoreCase)
+            || (notification.ActionUrl?.Contains("mission", StringComparison.OrdinalIgnoreCase) ?? false))
+        {
+            return "missions";
+        }
+
+        if (!notification.IsRead
+            || notification.Tone is "warning" or "danger"
+            || notification.Type.Contains("MoreInformation", StringComparison.OrdinalIgnoreCase)
+            || notification.Type.Contains("Rejected", StringComparison.OrdinalIgnoreCase))
+        {
+            return "action";
+        }
+
+        return "account";
     }
 
     private static string FormatDate(DateTimeOffset date)
