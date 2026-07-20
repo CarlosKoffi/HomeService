@@ -1095,6 +1095,39 @@ public static class AdminEndpoints
         .WithName("MarkAdminCompanyNotificationUnread")
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPost("/companies/{companyId:guid}/notifications/{notificationId:guid}/resend", async (
+            Guid companyId,
+            Guid notificationId,
+            HttpRequest httpRequest,
+            AdminCompanyNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.ResendAsync(companyId, notificationId, cancellationToken);
+            if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            var notification = result.Notification!;
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyNotificationResent",
+                nameof(CompanyPortalNotification),
+                notification.Id,
+                "Notification entreprise renvoyee sur le portail par l'administration.",
+                null,
+                new { notification.CompanyId, notification.Type, notification.Title, notification.IsRead });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.NoContent();
+        })
+        .WithName("ResendAdminCompanyNotification")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound);
         
         admin.MapPost("/company-applications/{id:guid}/approve", async (
             Guid id,

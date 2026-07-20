@@ -305,6 +305,7 @@ else
                         {
                             <button type="button" disabled="@(BusyNotificationId == notification.Id)" @onclick="() => MarkCompanyNotificationReadAsync(notification.Id)">Marquer lue</button>
                         }
+                        <button type="button" disabled="@(BusyNotificationId == notification.Id)" @onclick="() => ResendCompanyNotificationAsync(notification.Id)">Renvoyer</button>
                     </div>
                 </article>
             }
@@ -464,6 +465,18 @@ else
         await RunNotificationActionAsync(
             notificationId,
             () => ApiClient.MarkCompanyNotificationUnreadAsync(Company.Id, notificationId));
+    }
+
+    private async Task ResendCompanyNotificationAsync(Guid notificationId)
+    {
+        if (Company is null)
+        {
+            return;
+        }
+
+        await RunNotificationActionAsync(
+            notificationId,
+            () => ApiClient.ResendCompanyNotificationAsync(Company.Id, notificationId));
     }
 
     private async Task RunNotificationActionAsync(Guid notificationId, Func<Task<ApiActionResult>> action)

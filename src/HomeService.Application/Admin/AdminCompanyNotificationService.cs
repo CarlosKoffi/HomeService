@@ -38,6 +38,31 @@ public sealed class AdminCompanyNotificationService(IAppDbContext db)
         return AdminCompanyNotificationActionResult.Ok(notification, previousIsRead);
     }
 
+    public async Task<AdminCompanyNotificationActionResult> ResendAsync(
+        Guid companyId,
+        Guid notificationId,
+        CancellationToken cancellationToken)
+    {
+        var notification = await FindAsync(companyId, notificationId, cancellationToken);
+        if (notification is null)
+        {
+            return AdminCompanyNotificationActionResult.NotFound();
+        }
+
+        var copy = new CompanyPortalNotification(
+            notification.CompanyId,
+            notification.CompanyApplicationId,
+            notification.CompanyApplicationDocumentId,
+            notification.Type,
+            notification.Title,
+            notification.Message,
+            notification.Tone,
+            notification.ActionUrl);
+
+        db.CompanyPortalNotifications.Add(copy);
+        return AdminCompanyNotificationActionResult.Ok(copy, previousIsRead: false);
+    }
+
     private async Task<CompanyPortalNotification?> FindAsync(
         Guid companyId,
         Guid notificationId,
