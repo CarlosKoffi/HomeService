@@ -782,7 +782,7 @@ public static class DatabaseInitializer
                       {"question":"L'inscription est-elle gratuite ?","answer":"Oui. L'inscription est gratuite. wélé applique ensuite une commission uniquement sur les missions realisees."},
                       {"question":"Puis-je refuser une demande client ?","answer":"Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."},
                       {"question":"Qui choisit le prestataire ?","answer":"Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser wélé vous accompagner selon le mode choisi."},
-                      {"question":"Comment sont suivis les paiements ?","answer":"Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions."},
+                      {"question":"Comment sont suivis les paiements ?","answer":"Le portail permet de suivre les paiements Mobile Money, la carte bancaire et les commissions."},
                       {"question":"Combien de temps prend la validation ?","answer":"Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide."}
                     ]
                     """, french.Id);
