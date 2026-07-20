@@ -45,7 +45,8 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         CancellationToken cancellationToken)
     {
         var provider = await db.Providers
-            .AsNoTracking()
+            .Include(provider => provider.Services)
+                .ThenInclude(service => service.Prestations)
             .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
         if (provider is null)
         {
@@ -69,59 +70,28 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
                 group => group.Key,
                 group => group.Select(prestation => prestation.Id).ToHashSet());
 
-        var existingServices = await db.ProviderServices
-            .AsNoTracking()
-            .Where(providerService => providerService.ProviderId == employeeId)
-            .ToListAsync(cancellationToken);
-        var existingServiceCount = existingServices.Count;
+        var existingServiceCount = provider.Services.Count;
 
         var requestedServices = request.Services
             .Where(service => activeServiceIds.Contains(service.ServiceId))
             .GroupBy(service => service.ServiceId)
             .Select(group => group.Last())
             .ToList();
-        var requestedActiveIds = requestedServices.Select(service => service.ServiceId).ToHashSet();
 
-        await db.ProviderServices
-            .Where(service => service.ProviderId == employeeId && service.IsActive && !requestedActiveIds.Contains(service.ServiceId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(service => service.IsActive, false)
-                .SetProperty(service => service.UpdatedAt, DateTimeOffset.UtcNow),
-                cancellationToken);
+        provider.SyncCompanyServices(requestedServices.Select(service => (
+            service.ServiceId,
+            ParseExperienceLevel(service.ExperienceLevel),
+            Math.Max(0, service.YearsOfExperience),
+            ParseProviderServicePriceTier(service.PriceTier))));
 
         foreach (var requestedService in requestedServices)
         {
-            var providerService = existingServices.FirstOrDefault(service => service.ServiceId == requestedService.ServiceId);
-            if (providerService is null)
-            {
-                providerService = new ProviderService(
-                    employeeId,
-                    companyId,
-                    requestedService.ServiceId,
-                    ParseExperienceLevel(requestedService.ExperienceLevel),
-                    Math.Max(0, requestedService.YearsOfExperience),
-                    ParseProviderServicePriceTier(requestedService.PriceTier));
-                db.ProviderServices.Add(providerService);
-                existingServices.Add(providerService);
-            }
-            else
-            {
-                await db.ProviderServices
-                    .Where(service => service.Id == providerService.Id)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(service => service.ExperienceLevel, ParseExperienceLevel(requestedService.ExperienceLevel))
-                        .SetProperty(service => service.YearsOfExperience, Math.Max(0, requestedService.YearsOfExperience))
-                        .SetProperty(service => service.PriceTier, ParseProviderServicePriceTier(requestedService.PriceTier))
-                        .SetProperty(service => service.CompanyValidatedAt, DateTimeOffset.UtcNow)
-                        .SetProperty(service => service.IsActive, true)
-                        .SetProperty(service => service.UpdatedAt, DateTimeOffset.UtcNow),
-                        cancellationToken);
-            }
+            var providerService = provider.Services.First(service => service.ServiceId == requestedService.ServiceId);
 
             var allowedPrestationIds = activePrestationsByService.TryGetValue(providerService.ServiceId, out var ids)
                 ? ids
                 : new HashSet<Guid>();
-            await SyncServicePrestationsAsync(providerService.Id, requestedService.ServicePrestationIds.Where(allowedPrestationIds.Contains), cancellationToken);
+            providerService.SyncPrestations(requestedService.ServicePrestationIds.Where(allowedPrestationIds.Contains));
         }
 
         return CompanyEmployeeOperationResult.Ok(
@@ -175,52 +145,6 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             replacedPaths,
             new { ReplacedDocumentCount = replacedPaths.Count, DocumentType = documentType },
             new { DocumentType = documentType, OriginalFileName = originalFileName, ContentType = contentType });
-    }
-
-    private async Task SyncServicePrestationsAsync(
-        Guid providerServiceId,
-        IEnumerable<Guid> servicePrestationIds,
-        CancellationToken cancellationToken)
-    {
-        var requestedIds = servicePrestationIds
-            .Where(id => id != Guid.Empty)
-            .Distinct()
-            .ToHashSet();
-
-        await db.ProviderServicePrestations
-            .Where(prestation => prestation.ProviderServiceId == providerServiceId
-                && prestation.IsActive
-                && !requestedIds.Contains(prestation.ServicePrestationId))
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(prestation => prestation.IsActive, false)
-                .SetProperty(prestation => prestation.UpdatedAt, DateTimeOffset.UtcNow),
-                cancellationToken);
-
-        if (requestedIds.Count == 0)
-        {
-            return;
-        }
-
-        await db.ProviderServicePrestations
-            .Where(prestation => prestation.ProviderServiceId == providerServiceId
-                && requestedIds.Contains(prestation.ServicePrestationId)
-                && !prestation.IsActive)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(prestation => prestation.IsActive, true)
-                .SetProperty(prestation => prestation.UpdatedAt, DateTimeOffset.UtcNow),
-                cancellationToken);
-
-        var existingIds = await db.ProviderServicePrestations
-            .AsNoTracking()
-            .Where(prestation => prestation.ProviderServiceId == providerServiceId
-                && requestedIds.Contains(prestation.ServicePrestationId))
-            .Select(prestation => prestation.ServicePrestationId)
-            .ToListAsync(cancellationToken);
-
-        foreach (var missingId in requestedIds.Except(existingIds))
-        {
-            db.ProviderServicePrestations.Add(new ProviderServicePrestation(providerServiceId, missingId));
-        }
     }
 
     public async Task<CompanyEmployeeOperationResult> SuspendAsync(Guid companyId, Guid employeeId, CancellationToken cancellationToken)
