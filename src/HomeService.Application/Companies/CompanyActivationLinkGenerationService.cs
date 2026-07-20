@@ -19,6 +19,37 @@ public sealed class CompanyActivationLinkGenerationService(
         string changedBy,
         CancellationToken cancellationToken)
     {
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                return await GenerateCoreAsync(
+                    applicationId,
+                    companyPortalBaseUrl,
+                    tokenLifetimeHours,
+                    changedBy,
+                    cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt == 0 && db is DbContext context)
+            {
+                context.ChangeTracker.Clear();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return CompanyActivationLinkGenerationResult.ConcurrencyConflict();
+            }
+        }
+
+        return CompanyActivationLinkGenerationResult.ConcurrencyConflict();
+    }
+
+    private async Task<CompanyActivationLinkGenerationResult> GenerateCoreAsync(
+        Guid applicationId,
+        string companyPortalBaseUrl,
+        int tokenLifetimeHours,
+        string changedBy,
+        CancellationToken cancellationToken)
+    {
         var now = DateTimeOffset.UtcNow;
         var application = await db.CompanyApplications
             .FirstOrDefaultAsync(application => application.Id == applicationId, cancellationToken);
@@ -74,6 +105,8 @@ public sealed class CompanyActivationLinkGenerationService(
             activationLink,
             expiresAt,
             preference));
+
+        await db.SaveChangesAsync(cancellationToken);
 
         return CompanyActivationLinkGenerationResult.Ok(
             new CompanyApplicationActivationLinkResponse(

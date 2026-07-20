@@ -1314,7 +1314,12 @@ public static class AdminEndpoints
                 {
                     return Results.BadRequest(new { message = result.Message });
                 }
-        
+
+                if (result.Status == CompanyActivationLinkGenerationStatus.ConcurrencyConflict)
+                {
+                    return Results.Conflict(new { message = result.Message });
+                }
+
                 var response = result.Response!;
                 AddAuditLog(
                     db,

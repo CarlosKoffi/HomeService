@@ -15,6 +15,9 @@ public sealed record CompanyActivationLinkGenerationResult(
     public static CompanyActivationLinkGenerationResult InvalidStatus()
         => new(CompanyActivationLinkGenerationStatus.InvalidStatus, null, null, "Le lien d'activation ne peut etre genere qu'apres validation du dossier.");
 
+    public static CompanyActivationLinkGenerationResult ConcurrencyConflict()
+        => new(CompanyActivationLinkGenerationStatus.ConcurrencyConflict, null, null, "Le dossier a ete modifie pendant la generation du lien. Rechargez la fiche puis recommencez.");
+
     public static CompanyActivationLinkGenerationResult Ok(
         CompanyApplicationActivationLinkResponse response,
         CompanyApplicationStatus previousStatus)

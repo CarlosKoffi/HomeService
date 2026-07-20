@@ -4,5 +4,6 @@ public enum CompanyActivationLinkGenerationStatus
 {
     Ok = 0,
     NotFound = 1,
-    InvalidStatus = 2
+    InvalidStatus = 2,
+    ConcurrencyConflict = 3
 }
