@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" role="img" aria-label="Creation du profil prestataire">
+  <rect width="960" height="640" fill="#f7f8fb"/>
+  <rect x="210" y="82" width="540" height="476" rx="40" fill="#fff" stroke="#e5e7eb"/>
+  <rect x="270" y="148" width="150" height="150" rx="75" fill="#eff4ff"/>
+  <circle cx="345" cy="205" r="38" fill="#1a6aff"/>
+  <path d="M285 296c34-40 86-40 120 0" fill="none" stroke="#1a6aff" stroke-width="24" stroke-linecap="round"/>
+  <rect x="472" y="166" width="220" height="22" rx="11" fill="#111"/>
+  <rect x="472" y="214" width="170" height="18" rx="9" fill="#9ca3af"/>
+  <rect x="270" y="378" width="420" height="26" rx="13" fill="#dbeafe"/>
+  <rect x="270" y="430" width="330" height="26" rx="13" fill="#e5e7eb"/>
+  <rect x="270" y="482" width="260" height="26" rx="13" fill="#e5e7eb"/>
+</svg>

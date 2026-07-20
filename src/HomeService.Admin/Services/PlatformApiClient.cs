@@ -712,6 +712,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             return cmsMediaProxy;
         }
 
+        if (value.StartsWith("images/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/" + value.TrimStart('/');
+        }
+
         if (value.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("api/", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/storage/", StringComparison.OrdinalIgnoreCase)

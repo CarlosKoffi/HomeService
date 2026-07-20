@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" role="img" aria-label="Reception de mission mobile">
+  <rect width="960" height="640" fill="#f7f8fb"/>
+  <rect x="320" y="64" width="320" height="512" rx="54" fill="#111"/>
+  <rect x="344" y="104" width="272" height="432" rx="34" fill="#fff"/>
+  <rect x="394" y="130" width="172" height="12" rx="6" fill="#111"/>
+  <rect x="374" y="180" width="212" height="104" rx="24" fill="#eff4ff"/>
+  <path d="M406 222h98M406 254h140" stroke="#1a6aff" stroke-width="14" stroke-linecap="round"/>
+  <rect x="374" y="320" width="212" height="64" rx="20" fill="#f7f8fb" stroke="#e5e7eb"/>
+  <rect x="374" y="406" width="90" height="54" rx="18" fill="#fff" stroke="#d1d5db"/>
+  <rect x="496" y="406" width="90" height="54" rx="18" fill="#1a6aff"/>
+  <path d="M402 432h34M520 432h42" stroke="#111" stroke-width="10" stroke-linecap="round"/>
+  <path d="M520 432h42" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+</svg>
