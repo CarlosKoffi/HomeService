@@ -5,21 +5,24 @@ using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace HomeService.Application.Admin;
 
 public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
 {
+    private static readonly Expression<Func<CompanyApplicationService, bool>> PendingCatalogReviewFilter =
+        proposal =>
+            proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
+            || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
+            || proposal.MatchedServiceId == null;
+
     public async Task<CompanyServiceProposalListResponse> ListAsync(CancellationToken cancellationToken)
     {
         var catalog = await GetCatalogAsync(cancellationToken);
         var proposals = await db.CompanyApplicationServices
             .AsNoTracking()
-            .Where(proposal =>
-                proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
-                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
-                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.CreatedAsNewService
-                || proposal.MatchedServiceId == null)
+            .Where(PendingCatalogReviewFilter)
             .OrderByDescending(proposal => proposal.CreatedAt)
             .Select(proposal => new
             {
@@ -68,11 +71,7 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
     {
         var catalog = await GetCatalogAsync(cancellationToken);
         var proposals = await db.CompanyApplicationServices
-            .Where(proposal =>
-                proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
-                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
-                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.CreatedAsNewService
-                || proposal.MatchedServiceId == null)
+            .Where(PendingCatalogReviewFilter)
             .ToListAsync(cancellationToken);
 
         var updatedCount = 0;
