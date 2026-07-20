@@ -13,251 +13,317 @@
     <button type="button" class="secondary-action" @onclick="LoadAsync">Actualiser</button>
 </div>
 
-<section class="notification-rules-panel">
-    <div class="notification-rules-head">
-        <div>
-            <span>Regles de diffusion</span>
-            <strong>Canaux par type de notification</strong>
-            <p>Le portail s'applique aux entreprises. L'application s'applique aux clients et prestataires. Email et WhatsApp restent configurables.</p>
-        </div>
-        <small>@DeliveryRules.Count type(s)</small>
-    </div>
+<nav class="notification-section-nav" aria-label="Navigation notifications">
+    <button type="button"
+            class="@GetSectionButtonClass("overview")"
+            @onclick='() => SetSection("overview")'>
+        Vue d'ensemble
+        <span>@TotalOpenNotifications</span>
+    </button>
+    <button type="button"
+            class="@GetSectionButtonClass("portal")"
+            @onclick='() => SetSection("portal")'>
+        Portail entreprise
+        <span>@UnreadPortalNotifications</span>
+    </button>
+    <button type="button"
+            class="@GetSectionButtonClass("external")"
+            @onclick='() => SetSection("external")'>
+        Email / WhatsApp
+        <span>@QueuedNotifications.Count</span>
+    </button>
+    <button type="button"
+            class="@GetSectionButtonClass("rules")"
+            @onclick='() => SetSection("rules")'>
+        Regles
+        <span>@DeliveryRules.Count</span>
+    </button>
+</nav>
 
-    @if (DeliveryRules.Count == 0 && IsLoading)
-    {
-        <article class="notification-rule-row">
-            <p>Chargement des regles...</p>
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message admin-message-error">@ErrorMessage</p>
+}
+
+@if (ActiveNotificationSection == "overview")
+{
+    <section class="notification-command-center">
+        <article>
+            <span>Portail non lues</span>
+            <strong>@UnreadPortalNotifications</strong>
+            <small>entreprises</small>
         </article>
-    }
-    else
-    {
-        @foreach (var rule in DeliveryRules)
+        <article>
+            <span>A envoyer</span>
+            <strong>@CountByStatus("Pending")</strong>
+            <small>email / WhatsApp</small>
+        </article>
+        <article>
+            <span>Envoyees</span>
+            <strong>@CountByStatus("Sent")</strong>
+            <small>email / WhatsApp</small>
+        </article>
+        <article>
+            <span>En erreur</span>
+            <strong>@CountByStatus("Failed")</strong>
+            <small>email / WhatsApp</small>
+        </article>
+        <article>
+            <span>Annulees</span>
+            <strong>@CountByStatus("Cancelled")</strong>
+            <small>email / WhatsApp</small>
+        </article>
+    </section>
+
+    <section class="notification-overview-panel">
+        <article>
+            <span>Action rapide</span>
+            <strong>Messages portail</strong>
+            <p>Consultez ce que les entreprises voient dans leur espace et remettez un message en non lu si besoin.</p>
+            <button type="button" @onclick='() => SetSection("portal")'>Ouvrir le portail</button>
+        </article>
+        <article>
+            <span>Suivi externe</span>
+            <strong>Files email et WhatsApp</strong>
+            <p>Renvoyez, annulez ou marquez comme envoyees les notifications externes en attente.</p>
+            <button type="button" @onclick='() => SetSection("external")'>Voir les envois</button>
+        </article>
+        <article>
+            <span>Parametrage</span>
+            <strong>Regles de diffusion</strong>
+            <p>Email et WhatsApp restent configurables. Portail et application sont automatiques selon le destinataire.</p>
+            <button type="button" @onclick='() => SetSection("rules")'>Configurer</button>
+        </article>
+    </section>
+}
+
+@if (ActiveNotificationSection == "rules")
+{
+    <section class="notification-rules-panel">
+        <div class="notification-rules-head">
+            <div>
+                <span>Regles de diffusion</span>
+                <strong>Canaux par type de notification</strong>
+                <p>Le portail s'applique aux entreprises. L'application s'applique aux clients et prestataires. Email et WhatsApp restent configurables.</p>
+            </div>
+            <small>@DeliveryRules.Count type(s)</small>
+        </div>
+
+        @if (DeliveryRules.Count == 0 && IsLoading)
         {
             <article class="notification-rule-row">
-                <div class="notification-rule-copy">
-                    <span>@TranslateAudience(rule.Audience)</span>
-                    <strong>@rule.Label</strong>
-                    <small>@rule.EventKey</small>
-                </div>
-                <div class="notification-channel-grid">
-                    <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company" || rule.Audience == "Mixed")">
-                        <input type="checkbox"
-                               checked="@rule.PortalEnabled"
-                               disabled />
-                        <span>Portail</span>
-                        <small>@GetInternalChannelHint(rule, "Portal")</small>
-                    </label>
-                    <label class="@GetRuleChannelClass(rule.MobileAppEnabled, rule.Audience != "Company")">
-                        <input type="checkbox"
-                               checked="@rule.MobileAppEnabled"
-                               disabled />
-                        <span>Application</span>
-                        <small>@GetInternalChannelHint(rule, "MobileApp")</small>
-                    </label>
-                    <label class="@GetRuleChannelClass(rule.EmailEnabled, true)">
-                        <input type="checkbox"
-                               checked="@rule.EmailEnabled"
-                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "Email", eventArgs)' />
-                        <span>Email</span>
-                        <small>Configurable</small>
-                    </label>
-                    <label class="@GetRuleChannelClass(rule.WhatsAppEnabled, true)">
-                        <input type="checkbox"
-                               checked="@rule.WhatsAppEnabled"
-                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "WhatsApp", eventArgs)' />
-                        <span>WhatsApp</span>
-                        <small>Configurable</small>
-                    </label>
-                </div>
+                <p>Chargement des regles...</p>
             </article>
         }
-    }
-</section>
+        else
+        {
+            @foreach (var rule in DeliveryRules)
+            {
+                <article class="notification-rule-row">
+                    <div class="notification-rule-copy">
+                        <span>@TranslateAudience(rule.Audience)</span>
+                        <strong>@rule.Label</strong>
+                        <small>@rule.EventKey</small>
+                    </div>
+                    <div class="notification-channel-grid">
+                        <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company" || rule.Audience == "Mixed")">
+                            <input type="checkbox"
+                                   checked="@rule.PortalEnabled"
+                                   disabled />
+                            <span>Portail</span>
+                            <small>@GetInternalChannelHint(rule, "Portal")</small>
+                        </label>
+                        <label class="@GetRuleChannelClass(rule.MobileAppEnabled, rule.Audience != "Company")">
+                            <input type="checkbox"
+                                   checked="@rule.MobileAppEnabled"
+                                   disabled />
+                            <span>Application</span>
+                            <small>@GetInternalChannelHint(rule, "MobileApp")</small>
+                        </label>
+                        <label class="@GetRuleChannelClass(rule.EmailEnabled, true)">
+                            <input type="checkbox"
+                                   checked="@rule.EmailEnabled"
+                                   @onchange='eventArgs => ToggleRuleChannelAsync(rule, "Email", eventArgs)' />
+                            <span>Email</span>
+                            <small>Configurable</small>
+                        </label>
+                        <label class="@GetRuleChannelClass(rule.WhatsAppEnabled, true)">
+                            <input type="checkbox"
+                                   checked="@rule.WhatsAppEnabled"
+                                   @onchange='eventArgs => ToggleRuleChannelAsync(rule, "WhatsApp", eventArgs)' />
+                            <span>WhatsApp</span>
+                            <small>Configurable</small>
+                        </label>
+                    </div>
+                </article>
+            }
+        }
+    </section>
+}
 
-<section class="notification-command-center">
-    <article>
-        <span>Portail non lues</span>
-        <strong>@UnreadPortalNotifications</strong>
-        <small>entreprises</small>
-    </article>
-    <article>
-        <span>A envoyer</span>
-        <strong>@CountByStatus("Pending")</strong>
-        <small>email / WhatsApp</small>
-    </article>
-    <article>
-        <span>Envoyees</span>
-        <strong>@CountByStatus("Sent")</strong>
-        <small>email / WhatsApp</small>
-    </article>
-    <article>
-        <span>En erreur</span>
-        <strong>@CountByStatus("Failed")</strong>
-        <small>email / WhatsApp</small>
-    </article>
-    <article>
-        <span>Annulees</span>
-        <strong>@CountByStatus("Cancelled")</strong>
-        <small>email / WhatsApp</small>
-    </article>
-</section>
+@if (ActiveNotificationSection == "portal")
+{
+    <section class="notification-filters notification-portal-search">
+        <label>
+            Recherche portail
+            <input @bind="SearchTerm" @bind:event="oninput" placeholder="Entreprise, titre, message..." />
+        </label>
+    </section>
 
-<section class="notification-rules-panel portal-notification-admin-panel">
-    <div class="notification-rules-head">
-        <div>
-            <span>Portail entreprise</span>
-            <strong>Messages envoyes automatiquement au portail entreprise</strong>
-            <p>Ces notifications sont visibles par l'entreprise dans son portail. Le renvoi les remet en non lues et les remonte dans son fil.</p>
+    <section class="notification-rules-panel portal-notification-admin-panel">
+        <div class="notification-rules-head">
+            <div>
+                <span>Portail entreprise</span>
+                <strong>Messages envoyes automatiquement au portail entreprise</strong>
+                <p>Ces notifications sont visibles par l'entreprise dans son portail. Le renvoi les remet en non lues et les remonte dans son fil.</p>
+            </div>
+            <small>@CompanyPortalNotifications.Count message(s)</small>
         </div>
-        <small>@CompanyPortalNotifications.Count message(s)</small>
-    </div>
 
-    @if (IsLoading)
-    {
-        <article class="notification-rule-row">
-            <p>Chargement des notifications portail...</p>
-        </article>
-    }
-    else if (FilteredCompanyPortalNotifications.Count == 0)
-    {
-        <article class="notification-rule-row">
-            <p>Aucune notification portail ne correspond aux filtres.</p>
-        </article>
-    }
-    else
-    {
-        @foreach (var notification in FilteredCompanyPortalNotifications)
+        @if (IsLoading)
         {
-            <article class="@GetPortalNotificationClass(notification)">
-                <div class="notification-rule-copy">
-                    <span>@notification.CompanyName</span>
-                    <strong>@notification.Title</strong>
-                    <small>@notification.Message</small>
-                    <small>@TranslateNotificationTone(notification.Tone) - @notification.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
-                </div>
-                <div class="notification-actions">
-                    @if (notification.IsRead)
-                    {
-                        <button type="button"
-                                disabled="@IsBusy(notification.Id)"
-                                @onclick="() => MarkPortalNotificationUnreadAsync(notification)">
-                            Remettre non lue
-                        </button>
-                    }
-                    else
-                    {
-                        <button type="button"
-                                disabled="@IsBusy(notification.Id)"
-                                @onclick="() => MarkPortalNotificationReadAsync(notification)">
-                            Marquer lue
-                        </button>
-                    }
-                    <button type="button"
-                            disabled="@IsBusy(notification.Id)"
-                            @onclick="() => ResendPortalNotificationAsync(notification)">
-                        Renvoyer sur le portail
-                    </button>
-                </div>
+            <article class="notification-rule-row">
+                <p>Chargement des notifications portail...</p>
             </article>
         }
-    }
-</section>
-
-<section class="notification-filters">
-    <label>
-        Recherche
-        <input @bind="SearchTerm" @bind:event="oninput" placeholder="Destinataire, sujet, contenu..." />
-    </label>
-    <label>
-        Statut
-        <select @bind="StatusFilter">
-            <option value="">Tous</option>
-            <option value="Pending">A envoyer</option>
-            <option value="Failed">En erreur</option>
-            <option value="Sent">Envoyees</option>
-            <option value="Cancelled">Annulees</option>
-        </select>
-    </label>
-    <label>
-        Canal externe
-        <select @bind="ChannelFilter">
-            <option value="">Tous</option>
-            <option value="Email">Email</option>
-            <option value="WhatsApp">WhatsApp</option>
-            <option value="MobilePush">Application</option>
-        </select>
-    </label>
-</section>
-
-<section class="notification-list">
-    @if (IsLoading)
-    {
-        <article>
-            <p>Chargement des notifications...</p>
-        </article>
-    }
-    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
-    {
-        <article class="status-rejected">
-            <p>@ErrorMessage</p>
-        </article>
-    }
-    else if (FilteredNotifications.Count == 0)
-    {
-        <article>
-            <p>Aucune notification ne correspond aux filtres.</p>
-        </article>
-    }
-    else
-    {
-        @foreach (var notification in FilteredNotifications)
+        else if (FilteredCompanyPortalNotifications.Count == 0)
         {
-            <article class="@GetNotificationClass(notification.Status)">
-                <div>
-                    <strong>@notification.Subject</strong>
-                    <p>@notification.Body</p>
-                    <small>@notification.Recipient - @notification.ScheduledAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
-                    @if (!string.IsNullOrWhiteSpace(notification.FailureReason))
-                    {
-                        <small class="notification-failure">@notification.FailureReason</small>
-                    }
-                </div>
-                <span>@TranslateChannel(notification.Channel)</span>
-                <span>@TranslateStatus(notification.Status)</span>
-                <div class="notification-actions">
-                    <button type="button"
-                            disabled="@(!CanRetry(notification) || IsBusy(notification.Id))"
-                            @onclick="() => RetryAsync(notification)">
-                        @GetRetryLabel(notification)
-                    </button>
-                    <button type="button"
-                            disabled="@(!CanCancel(notification) || IsBusy(notification.Id))"
-                            @onclick="() => ToggleCancel(notification.Id)">
-                        Annuler
-                    </button>
-                    <button type="button"
-                            disabled="@(!CanMarkSent(notification) || IsBusy(notification.Id))"
-                            @onclick="() => MarkSentAsync(notification)">
-                        Marquer envoye
-                    </button>
-                </div>
-                @if (CancelNotificationId == notification.Id)
-                {
-                    <div class="notification-cancel-row">
-                        <input @bind="CancelReason"
-                               @bind:event="oninput"
-                               placeholder="Raison de l'annulation" />
+            <article class="notification-rule-row">
+                <p>Aucune notification portail ne correspond aux filtres.</p>
+            </article>
+        }
+        else
+        {
+            @foreach (var notification in FilteredCompanyPortalNotifications)
+            {
+                <article class="@GetPortalNotificationClass(notification)">
+                    <div class="notification-rule-copy">
+                        <span>@notification.CompanyName</span>
+                        <strong>@notification.Title</strong>
+                        <small>@notification.Message</small>
+                        <small>@TranslateNotificationTone(notification.Tone) - @notification.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                    </div>
+                    <div class="notification-actions">
+                        @if (notification.IsRead)
+                        {
+                            <button type="button"
+                                    disabled="@IsBusy(notification.Id)"
+                                    @onclick="() => MarkPortalNotificationUnreadAsync(notification)">
+                                Remettre non lue
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    disabled="@IsBusy(notification.Id)"
+                                    @onclick="() => MarkPortalNotificationReadAsync(notification)">
+                                Marquer lue
+                            </button>
+                        }
                         <button type="button"
                                 disabled="@IsBusy(notification.Id)"
-                                @onclick="() => CancelAsync(notification)">
-                            Confirmer
+                                @onclick="() => ResendPortalNotificationAsync(notification)">
+                            Renvoyer sur le portail
                         </button>
                     </div>
-                }
+                </article>
+            }
+        }
+    </section>
+}
+
+@if (ActiveNotificationSection == "external")
+{
+    <section class="notification-filters">
+        <label>
+            Recherche
+            <input @bind="SearchTerm" @bind:event="oninput" placeholder="Destinataire, sujet, contenu..." />
+        </label>
+        <label>
+            Statut
+            <select @bind="StatusFilter">
+                <option value="">Tous</option>
+                <option value="Pending">A envoyer</option>
+                <option value="Failed">En erreur</option>
+                <option value="Sent">Envoyees</option>
+                <option value="Cancelled">Annulees</option>
+            </select>
+        </label>
+        <label>
+            Canal externe
+            <select @bind="ChannelFilter">
+                <option value="">Tous</option>
+                <option value="Email">Email</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="MobilePush">Application</option>
+            </select>
+        </label>
+    </section>
+
+    <section class="notification-list">
+        @if (IsLoading)
+        {
+            <article>
+                <p>Chargement des notifications...</p>
             </article>
         }
-    }
-</section>
+        else if (FilteredNotifications.Count == 0)
+        {
+            <article>
+                <p>Aucune notification ne correspond aux filtres.</p>
+            </article>
+        }
+        else
+        {
+            @foreach (var notification in FilteredNotifications)
+            {
+                <article class="@GetNotificationClass(notification.Status)">
+                    <div>
+                        <strong>@notification.Subject</strong>
+                        <p>@notification.Body</p>
+                        <small>@notification.Recipient - @notification.ScheduledAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                        @if (!string.IsNullOrWhiteSpace(notification.FailureReason))
+                        {
+                            <small class="notification-failure">@notification.FailureReason</small>
+                        }
+                    </div>
+                    <span>@TranslateChannel(notification.Channel)</span>
+                    <span>@TranslateStatus(notification.Status)</span>
+                    <div class="notification-actions">
+                        <button type="button"
+                                disabled="@(!CanRetry(notification) || IsBusy(notification.Id))"
+                                @onclick="() => RetryAsync(notification)">
+                            @GetRetryLabel(notification)
+                        </button>
+                        <button type="button"
+                                disabled="@(!CanCancel(notification) || IsBusy(notification.Id))"
+                                @onclick="() => ToggleCancel(notification.Id)">
+                            Annuler
+                        </button>
+                        <button type="button"
+                                disabled="@(!CanMarkSent(notification) || IsBusy(notification.Id))"
+                                @onclick="() => MarkSentAsync(notification)">
+                            Marquer envoye
+                        </button>
+                    </div>
+                    @if (CancelNotificationId == notification.Id)
+                    {
+                        <div class="notification-cancel-row">
+                            <input @bind="CancelReason"
+                                   @bind:event="oninput"
+                                   placeholder="Raison de l'annulation" />
+                            <button type="button"
+                                    disabled="@IsBusy(notification.Id)"
+                                    @onclick="() => CancelAsync(notification)">
+                                Confirmer
+                            </button>
+                        </div>
+                    }
+                </article>
+            }
+        }
+    </section>
+}
 
 @if (!string.IsNullOrWhiteSpace(SuccessMessage))
 {
@@ -277,6 +343,7 @@
     private string? SearchTerm { get; set; }
     private string? StatusFilter { get; set; }
     private string? ChannelFilter { get; set; }
+    private string ActiveNotificationSection { get; set; } = "overview";
 
     private IReadOnlyList<NotificationOutboxMessageResponse> FilteredNotifications
         => QueuedNotifications
@@ -293,6 +360,8 @@
             .ToList();
 
     private int UnreadPortalNotifications => CompanyPortalNotifications.Count(notification => !notification.IsRead);
+
+    private int TotalOpenNotifications => UnreadPortalNotifications + CountByStatus("Pending") + CountByStatus("Failed");
 
     protected override async Task OnInitializedAsync()
     {
@@ -470,6 +539,20 @@
     private bool IsBusy(Guid notificationId)
     {
         return BusyNotificationId == notificationId;
+    }
+
+    private void SetSection(string section)
+    {
+        ActiveNotificationSection = section;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        CancelNotificationId = null;
+        CancelReason = null;
+    }
+
+    private string GetSectionButtonClass(string section)
+    {
+        return ActiveNotificationSection == section ? "active" : string.Empty;
     }
 
     private static bool CanCancel(NotificationOutboxMessageResponse notification)
