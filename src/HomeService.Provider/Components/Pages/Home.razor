@@ -125,6 +125,9 @@
 <ProviderBottomNav Active="home" />
 
 @code {
+    private const string ProviderSessionStorageKey = "wele.provider.session";
+    private const string LegacyProviderSessionStorageKey = "kaza.provider.session";
+
     private ProviderMobileHomeResponse? HomeData { get; set; }
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
@@ -144,7 +147,17 @@
             return;
         }
 
-        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "kaza.provider.session");
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", ProviderSessionStorageKey);
+        if (string.IsNullOrWhiteSpace(sessionJson))
+        {
+            sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", LegacyProviderSessionStorageKey);
+            if (!string.IsNullOrWhiteSpace(sessionJson))
+            {
+                await Js.InvokeVoidAsync("localStorage.setItem", ProviderSessionStorageKey, sessionJson);
+                await Js.InvokeVoidAsync("localStorage.removeItem", LegacyProviderSessionStorageKey);
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(sessionJson))
         {
             ErrorMessage = "Connectez-vous pour recevoir vos missions.";
@@ -166,7 +179,8 @@
         if (!result.IsSuccess || result.Value is null)
         {
             ErrorMessage = result.ErrorMessage ?? "Impossible de charger votre espace prestataire.";
-            await Js.InvokeVoidAsync("localStorage.removeItem", "kaza.provider.session");
+            await Js.InvokeVoidAsync("localStorage.removeItem", ProviderSessionStorageKey);
+            await Js.InvokeVoidAsync("localStorage.removeItem", LegacyProviderSessionStorageKey);
             IsLoading = false;
             StateHasChanged();
             return;
