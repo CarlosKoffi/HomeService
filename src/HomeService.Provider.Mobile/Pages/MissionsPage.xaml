@@ -9,14 +9,14 @@
         <VerticalStackLayout Padding="18" Spacing="16">
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="MISSION A CONFIRMER" Style="{StaticResource EyebrowLabel}" TextColor="{StaticResource KazaOrange}" />
+                    <Label Text="MISSION A CONFIRMER" Style="{StaticResource EyebrowLabel}" TextColor="{StaticResource WeleOrange}" />
                     <Label Text="Menage a domicile" Style="{StaticResource ScreenTitleLabel}" />
                     <Label Text="Entreprise : CI Home Service" Style="{StaticResource BodyLabel}" />
                     <Label Text="Cocody Angre - environ 1,8 km" Style="{StaticResource BodyLabel}" />
-                    <Label Text="Temps restant pour accepter : 02:41" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource KazaOrange}" />
+                    <Label Text="Temps restant pour accepter : 02:41" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleOrange}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,8,0,0">
                         <Button Text="Refuser" Grid.Column="0" BackgroundColor="White" BorderColor="{StaticResource Line}" BorderWidth="1" TextColor="Black" />
-                        <Button Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource KazaGreen}" TextColor="White" />
+                        <Button Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" />
                     </Grid>
                 </VerticalStackLayout>
             </Border>

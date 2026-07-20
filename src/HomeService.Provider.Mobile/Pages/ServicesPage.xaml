@@ -11,13 +11,13 @@
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Menage a domicile" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Pret - assignable" Style="{StaticResource BodyLabel}" TextColor="{StaticResource KazaGreen}" />
+                    <Label Text="Pret - assignable" Style="{StaticResource BodyLabel}" TextColor="{StaticResource WeleGreen}" />
                 </VerticalStackLayout>
             </Border>
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Coiffure a domicile" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Bloque - 2/3 photos validees" Style="{StaticResource BodyLabel}" TextColor="{StaticResource KazaOrange}" />
+                    <Label Text="Bloque - 2/3 photos validees" Style="{StaticResource BodyLabel}" TextColor="{StaticResource WeleOrange}" />
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                         <BoxView HeightRequest="76" Color="#F97316" CornerRadius="12" />
                         <BoxView Grid.Column="1" HeightRequest="76" Color="#12824C" CornerRadius="12" />

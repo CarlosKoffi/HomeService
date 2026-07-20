@@ -23,6 +23,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <MauiIcon Include="Resources\AppIcon\wele_appicon.png" />
+    <MauiImage Include="Resources\Images\wele_logo.png" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.14" />
     <ProjectReference Include="..\HomeService.Contracts\HomeService.Contracts.csproj" />
   </ItemGroup>

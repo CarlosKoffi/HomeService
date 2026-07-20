@@ -8,11 +8,11 @@
     <ScrollView>
         <VerticalStackLayout Padding="18" Spacing="14">
             <Label Text="Messages clients" Style="{StaticResource ScreenTitleLabel}" />
-            <Border BackgroundColor="White" Stroke="{StaticResource KazaGreen}" StrokeShape="RoundRectangle 20" Padding="14">
+            <Border BackgroundColor="White" Stroke="{StaticResource WeleGreen}" StrokeShape="RoundRectangle 20" Padding="14">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Mme Akissi" Style="{StaticResource CardTitleLabel}" />
                     <Label Text="Je vous envoie une photo du portail cote pharmacie." Style="{StaticResource BodyLabel}" />
-                    <Label Text="Mission live - il y a 1 min" Style="{StaticResource BodyLabel}" TextColor="{StaticResource KazaGreen}" />
+                    <Label Text="Mission live - il y a 1 min" Style="{StaticResource BodyLabel}" TextColor="{StaticResource WeleGreen}" />
                 </VerticalStackLayout>
             </Border>
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">

@@ -11,7 +11,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Awa Kone" FontSize="26" FontAttributes="Bold" />
                     <Label Text="Employee - Senior - Abidjan" />
-                    <Label Text="Profil valide pour Menage. Portfolio requis pour Esthetique." FontSize="13" TextColor="{StaticResource KazaOrange}" />
+                    <Label Text="Profil valide pour Menage. Portfolio requis pour Esthetique." FontSize="13" TextColor="{StaticResource WeleOrange}" />
                 </VerticalStackLayout>
             </Border>
 
@@ -20,7 +20,7 @@
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Coiffure a domicile" FontSize="18" FontAttributes="Bold" />
-                    <Label Text="2/3 photos validees - non assignable pour ce service" FontSize="13" TextColor="{StaticResource KazaOrange}" />
+                    <Label Text="2/3 photos validees - non assignable pour ce service" FontSize="13" TextColor="{StaticResource WeleOrange}" />
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                         <BoxView HeightRequest="82" Color="#F97316" CornerRadius="12" />
                         <BoxView Grid.Column="1" HeightRequest="82" Color="#12824C" CornerRadius="12" />

@@ -11,7 +11,7 @@
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Encaissements terrain" FontSize="24" FontAttributes="Bold" />
                     <Label Text="Cash a reverser a l'entreprise" />
-                    <Label Text="18 000 XOF" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource KazaGreen}" />
+                    <Label Text="18 000 XOF" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource WeleGreen}" />
                 </VerticalStackLayout>
             </Border>
 

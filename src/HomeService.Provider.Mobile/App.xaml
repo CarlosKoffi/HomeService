@@ -5,8 +5,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
     <Application.Resources>
         <Color x:Key="Ink">#000000</Color>
-        <Color x:Key="KazaGreen">#12824C</Color>
-        <Color x:Key="KazaOrange">#F97316</Color>
+        <Color x:Key="WeleGreen">#12824C</Color>
+        <Color x:Key="WeleOrange">#F97316</Color>
         <Color x:Key="Line">#E6E9EF</Color>
         <Color x:Key="PageWash">#F7FFFC</Color>
         <Style TargetType="Label">
