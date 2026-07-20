@@ -158,6 +158,7 @@
     private string RegisterPassword { get; set; } = string.Empty;
     private string RegisterConfirmPassword { get; set; } = string.Empty;
     private IReadOnlyList<ProviderOnboardingOptionResponse> OnboardingOptions { get; set; } = [];
+    private IReadOnlyList<ProviderOnboardingOptionResponse> AllOnboardingOptions { get; set; } = [];
     private IReadOnlyList<ProviderCompanyOpportunityResponse> CompanyOpportunities { get; set; } = [];
     private ProviderOnboardingOptionResponse? SelectedOption { get; set; }
     private HashSet<Guid> SelectedOpportunityCompanyIds { get; } = [];
@@ -197,7 +198,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        OnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
+        AllOnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
+        OnboardingOptions = AllOnboardingOptions;
     }
 
     private async Task RegisterAsync()
@@ -261,6 +263,12 @@
         ServiceEntry = args.Value?.ToString() ?? string.Empty;
         OnboardingOptions = await Api.GetOnboardingOptionsAsync(ServiceEntry);
         SelectedOption = FindSelectedOption(ServiceEntry);
+        if (SelectedOption is null && AllOnboardingOptions.Count == 0)
+        {
+            AllOnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
+            SelectedOption = FindSelectedOption(ServiceEntry);
+        }
+
         SelectedOpportunityCompanyIds.Clear();
         await LoadOpportunitiesAsync();
     }
@@ -306,16 +314,29 @@
         }
 
         var normalizedEntry = NormalizeCompletionValue(entry);
-        return OnboardingOptions.FirstOrDefault(option =>
+        return OnboardingOptions.Concat(AllOnboardingOptions).FirstOrDefault(option =>
                 NormalizeCompletionValue(option.Label) == normalizedEntry
                 || NormalizeCompletionValue(option.ServiceName) == normalizedEntry
+                || IsSameServicePrestationLabel(option, normalizedEntry)
                 || (!string.IsNullOrWhiteSpace(option.PrestationName) && NormalizeCompletionValue(option.PrestationName) == normalizedEntry))
-            ?? OnboardingOptions.FirstOrDefault(option =>
+            ?? OnboardingOptions.Concat(AllOnboardingOptions).FirstOrDefault(option =>
                 NormalizeCompletionValue(option.Label).Contains(normalizedEntry, StringComparison.Ordinal)
                 || normalizedEntry.Contains(NormalizeCompletionValue(option.Label), StringComparison.Ordinal)
                 || NormalizeCompletionValue(option.ServiceName).Contains(normalizedEntry, StringComparison.Ordinal)
+                || IsSameServicePrestationLabel(option, normalizedEntry)
                 || (!string.IsNullOrWhiteSpace(option.PrestationName)
                     && NormalizeCompletionValue(option.PrestationName).Contains(normalizedEntry, StringComparison.Ordinal)));
+    }
+
+    private static bool IsSameServicePrestationLabel(ProviderOnboardingOptionResponse option, string normalizedEntry)
+    {
+        if (string.IsNullOrWhiteSpace(option.PrestationName))
+        {
+            return false;
+        }
+
+        var combined = NormalizeCompletionValue($"{option.ServiceName} {option.PrestationName}");
+        return combined == normalizedEntry || normalizedEntry.Contains(combined, StringComparison.Ordinal);
     }
 
     private IReadOnlyList<ProviderCandidateServiceRequest> BuildSelectedServiceRequests()
