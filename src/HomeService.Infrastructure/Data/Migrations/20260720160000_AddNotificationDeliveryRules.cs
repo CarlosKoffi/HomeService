@@ -1,4 +1,3 @@
-using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -9,36 +8,38 @@ namespace HomeService.Infrastructure.Data.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "NotificationDeliveryRules",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    EventKey = table.Column<string>(type: "character varying(96)", maxLength: 96, nullable: false),
-                    Label = table.Column<string>(type: "character varying(180)", maxLength: 180, nullable: false),
-                    Audience = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    PortalEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    MobileAppEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    EmailEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    WhatsAppEnabled = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_NotificationDeliveryRules", x => x.Id);
-                });
+            migrationBuilder.Sql("""
+                CREATE TABLE IF NOT EXISTS "NotificationDeliveryRules" (
+                    "Id" uuid NOT NULL,
+                    "EventKey" character varying(96) NOT NULL,
+                    "Label" character varying(180) NOT NULL,
+                    "Audience" character varying(32) NOT NULL,
+                    "PortalEnabled" boolean NOT NULL,
+                    "MobileAppEnabled" boolean NOT NULL,
+                    "EmailEnabled" boolean NOT NULL,
+                    "WhatsAppEnabled" boolean NOT NULL,
+                    "CreatedAt" timestamp with time zone NOT NULL,
+                    "UpdatedAt" timestamp with time zone NULL,
+                    CONSTRAINT "PK_NotificationDeliveryRules" PRIMARY KEY ("Id")
+                );
 
-            migrationBuilder.CreateIndex(
-                name: "IX_NotificationDeliveryRules_Audience_EventKey",
-                table: "NotificationDeliveryRules",
-                columns: new[] { "Audience", "EventKey" });
+                ALTER TABLE "NotificationDeliveryRules"
+                    ADD COLUMN IF NOT EXISTS "EventKey" character varying(96) NOT NULL DEFAULT '',
+                    ADD COLUMN IF NOT EXISTS "Label" character varying(180) NOT NULL DEFAULT '',
+                    ADD COLUMN IF NOT EXISTS "Audience" character varying(32) NOT NULL DEFAULT 'Company',
+                    ADD COLUMN IF NOT EXISTS "PortalEnabled" boolean NOT NULL DEFAULT false,
+                    ADD COLUMN IF NOT EXISTS "MobileAppEnabled" boolean NOT NULL DEFAULT false,
+                    ADD COLUMN IF NOT EXISTS "EmailEnabled" boolean NOT NULL DEFAULT false,
+                    ADD COLUMN IF NOT EXISTS "WhatsAppEnabled" boolean NOT NULL DEFAULT false,
+                    ADD COLUMN IF NOT EXISTS "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                    ADD COLUMN IF NOT EXISTS "UpdatedAt" timestamp with time zone NULL;
 
-            migrationBuilder.CreateIndex(
-                name: "IX_NotificationDeliveryRules_EventKey",
-                table: "NotificationDeliveryRules",
-                column: "EventKey",
-                unique: true);
+                CREATE INDEX IF NOT EXISTS "IX_NotificationDeliveryRules_Audience_EventKey"
+                    ON "NotificationDeliveryRules" ("Audience", "EventKey");
+
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_NotificationDeliveryRules_EventKey"
+                    ON "NotificationDeliveryRules" ("EventKey");
+                """);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
