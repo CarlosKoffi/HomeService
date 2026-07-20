@@ -459,6 +459,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<NotificationOutboxMessageResponse>>("/api/admin/notifications", cancellationToken) ?? [];
     }
 
+    public async Task<IReadOnlyList<AdminCompanyPortalNotificationResponse>> GetCompanyPortalNotificationsAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<AdminCompanyPortalNotificationResponse>>("/api/admin/company-portal-notifications", cancellationToken) ?? [];
+    }
+
     public async Task<IReadOnlyList<NotificationDeliveryRuleResponse>> GetNotificationDeliveryRulesAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

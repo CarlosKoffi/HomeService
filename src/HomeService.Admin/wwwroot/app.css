@@ -2093,6 +2093,37 @@ h3 {
     padding: 1rem;
 }
 
+.portal-notification-admin-panel {
+    margin-top: 1.15rem;
+}
+
+.portal-notification-row {
+    border-left: 4px solid #2563eb;
+    padding-left: .85rem;
+}
+
+.portal-notification-row.warning,
+.portal-notification-row.pending {
+    border-left-color: #f97316;
+}
+
+.portal-notification-row.danger,
+.portal-notification-row.error {
+    border-left-color: #dc2626;
+}
+
+.portal-notification-row.success {
+    border-left-color: #00813c;
+}
+
+.portal-notification-row.read {
+    opacity: .76;
+}
+
+.portal-notification-row.unread {
+    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, .16), 0 14px 34px rgba(37, 99, 235, .1);
+}
+
 .notification-rules-head,
 .notification-rule-row {
     align-items: center;

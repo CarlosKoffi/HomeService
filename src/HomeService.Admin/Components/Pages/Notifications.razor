@@ -76,6 +76,11 @@
 
 <section class="notification-command-center">
     <article>
+        <span>Portail non lues</span>
+        <strong>@UnreadPortalNotifications</strong>
+        <small>entreprises</small>
+    </article>
+    <article>
         <span>A envoyer</span>
         <strong>@CountByStatus("Pending")</strong>
         <small>email / WhatsApp</small>
@@ -95,6 +100,67 @@
         <strong>@CountByStatus("Cancelled")</strong>
         <small>email / WhatsApp</small>
     </article>
+</section>
+
+<section class="notification-rules-panel portal-notification-admin-panel">
+    <div class="notification-rules-head">
+        <div>
+            <span>Portail entreprise</span>
+            <strong>Notifications visibles dans le dashboard</strong>
+            <p>Ces messages sont internes au portail. Vous pouvez les renvoyer pour les remettre en haut des notifications de l'entreprise.</p>
+        </div>
+        <small>@CompanyPortalNotifications.Count message(s)</small>
+    </div>
+
+    @if (IsLoading)
+    {
+        <article class="notification-rule-row">
+            <p>Chargement des notifications portail...</p>
+        </article>
+    }
+    else if (FilteredCompanyPortalNotifications.Count == 0)
+    {
+        <article class="notification-rule-row">
+            <p>Aucune notification portail ne correspond aux filtres.</p>
+        </article>
+    }
+    else
+    {
+        @foreach (var notification in FilteredCompanyPortalNotifications)
+        {
+            <article class="@GetPortalNotificationClass(notification)">
+                <div class="notification-rule-copy">
+                    <span>@notification.CompanyName</span>
+                    <strong>@notification.Title</strong>
+                    <small>@notification.Message</small>
+                    <small>@TranslateNotificationTone(notification.Tone) - @notification.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+                <div class="notification-actions">
+                    @if (notification.IsRead)
+                    {
+                        <button type="button"
+                                disabled="@IsBusy(notification.Id)"
+                                @onclick="() => MarkPortalNotificationUnreadAsync(notification)">
+                            Remettre non lue
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                disabled="@IsBusy(notification.Id)"
+                                @onclick="() => MarkPortalNotificationReadAsync(notification)">
+                            Marquer lue
+                        </button>
+                    }
+                    <button type="button"
+                            disabled="@IsBusy(notification.Id)"
+                            @onclick="() => ResendPortalNotificationAsync(notification)">
+                        Renvoyer
+                    </button>
+                </div>
+            </article>
+        }
+    }
 </section>
 
 <section class="notification-filters">
@@ -200,6 +266,7 @@
 
 @code {
     private List<NotificationOutboxMessageResponse> QueuedNotifications { get; set; } = [];
+    private List<AdminCompanyPortalNotificationResponse> CompanyPortalNotifications { get; set; } = [];
     private List<NotificationDeliveryRuleResponse> DeliveryRules { get; set; } = [];
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
@@ -218,6 +285,15 @@
             .ThenByDescending(notification => notification.ScheduledAt)
             .ToList();
 
+    private IReadOnlyList<AdminCompanyPortalNotificationResponse> FilteredCompanyPortalNotifications
+        => CompanyPortalNotifications
+            .Where(MatchesPortalFilters)
+            .OrderBy(notification => notification.IsRead)
+            .ThenByDescending(notification => notification.OccurredAt)
+            .ToList();
+
+    private int UnreadPortalNotifications => CompanyPortalNotifications.Count(notification => !notification.IsRead);
+
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
@@ -231,6 +307,7 @@
         try
         {
             QueuedNotifications = (await ApiClient.GetNotificationsAsync()).ToList();
+            CompanyPortalNotifications = (await ApiClient.GetCompanyPortalNotificationsAsync()).ToList();
             DeliveryRules = (await ApiClient.GetNotificationDeliveryRulesAsync()).ToList();
         }
         catch (Exception exception)
@@ -271,6 +348,30 @@
             notification.Id,
             () => ApiClient.MarkNotificationSentAsync(notification.Id),
             "Notification marquee envoyee.");
+    }
+
+    private Task MarkPortalNotificationReadAsync(AdminCompanyPortalNotificationResponse notification)
+    {
+        return RunPortalNotificationActionAsync(
+            notification,
+            () => ApiClient.MarkCompanyNotificationReadAsync(notification.CompanyId, notification.Id),
+            "Notification portail marquee comme lue.");
+    }
+
+    private Task MarkPortalNotificationUnreadAsync(AdminCompanyPortalNotificationResponse notification)
+    {
+        return RunPortalNotificationActionAsync(
+            notification,
+            () => ApiClient.MarkCompanyNotificationUnreadAsync(notification.CompanyId, notification.Id),
+            "Notification portail remise en non lue.");
+    }
+
+    private Task ResendPortalNotificationAsync(AdminCompanyPortalNotificationResponse notification)
+    {
+        return RunPortalNotificationActionAsync(
+            notification,
+            () => ApiClient.ResendCompanyNotificationAsync(notification.CompanyId, notification.Id),
+            "Notification renvoyee sur le portail entreprise.");
     }
 
     private async Task ToggleRuleChannelAsync(NotificationDeliveryRuleResponse rule, string channel, ChangeEventArgs eventArgs)
@@ -328,6 +429,37 @@
         catch (Exception exception)
         {
             ErrorMessage = $"Action notification impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            BusyNotificationId = null;
+        }
+    }
+
+    private async Task RunPortalNotificationActionAsync(
+        AdminCompanyPortalNotificationResponse notification,
+        Func<Task<ApiActionResult>> action,
+        string successMessage)
+    {
+        BusyNotificationId = notification.Id;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var result = await action();
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            SuccessMessage = successMessage;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action portail impossible. Detail: {exception.Message}";
         }
         finally
         {
@@ -401,6 +533,20 @@
             || (notification.RelatedEntityType?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 
+    private bool MatchesPortalFilters(AdminCompanyPortalNotificationResponse notification)
+    {
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            return true;
+        }
+
+        var search = SearchTerm.Trim();
+        return notification.CompanyName.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || notification.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || notification.Message.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || notification.Type.Contains(search, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string TranslateChannel(string channel) => channel switch
     {
         "Email" => "Email",
@@ -427,6 +573,15 @@
         _ => audience
     };
 
+    private static string TranslateNotificationTone(string tone) => tone switch
+    {
+        "success" => "Information positive",
+        "warning" => "Action attendue",
+        "danger" or "error" => "Attention",
+        "pending" => "En attente",
+        _ => "Information"
+    };
+
     private static string GetNotificationClass(string status)
     {
         return status switch
@@ -436,6 +591,9 @@
             _ => "status-new"
         };
     }
+
+    private static string GetPortalNotificationClass(AdminCompanyPortalNotificationResponse notification)
+        => $"notification-rule-row portal-notification-row {notification.Tone} {(notification.IsRead ? "read" : "unread")}";
 
     private static string GetRuleChannelClass(bool isEnabled, bool isAllowed)
         => $"notification-channel-card {(isEnabled ? "enabled" : "disabled")} {(!isAllowed ? "locked" : string.Empty)}";

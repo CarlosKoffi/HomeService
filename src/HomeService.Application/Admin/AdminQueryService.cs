@@ -1159,6 +1159,27 @@ public sealed class AdminQueryService(IAppDbContext db)
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<AdminCompanyPortalNotificationResponse>> ListCompanyPortalNotificationsAsync(CancellationToken cancellationToken)
+    {
+        return await db.CompanyPortalNotifications
+            .AsNoTracking()
+            .OrderBy(notification => notification.IsRead)
+            .ThenByDescending(notification => notification.OccurredAt)
+            .Take(100)
+            .Select(notification => new AdminCompanyPortalNotificationResponse(
+                notification.Id,
+                notification.CompanyId,
+                notification.Company == null ? "Entreprise inconnue" : notification.Company.Name,
+                notification.Type,
+                notification.Title,
+                notification.Message,
+                notification.Tone,
+                notification.IsRead,
+                notification.ActionUrl,
+                notification.OccurredAt))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<AdminAccessSnapshotResponse> GetAccessSnapshotAsync(CancellationToken cancellationToken)
     {
         var modules = await db.AdminModules

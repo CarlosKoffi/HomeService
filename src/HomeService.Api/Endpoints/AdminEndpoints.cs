@@ -521,6 +521,16 @@ public static class AdminEndpoints
         })
         .WithName("ListNotificationOutboxMessages");
 
+        admin.MapGet("/company-portal-notifications", async (
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var notifications = await queryService.ListCompanyPortalNotificationsAsync(cancellationToken);
+            return Results.Ok(notifications);
+        })
+        .WithName("ListAdminCompanyPortalNotifications")
+        .Produces<IReadOnlyList<AdminCompanyPortalNotificationResponse>>();
+
         admin.MapGet("/notification-delivery-rules", async (
             AdminNotificationDeliveryRuleService ruleService,
             CancellationToken cancellationToken) =>
