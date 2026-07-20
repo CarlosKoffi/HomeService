@@ -840,7 +840,7 @@ public static class CompanyPortalEndpoints
                 AuditActor.Company(companyId, null),
                 "CompanyEmployeeDocumentUploaded",
                 nameof(ProviderDocument),
-                result.Document!.Id,
+                result.DocumentId!.Value,
                 "Piece prestataire ajoutee ou remplacee.",
                 HttpAuditContextFactory.Create(httpRequest),
                 before: result.Before,
