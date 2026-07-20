@@ -110,7 +110,6 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         CancellationToken cancellationToken)
     {
         var provider = await db.Providers
-            .AsNoTracking()
             .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
         if (provider is null)
         {
@@ -118,14 +117,8 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         }
 
         var existingDocuments = await db.ProviderDocuments
-            .AsNoTracking()
             .Where(document => document.ProviderId == employeeId && document.DocumentType == documentType)
             .OrderByDescending(document => document.CreatedAt)
-            .Select(document => new
-            {
-                document.Id,
-                document.StoragePath
-            })
             .ToListAsync(cancellationToken);
 
         var replacedPaths = existingDocuments.Select(existing => existing.StoragePath).ToList();
@@ -143,24 +136,15 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
                 new { DocumentType = documentType, OriginalFileName = originalFileName, ContentType = contentType });
         }
 
-        await db.ProviderDocuments
-            .Where(document => document.Id == existingDocument.Id)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(document => document.OriginalFileName, originalFileName)
-                .SetProperty(document => document.StoragePath, storagePath)
-                .SetProperty(document => document.ContentType, contentType)
-                .SetProperty(document => document.UpdatedAt, DateTimeOffset.UtcNow),
-                cancellationToken);
-
-        await db.ProviderDocuments
-            .Where(document => document.ProviderId == employeeId
-                && document.DocumentType == documentType
-                && document.Id != existingDocument.Id)
-            .ExecuteDeleteAsync(cancellationToken);
+        existingDocument.ReplaceFile(originalFileName, storagePath, contentType);
+        foreach (var duplicateDocument in existingDocuments.Skip(1))
+        {
+            db.ProviderDocuments.Remove(duplicateDocument);
+        }
 
         return CompanyEmployeeDocumentOperationResult.Ok(
             provider,
-            existingDocument.Id,
+            existingDocument,
             replacedPaths,
             new { ReplacedDocumentCount = replacedPaths.Count, DocumentType = documentType },
             new { DocumentType = documentType, OriginalFileName = originalFileName, ContentType = contentType });

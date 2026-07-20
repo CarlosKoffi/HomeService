@@ -37,7 +37,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         if (TryExtractProviderDocumentId(previewUrl, out var documentId))
         {
-            return $"/provider-documents/{documentId:D}/preview";
+            return ToApiUrl($"/api/company-portal/provider-documents/{documentId:D}/preview");
         }
 
         return ToApiUrl(previewUrl);

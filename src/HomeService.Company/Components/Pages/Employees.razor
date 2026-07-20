@@ -717,7 +717,7 @@ else
                                                             {
                                                                 <span>
                                                                     @prestation.Name
-                                                                    <button type="button" @onclick="() => RemoveEditablePrestation(service, prestation.Id)" aria-label="Retirer la prestation">x</button>
+                                                                    <button type="button" @onclick="() => RemoveEditablePrestationAsync(service, prestation.Id)" aria-label="Retirer la prestation">x</button>
                                                                 </span>
                                                             }
                                                         </div>
@@ -1975,9 +1975,14 @@ else
         return true;
     }
 
-    private static void RemoveEditablePrestation(CompanyEmployeeServiceEditModel service, Guid prestationId)
+    private async Task RemoveEditablePrestationAsync(CompanyEmployeeServiceEditModel service, Guid prestationId)
     {
         service.ServicePrestationIds.Remove(prestationId);
+        var saved = await PersistEditableServicesAsync("Prestation retiree du profil.");
+        if (!saved)
+        {
+            Message = $"Prestation retiree a l'ecran, mais pas encore enregistree: {Message}";
+        }
     }
 
     private static void TogglePremium(CompanyEmployeeServiceEditModel service, ChangeEventArgs eventArgs)
@@ -2094,11 +2099,11 @@ else
         return slot.DocumentId is not null && !string.IsNullOrWhiteSpace(slot.PreviewUrl) && slot.PreviewUrl != "#";
     }
 
-    private static string GetDocumentOpenUrl(EmployeeDocumentSlot slot)
+    private string GetDocumentOpenUrl(EmployeeDocumentSlot slot)
     {
         return slot.DocumentId is null
             ? "#"
-            : $"/provider-documents/{slot.DocumentId.Value:D}/preview";
+            : ApiClient.ToProviderDocumentPreviewUrl($"/api/company-portal/provider-documents/{slot.DocumentId.Value:D}/preview");
     }
 
     private static string NormalizeProviderDocumentType(string? documentType)
