@@ -228,7 +228,7 @@
                     <button type="button"
                             disabled="@(!CanRetry(notification) || IsBusy(notification.Id))"
                             @onclick="() => RetryAsync(notification)">
-                        Relancer l'envoi
+                        @GetRetryLabel(notification)
                     </button>
                     <button type="button"
                             disabled="@(!CanCancel(notification) || IsBusy(notification.Id))"
@@ -479,7 +479,17 @@
 
     private static bool CanRetry(NotificationOutboxMessageResponse notification)
     {
-        return notification.Status is "Failed" or "Cancelled";
+        return notification.Status is not "Sent";
+    }
+
+    private static string GetRetryLabel(NotificationOutboxMessageResponse notification)
+    {
+        return notification.Status switch
+        {
+            "Pending" => "Renvoyer",
+            "Cancelled" => "Remettre a envoyer",
+            _ => "Relancer l'envoi"
+        };
     }
 
     private static bool CanMarkSent(NotificationOutboxMessageResponse notification)
