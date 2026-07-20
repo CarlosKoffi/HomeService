@@ -15,7 +15,7 @@
 
 <div class="company-landing premium-b2b">
     <section id="home" class="premium-hero">
-        <img class="premium-hero-image" src="@ResolveContentUrl(HomeContent.Hero.ImageUrl)" alt="@HomeContent.Hero.ImageAlt" />
+        <img class="premium-hero-image" src="@ResolveContentUrl(HomeContent.Hero.ImageUrl, "images/wele-premium-hero.png")" alt="@HomeContent.Hero.ImageAlt" />
         <div class="premium-hero-overlay"></div>
         <div class="premium-hero-content">
             <p class="premium-label">@HomeContent.Hero.Label</p>
@@ -257,9 +257,14 @@
 
     private string ResolveContentUrl(string? url)
     {
+        return ResolveContentUrl(url, string.Empty);
+    }
+
+    private string ResolveContentUrl(string? url, string fallbackUrl)
+    {
         if (string.IsNullOrWhiteSpace(url))
         {
-            return string.Empty;
+            return fallbackUrl;
         }
 
         if (Uri.TryCreate(url, UriKind.Absolute, out var absoluteUri))
