@@ -639,12 +639,16 @@ else if (ActiveTab == ServiceAdminTab.Insights)
 
     private void ApplySuggestion(Guid proposalId, CompanyServiceProposalSuggestionResponse suggestion)
     {
+        var proposal = CompanyServiceProposals.FirstOrDefault(item => item.Id == proposalId);
         var draft = ProposalDrafts.TryGetValue(proposalId, out var existing) ? existing : new ProposalDraft();
         draft.Action = ProposalAction.Attach;
         draft.Selection = suggestion.ServicePrestationId.HasValue
             ? BuildPrestationSelection(suggestion.ServiceId, suggestion.ServicePrestationId.Value)
             : BuildServiceSelection(suggestion.ServiceId);
         draft.CreateUnderServiceId = suggestion.ServiceId.ToString();
+        draft.ProposedName = proposal is null
+            ? suggestion.ServicePrestationName ?? suggestion.ServiceName
+            : BuildDefaultProposalName(proposal, suggestion);
         ProposalDrafts[proposalId] = draft;
     }
 
