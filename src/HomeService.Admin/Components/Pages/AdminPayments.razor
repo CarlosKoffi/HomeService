@@ -20,26 +20,37 @@
     <section class="admin-metric-grid compact payment-admin-metrics">
         <article class="payment-admin-revenue">
             <div>
-                <span>CA Wélé</span>
+                <span>CA wélé</span>
                 <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
+                <small>Commission plateforme</small>
             </div>
-            <i aria-hidden="true">CB</i>
+            <i aria-hidden="true">%</i>
         </article>
         <article>
             <span>Total encaisse</span>
             <strong>@Money(Snapshot.Stats.PaidAmount)</strong>
+            <small>@Snapshot.Stats.TransactionCount transaction(s)</small>
         </article>
-        <article>
-            <span>Carte bancaire</span>
-            <strong>@Money(Snapshot.Stats.CardAmount)</strong>
+        <article class="payment-channel-card">
+            <div>
+                <span>Carte bancaire</span>
+                <strong>@Money(Snapshot.Stats.CardAmount)</strong>
+                <small>@ShareOfPaid(Snapshot.Stats.CardAmount) du total encaisse</small>
+            </div>
+            <i aria-hidden="true">CB</i>
         </article>
-        <article>
-            <span>Mobile Money</span>
-            <strong>@Money(Snapshot.Stats.MobileMoneyAmount)</strong>
+        <article class="payment-channel-card">
+            <div>
+                <span>Mobile Money</span>
+                <strong>@Money(Snapshot.Stats.MobileMoneyAmount)</strong>
+                <small>@ShareOfPaid(Snapshot.Stats.MobileMoneyAmount) du total encaisse</small>
+            </div>
+            <i aria-hidden="true">MM</i>
         </article>
         <article>
             <span>En attente</span>
             <strong>@Money(Snapshot.Stats.PendingAmount)</strong>
+            <small>Autorisations et demandes ouvertes</small>
         </article>
     </section>
 }
@@ -190,6 +201,16 @@
 
     private static string Money(int amount) => $"{amount:N0} XOF";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    private string ShareOfPaid(int amount)
+    {
+        var paidAmount = Snapshot?.Stats.PaidAmount ?? 0;
+        if (paidAmount <= 0)
+        {
+            return "0%";
+        }
+
+        return $"{amount * 100m / paidAmount:0}%";
+    }
 
     private void OpenMission(Guid missionId) => Navigation.NavigateTo($"/missions/{missionId}");
     private void OpenCompany(Guid companyId) => Navigation.NavigateTo($"/companies/{companyId}");

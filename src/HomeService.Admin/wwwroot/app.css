@@ -988,6 +988,18 @@ h3 {
     color: #fff;
 }
 
+.payment-admin-metrics small {
+    color: #6b7280;
+    display: block;
+    font-size: .78rem;
+    font-weight: 650;
+    margin-top: .35rem;
+}
+
+.payment-admin-metrics .payment-admin-revenue small {
+    color: rgba(255, 255, 255, .82);
+}
+
 .payment-admin-metrics .payment-admin-revenue i {
     align-items: center;
     background: rgba(255, 255, 255, .16);
@@ -1001,6 +1013,29 @@ h3 {
     justify-content: center;
     letter-spacing: .04em;
     width: 44px;
+}
+
+.payment-channel-card {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    min-height: 118px;
+}
+
+.payment-channel-card i {
+    align-items: center;
+    background: #eff6ff;
+    border-radius: 14px;
+    color: #1264f6;
+    display: inline-flex;
+    flex: 0 0 42px;
+    font-size: .72rem;
+    font-style: normal;
+    font-weight: 950;
+    height: 42px;
+    justify-content: center;
+    letter-spacing: .04em;
+    width: 42px;
 }
 
 .operator-toolbar {
