@@ -164,45 +164,21 @@ SELECT
     chosen."SlotNumber",
     (ARRAY['Aminata','Fatou','Grace','Mariam','Nadege','Prisca','Awa','Carole','Estelle','Nadia','Akissi','Sonia','Rokia','Ines','Clarisse'])[((chosen."SlotNumber" - 1) % 15) + 1],
     (ARRAY['Kouame','Traore','Diallo','Bamba','Kone','Yao','Amani','Coulibaly','Nguessan','Koffi','Soro','Diaby','Toure','Konan','Kouassi'])[((chosen."SlotNumber" - 1) % 15) + 1],
-    '+22507' || LPAD(((90000000 + (chosen."SlotNumber" * 317) + ABS(hashtext(chosen."CompanyId"::text))) % 100000000)::text, 8, '0'),
+    '+22507' || LPAD(((90000000 + (chosen."SlotNumber" * 317) + ABS(hashtext(chosen."CompanyId"::text)::bigint)) % 100000000)::text, 8, '0'),
     CASE WHEN chosen."SlotNumber" IN (1, 4, 7, 10, 13) THEN 'Instant' ELSE 'Scheduled' END,
+    'Completed',
+    'Completed',
     CASE
-        WHEN chosen."SlotNumber" <= 6 THEN 'Completed'
-        WHEN chosen."SlotNumber" = 7 THEN 'Started'
-        WHEN chosen."SlotNumber" = 8 THEN 'OnTheWay'
-        WHEN chosen."SlotNumber" = 9 THEN 'Accepted'
-        ELSE 'Assigned'
-    END,
-    CASE
-        WHEN chosen."SlotNumber" <= 6 THEN 'Completed'
-        WHEN chosen."SlotNumber" = 7 THEN 'Started'
-        WHEN chosen."SlotNumber" IN (8, 9) THEN 'Accepted'
-        ELSE 'Offered'
-    END,
-    CASE
-        WHEN chosen."SlotNumber" <= 6 AND chosen."SlotNumber" % 2 = 0 THEN 'Card'
+        WHEN chosen."SlotNumber" % 2 = 0 THEN 'Card'
         ELSE 'MobileMoney'
     END,
-    CASE
-        WHEN chosen."SlotNumber" <= 6 THEN 'Paid'
-        WHEN chosen."SlotNumber" BETWEEN 7 AND 9 THEN 'Authorized'
-        ELSE 'Pending'
-    END,
-    CASE
-        WHEN chosen."SlotNumber" <= 9 THEN 'Accepted'
-        ELSE 'Submitted'
-    END,
-    CASE
-        WHEN chosen."SlotNumber" <= 6 THEN now() - ((chosen."SlotNumber" + 1) || ' days')::interval
-        WHEN chosen."SlotNumber" = 7 THEN now() - interval '45 minutes'
-        WHEN chosen."SlotNumber" = 8 THEN now() + interval '35 minutes'
-        WHEN chosen."SlotNumber" = 9 THEN now() + interval '2 hours'
-        ELSE now() + ((chosen."SlotNumber" - 9) || ' days')::interval
-    END,
+    'Paid',
+    'Accepted',
+    now() - (((chosen."SlotNumber" - 1) % 6) || ' days')::interval - ((8 + (chosen."SlotNumber" % 7)) || ' hours')::interval,
     90 + ((chosen."SlotNumber" % 4) * 30),
-    CASE WHEN chosen."SlotNumber" <= 6 THEN 95 + ((chosen."SlotNumber" % 4) * 25) ELSE NULL END,
+    95 + ((chosen."SlotNumber" % 4) * 25),
     LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END,
-    CASE WHEN chosen."SlotNumber" <= 6 THEN LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END ELSE NULL END,
+    LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END,
     LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END,
     CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE NULL END,
     CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 'Petites fournitures incluses dans le devis.' ELSE NULL END,
@@ -214,7 +190,7 @@ SELECT
     (ARRAY[5.359952,5.302840,5.336220,5.319720,5.350900,5.416500,5.301100,5.395000])[((chosen."SlotNumber" - 1) % 8) + 1],
     (ARRAY[-3.973560,-3.982740,-4.092100,-4.016110,-3.887200,-4.025600,-4.007600,-3.981200])[((chosen."SlotNumber" - 1) % 8) + 1],
     '[seed-demo-missions] ' || COALESCE(chosen."PrestationName", chosen."ServiceName") || ' - demande client avec photos et devis entreprise.',
-    now() - ((16 - chosen."SlotNumber") || ' hours')::interval
+    now() - (((chosen."SlotNumber" - 1) % 6) || ' days')::interval - ((10 + (chosen."SlotNumber" % 7)) || ' hours')::interval
 FROM chosen;
 
 INSERT INTO "Customers" ("Id", "FirstName", "LastName", "PhoneNumber", "CreatedAt", "UpdatedAt")
@@ -224,7 +200,7 @@ SELECT
     seed."CustomerLastName",
     seed."CustomerPhoneNumber",
     seed."CreatedAt",
-    NULL
+    seed."CreatedAt" + interval '5 minutes'
 FROM "WeleDemoMissionSeed" seed;
 
 INSERT INTO "Missions" (
@@ -295,7 +271,7 @@ SELECT
     seed."PartsEstimateAmount",
     seed."PartsDescription",
     seed."CreatedAt" + interval '10 minutes',
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."CreatedAt" + interval '25 minutes' ELSE NULL END,
+    seed."CreatedAt" + interval '25 minutes',
     seed."PlatformCommissionAmount",
     1200,
     0,
@@ -314,11 +290,11 @@ SELECT
     seed."ServiceLatitude",
     seed."ServiceLongitude",
     250,
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."CreatedAt" + interval '18 minutes' ELSE NULL END,
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."CreatedAt" + interval '28 minutes' ELSE NULL END,
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."CreatedAt" + interval '28 minutes' ELSE NULL END,
+    seed."CreatedAt" + interval '18 minutes',
+    seed."CreatedAt" + interval '28 minutes',
+    seed."CreatedAt" + interval '28 minutes',
     seed."CreatedAt",
-    CASE WHEN seed."SlotNumber" <= 7 THEN seed."CreatedAt" + interval '2 hours' ELSE NULL END
+    seed."ScheduledFor" + ((seed."ActualDurationMinutes" || ' minutes')::interval)
 FROM "WeleDemoMissionSeed" seed;
 
 INSERT INTO "ProviderMissionAssignments" (
@@ -356,26 +332,26 @@ SELECT
     seed."CompanyId",
     seed."AssignmentStatus",
     seed."CreatedAt" + interval '3 minutes',
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."CreatedAt" + interval '2 minutes' ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" IN ('Started', 'Completed') THEN seed."ScheduledFor" ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" = 'Completed' THEN seed."ScheduledFor" + ((seed."ActualDurationMinutes" || ' minutes')::interval) ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" = 'Completed' THEN 'Mission terminee, client satisfait.' ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" = 'Completed' THEN 'demo-missions/completion-' || seed."SlotNumber" || '.jpg' ELSE NULL END,
+    seed."CreatedAt" + interval '2 minutes',
+    seed."ScheduledFor",
+    seed."ScheduledFor" + ((seed."ActualDurationMinutes" || ' minutes')::interval),
+    'Mission terminee, client satisfait.',
+    'demo-missions/completion-' || seed."SlotNumber" || '.jpg',
     seed."ServiceLatitude",
     seed."ServiceLongitude",
     45,
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."ServiceLatitude" + 0.000120 ELSE NULL END,
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."ServiceLongitude" + 0.000120 ELSE NULL END,
-    CASE WHEN seed."SlotNumber" <= 9 THEN 35 ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" IN ('Started', 'Completed') THEN seed."ServiceLatitude" + 0.000050 ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" IN ('Started', 'Completed') THEN seed."ServiceLongitude" + 0.000050 ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" IN ('Started', 'Completed') THEN 25 ELSE NULL END,
-    CASE WHEN seed."AssignmentStatus" IN ('Started', 'Completed') THEN 12 ELSE NULL END,
+    seed."ServiceLatitude" + 0.000120,
+    seed."ServiceLongitude" + 0.000120,
+    35,
+    seed."ServiceLatitude" + 0.000050,
+    seed."ServiceLongitude" + 0.000050,
+    25,
+    12,
     250,
-    CASE WHEN seed."AssignmentStatus" IN ('Started', 'Completed') THEN 'Verified' ELSE 'NotChecked' END,
-    CASE WHEN seed."AssignmentStatus" IN ('Started', 'Completed') THEN seed."ScheduledFor" - interval '5 minutes' ELSE NULL END,
+    'Verified',
+    seed."ScheduledFor" - interval '5 minutes',
     seed."CreatedAt",
-    CASE WHEN seed."SlotNumber" <= 9 THEN seed."CreatedAt" + interval '35 minutes' ELSE NULL END
+    seed."ScheduledFor" + ((seed."ActualDurationMinutes" || ' minutes')::interval)
 FROM "WeleDemoMissionSeed" seed;
 
 INSERT INTO "MissionAttachments" (
@@ -402,7 +378,7 @@ SELECT
     'Photo client pour aider l''entreprise a evaluer la demande.',
     false,
     seed."CreatedAt" + interval '1 minute',
-    NULL
+    seed."CreatedAt" + interval '1 minute'
 FROM "WeleDemoMissionSeed" seed
 WHERE seed."SlotNumber" % 2 = 0
 UNION ALL
@@ -417,7 +393,7 @@ SELECT
     'Photo de fin de prestation.',
     false,
     seed."ScheduledFor" + interval '2 hours',
-    NULL
+    seed."ScheduledFor" + interval '2 hours'
 FROM "WeleDemoMissionSeed" seed
 WHERE seed."Status" = 'Completed';
 
@@ -432,17 +408,17 @@ INSERT INTO "MissionFinancialBreakdowns" (
     "CreatedAt",
     "UpdatedAt"
 )
-SELECT gen_random_uuid(), seed."MissionId", 'ServicePrice', 'Prestation', seed."CompanyQuotedAmount" - COALESCE(seed."PartsEstimateAmount", 0), 'XOF', 10, seed."CreatedAt", NULL
+SELECT gen_random_uuid(), seed."MissionId", 'ServicePrice', 'Prestation', seed."CompanyQuotedAmount" - COALESCE(seed."PartsEstimateAmount", 0), 'XOF', 10, seed."CreatedAt", seed."CreatedAt"
 FROM "WeleDemoMissionSeed" seed
 UNION ALL
-SELECT gen_random_uuid(), seed."MissionId", 'PartsEstimate', 'Fournitures', seed."PartsEstimateAmount", 'XOF', 20, seed."CreatedAt", NULL
+SELECT gen_random_uuid(), seed."MissionId", 'PartsEstimate', 'Fournitures', seed."PartsEstimateAmount", 'XOF', 20, seed."CreatedAt", seed."CreatedAt"
 FROM "WeleDemoMissionSeed" seed
 WHERE seed."PartsEstimateAmount" IS NOT NULL
 UNION ALL
-SELECT gen_random_uuid(), seed."MissionId", 'PlatformCommission', 'Commission plateforme', seed."PlatformCommissionAmount", 'XOF', 30, seed."CreatedAt", NULL
+SELECT gen_random_uuid(), seed."MissionId", 'PlatformCommission', 'Commission plateforme', seed."PlatformCommissionAmount", 'XOF', 30, seed."CreatedAt", seed."CreatedAt"
 FROM "WeleDemoMissionSeed" seed
 UNION ALL
-SELECT gen_random_uuid(), seed."MissionId", 'CompanyPayout', 'Reversement entreprise', seed."CompanyPayoutAmount", 'XOF', 40, seed."CreatedAt", NULL
+SELECT gen_random_uuid(), seed."MissionId", 'CompanyPayout', 'Reversement entreprise', seed."CompanyPayoutAmount", 'XOF', 40, seed."CreatedAt", seed."CreatedAt"
 FROM "WeleDemoMissionSeed" seed;
 
 INSERT INTO "MissionPaymentMilestones" (
@@ -466,7 +442,6 @@ SELECT
     milestone."Trigger",
     CASE
         WHEN seed."Status" = 'Completed' THEN 'Paid'
-        WHEN seed."Status" IN ('Started', 'OnTheWay', 'Accepted') AND milestone."SortOrder" = 1 THEN 'Paid'
         ELSE 'Pending'
     END,
     milestone."Amount",
@@ -476,16 +451,15 @@ SELECT
     seed."CreatedAt" + (milestone."SortOrder" || ' hours')::interval,
     CASE
         WHEN seed."Status" = 'Completed' THEN seed."CreatedAt" + (milestone."SortOrder" || ' hours')::interval
-        WHEN seed."Status" IN ('Started', 'OnTheWay', 'Accepted') AND milestone."SortOrder" = 1 THEN seed."CreatedAt" + interval '1 hour'
-        ELSE NULL
+        ELSE seed."CreatedAt" + (milestone."SortOrder" || ' hours')::interval
     END,
     CASE
-        WHEN seed."Status" = 'Completed' OR (seed."Status" IN ('Started', 'OnTheWay', 'Accepted') AND milestone."SortOrder" = 1)
+        WHEN seed."Status" = 'Completed'
             THEN 'DEMO-' || seed."PaymentMethod" || '-' || seed."SlotNumber" || '-' || milestone."SortOrder"
-        ELSE NULL
+        ELSE 'DEMO-' || seed."PaymentMethod" || '-' || seed."SlotNumber" || '-' || milestone."SortOrder"
     END,
     seed."CreatedAt",
-    NULL
+    seed."CreatedAt"
 FROM "WeleDemoMissionSeed" seed
 CROSS JOIN LATERAL (
     VALUES
