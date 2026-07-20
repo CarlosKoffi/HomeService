@@ -304,7 +304,13 @@ else
     private static string TranslateMissionMode(string mode) => mode switch { "Instant" => "Direct", "Scheduled" => "Rendez-vous", _ => mode };
     private static string TranslateMissionStatus(string status) => status switch { "Created" => "Creee", "SearchingProvider" => "Recherche", "Offered" => "Proposee", "Assigned" => "Affectee", "Accepted" => "Acceptee", "OnTheWay" => "En route", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", "Disputed" => "Litige", "Resolved" => "Resolue", _ => status };
     private static string TranslatePaymentStatus(string status) => status switch { "Paid" => "Encaisse", "Pending" => "En attente", "Authorized" => "Autorise", "Failed" => "Echec", "Refunded" => "Rembourse", _ => status };
-    private static string TranslatePaymentMethod(string method) => method switch { "MobileMoney" => "Mobile Money", "Cash" => "Cash", _ => method };
+    private static string TranslatePaymentMethod(string method) => method switch
+    {
+        "MobileMoney" => "Mobile Money",
+        "Card" => "Carte bancaire",
+        "Cash" => "Cash",
+        _ => method
+    };
     private static string TranslateAssignmentStatus(string status) => status switch { "Offered" => "Proposee", "Accepted" => "Acceptee", "Refused" => "Refusee", "Expired" => "Expiree", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", _ => status };
     private static string TranslateLocationStatus(string status) => status switch { "Verified" => "verifiee", "OutsideTolerance" => "hors zone", "MissingProviderLocation" => "position manquante", "MissingMissionLocation" => "mission sans position", "LowAccuracy" => "precision faible", "InvalidProviderLocation" => "position invalide", _ => "non verifiee" };
     private static string TranslateSenderType(string senderType) => senderType switch { "Customer" => "Client", "Provider" => "Prestataire", "Company" => "Entreprise", "Platform" => "wélé", _ => senderType };

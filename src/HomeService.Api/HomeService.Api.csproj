@@ -20,4 +20,8 @@
     <ProjectReference Include="..\HomeService.Contracts\HomeService.Contracts.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\HomeService.Admin\Sql\037_seed_demo_missions.sql" Link="Sql\037_seed_demo_missions.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

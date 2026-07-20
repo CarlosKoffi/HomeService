@@ -703,7 +703,13 @@ else
         return new string('*', rating) + new string('-', 5 - rating);
     }
 
-    private static string GetPaymentLabel(string method) => method == "MobileMoney" ? "Mobile Money" : "Cash";
+    private static string GetPaymentLabel(string method) => method switch
+    {
+        "MobileMoney" => "Mobile Money",
+        "Card" => "Carte bancaire",
+        "Cash" => "Cash",
+        _ => method
+    };
 
     private static string GetEmploymentTypeLabel(string employmentType) => employmentType switch
     {

@@ -22,12 +22,28 @@ public static class DatabaseInitializer
         await SeedLanguagesAsync(db, cancellationToken);
         await SeedServicesAsync(db, cancellationToken);
         await SeedServicePrestationsAsync(db, cancellationToken);
+        await SeedDemoMissionsAsync(db, cancellationToken);
         await SeedAdminAccessAsync(db, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
         await SeedCmsFoundationAsync(db, cancellationToken);
         await SeedCompanyEditorialContentAsync(db, cancellationToken);
         await SeedProviderEditorialContentAsync(db, cancellationToken);
         await ApplyVisibleRebrandAsync(db, cancellationToken);
+    }
+
+    private static async Task SeedDemoMissionsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var scriptPath = Path.Combine(AppContext.BaseDirectory, "Sql", "037_seed_demo_missions.sql");
+        if (!File.Exists(scriptPath))
+        {
+            return;
+        }
+
+        var script = await File.ReadAllTextAsync(scriptPath, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(script))
+        {
+            await db.Database.ExecuteSqlRawAsync(script, cancellationToken);
+        }
     }
 
     private static async Task EnsureProviderServiceSchemaAsync(HomeServiceDbContext db, CancellationToken cancellationToken)

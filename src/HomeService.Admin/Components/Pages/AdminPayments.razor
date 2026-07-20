@@ -62,6 +62,7 @@
         <select @bind="SelectedPaymentMethod">
             <option value="">Tous</option>
             <option value="MobileMoney">Mobile Money</option>
+            <option value="Card">Carte bancaire</option>
             <option value="Cash">Cash</option>
         </select>
     </label>
@@ -203,6 +204,7 @@
     {
         "MobileMoney" => "Mobile Money",
         "Cash" => "Cash",
+        "Card" => "Carte bancaire",
         _ => method
     };
 

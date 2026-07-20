@@ -126,6 +126,7 @@ else
                                 <h2>Evolution des encaissements</h2>
                                 <div>
                                     <span><i class="blue"></i> Mobile Money</span>
+                                    <span><i class="card-blue"></i> Carte</span>
                                     <span><i class="violet"></i> Cash</span>
                                 </div>
                             </header>
@@ -134,10 +135,12 @@ else
                                 {
                                     var max = Math.Max(1, ChartPoints.Max(item => item.Total));
                                     var mmHeight = Math.Max(4, (int)Math.Round(point.MobileMoney * 160m / max));
+                                    var cardHeight = Math.Max(point.Card > 0 ? 4 : 0, (int)Math.Round(point.Card * 160m / max));
                                     var cashHeight = Math.Max(point.Cash > 0 ? 4 : 0, (int)Math.Round(point.Cash * 160m / max));
                                     <div class="payments-bar-group" title="@($"{point.Label} - {Fmt(point.Total)}")">
                                         <div class="payments-bar-stack">
                                             <span class="payments-bar-cash" style="height: @(cashHeight)px"></span>
+                                            <span class="payments-bar-card" style="height: @(cardHeight)px"></span>
                                             <span class="payments-bar-mm" style="height: @(mmHeight)px"></span>
                                         </div>
                                         <small>@point.Label</small>
@@ -183,6 +186,7 @@ else
                                 <select @bind="ModeFilter" aria-label="Filtrer par mode">
                                     <option value="all">Tous modes</option>
                                     <option value="MobileMoney">Mobile Money</option>
+                                    <option value="Card">Carte bancaire</option>
                                     <option value="Cash">Cash</option>
                                 </select>
                                 <label class="payments-search">
@@ -221,7 +225,7 @@ else
                                     </div>
                                     <span class="payments-ref">@transaction.Reference</span>
                                     <span class="payments-date">@FormatDate(transaction.Date)</span>
-                                    <span class="payments-mode @GetPaymentModeClass(transaction.PaymentMethod)">@Icon(transaction.PaymentMethod == "Cash" ? "cash" : "phone") @GetPaymentModeLabel(transaction.PaymentMethod)</span>
+                                    <span class="payments-mode @GetPaymentModeClass(transaction.PaymentMethod)">@Icon(GetPaymentModeIcon(transaction.PaymentMethod)) @GetPaymentModeLabel(transaction.PaymentMethod)</span>
                                     <span class="payments-status @GetPaymentStatusClass(transaction.PaymentStatus)">@Icon(GetPaymentStatusIcon(transaction.PaymentStatus)) @GetPaymentStatusLabel(transaction.PaymentStatus)</span>
                                     <strong class="payments-amount @GetPaymentAmountClass(transaction.PaymentStatus)">@Fmt(transaction.Amount)</strong>
                                 </article>
@@ -417,8 +421,28 @@ else
         return date?.ToLocalTime().ToString("d MMM", System.Globalization.CultureInfo.GetCultureInfo("fr-FR")) ?? "-";
     }
 
-    private static string GetPaymentModeLabel(string mode) => mode == "MobileMoney" ? "Mobile Money" : "Cash";
-    private static string GetPaymentModeClass(string mode) => mode == "MobileMoney" ? "mobile-money" : "cash";
+    private static string GetPaymentModeLabel(string mode) => mode switch
+    {
+        "MobileMoney" => "Mobile Money",
+        "Card" => "Carte bancaire",
+        "Cash" => "Cash",
+        _ => mode
+    };
+
+    private static string GetPaymentModeClass(string mode) => mode switch
+    {
+        "MobileMoney" => "mobile-money",
+        "Card" => "card",
+        "Cash" => "cash",
+        _ => "cash"
+    };
+
+    private static string GetPaymentModeIcon(string mode) => mode switch
+    {
+        "Cash" => "cash",
+        "Card" => "card",
+        _ => "phone"
+    };
 
     private static string GetPaymentStatusLabel(string status)
     {
@@ -641,19 +665,25 @@ else
 
         private static string BuildReference(string paymentMethod, DateTimeOffset? scheduledFor, int index)
         {
-            var prefix = paymentMethod == "Cash" ? "CA" : "MM";
+            var prefix = paymentMethod switch
+            {
+                "Cash" => "CA",
+                "Card" => "CB",
+                _ => "MM"
+            };
             var date = scheduledFor ?? DateTimeOffset.UtcNow;
             return $"{prefix}-{date:yyMM}-{index + 1:000}";
         }
     }
 
-    private sealed record PaymentChartPoint(string Label, int Total, int MobileMoney, int Cash)
+    private sealed record PaymentChartPoint(string Label, int Total, int MobileMoney, int Card, int Cash)
     {
         public static PaymentChartPoint FromRows(string label, IReadOnlyList<PaymentTransactionViewModel> rows)
         {
             var mobileMoney = rows.Where(row => row.PaymentMethod == "MobileMoney").Sum(row => row.Amount);
+            var card = rows.Where(row => row.PaymentMethod == "Card").Sum(row => row.Amount);
             var cash = rows.Where(row => row.PaymentMethod == "Cash").Sum(row => row.Amount);
-            return new PaymentChartPoint(label, mobileMoney + cash, mobileMoney, cash);
+            return new PaymentChartPoint(label, mobileMoney + card + cash, mobileMoney, card, cash);
         }
     }
 
