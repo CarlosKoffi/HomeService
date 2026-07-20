@@ -59,6 +59,37 @@ h3 {
     grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
 }
 
+.admin-hero-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+    margin-top: 1rem;
+}
+
+.primary-action,
+.secondary-action {
+    align-items: center;
+    display: inline-flex;
+    justify-content: center;
+    line-height: 1;
+    min-height: 2.6rem;
+    text-decoration: none;
+}
+
+.primary-action {
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 999px;
+    color: #ffffff;
+    font-weight: 850;
+    padding: .7rem 1rem;
+}
+
+.primary-action:hover {
+    color: #ffffff;
+}
+
 .eyebrow {
     color: #0f766e;
     font-size: .78rem;
@@ -107,6 +138,18 @@ h3 {
 .dashboard-grid li,
 .operations-board li {
     margin-top: .35rem;
+}
+
+.dashboard-grid article > a {
+    color: #2563eb;
+    display: inline-flex;
+    font-weight: 850;
+    margin-top: .85rem;
+    text-decoration: none;
+}
+
+.dashboard-grid article > a:hover {
+    text-decoration: underline;
 }
 
 .info-panel,

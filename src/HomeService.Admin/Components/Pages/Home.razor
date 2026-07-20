@@ -1,86 +1,93 @@
 @page "/"
 
-<PageTitle>HomeService Admin</PageTitle>
+<PageTitle>wélé Admin</PageTitle>
 
 <section class="admin-hero">
     <div>
         <p class="eyebrow">Back-office plateforme</p>
-        <h1>Centre de controle entreprise</h1>
+        <h1>Centre de pilotage wélé</h1>
         <p class="lead">
-            Cette premiere version admin est concentree sur le portail entreprise: verifier les
-            demandes d'inscription, controler les pieces, suivre les services proposes et envoyer
-            le lien d'activation une fois le dossier valide.
+            Suivez les entreprises, les prestataires, les missions, les paiements, le contenu du site
+            et les notifications depuis un espace unique pense pour les operations terrain.
         </p>
+        <div class="admin-hero-actions">
+            <a class="primary-action" href="company-applications">Traiter les demandes</a>
+            <a class="secondary-action" href="missions">Voir les missions</a>
+            <a class="secondary-action" href="notifications">Notifications</a>
+        </div>
     </div>
     <aside class="hero-note">
-        <strong>Priorite actuelle</strong>
-        <p>Structurer la validation entreprise avant d'ajouter les parcours client et prestataire.</p>
+        <strong>Priorite operations</strong>
+        <p>Identifier vite ce qui bloque: dossier incomplet, prestataire non valide, mission sensible ou paiement a verifier.</p>
     </aside>
 </section>
 
 <section class="dashboard-grid">
     <article>
-        <h2>Validation</h2>
-        <p>Verifier les dossiers entreprise, les pieces legales et les contacts responsables.</p>
+        <h2>Dossiers entreprises</h2>
+        <p>Verifier les demandes, les documents et les informations responsables avant activation.</p>
         <ul>
-            <li>DFE, registre de commerce et identite du responsable.</li>
-            <li>Complements demandes avec historique.</li>
-            <li>Lien d'activation envoye apres validation.</li>
+            <li>Pieces visibles et commentaires de refus.</li>
+            <li>Complements demandes et notifications portail.</li>
+            <li>Activation du compte entreprise apres controle.</li>
         </ul>
+        <a href="company-applications">Ouvrir les demandes</a>
     </article>
     <article>
-        <h2>Catalogue</h2>
-        <p>Garder une liste de services simple, plate et extensible pour les demandes entreprise.</p>
+        <h2>Catalogue services</h2>
+        <p>Rattacher les libelles proposes aux bons services ou prestations, sans doublons.</p>
         <ul>
-            <li>Menage, nounou et jardinage au lancement.</li>
-            <li>Nouveaux services proposes par les entreprises.</li>
-            <li>Activation ou desactivation sans suppression brutale.</li>
+            <li>Services principaux et prestations detaillees.</li>
+            <li>Propositions entreprise a creer ou classer.</li>
+            <li>Activation, prix et besoins photos par service.</li>
         </ul>
+        <a href="service-proposals">Gerer le catalogue</a>
     </article>
     <article>
-        <h2>Controle</h2>
-        <p>Preparer le suivi qui sera visible plus tard dans le portail entreprise.</p>
+        <h2>Missions et litiges</h2>
+        <p>Retrouver une mission par numero, suivre les affectations et traiter les cas sensibles.</p>
         <ul>
-            <li>Prestataires rattaches a l'entreprise.</li>
-            <li>Missions, refus, retards et satisfaction client.</li>
-            <li>Cash, Mobile Money et rapprochement entreprise.</li>
+            <li>Numero unique de mission pour les appels client.</li>
+            <li>Historique des affectations prestataires.</li>
+            <li>Passage en litige avec note obligatoire.</li>
         </ul>
+        <a href="missions">Suivre les missions</a>
     </article>
     <article>
-        <h2>Acces admin</h2>
-        <p>Chaque admin doit avoir seulement les modules utiles a son travail.</p>
+        <h2>Finance et notifications</h2>
+        <p>Controler les encaissements, la commission plateforme et les messages envoyes.</p>
         <ul>
-            <li>Super admin pour les roles et modules.</li>
-            <li>Equipes validation, contenu, operations et finance.</li>
-            <li>Actions sensibles separees: voir, editer, valider, rejeter.</li>
+            <li>Mobile Money et carte bancaire.</li>
+            <li>Commission wélé visible dans les totaux.</li>
+            <li>Portail, application, email et WhatsApp separes.</li>
         </ul>
+        <a href="payments">Voir les encaissements</a>
     </article>
 </section>
 
 <section class="operations-board">
     <article>
-        <h2>Routine quotidienne conseillee</h2>
+        <h2>Routine quotidienne</h2>
         <ol>
-        <li>Traiter les dossiers entreprises recents, du plus urgent au moins urgent.</li>
-            <li>Demander les complements avant validation si un document est flou, expire ou incoherent.</li>
-            <li>Valider uniquement apres controle des informations legales et du contact responsable.</li>
-        <li>Verifier les services proposes par l'entreprise pour eviter les doublons et fautes proches.</li>
-            <li>Relancer les comptes valides qui n'ont pas encore cree leur mot de passe.</li>
+            <li>Traiter les nouvelles demandes entreprises et les pieces a verifier.</li>
+            <li>Controler les prestataires bloques avant mission: documents, services, statut.</li>
+            <li>Verifier les missions en cours, annulees ou signalees en litige.</li>
+            <li>Rattacher les nouveaux libelles de services au catalogue.</li>
+            <li>Surveiller les notifications en erreur et les paiements a rapprocher.</li>
         </ol>
     </article>
 
     <article>
-        <h2>Garde-fous Afrique reseau</h2>
+        <h2>Qualite attendue</h2>
         <p>
-            Les ecrans entreprise et admin doivent rester rapides sur connexion instable: peu d'images
-            lourdes, listes lisibles, actions explicites et textes courts mais complets. Les gros
-            documents doivent etre ouverts a la demande, jamais charges automatiquement.
+            Les ecrans doivent rester rapides et lisibles meme avec une connexion instable: listes
+            claires, actions courtes, pieces chargees seulement quand l'admin les ouvre.
         </p>
         <div class="check-list">
-            <span>Interface mobile utilisable</span>
+            <span>Recherche par numero mission</span>
             <span>Documents telecharges a la demande</span>
-            <span>Libelles clairs pour equipes terrain</span>
-            <span>Actions rapides sans parcours long</span>
+            <span>Notes admin visibles au bon endroit</span>
+            <span>Actions sensibles journalisees</span>
         </div>
     </article>
 </section>
