@@ -930,6 +930,36 @@ h3 {
     margin-top: .35rem;
 }
 
+.payment-admin-metrics .payment-admin-revenue {
+    align-items: center;
+    background: linear-gradient(135deg, #1264f6 0%, #0b4bc7 100%);
+    border-color: transparent;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    min-height: 118px;
+}
+
+.payment-admin-metrics .payment-admin-revenue span,
+.payment-admin-metrics .payment-admin-revenue strong {
+    color: #fff;
+}
+
+.payment-admin-metrics .payment-admin-revenue i {
+    align-items: center;
+    background: rgba(255, 255, 255, .16);
+    border: 1px solid rgba(255, 255, 255, .24);
+    border-radius: 16px;
+    display: inline-flex;
+    font-size: .72rem;
+    font-style: normal;
+    font-weight: 900;
+    height: 44px;
+    justify-content: center;
+    letter-spacing: .04em;
+    width: 44px;
+}
+
 .operator-toolbar {
     background: #fff;
     border: 1px solid #e5e7eb;

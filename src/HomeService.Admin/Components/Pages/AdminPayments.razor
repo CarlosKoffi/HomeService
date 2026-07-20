@@ -10,17 +10,20 @@
     <div>
         <p class="eyebrow">Finance</p>
         <h1>Encaissements</h1>
-        <p class="lead">Suivez Mobile Money, cash terrain, commissions et paiements a verifier.</p>
+        <p class="lead">Suivez les paiements, la carte bancaire, Mobile Money et le chiffre d'affaires wélé.</p>
     </div>
     <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
 </div>
 
 @if (Snapshot is not null)
 {
-    <section class="admin-metric-grid compact">
-        <article>
-            <span>CA Wélé</span>
-            <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
+    <section class="admin-metric-grid compact payment-admin-metrics">
+        <article class="payment-admin-revenue">
+            <div>
+                <span>CA Wélé</span>
+                <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
+            </div>
+            <i aria-hidden="true">CB</i>
         </article>
         <article>
             <span>Total encaisse</span>
