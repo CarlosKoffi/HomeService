@@ -312,10 +312,14 @@ public static class AdminEndpoints
             HttpRequest httpRequest,
             AdminQueryService queryService,
             AdminMissionOperationsService missionOperationsService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await missionOperationsService.MarkDisputedAsync(missionId, request.Note, cancellationToken);
+            var result = await missionOperationsService.MarkDisputedAsync(
+                missionId,
+                request.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminMissionOperationStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -325,18 +329,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminMissionMarkedDisputed",
-                nameof(Mission),
-                missionId,
-                $"Mission marquee en litige. Note: {result.Note}",
-                before: new { Status = result.PreviousStatus?.ToString() },
-                after: new { Status = result.Mission!.Status.ToString(), result.Note });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(await queryService.ListMissionsAsync("Disputed", null, cancellationToken));
         })
@@ -348,10 +340,14 @@ public static class AdminEndpoints
             HttpRequest httpRequest,
             AdminQueryService queryService,
             AdminMissionOperationsService missionOperationsService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await missionOperationsService.ResolveDisputeAsync(missionId, request.Note, cancellationToken);
+            var result = await missionOperationsService.ResolveDisputeAsync(
+                missionId,
+                request.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminMissionOperationStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -361,18 +357,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminMissionDisputeResolved",
-                nameof(Mission),
-                missionId,
-                $"Litige mission resolu. Note: {result.Note}",
-                before: new { Status = result.PreviousStatus?.ToString() },
-                after: new { Status = result.Mission!.Status.ToString(), result.Note });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(await queryService.GetMissionAsync(missionId, cancellationToken));
         })

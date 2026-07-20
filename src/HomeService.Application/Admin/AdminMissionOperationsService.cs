@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,12 @@ namespace HomeService.Application.Admin;
 
 public sealed class AdminMissionOperationsService(IAppDbContext db)
 {
-    public async Task<AdminMissionOperationResult> MarkDisputedAsync(Guid missionId, string? note, CancellationToken cancellationToken)
+    public async Task<AdminMissionOperationResult> MarkDisputedAsync(
+        Guid missionId,
+        string? note,
+        AuditActor actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var mission = await db.Missions.FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
         if (mission is null)
@@ -30,10 +36,27 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
             return AdminMissionOperationResult.ValidationFailed(exception.Message);
         }
 
-        return AdminMissionOperationResult.Ok(mission, previousStatus, note.Trim());
+        var cleanNote = note.Trim();
+        AddMissionAudit(
+            actor,
+            auditContext,
+            "AdminMissionMarkedDisputed",
+            mission,
+            previousStatus,
+            cleanNote,
+            $"Mission marquee en litige. Note: {cleanNote}");
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return AdminMissionOperationResult.Ok(mission, previousStatus, cleanNote);
     }
 
-    public async Task<AdminMissionOperationResult> ResolveDisputeAsync(Guid missionId, string? note, CancellationToken cancellationToken)
+    public async Task<AdminMissionOperationResult> ResolveDisputeAsync(
+        Guid missionId,
+        string? note,
+        AuditActor actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var mission = await db.Missions.FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
         if (mission is null)
@@ -56,7 +79,39 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
             return AdminMissionOperationResult.ValidationFailed(exception.Message);
         }
 
-        return AdminMissionOperationResult.Ok(mission, previousStatus, note.Trim());
+        var cleanNote = note.Trim();
+        AddMissionAudit(
+            actor,
+            auditContext,
+            "AdminMissionDisputeResolved",
+            mission,
+            previousStatus,
+            cleanNote,
+            $"Litige mission resolu. Note: {cleanNote}");
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return AdminMissionOperationResult.Ok(mission, previousStatus, cleanNote);
+    }
+
+    private void AddMissionAudit(
+        AuditActor actor,
+        AuditRequestContext? auditContext,
+        string action,
+        Mission mission,
+        MissionStatus previousStatus,
+        string note,
+        string summary)
+    {
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(Mission),
+            mission.Id,
+            summary,
+            auditContext,
+            before: new { Status = previousStatus.ToString() },
+            after: new { Status = mission.Status.ToString(), Note = note }));
     }
 }
 
