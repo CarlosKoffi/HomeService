@@ -106,8 +106,8 @@
     <div class="notification-rules-head">
         <div>
             <span>Portail entreprise</span>
-            <strong>Notifications visibles dans le dashboard</strong>
-            <p>Ces messages sont internes au portail. Vous pouvez les renvoyer pour les remettre en haut des notifications de l'entreprise.</p>
+            <strong>Messages envoyes automatiquement au portail entreprise</strong>
+            <p>Ces notifications sont visibles par l'entreprise dans son portail. Le renvoi les remet en non lues et les remonte dans son fil.</p>
         </div>
         <small>@CompanyPortalNotifications.Count message(s)</small>
     </div>
@@ -155,7 +155,7 @@
                     <button type="button"
                             disabled="@IsBusy(notification.Id)"
                             @onclick="() => ResendPortalNotificationAsync(notification)">
-                        Renvoyer
+                        Renvoyer sur le portail
                     </button>
                 </div>
             </article>
@@ -228,7 +228,7 @@
                     <button type="button"
                             disabled="@(!CanRetry(notification) || IsBusy(notification.Id))"
                             @onclick="() => RetryAsync(notification)">
-                        Relancer
+                        Relancer l'envoi
                     </button>
                     <button type="button"
                             disabled="@(!CanCancel(notification) || IsBusy(notification.Id))"
