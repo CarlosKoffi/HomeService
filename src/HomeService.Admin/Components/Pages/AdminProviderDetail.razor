@@ -45,7 +45,7 @@ else
         </div>
         <div class="company-admin-status">
             <span class="@GetProviderStatusClass(Provider.Status)">@TranslateProviderStatus(Provider.Status)</span>
-            <small>@TranslateEmploymentType(Provider.EmploymentType) - @(Provider.IsAvailable ? "Disponible" : "Non disponible")</small>
+            <small>@TranslateEmploymentType(Provider.EmploymentType) - @GetAvailabilityLabel(Provider)</small>
             @if (CanApproveProvider(Provider))
             {
                 <button type="button" class="primary-action compact-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
@@ -67,16 +67,16 @@ else
             <strong>@Provider.YearsOfExperience an(s)</strong>
         </article>
         <article>
+            <span>Validation</span>
+            <strong>@TranslateProviderStatus(Provider.Status)</strong>
+        </article>
+        <article>
+            <span>Terrain</span>
+            <strong>@GetAvailabilityLabel(Provider)</strong>
+        </article>
+        <article>
             <span>Services</span>
             <strong>@Provider.Services.Count</strong>
-        </article>
-        <article>
-            <span>Candidatures</span>
-            <strong>@Provider.AffiliationRequests.Count</strong>
-        </article>
-        <article>
-            <span>Missions</span>
-            <strong>@Provider.MissionAssignments.Count</strong>
         </article>
     </section>
 
@@ -108,7 +108,8 @@ else
                     <div><dt>Entreprise</dt><dd>@(Provider.CompanyName ?? "Non rattache")</dd></div>
                     <div><dt>Type</dt><dd>@TranslateEmploymentType(Provider.EmploymentType)</dd></div>
                     <div><dt>Source</dt><dd>@TranslateRegistrationSource(Provider.RegistrationSource)</dd></div>
-                    <div><dt>Statut</dt><dd>@TranslateProviderStatus(Provider.Status)</dd></div>
+                    <div><dt>Validation plateforme</dt><dd>@TranslateProviderStatus(Provider.Status)</dd></div>
+                    <div><dt>Disponibilite terrain</dt><dd>@GetAvailabilityLabel(Provider)</dd></div>
                 </dl>
             </article>
             <article>
@@ -124,7 +125,7 @@ else
                 <h2>Action admin</h2>
                 @if (CanSuspendProvider(Provider))
                 {
-                    <p>Suspendre bloque les affectations et coupe la disponibilite terrain.</p>
+                    <p>Suspendre retire le prestataire des affectations possibles et conserve une trace dans le journal.</p>
                     <label class="form-field">
                         <span>Note interne</span>
                         <textarea rows="3" @bind="SuspendNote" placeholder="Ex: documents a reverifier, incident client, demande entreprise..."></textarea>
@@ -135,7 +136,7 @@ else
                 }
                 else if (CanApproveProvider(Provider))
                 {
-                    <p>@(Provider.Status == "SuspendedByPlatform" ? "Ce prestataire est suspendu par wélé. Vous pouvez le reactiver apres controle." : "Le dossier peut etre valide apres verification des informations.")</p>
+                    <p>@(Provider.Status == "SuspendedByPlatform" ? "Ce prestataire est suspendu par wélé. Vous pouvez le reactiver apres controle." : "Validez le prestataire lorsque son identite, ses services et ses pieces sont suffisants.")</p>
                     <button type="button" class="primary-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
                         @(IsActionRunning ? "Validation..." : GetApproveButtonLabel(Provider))
                     </button>
@@ -413,5 +414,15 @@ else
     private static bool CanApproveProvider(AdminProviderDetailResponse provider)
     {
         return provider.Status is not ("Approved" or "SuspendedByCompany" or "Inactive" or "InterimCandidate");
+    }
+
+    private static string GetAvailabilityLabel(AdminProviderDetailResponse provider)
+    {
+        if (provider.Status != "Approved")
+        {
+            return "Non affectable";
+        }
+
+        return provider.IsAvailable ? "Disponible" : "Indisponible";
     }
 }
