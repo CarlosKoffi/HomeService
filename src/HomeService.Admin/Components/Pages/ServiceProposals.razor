@@ -64,18 +64,18 @@
 
 <nav class="service-admin-tabs" aria-label="Navigation catalogue services">
     <button type="button" class="@GetTabClass(ServiceAdminTab.Proposals)" @onclick="() => ActiveTab = ServiceAdminTab.Proposals">
-        Propositions
+        A classer
         @if (CompanyServiceProposals.Count > 0)
         {
             <span>@CompanyServiceProposals.Count</span>
         }
     </button>
     <button type="button" class="@GetTabClass(ServiceAdminTab.Catalog)" @onclick="() => ActiveTab = ServiceAdminTab.Catalog">
-        Catalogue
+        Services
         <span>@Services.Count</span>
     </button>
     <button type="button" class="@GetTabClass(ServiceAdminTab.Create)" @onclick="() => ActiveTab = ServiceAdminTab.Create">
-        Creer
+        Nouveau service
     </button>
     <button type="button" class="@GetTabClass(ServiceAdminTab.Insights)" @onclick="() => ActiveTab = ServiceAdminTab.Insights">
         Chiffres
@@ -87,8 +87,8 @@
 <section class="service-admin-create orphan-proposals">
     <div class="proposal-panel-heading">
         <p class="eyebrow">A verifier</p>
-        <h2>Libelles a classer</h2>
-        <p>Chaque libelle doit finir rattache a un service ou une prestation. Aucun service saisi par une entreprise ne reste orphelin.</p>
+        <h2>Classer les services demandes</h2>
+        <p>Quand une entreprise tape un libelle inconnu, vous decidez ici s'il correspond a un service existant, a une prestation, ou a un nouveau service.</p>
     </div>
 
     @if (CompanyServiceProposals.Count == 0)
@@ -107,16 +107,17 @@
 
                 <article class="proposal-review-card" @key="proposal.Id">
                     <div class="proposal-review-main">
+                        <span class="proposal-company">@proposal.CompanyName</span>
                         <div class="proposal-review-title">
                             <span class="status-pill pending">@GetProposalStatusLabel(proposal.MatchStatus)</span>
                             <h3>@proposal.RawName</h3>
                         </div>
-                        <p>@proposal.CompanyName</p>
-                        <small>Score @(proposal.MatchScore?.ToString() ?? "non calcule")</small>
+                        <p>Libelle envoye par l'entreprise. Vous pouvez corriger le nom avant de le classer.</p>
+                        <small>Confiance: @(proposal.MatchScore?.ToString() ?? "a verifier")</small>
                         @if (proposal.Suggestions.Count > 0)
                         {
                             <div class="proposal-suggestions">
-                                <span>Suggestion rapide</span>
+                                <span>Suggestion</span>
                                 @foreach (var suggestion in proposal.Suggestions.Take(3))
                                 {
                                     <button type="button" class="light-action" @onclick="() => ApplySuggestion(proposal.Id, suggestion)">
@@ -133,21 +134,25 @@
                         }
                     </div>
                     <div class="proposal-decision-panel">
+                        <div class="proposal-step-title">
+                            <strong>Decision catalogue</strong>
+                            <span>@GetProposalActionHelp(draft.Action)</span>
+                        </div>
                         <label class="wide">
-                            Libelle a utiliser
+                            Nom final
                             <input type="text" @bind="draft.ProposedName" placeholder="Nom a utiliser dans le catalogue" />
                         </label>
                         <label>
                             Action
                             <select @bind="draft.Action">
                                 <option value="@ProposalAction.Attach">Rattacher a l'existant</option>
-                                <option value="@ProposalAction.CreatePrestation">Creer une prestation</option>
-                                <option value="@ProposalAction.CreateService">Creer un service</option>
+                                <option value="@ProposalAction.CreatePrestation">Nouvelle prestation</option>
+                                <option value="@ProposalAction.CreateService">Nouveau service</option>
                             </select>
                         </label>
                         <label class="wide">
-                            Description courte
-                            <input type="text" @bind="draft.Description" placeholder="Optionnel, utile si vous creez un service ou une prestation" />
+                            Note interne
+                            <input type="text" @bind="draft.Description" placeholder="Optionnel, utile pour expliquer le classement" />
                         </label>
 
                         @if (draft.Action == ProposalAction.Attach)
@@ -197,7 +202,7 @@
                         }
 
                         <div class="proposal-primary-action">
-                            <p>@GetProposalActionHelp(draft.Action)</p>
+                            <p>@GetProposalActionSummary(draft.Action)</p>
                             <button type="button" @onclick="() => ExecuteProposalActionAsync(proposal)" disabled="@IsSaving">
                                 @GetProposalActionLabel(draft.Action)
                             </button>
@@ -765,7 +770,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         {
             ProposalAction.CreateService => "Creer le service",
             ProposalAction.CreatePrestation => "Creer la prestation",
-            _ => "Rattacher au catalogue"
+            _ => "Valider le rattachement"
         };
     }
 
@@ -773,9 +778,19 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     {
         return action switch
         {
-            ProposalAction.CreateService => "A utiliser si ce metier n'existe pas encore dans le catalogue.",
-            ProposalAction.CreatePrestation => "A utiliser si le metier existe deja mais que la demande precise une prestation.",
-            _ => "A utiliser quand le libelle correspond deja a un service ou une prestation existante."
+            ProposalAction.CreateService => "Cree un nouveau metier principal.",
+            ProposalAction.CreatePrestation => "Ajoute un detail sous un service existant.",
+            _ => "Lie le libelle a un element deja connu."
+        };
+    }
+
+    private static string GetProposalActionSummary(ProposalAction action)
+    {
+        return action switch
+        {
+            ProposalAction.CreateService => "Le libelle deviendra un service visible dans le catalogue.",
+            ProposalAction.CreatePrestation => "Le libelle sera ajoute sous le service parent choisi.",
+            _ => "La proposition disparaitra de la file a verifier."
         };
     }
 
