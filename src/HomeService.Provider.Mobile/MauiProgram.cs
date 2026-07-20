@@ -12,7 +12,7 @@ public static class MauiProgram
 
         builder.Services.AddSingleton(new HttpClient
         {
-            BaseAddress = new Uri("https://api.kaza.local/"),
+            BaseAddress = new Uri("https://api.wele.local/"),
             Timeout = TimeSpan.FromSeconds(12)
         });
         builder.Services.AddSingleton<ProviderMobileApiClient>();

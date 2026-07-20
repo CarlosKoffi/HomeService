@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:pages="clr-namespace:HomeService.Provider.Mobile.Pages"
     Shell.FlyoutBehavior="Disabled"
-    Title="Kaza Prestataire">
+    Title="wélé Prestataire">
     <TabBar>
         <ShellContent Title="Accueil" ContentTemplate="{DataTemplate pages:HomePage}" />
         <ShellContent Title="Missions" ContentTemplate="{DataTemplate pages:MissionsPage}" />

@@ -9,8 +9,8 @@
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationTitle>Kaza Prestataire</ApplicationTitle>
-    <ApplicationId>ci.kaza.provider</ApplicationId>
+    <ApplicationTitle>wélé Prestataire</ApplicationTitle>
+    <ApplicationId>ci.wele.provider</ApplicationId>
     <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
