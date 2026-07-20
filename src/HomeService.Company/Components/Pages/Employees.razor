@@ -1249,7 +1249,7 @@ else
         var saved = await PersistEditableServicesAsync("Service ajoute au profil.");
         if (!saved)
         {
-            Message = $"Service ajoute a l'ecran, mais pas encore enregistre: {Message}";
+            EditableServices.RemoveAll(service => service.ServiceId == serviceId);
         }
         StateHasChanged();
     }
@@ -1939,7 +1939,7 @@ else
         var saved = await PersistEditableServicesAsync("Prestation ajoutee au profil.");
         if (!saved)
         {
-            Message = $"Prestation ajoutee a l'ecran, mais pas encore enregistree: {Message}";
+            service.ServicePrestationIds.Remove(prestation.Id);
         }
         StateHasChanged();
     }
@@ -1978,11 +1978,11 @@ else
 
     private async Task RemoveEditablePrestationAsync(CompanyEmployeeServiceEditModel service, Guid prestationId)
     {
-        service.ServicePrestationIds.Remove(prestationId);
+        var removed = service.ServicePrestationIds.Remove(prestationId);
         var saved = await PersistEditableServicesAsync("Prestation retiree du profil.");
-        if (!saved)
+        if (!saved && removed)
         {
-            Message = $"Prestation retiree a l'ecran, mais pas encore enregistree: {Message}";
+            service.ServicePrestationIds.Add(prestationId);
         }
     }
 
