@@ -397,6 +397,22 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
     }
 
+    public async Task<EmployeeSaveResult> MarkCompanyNotificationReadAsync(
+        Guid companyId,
+        Guid notificationId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsync(
+            $"/api/company-portal/{companyId:D}/notifications/{notificationId:D}/mark-read",
+            null,
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action impossible.");
+    }
+
     public async Task<EmployeeSaveResult> ApproveInterimCandidateAsync(
         Guid companyId,
         Guid requestId,

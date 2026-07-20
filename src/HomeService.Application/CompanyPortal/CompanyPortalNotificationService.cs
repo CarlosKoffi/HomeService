@@ -63,6 +63,25 @@ public sealed class CompanyPortalNotificationService(IAppDbContext db)
 
         return CompanyPortalNotificationActionResult.Ok(unreadNotifications.Count);
     }
+
+    public async Task<CompanyPortalNotificationActionResult> MarkReadAsync(
+        Guid companyId,
+        Guid notificationId,
+        CancellationToken cancellationToken)
+    {
+        var notification = await db.CompanyPortalNotifications
+            .FirstOrDefaultAsync(item => item.Id == notificationId && item.CompanyId == companyId, cancellationToken);
+        if (notification is null)
+        {
+            return CompanyPortalNotificationActionResult.NotFound();
+        }
+
+        var wasUnread = !notification.IsRead;
+        notification.MarkRead();
+        await db.SaveChangesAsync(cancellationToken);
+
+        return CompanyPortalNotificationActionResult.Ok(wasUnread ? 1 : 0);
+    }
 }
 
 public sealed record CompanyPortalNotificationListResult(

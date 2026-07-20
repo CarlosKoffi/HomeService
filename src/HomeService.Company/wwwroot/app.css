@@ -7509,14 +7509,19 @@ h3 {
 
 .portal-notification-row {
     align-items: center;
+    background: #ffffff;
     border: 1px solid var(--portal-border);
     border-radius: 16px;
     color: #111111;
+    cursor: pointer;
     display: grid;
+    font: inherit;
     gap: 12px;
     grid-template-columns: 10px minmax(0, 1fr) auto;
     padding: 12px 14px;
+    text-align: left;
     text-decoration: none;
+    width: 100%;
 }
 
 .portal-notification-row:hover {
@@ -7912,12 +7917,17 @@ h3 {
     font-size: 11px;
 }
 
-.notifications-item > a {
+.notifications-item {
+    cursor: pointer;
+}
+
+.notifications-item > button {
     align-items: center;
     background: #ffffff;
     border: 1px solid var(--portal-border);
     border-radius: 999px;
     color: #111111;
+    cursor: pointer;
     display: inline-flex;
     font-size: 12px;
     font-weight: 800;
@@ -7926,7 +7936,7 @@ h3 {
     text-decoration: none;
 }
 
-.notifications-item > a:hover {
+.notifications-item > button:hover {
     background: #111111;
     border-color: #111111;
     color: #ffffff;

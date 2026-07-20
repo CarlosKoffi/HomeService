@@ -147,6 +147,34 @@ public static class CompanyPortalEndpoints
         })
         .WithName("MarkCompanyPortalNotificationsRead");
 
+        group.MapPost("/{companyId:guid}/notifications/{notificationId:guid}/mark-read", async (
+            Guid companyId,
+            Guid notificationId,
+            HttpRequest httpRequest,
+            CompanyPortalNotificationService notificationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await notificationService.MarkReadAsync(companyId, notificationId, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, "Entreprise"),
+                "CompanyPortalNotificationMarkedRead",
+                nameof(CompanyPortalNotification),
+                notificationId,
+                "Notification entreprise marquee comme lue.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: new { result.UpdatedCount }));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new { result.UpdatedCount });
+        })
+        .WithName("MarkOneCompanyPortalNotificationRead");
+
         group.MapPost("/{companyId:guid}/interim-candidates/{requestId:guid}/approve", async (
             Guid companyId,
             Guid requestId,

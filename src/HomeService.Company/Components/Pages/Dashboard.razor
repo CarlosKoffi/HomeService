@@ -127,14 +127,14 @@ else
                 <div class="portal-notification-list">
                     @foreach (var notification in PortalNotifications)
                     {
-                        <a class="@GetNotificationClass(notification)" href="@PortalLink(notification.ActionUrl ?? "company-profile")">
+                        <button class="@GetNotificationClass(notification)" type="button" @onclick="() => OpenDashboardNotificationAsync(notification)">
                             <span></span>
                             <div>
                                 <strong>@notification.Title</strong>
                                 <small>@notification.Message</small>
                             </div>
                             <time>@notification.OccurredAt.ToLocalTime().ToString("dd/MM HH:mm")</time>
-                        </a>
+                        </button>
                     }
                 </div>
             </section>
@@ -383,6 +383,45 @@ else
         return Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase)
             ? $"{path}?preview=1"
             : path;
+    }
+
+    private async Task OpenDashboardNotificationAsync(CompanyPortalNotificationResponse notification)
+    {
+        if (!notification.IsRead && Session is not null)
+        {
+            if (Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase))
+            {
+                MarkDashboardNotificationRead(notification.Id);
+            }
+            else
+            {
+                MarkDashboardNotificationRead(notification.Id);
+                var result = await ApiClient.MarkCompanyNotificationReadAsync(Session.CompanyId, notification.Id);
+                if (!result.IsSuccess)
+                {
+                    LoginMessage = result.ErrorMessage ?? "Notification non marquee comme lue cote serveur.";
+                }
+            }
+        }
+
+        Navigation.NavigateTo(PortalLink(notification.ActionUrl ?? "company-profile"));
+    }
+
+    private void MarkDashboardNotificationRead(Guid notificationId)
+    {
+        if (DashboardData is null)
+        {
+            return;
+        }
+
+        var notifications = DashboardData.Notifications
+            .Select(notification => notification.Id == notificationId ? notification with { IsRead = true } : notification)
+            .ToList();
+        DashboardData = DashboardData with
+        {
+            Notifications = notifications,
+            UnreadNotificationCount = notifications.Count(notification => !notification.IsRead)
+        };
     }
 
     private string FormatMoney(int amount)

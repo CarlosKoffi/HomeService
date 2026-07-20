@@ -97,7 +97,11 @@ else
                 <section class="notifications-list" aria-label="Notifications entreprise">
                     @foreach (var notification in FilteredNotifications)
                     {
-                        <article class="@GetNotificationClass(notification)">
+                        <article class="@GetNotificationClass(notification)"
+                                 role="button"
+                                 tabindex="0"
+                                 @onclick="() => OpenNotificationAsync(notification)"
+                                 @onkeydown="eventArgs => OpenNotificationFromKeyboardAsync(eventArgs, notification)">
                             <div class="notifications-icon">
                                 <span></span>
                             </div>
@@ -114,7 +118,7 @@ else
                             </div>
                             @if (!string.IsNullOrWhiteSpace(notification.ActionUrl))
                             {
-                                <a href="@PortalLink(notification.ActionUrl)">Ouvrir</a>
+                                <button type="button" @onclick:stopPropagation @onclick="() => OpenNotificationAsync(notification)">Ouvrir</button>
                             }
                         </article>
                     }
@@ -250,6 +254,44 @@ else
         finally
         {
             IsMarkingRead = false;
+        }
+    }
+
+    private async Task OpenNotificationFromKeyboardAsync(KeyboardEventArgs eventArgs, CompanyPortalNotificationResponse notification)
+    {
+        if (eventArgs.Key is "Enter" or " ")
+        {
+            await OpenNotificationAsync(notification);
+        }
+    }
+
+    private async Task OpenNotificationAsync(CompanyPortalNotificationResponse notification)
+    {
+        await MarkNotificationReadLocallyAsync(notification);
+        Navigation.NavigateTo(PortalLink(notification.ActionUrl ?? "notifications"));
+    }
+
+    private async Task MarkNotificationReadLocallyAsync(CompanyPortalNotificationResponse notification)
+    {
+        if (notification.IsRead || Session is null)
+        {
+            return;
+        }
+
+        NotificationItems = NotificationItems
+            .Select(item => item.Id == notification.Id ? item with { IsRead = true } : item)
+            .ToList();
+        StateHasChanged();
+
+        if (IsPreviewMode())
+        {
+            return;
+        }
+
+        var result = await ApiClient.MarkCompanyNotificationReadAsync(Session.CompanyId, notification.Id);
+        if (!result.IsSuccess)
+        {
+            Message = result.ErrorMessage ?? "Notification non marquee comme lue cote serveur.";
         }
     }
 
