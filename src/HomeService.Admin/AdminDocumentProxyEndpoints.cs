@@ -28,6 +28,17 @@ public static class AdminDocumentProxyEndpoints
                 context);
         });
 
+        app.MapGet("/admin-cms-media/{mediaId:guid}/preview", async (
+            Guid mediaId,
+            PlatformApiClient apiClient,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            return await RenderDocumentAsync(
+                () => apiClient.GetCmsMediaFileAsync(mediaId, cancellationToken),
+                context);
+        });
+
         return app;
     }
 

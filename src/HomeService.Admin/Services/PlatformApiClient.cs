@@ -697,7 +697,19 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var value = mediaUrl.Trim();
         if (Uri.TryCreate(value, UriKind.Absolute, out var absoluteUri))
         {
+            var localCmsMediaProxy = TryBuildLocalCmsMediaProxyUrl(absoluteUri.AbsolutePath);
+            if (!string.IsNullOrWhiteSpace(localCmsMediaProxy))
+            {
+                return localCmsMediaProxy;
+            }
+
             return absoluteUri.ToString();
+        }
+
+        var cmsMediaProxy = TryBuildLocalCmsMediaProxyUrl(value);
+        if (!string.IsNullOrWhiteSpace(cmsMediaProxy))
+        {
+            return cmsMediaProxy;
         }
 
         if (value.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
@@ -712,6 +724,48 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
         var publicBaseUrl = ResolvePublicBaseUrl(surface);
         return new Uri(publicBaseUrl ?? httpClient.BaseAddress!, value.TrimStart('/')).ToString();
+    }
+
+    public async Task<CompanyApplicationDocumentFile> GetCmsMediaFileAsync(Guid mediaId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/cms/media/{mediaId}";
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new PlatformApiException(
+                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName
+            ?? $"cms-media-{mediaId}";
+
+        return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
+    }
+
+    private static string? TryBuildLocalCmsMediaProxyUrl(string path)
+    {
+        var normalized = path.Trim();
+        if (!normalized.StartsWith("/", StringComparison.Ordinal))
+        {
+            normalized = "/" + normalized;
+        }
+
+        const string cmsMediaPrefix = "/api/cms/media/";
+        if (!normalized.StartsWith(cmsMediaPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var idSegment = normalized[cmsMediaPrefix.Length..].Split('/', '?', '#')[0];
+        return Guid.TryParse(idSegment, out var mediaId)
+            ? $"/admin-cms-media/{mediaId}/preview"
+            : null;
     }
 
     private Uri? ResolvePublicBaseUrl(string? surface)
