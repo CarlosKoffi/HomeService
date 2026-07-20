@@ -8,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminCompanyApplicationReviewService(IAppDbContext db, CompanyPortalNotificationWriter portalNotifications)
+public sealed class AdminCompanyApplicationReviewService(
+    IAppDbContext db,
+    CompanyPortalNotificationWriter portalNotifications,
+    NotificationDeliveryPreferenceService deliveryPreferences)
 {
     private const string AdminActor = "admin";
 
@@ -82,7 +85,16 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db, Compa
         var previousStatus = application.Status;
         application.Reject(reviewNote.Value!, AdminActor);
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
-        db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.Rejected(application, reviewNote.Value!));
+        var preference = await deliveryPreferences.GetAsync(
+            "CompanyApplicationRejected",
+            "Company",
+            defaultEmailEnabled: true,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+        db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.Rejected(
+            application,
+            reviewNote.Value!,
+            preference));
         portalNotifications.AddForApplication(
             application,
             "CompanyApplicationRejected",
@@ -117,7 +129,16 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db, Compa
         }
 
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
-        db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.Reopened(application, reviewNote.Value!));
+        var preference = await deliveryPreferences.GetAsync(
+            "CompanyApplicationReopened",
+            "Company",
+            defaultEmailEnabled: true,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+        db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.Reopened(
+            application,
+            reviewNote.Value!,
+            preference));
         portalNotifications.AddForApplication(
             application,
             "CompanyApplicationReopened",
@@ -144,7 +165,16 @@ public sealed class AdminCompanyApplicationReviewService(IAppDbContext db, Compa
         var previousStatus = application.Status;
         application.RequestMoreInformation(reviewNote.Value!, AdminActor);
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
-        db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.MoreInformationRequested(application, reviewNote.Value!));
+        var preference = await deliveryPreferences.GetAsync(
+            "CompanyApplicationMoreInformationRequested",
+            "Company",
+            defaultEmailEnabled: true,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+        db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.MoreInformationRequested(
+            application,
+            reviewNote.Value!,
+            preference));
         portalNotifications.AddForApplication(
             application,
             "CompanyApplicationMoreInformationRequested",

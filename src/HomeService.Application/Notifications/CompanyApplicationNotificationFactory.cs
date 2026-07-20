@@ -9,12 +9,13 @@ public static class CompanyApplicationNotificationFactory
         CompanyApplication application,
         string subject,
         string body,
+        bool includeEmail,
         bool includeWhatsApp,
         string? metadataJson = null)
     {
         var messages = new List<NotificationOutboxMessage>();
 
-        if (!string.IsNullOrWhiteSpace(application.Email))
+        if (includeEmail && !string.IsNullOrWhiteSpace(application.Email))
         {
             messages.Add(new NotificationOutboxMessage(
                 NotificationChannel.Email,
@@ -41,30 +42,42 @@ public static class CompanyApplicationNotificationFactory
         return messages;
     }
 
-    public static IReadOnlyList<NotificationOutboxMessage> Rejected(CompanyApplication application, string note)
+    public static IReadOnlyList<NotificationOutboxMessage> Rejected(
+        CompanyApplication application,
+        string note,
+        NotificationDeliveryPreference preference)
     {
         return CreateApplicantNotifications(
             application,
             "Votre dossier entreprise a ete refuse",
             $"Votre demande d'inscription entreprise a ete refusee. Motif: {note}",
-            includeWhatsApp: true);
+            preference.EmailEnabled,
+            preference.WhatsAppEnabled);
     }
 
-    public static IReadOnlyList<NotificationOutboxMessage> Reopened(CompanyApplication application, string note)
+    public static IReadOnlyList<NotificationOutboxMessage> Reopened(
+        CompanyApplication application,
+        string note,
+        NotificationDeliveryPreference preference)
     {
         return CreateApplicantNotifications(
             application,
             "Votre dossier entreprise est reouvert",
             $"Votre dossier entreprise a ete reouvert pour une nouvelle verification. Note: {note}",
-            includeWhatsApp: true);
+            preference.EmailEnabled,
+            preference.WhatsAppEnabled);
     }
 
-    public static IReadOnlyList<NotificationOutboxMessage> MoreInformationRequested(CompanyApplication application, string note)
+    public static IReadOnlyList<NotificationOutboxMessage> MoreInformationRequested(
+        CompanyApplication application,
+        string note,
+        NotificationDeliveryPreference preference)
     {
         return CreateApplicantNotifications(
             application,
             "Complement requis pour votre dossier entreprise",
             $"Notre equipe demande un complement sur votre dossier entreprise. Detail: {note}",
-            includeWhatsApp: true);
+            preference.EmailEnabled,
+            preference.WhatsAppEnabled);
     }
 }

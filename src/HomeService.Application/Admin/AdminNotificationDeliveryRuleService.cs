@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,10 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
     [
         new("CompanyDocumentRejected", "Piece entreprise refusee", "Company", true, false, true, true),
         new("CompanyDocumentNeedsReplacement", "Complement requis sur dossier entreprise", "Company", true, false, true, true),
+        new("CompanyDocumentReopened", "Piece entreprise reouverte", "Company", true, false, true, true),
+        new("CompanyApplicationRejected", "Dossier entreprise refuse", "Company", true, false, true, true),
+        new("CompanyApplicationReopened", "Dossier entreprise reouvert", "Company", true, false, true, true),
+        new("CompanyApplicationMoreInformationRequested", "Complement requis sur dossier entreprise", "Company", true, false, true, true),
         new("CompanyApplicationApproved", "Dossier entreprise valide", "Company", true, false, true, true),
         new("CompanyActivationLinkCreated", "Lien d'activation entreprise", "Company", true, false, true, true),
         new("InterimCandidateReceived", "Nouvelle demande interimaire", "Company", true, false, false, false),
@@ -51,13 +56,15 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
             return AdminNotificationDeliveryRuleResult.ValidationFailed(validation);
         }
 
+        var normalized = NormalizeChannels(request.Audience, request.EmailEnabled, request.WhatsAppEnabled);
+
         rule.Update(
             request.Label,
             request.Audience,
-            request.PortalEnabled,
-            request.MobileAppEnabled,
-            request.EmailEnabled,
-            request.WhatsAppEnabled);
+            normalized.PortalEnabled,
+            normalized.MobileAppEnabled,
+            normalized.EmailEnabled,
+            normalized.WhatsAppEnabled);
 
         return AdminNotificationDeliveryRuleResult.Ok(ToResponse(rule));
     }
@@ -72,14 +79,15 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
         var hasAddedRule = false;
         foreach (var seed in DefaultRules.Where(seed => !existing.Contains(seed.EventKey)))
         {
+            var normalized = NormalizeChannels(seed.Audience, seed.EmailEnabled, seed.WhatsAppEnabled);
             db.NotificationDeliveryRules.Add(new NotificationDeliveryRule(
                 seed.EventKey,
                 seed.Label,
                 seed.Audience,
-                seed.PortalEnabled,
-                seed.MobileAppEnabled,
-                seed.EmailEnabled,
-                seed.WhatsAppEnabled));
+                normalized.PortalEnabled,
+                normalized.MobileAppEnabled,
+                normalized.EmailEnabled,
+                normalized.WhatsAppEnabled));
             hasAddedRule = true;
         }
 
@@ -106,8 +114,10 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
             return "Audience invalide. Utilisez Company, Provider, Customer ou Mixed.";
         }
 
-        if (!request.PortalEnabled
-            && !request.MobileAppEnabled
+        var hasAutomaticChannel = NotificationDeliveryPreferenceService.IsPortalAutomatic(request.Audience)
+            || NotificationDeliveryPreferenceService.IsMobileAppAutomatic(request.Audience);
+
+        if (!hasAutomaticChannel
             && !request.EmailEnabled
             && !request.WhatsAppEnabled)
         {
@@ -120,6 +130,15 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
     private static bool IsKnownAudience(string audience)
     {
         return audience.Trim() is "Company" or "Provider" or "Customer" or "Mixed";
+    }
+
+    private static NotificationDeliveryPreference NormalizeChannels(string audience, bool emailEnabled, bool whatsAppEnabled)
+    {
+        return new NotificationDeliveryPreference(
+            NotificationDeliveryPreferenceService.IsPortalAutomatic(audience),
+            NotificationDeliveryPreferenceService.IsMobileAppAutomatic(audience),
+            emailEnabled,
+            whatsAppEnabled);
     }
 
     private static NotificationDeliveryRuleResponse ToResponse(NotificationDeliveryRule rule)

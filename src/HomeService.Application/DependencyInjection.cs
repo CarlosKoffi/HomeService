@@ -2,6 +2,7 @@ using HomeService.Application.Admin;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
 using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Application.ProviderPortal;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -25,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<CompanyPortalDashboardService>();
         services.AddScoped<CompanyPortalNotificationService>();
         services.AddScoped<CompanyPortalNotificationWriter>();
+        services.AddScoped<NotificationDeliveryPreferenceService>();
         services.AddScoped<CompanyPortalProfileManagementService>();
         services.AddScoped<CompanyPortalQueryService>();
         services.AddScoped<ProviderSelfRegistrationService>();

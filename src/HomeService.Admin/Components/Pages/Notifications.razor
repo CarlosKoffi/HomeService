@@ -8,7 +8,7 @@
 <div class="admin-page-heading">
     <div>
         <h1>Notifications</h1>
-        <p class="lead">Configurez les canaux internes et externes par type de notification, puis suivez les envois email et WhatsApp.</p>
+        <p class="lead">Portail entreprise et application sont automatiques. Configurez seulement les envois email et WhatsApp par type de notification.</p>
     </div>
     <button type="button" class="secondary-action" @onclick="LoadAsync">Actualiser</button>
 </div>
@@ -17,8 +17,8 @@
     <div class="notification-rules-head">
         <div>
             <span>Regles de diffusion</span>
-            <strong>Ou chaque notification doit apparaitre</strong>
-            <p>Portail entreprise et applications sont des notifications internes. Email et WhatsApp restent configurables selon le type.</p>
+            <strong>Canaux par type de notification</strong>
+            <p>Le portail s'applique aux entreprises. L'application s'applique aux clients et prestataires. Email et WhatsApp restent configurables.</p>
         </div>
         <small>@DeliveryRules.Count type(s)</small>
     </div>
@@ -40,21 +40,19 @@
                     <small>@rule.EventKey</small>
                 </div>
                 <div class="notification-channel-grid">
-                    <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company")">
+                    <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company" || rule.Audience == "Mixed")">
                         <input type="checkbox"
                                checked="@rule.PortalEnabled"
-                               disabled="@(rule.Audience != "Company" && rule.Audience != "Mixed")"
-                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "Portal", eventArgs)' />
+                               disabled />
                         <span>Portail</span>
-                        <small>Entreprise</small>
+                        <small>@GetInternalChannelHint(rule, "Portal")</small>
                     </label>
                     <label class="@GetRuleChannelClass(rule.MobileAppEnabled, rule.Audience != "Company")">
                         <input type="checkbox"
                                checked="@rule.MobileAppEnabled"
-                               disabled="@(rule.Audience == "Company")"
-                               @onchange='eventArgs => ToggleRuleChannelAsync(rule, "MobileApp", eventArgs)' />
+                               disabled />
                         <span>Application</span>
-                        <small>Client / prestataire</small>
+                        <small>@GetInternalChannelHint(rule, "MobileApp")</small>
                     </label>
                     <label class="@GetRuleChannelClass(rule.EmailEnabled, true)">
                         <input type="checkbox"
@@ -80,22 +78,22 @@
     <article>
         <span>A envoyer</span>
         <strong>@CountByStatus("Pending")</strong>
-        <small>messages en attente</small>
+        <small>email / WhatsApp</small>
     </article>
     <article>
         <span>Envoyees</span>
         <strong>@CountByStatus("Sent")</strong>
-        <small>messages confirmes</small>
+        <small>email / WhatsApp</small>
     </article>
     <article>
         <span>En erreur</span>
         <strong>@CountByStatus("Failed")</strong>
-        <small>a relancer</small>
+        <small>email / WhatsApp</small>
     </article>
     <article>
         <span>Annulees</span>
         <strong>@CountByStatus("Cancelled")</strong>
-        <small>hors file active</small>
+        <small>email / WhatsApp</small>
     </article>
 </section>
 
@@ -115,12 +113,12 @@
         </select>
     </label>
     <label>
-        Canal
+        Canal externe
         <select @bind="ChannelFilter">
             <option value="">Tous</option>
             <option value="Email">Email</option>
             <option value="WhatsApp">WhatsApp</option>
-            <option value="MobilePush">Mobile</option>
+            <option value="MobilePush">Application</option>
         </select>
     </label>
 </section>
@@ -407,7 +405,7 @@
     {
         "Email" => "Email",
         "WhatsApp" => "WhatsApp",
-        "MobilePush" => "Mobile",
+        "MobilePush" => "Application",
         _ => channel
     };
 
@@ -441,6 +439,18 @@
 
     private static string GetRuleChannelClass(bool isEnabled, bool isAllowed)
         => $"notification-channel-card {(isEnabled ? "enabled" : "disabled")} {(!isAllowed ? "locked" : string.Empty)}";
+
+    private static string GetInternalChannelHint(NotificationDeliveryRuleResponse rule, string channel)
+    {
+        var isAutomatic = channel switch
+        {
+            "Portal" => rule.Audience is "Company" or "Mixed",
+            "MobileApp" => rule.Audience is "Provider" or "Customer" or "Mixed",
+            _ => false
+        };
+
+        return isAutomatic ? "Automatique" : "Non concerne";
+    }
 
     private static UpdateNotificationDeliveryRuleRequest ToRuleRequest(
         NotificationDeliveryRuleResponse rule,

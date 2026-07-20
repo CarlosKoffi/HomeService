@@ -3,6 +3,7 @@ using System;
 using HomeService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HomeService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(HomeServiceDbContext))]
-    partial class HomeServiceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260720114344_SyncNotificationDeliveryRulesModel")]
+    partial class SyncNotificationDeliveryRulesModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

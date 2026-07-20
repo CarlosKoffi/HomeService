@@ -6,7 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext db, CompanyPortalNotificationWriter portalNotifications)
+public sealed class AdminCompanyApplicationDocumentReviewService(
+    IAppDbContext db,
+    CompanyPortalNotificationWriter portalNotifications,
+    NotificationDeliveryPreferenceService deliveryPreferences)
 {
     public async Task<AdminCompanyApplicationDocumentReviewResult> ApproveAsync(Guid documentId, CancellationToken cancellationToken)
     {
@@ -41,6 +44,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
             comment,
             "Un commentaire est obligatoire pour refuser une piece.",
             document => document.Reject(comment!.Trim()),
+            "CompanyDocumentRejected",
             "Une piece de votre dossier a ete refusee",
             $"Une piece de votre dossier entreprise a ete refusee. Commentaire: {comment?.Trim()}",
             cancellationToken);
@@ -53,6 +57,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
             comment,
             "Un commentaire est obligatoire pour demander le remplacement d'une piece.",
             document => document.RequestReplacement(comment!.Trim()),
+            "CompanyDocumentNeedsReplacement",
             "Complement de piece requis",
             $"Une piece de votre dossier entreprise doit etre remplacee ou completee. Commentaire: {comment?.Trim()}",
             cancellationToken);
@@ -65,6 +70,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
             comment,
             "Un commentaire est obligatoire pour reouvrir une piece refusee.",
             document => document.Reopen(comment!.Trim()),
+            "CompanyDocumentReopened",
             "Une piece refusee est reouverte",
             $"Une piece de votre dossier a ete reouverte pour verification. Commentaire: {comment?.Trim()}",
             cancellationToken);
@@ -75,6 +81,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
         string? comment,
         string requiredMessage,
         Action<CompanyApplicationDocument> applyReview,
+        string notificationEventKey,
         string notificationSubject,
         string notificationBody,
         CancellationToken cancellationToken)
@@ -103,7 +110,12 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
             return AdminCompanyApplicationDocumentReviewResult.InvalidTransition(exception.Message);
         }
 
-        await QueueDocumentNotificationAsync(document.CompanyApplicationId, notificationSubject, notificationBody, cancellationToken);
+        await QueueDocumentNotificationAsync(
+            document.CompanyApplicationId,
+            notificationEventKey,
+            notificationSubject,
+            notificationBody,
+            cancellationToken);
         if (document.CompanyApplication is not null)
         {
             portalNotifications.AddForDocument(
@@ -120,6 +132,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
 
     private async Task QueueDocumentNotificationAsync(
         Guid companyApplicationId,
+        string notificationEventKey,
         string subject,
         string body,
         CancellationToken cancellationToken)
@@ -130,11 +143,19 @@ public sealed class AdminCompanyApplicationDocumentReviewService(IAppDbContext d
             return;
         }
 
+        var preference = await deliveryPreferences.GetAsync(
+            notificationEventKey,
+            "Company",
+            defaultEmailEnabled: true,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+
         db.NotificationOutboxMessages.AddRange(CompanyApplicationNotificationFactory.CreateApplicantNotifications(
             application,
             subject,
             body,
-            includeWhatsApp: true));
+            preference.EmailEnabled,
+            preference.WhatsAppEnabled));
     }
 
     private static string GetTone(HomeService.Domain.Enums.DocumentReviewStatus status) => status switch

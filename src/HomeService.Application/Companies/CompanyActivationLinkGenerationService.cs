@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Application.Security;
 using HomeService.Contracts.Companies;
 using HomeService.Domain.Entities;
@@ -7,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Companies;
 
-public sealed class CompanyActivationLinkGenerationService(IAppDbContext db)
+public sealed class CompanyActivationLinkGenerationService(
+    IAppDbContext db,
+    NotificationDeliveryPreferenceService deliveryPreferences)
 {
     public async Task<CompanyActivationLinkGenerationResult> GenerateAsync(
         Guid applicationId,
@@ -60,7 +63,17 @@ public sealed class CompanyActivationLinkGenerationService(IAppDbContext db)
             CompanyApplicationStatus.ActivationSent,
             "Lien d'activation envoye.",
             changedBy));
-        db.NotificationOutboxMessages.AddRange(CompanyActivationLinkNotificationFactory.Create(application, activationLink, expiresAt));
+        var preference = await deliveryPreferences.GetAsync(
+            "CompanyActivationLinkCreated",
+            "Company",
+            defaultEmailEnabled: true,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+        db.NotificationOutboxMessages.AddRange(CompanyActivationLinkNotificationFactory.Create(
+            application,
+            activationLink,
+            expiresAt,
+            preference));
 
         return CompanyActivationLinkGenerationResult.Ok(
             new CompanyApplicationActivationLinkResponse(

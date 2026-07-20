@@ -1,4 +1,5 @@
 using HomeService.Application.Companies;
+using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 
@@ -23,7 +24,12 @@ public sealed class CompanyActivationLinkNotificationFactoryTests
         var messages = CompanyActivationLinkNotificationFactory.Create(
             application,
             "https://company.kaza.ci/activate?token=abc",
-            new DateTimeOffset(2026, 7, 11, 12, 0, 0, TimeSpan.Zero));
+            new DateTimeOffset(2026, 7, 11, 12, 0, 0, TimeSpan.Zero),
+            new NotificationDeliveryPreference(
+                PortalEnabled: true,
+                MobileAppEnabled: false,
+                EmailEnabled: true,
+                WhatsAppEnabled: true));
 
         Assert.Equal(2, messages.Count);
         Assert.Contains(messages, message => message.Channel == NotificationChannel.Email && message.Recipient == "direction@entreprise.ci");

@@ -15,6 +15,7 @@ public sealed class CompanyApplicationNotificationFactoryTests
             application,
             "Sujet",
             "Corps",
+            includeEmail: true,
             includeWhatsApp: true,
             metadataJson: "{\"kind\":\"test\"}");
 
@@ -40,6 +41,7 @@ public sealed class CompanyApplicationNotificationFactoryTests
             application,
             "Sujet",
             "Corps",
+            includeEmail: true,
             includeWhatsApp: false);
 
         var message = Assert.Single(messages);
@@ -51,7 +53,7 @@ public sealed class CompanyApplicationNotificationFactoryTests
     {
         var application = CreateApplication();
 
-        var messages = CompanyApplicationNotificationFactory.Rejected(application, "Document illisible");
+        var messages = CompanyApplicationNotificationFactory.Rejected(application, "Document illisible", AllChannels());
 
         Assert.All(messages, message => Assert.Contains("Document illisible", message.Body));
         Assert.All(messages, message => Assert.Contains("refuse", message.Subject, StringComparison.OrdinalIgnoreCase));
@@ -62,7 +64,7 @@ public sealed class CompanyApplicationNotificationFactoryTests
     {
         var application = CreateApplication();
 
-        var messages = CompanyApplicationNotificationFactory.Reopened(application, "Nouvelle piece recue");
+        var messages = CompanyApplicationNotificationFactory.Reopened(application, "Nouvelle piece recue", AllChannels());
 
         Assert.All(messages, message => Assert.Contains("Nouvelle piece recue", message.Body));
         Assert.All(messages, message => Assert.Contains("reouvert", message.Subject, StringComparison.OrdinalIgnoreCase));
@@ -73,7 +75,7 @@ public sealed class CompanyApplicationNotificationFactoryTests
     {
         var application = CreateApplication();
 
-        var messages = CompanyApplicationNotificationFactory.MoreInformationRequested(application, "Ajouter le DFE");
+        var messages = CompanyApplicationNotificationFactory.MoreInformationRequested(application, "Ajouter le DFE", AllChannels());
 
         Assert.All(messages, message => Assert.Contains("Ajouter le DFE", message.Body));
         Assert.All(messages, message => Assert.Contains("Complement", message.Subject, StringComparison.OrdinalIgnoreCase));
@@ -91,5 +93,14 @@ public sealed class CompanyApplicationNotificationFactoryTests
             "+2250701020304",
             "Menage",
             12);
+    }
+
+    private static NotificationDeliveryPreference AllChannels()
+    {
+        return new NotificationDeliveryPreference(
+            PortalEnabled: true,
+            MobileAppEnabled: false,
+            EmailEnabled: true,
+            WhatsAppEnabled: true);
     }
 }
