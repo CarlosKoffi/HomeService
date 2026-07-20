@@ -1,4 +1,5 @@
 @page "/"
+@using HomeService.Contracts.Contact
 @inject NavigationManager Navigation
 @inject PlatformApiClient ApiClient
 
@@ -219,7 +220,7 @@
         HomeContent = await ApiClient.GetCompanyHomeContentAsync() ?? CreateDefaultHomeContent();
     }
 
-    private Task SubmitContactAsync()
+    private async Task SubmitContactAsync()
     {
         if (string.IsNullOrWhiteSpace(ContactName)
             || string.IsNullOrWhiteSpace(ContactCompany)
@@ -227,11 +228,31 @@
             || string.IsNullOrWhiteSpace(ContactBody))
         {
             ContactMessage = "Renseignez au moins le nom, l'entreprise, le telephone et le message.";
-            return Task.CompletedTask;
+            return;
         }
 
-        ContactMessage = "Message pret a etre transmis. Le branchement email/API sera ajoute a la prochaine etape.";
-        return Task.CompletedTask;
+        var result = await ApiClient.SubmitContactRequestAsync(new SubmitContactRequest(
+            "CompanyLanding",
+            ContactName,
+            ContactCompany,
+            ContactPhone,
+            ContactEmail,
+            ContactSubject,
+            ContactBody));
+
+        if (!result.IsSuccess)
+        {
+            ContactMessage = result.ErrorMessage ?? "Impossible d'envoyer le message pour le moment.";
+            return;
+        }
+
+        ContactName = string.Empty;
+        ContactCompany = string.Empty;
+        ContactPhone = string.Empty;
+        ContactEmail = string.Empty;
+        ContactSubject = "Devenir partenaire";
+        ContactBody = string.Empty;
+        ContactMessage = "Message envoye. Notre equipe vous recontacte rapidement.";
     }
 
     private string ResolveContentUrl(string? url)

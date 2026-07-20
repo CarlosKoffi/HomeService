@@ -1,0 +1,282 @@
+@page "/contact-requests"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Contact
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Contacts</PageTitle>
+
+<div class="admin-page-heading">
+    <div>
+        <h1>Contacts</h1>
+        <p class="lead">Suivez les messages envoyes depuis les sites entreprise et prestataire.</p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync">Actualiser</button>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message admin-message-error">@ErrorMessage</p>
+}
+
+<section class="admin-stat-grid">
+    <article>
+        <span>Nouveaux</span>
+        <strong>@CountByStatus("New")</strong>
+        <small>A traiter</small>
+    </article>
+    <article>
+        <span>En cours</span>
+        <strong>@CountByStatus("InProgress")</strong>
+        <small>Pris en charge</small>
+    </article>
+    <article>
+        <span>Clotures</span>
+        <strong>@CountByStatus("Closed")</strong>
+        <small>Traites</small>
+    </article>
+</section>
+
+<section class="admin-filters">
+    <label>
+        Recherche
+        <input @bind="SearchTerm" @bind:event="oninput" placeholder="Nom, entreprise, telephone, sujet..." />
+    </label>
+    <label>
+        Statut
+        <select @bind="StatusFilter">
+            <option value="">Tous</option>
+            <option value="New">Nouveau</option>
+            <option value="InProgress">En cours</option>
+            <option value="Closed">Cloture</option>
+        </select>
+    </label>
+    <label>
+        Source
+        <select @bind="SourceFilter">
+            <option value="">Toutes</option>
+            <option value="CompanyLanding">Site entreprise</option>
+            <option value="ProviderLanding">Site prestataire</option>
+        </select>
+    </label>
+    <button type="button" class="secondary-action" @onclick="LoadAsync">Filtrer</button>
+</section>
+
+<section class="admin-list-panel">
+    @if (IsLoading)
+    {
+        <article class="admin-list-row">
+            <p>Chargement des contacts...</p>
+        </article>
+    }
+    else if (FilteredRequests.Count == 0)
+    {
+        <article class="admin-list-row">
+            <p>Aucun contact ne correspond aux filtres.</p>
+        </article>
+    }
+    else
+    {
+        @foreach (var request in FilteredRequests)
+        {
+            <article class="contact-request-card">
+                <div class="contact-request-main">
+                    <div class="contact-request-title">
+                        <span class="@GetStatusClass(request.Status)">@TranslateStatus(request.Status)</span>
+                        <strong>@request.Subject</strong>
+                    </div>
+                    <p>@request.Message</p>
+                    <dl>
+                        <div>
+                            <dt>Contact</dt>
+                            <dd>@request.FullName</dd>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(request.CompanyName))
+                        {
+                            <div>
+                                <dt>Entreprise</dt>
+                                <dd>@request.CompanyName</dd>
+                            </div>
+                        }
+                        <div>
+                            <dt>Telephone</dt>
+                            <dd>@request.PhoneNumber</dd>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(request.Email))
+                        {
+                            <div>
+                                <dt>Email</dt>
+                                <dd>@request.Email</dd>
+                            </div>
+                        }
+                        <div>
+                            <dt>Source</dt>
+                            <dd>@TranslateSource(request.Source)</dd>
+                        </div>
+                        <div>
+                            <dt>Recu</dt>
+                            <dd>@request.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd>
+                        </div>
+                    </dl>
+                    @if (!string.IsNullOrWhiteSpace(request.AdminNote))
+                    {
+                        <p class="contact-request-note">@request.AdminNote</p>
+                    }
+                </div>
+                <div class="contact-request-actions">
+                    <textarea rows="3"
+                              placeholder="Note interne..."
+                              value="@GetNote(request.Id)"
+                              @oninput="eventArgs => SetNote(request.Id, eventArgs.Value?.ToString())"></textarea>
+                    <button type="button"
+                            class="secondary-action"
+                            disabled="@IsBusy(request.Id)"
+                            @onclick="() => MarkInProgressAsync(request)">
+                        Prendre en charge
+                    </button>
+                    <button type="button"
+                            class="primary-action"
+                            disabled="@IsBusy(request.Id)"
+                            @onclick="() => CloseAsync(request)">
+                        Cloturer
+                    </button>
+                </div>
+            </article>
+        }
+    }
+</section>
+
+@code {
+    private List<AdminContactRequestResponse> Requests { get; set; } = [];
+    private string? StatusFilter { get; set; }
+    private string? SourceFilter { get; set; }
+    private string? SearchTerm { get; set; }
+    private string? ErrorMessage { get; set; }
+    private bool IsLoading { get; set; }
+    private HashSet<Guid> BusyIds { get; } = [];
+    private Dictionary<Guid, string?> Notes { get; } = [];
+
+    private List<AdminContactRequestResponse> FilteredRequests => Requests
+        .Where(request => string.IsNullOrWhiteSpace(SearchTerm)
+            || request.FullName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+            || request.PhoneNumber.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+            || request.Subject.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+            || request.Message.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)
+            || (request.CompanyName?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (request.Email?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            Requests = (await ApiClient.GetContactRequestsAsync(StatusFilter, SourceFilter, SearchTerm)).ToList();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les contacts. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task MarkInProgressAsync(AdminContactRequestResponse request)
+    {
+        await RunActionAsync(request.Id, async () =>
+        {
+            var updated = await ApiClient.MarkContactRequestInProgressAsync(request.Id, GetNote(request.Id));
+            ReplaceRequest(updated);
+        });
+    }
+
+    private async Task CloseAsync(AdminContactRequestResponse request)
+    {
+        await RunActionAsync(request.Id, async () =>
+        {
+            var updated = await ApiClient.CloseContactRequestAsync(request.Id, GetNote(request.Id));
+            ReplaceRequest(updated);
+        });
+    }
+
+    private async Task RunActionAsync(Guid id, Func<Task> action)
+    {
+        ErrorMessage = null;
+        BusyIds.Add(id);
+
+        try
+        {
+            await action();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            BusyIds.Remove(id);
+        }
+    }
+
+    private void ReplaceRequest(AdminContactRequestResponse? updated)
+    {
+        if (updated is null)
+        {
+            return;
+        }
+
+        var index = Requests.FindIndex(request => request.Id == updated.Id);
+        if (index >= 0)
+        {
+            Requests[index] = updated;
+        }
+    }
+
+    private int CountByStatus(string status)
+    {
+        return Requests.Count(request => string.Equals(request.Status, status, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool IsBusy(Guid id) => BusyIds.Contains(id);
+
+    private string? GetNote(Guid id)
+    {
+        return Notes.GetValueOrDefault(id);
+    }
+
+    private void SetNote(Guid id, string? note)
+    {
+        Notes[id] = note;
+    }
+
+    private static string TranslateStatus(string status) => status switch
+    {
+        "New" => "Nouveau",
+        "InProgress" => "En cours",
+        "Closed" => "Cloture",
+        _ => status
+    };
+
+    private static string TranslateSource(string source) => source switch
+    {
+        "CompanyLanding" => "Site entreprise",
+        "ProviderLanding" => "Site prestataire",
+        _ => source
+    };
+
+    private static string GetStatusClass(string status) => status switch
+    {
+        "New" => "status-pill pending",
+        "InProgress" => "status-pill",
+        "Closed" => "status-pill ok",
+        _ => "status-pill"
+    };
+}

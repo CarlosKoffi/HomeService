@@ -3296,6 +3296,139 @@ h3 {
     font-weight: 700;
 }
 
+.admin-stat-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 1.2rem 0;
+}
+
+.admin-stat-grid article,
+.admin-filters,
+.admin-list-panel,
+.contact-request-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .05);
+}
+
+.admin-stat-grid article {
+    padding: 1rem;
+}
+
+.admin-stat-grid span,
+.contact-request-title span,
+.contact-request-main dt {
+    color: #64748b;
+    display: block;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.admin-stat-grid strong {
+    color: #000;
+    display: block;
+    font-size: 1.8rem;
+    line-height: 1.1;
+    margin-top: .35rem;
+}
+
+.admin-stat-grid small {
+    color: #475569;
+}
+
+.admin-filters {
+    align-items: end;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(220px, 1fr) 180px 200px auto;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.admin-filters label {
+    color: #000;
+    display: grid;
+    gap: .35rem;
+    font-weight: 800;
+}
+
+.admin-filters input,
+.admin-filters select,
+.contact-request-actions textarea {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    color: #000;
+    min-height: 44px;
+    padding: .65rem .8rem;
+}
+
+.admin-list-panel {
+    display: grid;
+    gap: .8rem;
+    padding: .8rem;
+}
+
+.contact-request-card {
+    align-items: start;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    padding: 1rem;
+}
+
+.contact-request-title {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+    margin-bottom: .5rem;
+}
+
+.contact-request-title strong {
+    color: #000;
+    font-size: 1.05rem;
+}
+
+.contact-request-main p {
+    color: #000;
+    margin: .4rem 0 .8rem;
+}
+
+.contact-request-main dl {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+}
+
+.contact-request-main dd {
+    color: #000;
+    font-weight: 700;
+    margin: .15rem 0 0;
+    overflow-wrap: anywhere;
+}
+
+.contact-request-note {
+    background: #f8fafc;
+    border-left: 3px solid #2563eb;
+    border-radius: 12px;
+    padding: .75rem;
+}
+
+.contact-request-actions {
+    display: grid;
+    gap: .6rem;
+}
+
+.contact-request-actions button {
+    justify-content: center;
+}
+
 .permission-matrix {
     display: grid;
     gap: .5rem;
@@ -3440,7 +3573,11 @@ h3 {
 
     .operator-row,
     .company-detail-grid,
-    .detail-list div {
+    .detail-list div,
+    .admin-stat-grid,
+    .admin-filters,
+    .contact-request-card,
+    .contact-request-main dl {
         grid-template-columns: 1fr;
     }
 

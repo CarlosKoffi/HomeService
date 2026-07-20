@@ -50,6 +50,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<AdminUserRole> AdminUserRoles => Set<AdminUserRole>();
     public DbSet<NotificationOutboxMessage> NotificationOutboxMessages => Set<NotificationOutboxMessage>();
     public DbSet<NotificationDeliveryRule> NotificationDeliveryRules => Set<NotificationDeliveryRule>();
+    public DbSet<ContactRequest> ContactRequests => Set<ContactRequest>();
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
     public DbSet<CmsSite> CmsSites => Set<CmsSite>();
     public DbSet<CmsComponentDefinition> CmsComponentDefinitions => Set<CmsComponentDefinition>();

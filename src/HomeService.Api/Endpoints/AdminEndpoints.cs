@@ -3,12 +3,14 @@ using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
 using HomeService.Application.Branding;
 using HomeService.Application.Companies;
+using HomeService.Application.Contact;
 using HomeService.Application.Notifications;
 using HomeService.Api.Auditing;
 using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
+using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
@@ -59,6 +61,49 @@ public static class AdminEndpoints
             return Results.Ok(result);
         })
         .WithName("ListAdminAuditLogs");
+
+        admin.MapGet("/contact-requests", async (
+            string? status,
+            string? source,
+            string? search,
+            ContactRequestService contactRequestService,
+            CancellationToken cancellationToken) =>
+        {
+            var requests = await contactRequestService.ListAdminAsync(status, source, search, cancellationToken);
+            return Results.Ok(requests);
+        })
+        .WithName("ListAdminContactRequests")
+        .Produces<IReadOnlyList<AdminContactRequestResponse>>();
+
+        admin.MapPost("/contact-requests/{id:guid}/in-progress", async (
+            Guid id,
+            UpdateContactRequestStatusRequest request,
+            ContactRequestService contactRequestService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await contactRequestService.MarkInProgressAsync(id, request, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("MarkContactRequestInProgress")
+        .Produces<AdminContactRequestResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPost("/contact-requests/{id:guid}/close", async (
+            Guid id,
+            UpdateContactRequestStatusRequest request,
+            ContactRequestService contactRequestService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await contactRequestService.CloseAsync(id, request, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("CloseContactRequest")
+        .Produces<AdminContactRequestResponse>()
+        .Produces(StatusCodes.Status404NotFound);
 
         admin.MapGet("/cms/sites", async (
             AdminCmsQueryService cmsQueryService,

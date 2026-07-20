@@ -5,6 +5,7 @@ using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
+using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Notifications;
@@ -451,6 +452,47 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<AdminTranslationListResponse>("/api/admin/translations", request, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AdminContactRequestResponse>> GetContactRequestsAsync(
+        string? status,
+        string? source,
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+
+        var query = new List<string>();
+        AddQueryValue(query, "status", status);
+        AddQueryValue(query, "source", source);
+        AddQueryValue(query, "search", search);
+
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
+        return await GetJsonAsync<IReadOnlyList<AdminContactRequestResponse>>($"/api/admin/contact-requests{suffix}", cancellationToken) ?? [];
+    }
+
+    public async Task<AdminContactRequestResponse?> MarkContactRequestInProgressAsync(
+        Guid contactRequestId,
+        string? note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminContactRequestResponse>(
+            $"/api/admin/contact-requests/{contactRequestId:D}/in-progress",
+            new UpdateContactRequestStatusRequest(note),
+            cancellationToken);
+    }
+
+    public async Task<AdminContactRequestResponse?> CloseContactRequestAsync(
+        Guid contactRequestId,
+        string? note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminContactRequestResponse>(
+            $"/api/admin/contact-requests/{contactRequestId:D}/close",
+            new UpdateContactRequestStatusRequest(note),
+            cancellationToken);
     }
 
     public async Task<IReadOnlyList<NotificationOutboxMessageResponse>> GetNotificationsAsync(CancellationToken cancellationToken = default)

@@ -7,6 +7,7 @@ using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.CompanyPortal;
+using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Services;
 using Microsoft.AspNetCore.Components.Forms;
@@ -76,6 +77,19 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await httpClient.GetFromJsonAsync<CountryBrandingResponse>($"/api/country-branding?country={Uri.EscapeDataString(countryCode)}", cancellationToken);
+    }
+
+    public async Task<RegisterCompanyResult> SubmitContactRequestAsync(
+        SubmitContactRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        using var response = await httpClient.PostAsJsonAsync("/api/contact-requests", request, JsonOptions, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        return response.IsSuccessStatusCode
+            ? new RegisterCompanyResult(true, null)
+            : new RegisterCompanyResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Envoi du message impossible.");
     }
 
     public async Task<CompanyHomeCmsResponse?> GetCompanyHomeContentAsync(

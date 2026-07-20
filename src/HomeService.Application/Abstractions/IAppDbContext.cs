@@ -48,6 +48,7 @@ public interface IAppDbContext
     DbSet<AdminUserRole> AdminUserRoles { get; }
     DbSet<NotificationOutboxMessage> NotificationOutboxMessages { get; }
     DbSet<NotificationDeliveryRule> NotificationDeliveryRules { get; }
+    DbSet<ContactRequest> ContactRequests { get; }
     DbSet<AuditLogEntry> AuditLogEntries { get; }
     DbSet<CmsSite> CmsSites { get; }
     DbSet<CmsComponentDefinition> CmsComponentDefinitions { get; }

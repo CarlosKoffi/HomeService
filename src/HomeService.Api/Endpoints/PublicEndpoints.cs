@@ -3,9 +3,11 @@ using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
+using HomeService.Application.Contact;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
+using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Services;
 using Microsoft.EntityFrameworkCore;
@@ -194,6 +196,25 @@ public static class PublicEndpoints
         })
         .WithName("GetCmsMedia")
         .Produces(StatusCodes.Status404NotFound);
+
+        app.MapPost("/api/contact-requests", async (
+            SubmitContactRequest request,
+            ContactRequestService contactRequestService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await contactRequestService.SubmitAsync(request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { message = "Demande contact invalide.", errors = result.Errors });
+            }
+
+            return Results.Ok(new SubmitContactResponse(
+                result.Id!.Value,
+                "Votre message a bien ete transmis. Notre equipe revient vers vous rapidement."));
+        })
+        .WithName("SubmitContactRequest")
+        .Produces<SubmitContactResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
 
         app.MapPost("/api/company-applications", async (
             HttpRequest httpRequest,

@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using HomeService.Contracts.Cms;
+using HomeService.Contracts.Contact;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Contracts.Services;
 
@@ -111,6 +112,15 @@ public sealed class ProviderApiClient(HttpClient httpClient)
         {
             return null;
         }
+    }
+
+    public async Task<ApiResult<SubmitContactResponse>> SubmitContactRequestAsync(
+        SubmitContactRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendAsync<SubmitContactResponse>(
+            () => httpClient.PostAsJsonAsync("/api/contact-requests", request, JsonOptions, cancellationToken),
+            cancellationToken);
     }
 
     public async Task<ApiResult<ProviderPortalLoginResponse>> ActivateAsync(

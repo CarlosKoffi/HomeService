@@ -2,6 +2,7 @@ using HomeService.Application.Admin;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
 using HomeService.Application.CompanyPortal;
+using HomeService.Application.Contact;
 using HomeService.Application.Notifications;
 using HomeService.Application.ProviderPortal;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<ProviderPortalAuthService>();
         services.AddScoped<CompanyHomeCmsQueryService>();
         services.AddScoped<ProviderHomeCmsQueryService>();
+        services.AddScoped<ContactRequestService>();
         services.AddScoped<AdminConfigurationService>();
         services.AddScoped<AdminQueryService>();
         services.AddScoped<AdminAccessControlService>();
