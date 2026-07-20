@@ -108,7 +108,7 @@ else
                     <span><FigmaDashboardIcon Name="customer" Tone="light" /> @NextMissionCustomerText</span>
                 </div>
             </div>
-            <a href="@PortalLink("operations")">Voir les missions</a>
+            <a href="@PortalLink("missions")">Voir les missions</a>
         </section>
 
         @if (PortalNotifications.Any())
@@ -182,7 +182,7 @@ else
                         <span>Activite recente</span>
                         <h2>Ce qui bouge dans votre entreprise</h2>
                     </div>
-                    <a href="@PortalLink("operations")">Ouvrir</a>
+                    <a href="@PortalLink("missions")">Ouvrir</a>
                 </div>
 
                 <div class="portal-activity-list">
@@ -272,7 +272,7 @@ else
         new("Profil entreprise", true, null, null),
         new("Documents de conformite", false, "Completer", "company-profile"),
         new("Premier employe ajoute", false, "Ajouter", "employees"),
-        new("Premiere mission creee", false, "Voir", "operations")
+        new("Premiere mission creee", false, "Voir", "missions")
     ];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -426,7 +426,7 @@ else
                 new("Profil entreprise", true, null, null),
                 new("Documents de conformite", true, null, null),
                 new("Equipe initiale", true, null, null),
-                new("Premiere mission", false, "Voir", "operations")
+                new("Premiere mission", false, "Voir", "missions")
             ],
             8,
             5,

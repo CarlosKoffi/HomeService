@@ -36,7 +36,7 @@
                 <a class="@GetPortalLinkClass("company-profile")" href="@PortalLink("company-profile")">Informations</a>
                 <a class="@GetPortalLinkClass("employees")" href="@PortalLink("employees")">Employes</a>
                 <a class="@GetPortalLinkClass("interim-candidates")" href="@PortalLink("interim-candidates")">Interim</a>
-                <a class="@GetPortalLinkClass("operations")" href="@PortalLink("operations")">Missions</a>
+                <a class="@GetPortalLinkClass("missions")" href="@PortalLink("missions")">Missions</a>
                 <a class="@GetPortalLinkClass("accounts")" href="@PortalLink("accounts")">Encaissements</a>
                 <div class="session-chip" title="@SessionEmail">
                     <strong>@SessionCompanyName</strong>
@@ -59,7 +59,9 @@
         "company-profile",
         "employees",
         "interim-candidates",
+        "missions",
         "operations",
+        "notifications",
         "accounts"
     };
 
@@ -126,6 +128,9 @@
 
     private string GetPortalLinkClass(string path)
     {
-        return string.Equals(CurrentSegment, path, StringComparison.OrdinalIgnoreCase) ? "portal-current" : string.Empty;
+        return string.Equals(CurrentSegment, path, StringComparison.OrdinalIgnoreCase)
+            || path == "missions" && string.Equals(CurrentSegment, "operations", StringComparison.OrdinalIgnoreCase)
+            ? "portal-current"
+            : string.Empty;
     }
 }

@@ -242,7 +242,7 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
             new CompanyPortalProgressStepResponse("Profil entreprise", true, null, null),
             new CompanyPortalProgressStepResponse("Documents de conformite", hasRequiredComplianceDocuments, "Completer", "company-profile"),
             new CompanyPortalProgressStepResponse("Premier employe ajoute", providerCount > 0, "Ajouter", "employees"),
-            new CompanyPortalProgressStepResponse("Premiere mission creee", missionCount > 0, "Voir", "operations")
+            new CompanyPortalProgressStepResponse("Premiere mission creee", missionCount > 0, "Voir", "missions")
         ];
     }
 
