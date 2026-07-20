@@ -122,21 +122,13 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             .OrderByDescending(document => document.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        var document = existingDocuments.FirstOrDefault();
         var replacedPaths = existingDocuments.Select(existing => existing.StoragePath).ToList();
-        if (document is null)
-        {
-            document = new ProviderDocument(employeeId, documentType, originalFileName, storagePath, contentType);
-            db.ProviderDocuments.Add(document);
-        }
-        else
-        {
-            document.ReplaceFile(originalFileName, storagePath, contentType);
-        }
+        var document = new ProviderDocument(employeeId, documentType, originalFileName, storagePath, contentType);
+        db.ProviderDocuments.Add(document);
 
-        foreach (var duplicate in existingDocuments.Skip(1))
+        foreach (var existingDocument in existingDocuments)
         {
-            db.ProviderDocuments.Remove(duplicate);
+            db.ProviderDocuments.Remove(existingDocument);
         }
 
         return CompanyEmployeeDocumentOperationResult.Ok(
