@@ -190,6 +190,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             orderby mission.ScheduledFor ?? mission.CreatedAt descending
             select new AdminCompanyMissionResponse(
                 mission.Id,
+                mission.MissionNumber,
                 service.Name,
                 null,
                 (customer.FirstName + " " + customer.LastName).Trim(),
@@ -331,6 +332,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             select new
             {
                 mission.Id,
+                mission.MissionNumber,
                 ServiceName = service.Name,
                 mission.CompanyId,
                 CompanyName = company == null ? null : company.Name,
@@ -358,6 +360,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             var term = search.Trim().ToLowerInvariant();
             query = query.Where(mission =>
                 mission.ServiceName.ToLower().Contains(term)
+                || mission.MissionNumber.ToLower().Contains(term)
                 || mission.CustomerName.ToLower().Contains(term)
                 || mission.CustomerPhoneNumber.ToLower().Contains(term)
                 || (mission.CompanyName != null && mission.CompanyName.ToLower().Contains(term))
@@ -370,6 +373,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             .Take(250)
             .Select(mission => new AdminMissionSummaryResponse(
                 mission.Id,
+                mission.MissionNumber,
                 mission.ServiceName,
                 mission.CompanyName,
                 mission.CustomerName,
@@ -409,6 +413,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             select new
             {
                 item.Id,
+                item.MissionNumber,
                 ServiceName = service.Name,
                 CompanyName = company == null ? null : company.Name,
                 item.CompanyId,
@@ -491,6 +496,7 @@ public sealed class AdminQueryService(IAppDbContext db)
 
         return new AdminMissionDetailResponse(
             mission.Id,
+            mission.MissionNumber,
             mission.ServiceName,
             mission.CompanyName,
             mission.CompanyId,
@@ -779,7 +785,8 @@ public sealed class AdminQueryService(IAppDbContext db)
             where mission.CreatedAt >= periodStart || (mission.ScheduledFor != null && mission.ScheduledFor >= periodStart)
             select new
             {
-                mission.Id,
+               mission.Id,
+                mission.MissionNumber,
                 ServiceName = service.Name,
                 mission.CompanyId,
                 CompanyName = company == null ? null : company.Name,
@@ -814,6 +821,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             var term = search.Trim().ToLowerInvariant();
             query = query.Where(payment =>
                 payment.ServiceName.ToLower().Contains(term)
+                || payment.MissionNumber.ToLower().Contains(term)
                 || payment.CustomerName.ToLower().Contains(term)
                 || payment.CustomerPhoneNumber.ToLower().Contains(term)
                 || (payment.CompanyName != null && payment.CompanyName.ToLower().Contains(term))
@@ -825,6 +833,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             .Take(300)
             .Select(payment => new AdminPaymentMissionResponse(
                 payment.Id,
+                payment.MissionNumber,
                 payment.ServiceName,
                 payment.CompanyId,
                 payment.CompanyName,

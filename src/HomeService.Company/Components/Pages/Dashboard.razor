@@ -104,6 +104,10 @@ else
                 <span class="portal-mission-eyebrow">Prochaine action</span>
                 <h2>@NextMissionTitle</h2>
                 <div class="portal-mission-meta">
+                    @if (DashboardData?.NextMission is not null)
+                    {
+                        <span><FigmaDashboardIcon Name="document" Tone="light" /> @DashboardData.NextMission.MissionNumber</span>
+                    }
                     <span><FigmaDashboardIcon Name="calendar" Tone="light" /> @NextMissionScheduleText</span>
                     <span><FigmaDashboardIcon Name="customer" Tone="light" /> @NextMissionCustomerText</span>
                 </div>
@@ -475,7 +479,7 @@ else
             185000,
             42000,
             "XOF",
-            new(Guid.NewGuid(), "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", null, 180, 15000, "XOF", null, null),
+            new(Guid.NewGuid(), "MIS-260720-200001", "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", null, 180, 15000, "XOF", null, null),
             2,
             [
                 new(Guid.NewGuid(), "CompanyDocumentRejected", "Piece a reprendre", "Le DFE envoye est illisible. Merci de deposer une version plus nette.", "danger", "company-profile#documents", DateTimeOffset.Now.AddMinutes(-25), false, Guid.NewGuid()),

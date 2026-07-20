@@ -54,7 +54,7 @@
     </label>
     <label>
         Recherche
-        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Client, entreprise, prestataire, service" />
+        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Numero mission, client, entreprise, prestataire, service" />
     </label>
     <button type="button" @onclick="LoadAsync" disabled="@IsLoading">Rechercher</button>
 </section>
@@ -103,7 +103,7 @@
                 <div>
                     <strong>@mission.ServiceName</strong>
                     <p>@mission.CustomerName - @mission.CustomerPhoneNumber</p>
-                    <small>@(mission.CompanyName ?? "Entreprise non affectee")</small>
+                    <small>@mission.MissionNumber - @(mission.CompanyName ?? "Entreprise non affectee")</small>
                 </div>
                 <div class="operator-meta">
                     <span class="@GetMissionStatusClass(mission.Status)">@TranslateMissionStatus(mission.Status)</span>

@@ -42,7 +42,7 @@ else
             <button type="button" class="link-action" @onclick="BackToList">Retour aux missions</button>
             <p class="eyebrow">Dossier mission</p>
             <h1>@Mission.ServiceName</h1>
-            <p class="lead">@Mission.CustomerName - @(Mission.ServiceAddress ?? "Adresse non renseignee")</p>
+            <p class="lead">@Mission.MissionNumber - @Mission.CustomerName - @(Mission.ServiceAddress ?? "Adresse non renseignee")</p>
         </div>
         <div class="company-admin-status">
             <span class="@GetMissionStatusClass(Mission.Status)">@TranslateMissionStatus(Mission.Status)</span>
@@ -83,6 +83,7 @@ else
                 <h2>Client</h2>
                 <dl class="detail-list">
                     <div><dt>Nom</dt><dd>@Mission.CustomerName</dd></div>
+                    <div><dt>Numero mission</dt><dd>@Mission.MissionNumber</dd></div>
                     <div><dt>Telephone</dt><dd>@Mission.CustomerPhoneNumber</dd></div>
                     <div><dt>Adresse</dt><dd>@(Mission.ServiceAddress ?? "Non renseignee")</dd></div>
                     <div><dt>Coordonnees</dt><dd>@FormatLocation(Mission.ServiceLatitude, Mission.ServiceLongitude)</dd></div>

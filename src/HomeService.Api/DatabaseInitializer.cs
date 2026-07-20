@@ -14,6 +14,7 @@ public static class DatabaseInitializer
         var db = scope.ServiceProvider.GetRequiredService<HomeServiceDbContext>();
 
         await db.Database.MigrateAsync(cancellationToken);
+        await EnsureMissionNumbersAsync(db, cancellationToken);
         await EnsureProviderServiceSchemaAsync(db, cancellationToken);
         await EnsureNotificationDeliveryRulesAsync(db, cancellationToken);
         await EnsureDefaultCommissionRulesAsync(db, cancellationToken);
@@ -45,6 +46,30 @@ public static class DatabaseInitializer
         {
             await db.Database.ExecuteSqlRawAsync(script, cancellationToken);
         }
+    }
+
+    private static async Task EnsureMissionNumbersAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "Missions"
+                ADD COLUMN IF NOT EXISTS "MissionNumber" character varying(32);
+
+            UPDATE "Missions"
+            SET "MissionNumber" = upper(concat(
+                'MIS-',
+                to_char(coalesce("CreatedAt", now()), 'YYMMDD'),
+                '-',
+                substr(replace("Id"::text, '-', ''), 1, 8)
+            ))
+            WHERE "MissionNumber" IS NULL
+               OR trim("MissionNumber") = '';
+
+            ALTER TABLE "Missions"
+                ALTER COLUMN "MissionNumber" SET NOT NULL;
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_Missions_MissionNumber"
+                ON "Missions" ("MissionNumber");
+            """, cancellationToken);
     }
 
     private static async Task EnsureProviderServiceSchemaAsync(HomeServiceDbContext db, CancellationToken cancellationToken)

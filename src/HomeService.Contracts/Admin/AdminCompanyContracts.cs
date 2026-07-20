@@ -107,6 +107,7 @@ public sealed record AdminCompanyProviderResponse(
 
 public sealed record AdminCompanyMissionResponse(
     Guid Id,
+    string MissionNumber,
     string ServiceName,
     string? PrestationName,
     string CustomerName,

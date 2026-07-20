@@ -28,6 +28,17 @@ public sealed class MissionTests
     }
 
     [Fact]
+    public void Constructor_GeneratesReadableUniqueMissionNumber()
+    {
+        var firstMission = CreateMission(60);
+        var secondMission = CreateMission(60);
+
+        Assert.StartsWith("MIS-", firstMission.MissionNumber);
+        Assert.Matches(@"^MIS-\d{6}-[A-F0-9]{8}$", firstMission.MissionNumber);
+        Assert.NotEqual(firstMission.MissionNumber, secondMission.MissionNumber);
+    }
+
+    [Fact]
     public void Start_WhenWrongProvider_Throws()
     {
         var mission = CreateAssignedMission();

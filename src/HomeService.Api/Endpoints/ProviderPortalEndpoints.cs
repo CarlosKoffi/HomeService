@@ -448,6 +448,7 @@ public static class ProviderPortalEndpoints
         return new ProviderMobileMissionSummaryResponse(
             assignment.Id,
             assignment.MissionId,
+            assignment.Mission.MissionNumber,
             service?.Name ?? "Service",
             service?.IconName ?? "sparkles",
             assignment.Company?.Name ?? "Entreprise",
@@ -481,6 +482,7 @@ public static class ProviderPortalEndpoints
         return new ProviderMobileMissionOfferResponse(
             assignment.Id,
             assignment.MissionId,
+            assignment.Mission.MissionNumber,
             service?.Name ?? "Service",
             service?.IconName ?? "sparkles",
             assignment.Company?.Name ?? provider.Company?.Name ?? "Entreprise",

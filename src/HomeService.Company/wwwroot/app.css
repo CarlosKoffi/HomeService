@@ -12319,6 +12319,24 @@ h3 {
     line-height: 1.35;
 }
 
+.mission-number,
+.mission-number-line {
+    color: #1a6aff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+.mission-number {
+    display: inline-flex;
+    margin-right: 6px;
+}
+
+.mission-number-line {
+    margin-bottom: 6px !important;
+    text-transform: uppercase;
+}
+
 .missions-card-main > div > strong {
     color: #111111;
     font-size: 13px;

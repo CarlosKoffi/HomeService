@@ -22,6 +22,7 @@ public sealed class Mission : AuditableEntity
     {
         CustomerId = customerId;
         ServiceId = serviceId;
+        MissionNumber = GenerateMissionNumber();
         ServicePrestationId = servicePrestationId;
         Mode = mode;
         PaymentMethod = paymentMethod;
@@ -34,6 +35,7 @@ public sealed class Mission : AuditableEntity
 
     public Guid CustomerId { get; private set; }
     public Guid ServiceId { get; private set; }
+    public string MissionNumber { get; private set; } = string.Empty;
     public Guid? ServicePrestationId { get; private set; }
     public ServicePrestation? ServicePrestation { get; private set; }
     public Guid? ProviderId { get; private set; }
@@ -298,5 +300,10 @@ public sealed class Mission : AuditableEntity
     {
         var billableHalfHours = (int)Math.Ceiling(durationMinutes / 30m);
         return billableHalfHours * hourlyRateAmount / 2;
+    }
+
+    private static string GenerateMissionNumber()
+    {
+        return $"MIS-{DateTimeOffset.UtcNow:yyMMdd}-{Guid.NewGuid():N}"[..19].ToUpperInvariant();
     }
 }

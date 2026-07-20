@@ -21,6 +21,7 @@ public sealed record ProviderMobileProfileCompletionResponse(
 public sealed record ProviderMobileMissionSummaryResponse(
     Guid AssignmentId,
     Guid MissionId,
+    string MissionNumber,
     string ServiceName,
     string ServiceIconName,
     string CompanyName,
@@ -33,6 +34,7 @@ public sealed record ProviderMobileMissionSummaryResponse(
 public sealed record ProviderMobileMissionOfferResponse(
     Guid AssignmentId,
     Guid MissionId,
+    string MissionNumber,
     string ServiceName,
     string ServiceIconName,
     string CompanyName,

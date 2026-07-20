@@ -13,6 +13,7 @@ public sealed record AdminMissionStatsResponse(
 
 public sealed record AdminMissionSummaryResponse(
     Guid Id,
+    string MissionNumber,
     string ServiceName,
     string? CompanyName,
     string CustomerName,
@@ -31,6 +32,7 @@ public sealed record AdminMissionActionRequest(string? Note);
 
 public sealed record AdminMissionDetailResponse(
     Guid Id,
+    string MissionNumber,
     string ServiceName,
     string? CompanyName,
     Guid? CompanyId,

@@ -17,6 +17,7 @@ public sealed record AdminPaymentStatsResponse(
 
 public sealed record AdminPaymentMissionResponse(
     Guid MissionId,
+    string MissionNumber,
     string ServiceName,
     Guid? CompanyId,
     string? CompanyName,

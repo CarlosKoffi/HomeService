@@ -4,6 +4,7 @@
 
 CREATE TEMP TABLE IF NOT EXISTS "WeleDemoMissionSeed" (
     "MissionId" uuid NOT NULL,
+    "MissionNumber" text NOT NULL,
     "CustomerId" uuid NOT NULL,
     "CompanyId" uuid NOT NULL,
     "ProviderId" uuid NOT NULL,
@@ -122,6 +123,7 @@ chosen AS (
 )
 INSERT INTO "WeleDemoMissionSeed" (
     "MissionId",
+    "MissionNumber",
     "CustomerId",
     "CompanyId",
     "ProviderId",
@@ -156,6 +158,7 @@ INSERT INTO "WeleDemoMissionSeed" (
 )
 SELECT
     chosen."MissionId",
+    upper(concat('MIS-', to_char(now(), 'YYMMDD'), '-', substr(replace(chosen."MissionId"::text, '-', ''), 1, 8))),
     chosen."CustomerId",
     chosen."CompanyId",
     chosen."ProviderId",
@@ -205,6 +208,7 @@ FROM "WeleDemoMissionSeed" seed;
 
 INSERT INTO "Missions" (
     "Id",
+    "MissionNumber",
     "CustomerId",
     "ServiceId",
     "ServicePrestationId",
@@ -249,6 +253,7 @@ INSERT INTO "Missions" (
 )
 SELECT
     seed."MissionId",
+    seed."MissionNumber",
     seed."CustomerId",
     seed."ServiceId",
     seed."ServicePrestationId",

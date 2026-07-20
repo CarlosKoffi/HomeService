@@ -2,6 +2,7 @@ namespace HomeService.Contracts.CompanyPortal;
 
 public sealed record CompanyPortalMissionResponse(
     Guid Id,
+    string MissionNumber,
     string ServiceName,
     string CustomerName,
     string CustomerPhoneNumber,

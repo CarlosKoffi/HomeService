@@ -64,6 +64,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 039 | `039_add_notification_delivery_rules.sql` | Notification delivery rules reference schema |
 | 040 | `040_update_notification_delivery_rules.sql` | Notification delivery rules channels update |
 | 041 | `041_set_default_platform_commission.sql` | Default platform connection commission set to 15% |
+| 042 | `042_add_mission_number.sql` | Unique readable mission numbers for support and disputes |
 
 ## Notes
 

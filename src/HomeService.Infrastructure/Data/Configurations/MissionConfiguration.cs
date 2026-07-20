@@ -9,6 +9,7 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
     public void Configure(EntityTypeBuilder<Mission> builder)
     {
         builder.HasKey(mission => mission.Id);
+        builder.Property(mission => mission.MissionNumber).HasMaxLength(32).IsRequired();
         builder.Property(mission => mission.Mode).HasConversion<string>().HasMaxLength(32);
         builder.Property(mission => mission.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(mission => mission.QuoteStatus).HasConversion<string>().HasMaxLength(32).HasDefaultValue(Domain.Enums.MissionQuoteStatus.NotRequired);
@@ -28,6 +29,7 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
             .HasForeignKey(mission => mission.ServicePrestationId)
             .OnDelete(DeleteBehavior.SetNull);
         builder.HasIndex(mission => new { mission.ServiceId, mission.Status });
+        builder.HasIndex(mission => mission.MissionNumber).IsUnique();
         builder.HasIndex(mission => new { mission.ServicePrestationId, mission.Status });
         builder.HasIndex(mission => new { mission.CompanyId, mission.Status });
         builder.HasIndex(mission => new { mission.QuoteStatus, mission.PaymentStatus });

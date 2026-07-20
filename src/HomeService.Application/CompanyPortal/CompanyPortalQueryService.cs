@@ -110,6 +110,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             .OrderBy(row => row.mission.ScheduledFor ?? row.mission.CreatedAt)
             .Select(row => new CompanyPortalMissionResponse(
                 row.mission.Id,
+                row.mission.MissionNumber,
                 row.service.Name,
                 row.customer.FirstName + " " + row.customer.LastName,
                 row.customer.PhoneNumber,
@@ -324,6 +325,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                               orderby mission.ScheduledFor descending
                               select new CompanyPortalMissionResponse(
                                   mission.Id,
+                                  mission.MissionNumber,
                                   service.Name,
                                   customer.FirstName + " " + customer.LastName,
                                   customer.PhoneNumber,

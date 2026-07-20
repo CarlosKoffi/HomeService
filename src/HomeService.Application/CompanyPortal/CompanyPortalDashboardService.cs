@@ -57,6 +57,7 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
                                  from provider in providerJoin.DefaultIfEmpty()
                                  select new DashboardMissionRow(
                                      mission.Id,
+                                     mission.MissionNumber,
                                      service.Name,
                                      customer.FirstName + " " + customer.LastName,
                                      customer.PhoneNumber,
@@ -195,6 +196,7 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
     {
         return new CompanyPortalMissionResponse(
             row.Id,
+            row.MissionNumber,
             row.ServiceName,
             row.CustomerName,
             row.CustomerPhoneNumber,
@@ -256,6 +258,7 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
 
 internal sealed record DashboardMissionRow(
     Guid Id,
+    string MissionNumber,
     string ServiceName,
     string CustomerName,
     string CustomerPhoneNumber,

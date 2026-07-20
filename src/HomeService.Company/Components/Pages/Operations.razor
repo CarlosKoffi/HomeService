@@ -173,7 +173,7 @@ else
                         <div class="missions-search-panel">
                             <label class="missions-search">
                                 <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                                <input @bind="SearchTerm" @bind:event="oninput" placeholder="Rechercher client, service, employe, zone..." />
+                                <input @bind="SearchTerm" @bind:event="oninput" placeholder="Rechercher numero, client, service, employe, zone..." />
                             </label>
                             <div class="missions-tabs">
                                 @foreach (var tab in Tabs)
@@ -204,7 +204,7 @@ else
                                                 <strong>@mission.CustomerName</strong>
                                                 <span class="@GetMissionStatusBadgeClass(mission)">@GetMissionStatusLabel(mission)</span>
                                             </div>
-                                            <p>@GetServiceEmoji(mission) @mission.ServiceName</p>
+                                            <p><span class="mission-number">@mission.MissionNumber</span> @GetServiceEmoji(mission) @mission.ServiceName</p>
                                             <footer>
                                                 <small>@GetProviderMeta(mission)</small>
                                                 <small>@GetLocation(mission)</small>
@@ -239,6 +239,7 @@ else
                         <div>
                             <span class="@GetMissionStatusBadgeClass(SelectedMission)">@GetMissionStatusLabel(SelectedMission)</span>
                             <h3>@SelectedMission.ServiceName</h3>
+                            <p class="mission-number-line">Numero mission @SelectedMission.MissionNumber</p>
                             <p>@SelectedMission.CustomerName - @SelectedMission.CustomerPhoneNumber</p>
                             <div class="missions-detail-grid">
                                 <article><span>Adresse</span><strong>@GetLocation(SelectedMission)</strong></article>
@@ -371,6 +372,7 @@ else
                 var search = SearchTerm.Trim();
                 query = query.Where(mission =>
                     mission.CustomerName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || mission.MissionNumber.Contains(search, StringComparison.OrdinalIgnoreCase)
                     || mission.ServiceName.Contains(search, StringComparison.OrdinalIgnoreCase)
                     || (mission.ProviderName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
                     || (mission.LocationLabel?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false));
@@ -782,14 +784,14 @@ else
         var today = DateTimeOffset.Now.Date;
         return
         [
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc1"), "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", DateTimeOffset.Now, 180, 15000, "XOF", null, null, LocationLabel: "Cocody, Abidjan"),
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), "Jardinage", "M. Diarra", "+225 05 90 80 70 60", "Direct", "OnTheWay", "Cash", "Pending", DateTimeOffset.Now.AddHours(1), 120, 12000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri", LocationLabel: "Riviera 3"),
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), "Nounou", "Mme Traore", "+225 07 77 10 20 30", "Scheduled", "Scheduled", "MobileMoney", "Authorized", new DateTimeOffset(today.AddHours(15)), 180, 18000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", LocationLabel: "Marcory"),
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc4"), "Jardinage", "Residence Palm Club", "+225 05 12 34 56 78", "Scheduled", "Scheduled", "Cash", "Pending", DateTimeOffset.Now.AddDays(1).AddHours(2), 240, 26000, "XOF", null, null, LocationLabel: "Bingerville"),
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc5"), "Menage a domicile", "Mme Bamba", "+225 01 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Paid", DateTimeOffset.Now.AddDays(-2), 240, 22000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", LocationLabel: "Plateau", CustomerRating: 5),
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc6"), "Jardinage", "M. Kouassi", "+225 07 45 45 45 45", "Direct", "Completed", "Cash", "Paid", DateTimeOffset.Now.AddDays(-5), 180, 16000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri", LocationLabel: "Angre", CustomerRating: 4),
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc7"), "Menage apres travaux", "SCI Lagune", "+225 05 33 44 55 66", "Scheduled", "Scheduled", "MobileMoney", "Authorized", DateTimeOffset.Now.AddDays(3), 420, 48000, "XOF", null, null, LocationLabel: "Zone 4"),
-            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc8"), "Menage a domicile", "Mme Diaby", "+225 01 22 80 90 33", "Direct", "Cancelled", "MobileMoney", "Failed", DateTimeOffset.Now.AddDays(-11), 180, 15000, "XOF", null, null, LocationLabel: "Yopougon", CancellationReason: "Client indisponible")
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc1"), "MIS-260720-000001", "Menage a domicile", "Mme Akissi", "+225 07 00 11 22 33", "Direct", "SearchingProvider", "MobileMoney", "Authorized", DateTimeOffset.Now, 180, 15000, "XOF", null, null, LocationLabel: "Cocody, Abidjan"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc2"), "MIS-260720-000002", "Jardinage", "M. Diarra", "+225 05 90 80 70 60", "Direct", "OnTheWay", "Cash", "Pending", DateTimeOffset.Now.AddHours(1), 120, 12000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri", LocationLabel: "Riviera 3"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc3"), "MIS-260720-000003", "Nounou", "Mme Traore", "+225 07 77 10 20 30", "Scheduled", "Scheduled", "MobileMoney", "Authorized", new DateTimeOffset(today.AddHours(15)), 180, 18000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", LocationLabel: "Marcory"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc4"), "MIS-260720-000004", "Jardinage", "Residence Palm Club", "+225 05 12 34 56 78", "Scheduled", "Scheduled", "Cash", "Pending", DateTimeOffset.Now.AddDays(1).AddHours(2), 240, 26000, "XOF", null, null, LocationLabel: "Bingerville"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc5"), "MIS-260720-000005", "Menage a domicile", "Mme Bamba", "+225 01 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Paid", DateTimeOffset.Now.AddDays(-2), 240, 22000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Awa Kone", LocationLabel: "Plateau", CustomerRating: 5),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc6"), "MIS-260720-000006", "Jardinage", "M. Kouassi", "+225 07 45 45 45 45", "Direct", "Completed", "Cash", "Paid", DateTimeOffset.Now.AddDays(-5), 180, 16000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Yao N'Dri", LocationLabel: "Angre", CustomerRating: 4),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc7"), "MIS-260720-000007", "Menage apres travaux", "SCI Lagune", "+225 05 33 44 55 66", "Scheduled", "Scheduled", "MobileMoney", "Authorized", DateTimeOffset.Now.AddDays(3), 420, 48000, "XOF", null, null, LocationLabel: "Zone 4"),
+            new(Guid.Parse("cccccccc-cccc-cccc-cccc-ccccccccccc8"), "MIS-260720-000008", "Menage a domicile", "Mme Diaby", "+225 01 22 80 90 33", "Direct", "Cancelled", "MobileMoney", "Failed", DateTimeOffset.Now.AddDays(-11), 180, 15000, "XOF", null, null, LocationLabel: "Yopougon", CancellationReason: "Client indisponible")
         ];
     }
 
