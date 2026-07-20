@@ -25,15 +25,11 @@
     letter-spacing: -.01em;
 }
 
-.navbar-brand::before {
-    align-items: center;
-    background: #1A6AFF;
-    border-radius: 10px;
-    content: "K";
-    display: inline-flex;
+.navbar-brand img {
+    display: block;
     height: 30px;
-    justify-content: center;
-    width: 30px;
+    object-fit: contain;
+    width: 78px;
 }
 
 .nav-icon {

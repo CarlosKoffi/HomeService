@@ -58,7 +58,7 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
 
         return new CompanyHomeCmsResponse(
             new CompanyHomeHeroCmsResponse(
-                GetText(hero, "label", "Kaza prestataire"),
+                GetText(hero, "label", "wélé prestataire"),
                 GetText(hero, "headline", "Trouvez des missions. Travaillez avec des entreprises verifiees."),
                 GetText(hero, "subtitle", "Creez votre profil, rattachez-vous a une entreprise partenaire ou proposez votre candidature en interim."),
                 new CmsLinkResponse(
@@ -68,7 +68,7 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                     GetText(hero, "secondaryCta.label", "Voir le fonctionnement"),
                     GetText(hero, "secondaryCta.url", "#how")),
                 GetText(hero, "image.url", "images/kaza-provider-hero.png"),
-                GetText(hero, "image.alt", "Prestataires de services a domicile Kaza"),
+                GetText(hero, "image.alt", "Prestataires de services a domicile wélé"),
                 GetJsonList(hero, "proofItems", ["Code entreprise", "Profil interim", "Missions proches"])),
             new CompanyHomeStepsCmsResponse(
                 GetText(steps, "label", "Fonctionnement"),
@@ -76,7 +76,7 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 GetText(steps, "subtitle", "Un parcours simple pour proposer votre profil en interim a une entreprise partenaire."),
                 GetJsonList(steps, "steps", [
                     new CmsStepResponse("01", "Formulaire", "Creez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/kaza-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "Kaza vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/kaza-provider-step-2.svg"),
+                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/kaza-provider-step-2.svg"),
                     new CmsStepResponse("03", "Validation", "L'entreprise etudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/kaza-provider-step-3.svg")
                 ])),
             new CompanyHomeTrustedCmsResponse(
@@ -109,7 +109,7 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 GetJsonList(contact, "tags", ["Abidjan", "Interim", "Services a domicile"])),
             new CompanyHomeFooterCmsResponse(
                 GetText(footer, "brandText", "La plateforme qui rapproche les prestataires serieux des entreprises de services."),
-                GetText(footer, "copyright", "(c) 2026 Kaza Technologies. Tous droits reserves."),
+                GetText(footer, "copyright", "(c) 2026 wélé Technologies. Tous droits reserves."),
                 GetText(footer, "baseline", "Concu pour l'Afrique de l'Ouest"),
                 GetJsonList(footer, "columns", [
                     new CmsFooterColumnResponse("Produit", ["Application", "Fonctionnement", "Securite", "Support"]),

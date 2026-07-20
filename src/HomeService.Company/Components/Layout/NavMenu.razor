@@ -6,7 +6,9 @@
 @if (!HideGlobalHeader)
 {
     <header class="site-header @HeaderThemeClass @(IsPortalExperience ? "portal-mode" : "public-mode")">
-        <a class="brand" href="@BrandHref">Kaza</a>
+        <a class="brand brand-logo" href="@BrandHref" aria-label="Accueil wélé">
+            <img src="images/wele-logo.png" alt="wélé" />
+        </a>
 
         <input type="checkbox" id="menu-toggle" class="menu-toggle" />
         <label for="menu-toggle" class="menu-button" title="Menu">
@@ -67,7 +69,7 @@
     private string CurrentSegment => Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
     private string BrandHref => IsPortalExperience ? PortalLink("dashboard") : PublicLandingBase;
     private string SessionCompanyName => Session?.CompanyName ?? "CI Home Service";
-    private string SessionEmail => Session?.Email ?? "mode.demo@kaza.ci";
+    private string SessionEmail => Session?.Email ?? "mode.demo@wele.ci";
 
     protected override void OnInitialized()
     {

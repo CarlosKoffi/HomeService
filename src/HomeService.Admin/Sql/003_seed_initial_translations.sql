@@ -27,7 +27,7 @@ BEGIN
         ('company.home.hero.title', 'Company', 'Titre hero portail entreprise', 'Le service a domicile en toute confiance'),
         ('company.home.hero.subtitle', 'Company', 'Sous-titre hero portail entreprise', 'Inscrivez votre entreprise, faites valider vos prestataires et developpez vos missions a domicile.'),
         ('company.register.title', 'Company', 'Titre inscription entreprise', 'Demande d''inscription'),
-        ('company.register.description', 'Company', 'Introduction formulaire inscription', 'Ce formulaire permet a votre entreprise de demander son acces ProxiPro. Notre equipe verifiera les informations et les pieces fournies.'),
+        ('company.register.description', 'Company', 'Introduction formulaire inscription', 'Ce formulaire permet a votre entreprise de demander son acces wélé. Notre equipe verifiera les informations et les pieces fournies.'),
         ('company.register.submit', 'Company', 'Bouton envoyer demande', 'Envoyer la demande'),
         ('company.register.success', 'Company', 'Confirmation demande envoyee', 'Demande envoyee. Notre equipe va verifier votre dossier.'),
         ('admin.dashboard.title', 'Admin', 'Titre dashboard admin', 'Centre de controle entreprise'),

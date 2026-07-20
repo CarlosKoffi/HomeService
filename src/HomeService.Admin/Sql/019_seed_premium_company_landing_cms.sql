@@ -25,7 +25,7 @@ BEGIN
 
     INSERT INTO "CmsComponentDefinitions" ("Id", "Key", "Name", "Description", "SchemaVersion", "IsActive", "CreatedAt", "UpdatedAt")
     VALUES
-        (gen_random_uuid(), 'HeroStandard', 'Hero premium', 'Section hero premium issue du design Figma Kaza entreprises.', 1, true, v_now, v_now),
+        (gen_random_uuid(), 'HeroStandard', 'Hero premium', 'Section hero premium issue du design Figma wélé entreprises.', 1, true, v_now, v_now),
         (gen_random_uuid(), 'StepsTimeline', 'Parcours en etapes', 'Parcours entreprise court en trois etapes.', 1, true, v_now, v_now),
         (gen_random_uuid(), 'TrustedLogos', 'Preuve sociale', 'Bande de references et preuves de confiance.', 1, true, v_now, v_now),
         (gen_random_uuid(), 'DashboardPreview', 'Apercu dashboard', 'Mockup produit avec indicateurs et activite.', 1, true, v_now, v_now),
@@ -47,7 +47,7 @@ BEGIN
     SELECT "Id" INTO v_footer_id FROM "CmsComponentDefinitions" WHERE "Key" = 'FooterLinks' AND "SchemaVersion" = 1;
 
     INSERT INTO "CmsSites" ("Id", "Code", "Name", "Surface", "Status", "DefaultCountryId", "DefaultLanguageId", "HomePageCode", "CreatedAt", "UpdatedAt")
-    VALUES (gen_random_uuid(), 'company-public', 'Kaza entreprises', 'PublicCompany', 'Active', v_country_id, v_language_id, 'home', v_now, v_now)
+    VALUES (gen_random_uuid(), 'company-public', 'wélé entreprises', 'PublicCompany', 'Active', v_country_id, v_language_id, 'home', v_now, v_now)
     ON CONFLICT ("Code") DO UPDATE SET
         "Name" = EXCLUDED."Name",
         "Surface" = EXCLUDED."Surface",
@@ -76,9 +76,9 @@ BEGIN
         v_page_id,
         v_language_id,
         'entreprises',
-        'Kaza pour les entreprises',
-        'Kaza entreprises - recevez plus de missions',
-        'Kaza connecte les clients aux entreprises de services a domicile verifiees en Cote d''Ivoire.',
+        'wélé pour les entreprises',
+        'wélé entreprises - recevez plus de missions',
+        'wélé connecte les clients aux entreprises de services a domicile verifiees en Cote d''Ivoire.',
         'Draft',
         v_now,
         v_now)
@@ -127,7 +127,7 @@ BEGIN
             ('Hero premium entreprises', 'label', 'ShortText', 'Plateforme partenaire', NULL::jsonb),
             ('Hero premium entreprises', 'headline', 'ShortText', 'Recevez plus de missions.', NULL::jsonb),
             ('Hero premium entreprises', 'highlight', 'ShortText', 'Developpez votre entreprise.', NULL::jsonb),
-            ('Hero premium entreprises', 'body', 'LongText', 'Kaza connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.', NULL::jsonb),
+            ('Hero premium entreprises', 'body', 'LongText', 'wélé connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.', NULL::jsonb),
             ('Hero premium entreprises', 'primaryCtaLabel', 'ShortText', 'Commencer', NULL::jsonb),
             ('Hero premium entreprises', 'primaryCtaUrl', 'InternalLink', 'register', NULL::jsonb),
             ('Hero premium entreprises', 'secondaryCtaLabel', 'ShortText', 'Voir le fonctionnement', NULL::jsonb),
@@ -138,9 +138,9 @@ BEGIN
             ('Fonctionnement entreprises', 'label', 'ShortText', 'Comment ca marche', NULL::jsonb),
             ('Fonctionnement entreprises', 'title', 'ShortText', 'Trois etapes, puis votre portail est pret.', NULL::jsonb),
             ('Fonctionnement entreprises', 'body', 'LongText', 'Un parcours court pour verifier l''entreprise et demarrer avec une base claire.', NULL::jsonb),
-            ('Fonctionnement entreprises', 'steps', 'Json', NULL, '[{"number":"01","label":"Compte","title":"Creez votre compte","body":"Renseignez votre entreprise, vos services et le contact responsable.","imagePath":"images/kaza-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","body":"Kaza controle les informations pour securiser les clients et les missions.","imagePath":"images/kaza-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","body":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","imagePath":"images/kaza-how-step-3.png"}]'::jsonb),
+            ('Fonctionnement entreprises', 'steps', 'Json', NULL, '[{"number":"01","label":"Compte","title":"Creez votre compte","body":"Renseignez votre entreprise, vos services et le contact responsable.","imagePath":"images/kaza-how-step-1.png"},{"number":"02","label":"Verification","title":"Nous verifions votre dossier","body":"wélé controle les informations pour securiser les clients et les missions.","imagePath":"images/kaza-how-step-2.png"},{"number":"03","label":"Portail","title":"Travaillez depuis votre portail","body":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","imagePath":"images/kaza-how-step-3.png"}]'::jsonb),
 
-            ('Preuve sociale entreprises', 'title', 'ShortText', 'Ils font confiance a Kaza', NULL::jsonb),
+            ('Preuve sociale entreprises', 'title', 'ShortText', 'Ils font confiance a wélé', NULL::jsonb),
             ('Preuve sociale entreprises', 'items', 'Json', NULL, '["Services verifies","Entreprises locales","Prestataires suivis","Paiements traces","Support partenaire"]'::jsonb),
 
             ('Apercu dashboard entreprises', 'label', 'ShortText', 'Dashboard', NULL::jsonb),
@@ -152,14 +152,14 @@ BEGIN
 
             ('FAQ entreprises', 'label', 'ShortText', 'FAQ', NULL::jsonb),
             ('FAQ entreprises', 'title', 'ShortText', 'Foire aux questions', NULL::jsonb),
-            ('FAQ entreprises', 'items', 'Json', NULL, '[{"question":"Comment sont verifiees les entreprises sur Kaza ?","answer":"Nous verifions les informations de l''entreprise, les documents essentiels et le contact responsable avant l''activation complete."},{"question":"L''inscription est-elle gratuite ?","answer":"Oui. L''inscription est gratuite. Kaza applique ensuite une commission uniquement sur les missions realisees."},{"question":"Puis-je refuser une demande client ?","answer":"Oui. Votre entreprise reste libre d''accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."},{"question":"Qui choisit le prestataire ?","answer":"Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser Kaza vous accompagner selon le mode choisi."},{"question":"Comment sont suivis les paiements ?","answer":"Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions."},{"question":"Combien de temps prend la validation ?","answer":"Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide."}]'::jsonb),
+            ('FAQ entreprises', 'items', 'Json', NULL, '[{"question":"Comment sont verifiees les entreprises sur wélé ?","answer":"Nous verifions les informations de l''entreprise, les documents essentiels et le contact responsable avant l''activation complete."},{"question":"L''inscription est-elle gratuite ?","answer":"Oui. L''inscription est gratuite. wélé applique ensuite une commission uniquement sur les missions realisees."},{"question":"Puis-je refuser une demande client ?","answer":"Oui. Votre entreprise reste libre d''accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."},{"question":"Qui choisit le prestataire ?","answer":"Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser wélé vous accompagner selon le mode choisi."},{"question":"Comment sont suivis les paiements ?","answer":"Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions."},{"question":"Combien de temps prend la validation ?","answer":"Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide."}]'::jsonb),
 
             ('Contact entreprises', 'label', 'ShortText', 'Contact', NULL::jsonb),
             ('Contact entreprises', 'title', 'ShortText', 'Vous voulez en parler avant de vous inscrire ?', NULL::jsonb),
-            ('Contact entreprises', 'body', 'LongText', 'Laissez vos coordonnees. Nous vous rappelons pour voir comment Kaza peut aider votre entreprise.', NULL::jsonb),
+            ('Contact entreprises', 'body', 'LongText', 'Laissez vos coordonnees. Nous vous rappelons pour voir comment wélé peut aider votre entreprise.', NULL::jsonb),
             ('Contact entreprises', 'tags', 'Json', NULL, '["Abidjan","Services a domicile","Partenariat entreprise"]'::jsonb),
 
-            ('Footer entreprises', 'brand', 'ShortText', 'Kaza', NULL::jsonb),
+            ('Footer entreprises', 'brand', 'ShortText', 'wélé', NULL::jsonb),
             ('Footer entreprises', 'body', 'LongText', 'La plateforme qui connecte les clients aux entreprises de services a domicile verifiees.', NULL::jsonb),
             ('Footer entreprises', 'columns', 'Json', NULL, '[{"title":"Produit","links":[{"label":"Comment ca marche","url":"#how"},{"label":"Dashboard","url":"#dashboard"},{"label":"FAQ","url":"#faq"}]},{"title":"Entreprise","links":[{"label":"Devenir partenaire","url":"register"},{"label":"Se connecter","url":"dashboard"},{"label":"Contact","url":"#contact"}]},{"title":"Legal","links":[{"label":"Support","url":"#contact"},{"label":"Conditions partenaires","url":"#contact"},{"label":"Confidentialite","url":"#contact"}]}]'::jsonb)
     ) AS content("SectionName", "FieldKey", "ValueType", "TextValue", "JsonValue")

@@ -43,7 +43,7 @@ else if (Session is null)
             <div class="login-accent" aria-hidden="true"></div>
             <div class="section-intro">
                 <h2>Connexion</h2>
-                <p>Acces reserve aux entreprises validees par l'equipe Kaza.</p>
+                <p>Acces reserve aux entreprises validees par l'equipe wélé.</p>
             </div>
 
             <label>
@@ -117,7 +117,7 @@ else
                 <div class="portal-panel-heading">
                     <div>
                         <span>Notifications</span>
-                        <h2>Messages de l'equipe Kaza</h2>
+                        <h2>Messages de l'equipe wélé</h2>
                     </div>
                     @if ((DashboardData?.UnreadNotificationCount ?? 0) > 0)
                     {
@@ -257,7 +257,7 @@ else
 
     private string DashboardSubtitle => $"Portail connecte - {PortalCompanyName}";
     private string PortalCompanyName => DashboardData?.CompanyName ?? Session?.CompanyName ?? "Entreprise";
-    private string PortalEmail => DashboardData?.UserEmail ?? Session?.Email ?? "mode.demo@kaza.ci";
+    private string PortalEmail => DashboardData?.UserEmail ?? Session?.Email ?? "mode.demo@wele.ci";
     private int PortalCompletion => DashboardData?.ProfileCompletionPercent ?? (Session?.IsCompanyApproved == true ? 75 : 25);
     private IReadOnlyList<CompanyPortalProgressStepResponse> PortalProgressSteps => DashboardData?.ProgressSteps ?? DefaultProgressSteps;
     private IEnumerable<CompanyPortalActivityResponse> PortalActivities => DashboardData?.RecentActivities is { Count: > 0 } activities ? activities : DemoActivities();

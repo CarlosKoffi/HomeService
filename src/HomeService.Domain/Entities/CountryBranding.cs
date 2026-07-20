@@ -25,7 +25,7 @@ public sealed class CountryBranding : AuditableEntity
 
     public Guid CountryId { get; private set; }
     public Country? Country { get; private set; }
-    public string BrandName { get; private set; } = "ProxiPro";
+    public string BrandName { get; private set; } = "wélé";
     public string PrimaryColor { get; private set; } = "#08bfa8";
     public string SecondaryColor { get; private set; } = "#ffffff";
     public string AccentColor { get; private set; } = "#f97316";

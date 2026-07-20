@@ -511,7 +511,7 @@ else
         return values.Count == 0 ? "Aucun service" : string.Join(", ", values.Take(3));
     }
 
-    private static string TranslateAssignmentMode(string status) => status == "PlatformManaged" ? "Affectation Kaza" : "Affectation entreprise";
+    private static string TranslateAssignmentMode(string status) => status == "PlatformManaged" ? "Affectation wélé" : "Affectation entreprise";
     private static string TranslateStatus(string status) => status switch { "Approved" => "Active", "Suspended" => "Suspendue", "Rejected" => "Refusee", "PendingReview" => "A verifier", _ => status };
     private static string TranslateEmploymentType(string value) => value switch { "TemporaryWorker" => "Interimaire", "CompanyEmployee" => "Employe", _ => value };
     private static string TranslateProviderStatus(string status) => status switch { "Approved" => "Valide", "Invited" => "Invite", "SuspendedByCompany" => "Suspendu entreprise", "SuspendedByPlatform" => "Suspendu plateforme", "InterimCandidate" => "Candidat interim", _ => status };

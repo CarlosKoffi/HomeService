@@ -18,10 +18,19 @@
 
 .brand {
     color: #102019;
+    display: inline-flex;
+    align-items: center;
     font-size: clamp(1.35rem, 2.4vw, 1.85rem);
     font-weight: 700;
     letter-spacing: 0;
     text-decoration: none;
+}
+
+.brand-logo img {
+    display: block;
+    height: 42px;
+    object-fit: contain;
+    width: 118px;
 }
 
 .site-nav {
@@ -295,6 +304,11 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 
 .site-header.theme-premium .brand {
     letter-spacing: -.03em;
+}
+
+.site-header.theme-premium .brand-logo img {
+    height: 38px;
+    width: 110px;
 }
 
 .site-header.theme-premium .site-nav a,

@@ -60,7 +60,7 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
             new CompanyHomeHeroCmsResponse(
                 GetText(hero, "label", "Plateforme partenaire"),
                 GetText(hero, "headline", "Recevez plus de missions. Developpez votre entreprise."),
-                GetText(hero, "subtitle", "Kaza connecte les clients aux entreprises de services a domicile verifiees."),
+                GetText(hero, "subtitle", "wélé connecte les clients aux entreprises de services a domicile verifiees."),
                 new CmsLinkResponse(
                     GetText(hero, "primaryCta.label", "Commencer"),
                     GetText(hero, "primaryCta.url", "register")),
@@ -68,7 +68,7 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                     GetText(hero, "secondaryCta.label", "Voir le fonctionnement"),
                     GetText(hero, "secondaryCta.url", "#how")),
                 GetText(hero, "image.url", "images/kaza-premium-hero.png"),
-                GetText(hero, "image.alt", "Equipe Kaza en intervention chez un client"),
+                GetText(hero, "image.alt", "Equipe wélé en intervention chez un client"),
                 GetJsonList(hero, "proofItems", ["Inscription gratuite", "Validation dossier", "Portail entreprise"])),
             new CompanyHomeStepsCmsResponse(
                 GetText(steps, "label", "Comment ca marche"),
@@ -76,11 +76,11 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                 GetText(steps, "subtitle", "Un parcours court pour verifier l'entreprise et demarrer avec une base claire."),
                 GetJsonList(steps, "steps", [
                     new CmsStepResponse("01", "Compte", "Creez votre compte", "Renseignez votre entreprise, vos services et le contact responsable.", "images/kaza-how-step-1.png"),
-                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "Kaza controle les informations pour securiser les clients et les missions.", "images/kaza-how-step-2.png"),
+                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "wélé controle les informations pour securiser les clients et les missions.", "images/kaza-how-step-2.png"),
                     new CmsStepResponse("03", "Portail", "Travaillez depuis votre portail", "Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.", "images/kaza-how-step-3.png")
                 ])),
             new CompanyHomeTrustedCmsResponse(
-                GetText(trusted, "headline", "Ils font confiance a Kaza"),
+                GetText(trusted, "headline", "Ils font confiance a wélé"),
                 GetJsonList(trusted, "items", ["Services verifies", "Entreprises locales", "Prestataires suivis", "Paiements traces", "Support partenaire"])),
             new CompanyHomeDashboardCmsResponse(
                 GetText(dashboard, "label", "Dashboard"),
@@ -97,18 +97,18 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                 GetText(faq, "label", "FAQ"),
                 GetText(faq, "headline", "Foire aux questions"),
                 GetJsonList(faq, "questions", [
-                    new CmsFaqItemResponse("Comment sont verifiees les entreprises sur Kaza ?", "Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."),
-                    new CmsFaqItemResponse("L'inscription est-elle gratuite ?", "Oui. L'inscription est gratuite. Kaza applique ensuite une commission uniquement sur les missions realisees."),
+                    new CmsFaqItemResponse("Comment sont verifiees les entreprises sur wélé ?", "Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."),
+                    new CmsFaqItemResponse("L'inscription est-elle gratuite ?", "Oui. L'inscription est gratuite. wélé applique ensuite une commission uniquement sur les missions realisees."),
                     new CmsFaqItemResponse("Puis-je refuser une demande client ?", "Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites.")
                 ])),
             new CompanyHomeContactCmsResponse(
                 GetText(contact, "label", "Contact"),
                 GetText(contact, "headline", "Vous voulez en parler avant de vous inscrire ?"),
-                GetText(contact, "subtitle", "Laissez vos coordonnees. Nous vous rappelons pour voir comment Kaza peut aider votre entreprise."),
+                GetText(contact, "subtitle", "Laissez vos coordonnees. Nous vous rappelons pour voir comment wélé peut aider votre entreprise."),
                 GetJsonList(contact, "tags", ["Abidjan", "Services a domicile", "Partenariat entreprise"])),
             new CompanyHomeFooterCmsResponse(
                 GetText(footer, "brandText", "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance."),
-                GetText(footer, "copyright", "(c) 2026 Kaza Technologies. Tous droits reserves."),
+                GetText(footer, "copyright", "(c) 2026 wélé Technologies. Tous droits reserves."),
                 GetText(footer, "baseline", "Concu pour l'Afrique de l'Ouest"),
                 GetJsonList(footer, "columns", [
                     new CmsFooterColumnResponse("Produit", ["Plateforme", "Fonctionnement", "Tarifs", "Securite"]),

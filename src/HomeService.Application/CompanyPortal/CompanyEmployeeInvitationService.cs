@@ -64,7 +64,7 @@ public sealed class CompanyEmployeeInvitationService(IAppDbContext db)
     {
         for (var attempt = 0; attempt < 20; attempt++)
         {
-            var code = $"KAZA-{RandomNumberGenerator.GetInt32(100000, 999999)}";
+            var code = $"WELE-{RandomNumberGenerator.GetInt32(100000, 999999)}";
             var exists = await db.ProviderInvitations.AnyAsync(invitation => invitation.Code == code, cancellationToken);
             if (!exists)
             {
@@ -72,7 +72,7 @@ public sealed class CompanyEmployeeInvitationService(IAppDbContext db)
             }
         }
 
-        return $"KAZA-{Guid.NewGuid():N}"[..15].ToUpperInvariant();
+        return $"WELE-{Guid.NewGuid():N}"[..15].ToUpperInvariant();
     }
 }
 

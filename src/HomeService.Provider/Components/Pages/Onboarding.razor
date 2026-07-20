@@ -2,11 +2,11 @@
 @inject ProviderApiClient Api
 @inject NavigationManager Navigation
 
-<PageTitle>Kaza Prestataire - Interim</PageTitle>
+<PageTitle>wélé Prestataire - Interim</PageTitle>
 
 <main class="provider-onboarding-page">
     <section class="registration-header onboarding-hero-copy">
-        <p class="eyebrow">Kaza prestataire</p>
+        <p class="eyebrow">wélé prestataire</p>
         <h1>@PageHeadline</h1>
         <p>@PageSubtitle</p>
     </section>
@@ -38,7 +38,7 @@
                             <option value="@option.Label"></option>
                         }
                     </datalist>
-                    <small>Choisissez un service ou une prestation. Si cela n'existe pas encore, le service sera propose a Kaza.</small>
+                    <small>Choisissez un service ou une prestation. Si cela n'existe pas encore, le service sera propose a wélé.</small>
                 </label>
                 <label>Annee d'experience<input type="number" min="0" placeholder="Ex: 3" @bind="RegisterYearsOfExperience" /></label>
                 @if (!string.IsNullOrWhiteSpace(ServiceEntry))
@@ -92,7 +92,7 @@
 
             <div class="register-fieldset opportunity-fieldset">
                 <span>Opportunites proches</span>
-                <p class="opportunity-help">Kaza vous propose jusqu'a 5 entreprises qui acceptent les candidatures interimaires dans votre domaine. Une seule entreprise recevra votre demande : la premiere est selectionnee par defaut, vous pouvez en choisir une autre.</p>
+                <p class="opportunity-help">wélé vous propose jusqu'a 5 entreprises qui acceptent les candidatures interimaires dans votre domaine. Une seule entreprise recevra votre demande : la premiere est selectionnee par defaut, vous pouvez en choisir une autre.</p>
                 @if (IsLoadingOpportunities)
                 {
                     <div class="opportunity-empty">Recherche des entreprises compatibles...</div>

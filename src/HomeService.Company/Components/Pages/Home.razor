@@ -2,7 +2,7 @@
 @inject NavigationManager Navigation
 @inject PlatformApiClient ApiClient
 
-<PageTitle>Kaza Entreprises</PageTitle>
+<PageTitle>wélé Entreprises</PageTitle>
 
 @if (IsSubmittedConfirmationVisible)
 {
@@ -30,7 +30,7 @@
                 <a class="premium-primary" href="@HomeContent.Hero.PrimaryCta.Url">@HomeContent.Hero.PrimaryCta.Label</a>
                 <a class="premium-secondary" href="@HomeContent.Hero.SecondaryCta.Url">@HomeContent.Hero.SecondaryCta.Label</a>
             </div>
-            <div class="premium-proof" aria-label="Indicateurs Kaza">
+            <div class="premium-proof" aria-label="Indicateurs wélé">
                 @foreach (var proof in HomeContent.Hero.ProofItems)
                 {
                     <span>@proof</span>
@@ -78,7 +78,7 @@
 
         <div class="premium-dashboard">
             <div class="premium-dashboard-top">
-                <div><span></span><strong>Kaza Partner</strong></div>
+                <div><span></span><strong>wélé Partner</strong></div>
                 <small>Aujourd'hui</small>
             </div>
             <div class="premium-dashboard-stats">
@@ -176,9 +176,8 @@
 
     <footer class="premium-footer">
         <div class="premium-footer-brand">
-            <a class="premium-footer-logo" href="#home" aria-label="Retour accueil Kaza">
-                <span>K</span>
-                <strong>Kaza</strong>
+            <a class="premium-footer-logo" href="#home" aria-label="Retour accueil wélé">
+                <img src="images/wele-logo.png" alt="wélé" />
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
@@ -250,11 +249,11 @@
             new CompanyHomeHeroCmsResponse(
                 "Plateforme partenaire",
                 "Recevez plus de missions. Developpez votre entreprise.",
-                "Kaza connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.",
+                "wélé connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.",
                 new CmsLinkResponse("Commencer", "register"),
                 new CmsLinkResponse("Voir le fonctionnement", "#how"),
                 "images/kaza-premium-hero.png",
-                "Equipe Kaza en intervention chez un client",
+                "Equipe wélé en intervention chez un client",
                 ["Inscription gratuite", "Validation dossier", "Portail entreprise"]),
             new CompanyHomeStepsCmsResponse(
                 "Comment ca marche",
@@ -262,11 +261,11 @@
                 "Un parcours court pour verifier l'entreprise et demarrer avec une base claire.",
                 [
                     new CmsStepResponse("01", "Compte", "Creez votre compte", "Renseignez votre entreprise, vos services et le contact responsable.", "images/kaza-how-step-1.png"),
-                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "Kaza controle les informations pour securiser les clients et les missions.", "images/kaza-how-step-2.png"),
+                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "wélé controle les informations pour securiser les clients et les missions.", "images/kaza-how-step-2.png"),
                     new CmsStepResponse("03", "Portail", "Travaillez depuis votre portail", "Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.", "images/kaza-how-step-3.png")
                 ]),
             new CompanyHomeTrustedCmsResponse(
-                "Ils font confiance a Kaza",
+                "Ils font confiance a wélé",
                 ["Services verifies", "Entreprises locales", "Prestataires suivis", "Paiements traces", "Support partenaire"]),
             new CompanyHomeDashboardCmsResponse(
                 "Dashboard",
@@ -283,21 +282,21 @@
                 "FAQ",
                 "Foire aux questions",
                 [
-                    new CmsFaqItemResponse("Comment sont verifiees les entreprises sur Kaza ?", "Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."),
-                    new CmsFaqItemResponse("L'inscription est-elle gratuite ?", "Oui. L'inscription est gratuite. Kaza applique ensuite une commission uniquement sur les missions realisees."),
+                    new CmsFaqItemResponse("Comment sont verifiees les entreprises sur wélé ?", "Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."),
+                    new CmsFaqItemResponse("L'inscription est-elle gratuite ?", "Oui. L'inscription est gratuite. wélé applique ensuite une commission uniquement sur les missions realisees."),
                     new CmsFaqItemResponse("Puis-je refuser une demande client ?", "Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."),
-                    new CmsFaqItemResponse("Qui choisit le prestataire ?", "Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser Kaza vous accompagner selon le mode choisi."),
+                    new CmsFaqItemResponse("Qui choisit le prestataire ?", "Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser wélé vous accompagner selon le mode choisi."),
                     new CmsFaqItemResponse("Comment sont suivis les paiements ?", "Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions."),
                     new CmsFaqItemResponse("Combien de temps prend la validation ?", "Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide.")
                 ]),
             new CompanyHomeContactCmsResponse(
                 "Contact",
                 "Vous voulez en parler avant de vous inscrire ?",
-                "Laissez vos coordonnees. Nous vous rappelons pour voir comment Kaza peut aider votre entreprise.",
+                "Laissez vos coordonnees. Nous vous rappelons pour voir comment wélé peut aider votre entreprise.",
                 ["Abidjan", "Services a domicile", "Partenariat entreprise"]),
             new CompanyHomeFooterCmsResponse(
                 "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.",
-                "(c) 2026 Kaza Technologies. Tous droits reserves.",
+                "(c) 2026 wélé Technologies. Tous droits reserves.",
                 "Concu pour l'Afrique de l'Ouest",
                 [
                     new CmsFooterColumnResponse("Produit", ["Plateforme", "Fonctionnement", "Tarifs", "Securite", "Integrations", "Changelog"]),

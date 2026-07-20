@@ -201,7 +201,7 @@ public static class DatabaseInitializer
 
         db.CountryBrandings.Add(new CountryBranding(
             coteDIvoire.Id,
-            "ProxiPro CI",
+            "wélé CI",
             "#0f9f7a",
             "#ffffff",
             "#f97316",
@@ -399,7 +399,7 @@ public static class DatabaseInitializer
             new TranslationSeed("company.home.hero.title", "Company", "Titre hero portail entreprise", "Le service a domicile en toute confiance"),
             new TranslationSeed("company.home.hero.subtitle", "Company", "Sous-titre hero portail entreprise", "Inscrivez votre entreprise, faites valider vos prestataires et developpez vos missions a domicile."),
             new TranslationSeed("company.register.title", "Company", "Titre inscription entreprise", "Demande d'inscription"),
-            new TranslationSeed("company.register.description", "Company", "Introduction formulaire inscription", "Ce formulaire permet a votre entreprise de demander son acces ProxiPro. Notre equipe verifiera les informations et les pieces fournies."),
+            new TranslationSeed("company.register.description", "Company", "Introduction formulaire inscription", "Ce formulaire permet a votre entreprise de demander son acces wélé. Notre equipe verifiera les informations et les pieces fournies."),
             new TranslationSeed("company.register.submit", "Company", "Bouton envoyer demande", "Envoyer la demande"),
             new TranslationSeed("company.register.success", "Company", "Confirmation demande envoyee", "Demande envoyee. Notre equipe va verifier votre dossier."),
             new TranslationSeed("company.employees.form.title", "Company", "Titre formulaire ajout employe", "Nouvel employe"),
@@ -471,15 +471,15 @@ public static class DatabaseInitializer
 
         db.CmsComponentDefinitions.AddRange(hero, steps, trusted, services, dashboard, faq, cta, contact, footer);
 
-        var companySite = new CmsSite("company-public", "Kaza entreprises", CmsSiteSurface.PublicCompany, coteDIvoire.Id, french.Id);
+        var companySite = new CmsSite("company-public", "wélé entreprises", CmsSiteSurface.PublicCompany, coteDIvoire.Id, french.Id);
         companySite.Activate();
         companySite.SetHomePage("home");
 
-        var providerSite = new CmsSite("provider-public", "Kaza prestataires", CmsSiteSurface.PublicProvider, coteDIvoire.Id, french.Id);
+        var providerSite = new CmsSite("provider-public", "wélé prestataires", CmsSiteSurface.PublicProvider, coteDIvoire.Id, french.Id);
         providerSite.Activate();
         providerSite.SetHomePage("home");
 
-        var clientSite = new CmsSite("client-public", "Kaza clients", CmsSiteSurface.PublicClient, coteDIvoire.Id, french.Id);
+        var clientSite = new CmsSite("client-public", "wélé clients", CmsSiteSurface.PublicClient, coteDIvoire.Id, french.Id);
         clientSite.Activate();
         clientSite.SetHomePage("home");
 
@@ -489,9 +489,9 @@ public static class DatabaseInitializer
 
         db.CmsSites.AddRange(companySite, providerSite, clientSite, companyPortal);
 
-        AddSeedPage(db, companySite, french.Id, "home", "Accueil entreprises", "premium-b2b-landing", "entreprises", "Kaza pour les entreprises", hero.Id, steps.Id, trusted.Id, dashboard.Id, faq.Id, contact.Id, footer.Id);
-        AddSeedPage(db, providerSite, french.Id, "home", "Accueil prestataires", "landing", "prestataires", "Kaza pour les prestataires", hero.Id, steps.Id, faq.Id);
-        AddSeedPage(db, clientSite, french.Id, "home", "Accueil clients", "landing", "accueil", "Kaza", hero.Id, services.Id, faq.Id);
+        AddSeedPage(db, companySite, french.Id, "home", "Accueil entreprises", "premium-b2b-landing", "entreprises", "wélé pour les entreprises", hero.Id, steps.Id, trusted.Id, dashboard.Id, faq.Id, contact.Id, footer.Id);
+        AddSeedPage(db, providerSite, french.Id, "home", "Accueil prestataires", "landing", "prestataires", "wélé pour les prestataires", hero.Id, steps.Id, faq.Id);
+        AddSeedPage(db, clientSite, french.Id, "home", "Accueil clients", "landing", "accueil", "wélé", hero.Id, services.Id, faq.Id);
         AddSeedPage(db, companyPortal, french.Id, "dashboard", "Tableau de bord entreprise", "portal-dashboard", "dashboard", "Tableau de bord", cta.Id);
 
         db.CmsMenus.AddRange(
@@ -531,13 +531,13 @@ public static class DatabaseInitializer
                 case "HeroStandard":
                     AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Plateforme partenaire", french.Id);
                     AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Recevez plus de missions. Developpez votre entreprise.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Kaza connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "wélé connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.", french.Id);
                     AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Commencer", french.Id);
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "register", french.Id);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
                     AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-premium-hero.png", french.Id);
-                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Equipe Kaza en intervention chez un client", french.Id);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Equipe wélé en intervention chez un client", french.Id);
                     AddCmsJson(db, section, "proofItems", "[\"Inscription gratuite\",\"Validation dossier\",\"Portail entreprise\"]", french.Id);
                     break;
 
@@ -548,14 +548,14 @@ public static class DatabaseInitializer
                     AddCmsJson(db, section, "steps", """
                     [
                       {"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/kaza-how-step-1.png"},
-                      {"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"Kaza controle les informations pour securiser les clients et les missions.","image":"images/kaza-how-step-2.png"},
+                      {"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/kaza-how-step-2.png"},
                       {"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/kaza-how-step-3.png"}
                     ]
                     """, french.Id);
                     break;
 
                 case "TrustedLogos":
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Ils font confiance a Kaza", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Ils font confiance a wélé", french.Id);
                     AddCmsJson(db, section, "items", "[\"Services verifies\",\"Entreprises locales\",\"Prestataires suivis\",\"Paiements traces\",\"Support partenaire\"]", french.Id);
                     break;
 
@@ -573,10 +573,10 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Foire aux questions", french.Id);
                     AddCmsJson(db, section, "questions", """
                     [
-                      {"question":"Comment sont verifiees les entreprises sur Kaza ?","answer":"Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."},
-                      {"question":"L'inscription est-elle gratuite ?","answer":"Oui. L'inscription est gratuite. Kaza applique ensuite une commission uniquement sur les missions realisees."},
+                      {"question":"Comment sont verifiees les entreprises sur wélé ?","answer":"Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."},
+                      {"question":"L'inscription est-elle gratuite ?","answer":"Oui. L'inscription est gratuite. wélé applique ensuite une commission uniquement sur les missions realisees."},
                       {"question":"Puis-je refuser une demande client ?","answer":"Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."},
-                      {"question":"Qui choisit le prestataire ?","answer":"Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser Kaza vous accompagner selon le mode choisi."},
+                      {"question":"Qui choisit le prestataire ?","answer":"Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser wélé vous accompagner selon le mode choisi."},
                       {"question":"Comment sont suivis les paiements ?","answer":"Le portail permet de suivre les paiements Mobile Money, les encaissements terrain et les commissions."},
                       {"question":"Combien de temps prend la validation ?","answer":"Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide."}
                     ]
@@ -586,13 +586,13 @@ public static class DatabaseInitializer
                 case "ContactForm":
                     AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Contact", french.Id);
                     AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Vous voulez en parler avant de vous inscrire ?", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnees. Nous vous rappelons pour voir comment Kaza peut aider votre entreprise.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnees. Nous vous rappelons pour voir comment wélé peut aider votre entreprise.", french.Id);
                     AddCmsJson(db, section, "tags", "[\"Abidjan\",\"Services a domicile\",\"Partenariat entreprise\"]", french.Id);
                     break;
 
                 case "FooterLinks":
                     AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.", french.Id);
-                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 Kaza Technologies. Tous droits reserves.", french.Id);
+                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 wélé Technologies. Tous droits reserves.", french.Id);
                     AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Concu pour l'Afrique de l'Ouest", french.Id);
                     AddCmsJson(db, section, "columns", """
                     [
@@ -656,15 +656,15 @@ public static class DatabaseInitializer
             switch (section.ComponentDefinition?.Key)
             {
                 case "HeroStandard":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Kaza prestataire", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "wélé prestataire", french.Id);
                     AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trouvez des missions. Travaillez depuis votre mobile.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Creez votre profil Kaza, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Creez votre profil wélé, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.", french.Id);
                     AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Creer un compte", french.Id);
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/onboarding", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
                     AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/kaza-provider-hero.png", french.Id, replaceExisting: true);
-                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Prestataires de services a domicile Kaza", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Prestataires de services a domicile wélé", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "proofItems", "[\"Code entreprise\",\"Profil interim\",\"Missions proches\"]", french.Id, replaceExisting: true);
                     break;
 
@@ -675,7 +675,7 @@ public static class DatabaseInitializer
                     AddCmsJson(db, section, "steps", """
                     [
                       {"number":"01","label":"Formulaire","title":"Creez votre compte en ligne","text":"Renseignez vos informations, votre service principal et votre zone.","image":"images/kaza-provider-step-1.svg"},
-                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"Kaza vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.","image":"images/kaza-provider-step-2.svg"},
+                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.","image":"images/kaza-provider-step-2.svg"},
                       {"number":"03","label":"Validation","title":"L'entreprise etudie votre demande","text":"Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.","image":"images/kaza-provider-step-3.svg"}
                     ]
                     """, french.Id, replaceExisting: true);
@@ -717,7 +717,7 @@ public static class DatabaseInitializer
 
                 case "FooterLinks":
                     AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme qui rapproche les prestataires serieux des entreprises de services.", french.Id);
-                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 Kaza Technologies. Tous droits reserves.", french.Id);
+                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 wélé Technologies. Tous droits reserves.", french.Id);
                     AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Concu pour l'Afrique de l'Ouest", french.Id);
                     AddCmsJson(db, section, "columns", """
                     [

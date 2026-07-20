@@ -90,7 +90,7 @@ else if (Application is not null)
         <div>
             <h2>Affectation des missions</h2>
             <p class="section-help">
-                Choisissez qui affecte les demandes aux prestataires de cette entreprise. Si ProxiPro gere
+                Choisissez qui affecte les demandes aux prestataires de cette entreprise. Si wélé gere
                 l'affectation, une commission additionnelle pourra etre appliquee plus tard.
             </p>
         </div>
@@ -103,7 +103,7 @@ else if (Application is not null)
             <div class="assignment-mode-actions">
                 <select @bind="SelectedAssignmentMode" disabled="@IsBusy">
                     <option value="SelfManaged">Entreprise affecte elle-meme</option>
-                    <option value="PlatformManaged">ProxiPro affecte pour l'entreprise</option>
+                    <option value="PlatformManaged">wélé affecte pour l'entreprise</option>
                 </select>
                 <button type="button" disabled="@IsBusy" @onclick="SaveAssignmentModeAsync">Enregistrer</button>
             </div>
@@ -300,7 +300,7 @@ else if (Application is not null)
                             {
                                 <p>@item.Note</p>
                             }
-                            <small>@FormatDate(item.ChangedAt) - @(string.IsNullOrWhiteSpace(item.ChangedBy) ? "Equipe Kaza" : item.ChangedBy)</small>
+                            <small>@FormatDate(item.ChangedAt) - @(string.IsNullOrWhiteSpace(item.ChangedBy) ? "Equipe wélé" : item.ChangedBy)</small>
                         </div>
                     </article>
                 }
@@ -654,7 +654,7 @@ else if (Application is not null)
     private static string GetAssignmentModeHelp(string assignmentMode)
     {
         return assignmentMode == "PlatformManaged"
-            ? "ProxiPro choisira le meilleur prestataire disponible. Ce mode servira de base a une commission plus elevee."
+            ? "wélé choisira le meilleur prestataire disponible. Ce mode servira de base a une commission plus elevee."
             : "L'entreprise recoit les demandes et affecte elle-meme ses employes depuis son portail.";
     }
 

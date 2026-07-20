@@ -87,7 +87,7 @@ BEGIN
             "number": "02",
             "label": "Entreprise",
             "title": "Choisissez une entreprise",
-            "text": "Kaza vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.",
+            "text": "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.",
             "image": "images/kaza-provider-step-2.svg"
         },
         {
@@ -116,7 +116,7 @@ BEGIN
             "number": "02",
             "label": "Entreprise",
             "title": "Choisissez une entreprise",
-            "text": "Kaza vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.",
+            "text": "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.",
             "image": "images/kaza-provider-step-2.svg"
         },
         {

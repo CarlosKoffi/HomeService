@@ -9,8 +9,7 @@
 
     <aside class="portal-sidebar" aria-label="Navigation portail entreprise">
         <a class="portal-sidebar-logo" href="@PortalLink("dashboard")">
-            <span>K</span>
-            <strong>kaza</strong>
+            <img src="images/wele-logo.png" alt="wélé" />
         </a>
 
         <nav class="portal-sidebar-nav">
@@ -111,7 +110,7 @@
     [Parameter] public string Subtitle { get; set; } = "Portail connecte";
     [Parameter] public Guid? CompanyId { get; set; }
     [Parameter] public string CompanyName { get; set; } = "CI Home Service";
-    [Parameter] public string Email { get; set; } = "mode.demo@kaza.ci";
+    [Parameter] public string Email { get; set; } = "mode.demo@wele.ci";
     [Parameter] public int ProfileCompletionPercent { get; set; } = 25;
     [Parameter] public int UnreadNotificationCount { get; set; }
     [Parameter] public IReadOnlyList<CompanyPortalProgressStepResponse> ProgressSteps { get; set; } =

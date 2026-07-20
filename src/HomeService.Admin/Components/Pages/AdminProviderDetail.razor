@@ -135,7 +135,7 @@ else
                 }
                 else if (CanApproveProvider(Provider))
                 {
-                    <p>@(Provider.Status == "SuspendedByPlatform" ? "Ce prestataire est suspendu par Kaza. Vous pouvez le reactiver apres controle." : "Le dossier peut etre valide apres verification des informations.")</p>
+                    <p>@(Provider.Status == "SuspendedByPlatform" ? "Ce prestataire est suspendu par wélé. Vous pouvez le reactiver apres controle." : "Le dossier peut etre valide apres verification des informations.")</p>
                     <button type="button" class="primary-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
                         @(IsActionRunning ? "Validation..." : GetApproveButtonLabel(Provider))
                     </button>
@@ -377,7 +377,7 @@ else
 
             SuspendNote = null;
             await LoadAsync();
-            Message = "Prestataire suspendu par Kaza.";
+            Message = "Prestataire suspendu par wélé.";
         }
         catch (Exception exception)
         {

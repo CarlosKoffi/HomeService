@@ -2,7 +2,7 @@
 @inject ProviderApiClient ApiClient
 @inject NavigationManager Navigation
 
-<PageTitle>Kaza Prestataire</PageTitle>
+<PageTitle>wélé Prestataire</PageTitle>
 
 <div class="provider-landing premium-b2b">
     @if (ShowCandidateSubmitted)
@@ -35,7 +35,7 @@
                 <a class="premium-secondary" href="@HomeContent.Hero.SecondaryCta.Url">@HomeContent.Hero.SecondaryCta.Label</a>
                 <a class="premium-secondary" href="/mobileappview">Telecharger l'application</a>
             </div>
-            <div class="premium-proof" aria-label="Parcours prestataire Kaza">
+            <div class="premium-proof" aria-label="Parcours prestataire wélé">
                 @foreach (var proof in HomeContent.Hero.ProofItems)
                 {
                     <span>@proof</span>
@@ -83,17 +83,17 @@
 
         <div class="provider-mobile-showcase">
             <div class="provider-mobile-copy">
-                <span>Kaza mobile</span>
+                <span>wélé mobile</span>
                 <strong>Un espace pense pour le terrain.</strong>
                 <p>Le prestataire voit l'essentiel: son profil, la prochaine mission, les messages et les services suivis.</p>
             </div>
 
-            <div class="provider-phone-frame" aria-label="Apercu de l'application mobile Kaza Prestataire">
+            <div class="provider-phone-frame" aria-label="Apercu de l'application mobile wélé Prestataire">
                 <div class="provider-phone-speaker"></div>
                 <div class="provider-phone-screen">
                     <div class="provider-phone-status">
                         <span>9:41</span>
-                        <strong>Kaza</strong>
+                        <strong>wélé</strong>
                     </div>
 
                     <section class="provider-phone-hero-card">
@@ -193,9 +193,8 @@
 
     <footer class="premium-footer">
         <div class="premium-footer-brand">
-            <a class="premium-footer-logo" href="#home" aria-label="Retour accueil Kaza">
-                <span>K</span>
-                <strong>Kaza</strong>
+            <a class="premium-footer-logo" href="#home" aria-label="Retour accueil wélé">
+                <img src="images/wele-logo.png" alt="wélé" />
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
@@ -286,13 +285,13 @@
     {
         return new CompanyHomeCmsResponse(
             new CompanyHomeHeroCmsResponse(
-                "Kaza prestataire",
+                "wélé prestataire",
                 "Trouvez des missions. Travaillez depuis votre mobile.",
-                "Creez votre profil Kaza, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.",
+                "Creez votre profil wélé, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.",
                 new CmsLinkResponse("Creer un compte", "/onboarding?mode=register"),
                 new CmsLinkResponse("Voir le fonctionnement", "#how"),
                 "images/kaza-provider-hero.png",
-                "Prestataires de services a domicile Kaza",
+                "Prestataires de services a domicile wélé",
                 ["Code entreprise", "Profil interim", "Missions proches"]),
             new CompanyHomeStepsCmsResponse(
                 "Fonctionnement",
@@ -300,7 +299,7 @@
                 "Un parcours simple pour proposer votre profil en interim a une entreprise partenaire.",
                 [
                     new CmsStepResponse("01", "Formulaire", "Creez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/kaza-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "Kaza vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/kaza-provider-step-2.svg"),
+                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/kaza-provider-step-2.svg"),
                     new CmsStepResponse("03", "Validation", "L'entreprise etudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/kaza-provider-step-3.svg")
                 ]),
             new CompanyHomeTrustedCmsResponse(
@@ -333,7 +332,7 @@
                 ["Abidjan", "Interim", "Services a domicile"]),
             new CompanyHomeFooterCmsResponse(
                 "La plateforme qui rapproche les prestataires serieux des entreprises de services.",
-                "(c) 2026 Kaza Technologies. Tous droits reserves.",
+                "(c) 2026 wélé Technologies. Tous droits reserves.",
                 "Concu pour l'Afrique de l'Ouest",
                 [
                     new CmsFooterColumnResponse("Produit", ["Application", "Fonctionnement", "Securite", "Support"]),

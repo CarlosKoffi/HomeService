@@ -307,7 +307,7 @@ else
     private static string TranslatePaymentMethod(string method) => method switch { "MobileMoney" => "Mobile Money", "Cash" => "Cash", _ => method };
     private static string TranslateAssignmentStatus(string status) => status switch { "Offered" => "Proposee", "Accepted" => "Acceptee", "Refused" => "Refusee", "Expired" => "Expiree", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", _ => status };
     private static string TranslateLocationStatus(string status) => status switch { "Verified" => "verifiee", "OutsideTolerance" => "hors zone", "MissingProviderLocation" => "position manquante", "MissingMissionLocation" => "mission sans position", "LowAccuracy" => "precision faible", "InvalidProviderLocation" => "position invalide", _ => "non verifiee" };
-    private static string TranslateSenderType(string senderType) => senderType switch { "Customer" => "Client", "Provider" => "Prestataire", "Company" => "Entreprise", "Platform" => "Kaza", _ => senderType };
+    private static string TranslateSenderType(string senderType) => senderType switch { "Customer" => "Client", "Provider" => "Prestataire", "Company" => "Entreprise", "Platform" => "wélé", _ => senderType };
 
     private static string GetMissionStatusClass(string status) => status switch { "Completed" or "Resolved" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };

@@ -24,10 +24,19 @@ main {
 }
 
 .top-row > div {
-    align-items: flex-end;
+    align-items: center;
     display: grid;
-    gap: .1rem;
+    gap: .1rem .65rem;
+    grid-template-columns: auto auto;
     justify-items: end;
+}
+
+.top-row img {
+    display: block;
+    grid-row: span 2;
+    height: 30px;
+    object-fit: contain;
+    width: 78px;
 }
 
 .top-row strong {
