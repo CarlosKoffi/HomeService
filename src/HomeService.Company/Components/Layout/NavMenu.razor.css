@@ -109,56 +109,6 @@
     color: #fff !important;
 }
 
-.portal-header-nav {
-    gap: .45rem;
-}
-
-.portal-header-nav ::deep a {
-    font-size: .9rem;
-    padding: .6rem .72rem;
-}
-
-.session-chip {
-    border-left: 1px solid #e5e7eb;
-    display: grid;
-    line-height: 1.1;
-    max-width: 230px;
-    padding-left: .9rem;
-}
-
-.session-chip strong {
-    color: #000;
-    font-size: .86rem;
-    font-weight: 650;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.session-chip span {
-    color: #000;
-    font-size: .74rem;
-    font-weight: 500;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.logout-button {
-    background: #fff;
-    border: 1px solid #d8dee8;
-    border-radius: 999px;
-    color: #000;
-    cursor: pointer;
-    font: inherit;
-    font-weight: 680;
-    padding: .62rem .85rem;
-}
-
-.logout-button:hover {
-    background: #f8fafc;
-}
-
 .menu-toggle,
 .menu-button {
     display: none;
@@ -218,17 +168,6 @@
         align-items: stretch;
         flex-direction: column;
         margin-left: 0;
-    }
-
-    .session-chip {
-        border-left: 0;
-        border-top: 1px solid #e5e7eb;
-        max-width: none;
-        padding: .65rem 0 0;
-    }
-
-    .logout-button {
-        width: 100%;
     }
 
     .menu-toggle:checked ~ .site-nav {
@@ -343,30 +282,4 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 .site-header.theme-premium .header-secondary {
     border: 0;
     color: #666666 !important;
-}
-
-.site-header.theme-premium.portal-mode {
-    background: rgba(255, 255, 255, .96);
-    backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(236, 236, 236, .86);
-    box-shadow: 0 8px 22px rgba(0, 0, 0, .045);
-    position: sticky;
-}
-
-.site-header.theme-premium.portal-mode .brand {
-    color: #111111;
-}
-
-.site-header.theme-premium.portal-mode .portal-header-nav a {
-    color: #111111;
-}
-
-.site-header.theme-premium.portal-mode .portal-header-nav a:hover,
-.site-header.theme-premium.portal-mode .portal-header-nav a.portal-current {
-    background: #eff4ff;
-    color: #1a6aff;
-}
-
-.site-header.theme-premium.portal-mode .logout-button {
-    border-color: #ececec;
 }

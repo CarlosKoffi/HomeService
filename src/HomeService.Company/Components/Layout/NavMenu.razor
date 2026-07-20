@@ -5,9 +5,9 @@
 
 @if (!HideGlobalHeader)
 {
-    <header class="site-header @HeaderThemeClass @(IsPortalExperience ? "portal-mode" : "public-mode")">
-        <a class="brand brand-logo" href="@BrandHref" aria-label="Accueil wélé">
-            <img src="images/wele-logo.png" alt="wélé" />
+    <header class="site-header @HeaderThemeClass public-mode">
+        <a class="brand brand-logo" href="@BrandHref" aria-label="Accueil Wele">
+            <img src="images/wele-logo.png" alt="Wele" />
         </a>
 
         <input type="checkbox" id="menu-toggle" class="menu-toggle" />
@@ -17,33 +17,17 @@
             <span></span>
         </label>
 
-        <nav class="site-nav @(IsPortalExperience ? "portal-header-nav" : "public-nav")">
-            @if (!IsPortalExperience)
-            {
-                <a href="@($"{PublicLandingBase}#home")" data-section-nav="home">Accueil</a>
-                <a href="@($"{PublicLandingBase}#how")" data-section-nav="how">Fonctionnement</a>
-                <a href="@($"{PublicLandingBase}#trusted")" data-section-nav="trusted">References</a>
-                <a href="@($"{PublicLandingBase}#dashboard")" data-section-nav="dashboard">Dashboard</a>
-                <a href="@($"{PublicLandingBase}#faq")" data-section-nav="faq">FAQ</a>
-                <a href="@($"{PublicLandingBase}#contact")" data-section-nav="contact">Contact</a>
-                <div class="header-actions">
-                    <a class="header-secondary" href="dashboard">Se connecter</a>
-                    <a class="header-primary" href="register">Commencer</a>
-                </div>
-            }
-            else
-            {
-                <a class="@GetPortalLinkClass("company-profile")" href="@PortalLink("company-profile")">Informations</a>
-                <a class="@GetPortalLinkClass("employees")" href="@PortalLink("employees")">Employes</a>
-                <a class="@GetPortalLinkClass("interim-candidates")" href="@PortalLink("interim-candidates")">Interim</a>
-                <a class="@GetPortalLinkClass("missions")" href="@PortalLink("missions")">Missions</a>
-                <a class="@GetPortalLinkClass("accounts")" href="@PortalLink("accounts")">Encaissements</a>
-                <div class="session-chip" title="@SessionEmail">
-                    <strong>@SessionCompanyName</strong>
-                    <span>@SessionEmail</span>
-                </div>
-                <button type="button" class="logout-button" @onclick="LogoutAsync">Sortir</button>
-            }
+        <nav class="site-nav public-nav">
+            <a href="@($"{PublicLandingBase}#home")" data-section-nav="home">Accueil</a>
+            <a href="@($"{PublicLandingBase}#how")" data-section-nav="how">Fonctionnement</a>
+            <a href="@($"{PublicLandingBase}#trusted")" data-section-nav="trusted">References</a>
+            <a href="@($"{PublicLandingBase}#dashboard")" data-section-nav="dashboard">Dashboard</a>
+            <a href="@($"{PublicLandingBase}#faq")" data-section-nav="faq">FAQ</a>
+            <a href="@($"{PublicLandingBase}#contact")" data-section-nav="contact">Contact</a>
+            <div class="header-actions">
+                <a class="header-secondary" href="@PortalLink("dashboard")">@PortalAccessLabel</a>
+                <a class="header-primary" href="register">Commencer</a>
+            </div>
         </nav>
     </header>
 }
@@ -70,8 +54,7 @@
     private bool IsPreviewMode => Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase);
     private string CurrentSegment => Navigation.ToAbsoluteUri(Navigation.Uri).AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
     private string BrandHref => IsPortalExperience ? PortalLink("dashboard") : PublicLandingBase;
-    private string SessionCompanyName => Session?.CompanyName ?? "CI Home Service";
-    private string SessionEmail => Session?.Email ?? "mode.demo@wele.ci";
+    private string PortalAccessLabel => IsPortalExperience ? "Mon portail" : "Se connecter";
 
     protected override void OnInitialized()
     {
@@ -109,13 +92,6 @@
         }
     }
 
-    private async Task LogoutAsync()
-    {
-        await Js.InvokeVoidAsync("localStorage.removeItem", "homeservice.company.session");
-        Session = null;
-        Navigation.NavigateTo("");
-    }
-
     public void Dispose()
     {
         Navigation.LocationChanged -= HandleLocationChanged;
@@ -124,13 +100,5 @@
     private string PortalLink(string path)
     {
         return IsPreviewMode ? $"{path}?preview=1" : path;
-    }
-
-    private string GetPortalLinkClass(string path)
-    {
-        return string.Equals(CurrentSegment, path, StringComparison.OrdinalIgnoreCase)
-            || path == "missions" && string.Equals(CurrentSegment, "operations", StringComparison.OrdinalIgnoreCase)
-            ? "portal-current"
-            : string.Empty;
     }
 }
