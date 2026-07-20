@@ -10,6 +10,7 @@ public sealed record AdminPaymentStatsResponse(
     int PendingAmount,
     int CashToCollectAmount,
     int MobileMoneyAmount,
+    int CardAmount,
     int PlatformCommissionAmount,
     int DisputedAmount,
     int TransactionCount);

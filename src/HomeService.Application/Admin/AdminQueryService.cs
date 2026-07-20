@@ -853,6 +853,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             pendingItems.Sum(item => item.Amount),
             pendingItems.Where(item => item.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(item => item.Amount),
             paidItems.Where(item => item.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(item => item.Amount),
+            paidItems.Where(item => item.PaymentMethod == PaymentMethod.Card.ToString()).Sum(item => item.Amount),
             items.Sum(item => item.PlatformCommissionAmount),
             disputedItems.Sum(item => item.Amount),
             items.Count);

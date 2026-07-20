@@ -49,7 +49,7 @@ public sealed class CompanyPortalQueryResultTests
     [Fact]
     public void PaymentsOk_CarriesSummary()
     {
-        var summary = new CompanyPortalPaymentSummaryResponse("month", 0, 0, 0, 0, 0, "XOF", []);
+        var summary = new CompanyPortalPaymentSummaryResponse("month", 0, 0, 0, 0, 0, 0, 0, "XOF", []);
 
         var result = CompanyPortalPaymentsResult.Ok(summary);
 

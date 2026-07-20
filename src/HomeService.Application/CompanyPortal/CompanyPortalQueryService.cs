@@ -133,7 +133,8 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 null,
                 row.mission.Status == MissionStatus.Cancelled
                     ? (row.mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
-                    : null))
+                    : null,
+                row.mission.PlatformCommissionAmount))
             .ToListAsync(cancellationToken);
 
         return CompanyPortalMissionsResult.Ok(missions);
@@ -346,7 +347,8 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   null,
                                   mission.Status == MissionStatus.Cancelled
                                       ? (mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
-                                      : null))
+                                      : null,
+                                  mission.PlatformCommissionAmount))
             .ToListAsync(cancellationToken);
 
         var paidMissions = missions
@@ -360,8 +362,10 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             normalizedPeriod,
             paidMissions.Sum(mission => mission.FinalTotalAmount ?? 0),
             paidMissions.Where(mission => mission.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+            paidMissions.Where(mission => mission.PaymentMethod == PaymentMethod.Card.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
             paidMissions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
             pendingMissions.Where(mission => mission.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(mission => mission.FinalTotalAmount ?? 0),
+            paidMissions.Sum(mission => mission.PlatformCommissionAmount),
             missions.Count,
             "XOF",
             missions));

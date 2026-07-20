@@ -976,6 +976,10 @@
     border-left: 4px solid #fbbf24;
 }
 
+.payments-kpi-card.blue {
+    border-left: 4px solid var(--payments-blue);
+}
+
 .payments-kpi-card.orange {
     border-left: 4px solid #fb923c;
 }

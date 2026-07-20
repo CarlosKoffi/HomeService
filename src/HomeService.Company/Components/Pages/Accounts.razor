@@ -62,6 +62,15 @@ else
                             <i>@Icon("card-large")</i>
                         </article>
 
+                        <article class="payments-kpi-card blue">
+                            <header>
+                                <span>Carte bancaire</span>
+                                <i class="blue">@Icon("card")</i>
+                            </header>
+                            <strong>@Fmt(TotalCard)</strong>
+                            <small>@Percent(TotalCard, TotalPaid)% du total encaisse</small>
+                        </article>
+
                         <article class="payments-kpi-card">
                             <header>
                                 <span>Mobile Money</span>
@@ -287,7 +296,9 @@ else
 
     private int TotalPaid => PaidTransactions.Sum(transaction => transaction.Amount);
     private int TotalMobileMoney => PaidTransactions.Where(transaction => transaction.PaymentMethod == "MobileMoney").Sum(transaction => transaction.Amount);
+    private int TotalCard => Summary?.CardAmount ?? PaidTransactions.Where(transaction => transaction.PaymentMethod == "Card").Sum(transaction => transaction.Amount);
     private int TotalCashPaid => PaidTransactions.Where(transaction => transaction.PaymentMethod == "Cash").Sum(transaction => transaction.Amount);
+    private int TotalPlatformRevenue => Summary?.PlatformRevenueAmount ?? PaidTransactions.Sum(transaction => transaction.PlatformCommissionAmount);
     private int TotalPending => PendingTransactions.Sum(transaction => transaction.Amount);
     private int TotalCashToCollect => CashToCollectTransactions.Sum(transaction => transaction.Amount);
     private int TotalDisputed => DisputedTransactions.Sum(transaction => transaction.Amount);
@@ -603,8 +614,10 @@ else
             period,
             missions.Where(mission => IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
             missions.Where(mission => mission.PaymentMethod == "MobileMoney" && IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
+            missions.Where(mission => mission.PaymentMethod == "Card" && IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
             missions.Where(mission => mission.PaymentMethod == "Cash" && IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
             missions.Where(mission => mission.PaymentMethod == "Cash" && IsPending(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
+            missions.Where(mission => IsPaid(mission.PaymentStatus)).Sum(GetPlatformRevenue),
             missions.Count,
             "XOF",
             missions);
@@ -647,7 +660,8 @@ else
         int Amount,
         string PaymentMethod,
         string PaymentStatus,
-        string Reference)
+        string Reference,
+        int PlatformCommissionAmount)
     {
         public static PaymentTransactionViewModel FromMission(CompanyPortalMissionResponse mission, int index)
         {
@@ -660,7 +674,8 @@ else
                 mission.FinalTotalAmount ?? 0,
                 mission.PaymentMethod,
                 mission.PaymentStatus,
-                BuildReference(mission.PaymentMethod, mission.ScheduledFor, index));
+                BuildReference(mission.PaymentMethod, mission.ScheduledFor, index),
+                GetPlatformRevenue(mission));
         }
 
         private static string BuildReference(string paymentMethod, DateTimeOffset? scheduledFor, int index)
@@ -674,6 +689,16 @@ else
             var date = scheduledFor ?? DateTimeOffset.UtcNow;
             return $"{prefix}-{date:yyMM}-{index + 1:000}";
         }
+    }
+
+    private static int GetPlatformRevenue(CompanyPortalMissionResponse mission)
+    {
+        if (mission.PlatformCommissionAmount > 0)
+        {
+            return mission.PlatformCommissionAmount;
+        }
+
+        return (int)Math.Round((mission.FinalTotalAmount ?? 0) * 0.15m);
     }
 
     private sealed record PaymentChartPoint(string Label, int Total, int MobileMoney, int Card, int Cash)

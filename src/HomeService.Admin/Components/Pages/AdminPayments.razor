@@ -19,20 +19,24 @@
 {
     <section class="admin-metric-grid compact">
         <article>
-            <span>Encaisse</span>
+            <span>CA Wélé</span>
+            <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
+        </article>
+        <article>
+            <span>Total encaisse</span>
             <strong>@Money(Snapshot.Stats.PaidAmount)</strong>
+        </article>
+        <article>
+            <span>Carte bancaire</span>
+            <strong>@Money(Snapshot.Stats.CardAmount)</strong>
+        </article>
+        <article>
+            <span>Mobile Money</span>
+            <strong>@Money(Snapshot.Stats.MobileMoneyAmount)</strong>
         </article>
         <article>
             <span>En attente</span>
             <strong>@Money(Snapshot.Stats.PendingAmount)</strong>
-        </article>
-        <article>
-            <span>Cash a recuperer</span>
-            <strong>@Money(Snapshot.Stats.CashToCollectAmount)</strong>
-        </article>
-        <article>
-            <span>Commission</span>
-            <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
         </article>
     </section>
 }

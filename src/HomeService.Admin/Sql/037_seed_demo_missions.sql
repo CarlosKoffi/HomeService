@@ -182,9 +182,9 @@ SELECT
     LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END,
     CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE NULL END,
     CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 'Petites fournitures incluses dans le devis.' ELSE NULL END,
-    ROUND((LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END) * 0.12)::integer,
+    ROUND((LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END) * 0.15)::integer,
     (LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END)
-        - ROUND((LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END) * 0.12)::integer,
+        - ROUND((LEAST(chosen."PriceMaxAmount", chosen."PriceMinAmount" + ((chosen."SlotNumber" % 4) * 750)) + CASE WHEN chosen."SlotNumber" % 5 = 0 THEN 3000 ELSE 0 END) * 0.15)::integer,
     0,
     (ARRAY['Cocody Riviera 2','Marcory Zone 4','Yopougon Niangon','Plateau Centre','Bingerville Carrefour','Abobo Baoule','Treichville Avenue 8','Angre 7e tranche'])[((chosen."SlotNumber" - 1) % 8) + 1],
     (ARRAY[5.359952,5.302840,5.336220,5.319720,5.350900,5.416500,5.301100,5.395000])[((chosen."SlotNumber" - 1) % 8) + 1],
@@ -273,7 +273,7 @@ SELECT
     seed."CreatedAt" + interval '10 minutes',
     seed."CreatedAt" + interval '25 minutes',
     seed."PlatformCommissionAmount",
-    1200,
+    1500,
     0,
     seed."CompanyPayoutAmount",
     seed."TransportFeeAmount",
@@ -463,9 +463,9 @@ SELECT
 FROM "WeleDemoMissionSeed" seed
 CROSS JOIN LATERAL (
     VALUES
-        ('QuoteAccepted', ROUND(seed."CompanyQuotedAmount" * 0.12)::integer, 'Commission a l''acceptation', 1),
+        ('QuoteAccepted', ROUND(seed."CompanyQuotedAmount" * 0.15)::integer, 'Commission a l''acceptation', 1),
         ('MissionStarted', ROUND(seed."CompanyQuotedAmount" * 0.38)::integer, 'Acompte demarrage', 2),
-        ('MissionCompleted', seed."CompanyQuotedAmount" - ROUND(seed."CompanyQuotedAmount" * 0.12)::integer - ROUND(seed."CompanyQuotedAmount" * 0.38)::integer, 'Solde fin de mission', 3)
+        ('MissionCompleted', seed."CompanyQuotedAmount" - ROUND(seed."CompanyQuotedAmount" * 0.15)::integer - ROUND(seed."CompanyQuotedAmount" * 0.38)::integer, 'Solde fin de mission', 3)
 ) AS milestone("Trigger", "Amount", "Label", "SortOrder");
 
 DROP TABLE IF EXISTS "WeleDemoMissionSeed";
