@@ -80,14 +80,17 @@ else
                             <small>@Percent(TotalMobileMoney, TotalPaid)% du total encaisse</small>
                         </article>
 
-                        <article class="payments-kpi-card">
-                            <header>
-                                <span>Cash recupere</span>
-                                <i class="violet">@Icon("cash")</i>
-                            </header>
-                            <strong>@Fmt(TotalCashPaid)</strong>
-                            <small>@Percent(TotalCashPaid, TotalPaid)% du total encaisse</small>
-                        </article>
+                        @if (TotalCashPaid > 0)
+                        {
+                            <article class="payments-kpi-card">
+                                <header>
+                                    <span>Cash recupere</span>
+                                    <i class="violet">@Icon("cash")</i>
+                                </header>
+                                <strong>@Fmt(TotalCashPaid)</strong>
+                                <small>@Percent(TotalCashPaid, TotalPaid)% du total encaisse</small>
+                            </article>
+                        }
 
                         <article class="payments-kpi-card warning">
                             <header>
@@ -630,22 +633,22 @@ else
         {
             new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd01"), "Menage a domicile", "Residence Belle Vue", "+225 01 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-2), 240, 15000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Traore Nadege", null, null, null, null, "cleaning", "Cocody"),
             new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd02"), "Electricite", "Famille Gbane", "+225 07 45 45 45 45", "Direct", "Completed", "MobileMoney", "Paid", now.AddDays(-3), 180, 30000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"), "Sylla Yaya", null, null, null, null, "electricity", "Marcory"),
-            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd03"), "Plomberie", "M. Adama Sanogo", "+225 05 20 20 20 20", "Scheduled", "Completed", "Cash", "Paid", now.AddDays(-4), 180, 40000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Ouedraogo Koffi", null, null, null, null, "plumbing", "Plateau"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd03"), "Plomberie", "M. Adama Sanogo", "+225 05 20 20 20 20", "Scheduled", "Completed", "Card", "Paid", now.AddDays(-4), 180, 40000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Ouedraogo Koffi", null, null, null, null, "plumbing", "Plateau"),
             new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd04"), "Jardinage", "Famille Bah", "+225 07 77 10 20 30", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddDays(-5), 180, 12000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Diallo Bakary", null, null, null, null, "gardening", "Riviera"),
             new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd05"), "Menage a domicile", "Famille Konan", "+225 01 88 77 66 55", "Scheduled", "Completed", "MobileMoney", "Pending", now.AddDays(-1), 240, 15000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"), "Traore Nadege", null, null, null, null, "cleaning", "Angre"),
-            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd06"), "Plomberie", "Societe Generale CI", "+225 05 89 12 33 44", "Scheduled", "Completed", "Cash", "Pending", now.AddDays(-1), 180, 35000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Ouedraogo Koffi", null, null, null, null, "plumbing", "Plateau"),
+            new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd06"), "Plomberie", "Societe Generale CI", "+225 05 89 12 33 44", "Scheduled", "Completed", "Card", "Authorized", now.AddDays(-1), 180, 35000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"), "Ouedraogo Koffi", null, null, null, null, "plumbing", "Plateau"),
             new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd07"), "Blanchisserie", "Mme Ouattara", "+225 01 22 44 66 88", "Direct", "Completed", "MobileMoney", "Pending", now, 120, 10000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"), "Awa Konate", null, null, null, null, "laundry", "Bingerville"),
             new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd08"), "Menage a domicile", "M. Dembele", "+225 07 11 22 33 44", "Scheduled", "Completed", "MobileMoney", "Failed", now.AddDays(-6), 240, 15000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"), "Awa Konate", null, null, null, null, "cleaning", "Yopougon")
         };
 
         if (period != "week")
         {
-            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd09"), "Blanchisserie", "Bureaux Koffi", "+225 05 44 33 22 11", "Scheduled", "Completed", "Cash", "Paid", now.AddDays(-12), 180, 25000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6"), "Kouame Aya", null, null, null, null, "laundry", "Cocody"));
+            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd09"), "Blanchisserie", "Bureaux Koffi", "+225 05 44 33 22 11", "Scheduled", "Completed", "Card", "Paid", now.AddDays(-12), 180, 25000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6"), "Kouame Aya", null, null, null, null, "laundry", "Cocody"));
         }
 
         if (period == "year")
         {
-            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd10"), "Jardinage", "Villa Angre", "+225 01 10 10 10 10", "Scheduled", "Completed", "Cash", "Paid", now.AddMonths(-2), 420, 52000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Diallo Bakary", null, null, null, null, "gardening", "Angre"));
+            missions.Add(new(Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddd10"), "Jardinage", "Villa Angre", "+225 01 10 10 10 10", "Scheduled", "Completed", "MobileMoney", "Paid", now.AddMonths(-2), 420, 52000, "XOF", Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"), "Diallo Bakary", null, null, null, null, "gardening", "Angre"));
         }
 
         return missions;
