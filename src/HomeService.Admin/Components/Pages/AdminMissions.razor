@@ -88,11 +88,9 @@
     }
     else if (Snapshot is null || Snapshot.Items.Count == 0)
     {
-        <article class="operator-row">
-            <div>
-                <strong>Aucune mission</strong>
-                <p>Aucun resultat pour les filtres actuels.</p>
-            </div>
+        <article class="admin-empty-row">
+            <strong>Aucune mission</strong>
+            <p>Aucun resultat pour les filtres actuels. Essayez un autre statut, un numero mission, un client ou une entreprise.</p>
         </article>
     }
     else
@@ -191,13 +189,19 @@
 
     private async Task ConfirmDisputeAsync(Guid missionId)
     {
+        if (string.IsNullOrWhiteSpace(DisputeNote))
+        {
+            ErrorMessage = "Ajoutez une note avant de signaler un litige. Elle servira au suivi admin.";
+            return;
+        }
+
         IsActionBusy = true;
         ErrorMessage = null;
         Message = null;
 
         try
         {
-            Snapshot = await ApiClient.MarkAdminMissionDisputedAsync(missionId, DisputeNote ?? string.Empty);
+            Snapshot = await ApiClient.MarkAdminMissionDisputedAsync(missionId, DisputeNote);
             SelectedStatus = "Disputed";
             SelectedMissionId = null;
             DisputeNote = null;
