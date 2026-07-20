@@ -108,8 +108,8 @@
                     </div>
                 </div>
                 <div class="operator-meta">
-                    <span class="@GetProviderStatusClass(provider.Status)">@TranslateProviderStatus(provider.Status)</span>
-                    <small>@(provider.IsAvailable ? "Disponible" : "Non disponible")</small>
+                    <span class="@GetProviderStatusClass(provider.Status)">@GetProviderAuthorizationLabel(provider)</span>
+                    <small>@GetAvailabilityLabel(provider)</small>
                 </div>
                 <div class="operator-kpis">
                     <span>@provider.YearsOfExperience an(s)</span>
@@ -237,4 +237,28 @@
         "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-pill danger",
         _ => "status-pill pending"
     };
+
+    private static string GetAvailabilityLabel(AdminProviderSummaryResponse provider)
+    {
+        if (provider.Status != "Approved")
+        {
+            return "Non affectable";
+        }
+
+        return provider.IsAvailable ? "Disponible terrain" : "Indisponible terrain";
+    }
+
+    private static string GetProviderAuthorizationLabel(AdminProviderSummaryResponse provider)
+    {
+        return provider.Status switch
+        {
+            "Approved" => "Actif mission",
+            "SuspendedByCompany" => "Suspendu entreprise",
+            "SuspendedByPlatform" => "Suspendu wélé",
+            "Inactive" => "Inactif",
+            "InterimCandidate" => "Candidat interim",
+            "Invited" => "Invitation envoyee",
+            _ => TranslateProviderStatus(provider.Status)
+        };
+    }
 }
