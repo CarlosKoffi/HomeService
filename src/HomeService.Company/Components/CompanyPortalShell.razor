@@ -112,7 +112,7 @@
     [Parameter] public string CompanyName { get; set; } = "CI Home Service";
     [Parameter] public string Email { get; set; } = "mode.demo@wele.ci";
     [Parameter] public int ProfileCompletionPercent { get; set; } = 25;
-    [Parameter] public int UnreadNotificationCount { get; set; }
+    [Parameter] public int? UnreadNotificationCount { get; set; }
     [Parameter] public IReadOnlyList<CompanyPortalProgressStepResponse> ProgressSteps { get; set; } =
     [
         new("Profil entreprise", true, null, null),
@@ -128,7 +128,7 @@
 
     private int EffectiveProfileCompletionPercent => PortalSummary?.ProfileCompletionPercent ?? ProfileCompletionPercent;
     private IReadOnlyList<CompanyPortalProgressStepResponse> EffectiveProgressSteps => PortalSummary?.ProgressSteps ?? ProgressSteps;
-    private int EffectiveUnreadNotificationCount => PortalSummary?.UnreadNotificationCount ?? UnreadNotificationCount;
+    private int EffectiveUnreadNotificationCount => UnreadNotificationCount ?? PortalSummary?.UnreadNotificationCount ?? 0;
 
     private string Initials
     {
