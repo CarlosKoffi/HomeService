@@ -16,6 +16,7 @@ public static class DatabaseInitializer
         await db.Database.MigrateAsync(cancellationToken);
         await EnsureProviderServiceSchemaAsync(db, cancellationToken);
         await EnsureNotificationDeliveryRulesAsync(db, cancellationToken);
+        await EnsureDefaultCommissionRulesAsync(db, cancellationToken);
         await NormalizeCatalogNamesAsync(db, cancellationToken);
         await SeedCountriesAsync(db, cancellationToken);
         await SeedCountryBrandingAsync(db, cancellationToken);
@@ -164,6 +165,41 @@ public static class DatabaseInitializer
                 "UpdatedAt" = now()
             WHERE "PortalEnabled" <> CASE WHEN "Audience" IN ('Company', 'Mixed') THEN true ELSE false END
                OR "MobileAppEnabled" <> CASE WHEN "Audience" IN ('Provider', 'Customer', 'Mixed') THEN true ELSE false END;
+            """, cancellationToken);
+    }
+
+    private static async Task EnsureDefaultCommissionRulesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            UPDATE "CommissionRules"
+            SET "Name" = 'Commission mise en relation wélé',
+                "RateBasisPoints" = 1500,
+                "FixedAmount" = 0,
+                "Currency" = 'XOF',
+                "IsActive" = true,
+                "EffectiveUntil" = NULL,
+                "UpdatedAt" = now()
+            WHERE "Target" = 'PlatformConnection'
+              AND "ServiceId" IS NULL
+              AND "ServicePrestationId" IS NULL
+              AND "CompanyId" IS NULL
+              AND "AssignmentSource" IS NULL;
+
+            INSERT INTO "CommissionRules"
+                ("Id", "Name", "Target", "ServiceId", "ServicePrestationId", "CompanyId", "AssignmentSource",
+                 "RateBasisPoints", "FixedAmount", "Currency", "EffectiveFrom", "EffectiveUntil", "IsActive",
+                 "CreatedAt", "UpdatedAt")
+            SELECT gen_random_uuid(), 'Commission mise en relation wélé', 'PlatformConnection',
+                   NULL, NULL, NULL, NULL, 1500, 0, 'XOF', now(), NULL, true, now(), now()
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM "CommissionRules"
+                WHERE "Target" = 'PlatformConnection'
+                  AND "ServiceId" IS NULL
+                  AND "ServicePrestationId" IS NULL
+                  AND "CompanyId" IS NULL
+                  AND "AssignmentSource" IS NULL
+            );
             """, cancellationToken);
     }
 

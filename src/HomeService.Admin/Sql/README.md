@@ -61,6 +61,10 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 037 | `037_normalize_catalog_names.sql` | Normalize existing service, prestation and proposal labels for accent-tolerant matching |
 | 038 | `038_rebrand_wele.sql` | Rebrand visible CMS, translations and country branding content to wélé |
 
+| 039 | `039_add_notification_delivery_rules.sql` | Notification delivery rules reference schema |
+| 040 | `040_update_notification_delivery_rules.sql` | Notification delivery rules channels update |
+| 041 | `041_set_default_platform_commission.sql` | Default platform connection commission set to 15% |
+
 ## Notes
 
 `013_add_audit_log_entries.sql` and `014_add_service_icons.sql` are split for operational readability, while the EF migration `20260711223950_AddMissionConfirmationContactRelease` also contains those schema changes in the current history.
