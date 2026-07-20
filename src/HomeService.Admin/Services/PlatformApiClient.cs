@@ -707,7 +707,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             || value.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
         {
-            return ToApiUrl(value);
+            return ToPublicApiUrl(value);
         }
 
         var publicBaseUrl = ResolvePublicBaseUrl(surface);
@@ -727,6 +727,17 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return string.IsNullOrWhiteSpace(key)
             ? null
             : new Uri(key.TrimEnd('/') + "/");
+    }
+
+    private string ToPublicApiUrl(string relativeUrl)
+    {
+        var publicApiBaseUrl = configuration["API_PUBLIC_BASE_URL"] ?? configuration["ApiPublicBaseUrl"];
+        if (string.IsNullOrWhiteSpace(publicApiBaseUrl))
+        {
+            return ToApiUrl(relativeUrl);
+        }
+
+        return new Uri(new Uri(publicApiBaseUrl.TrimEnd('/') + "/"), relativeUrl.TrimStart('/')).ToString();
     }
 
     public async Task<IReadOnlyList<CmsComponentDefinitionResponse>> GetCmsComponentDefinitionsAsync(CancellationToken cancellationToken = default)

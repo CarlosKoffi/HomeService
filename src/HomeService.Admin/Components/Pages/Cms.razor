@@ -246,9 +246,12 @@ else
                                                         {
                                                             <div class="cms-media-editor">
                                                                 <div class="cms-media-preview">
-                                                                    @if (!string.IsNullOrWhiteSpace(draft.EditableValue))
+                                                                    @{
+                                                                        var previewUrl = GetMediaPreviewUrl(value, draft);
+                                                                    }
+                                                                    @if (!string.IsNullOrWhiteSpace(previewUrl))
                                                                     {
-                                                                        <img src="@GetMediaPreviewUrl(draft.EditableValue)" alt="Apercu CMS" />
+                                                                        <img src="@previewUrl" alt="Apercu CMS" />
                                                                     }
                                                                     else
                                                                     {
@@ -439,7 +442,11 @@ else
         {
             draft = new CmsValueDraft
             {
-                EditableValue = value.ValueType == "Json" ? value.JsonValue ?? string.Empty : value.TextValue ?? string.Empty
+                EditableValue = value.ValueType == "Json"
+                    ? value.JsonValue ?? string.Empty
+                    : IsMediaField(value)
+                        ? value.MediaUrl ?? value.TextValue ?? string.Empty
+                        : value.TextValue ?? string.Empty
             };
 
             if (value.ValueType == "Json")
@@ -556,9 +563,13 @@ else
             || value.FieldKey.Contains("image", StringComparison.OrdinalIgnoreCase);
     }
 
-    private string GetMediaPreviewUrl(string value)
+    private string GetMediaPreviewUrl(CmsContentValueResponse value, CmsValueDraft draft)
     {
-        return ApiClient.ToCmsMediaPreviewUrl(value, SelectedSite?.Surface);
+        var mediaUrl = !string.IsNullOrWhiteSpace(value.MediaUrl)
+            ? value.MediaUrl
+            : draft.EditableValue;
+
+        return ApiClient.ToCmsMediaPreviewUrl(mediaUrl, SelectedSite?.Surface);
     }
 
     private static void ToggleRawJson(CmsValueDraft draft)
