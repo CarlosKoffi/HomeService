@@ -2,7 +2,7 @@
 -- Safe to run multiple times. Rows that would collide with an existing normalized key are left unchanged
 -- so an admin can merge them manually from the service catalogue screen.
 
-CREATE OR REPLACE FUNCTION kaza_normalize_catalog_name(value text)
+CREATE OR REPLACE FUNCTION wele_normalize_catalog_name(value text)
 RETURNS text
 LANGUAGE sql
 IMMUTABLE
@@ -22,7 +22,7 @@ $$;
 WITH normalized_services AS (
     SELECT
         "Id",
-        kaza_normalize_catalog_name("Name") AS "NextNormalizedName"
+        wele_normalize_catalog_name("Name") AS "NextNormalizedName"
     FROM "Services"
 ),
 safe_services AS (
@@ -46,7 +46,7 @@ WITH normalized_prestations AS (
     SELECT
         "Id",
         "ServiceId",
-        kaza_normalize_catalog_name("Name") AS "NextNormalizedName"
+        wele_normalize_catalog_name("Name") AS "NextNormalizedName"
     FROM "ServicePrestations"
 ),
 safe_prestations AS (
@@ -68,8 +68,8 @@ WHERE prestation."Id" = safe."Id"
   AND prestation."NormalizedName" <> safe."NextNormalizedName";
 
 UPDATE "CompanyApplicationServices"
-SET "NormalizedName" = kaza_normalize_catalog_name("RawName")
-WHERE kaza_normalize_catalog_name("RawName") <> ''
-  AND "NormalizedName" <> kaza_normalize_catalog_name("RawName");
+SET "NormalizedName" = wele_normalize_catalog_name("RawName")
+WHERE wele_normalize_catalog_name("RawName") <> ''
+  AND "NormalizedName" <> wele_normalize_catalog_name("RawName");
 
-DROP FUNCTION kaza_normalize_catalog_name(text);
+DROP FUNCTION wele_normalize_catalog_name(text);

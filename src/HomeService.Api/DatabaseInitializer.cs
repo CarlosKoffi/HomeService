@@ -87,7 +87,7 @@ public static class DatabaseInitializer
     private static async Task NormalizeCatalogNamesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         await db.Database.ExecuteSqlRawAsync("""
-            CREATE OR REPLACE FUNCTION kaza_normalize_catalog_name(value text)
+            CREATE OR REPLACE FUNCTION wele_normalize_catalog_name(value text)
             RETURNS text
             LANGUAGE sql
             IMMUTABLE
@@ -107,7 +107,7 @@ public static class DatabaseInitializer
             WITH normalized_services AS (
                 SELECT
                     "Id",
-                    kaza_normalize_catalog_name("Name") AS "NextNormalizedName"
+                    wele_normalize_catalog_name("Name") AS "NextNormalizedName"
                 FROM "Services"
             ),
             safe_services AS (
@@ -131,7 +131,7 @@ public static class DatabaseInitializer
                 SELECT
                     "Id",
                     "ServiceId",
-                    kaza_normalize_catalog_name("Name") AS "NextNormalizedName"
+                    wele_normalize_catalog_name("Name") AS "NextNormalizedName"
                 FROM "ServicePrestations"
             ),
             safe_prestations AS (
@@ -153,11 +153,11 @@ public static class DatabaseInitializer
               AND prestation."NormalizedName" <> safe."NextNormalizedName";
 
             UPDATE "CompanyApplicationServices"
-            SET "NormalizedName" = kaza_normalize_catalog_name("RawName")
-            WHERE kaza_normalize_catalog_name("RawName") <> ''
-              AND "NormalizedName" <> kaza_normalize_catalog_name("RawName");
+            SET "NormalizedName" = wele_normalize_catalog_name("RawName")
+            WHERE wele_normalize_catalog_name("RawName") <> ''
+              AND "NormalizedName" <> wele_normalize_catalog_name("RawName");
 
-            DROP FUNCTION kaza_normalize_catalog_name(text);
+            DROP FUNCTION wele_normalize_catalog_name(text);
             """, cancellationToken);
     }
 
