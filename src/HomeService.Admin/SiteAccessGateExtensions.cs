@@ -32,7 +32,7 @@ public static class SiteAccessGateExtensions
                 return;
             }
 
-            context.Response.Headers.WWWAuthenticate = "Basic realm=\"HomeService\"";
+            context.Response.Headers.WWWAuthenticate = "Basic realm=\"wélé\"";
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             await context.Response.WriteAsync("Authentication required.");
         });

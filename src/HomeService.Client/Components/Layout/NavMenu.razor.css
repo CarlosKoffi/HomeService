@@ -24,6 +24,13 @@
     font-size: 1.1rem;
 }
 
+.navbar-brand img {
+    height: 1.5rem;
+    width: auto;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
 .bi {
     display: inline-block;
     position: relative;
