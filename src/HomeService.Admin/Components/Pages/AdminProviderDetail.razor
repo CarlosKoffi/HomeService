@@ -158,6 +158,13 @@ else
                         <p>@Provider.Services.Count service(s)</p>
                     </div>
                 </header>
+                @if (Provider.Services.Count == 0)
+                {
+                    <article class="admin-empty-row">
+                        <strong>Aucun service valide</strong>
+                        <p>Les services que l'entreprise autorise pour ce prestataire apparaitront ici.</p>
+                    </article>
+                }
                 @foreach (var service in Provider.Services)
                 {
                     <article class="operator-row">
@@ -180,6 +187,13 @@ else
                         <p>@Provider.CandidateServices.Count service(s)</p>
                     </div>
                 </header>
+                @if (Provider.CandidateServices.Count == 0)
+                {
+                    <article class="admin-empty-row">
+                        <strong>Aucun service candidat</strong>
+                        <p>Les services saisis lors d'une candidature interimaire seront affiches ici.</p>
+                    </article>
+                }
                 @foreach (var service in Provider.CandidateServices)
                 {
                     <article class="operator-row">
@@ -205,6 +219,13 @@ else
                     <p>@Provider.Documents.Count document(s)</p>
                 </div>
             </header>
+            @if (Provider.Documents.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucune piece prestataire</strong>
+                    <p>Photo, piece d'identite, diplome et autres justificatifs seront consultables ici.</p>
+                </article>
+            }
             @foreach (var document in Provider.Documents)
             {
                 <article class="operator-row document-row">
@@ -228,6 +249,13 @@ else
                     <p>@Provider.AffiliationRequests.Count demande(s)</p>
                 </div>
             </header>
+            @if (Provider.AffiliationRequests.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucune demande d'affiliation</strong>
+                    <p>Les entreprises auxquelles ce prestataire a postule seront listees ici.</p>
+                </article>
+            }
             @foreach (var request in Provider.AffiliationRequests)
             {
                 <article class="operator-row">
@@ -253,6 +281,13 @@ else
                     <p>@Provider.MissionAssignments.Count ligne(s)</p>
                 </div>
             </header>
+            @if (Provider.MissionAssignments.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucune affectation mission</strong>
+                    <p>Les missions proposees, acceptees, refusees ou terminees seront visibles ici.</p>
+                </article>
+            }
             @foreach (var assignment in Provider.MissionAssignments)
             {
                 <article class="operator-row">

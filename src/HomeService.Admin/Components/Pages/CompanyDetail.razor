@@ -139,6 +139,13 @@ else
                     <p>@Company.Providers.Count profil(s) rattache(s)</p>
                 </div>
             </header>
+            @if (Company.Providers.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucun prestataire rattache</strong>
+                    <p>Les employes et interimaires valides par cette entreprise apparaitront ici.</p>
+                </article>
+            }
             @foreach (var provider in Company.Providers)
             {
                 <article class="operator-row provider-row">
@@ -174,6 +181,13 @@ else
                     <p>@Company.InterimRequests.Count candidature(s) rattachee(s)</p>
                 </div>
             </header>
+            @if (Company.InterimRequests.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucune demande interimaire</strong>
+                    <p>Les candidatures envoyees par les prestataires depuis le formulaire interim seront listees ici.</p>
+                </article>
+            }
             @foreach (var request in Company.InterimRequests)
             {
                 <article class="operator-row interim-row">
@@ -209,6 +223,13 @@ else
                     <p>@Company.Missions.Count derniere(s) mission(s)</p>
                 </div>
             </header>
+            @if (Company.Missions.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucune mission rattachee</strong>
+                    <p>Les missions client affectees ou suivies pour cette entreprise apparaitront ici.</p>
+                </article>
+            }
             @foreach (var mission in Company.Missions)
             {
                 <article class="operator-row mission-row">
@@ -242,6 +263,13 @@ else
                         <p>@Company.ApplicationDocuments.Count document(s) du dossier legal</p>
                     </div>
                 </header>
+                @if (Company.ApplicationDocuments.Count == 0)
+                {
+                    <article class="admin-empty-row">
+                        <strong>Aucune piece entreprise</strong>
+                        <p>Les documents du dossier d'inscription seront visibles ici des qu'ils sont ajoutes.</p>
+                    </article>
+                }
                 @foreach (var document in Company.ApplicationDocuments)
                 {
                     <article class="operator-row document-row">
@@ -269,6 +297,13 @@ else
                         <p>@Company.Documents.Count piece(s) rattachee(s) aux employes</p>
                     </div>
                 </header>
+                @if (Company.Documents.Count == 0)
+                {
+                    <article class="admin-empty-row">
+                        <strong>Aucune piece prestataire</strong>
+                        <p>Les pieces d'identite, diplomes et photos des prestataires seront listees ici.</p>
+                    </article>
+                }
                 @foreach (var document in Company.Documents)
                 {
                     <article class="operator-row document-row">
@@ -288,6 +323,13 @@ else
     else if (SelectedTab == "notifications")
     {
         <section class="timeline-panel company-notification-list">
+            @if (Company.Notifications.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucune notification portail</strong>
+                    <p>Les messages visibles par cette entreprise dans son portail seront centralises ici.</p>
+                </article>
+            }
             @foreach (var notification in Company.Notifications)
             {
                 <article class="@GetNotificationClass(notification)">
@@ -314,6 +356,13 @@ else
     else if (SelectedTab == "timeline")
     {
         <section class="timeline-panel">
+            @if (Company.Timeline.Count == 0)
+            {
+                <article class="admin-empty-row">
+                    <strong>Aucun historique dossier</strong>
+                    <p>Les validations, refus, relances et changements de statut seront traces ici.</p>
+                </article>
+            }
             @foreach (var item in Company.Timeline)
             {
                 <article>
