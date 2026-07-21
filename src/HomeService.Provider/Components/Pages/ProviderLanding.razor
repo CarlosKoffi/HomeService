@@ -34,7 +34,6 @@
             <div class="premium-actions">
                 <a class="premium-primary" href="@NormalizeCtaUrl(HomeContent.Hero.PrimaryCta.Url)">@HomeContent.Hero.PrimaryCta.Label</a>
                 <a class="premium-secondary" href="@HomeContent.Hero.SecondaryCta.Url">@HomeContent.Hero.SecondaryCta.Label</a>
-                <a class="premium-secondary" href="/mobileappview">Telecharger l'application</a>
             </div>
             <div class="premium-proof" aria-label="Parcours prestataire wélé">
                 @foreach (var proof in HomeContent.Hero.ProofItems)
@@ -42,6 +41,24 @@
                     <span>@proof</span>
                 }
             </div>
+        </div>
+    </section>
+
+    <section id="benefits" class="premium-section provider-benefits-section" aria-label="Avantages prestataire">
+        <div class="premium-section-head">
+            <p class="premium-label">Avantages</p>
+            <h2>@HomeContent.Trusted.Headline</h2>
+            <p>@HomeContent.Trusted.Subtitle</p>
+        </div>
+        <div class="provider-benefit-cards">
+            @foreach (var item in HomeContent.Trusted.Items)
+            {
+                var benefit = SplitBenefitItem(item);
+                <article>
+                    <strong>@benefit.Title</strong>
+                    <p>@benefit.Text</p>
+                </article>
+            }
         </div>
     </section>
 
@@ -61,16 +78,6 @@
                     <h3>@step.Title</h3>
                     <p>@step.Text</p>
                 </article>
-            }
-        </div>
-    </section>
-
-    <section id="benefits" class="premium-trusted provider-trusted" aria-label="Avantages prestataire">
-        <p>@HomeContent.Trusted.Headline</p>
-        <div>
-            @foreach (var item in HomeContent.Trusted.Items)
-            {
-                <span>@item</span>
             }
         </div>
     </section>
@@ -313,67 +320,80 @@
             : new HeroHeadlineParts(headline[..(index + 1)], headline[(index + marker.Length)..]);
     }
 
+    private static BenefitItem SplitBenefitItem(string item)
+    {
+        var index = item.IndexOf(':', StringComparison.Ordinal);
+        return index < 0
+            ? new BenefitItem(item, string.Empty)
+            : new BenefitItem(item[..index].Trim(), item[(index + 1)..].Trim());
+    }
+
     private static CompanyHomeCmsResponse CreateDefaultHomeContent()
     {
         return new CompanyHomeCmsResponse(
             new CompanyHomeHeroCmsResponse(
                 "wélé prestataire",
-                "Trouvez des missions. Travaillez depuis votre mobile.",
-                "Creez votre profil wélé, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.",
-                new CmsLinkResponse("Creer un compte", "/onboarding?mode=register"),
-                new CmsLinkResponse("Voir le fonctionnement", "#how"),
+                "Rejoignez notre réseau de professionnels à Abidjan",
+                "Recevez des demandes de clients et développez votre activité.",
+                new CmsLinkResponse("Créer un compte", "/onboarding?mode=register"),
+                new CmsLinkResponse("Voir le fonctionnement", "#benefits"),
                 "images/wele-provider-hero.png",
-                "Prestataires de services a domicile wélé",
-                ["Code entreprise", "Profil interim", "Missions proches"]),
+                "Prestataires de services à domicile wélé",
+                ["Clients à Abidjan", "Paiement sécurisé", "Planning libre"]),
             new CompanyHomeStepsCmsResponse(
                 "Fonctionnement",
-                "Trois etapes pour demarrer.",
-                "Un parcours simple pour proposer votre profil en interim a une entreprise partenaire.",
+                "Trois étapes pour démarrer.",
+                "Un parcours simple pour proposer votre profil en intérim à une entreprise partenaire.",
                 [
-                    new CmsStepResponse("01", "Formulaire", "Creez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/wele-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.", "images/wele-provider-step-2.svg"),
-                    new CmsStepResponse("03", "Validation", "L'entreprise etudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/wele-provider-step-3.svg")
+                    new CmsStepResponse("01", "Formulaire", "Créez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/wele-provider-step-1.svg"),
+                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.", "images/wele-provider-step-2.svg"),
+                    new CmsStepResponse("03", "Validation", "L'entreprise étudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/wele-provider-step-3.svg")
                 ]),
             new CompanyHomeTrustedCmsResponse(
-                "Des opportunites simples et suivies",
-                "Des entreprises partenaires, un profil clair et un suivi simple pour avancer depuis votre telephone.",
-                ["Entreprises partenaires", "Missions proches", "Profil mobile", "Suivi terrain", "Chat client"]),
+                "Pourquoi rejoindre wélé ?",
+                "Nous vous aidons à trouver des clients et développer votre activité.",
+                [
+                    "Clients réguliers : recevez des demandes de clients dans votre zone. Plus besoin de chercher.",
+                    "Paiement sécurisé : les clients paient avant l'intervention, vous êtes payé rapidement.",
+                    "Liberté totale : vous choisissez vos horaires et les missions que vous acceptez. Pas d'engagement, vous gérez votre planning."
+                ]),
             new CompanyHomeDashboardCmsResponse(
                 "Application",
-                "Tout tient dans votre telephone.",
-                "Vos missions, vos services, vos messages et votre profil restent clairs, meme avec peu de connexion.",
+                "Tout tient dans votre téléphone.",
+                "Vos missions, vos services, vos messages et votre profil restent clairs, même avec peu de connexion.",
                 [
-                    new CmsDashboardStatResponse("Mission", "1", "A traiter a la fois"),
+                    new CmsDashboardStatResponse("Mission", "1", "A traiter à la fois"),
                     new CmsDashboardStatResponse("Distance", "2 km", "Zone proche"),
                     new CmsDashboardStatResponse("Profil", "92%", "Presque complet")
                 ],
-                ["Mission menage a Cocody", "Demande jardinage a Marcory", "Rendez-vous electricite demain"],
-                ["Disponible maintenant", "Code entreprise actif", "Book photo a completer"]),
+                ["Mission ménage à Cocody", "Demande jardinage à Marcory", "Rendez-vous électricité demain"],
+                ["Disponible maintenant", "Code entreprise actif", "Book photo à compléter"]),
             new CompanyHomeFaqCmsResponse(
                 "FAQ",
                 "Foire aux questions",
                 [
-                    new CmsFaqItemResponse("Je peux m'inscrire sans entreprise ?", "Oui. Vous creez un profil interim. Une entreprise devra ensuite vous valider avant les missions."),
-                    new CmsFaqItemResponse("A quoi sert le code entreprise ?", "Il permet d'activer le profil que votre entreprise a deja cree pour vous."),
-                    new CmsFaqItemResponse("Quand vois-je le numero du client ?", "Apres acceptation et confirmation de la mission, les contacts utiles deviennent visibles."),
-                    new CmsFaqItemResponse("Pourquoi ajouter des photos ?", "Pour certains services, un book aide l'entreprise a valider votre profil et vos prestations.")
+                    new CmsFaqItemResponse("Je peux m'inscrire sans entreprise ?", "Oui. Vous créez un profil intérim. Une entreprise devra ensuite vous valider avant les missions."),
+                    new CmsFaqItemResponse("A quoi sert le code entreprise ?", "Il permet d'activer le profil que votre entreprise a déjà créé pour vous."),
+                    new CmsFaqItemResponse("Quand vois-je le numéro du client ?", "Après acceptation et confirmation de la mission, les contacts utiles deviennent visibles."),
+                    new CmsFaqItemResponse("Pourquoi ajouter des photos ?", "Pour certains services, un book aide l'entreprise à valider votre profil et vos prestations.")
                 ]),
             new CompanyHomeContactCmsResponse(
                 "Contact",
-                "Besoin d'aide pour demarrer ?",
-                "Laissez vos coordonnees. Nous vous orientons vers le bon parcours: code entreprise ou profil interim.",
-                ["Abidjan", "Interim", "Services a domicile"]),
+                "Besoin d'aide pour démarrer ?",
+                "Laissez vos coordonnées. Nous vous orientons vers le bon parcours.",
+                ["Abidjan", "Intérim", "Services à domicile"]),
             new CompanyHomeFooterCmsResponse(
-                "La plateforme qui rapproche les prestataires serieux des entreprises de services.",
-                "(c) 2026 wélé Technologies. Tous droits reserves.",
-                "Concu pour l'Afrique de l'Ouest",
+                "La plateforme qui rapproche les prestataires sérieux des entreprises de services.",
+                "(c) 2026 wélé Technologies. Tous droits réservés.",
+                "Conçu pour l'Afrique de l'Ouest",
                 [
-                    new CmsFooterColumnResponse("Produit", ["Application", "Fonctionnement", "Securite", "Support"]),
-                    new CmsFooterColumnResponse("Prestataire", ["Creer un profil", "Activer un code", "Missions", "Profil interim"]),
+                    new CmsFooterColumnResponse("Produit", ["Fonctionnement", "Sécurité", "Support"]),
+                    new CmsFooterColumnResponse("Prestataire", ["Créer un profil", "Missions", "Profil intérim"]),
                     new CmsFooterColumnResponse("Ressources", ["Centre d'aide", "FAQ", "Contact", "WhatsApp"]),
-                    new CmsFooterColumnResponse("Legal", ["CGU", "Confidentialite", "Mentions legales"])
+                    new CmsFooterColumnResponse("Légal", ["CGU", "Confidentialité", "Mentions légales"])
                 ]));
     }
 
     private sealed record HeroHeadlineParts(string Main, string Highlight);
+    private sealed record BenefitItem(string Title, string Text);
 }

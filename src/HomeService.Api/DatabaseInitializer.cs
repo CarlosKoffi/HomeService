@@ -890,77 +890,78 @@ public static class DatabaseInitializer
             switch (section.ComponentDefinition?.Key)
             {
                 case "HeroStandard":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "wélé prestataire", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trouvez des missions. Travaillez depuis votre mobile.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Creez votre profil wélé, choisissez vos opportunites et recevez vos missions sur l'application mobile apres validation par une entreprise partenaire.", french.Id);
-                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Creer un compte", french.Id);
-                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/onboarding", french.Id, replaceExisting: true);
-                    AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
-                    AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "wélé prestataire", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Rejoignez notre réseau de professionnels à Abidjan", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Recevez des demandes de clients et développez votre activité.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Créer un compte", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/onboarding?mode=register", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#benefits", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/wele-provider-hero.png", french.Id, replaceExisting: true);
-                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Prestataires de services a domicile wélé", french.Id, replaceExisting: true);
-                    AddCmsJson(db, section, "proofItems", "[\"Code entreprise\",\"Profil interim\",\"Missions proches\"]", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Prestataires de services à domicile wélé", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "proofItems", "[\"Clients à Abidjan\",\"Paiement sécurisé\",\"Planning libre\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "StepsTimeline":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Fonctionnement", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trois etapes pour demarrer.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours simple pour proposer votre profil en interim a une entreprise partenaire.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Fonctionnement", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trois étapes pour démarrer.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours simple pour proposer votre profil en intérim à une entreprise partenaire.", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "steps", """
                     [
-                      {"number":"01","label":"Formulaire","title":"Creez votre compte en ligne","text":"Renseignez vos informations, votre service principal et votre zone.","image":"images/wele-provider-step-1.svg"},
-                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"wélé vous propose des entreprises qui acceptent les profils interimaires dans votre domaine.","image":"images/wele-provider-step-2.svg"},
-                      {"number":"03","label":"Validation","title":"L'entreprise etudie votre demande","text":"Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.","image":"images/wele-provider-step-3.svg"}
+                      {"number":"01","label":"Formulaire","title":"Créez votre compte en ligne","text":"Renseignez vos informations, votre service principal et votre zone.","image":"images/wele-provider-step-1.svg"},
+                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.","image":"images/wele-provider-step-2.svg"},
+                      {"number":"03","label":"Validation","title":"L'entreprise étudie votre demande","text":"Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.","image":"images/wele-provider-step-3.svg"}
                     ]
                     """, french.Id, replaceExisting: true);
                     break;
 
                 case "TrustedLogos":
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Des opportunites simples et suivies", french.Id);
-                    AddCmsJson(db, section, "items", "[\"Entreprises partenaires\",\"Missions proches\",\"Profil mobile\",\"Suivi terrain\",\"Chat client\"]", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Pourquoi rejoindre wélé ?", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Nous vous aidons à trouver des clients et développer votre activité.", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "items", "[\"Clients réguliers : recevez des demandes de clients dans votre zone. Plus besoin de chercher.\",\"Paiement sécurisé : les clients paient avant l'intervention, vous êtes payé rapidement.\",\"Liberté totale : vous choisissez vos horaires et les missions que vous acceptez. Pas d'engagement, vous gérez votre planning.\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "DashboardPreview":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Application", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Tout tient dans votre telephone.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Vos missions, vos services, vos messages et votre profil restent clairs, meme avec peu de connexion.", french.Id);
-                    AddCmsJson(db, section, "stats", "[{\"label\":\"Mission\",\"value\":\"1\",\"help\":\"A traiter a la fois\"},{\"label\":\"Distance\",\"value\":\"2 km\",\"help\":\"Zone proche\"},{\"label\":\"Profil\",\"value\":\"92%\",\"help\":\"Presque complet\"}]", french.Id);
-                    AddCmsJson(db, section, "requests", "[\"Mission menage a Cocody\",\"Demande jardinage a Marcory\",\"Rendez-vous electricite demain\"]", french.Id);
-                    AddCmsJson(db, section, "providers", "[\"Disponible maintenant\",\"Code entreprise actif\",\"Book photo a completer\"]", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Application", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Tout tient dans votre téléphone.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Vos missions, vos services, vos messages et votre profil restent clairs, même avec peu de connexion.", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "stats", "[{\"label\":\"Mission\",\"value\":\"1\",\"help\":\"A traiter à la fois\"},{\"label\":\"Distance\",\"value\":\"2 km\",\"help\":\"Zone proche\"},{\"label\":\"Profil\",\"value\":\"92%\",\"help\":\"Presque complet\"}]", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "requests", "[\"Mission ménage à Cocody\",\"Demande jardinage à Marcory\",\"Rendez-vous électricité demain\"]", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "providers", "[\"Disponible maintenant\",\"Code entreprise actif\",\"Book photo à compléter\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "FaqAccordion":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "FAQ", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Foire aux questions", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "FAQ", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Foire aux questions", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "questions", """
                     [
-                      {"question":"Je peux m'inscrire sans entreprise ?","answer":"Oui. Vous creez un profil interim. Une entreprise devra ensuite vous valider avant les missions."},
-                      {"question":"A quoi sert le code entreprise ?","answer":"Il permet d'activer le profil que votre entreprise a deja cree pour vous."},
-                      {"question":"Quand vois-je le numero du client ?","answer":"Apres acceptation et confirmation de la mission, les contacts utiles deviennent visibles."},
-                      {"question":"Pourquoi ajouter des photos ?","answer":"Pour certains services, un book aide l'entreprise a valider votre profil et vos prestations."}
+                      {"question":"Je peux m'inscrire sans entreprise ?","answer":"Oui. Vous créez un profil intérim. Une entreprise devra ensuite vous valider avant les missions."},
+                      {"question":"A quoi sert le code entreprise ?","answer":"Il permet d'activer le profil que votre entreprise a déjà créé pour vous."},
+                      {"question":"Quand vois-je le numéro du client ?","answer":"Après acceptation et confirmation de la mission, les contacts utiles deviennent visibles."},
+                      {"question":"Pourquoi ajouter des photos ?","answer":"Pour certains services, un book aide l'entreprise à valider votre profil et vos prestations."}
                     ]
-                    """, french.Id);
+                    """, french.Id, replaceExisting: true);
                     break;
 
                 case "ContactForm":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Contact", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Besoin d'aide pour demarrer ?", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnees. Nous vous orientons vers le bon parcours: code entreprise ou profil interim.", french.Id);
-                    AddCmsJson(db, section, "tags", "[\"Abidjan\",\"Interim\",\"Services a domicile\"]", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Contact", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Besoin d'aide pour démarrer ?", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnées. Nous vous orientons vers le bon parcours.", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "tags", "[\"Abidjan\",\"Intérim\",\"Services à domicile\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "FooterLinks":
-                    AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme qui rapproche les prestataires serieux des entreprises de services.", french.Id);
-                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 wélé Technologies. Tous droits reserves.", french.Id);
-                    AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Concu pour l'Afrique de l'Ouest", french.Id);
+                    AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme qui rapproche les prestataires sérieux des entreprises de services.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 wélé Technologies. Tous droits réservés.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Conçu pour l'Afrique de l'Ouest", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "columns", """
                     [
-                      {"title":"Produit","links":["Application","Fonctionnement","Securite","Support"]},
-                      {"title":"Prestataire","links":["Creer un profil","Activer un code","Missions","Profil interim"]},
+                      {"title":"Produit","links":["Fonctionnement","Sécurité","Support"]},
+                      {"title":"Prestataire","links":["Créer un profil","Missions","Profil intérim"]},
                       {"title":"Ressources","links":["Centre d'aide","FAQ","Contact","WhatsApp"]},
-                      {"title":"Legal","links":["CGU","Confidentialite","Mentions legales"]}
+                      {"title":"Légal","links":["CGU","Confidentialité","Mentions légales"]}
                     ]
-                    """, french.Id);
+                    """, french.Id, replaceExisting: true);
                     break;
             }
         }
