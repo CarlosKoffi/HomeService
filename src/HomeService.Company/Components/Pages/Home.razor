@@ -8,8 +8,8 @@
 @if (IsSubmittedConfirmationVisible)
 {
     <section class="submission-confirmation">
-        <strong>Demande envoyee</strong>
-        <p>Votre dossier a bien ete transmis. Notre equipe va verifier les informations et revenir vers vous.</p>
+        <strong>Demande envoyée</strong>
+        <p>Votre dossier a bien été transmis. Notre équipe va vérifier les informations et revenir vers vous.</p>
     </section>
 }
 
@@ -234,7 +234,7 @@
             || string.IsNullOrWhiteSpace(ContactPhone)
             || string.IsNullOrWhiteSpace(ContactBody))
         {
-            ContactMessage = "Renseignez au moins le nom, l'entreprise, le telephone et le message.";
+            ContactMessage = "Renseignez au moins le nom, l'entreprise, le téléphone et le message.";
             return;
         }
 
@@ -259,7 +259,7 @@
         ContactEmail = string.Empty;
         ContactSubject = "Devenir partenaire";
         ContactBody = string.Empty;
-        ContactMessage = "Message envoye. Notre equipe vous recontacte rapidement.";
+        ContactMessage = "Message envoyé. Notre équipe vous recontacte rapidement.";
     }
 
     private string ResolveContentUrl(string? url)
