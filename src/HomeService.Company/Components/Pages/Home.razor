@@ -60,12 +60,19 @@
         </div>
     </section>
 
-    <section id="trusted" class="premium-trusted" aria-label="Entreprises partenaires">
-        <p>@HomeContent.Trusted.Headline</p>
-        <div>
+    <section id="benefits" class="premium-section premium-benefits-section" aria-label="Avantages partenaires">
+        <div class="premium-section-head centered">
+            <p class="premium-label">Avantages</p>
+            <h2>@HomeContent.Trusted.Headline</h2>
+            <p>@HomeContent.Trusted.Subtitle</p>
+        </div>
+        <div class="premium-benefits-grid">
             @foreach (var item in HomeContent.Trusted.Items)
             {
-                <span>@item</span>
+                <article>
+                    <span></span>
+                    <strong>@item</strong>
+                </article>
             }
         </div>
     </section>
@@ -296,61 +303,65 @@
         return new CompanyHomeCmsResponse(
             new CompanyHomeHeroCmsResponse(
                 "Plateforme partenaire",
-                "Recevez plus de missions. Developpez votre entreprise.",
-                "wélé connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.",
-                new CmsLinkResponse("Commencer", "register"),
+                "La plateforme qui fait grandir votre entreprise de services",
+                "wélé connecte votre entreprise à des clients et vous donne les outils pour gérer vos techniciens, vos missions et vos revenus. Le tout depuis une interface unique.",
+                new CmsLinkResponse("Devenir partenaire", "register"),
                 new CmsLinkResponse("Voir le fonctionnement", "#how"),
                 "images/wele-premium-hero.png",
                 "Equipe wélé en intervention chez un client",
-                ["Inscription gratuite", "Validation dossier", "Portail entreprise"]),
+                ["Inscription gratuite", "Validation sous 48h", "Support partenaire 24/7"]),
             new CompanyHomeStepsCmsResponse(
                 "Comment ca marche",
-                "Trois etapes, puis votre portail est pret.",
-                "Un parcours court pour verifier l'entreprise et demarrer avec une base claire.",
+                "De l'inscription à votre première mission",
+                "Un parcours clair en trois étapes.",
                 [
-                    new CmsStepResponse("01", "Compte", "Creez votre compte", "Renseignez votre entreprise, vos services et le contact responsable.", "images/wele-how-step-1.png"),
-                    new CmsStepResponse("02", "Verification", "Nous verifions votre dossier", "wélé controle les informations pour securiser les clients et les missions.", "images/wele-how-step-2.png"),
-                    new CmsStepResponse("03", "Portail", "Travaillez depuis votre portail", "Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.", "images/wele-how-step-3.png")
+                    new CmsStepResponse("01", "Compte", "Créez votre compte entreprise", "Renseignez les informations et les pièces légales et administratives de votre entreprise.", "images/wele-how-step-1.png"),
+                    new CmsStepResponse("02", "Validation", "Validation par nos équipes", "Nous vérifions et approuvons votre dossier sous 48h.", "images/wele-how-step-2.png"),
+                    new CmsStepResponse("03", "Demandes", "Recevez des demandes", "Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.", "images/wele-how-step-3.png")
                 ]),
             new CompanyHomeTrustedCmsResponse(
-                "Ils font confiance a wélé",
-                ["Services verifies", "Entreprises locales", "Prestataires suivis", "Paiements traces", "Support partenaire"]),
+                "Tout ce qu'il faut pour développer votre activité",
+                "Une infrastructure professionnelle conçue pour vous apporter des clients et simplifier votre gestion.",
+                ["Demandes qualifiées", "Gestion des techniciens", "Suivi des missions", "Paiements sécurisés", "Visibilité locale", "Support partenaire 24/7"]),
             new CompanyHomeDashboardCmsResponse(
-                "Dashboard",
-                "Tout ce qui compte, lisible en un coup d'oeil.",
-                "Demandes, equipe, missions, documents et paiements restent au meme endroit.",
+                "Le tableau de bord",
+                "Une interface unique pour piloter votre entreprise",
+                "Demandes, équipes, missions et paiements : tout est réuni au même endroit.",
                 [
                     new CmsDashboardStatResponse("Demandes", "12", "+4 cette semaine"),
-                    new CmsDashboardStatResponse("Assignees", "8", "Equipe mobilisee"),
+                    new CmsDashboardStatResponse("Assignées", "8", "Equipe mobilisée"),
                     new CmsDashboardStatResponse("Paiements", "185k", "XOF suivis")
                 ],
-                ["Menage a Cocody Riviera", "Jardinage a Marcory", "Nounou aux Deux Plateaux"],
-                ["Awa K. - Menage", "Jean M. - Jardinage", "Fatou C. - Nounou"]),
+                ["Ménage à Cocody Riviera", "Jardinage à Marcory", "Nounou aux Deux Plateaux"],
+                ["Awa K. - Ménage", "Jean M. - Jardinage", "Fatou C. - Nounou"]),
             new CompanyHomeFaqCmsResponse(
                 "FAQ",
                 "Foire aux questions",
                 [
-                    new CmsFaqItemResponse("Comment sont verifiees les entreprises sur wélé ?", "Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."),
-                    new CmsFaqItemResponse("L'inscription est-elle gratuite ?", "Oui. L'inscription est gratuite. wélé applique ensuite une commission uniquement sur les missions realisees."),
-                    new CmsFaqItemResponse("Puis-je refuser une demande client ?", "Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."),
-                    new CmsFaqItemResponse("Qui choisit le prestataire ?", "Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser wélé vous accompagner selon le mode choisi."),
-                    new CmsFaqItemResponse("Comment sont suivis les paiements ?", "Le portail permet de suivre les paiements Mobile Money, la carte bancaire et les commissions."),
-                    new CmsFaqItemResponse("Combien de temps prend la validation ?", "Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide.")
+                    new CmsFaqItemResponse("Quel type de sociétés peuvent s'inscrire sur wélé ?", "Les entreprises de jardinage, électricité, ménage à domicile, blanchisserie, dépannage auto, nounou, plomberie, climatisation, peinture, serrurerie, déménagement, maintenance maison et autres services de proximité peuvent rejoindre la plateforme selon le catalogue ouvert dans l'admin."),
+                    new CmsFaqItemResponse("Comment sont vérifiées les entreprises sur wélé ?", "Nous vérifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complète."),
+                    new CmsFaqItemResponse("L'inscription est-elle gratuite ?", "Oui, la création de votre compte entreprise est entièrement gratuite. wélé ne prélève qu'une commission sur les missions réalisées avec succès."),
+                    new CmsFaqItemResponse("Puis-je refuser une demande ?", "Absolument. Vous restez libre d'accepter ou de refuser chaque demande selon votre disponibilité et votre zone d'intervention."),
+                    new CmsFaqItemResponse("Qui choisit le technicien ?", "C'est vous. Vous affectez le technicien de votre équipe que vous jugez le plus adapté à chaque intervention, ou vous laissez wélé s'en occuper."),
+                    new CmsFaqItemResponse("Comment sont suivis les paiements ?", "Les paiements sont sécurisés et versés rapidement sur votre compte après la clôture de chaque mission."),
+                    new CmsFaqItemResponse("Qui gère les réclamations clients ?", "wélé gère le support client de premier niveau, en coordination avec votre entreprise lorsque cela est nécessaire."),
+                    new CmsFaqItemResponse("Puis-je mettre mon compte en pause ?", "Oui, vous pouvez suspendre temporairement votre activité à tout moment depuis vos paramètres."),
+                    new CmsFaqItemResponse("Combien de temps prend la validation ?", "La validation de votre dossier est généralement réalisée sous 48h après réception de vos documents.")
                 ]),
             new CompanyHomeContactCmsResponse(
                 "Contact",
                 "Vous voulez en parler avant de vous inscrire ?",
-                "Laissez vos coordonnees. Nous vous rappelons pour voir comment wélé peut aider votre entreprise.",
-                ["Abidjan", "Services a domicile", "Partenariat entreprise"]),
+                "Laissez vos coordonnées. Nous vous rappelons pour voir comment wélé peut aider votre entreprise.",
+                ["Abidjan", "Services à domicile", "Partenariat entreprise"]),
             new CompanyHomeFooterCmsResponse(
                 "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.",
-                "(c) 2026 wélé Technologies. Tous droits reserves.",
-                "Concu pour l'Afrique de l'Ouest",
+                "(c) 2026 wélé Technologies. Tous droits réservés.",
+                "Conçu pour l'Afrique de l'Ouest",
                 [
-                    new CmsFooterColumnResponse("Produit", ["Plateforme", "Fonctionnement", "Tarifs", "Securite", "Integrations", "Changelog"]),
-                    new CmsFooterColumnResponse("Entreprise", ["A propos", "Blog", "Carrieres", "Presse", "Partenaires"]),
-                    new CmsFooterColumnResponse("Ressources", ["Documentation", "Centre d'aide", "Communaute", "Dashboard", "Etudes de cas"]),
-                    new CmsFooterColumnResponse("Legal", ["CGU", "Confidentialite", "Cookies", "Mentions legales", "Conditions partenaires"])
+                    new CmsFooterColumnResponse("Produit", ["Plateforme", "Fonctionnement", "Tarifs", "Sécurité", "Intégrations", "Changelog"]),
+                    new CmsFooterColumnResponse("Entreprise", ["A propos", "Blog", "Carrières", "Presse", "Partenaires"]),
+                    new CmsFooterColumnResponse("Ressources", ["Documentation", "Centre d'aide", "Communauté", "Dashboard", "Etudes de cas"]),
+                    new CmsFooterColumnResponse("Légal", ["CGU", "Confidentialité", "Cookies", "Mentions légales", "Conditions partenaires"])
                 ]));
     }
 

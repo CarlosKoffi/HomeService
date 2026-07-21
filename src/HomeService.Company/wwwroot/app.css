@@ -2949,6 +2949,45 @@
     font-weight: 700;
 }
 
+.premium-benefits-section {
+    background: #ffffff;
+}
+
+.premium-benefits-grid {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0 auto;
+    max-width: 1040px;
+    overflow: hidden;
+}
+
+.premium-benefits-grid article {
+    align-items: flex-start;
+    background: #f7f9fc;
+    display: flex;
+    gap: .85rem;
+    min-height: 118px;
+    padding: 1.35rem;
+}
+
+.premium-benefits-grid article span {
+    background: var(--premium-blue);
+    border-radius: 999px;
+    flex: 0 0 auto;
+    height: 9px;
+    margin-top: .48rem;
+    width: 9px;
+}
+
+.premium-benefits-grid article strong {
+    color: var(--premium-black);
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -.01em;
+    line-height: 1.35;
+}
+
 .premium-dashboard-section {
     background: #ffffff;
 }
@@ -3283,6 +3322,7 @@
     }
 
     .premium-how-grid,
+    .premium-benefits-grid,
     .premium-dashboard-stats,
     .premium-dashboard-body,
     .premium-contact-section {
@@ -3299,6 +3339,10 @@
 
     .premium-dashboard-stats article {
         border-right: 0;
+    }
+
+    .premium-benefits-grid article {
+        min-height: auto;
     }
 
     .premium-floating-card {

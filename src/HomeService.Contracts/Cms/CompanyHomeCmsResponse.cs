@@ -27,6 +27,7 @@ public sealed record CompanyHomeStepsCmsResponse(
 
 public sealed record CompanyHomeTrustedCmsResponse(
     string Headline,
+    string Subtitle,
     IReadOnlyList<string> Items);
 
 public sealed record CompanyHomeDashboardCmsResponse(

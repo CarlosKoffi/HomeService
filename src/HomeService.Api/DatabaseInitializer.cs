@@ -759,79 +759,83 @@ public static class DatabaseInitializer
             switch (section.ComponentDefinition?.Key)
             {
                 case "HeroStandard":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Plateforme partenaire", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Recevez plus de missions. Developpez votre entreprise.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "wélé connecte les clients aux entreprises de services a domicile verifiees. Vous gardez le controle de vos equipes, de vos demandes et de vos interventions.", french.Id);
-                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Commencer", french.Id);
-                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "register", french.Id);
-                    AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id);
-                    AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id);
-                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/wele-premium-hero.png", french.Id);
-                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Equipe wélé en intervention chez un client", french.Id);
-                    AddCmsJson(db, section, "proofItems", "[\"Inscription gratuite\",\"Validation dossier\",\"Portail entreprise\"]", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Plateforme partenaire", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "La plateforme qui fait grandir votre entreprise de services", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "wélé connecte votre entreprise à des clients et vous donne les outils pour gérer vos techniciens, vos missions et vos revenus. Le tout depuis une interface unique.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Devenir partenaire", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "register", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/wele-premium-hero.png", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Equipe wélé en intervention chez un client", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "proofItems", "[\"Inscription gratuite\",\"Validation sous 48h\",\"Support partenaire 24/7\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "StepsTimeline":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Comment ca marche", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Trois etapes, puis votre portail est pret.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours court pour verifier l'entreprise et demarrer avec une base claire.", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Comment ca marche", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "De l'inscription à votre première mission", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours clair en trois étapes.", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "steps", """
                     [
-                      {"number":"01","label":"Compte","title":"Creez votre compte","text":"Renseignez votre entreprise, vos services et le contact responsable.","image":"images/wele-how-step-1.png"},
-                      {"number":"02","label":"Verification","title":"Nous verifions votre dossier","text":"wélé controle les informations pour securiser les clients et les missions.","image":"images/wele-how-step-2.png"},
-                      {"number":"03","label":"Portail","title":"Travaillez depuis votre portail","text":"Ajoutez vos prestataires, recevez des demandes et suivez vos interventions.","image":"images/wele-how-step-3.png"}
+                      {"number":"01","label":"Compte","title":"Créez votre compte entreprise","text":"Renseignez les informations et les pièces légales et administratives de votre entreprise.","image":"images/wele-how-step-1.png"},
+                      {"number":"02","label":"Validation","title":"Validation par nos équipes","text":"Nous vérifions et approuvons votre dossier sous 48h.","image":"images/wele-how-step-2.png"},
+                      {"number":"03","label":"Demandes","title":"Recevez des demandes","text":"Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.","image":"images/wele-how-step-3.png"}
                     ]
-                    """, french.Id);
+                    """, french.Id, replaceExisting: true);
                     break;
 
                 case "TrustedLogos":
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Ils font confiance a wélé", french.Id);
-                    AddCmsJson(db, section, "items", "[\"Services verifies\",\"Entreprises locales\",\"Prestataires suivis\",\"Paiements traces\",\"Support partenaire\"]", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Tout ce qu'il faut pour développer votre activité", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Une infrastructure professionnelle conçue pour vous apporter des clients et simplifier votre gestion.", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "items", "[\"Demandes qualifiées\",\"Gestion des techniciens\",\"Suivi des missions\",\"Paiements sécurisés\",\"Visibilité locale\",\"Support partenaire 24/7\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "DashboardPreview":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Dashboard", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Tout ce qui compte, lisible en un coup d'oeil.", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Demandes, equipe, missions, documents et paiements restent au meme endroit.", french.Id);
-                    AddCmsJson(db, section, "stats", "[{\"label\":\"Demandes\",\"value\":\"12\",\"help\":\"+4 cette semaine\"},{\"label\":\"Assignees\",\"value\":\"8\",\"help\":\"Equipe mobilisee\"},{\"label\":\"Paiements\",\"value\":\"185k\",\"help\":\"XOF suivis\"}]", french.Id);
-                    AddCmsJson(db, section, "requests", "[\"Menage a Cocody Riviera\",\"Jardinage a Marcory\",\"Nounou aux Deux Plateaux\"]", french.Id);
-                    AddCmsJson(db, section, "providers", "[\"Awa K. - Menage\",\"Jean M. - Jardinage\",\"Fatou C. - Nounou\"]", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Le tableau de bord", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Une interface unique pour piloter votre entreprise", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Demandes, équipes, missions et paiements : tout est réuni au même endroit.", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "stats", "[{\"label\":\"Demandes\",\"value\":\"12\",\"help\":\"+4 cette semaine\"},{\"label\":\"Assignées\",\"value\":\"8\",\"help\":\"Equipe mobilisée\"},{\"label\":\"Paiements\",\"value\":\"185k\",\"help\":\"XOF suivis\"}]", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "requests", "[\"Ménage à Cocody Riviera\",\"Jardinage à Marcory\",\"Nounou aux Deux Plateaux\"]", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "providers", "[\"Awa K. - Ménage\",\"Jean M. - Jardinage\",\"Fatou C. - Nounou\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "FaqAccordion":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "FAQ", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Foire aux questions", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "FAQ", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Foire aux questions", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "questions", """
                     [
-                      {"question":"Comment sont verifiees les entreprises sur wélé ?","answer":"Nous verifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complete."},
-                      {"question":"L'inscription est-elle gratuite ?","answer":"Oui. L'inscription est gratuite. wélé applique ensuite une commission uniquement sur les missions realisees."},
-                      {"question":"Puis-je refuser une demande client ?","answer":"Oui. Votre entreprise reste libre d'accepter les demandes qui correspondent a son equipe, sa zone et ses disponibilites."},
-                      {"question":"Qui choisit le prestataire ?","answer":"Vous pouvez affecter vous-meme un prestataire depuis le portail ou laisser wélé vous accompagner selon le mode choisi."},
-                      {"question":"Comment sont suivis les paiements ?","answer":"Le portail permet de suivre les paiements Mobile Money, la carte bancaire et les commissions."},
-                      {"question":"Combien de temps prend la validation ?","answer":"Elle depend de la qualite du dossier. Plus les informations sont claires, plus la validation est rapide."}
+                      {"question":"Quel type de sociétés peuvent s'inscrire sur wélé ?","answer":"Les entreprises de jardinage, électricité, ménage à domicile, blanchisserie, dépannage auto, nounou, plomberie, climatisation, peinture, serrurerie, déménagement, maintenance maison et autres services de proximité peuvent rejoindre la plateforme selon le catalogue ouvert dans l'admin."},
+                      {"question":"Comment sont vérifiées les entreprises sur wélé ?","answer":"Nous vérifions les informations de l'entreprise, les documents essentiels et le contact responsable avant l'activation complète."},
+                      {"question":"L'inscription est-elle gratuite ?","answer":"Oui, la création de votre compte entreprise est entièrement gratuite. wélé ne prélève qu'une commission sur les missions réalisées avec succès."},
+                      {"question":"Puis-je refuser une demande ?","answer":"Absolument. Vous restez libre d'accepter ou de refuser chaque demande selon votre disponibilité et votre zone d'intervention."},
+                      {"question":"Qui choisit le technicien ?","answer":"C'est vous. Vous affectez le technicien de votre équipe que vous jugez le plus adapté à chaque intervention, ou vous laissez wélé s'en occuper."},
+                      {"question":"Comment sont suivis les paiements ?","answer":"Les paiements sont sécurisés et versés rapidement sur votre compte après la clôture de chaque mission."},
+                      {"question":"Qui gère les réclamations clients ?","answer":"wélé gère le support client de premier niveau, en coordination avec votre entreprise lorsque cela est nécessaire."},
+                      {"question":"Puis-je mettre mon compte en pause ?","answer":"Oui, vous pouvez suspendre temporairement votre activité à tout moment depuis vos paramètres."},
+                      {"question":"Combien de temps prend la validation ?","answer":"La validation de votre dossier est généralement réalisée sous 48h après réception de vos documents."}
                     ]
-                    """, french.Id);
+                    """, french.Id, replaceExisting: true);
                     break;
 
                 case "ContactForm":
-                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Contact", french.Id);
-                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Vous voulez en parler avant de vous inscrire ?", french.Id);
-                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnees. Nous vous rappelons pour voir comment wélé peut aider votre entreprise.", french.Id);
-                    AddCmsJson(db, section, "tags", "[\"Abidjan\",\"Services a domicile\",\"Partenariat entreprise\"]", french.Id);
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Contact", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Vous voulez en parler avant de vous inscrire ?", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Laissez vos coordonnées. Nous vous rappelons pour voir comment wélé peut aider votre entreprise.", french.Id, replaceExisting: true);
+                    AddCmsJson(db, section, "tags", "[\"Abidjan\",\"Services à domicile\",\"Partenariat entreprise\"]", french.Id, replaceExisting: true);
                     break;
 
                 case "FooterLinks":
-                    AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.", french.Id);
-                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 wélé Technologies. Tous droits reserves.", french.Id);
-                    AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Concu pour l'Afrique de l'Ouest", french.Id);
+                    AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "La plateforme B2B pour connecter clients, entreprises et professionnels de confiance.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 wélé Technologies. Tous droits réservés.", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Conçu pour l'Afrique de l'Ouest", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "columns", """
                     [
-                      {"title":"Produit","links":["Plateforme","Fonctionnement","Tarifs","Securite","Integrations","Changelog"]},
-                      {"title":"Entreprise","links":["A propos","Blog","Carrieres","Presse","Partenaires"]},
-                      {"title":"Ressources","links":["Documentation","Centre d'aide","Communaute","Dashboard","Etudes de cas"]},
-                      {"title":"Legal","links":["CGU","Confidentialite","Cookies","Mentions legales","Conditions partenaires"]}
+                      {"title":"Produit","links":["Plateforme","Fonctionnement","Tarifs","Sécurité","Intégrations","Changelog"]},
+                      {"title":"Entreprise","links":["A propos","Blog","Carrières","Presse","Partenaires"]},
+                      {"title":"Ressources","links":["Documentation","Centre d'aide","Communauté","Dashboard","Etudes de cas"]},
+                      {"title":"Légal","links":["CGU","Confidentialité","Cookies","Mentions légales","Conditions partenaires"]}
                     ]
-                    """, french.Id);
+                    """, french.Id, replaceExisting: true);
                     break;
             }
         }

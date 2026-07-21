@@ -81,6 +81,7 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 ])),
             new CompanyHomeTrustedCmsResponse(
                 GetText(trusted, "headline", "Des opportunites simples et suivies"),
+                GetText(trusted, "subtitle", "Des entreprises partenaires, un profil clair et un suivi simple pour avancer depuis votre téléphone."),
                 GetJsonList(trusted, "items", ["Entreprises partenaires", "Missions proches", "Profil mobile", "Suivi des interventions", "Chat client apres acceptation"])),
             new CompanyHomeDashboardCmsResponse(
                 GetText(dashboard, "label", "Application"),
