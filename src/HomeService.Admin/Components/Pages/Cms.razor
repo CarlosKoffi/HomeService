@@ -565,9 +565,9 @@ else
 
     private string GetMediaPreviewUrl(CmsContentValueResponse value, CmsValueDraft draft)
     {
-        var mediaUrl = !string.IsNullOrWhiteSpace(value.MediaUrl)
-            ? value.MediaUrl
-            : draft.EditableValue;
+        var mediaUrl = !string.IsNullOrWhiteSpace(draft.EditableValue)
+            ? draft.EditableValue
+            : value.MediaUrl;
 
         return ApiClient.ToCmsMediaPreviewUrl(mediaUrl, SelectedSite?.Surface);
     }
