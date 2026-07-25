@@ -26,9 +26,17 @@ public sealed record AdminCompanySummaryResponse(
     int MissionCount,
     int OpenMissionCount,
     int DocumentCount,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt)
+{
+    public int MissionDispatchPriority { get; init; } = 100;
+    public bool AcceptsUrgentMissions { get; init; }
+}
 
 public sealed record AdminCompanyActionRequest(string? Note);
+
+public sealed record UpdateAdminCompanyDispatchSettingsRequest(
+    int MissionDispatchPriority,
+    bool AcceptsUrgentMissions);
 
 public sealed record AdminCompanyDetailResponse(
     Guid Id,
@@ -56,6 +64,8 @@ public sealed record AdminCompanyDetailResponse(
     public IReadOnlyList<AdminCompanyInterimRequestResponse> InterimRequests { get; init; } = [];
     public IReadOnlyList<AdminCompanyApplicationDocumentResponse> ApplicationDocuments { get; init; } = [];
     public IReadOnlyList<AdminCompanyNotificationResponse> Notifications { get; init; } = [];
+    public int MissionDispatchPriority { get; init; } = 100;
+    public bool AcceptsUrgentMissions { get; init; }
 }
 
 public sealed record AdminCompanyOperationsSummaryResponse(

@@ -34,6 +34,8 @@ public sealed class Company : AuditableEntity
     public CompanyStatus Status { get; private set; } = CompanyStatus.PendingReview;
     public CompanyAssignmentMode AssignmentMode { get; private set; } = CompanyAssignmentMode.SelfManaged;
     public bool AcceptsInterimApplications { get; private set; }
+    public int MissionDispatchPriority { get; private set; } = 100;
+    public bool AcceptsUrgentMissions { get; private set; }
     public IReadOnlyCollection<ProviderProfile> Providers => _providers;
     public IReadOnlyCollection<CompanyApplication> Applications => _applications;
 
@@ -58,6 +60,13 @@ public sealed class Company : AuditableEntity
     public void SetInterimApplications(bool acceptsInterimApplications)
     {
         AcceptsInterimApplications = acceptsInterimApplications;
+        Touch();
+    }
+
+    public void UpdateMissionDispatchSettings(int missionDispatchPriority, bool acceptsUrgentMissions)
+    {
+        MissionDispatchPriority = Math.Clamp(missionDispatchPriority, 0, 9999);
+        AcceptsUrgentMissions = acceptsUrgentMissions;
         Touch();
     }
 

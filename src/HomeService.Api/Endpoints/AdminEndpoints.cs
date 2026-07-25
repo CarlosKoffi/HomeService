@@ -4,6 +4,7 @@ using HomeService.Application.Auditing;
 using HomeService.Application.Branding;
 using HomeService.Application.Companies;
 using HomeService.Application.Contact;
+using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Api.Auditing;
 using HomeService.Contracts.Admin;
@@ -350,6 +351,33 @@ public static class AdminEndpoints
         .WithName("GetAdminMission")
         .Produces<AdminMissionDetailResponse>()
         .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPost("/missions/{missionId:guid}/dispatch-offers", async (
+            Guid missionId,
+            bool? urgent,
+            MissionDispatchService dispatchService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await dispatchService.CreateInitialOffersAsync(missionId, urgent ?? false, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            return Results.Ok(result.Offers.Select(offer => new
+            {
+                offer.Id,
+                offer.MissionId,
+                offer.CompanyId,
+                offer.Rank,
+                offer.Score,
+                offer.ScoreDetails,
+                Status = offer.Status.ToString(),
+                offer.ExpiresAt
+            }));
+        })
+        .WithName("CreateAdminMissionDispatchOffers")
+        .Produces(StatusCodes.Status400BadRequest);
 
         admin.MapPost("/missions/{missionId:guid}/mark-disputed", async (
             Guid missionId,
@@ -986,6 +1014,49 @@ public static class AdminEndpoints
             return Results.Ok(result.Response);
         })
         .WithName("UpdateCompanyAssignmentMode");
+
+        admin.MapPut("/companies/{id:guid}/dispatch-settings", async (
+            Guid id,
+            UpdateAdminCompanyDispatchSettingsRequest request,
+            HttpRequest httpRequest,
+            AdminConfigurationService configurationService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await configurationService.UpdateCompanyDispatchSettingsAsync(id, request, cancellationToken);
+            if (result.Status == AdminConfigurationUpdateStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminConfigurationUpdateStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            var company = result.Company!;
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminCompanyDispatchSettingsUpdated",
+                nameof(Company),
+                company.Id,
+                "Parametres de reception des missions modifies.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new
+            {
+                company.Id,
+                company.MissionDispatchPriority,
+                company.AcceptsUrgentMissions
+            });
+        })
+        .WithName("UpdateCompanyDispatchSettings")
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
 
         admin.MapPost("/companies/{id:guid}/suspend", async (
             Guid id,

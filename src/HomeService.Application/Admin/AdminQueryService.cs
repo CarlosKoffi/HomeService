@@ -45,6 +45,8 @@ public sealed class AdminQueryService(IAppDbContext db)
                 company.City,
                 Status = company.Status.ToString(),
                 AssignmentMode = company.AssignmentMode.ToString(),
+                company.MissionDispatchPriority,
+                company.AcceptsUrgentMissions,
                 company.CreatedAt,
                 ProviderCount = db.Providers.Count(provider => provider.CompanyId == company.Id),
                 ActiveProviderCount = db.Providers.Count(provider => provider.CompanyId == company.Id && provider.Status == ProviderStatus.Approved),
@@ -81,7 +83,11 @@ public sealed class AdminQueryService(IAppDbContext db)
                     company.MissionCount,
                     company.OpenMissionCount,
                     company.DocumentCount,
-                    company.CreatedAt))
+                    company.CreatedAt)
+                {
+                    MissionDispatchPriority = company.MissionDispatchPriority,
+                    AcceptsUrgentMissions = company.AcceptsUrgentMissions
+                })
                 .ToList(),
             stats);
     }
@@ -108,6 +114,8 @@ public sealed class AdminQueryService(IAppDbContext db)
                 company.OrangeMoneyPaymentNumber,
                 Status = company.Status.ToString(),
                 AssignmentMode = company.AssignmentMode.ToString(),
+                company.MissionDispatchPriority,
+                company.AcceptsUrgentMissions,
                 company.CreatedAt
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -312,7 +320,9 @@ public sealed class AdminQueryService(IAppDbContext db)
             Summary = summary,
             InterimRequests = interimRequests,
             ApplicationDocuments = applicationDocuments,
-            Notifications = notifications
+            Notifications = notifications,
+            MissionDispatchPriority = company.MissionDispatchPriority,
+            AcceptsUrgentMissions = company.AcceptsUrgentMissions
         };
     }
 

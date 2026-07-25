@@ -1,6 +1,7 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Branding;
 using HomeService.Application.Companies;
+using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
 using HomeService.Domain.Entities;
@@ -112,6 +113,39 @@ public sealed class AdminConfigurationService(IAppDbContext db)
             CompanyAssignmentModePresenter.ToResponse(company));
     }
 
+    public async Task<AdminCompanyDispatchSettingsUpdateResult> UpdateCompanyDispatchSettingsAsync(
+        Guid companyId,
+        UpdateAdminCompanyDispatchSettingsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId, cancellationToken);
+        if (company is null)
+        {
+            return AdminCompanyDispatchSettingsUpdateResult.NotFound();
+        }
+
+        if (request.MissionDispatchPriority is < 0 or > 9999)
+        {
+            return AdminCompanyDispatchSettingsUpdateResult.ValidationFailed("La priorite mission doit etre comprise entre 0 et 9999.");
+        }
+
+        var before = new
+        {
+            company.MissionDispatchPriority,
+            company.AcceptsUrgentMissions
+        };
+
+        company.UpdateMissionDispatchSettings(request.MissionDispatchPriority, request.AcceptsUrgentMissions);
+
+        var after = new
+        {
+            company.MissionDispatchPriority,
+            company.AcceptsUrgentMissions
+        };
+
+        return AdminCompanyDispatchSettingsUpdateResult.Ok(company, before, after);
+    }
+
     private static bool TryParseCompanyAssignmentMode(string? value, out CompanyAssignmentMode assignmentMode)
     {
         return Enum.TryParse(value?.Trim(), true, out assignmentMode);
@@ -159,4 +193,21 @@ public sealed record AdminCompanyAssignmentModeUpdateResult(
 
     public static AdminCompanyAssignmentModeUpdateResult ValidationFailed(string message)
         => new(AdminConfigurationUpdateStatus.ValidationFailed, null, null, null, null, message);
+}
+
+public sealed record AdminCompanyDispatchSettingsUpdateResult(
+    AdminConfigurationUpdateStatus Status,
+    Company? Company,
+    object? Before,
+    object? After,
+    string? Message)
+{
+    public static AdminCompanyDispatchSettingsUpdateResult Ok(Company company, object? before, object? after)
+        => new(AdminConfigurationUpdateStatus.Ok, company, before, after, null);
+
+    public static AdminCompanyDispatchSettingsUpdateResult NotFound()
+        => new(AdminConfigurationUpdateStatus.NotFound, null, null, null, "Entreprise introuvable.");
+
+    public static AdminCompanyDispatchSettingsUpdateResult ValidationFailed(string message)
+        => new(AdminConfigurationUpdateStatus.ValidationFailed, null, null, null, message);
 }

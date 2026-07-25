@@ -77,6 +77,23 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Reactivation impossible.");
     }
 
+    public async Task<ApiActionResult> UpdateCompanyDispatchSettingsAsync(
+        Guid companyId,
+        int missionDispatchPriority,
+        bool acceptsUrgentMissions,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PutAsJsonAsync(
+            $"/api/admin/companies/{companyId}/dispatch-settings",
+            new UpdateAdminCompanyDispatchSettingsRequest(missionDispatchPriority, acceptsUrgentMissions),
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Mise a jour impossible.");
+    }
+
     public async Task<ApiActionResult> MarkCompanyNotificationReadAsync(
         Guid companyId,
         Guid notificationId,

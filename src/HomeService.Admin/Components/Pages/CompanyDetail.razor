@@ -123,10 +123,26 @@ else
                 <dl class="detail-list">
                     <div><dt>Zones</dt><dd>@(Company.InterventionZones ?? "Non renseigne")</dd></div>
                     <div><dt>Services</dt><dd>@(Company.PlannedServices ?? "Non renseigne")</dd></div>
+                    <div><dt>Priorite mission</dt><dd>@Company.MissionDispatchPriority</dd></div>
+                    <div><dt>Urgences</dt><dd>@(Company.AcceptsUrgentMissions ? "Accepte les urgences" : "Urgences desactivees")</dd></div>
                     <div><dt>Wave</dt><dd>@(Company.WavePaymentNumber ?? "Non renseigne")</dd></div>
                     <div><dt>Orange Money</dt><dd>@(Company.OrangeMoneyPaymentNumber ?? "Non renseigne")</dd></div>
                     <div><dt>Montant a suivre</dt><dd>@FormatMoney(Company.Summary.PendingPaymentAmount, Company.Summary.Currency)</dd></div>
                 </dl>
+                <div class="admin-inline-settings">
+                    <label>
+                        Priorite de reception
+                        <input type="number" min="0" max="9999" @bind="DispatchPriority" disabled="@IsDispatchSettingsBusy" />
+                    </label>
+                    <label class="checkbox-line">
+                        <input type="checkbox" @bind="AcceptsUrgentMissions" disabled="@IsDispatchSettingsBusy" />
+                        Recoit les urgences
+                    </label>
+                    <button type="button" class="secondary-action" disabled="@IsDispatchSettingsBusy" @onclick="SaveDispatchSettingsAsync">
+                        Enregistrer
+                    </button>
+                    <small>Plus le chiffre est bas, plus l'entreprise est prioritaire.</small>
+                </div>
             </article>
         </section>
     }
@@ -393,6 +409,9 @@ else
     private string SelectedTab { get; set; } = "summary";
     private string? CompanyActionNote { get; set; }
     private bool IsCompanyActionBusy { get; set; }
+    private int DispatchPriority { get; set; } = 100;
+    private bool AcceptsUrgentMissions { get; set; }
+    private bool IsDispatchSettingsBusy { get; set; }
     private Guid? BusyNotificationId { get; set; }
 
     protected override async Task OnParametersSetAsync()
@@ -408,6 +427,11 @@ else
         try
         {
             Company = await ApiClient.GetCompanyAsync(CompanyId);
+            if (Company is not null)
+            {
+                DispatchPriority = Company.MissionDispatchPriority;
+                AcceptsUrgentMissions = Company.AcceptsUrgentMissions;
+            }
         }
         catch (Exception exception)
         {
@@ -463,6 +487,40 @@ else
         }
 
         await RunCompanyActionAsync(() => ApiClient.ReactivateAdminCompanyAsync(Company.Id, CompanyActionNote));
+    }
+
+    private async Task SaveDispatchSettingsAsync()
+    {
+        if (Company is null)
+        {
+            return;
+        }
+
+        IsDispatchSettingsBusy = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var result = await ApiClient.UpdateCompanyDispatchSettingsAsync(
+                Company.Id,
+                DispatchPriority,
+                AcceptsUrgentMissions);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Mise a jour reception missions impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsDispatchSettingsBusy = false;
+        }
     }
 
     private async Task RunCompanyActionAsync(Func<Task<ApiActionResult>> action)

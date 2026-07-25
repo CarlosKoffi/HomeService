@@ -24,5 +24,8 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(company => company.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(company => company.AssignmentMode).HasConversion<string>().HasMaxLength(32);
         builder.Property(company => company.AcceptsInterimApplications).HasDefaultValue(false);
+        builder.Property(company => company.MissionDispatchPriority).HasDefaultValue(100);
+        builder.Property(company => company.AcceptsUrgentMissions).HasDefaultValue(false);
+        builder.HasIndex(company => new { company.Status, company.MissionDispatchPriority });
     }
 }
