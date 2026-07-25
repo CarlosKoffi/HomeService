@@ -244,6 +244,71 @@ public static class ProviderPortalEndpoints
         })
         .WithName("AcceptProviderMission");
 
+        group.MapPost("/mission-assignments/{assignmentId:guid}/refuse", async (
+            Guid assignmentId,
+            ProviderRefuseMissionRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMissionWorkflowService workflow,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var assignment = await db.ProviderMissionAssignments
+                .Include(assignment => assignment.Mission)
+                .FirstOrDefaultAsync(assignment =>
+                    assignment.Id == assignmentId
+                    && assignment.ProviderId == session.ProviderId,
+                    cancellationToken);
+
+            if (assignment?.Mission is null)
+            {
+                return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+            }
+
+            var result = workflow.RefuseMission(session.Provider, assignment, request);
+            if (result.Status != ProviderMissionOperationStatus.Ok)
+            {
+                return ToProviderMissionHttpResult(result);
+            }
+
+            var reasonLabel = assignment.RefusalReason?.ToString() ?? "Non renseignee";
+            AddProviderAudit(
+                db,
+                httpRequest,
+                session.ProviderId,
+                $"{session.Provider.FirstName} {session.Provider.LastName}",
+                "ProviderMissionRefused",
+                nameof(ProviderMissionAssignment),
+                assignment.Id,
+                "Mission refusee par le prestataire.",
+                after: new
+                {
+                    assignment.MissionId,
+                    AssignmentStatus = assignment.Status,
+                    assignment.RefusalReason,
+                    assignment.RefusalComment,
+                    assignment.RespondedAt
+                });
+
+            db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+                assignment.CompanyId,
+                "mission",
+                "Mission refusee",
+                $"{session.Provider.FullName} a refuse la mission {assignment.Mission.MissionNumber}. Raison: {reasonLabel}.",
+                "orange",
+                nameof(ProviderMissionAssignment),
+                assignment.Id));
+
+            await db.SaveChangesAsync(cancellationToken);
+            return ToProviderMissionHttpResult(result);
+        })
+        .WithName("RefuseProviderMission");
+
         group.MapPost("/mission-assignments/{assignmentId:guid}/verify-arrival", async (
             Guid assignmentId,
             ProviderLocationVerificationRequest request,

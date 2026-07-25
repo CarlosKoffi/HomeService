@@ -44,6 +44,47 @@ public sealed class ProviderMissionWorkflowService
         }
     }
 
+    public ProviderMissionOperationResult RefuseMission(
+        ProviderProfile provider,
+        ProviderMissionAssignment assignment,
+        ProviderRefuseMissionRequest request)
+    {
+        if (!CanProviderUsePortal(provider))
+        {
+            return ProviderMissionOperationResult.Forbidden("Ce prestataire n'est pas autorise a utiliser le portail.");
+        }
+
+        if (assignment.Mission is null)
+        {
+            return ProviderMissionOperationResult.NotFound("Mission introuvable pour ce prestataire.");
+        }
+
+        if (assignment.Status == ProviderMissionAssignmentStatus.Refused)
+        {
+            return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+        }
+
+        if (!Enum.TryParse<ProviderMissionRefusalReason>(request.Reason, ignoreCase: true, out var reason))
+        {
+            return ProviderMissionOperationResult.BadRequest("Raison de refus invalide.");
+        }
+
+        if (reason == ProviderMissionRefusalReason.Other && string.IsNullOrWhiteSpace(request.Comment))
+        {
+            return ProviderMissionOperationResult.BadRequest("Expliquez le refus lorsque la raison est Autre.");
+        }
+
+        try
+        {
+            assignment.Refuse(reason, request.Comment);
+            return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return ProviderMissionOperationResult.BadRequest(exception.Message);
+        }
+    }
+
     public ProviderMissionOperationResult VerifyArrival(
         ProviderProfile provider,
         ProviderMissionAssignment assignment,

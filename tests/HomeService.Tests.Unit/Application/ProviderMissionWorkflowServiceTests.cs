@@ -62,6 +62,55 @@ public sealed class ProviderMissionWorkflowServiceTests
     }
 
     [Fact]
+    public void RefuseMission_WhenReasonIsValid_RefusesAssignmentWithReasonAndComment()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateOfferedAssignment(mission);
+        var request = new ProviderRefuseMissionRequest(nameof(ProviderMissionRefusalReason.TooFar), "Le client est trop loin.");
+
+        var result = _service.RefuseMission(provider, assignment, request);
+
+        Assert.Equal(ProviderMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(ProviderMissionAssignmentStatus.Refused, assignment.Status);
+        Assert.Equal(ProviderMissionRefusalReason.TooFar, assignment.RefusalReason);
+        Assert.Equal("Le client est trop loin.", assignment.RefusalComment);
+        Assert.NotNull(assignment.RespondedAt);
+        Assert.Equal(MissionStatus.Assigned, mission.Status);
+    }
+
+    [Fact]
+    public void RefuseMission_WhenReasonIsOtherWithoutComment_IsRejected()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateOfferedAssignment(mission);
+        var request = new ProviderRefuseMissionRequest(nameof(ProviderMissionRefusalReason.Other), " ");
+
+        var result = _service.RefuseMission(provider, assignment, request);
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, result.Status);
+        Assert.Equal(ProviderMissionAssignmentStatus.Offered, assignment.Status);
+        Assert.Null(assignment.RefusalReason);
+        Assert.Null(assignment.RespondedAt);
+    }
+
+    [Fact]
+    public void RefuseMission_WhenAssignmentIsAlreadyAccepted_IsRejected()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission);
+        var request = new ProviderRefuseMissionRequest(nameof(ProviderMissionRefusalReason.Unavailable), "Plus disponible.");
+
+        var result = _service.RefuseMission(provider, assignment, request);
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, result.Status);
+        Assert.Equal(ProviderMissionAssignmentStatus.Accepted, assignment.Status);
+        Assert.Null(assignment.RefusalReason);
+    }
+
+    [Fact]
     public void StartMission_WhenCalledTwice_ReturnsOkWithoutChangingProof()
     {
         var provider = CreateApprovedProvider();
