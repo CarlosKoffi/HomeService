@@ -96,6 +96,28 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
+    public void StartCompanySearch()
+    {
+        if (Status != MissionStatus.Created)
+        {
+            throw new InvalidOperationException("Only newly created missions can start company search.");
+        }
+
+        Status = MissionStatus.SearchingProvider;
+        Touch();
+    }
+
+    public void MarkCompanyOffersSent()
+    {
+        if (Status is not (MissionStatus.Created or MissionStatus.SearchingProvider))
+        {
+            throw new InvalidOperationException("Mission cannot be offered to companies in its current state.");
+        }
+
+        Status = MissionStatus.Offered;
+        Touch();
+    }
+
     public void Assign(Guid providerId, Guid companyId, int hourlyRateAmount)
     {
         if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed or MissionStatus.Resolved)

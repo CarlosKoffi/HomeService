@@ -1,4 +1,5 @@
 using HomeService.Application.Admin;
+using HomeService.Application.Clients;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
 using HomeService.Application.CompanyPortal;
@@ -15,6 +16,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<ProviderMissionWorkflowService>();
+        services.AddScoped<ClientMissionRequestService>();
         services.AddScoped<CompanyApplicationRegistrationService>();
         services.AddScoped<CompanyPortalAuthService>();
         services.AddScoped<CompanyActivationPreviewService>();

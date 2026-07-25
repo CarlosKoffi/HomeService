@@ -1,10 +1,12 @@
 using HomeService.Api.Auditing;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
+using HomeService.Application.Clients;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
 using HomeService.Application.Contact;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.Clients;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Contact;
@@ -214,6 +216,27 @@ public static class PublicEndpoints
         })
         .WithName("SubmitContactRequest")
         .Produces<SubmitContactResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
+
+        app.MapPost("/api/client/missions", async (
+            CreateClientMissionRequest request,
+            ClientMissionRequestService missionRequestService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await missionRequestService.CreateAsync(request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new
+                {
+                    message = "Demande mission invalide.",
+                    errors = result.Errors
+                });
+            }
+
+            return Results.Created($"/api/client/missions/{result.Response!.MissionId}", result.Response);
+        })
+        .WithName("CreateClientMission")
+        .Produces<CreateClientMissionResponse>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest);
 
         app.MapPost("/api/company-applications", async (
