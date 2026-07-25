@@ -272,6 +272,39 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapPost("/api/client/missions/{missionId:guid}/cancel", async (
+            Guid missionId,
+            CancelClientMissionRequest request,
+            ClientMissionCancellationService cancellationService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await cancellationService.CancelAsync(missionId, request, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionCancellationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionCancellationStatus.Forbidden => Results.Problem(
+                    title: "Annulation interdite.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                ClientMissionCancellationStatus.ValidationFailed => Results.BadRequest(new
+                {
+                    message = result.Message,
+                    errors = result.Errors
+                }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("CancelClientMission")
+        .Produces<CancelClientMissionResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/client/missions/{missionId:guid}/validate-completion", async (
             Guid missionId,
             ValidateClientMissionCompletionRequest request,

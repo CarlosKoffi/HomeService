@@ -15,10 +15,13 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
         builder.Property(mission => mission.QuoteStatus).HasConversion<string>().HasMaxLength(32).HasDefaultValue(Domain.Enums.MissionQuoteStatus.NotRequired);
         builder.Property(mission => mission.PaymentMethod).HasConversion<string>().HasMaxLength(32);
         builder.Property(mission => mission.PaymentStatus).HasConversion<string>().HasMaxLength(32);
+        builder.Property(mission => mission.CancelledBy).HasConversion<string>().HasMaxLength(32);
+        builder.Property(mission => mission.CancellationReason).HasConversion<string>().HasMaxLength(64);
         builder.Property(mission => mission.AssignmentSource).HasConversion<string>().HasMaxLength(32).HasDefaultValue(Domain.Enums.MissionAssignmentSource.Company);
         builder.Property(mission => mission.Description).HasMaxLength(1200);
         builder.Property(mission => mission.CompanyQuoteJustification).HasMaxLength(1200);
         builder.Property(mission => mission.PartsDescription).HasMaxLength(1200);
+        builder.Property(mission => mission.CancellationComment).HasMaxLength(1200);
         builder.Property(mission => mission.Currency).HasMaxLength(3).IsRequired();
         builder.Property(mission => mission.ServiceAddress).HasMaxLength(360);
         builder.Property(mission => mission.ServiceLatitude).HasPrecision(9, 6);
@@ -34,6 +37,7 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
         builder.HasIndex(mission => new { mission.CompanyId, mission.Status });
         builder.HasIndex(mission => new { mission.QuoteStatus, mission.PaymentStatus });
         builder.HasIndex(mission => new { mission.CustomerCompletionValidatedAt, mission.CompanyPayoutReleasedAt });
+        builder.HasIndex(mission => new { mission.CancelledAt, mission.CancelledBy });
         builder.HasIndex(mission => new { mission.CompanyAssignmentExpiresAt, mission.Status });
     }
 }

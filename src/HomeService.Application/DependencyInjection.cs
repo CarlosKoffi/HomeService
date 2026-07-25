@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<ProviderMissionWorkflowService>();
         services.AddScoped<ClientMissionRequestService>();
         services.AddScoped<ClientMissionConfirmationService>();
+        services.AddScoped<ClientMissionCancellationService>();
         services.AddScoped<ClientMissionCompletionValidationService>();
         services.AddScoped<CompanyApplicationRegistrationService>();
         services.AddScoped<CompanyPortalAuthService>();

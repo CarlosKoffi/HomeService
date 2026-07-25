@@ -75,6 +75,11 @@ public sealed class Mission : AuditableEntity
     public DateTimeOffset? ProviderAcceptedAt { get; private set; }
     public DateTimeOffset? CustomerConfirmedAt { get; private set; }
     public DateTimeOffset? CustomerCompletionValidatedAt { get; private set; }
+    public DateTimeOffset? CancelledAt { get; private set; }
+    public MissionCancellationActor? CancelledBy { get; private set; }
+    public MissionCancellationReason? CancellationReason { get; private set; }
+    public string? CancellationComment { get; private set; }
+    public int RefundAmount { get; private set; }
     public DateTimeOffset? ContactDetailsReleasedAt { get; private set; }
     public DateTimeOffset? CompanyPayoutReleasedAt { get; private set; }
     public DateTimeOffset? CompanyAssignmentExpiresAt { get; private set; }
@@ -275,12 +280,37 @@ public sealed class Mission : AuditableEntity
 
     public void CancelByCustomer(int cancellationFeeAmount)
     {
+        Cancel(
+            MissionCancellationActor.Customer,
+            MissionCancellationReason.Other,
+            null,
+            cancellationFeeAmount,
+            CalculateRefundAmount(cancellationFeeAmount));
+    }
+
+    public void Cancel(
+        MissionCancellationActor cancelledBy,
+        MissionCancellationReason reason,
+        string? comment,
+        int cancellationFeeAmount,
+        int refundAmount)
+    {
         if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
         {
             throw new InvalidOperationException("Mission cannot be cancelled in its current state.");
         }
 
         CancellationFeeAmount = ContactDetailsReleasedAt is null ? 0 : Math.Max(0, cancellationFeeAmount);
+        RefundAmount = Math.Max(0, refundAmount);
+        CancelledAt = DateTimeOffset.UtcNow;
+        CancelledBy = cancelledBy;
+        CancellationReason = reason;
+        CancellationComment = Clean(comment);
+        if (PaymentStatus == PaymentStatus.Authorized)
+        {
+            PaymentStatus = RefundAmount > 0 ? PaymentStatus.Refunded : PaymentStatus.Failed;
+        }
+
         Status = MissionStatus.Cancelled;
         Touch();
     }
@@ -376,6 +406,17 @@ public sealed class Mission : AuditableEntity
     {
         var billableHalfHours = (int)Math.Ceiling(durationMinutes / 30m);
         return billableHalfHours * hourlyRateAmount / 2;
+    }
+
+    private int CalculateRefundAmount(int cancellationFeeAmount)
+    {
+        if (PaymentStatus is not (PaymentStatus.Authorized or PaymentStatus.Paid))
+        {
+            return 0;
+        }
+
+        var paidAmount = CompanyQuotedAmount ?? EstimatedTotalAmount ?? FinalTotalAmount ?? 0;
+        return Math.Max(0, paidAmount - Math.Max(0, cancellationFeeAmount));
     }
 
     private static string GenerateMissionNumber()
