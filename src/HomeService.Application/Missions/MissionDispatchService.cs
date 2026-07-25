@@ -42,7 +42,7 @@ public sealed class MissionDispatchService(
             mission.ServiceAddress,
             isUrgent);
 
-        var candidates = await GetCandidatesAsync(mission, cancellationToken);
+        var candidates = await GetCandidatesAsync(mission, excludedCompanyIds: EmptyCompanySet, cancellationToken);
         var scores = scoringService.SelectTopCompanies(request, candidates);
 
         if (scores.Count == 0)
@@ -70,8 +70,114 @@ public sealed class MissionDispatchService(
         return MissionDispatchCreationResult.Ok(offers);
     }
 
+    public async Task<MissionDispatchReissueBatchResult> ExpireAndReissueDueOffersAsync(
+        DateTimeOffset now,
+        int batchSize,
+        CancellationToken cancellationToken)
+    {
+        var missionIds = await db.MissionDispatchOffers
+            .AsNoTracking()
+            .Where(offer => offer.Status == MissionDispatchOfferStatus.Sent && offer.ExpiresAt <= now)
+            .OrderBy(offer => offer.ExpiresAt)
+            .Select(offer => offer.MissionId)
+            .Distinct()
+            .Take(Math.Clamp(batchSize, 1, 200))
+            .ToListAsync(cancellationToken);
+
+        var results = new List<MissionDispatchReissueResult>();
+        foreach (var missionId in missionIds)
+        {
+            results.Add(await ExpireAndReissueMissionOffersAsync(missionId, now, cancellationToken));
+        }
+
+        return new MissionDispatchReissueBatchResult(results);
+    }
+
+    public async Task<MissionDispatchReissueResult> ExpireAndReissueMissionOffersAsync(
+        Guid missionId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var mission = await db.Missions
+            .FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
+        if (mission is null)
+        {
+            return MissionDispatchReissueResult.Failed(missionId, "Mission introuvable.");
+        }
+
+        var offers = await db.MissionDispatchOffers
+            .Where(offer => offer.MissionId == missionId)
+            .OrderBy(offer => offer.Rank)
+            .ToListAsync(cancellationToken);
+
+        var expiredCount = 0;
+        foreach (var offer in offers.Where(offer => offer.Status == MissionDispatchOfferStatus.Sent && offer.ExpiresAt <= now))
+        {
+            offer.MarkExpired(now);
+            expiredCount++;
+        }
+
+        if (offers.Any(offer => offer.Status == MissionDispatchOfferStatus.Accepted))
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return MissionDispatchReissueResult.Ok(missionId, expiredCount, CreatedOfferCount: 0, "Une entreprise a deja accepte la mission.");
+        }
+
+        if (mission.Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed or MissionStatus.Resolved)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return MissionDispatchReissueResult.Ok(missionId, expiredCount, CreatedOfferCount: 0, "Mission terminee ou non redistribuable.");
+        }
+
+        var excludedCompanyIds = offers.Select(offer => offer.CompanyId).ToHashSet();
+        var request = new MissionDispatchRequest(
+            mission.Id,
+            mission.ServiceId,
+            mission.ServicePrestationId,
+            mission.ServiceAddress,
+            mission.Mode == MissionMode.Instant);
+        var candidates = await GetCandidatesAsync(mission, excludedCompanyIds, cancellationToken);
+        var scores = scoringService.SelectTopCompanies(request, candidates);
+
+        if (scores.Count == 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return MissionDispatchReissueResult.Ok(missionId, expiredCount, CreatedOfferCount: 0, "Aucune nouvelle entreprise candidate.");
+        }
+
+        var expiresAt = now.Add(DefaultCompanyResponseWindow);
+        var nextRankStart = offers.Count == 0 ? 1 : offers.Max(offer => offer.Rank) + 1;
+        var createdOffers = scores
+            .Select((score, index) => new MissionDispatchOffer(
+                mission.Id,
+                score.CompanyId,
+                nextRankStart + index,
+                score.Score,
+                score.Details,
+                expiresAt))
+            .ToList();
+
+        foreach (var offer in createdOffers)
+        {
+            db.MissionDispatchOffers.Add(offer);
+        }
+
+        mission.MarkCompanyOffersSent();
+        await db.SaveChangesAsync(cancellationToken);
+
+        return MissionDispatchReissueResult.Ok(missionId, expiredCount, createdOffers.Count, "Nouvelle vague envoyee.");
+    }
+
     public async Task<IReadOnlyList<MissionDispatchCandidate>> GetCandidatesAsync(
         Mission mission,
+        CancellationToken cancellationToken)
+    {
+        return await GetCandidatesAsync(mission, excludedCompanyIds: EmptyCompanySet, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<MissionDispatchCandidate>> GetCandidatesAsync(
+        Mission mission,
+        IReadOnlySet<Guid> excludedCompanyIds,
         CancellationToken cancellationToken)
     {
         var service = await db.Services
@@ -93,7 +199,7 @@ public sealed class MissionDispatchService(
         var normalizedServiceName = service.NormalizedName;
         var companies = await db.Companies
             .AsNoTracking()
-            .Where(company => company.Status == CompanyStatus.Approved)
+            .Where(company => company.Status == CompanyStatus.Approved && !excludedCompanyIds.Contains(company.Id))
             .ToListAsync(cancellationToken);
 
         var eligibleCompanies = companies
@@ -125,6 +231,13 @@ public sealed class MissionDispatchService(
             })
             .ToListAsync(cancellationToken);
 
+        var noResponseCounts = await db.MissionDispatchOffers
+            .AsNoTracking()
+            .Where(offer => companyIds.Contains(offer.CompanyId) && offer.Status == MissionDispatchOfferStatus.Expired)
+            .GroupBy(offer => offer.CompanyId)
+            .Select(group => new { CompanyId = group.Key, Count = group.Count() })
+            .ToListAsync(cancellationToken);
+
         var marketAverage = await db.Missions
             .AsNoTracking()
             .Where(item => item.ServiceId == mission.ServiceId && item.CompanyQuotedAmount.HasValue)
@@ -144,7 +257,7 @@ public sealed class MissionDispatchService(
                     stats?.Completed ?? 0,
                     stats?.Recent ?? 0,
                     stats?.Cancelled ?? 0,
-                    NoResponseCount: 0,
+                    noResponseCounts.FirstOrDefault(item => item.CompanyId == company.Id)?.Count ?? 0,
                     CalculatePriceDeviation(stats?.AverageQuote, marketAverage));
             })
             .ToList();
@@ -187,4 +300,6 @@ public sealed class MissionDispatchService(
 
         return ((companyAverage.Value - marketAverage.Value) / marketAverage.Value) * 100m;
     }
+
+    private static readonly IReadOnlySet<Guid> EmptyCompanySet = new HashSet<Guid>();
 }

@@ -109,7 +109,7 @@ public sealed class Mission : AuditableEntity
 
     public void MarkCompanyOffersSent()
     {
-        if (Status is not (MissionStatus.Created or MissionStatus.SearchingProvider))
+        if (Status is not (MissionStatus.Created or MissionStatus.SearchingProvider or MissionStatus.Offered))
         {
             throw new InvalidOperationException("Mission cannot be offered to companies in its current state.");
         }
