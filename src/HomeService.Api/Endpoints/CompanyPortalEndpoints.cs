@@ -446,6 +446,41 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalAssignableProviders");
 
+        group.MapGet("/{companyId:guid}/mission-offers", async (
+            Guid companyId,
+            CompanyMissionOfferService offerService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await offerService.ListOpenOffersAsync(companyId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Offers)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("ListCompanyPortalMissionOffers")
+        .Produces<IReadOnlyList<CompanyMissionOfferResponse>>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{companyId:guid}/mission-offers/{offerId:guid}/accept", async (
+            Guid companyId,
+            Guid offerId,
+            CompanyMissionOfferService offerService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await offerService.AcceptAsync(companyId, offerId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.IsNotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("AcceptCompanyPortalMissionOffer")
+        .Produces<CompanyMissionOfferAcceptResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapPost("/{companyId:guid}/missions/{missionId:guid}/assign", async (
             Guid companyId,
             Guid missionId,

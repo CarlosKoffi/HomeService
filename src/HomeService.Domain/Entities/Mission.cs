@@ -118,6 +118,23 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
+    public void AcceptCompanyOffer(Guid companyId)
+    {
+        if (Status is not (MissionStatus.Offered or MissionStatus.SearchingProvider))
+        {
+            throw new InvalidOperationException("Mission cannot be accepted by a company in its current state.");
+        }
+
+        if (CompanyId is not null && CompanyId != companyId)
+        {
+            throw new InvalidOperationException("Mission is already owned by another company.");
+        }
+
+        CompanyId = companyId;
+        Status = MissionStatus.SearchingProvider;
+        Touch();
+    }
+
     public void Assign(Guid providerId, Guid companyId, int hourlyRateAmount)
     {
         if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed or MissionStatus.Resolved)
