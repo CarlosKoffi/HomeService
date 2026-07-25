@@ -239,6 +239,39 @@ public static class PublicEndpoints
         .Produces<CreateClientMissionResponse>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest);
 
+        app.MapPost("/api/client/missions/{missionId:guid}/confirm", async (
+            Guid missionId,
+            ConfirmClientMissionRequest request,
+            ClientMissionConfirmationService confirmationService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await confirmationService.ConfirmAsync(missionId, request, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionConfirmationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionConfirmationStatus.Forbidden => Results.Problem(
+                    title: "Confirmation interdite.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                ClientMissionConfirmationStatus.ValidationFailed => Results.BadRequest(new
+                {
+                    message = result.Message,
+                    errors = result.Errors
+                }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("ConfirmClientMission")
+        .Produces<ConfirmClientMissionResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/company-applications", async (
             HttpRequest httpRequest,
             CompanyApplicationUploadService uploadService,

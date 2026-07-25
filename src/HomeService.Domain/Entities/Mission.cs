@@ -215,9 +215,9 @@ public sealed class Mission : AuditableEntity
             throw new InvalidOperationException("Mission has no company quote to accept.");
         }
 
-        if (Status != MissionStatus.Assigned)
+        if (Status is not (MissionStatus.Assigned or MissionStatus.Accepted))
         {
-            throw new InvalidOperationException("Only assigned missions can have their quote accepted.");
+            throw new InvalidOperationException("Only assigned or provider accepted missions can have their quote accepted.");
         }
 
         CustomerQuoteAcceptedAt = DateTimeOffset.UtcNow;
