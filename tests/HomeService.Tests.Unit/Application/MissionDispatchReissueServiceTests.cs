@@ -76,7 +76,7 @@ public sealed class MissionDispatchReissueServiceTests
             score: 10,
             scoreDetails: "Acceptee",
             DateTimeOffset.UtcNow.AddMinutes(5));
-        mission.AcceptCompanyOffer(company.Id);
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(5));
         offer.Accept(DateTimeOffset.UtcNow);
 
         db.Services.Add(service);
@@ -96,6 +96,54 @@ public sealed class MissionDispatchReissueServiceTests
         Assert.True(result.IsSuccess);
         Assert.Equal(0, result.CreatedOfferCount);
         Assert.Single(db.MissionDispatchOffers);
+    }
+
+    [Fact]
+    public async Task ExpireAndReissueMissionOffersAsync_WhenAcceptedCompanyDoesNotAssignProvider_ReissuesToAnotherCompany()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Plomberie", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var firstCompany = ApprovedCompany("Premiere plomberie", priority: 1);
+        var secondCompany = ApprovedCompany("Deuxieme plomberie", priority: 2);
+        var firstProvider = Provider(firstCompany.Id, service.Id, "Awa");
+        var secondProvider = Provider(secondCompany.Id, service.Id, "Mamadou");
+        var mission = new Mission(customer.Id, service.Id, MissionMode.Instant, PaymentMethod.MobileMoney, null, 90);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        var acceptedOffer = new MissionDispatchOffer(
+            mission.Id,
+            firstCompany.Id,
+            rank: 1,
+            score: 10,
+            scoreDetails: "Premiere vague",
+            DateTimeOffset.UtcNow.AddMinutes(5));
+        var now = DateTimeOffset.UtcNow;
+        mission.AcceptCompanyOffer(firstCompany.Id, now.AddMinutes(-1));
+        acceptedOffer.Accept(now.AddMinutes(-10));
+
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Companies.AddRange(firstCompany, secondCompany);
+        db.Providers.AddRange(firstProvider, secondProvider);
+        db.Missions.Add(mission);
+        db.MissionDispatchOffers.Add(acceptedOffer);
+        await db.SaveChangesAsync();
+
+        var sut = new MissionDispatchService(db, new MissionDispatchScoringService());
+
+        var result = await sut.ExpireAndReissueMissionOffersAsync(mission.Id, now, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.ExpiredOfferCount);
+        Assert.Equal(1, result.CreatedOfferCount);
+        Assert.Null(mission.CompanyId);
+        Assert.Null(mission.CompanyAssignmentExpiresAt);
+        Assert.Equal(MissionStatus.Offered, mission.Status);
+        Assert.Equal(MissionDispatchOfferStatus.AssignmentTimedOut, acceptedOffer.Status);
+        Assert.Contains(db.MissionDispatchOffers, offer =>
+            offer.CompanyId == secondCompany.Id
+            && offer.Status == MissionDispatchOfferStatus.Sent);
     }
 
     private static Company ApprovedCompany(string name, int priority)

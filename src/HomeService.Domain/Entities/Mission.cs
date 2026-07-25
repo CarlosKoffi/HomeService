@@ -75,6 +75,7 @@ public sealed class Mission : AuditableEntity
     public DateTimeOffset? ProviderAcceptedAt { get; private set; }
     public DateTimeOffset? CustomerConfirmedAt { get; private set; }
     public DateTimeOffset? ContactDetailsReleasedAt { get; private set; }
+    public DateTimeOffset? CompanyAssignmentExpiresAt { get; private set; }
     public bool CanRevealContactDetails => ContactDetailsReleasedAt is not null
         && Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started or MissionStatus.Completed
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
@@ -118,7 +119,7 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
-    public void AcceptCompanyOffer(Guid companyId)
+    public void AcceptCompanyOffer(Guid companyId, DateTimeOffset assignmentExpiresAt)
     {
         if (Status is not (MissionStatus.Offered or MissionStatus.SearchingProvider))
         {
@@ -132,6 +133,20 @@ public sealed class Mission : AuditableEntity
 
         CompanyId = companyId;
         Status = MissionStatus.SearchingProvider;
+        CompanyAssignmentExpiresAt = assignmentExpiresAt;
+        Touch();
+    }
+
+    public void ReleaseCompanyAfterAssignmentTimeout(DateTimeOffset now)
+    {
+        if (CompanyId is null || ProviderId is not null || CompanyAssignmentExpiresAt is null || CompanyAssignmentExpiresAt > now)
+        {
+            return;
+        }
+
+        CompanyId = null;
+        CompanyAssignmentExpiresAt = null;
+        Status = MissionStatus.Offered;
         Touch();
     }
 
@@ -144,6 +159,7 @@ public sealed class Mission : AuditableEntity
 
         ProviderId = providerId;
         CompanyId = companyId;
+        CompanyAssignmentExpiresAt = null;
         HourlyRateAmount = hourlyRateAmount;
         EstimatedTotalAmount = CalculateAmount(EstimatedDurationMinutes, hourlyRateAmount);
         Status = MissionStatus.Assigned;
@@ -174,6 +190,7 @@ public sealed class Mission : AuditableEntity
 
         ProviderId = providerId;
         CompanyId = companyId;
+        CompanyAssignmentExpiresAt = null;
         AssignmentSource = assignmentSource;
         IsInterimProviderSnapshot = isInterimProvider;
         CompanyQuotedAmount = normalizedQuote;

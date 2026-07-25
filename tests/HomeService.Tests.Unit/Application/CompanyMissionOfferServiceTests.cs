@@ -55,6 +55,7 @@ public sealed class CompanyMissionOfferServiceTests
         Assert.True(result.IsSuccess);
         Assert.Equal(MissionStatus.SearchingProvider.ToString(), result.Response!.Status);
         Assert.Equal(winningCompany.Id, mission.CompanyId);
+        Assert.NotNull(mission.CompanyAssignmentExpiresAt);
         Assert.Equal(MissionDispatchOfferStatus.Accepted, winningOffer.Status);
         Assert.Equal(MissionDispatchOfferStatus.Lost, competingOffer.Status);
         Assert.Single(db.CompanyPortalActivities);

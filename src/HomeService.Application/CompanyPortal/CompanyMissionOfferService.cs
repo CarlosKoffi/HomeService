@@ -8,6 +8,8 @@ namespace HomeService.Application.CompanyPortal;
 
 public sealed class CompanyMissionOfferService(IAppDbContext db)
 {
+    private static readonly TimeSpan ProviderAssignmentWindow = TimeSpan.FromMinutes(10);
+
     public async Task<CompanyMissionOfferListResult> ListOpenOffersAsync(
         Guid companyId,
         CancellationToken cancellationToken)
@@ -74,7 +76,7 @@ public sealed class CompanyMissionOfferService(IAppDbContext db)
         var mission = offer.Mission;
         try
         {
-            mission.AcceptCompanyOffer(companyId);
+            mission.AcceptCompanyOffer(companyId, now.Add(ProviderAssignmentWindow));
             offer.Accept(now);
         }
         catch (InvalidOperationException exception)

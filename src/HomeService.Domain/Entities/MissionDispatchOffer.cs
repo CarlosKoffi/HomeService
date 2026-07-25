@@ -86,6 +86,18 @@ public sealed class MissionDispatchOffer : AuditableEntity
         Touch();
     }
 
+    public void MarkAssignmentTimedOut(DateTimeOffset now)
+    {
+        if (Status != MissionDispatchOfferStatus.Accepted)
+        {
+            return;
+        }
+
+        Status = MissionDispatchOfferStatus.AssignmentTimedOut;
+        RespondedAt ??= now;
+        Touch();
+    }
+
     private static string CleanRequired(string value)
     {
         var cleaned = string.IsNullOrWhiteSpace(value) ? null : value.Trim();

@@ -75,7 +75,7 @@ public sealed class MissionDispatchService(
         int batchSize,
         CancellationToken cancellationToken)
     {
-        var missionIds = await db.MissionDispatchOffers
+        var expiredOfferMissionIds = await db.MissionDispatchOffers
             .AsNoTracking()
             .Where(offer => offer.Status == MissionDispatchOfferStatus.Sent && offer.ExpiresAt <= now)
             .OrderBy(offer => offer.ExpiresAt)
@@ -83,6 +83,24 @@ public sealed class MissionDispatchService(
             .Distinct()
             .Take(Math.Clamp(batchSize, 1, 200))
             .ToListAsync(cancellationToken);
+
+        var assignmentTimedOutMissionIds = await db.Missions
+            .AsNoTracking()
+            .Where(mission => mission.CompanyId.HasValue
+                && mission.ProviderId == null
+                && mission.Status == MissionStatus.SearchingProvider
+                && mission.CompanyAssignmentExpiresAt != null
+                && mission.CompanyAssignmentExpiresAt <= now)
+            .OrderBy(mission => mission.CompanyAssignmentExpiresAt)
+            .Select(mission => mission.Id)
+            .Take(Math.Clamp(batchSize, 1, 200))
+            .ToListAsync(cancellationToken);
+
+        var missionIds = expiredOfferMissionIds
+            .Concat(assignmentTimedOutMissionIds)
+            .Distinct()
+            .Take(Math.Clamp(batchSize, 1, 200))
+            .ToList();
 
         var results = new List<MissionDispatchReissueResult>();
         foreach (var missionId in missionIds)
@@ -117,16 +135,25 @@ public sealed class MissionDispatchService(
             expiredCount++;
         }
 
-        if (offers.Any(offer => offer.Status == MissionDispatchOfferStatus.Accepted))
+        var acceptedOffer = offers.FirstOrDefault(offer => offer.Status == MissionDispatchOfferStatus.Accepted);
+        if (acceptedOffer is not null && !IsCompanyAssignmentTimedOut(mission, now))
         {
             await db.SaveChangesAsync(cancellationToken);
             return MissionDispatchReissueResult.Ok(missionId, expiredCount, CreatedOfferCount: 0, "Une entreprise a deja accepte la mission.");
         }
 
+        var assignmentTimedOutCount = 0;
+        if (acceptedOffer is not null && IsCompanyAssignmentTimedOut(mission, now))
+        {
+            acceptedOffer.MarkAssignmentTimedOut(now);
+            mission.ReleaseCompanyAfterAssignmentTimeout(now);
+            assignmentTimedOutCount = 1;
+        }
+
         if (mission.Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed or MissionStatus.Resolved)
         {
             await db.SaveChangesAsync(cancellationToken);
-            return MissionDispatchReissueResult.Ok(missionId, expiredCount, CreatedOfferCount: 0, "Mission terminee ou non redistribuable.");
+            return MissionDispatchReissueResult.Ok(missionId, expiredCount + assignmentTimedOutCount, CreatedOfferCount: 0, "Mission terminee ou non redistribuable.");
         }
 
         var excludedCompanyIds = offers.Select(offer => offer.CompanyId).ToHashSet();
@@ -142,7 +169,7 @@ public sealed class MissionDispatchService(
         if (scores.Count == 0)
         {
             await db.SaveChangesAsync(cancellationToken);
-            return MissionDispatchReissueResult.Ok(missionId, expiredCount, CreatedOfferCount: 0, "Aucune nouvelle entreprise candidate.");
+            return MissionDispatchReissueResult.Ok(missionId, expiredCount + assignmentTimedOutCount, CreatedOfferCount: 0, "Aucune nouvelle entreprise candidate.");
         }
 
         var expiresAt = now.Add(DefaultCompanyResponseWindow);
@@ -165,7 +192,7 @@ public sealed class MissionDispatchService(
         mission.MarkCompanyOffersSent();
         await db.SaveChangesAsync(cancellationToken);
 
-        return MissionDispatchReissueResult.Ok(missionId, expiredCount, createdOffers.Count, "Nouvelle vague envoyee.");
+        return MissionDispatchReissueResult.Ok(missionId, expiredCount + assignmentTimedOutCount, createdOffers.Count, "Nouvelle vague envoyee.");
     }
 
     public async Task<IReadOnlyList<MissionDispatchCandidate>> GetCandidatesAsync(
@@ -302,4 +329,12 @@ public sealed class MissionDispatchService(
     }
 
     private static readonly IReadOnlySet<Guid> EmptyCompanySet = new HashSet<Guid>();
+
+    private static bool IsCompanyAssignmentTimedOut(Mission mission, DateTimeOffset now)
+    {
+        return mission.CompanyId.HasValue
+            && mission.ProviderId is null
+            && mission.CompanyAssignmentExpiresAt is not null
+            && mission.CompanyAssignmentExpiresAt <= now;
+    }
 }

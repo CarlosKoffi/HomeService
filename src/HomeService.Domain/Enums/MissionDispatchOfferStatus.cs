@@ -6,5 +6,6 @@ public enum MissionDispatchOfferStatus
     Accepted = 1,
     Expired = 2,
     Lost = 3,
-    Cancelled = 4
+    Cancelled = 4,
+    AssignmentTimedOut = 5
 }
