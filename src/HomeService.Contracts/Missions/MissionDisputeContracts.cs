@@ -8,10 +8,15 @@ public sealed record MissionDisputeResponse(
     string Reason,
     string Description,
     string? Resolution,
+    int? RefundPercent,
+    int? RefundAmount,
+    string Currency,
     string? ResolutionNote,
     DateTimeOffset OpenedAt,
     DateTimeOffset? ResolvedAt);
 
 public sealed record ResolveMissionDisputeRequest(
     string Resolution,
-    string Note);
+    string Note,
+    int? RefundPercent = null,
+    int? RefundAmount = null);

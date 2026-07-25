@@ -43,6 +43,8 @@ public sealed class AdminMissionDisputeServiceTests
             mission.Id,
             "PartialRefund",
             "Remboursement partiel valide",
+            40,
+            null,
             AuditActor.Admin(),
             null,
             CancellationToken.None);
@@ -52,7 +54,34 @@ public sealed class AdminMissionDisputeServiceTests
         Assert.Equal(MissionStatus.Resolved, mission.Status);
         Assert.Equal(MissionDisputeStatus.Resolved, dispute.Status);
         Assert.Equal(MissionDisputeResolution.PartialRefund, dispute.Resolution);
+        Assert.Equal(4000, dispute.RefundPercentBasisPoints);
+        Assert.Equal(800, dispute.RefundAmount);
+        Assert.Equal(1, await db.MissionFinancialBreakdowns.CountAsync());
         Assert.Equal(2, await db.AuditLogEntries.CountAsync());
+    }
+
+    [Fact]
+    public async Task ResolveAsync_WhenFullRefundWithoutPercent_DefaultsToHundredPercent()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedMissionAsync(db);
+        var sut = new AdminMissionDisputeService(db);
+        await sut.OpenAsync(mission.Id, "Other", "Service conteste", AuditActor.Admin(), null, CancellationToken.None);
+
+        var result = await sut.ResolveAsync(
+            mission.Id,
+            "RefundCustomer",
+            "Remboursement complet accepte",
+            null,
+            null,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        var dispute = await db.MissionDisputes.SingleAsync();
+        Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(10000, dispute.RefundPercentBasisPoints);
+        Assert.Equal(2000, dispute.RefundAmount);
     }
 
     [Fact]
@@ -66,6 +95,8 @@ public sealed class AdminMissionDisputeServiceTests
             mission.Id,
             "NoAction",
             "Rien a faire",
+            null,
+            null,
             AuditActor.Admin(),
             null,
             CancellationToken.None);

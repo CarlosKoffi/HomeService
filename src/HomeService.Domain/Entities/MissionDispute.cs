@@ -34,11 +34,19 @@ public sealed class MissionDispute : AuditableEntity
     public MissionCancellationReason Reason { get; private set; }
     public string Description { get; private set; } = string.Empty;
     public MissionDisputeResolution? Resolution { get; private set; }
+    public int? RefundPercentBasisPoints { get; private set; }
+    public int? RefundAmount { get; private set; }
+    public string Currency { get; private set; } = "XOF";
     public string? ResolutionNote { get; private set; }
     public DateTimeOffset OpenedAt { get; private set; }
     public DateTimeOffset? ResolvedAt { get; private set; }
 
-    public void Resolve(MissionDisputeResolution resolution, string note)
+    public void Resolve(
+        MissionDisputeResolution resolution,
+        string note,
+        int? refundPercentBasisPoints,
+        int? refundAmount,
+        string currency)
     {
         if (Status == MissionDisputeStatus.Resolved)
         {
@@ -52,6 +60,11 @@ public sealed class MissionDispute : AuditableEntity
 
         Status = MissionDisputeStatus.Resolved;
         Resolution = resolution;
+        RefundPercentBasisPoints = refundPercentBasisPoints.HasValue
+            ? Math.Clamp(refundPercentBasisPoints.Value, 0, 10000)
+            : null;
+        RefundAmount = refundAmount.HasValue ? Math.Max(0, refundAmount.Value) : null;
+        Currency = string.IsNullOrWhiteSpace(currency) ? "XOF" : currency.Trim().ToUpperInvariant();
         ResolutionNote = note.Trim();
         ResolvedAt = DateTimeOffset.UtcNow;
         Touch();

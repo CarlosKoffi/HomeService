@@ -421,6 +421,8 @@ public static class AdminEndpoints
                 missionId,
                 request.Resolution,
                 request.Note,
+                request.RefundPercent,
+                request.RefundAmount,
                 AuditActor.Admin(),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);

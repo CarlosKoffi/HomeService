@@ -66,6 +66,8 @@ public sealed class AdminMissionDisputeService(IAppDbContext db)
         Guid missionId,
         string? resolution,
         string? note,
+        int? refundPercent,
+        int? refundAmount,
         AuditActor actor,
         AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
@@ -90,9 +92,21 @@ public sealed class AdminMissionDisputeService(IAppDbContext db)
         }
 
         var previousStatus = mission.Status;
+        var parsedResolution = ParseResolution(resolution);
+        var refundDecision = ResolveRefundDecision(mission, parsedResolution, refundPercent, refundAmount);
+        if (!refundDecision.IsValid)
+        {
+            return AdminMissionDisputeResult.ValidationFailed(refundDecision.Message!);
+        }
+
         try
         {
-            dispute.Resolve(ParseResolution(resolution), note);
+            dispute.Resolve(
+                parsedResolution,
+                note,
+                refundDecision.RefundPercentBasisPoints,
+                refundDecision.RefundAmount,
+                mission.Currency);
             mission.ResolveDispute();
         }
         catch (InvalidOperationException exception)
@@ -112,8 +126,22 @@ public sealed class AdminMissionDisputeService(IAppDbContext db)
             {
                 Status = mission.Status.ToString(),
                 Resolution = dispute.Resolution?.ToString(),
+                RefundPercent = dispute.RefundPercentBasisPoints.HasValue ? dispute.RefundPercentBasisPoints.Value / 100 : (int?)null,
+                dispute.RefundAmount,
+                dispute.Currency,
                 dispute.ResolutionNote
             }));
+
+        if (refundDecision.RefundAmount is > 0)
+        {
+            db.MissionFinancialBreakdowns.Add(new MissionFinancialBreakdown(
+                mission.Id,
+                MissionFinancialLineType.Refund,
+                "Remboursement valide apres litige",
+                -refundDecision.RefundAmount.Value,
+                mission.Currency,
+                110));
+        }
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -133,6 +161,60 @@ public sealed class AdminMissionDisputeService(IAppDbContext db)
             ? parsed
             : MissionDisputeResolution.Other;
     }
+
+    private static MissionDisputeRefundDecision ResolveRefundDecision(
+        Mission mission,
+        MissionDisputeResolution resolution,
+        int? refundPercent,
+        int? refundAmount)
+    {
+        var totalAmount = mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0;
+        if (refundPercent is < 0 or > 100)
+        {
+            return MissionDisputeRefundDecision.Invalid("Le pourcentage de remboursement doit etre compris entre 0 et 100.");
+        }
+
+        if (refundAmount is < 0)
+        {
+            return MissionDisputeRefundDecision.Invalid("Le montant de remboursement ne peut pas etre negatif.");
+        }
+
+        if (resolution is not (MissionDisputeResolution.RefundCustomer or MissionDisputeResolution.PartialRefund))
+        {
+            return MissionDisputeRefundDecision.Valid(null, null);
+        }
+
+        var normalizedPercent = resolution == MissionDisputeResolution.RefundCustomer
+            ? refundPercent ?? 100
+            : refundPercent;
+        if (normalizedPercent is null && refundAmount is null)
+        {
+            return MissionDisputeRefundDecision.Invalid("Indiquez un pourcentage ou un montant de remboursement.");
+        }
+
+        var calculatedAmount = refundAmount ?? (int)Math.Round(totalAmount * normalizedPercent!.Value / 100m, MidpointRounding.AwayFromZero);
+        if (totalAmount > 0 && calculatedAmount > totalAmount)
+        {
+            return MissionDisputeRefundDecision.Invalid("Le remboursement ne peut pas depasser le montant total de la mission.");
+        }
+
+        return MissionDisputeRefundDecision.Valid(
+            normalizedPercent.HasValue ? normalizedPercent.Value * 100 : null,
+            calculatedAmount);
+    }
+}
+
+internal sealed record MissionDisputeRefundDecision(
+    bool IsValid,
+    string? Message,
+    int? RefundPercentBasisPoints,
+    int? RefundAmount)
+{
+    public static MissionDisputeRefundDecision Valid(int? refundPercentBasisPoints, int? refundAmount)
+        => new(true, null, refundPercentBasisPoints, refundAmount);
+
+    public static MissionDisputeRefundDecision Invalid(string message)
+        => new(false, message, null, null);
 }
 
 public sealed record AdminMissionDisputeResult(

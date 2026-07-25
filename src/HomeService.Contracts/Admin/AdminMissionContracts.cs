@@ -82,6 +82,9 @@ public sealed record AdminMissionDisputeResponse(
     string Reason,
     string Description,
     string? Resolution,
+    int? RefundPercent,
+    int? RefundAmount,
+    string Currency,
     string? ResolutionNote,
     DateTimeOffset OpenedAt,
     DateTimeOffset? ResolvedAt);

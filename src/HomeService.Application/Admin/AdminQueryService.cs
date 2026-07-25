@@ -520,6 +520,9 @@ public sealed class AdminQueryService(IAppDbContext db)
                 dispute.Reason.ToString(),
                 dispute.Description,
                 dispute.Resolution == null ? null : dispute.Resolution.ToString(),
+                dispute.RefundPercentBasisPoints.HasValue ? dispute.RefundPercentBasisPoints.Value / 100 : null,
+                dispute.RefundAmount,
+                dispute.Currency,
                 dispute.ResolutionNote,
                 dispute.OpenedAt,
                 dispute.ResolvedAt))
