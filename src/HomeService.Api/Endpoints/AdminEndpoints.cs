@@ -14,6 +14,7 @@ using HomeService.Contracts.Companies;
 using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Monitoring;
+using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
 using HomeService.Domain.Common;
@@ -381,15 +382,16 @@ public static class AdminEndpoints
 
         admin.MapPost("/missions/{missionId:guid}/mark-disputed", async (
             Guid missionId,
-            AdminMissionActionRequest request,
+            CancelMissionRequest request,
             HttpRequest httpRequest,
             AdminQueryService queryService,
-            AdminMissionOperationsService missionOperationsService,
+            AdminMissionDisputeService disputeService,
             CancellationToken cancellationToken) =>
         {
-            var result = await missionOperationsService.MarkDisputedAsync(
+            var result = await disputeService.OpenAsync(
                 missionId,
-                request.Note,
+                request.Reason,
+                request.Comment,
                 AuditActor.Admin(),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
@@ -409,14 +411,15 @@ public static class AdminEndpoints
 
         admin.MapPost("/missions/{missionId:guid}/resolve-dispute", async (
             Guid missionId,
-            AdminMissionActionRequest request,
+            ResolveMissionDisputeRequest request,
             HttpRequest httpRequest,
             AdminQueryService queryService,
-            AdminMissionOperationsService missionOperationsService,
+            AdminMissionDisputeService disputeService,
             CancellationToken cancellationToken) =>
         {
-            var result = await missionOperationsService.ResolveDisputeAsync(
+            var result = await disputeService.ResolveAsync(
                 missionId,
+                request.Resolution,
                 request.Note,
                 AuditActor.Admin(),
                 GetAuditRequestContext(httpRequest),
@@ -434,6 +437,35 @@ public static class AdminEndpoints
             return Results.Ok(await queryService.GetMissionAsync(missionId, cancellationToken));
         })
         .WithName("ResolveAdminMissionDispute");
+
+        admin.MapPost("/missions/{missionId:guid}/cancel", async (
+            Guid missionId,
+            CancelMissionRequest request,
+            HttpRequest httpRequest,
+            AdminQueryService queryService,
+            AdminMissionOperationsService missionOperationsService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await missionOperationsService.CancelAsync(
+                missionId,
+                request.Reason,
+                request.Comment,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            if (result.Status == AdminMissionOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminMissionOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            return Results.Ok(await queryService.GetMissionAsync(missionId, cancellationToken));
+        })
+        .WithName("CancelAdminMission");
 
         admin.MapGet("/providers", async (
             string? status,

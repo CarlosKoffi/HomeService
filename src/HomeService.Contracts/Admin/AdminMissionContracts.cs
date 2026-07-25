@@ -56,6 +56,11 @@ public sealed record AdminMissionDetailResponse(
     int PlatformCommissionAmount,
     int TransportFeeAmount,
     int CancellationFeeAmount,
+    int RefundAmount,
+    string? CancelledBy,
+    string? CancellationReason,
+    string? CancellationComment,
+    DateTimeOffset? CancelledAt,
     string Currency,
     string? ServiceAddress,
     decimal? ServiceLatitude,
@@ -67,7 +72,19 @@ public sealed record AdminMissionDetailResponse(
     bool CanRevealContactDetails,
     DateTimeOffset CreatedAt,
     IReadOnlyList<AdminMissionAssignmentResponse> Assignments,
+    IReadOnlyList<AdminMissionDisputeResponse> Disputes,
     IReadOnlyList<AdminMissionConversationMessageResponse> Messages);
+
+public sealed record AdminMissionDisputeResponse(
+    Guid Id,
+    string Status,
+    string OpenedBy,
+    string Reason,
+    string Description,
+    string? Resolution,
+    string? ResolutionNote,
+    DateTimeOffset OpenedAt,
+    DateTimeOffset? ResolvedAt);
 
 public sealed record AdminMissionAssignmentResponse(
     Guid Id,

@@ -447,6 +447,11 @@ public sealed class AdminQueryService(IAppDbContext db)
                 item.PlatformCommissionAmount,
                 item.TransportFeeAmount,
                 item.CancellationFeeAmount,
+                item.RefundAmount,
+                item.CancelledBy,
+                item.CancellationReason,
+                item.CancellationComment,
+                item.CancelledAt,
                 item.Currency,
                 item.ServiceAddress,
                 item.ServiceLatitude,
@@ -504,6 +509,22 @@ public sealed class AdminQueryService(IAppDbContext db)
             .Take(100)
             .ToListAsync(cancellationToken);
 
+        var disputes = await db.MissionDisputes
+            .AsNoTracking()
+            .Where(dispute => dispute.MissionId == missionId)
+            .OrderByDescending(dispute => dispute.OpenedAt)
+            .Select(dispute => new AdminMissionDisputeResponse(
+                dispute.Id,
+                dispute.Status.ToString(),
+                dispute.OpenedBy.ToString(),
+                dispute.Reason.ToString(),
+                dispute.Description,
+                dispute.Resolution == null ? null : dispute.Resolution.ToString(),
+                dispute.ResolutionNote,
+                dispute.OpenedAt,
+                dispute.ResolvedAt))
+            .ToListAsync(cancellationToken);
+
         return new AdminMissionDetailResponse(
             mission.Id,
             mission.MissionNumber,
@@ -530,6 +551,11 @@ public sealed class AdminQueryService(IAppDbContext db)
             mission.PlatformCommissionAmount,
             mission.TransportFeeAmount,
             mission.CancellationFeeAmount,
+            mission.RefundAmount,
+            mission.CancelledBy == null ? null : mission.CancelledBy.ToString(),
+            mission.CancellationReason == null ? null : mission.CancellationReason.ToString(),
+            mission.CancellationComment,
+            mission.CancelledAt,
             mission.Currency,
             mission.ServiceAddress,
             mission.ServiceLatitude,
@@ -541,6 +567,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             mission.CanRevealContactDetails,
             mission.CreatedAt,
             assignments,
+            disputes,
             messages);
     }
 

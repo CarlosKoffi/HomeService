@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<CompanyPortalQueryService>();
         services.AddScoped<MissionDispatchScoringService>();
         services.AddScoped<MissionDispatchService>();
+        services.AddScoped<MissionCancellationWorkflowService>();
         services.AddScoped<MissionPaymentMilestoneService>();
         services.AddScoped<ProviderAssignmentExpirationService>();
         services.AddScoped<ProviderSelfRegistrationService>();
@@ -60,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<AdminNotificationService>();
         services.AddScoped<AdminTranslationService>();
         services.AddScoped<AdminMissionOperationsService>();
+        services.AddScoped<AdminMissionDisputeService>();
         services.AddScoped<AdminProviderOperationsService>();
         services.AddScoped<AdminServiceCatalogInsightsService>();
 

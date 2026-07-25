@@ -1,0 +1,250 @@
+using HomeService.Application.Abstractions;
+using HomeService.Contracts.Missions;
+using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+
+namespace HomeService.Application.Missions;
+
+public sealed class MissionCancellationWorkflowService(IAppDbContext db)
+{
+    private const int DefaultAfterContactReleaseFeeAmount = 2500;
+
+    public async Task<MissionCancellationWorkflowResult> CancelAsync(
+        Guid missionId,
+        MissionCancellationActor actor,
+        CancelMissionRequest request,
+        Guid? expectedCompanyId,
+        Guid? expectedProviderId,
+        CancellationToken cancellationToken)
+    {
+        var validationErrors = Validate(request);
+        if (validationErrors.Count > 0)
+        {
+            return MissionCancellationWorkflowResult.ValidationFailed(validationErrors);
+        }
+
+        var mission = await db.Missions.FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
+        if (mission is null)
+        {
+            return MissionCancellationWorkflowResult.NotFound("Mission introuvable.");
+        }
+
+        if (expectedCompanyId is not null && mission.CompanyId != expectedCompanyId.Value)
+        {
+            return MissionCancellationWorkflowResult.Forbidden("Cette mission n'appartient pas a cette entreprise.");
+        }
+
+        if (expectedProviderId is not null && mission.ProviderId != expectedProviderId.Value)
+        {
+            return MissionCancellationWorkflowResult.Forbidden("Cette mission n'est pas affectee a ce prestataire.");
+        }
+
+        var reason = ParseReason(request.Reason, actor);
+        var fee = ResolveCancellationFee(mission, request.CancellationFeeAmount);
+        var refund = CalculateRefundAmount(mission, fee);
+        var previousStatus = mission.Status;
+
+        try
+        {
+            mission.Cancel(actor, reason, request.Comment, fee, refund);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return MissionCancellationWorkflowResult.Invalid(exception.Message);
+        }
+
+        await CancelOpenAssignmentsAsync(mission.Id, cancellationToken);
+        TrackCancellationFinancials(mission, fee, refund);
+        TrackCancellationMilestone(mission, fee);
+        TrackCompanyActivity(mission, actor, reason);
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return MissionCancellationWorkflowResult.Success(
+            ToResponse(mission),
+            previousStatus);
+    }
+
+    private async Task CancelOpenAssignmentsAsync(Guid missionId, CancellationToken cancellationToken)
+    {
+        var assignments = await db.ProviderMissionAssignments
+            .Where(assignment => assignment.MissionId == missionId)
+            .ToListAsync(cancellationToken);
+
+        foreach (var assignment in assignments)
+        {
+            assignment.Cancel();
+        }
+    }
+
+    private static IReadOnlyList<string> Validate(CancelMissionRequest request)
+    {
+        var errors = new List<string>();
+        if (string.IsNullOrWhiteSpace(request.Reason))
+        {
+            errors.Add("La raison d'annulation est obligatoire.");
+        }
+
+        if (request.Comment?.Length > 1200)
+        {
+            errors.Add("Le commentaire d'annulation est trop long.");
+        }
+
+        if (request.CancellationFeeAmount is < 0)
+        {
+            errors.Add("Les frais d'annulation ne peuvent pas etre negatifs.");
+        }
+
+        return errors;
+    }
+
+    private static MissionCancellationReason ParseReason(string reason, MissionCancellationActor actor)
+    {
+        if (Enum.TryParse<MissionCancellationReason>(reason, ignoreCase: true, out var parsed))
+        {
+            return parsed;
+        }
+
+        return actor switch
+        {
+            MissionCancellationActor.Provider => MissionCancellationReason.ProviderUnavailable,
+            MissionCancellationActor.Company => MissionCancellationReason.CompanyUnavailable,
+            _ => MissionCancellationReason.Other
+        };
+    }
+
+    private static int ResolveCancellationFee(Mission mission, int? requestedFee)
+    {
+        if (mission.ContactDetailsReleasedAt is null)
+        {
+            return 0;
+        }
+
+        return Math.Max(0, requestedFee ?? DefaultAfterContactReleaseFeeAmount);
+    }
+
+    private static int CalculateRefundAmount(Mission mission, int cancellationFee)
+    {
+        if (mission.PaymentStatus is not (PaymentStatus.Authorized or PaymentStatus.Paid))
+        {
+            return 0;
+        }
+
+        var paidAmount = mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? mission.FinalTotalAmount ?? 0;
+        return Math.Max(0, paidAmount - cancellationFee);
+    }
+
+    private void TrackCancellationFinancials(Mission mission, int cancellationFee, int refundAmount)
+    {
+        if (cancellationFee > 0)
+        {
+            db.MissionFinancialBreakdowns.Add(new MissionFinancialBreakdown(
+                mission.Id,
+                MissionFinancialLineType.CancellationFee,
+                "Frais d'annulation",
+                cancellationFee,
+                mission.Currency,
+                90));
+        }
+
+        if (refundAmount > 0)
+        {
+            db.MissionFinancialBreakdowns.Add(new MissionFinancialBreakdown(
+                mission.Id,
+                MissionFinancialLineType.Refund,
+                "Remboursement client",
+                -refundAmount,
+                mission.Currency,
+                100));
+        }
+    }
+
+    private void TrackCancellationMilestone(Mission mission, int cancellationFee)
+    {
+        var milestone = new MissionPaymentMilestone(
+            mission.Id,
+            MissionPaymentMilestoneTrigger.Cancellation,
+            cancellationFee,
+            mission.Currency,
+            cancellationFee > 0 ? "Annulation - frais conserves" : "Annulation - aucun frais",
+            90);
+
+        if (cancellationFee > 0)
+        {
+            milestone.MarkDue(DateTimeOffset.UtcNow);
+        }
+        else
+        {
+            milestone.Cancel();
+        }
+
+        db.MissionPaymentMilestones.Add(milestone);
+    }
+
+    private void TrackCompanyActivity(Mission mission, MissionCancellationActor actor, MissionCancellationReason reason)
+    {
+        if (mission.CompanyId is null)
+        {
+            return;
+        }
+
+        db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+            mission.CompanyId.Value,
+            "mission",
+            "Mission annulee",
+            $"{mission.MissionNumber} - annulation {actor}. Raison: {reason}.",
+            "orange",
+            nameof(Mission),
+            mission.Id));
+    }
+
+    private static CancelMissionResponse ToResponse(Mission mission)
+    {
+        return new CancelMissionResponse(
+            mission.Id,
+            mission.MissionNumber,
+            mission.Status.ToString(),
+            mission.PaymentStatus.ToString(),
+            mission.CancelledBy?.ToString() ?? string.Empty,
+            mission.CancellationReason?.ToString() ?? string.Empty,
+            mission.CancellationFeeAmount,
+            mission.RefundAmount,
+            mission.Currency,
+            mission.CancelledAt!.Value);
+    }
+}
+
+public enum MissionCancellationWorkflowStatus
+{
+    Success,
+    NotFound,
+    Forbidden,
+    ValidationFailed,
+    Invalid
+}
+
+public sealed record MissionCancellationWorkflowResult(
+    MissionCancellationWorkflowStatus Status,
+    CancelMissionResponse? Response,
+    MissionStatus? PreviousStatus,
+    string Message,
+    IReadOnlyList<string> Errors)
+{
+    public bool IsSuccess => Status == MissionCancellationWorkflowStatus.Success;
+
+    public static MissionCancellationWorkflowResult Success(CancelMissionResponse response, MissionStatus previousStatus)
+        => new(MissionCancellationWorkflowStatus.Success, response, previousStatus, "Mission annulee.", []);
+
+    public static MissionCancellationWorkflowResult NotFound(string message)
+        => new(MissionCancellationWorkflowStatus.NotFound, null, null, message, []);
+
+    public static MissionCancellationWorkflowResult Forbidden(string message)
+        => new(MissionCancellationWorkflowStatus.Forbidden, null, null, message, []);
+
+    public static MissionCancellationWorkflowResult ValidationFailed(IReadOnlyList<string> errors)
+        => new(MissionCancellationWorkflowStatus.ValidationFailed, null, null, "Annulation invalide.", errors);
+
+    public static MissionCancellationWorkflowResult Invalid(string message)
+        => new(MissionCancellationWorkflowStatus.Invalid, null, null, message, []);
+}

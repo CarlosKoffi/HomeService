@@ -4,6 +4,7 @@ using HomeService.Application.Auditing;
 using HomeService.Application.Missions;
 using HomeService.Application.ProviderPortal;
 using HomeService.Application.Security;
+using HomeService.Contracts.Missions;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -309,6 +310,72 @@ public static class ProviderPortalEndpoints
             return ToProviderMissionHttpResult(result);
         })
         .WithName("RefuseProviderMission");
+
+        group.MapPost("/mission-assignments/{assignmentId:guid}/cancel", async (
+            Guid assignmentId,
+            CancelMissionRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            MissionCancellationWorkflowService cancellationService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var assignment = await db.ProviderMissionAssignments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(assignment =>
+                    assignment.Id == assignmentId
+                    && assignment.ProviderId == session.ProviderId,
+                    cancellationToken);
+
+            if (assignment is null)
+            {
+                return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+            }
+
+            var result = await cancellationService.CancelAsync(
+                assignment.MissionId,
+                MissionCancellationActor.Provider,
+                request,
+                expectedCompanyId: assignment.CompanyId,
+                expectedProviderId: session.ProviderId,
+                cancellationToken);
+
+            if (result.Status == MissionCancellationWorkflowStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == MissionCancellationWorkflowStatus.Forbidden)
+            {
+                return Results.Forbid();
+            }
+
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { message = result.Message, errors = result.Errors });
+            }
+
+            AddProviderAudit(
+                db,
+                httpRequest,
+                session.ProviderId,
+                session.Provider.FullName,
+                "ProviderMissionCancelled",
+                nameof(Mission),
+                assignment.MissionId,
+                "Mission annulee par le prestataire.",
+                before: new { Status = result.PreviousStatus?.ToString() },
+                after: result.Response);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("CancelProviderMission");
 
         group.MapPost("/mission-assignments/{assignmentId:guid}/verify-arrival", async (
             Guid assignmentId,

@@ -96,6 +96,18 @@ public sealed class ProviderMissionAssignment : AuditableEntity
         Touch();
     }
 
+    public void Cancel()
+    {
+        if (Status is ProviderMissionAssignmentStatus.Completed or ProviderMissionAssignmentStatus.Refused or ProviderMissionAssignmentStatus.Expired)
+        {
+            return;
+        }
+
+        Status = ProviderMissionAssignmentStatus.Cancelled;
+        RespondedAt ??= DateTimeOffset.UtcNow;
+        Touch();
+    }
+
     public void VerifyArrival(
         decimal? providerLatitude,
         decimal? providerLongitude,

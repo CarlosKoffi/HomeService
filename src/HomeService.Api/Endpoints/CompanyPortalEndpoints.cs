@@ -3,7 +3,9 @@ using HomeService.Application.Companies;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
+using HomeService.Application.Missions;
 using HomeService.Contracts.CompanyPortal;
+using HomeService.Contracts.Missions;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -505,6 +507,52 @@ public static class CompanyPortalEndpoints
                 : Results.BadRequest(new { message = result.Message });
         })
         .WithName("AssignCompanyPortalMission");
+
+        group.MapPost("/{companyId:guid}/missions/{missionId:guid}/cancel", async (
+            Guid companyId,
+            Guid missionId,
+            CancelMissionRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            MissionCancellationWorkflowService cancellationService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await cancellationService.CancelAsync(
+                missionId,
+                MissionCancellationActor.Company,
+                request,
+                expectedCompanyId: companyId,
+                expectedProviderId: null,
+                cancellationToken);
+            if (result.Status == MissionCancellationWorkflowStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == MissionCancellationWorkflowStatus.Forbidden)
+            {
+                return Results.Forbid();
+            }
+
+            if (!result.IsSuccess)
+            {
+                return Results.BadRequest(new { message = result.Message, errors = result.Errors });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Company(companyId, null),
+                "CompanyMissionCancelled",
+                nameof(Mission),
+                missionId,
+                "Mission annulee depuis le portail entreprise.",
+                HttpAuditContextFactory.Create(httpRequest),
+                before: new { Status = result.PreviousStatus?.ToString() },
+                after: result.Response));
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("CancelCompanyPortalMission");
 
         group.MapGet("/{companyId:guid}/employees", async (
             Guid companyId,
