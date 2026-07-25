@@ -182,6 +182,43 @@ public sealed class ProviderMissionWorkflowService
         return ProviderMissionOperationResult.Ok(ToResponse(assignment));
     }
 
+    public ProviderMissionOperationResult CompleteMission(
+        ProviderProfile provider,
+        ProviderMissionAssignment assignment,
+        ProviderCompleteMissionRequest request)
+    {
+        if (!CanProviderUsePortal(provider))
+        {
+            return ProviderMissionOperationResult.Forbidden("Ce prestataire n'est pas autorise a utiliser le portail.");
+        }
+
+        if (assignment.Mission is null)
+        {
+            return ProviderMissionOperationResult.NotFound("Mission introuvable pour ce prestataire.");
+        }
+
+        if (assignment.Status == ProviderMissionAssignmentStatus.Completed)
+        {
+            return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+        }
+
+        if (request.ActualDurationMinutes <= 0)
+        {
+            return ProviderMissionOperationResult.BadRequest("La duree reelle de mission doit etre positive.");
+        }
+
+        try
+        {
+            assignment.Complete(request.Note, request.CompletionPhotoPath);
+            assignment.Mission.Complete(request.ActualDurationMinutes);
+            return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return ProviderMissionOperationResult.BadRequest(exception.Message);
+        }
+    }
+
     public static bool CanProviderUsePortal(ProviderProfile provider)
     {
         return provider.Status == ProviderStatus.Approved

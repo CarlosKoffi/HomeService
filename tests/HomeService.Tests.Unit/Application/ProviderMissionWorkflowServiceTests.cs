@@ -31,6 +31,45 @@ public sealed class ProviderMissionWorkflowServiceTests
     }
 
     [Fact]
+    public void CompleteMission_WhenMissionIsStarted_CompletesAssignmentAndMission()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission);
+        _service.StartMission(provider, assignment, ValidLocation());
+
+        var result = _service.CompleteMission(
+            provider,
+            assignment,
+            new ProviderCompleteMissionRequest(75, "Intervention terminee.", "/storage/photo.jpg"));
+
+        Assert.Equal(ProviderMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(ProviderMissionAssignmentStatus.Completed, assignment.Status);
+        Assert.Equal(MissionStatus.Completed, mission.Status);
+        Assert.Equal("Intervention terminee.", assignment.CompletionNote);
+        Assert.Equal("/storage/photo.jpg", assignment.CompletionPhotoPath);
+        Assert.Equal(75, mission.ActualDurationMinutes);
+    }
+
+    [Fact]
+    public void CompleteMission_WhenDurationIsInvalid_IsRejected()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission);
+        _service.StartMission(provider, assignment, ValidLocation());
+
+        var result = _service.CompleteMission(
+            provider,
+            assignment,
+            new ProviderCompleteMissionRequest(0, null, null));
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, result.Status);
+        Assert.Equal(ProviderMissionAssignmentStatus.Started, assignment.Status);
+        Assert.Equal(MissionStatus.Started, mission.Status);
+    }
+
+    [Fact]
     public void AcceptMission_WhenLocationIsValid_AcceptsAssignmentAndMissionWithoutReleasingContacts()
     {
         var provider = CreateApprovedProvider();

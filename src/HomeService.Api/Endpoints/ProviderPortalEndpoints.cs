@@ -1,6 +1,7 @@
 using HomeService.Api.Auditing;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
+using HomeService.Application.Missions;
 using HomeService.Application.ProviderPortal;
 using HomeService.Application.Security;
 using HomeService.Contracts.ProviderPortal;
@@ -368,6 +369,7 @@ public static class ProviderPortalEndpoints
             HttpRequest httpRequest,
             IAppDbContext db,
             ProviderMissionWorkflowService workflow,
+            MissionPaymentMilestoneService milestoneService,
             CancellationToken cancellationToken) =>
         {
             var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -430,10 +432,85 @@ public static class ProviderPortalEndpoints
                     MissionStatus = assignment.Mission.Status,
                     assignment.StartedAt
                 });
+            await milestoneService.EnsureMissionStartedMilestoneAsync(assignment.Mission, cancellationToken);
+            db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+                assignment.CompanyId,
+                "mission",
+                "Mission demarree",
+                $"{session.Provider.FullName} a demarre la mission {assignment.Mission.MissionNumber}. Les fonds client restent securises.",
+                "blue",
+                nameof(Mission),
+                assignment.MissionId));
             await db.SaveChangesAsync(cancellationToken);
             return ToProviderMissionHttpResult(result);
         })
         .WithName("StartProviderMissionWithArrivalVerification");
+
+        group.MapPost("/mission-assignments/{assignmentId:guid}/complete", async (
+            Guid assignmentId,
+            ProviderCompleteMissionRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMissionWorkflowService workflow,
+            MissionPaymentMilestoneService milestoneService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var assignment = await db.ProviderMissionAssignments
+                .Include(assignment => assignment.Mission)
+                .FirstOrDefaultAsync(assignment =>
+                    assignment.Id == assignmentId
+                    && assignment.ProviderId == session.ProviderId,
+                    cancellationToken);
+
+            if (assignment?.Mission is null)
+            {
+                return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+            }
+
+            var result = workflow.CompleteMission(session.Provider, assignment, request);
+            if (result.Status != ProviderMissionOperationStatus.Ok)
+            {
+                return ToProviderMissionHttpResult(result);
+            }
+
+            AddProviderAudit(
+                db,
+                httpRequest,
+                session.ProviderId,
+                $"{session.Provider.FirstName} {session.Provider.LastName}",
+                "ProviderMissionCompleted",
+                nameof(ProviderMissionAssignment),
+                assignment.Id,
+                "Mission terminee par le prestataire.",
+                after: new
+                {
+                    assignment.MissionId,
+                    AssignmentStatus = assignment.Status,
+                    MissionStatus = assignment.Mission.Status,
+                    request.ActualDurationMinutes,
+                    assignment.CompletedAt
+                });
+
+            await milestoneService.EnsureMissionCompletedMilestoneAsync(assignment.Mission, cancellationToken);
+            db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+                assignment.CompanyId,
+                "mission",
+                "Mission terminee",
+                $"{session.Provider.FullName} a termine la mission {assignment.Mission.MissionNumber}. Paiement entreprise a liberer apres validation client.",
+                "green",
+                nameof(Mission),
+                assignment.MissionId));
+
+            await db.SaveChangesAsync(cancellationToken);
+            return ToProviderMissionHttpResult(result);
+        })
+        .WithName("CompleteProviderMission");
 
         return app;
     }
