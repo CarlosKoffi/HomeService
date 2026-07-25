@@ -31,6 +31,7 @@ public interface IAppDbContext
     DbSet<MissionAttachment> MissionAttachments { get; }
     DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns { get; }
     DbSet<MissionPaymentMilestone> MissionPaymentMilestones { get; }
+    DbSet<MissionReview> MissionReviews { get; }
     DbSet<MissionStatusHistory> MissionStatusHistories { get; }
     DbSet<MissionDispatchOffer> MissionDispatchOffers { get; }
     DbSet<CommissionRule> CommissionRules { get; }

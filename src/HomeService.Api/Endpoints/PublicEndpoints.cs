@@ -272,6 +272,39 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapPost("/api/client/missions/{missionId:guid}/validate-completion", async (
+            Guid missionId,
+            ValidateClientMissionCompletionRequest request,
+            ClientMissionCompletionValidationService completionValidationService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await completionValidationService.ValidateAsync(missionId, request, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionCompletionValidationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionCompletionValidationStatus.Forbidden => Results.Problem(
+                    title: "Validation interdite.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                ClientMissionCompletionValidationStatus.ValidationFailed => Results.BadRequest(new
+                {
+                    message = result.Message,
+                    errors = result.Errors
+                }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("ValidateClientMissionCompletion")
+        .Produces<ValidateClientMissionCompletionResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/company-applications", async (
             HttpRequest httpRequest,
             CompanyApplicationUploadService uploadService,

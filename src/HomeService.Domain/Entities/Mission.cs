@@ -74,7 +74,9 @@ public sealed class Mission : AuditableEntity
     public int ArrivalToleranceMeters { get; private set; } = 250;
     public DateTimeOffset? ProviderAcceptedAt { get; private set; }
     public DateTimeOffset? CustomerConfirmedAt { get; private set; }
+    public DateTimeOffset? CustomerCompletionValidatedAt { get; private set; }
     public DateTimeOffset? ContactDetailsReleasedAt { get; private set; }
+    public DateTimeOffset? CompanyPayoutReleasedAt { get; private set; }
     public DateTimeOffset? CompanyAssignmentExpiresAt { get; private set; }
     public bool CanRevealContactDetails => ContactDetailsReleasedAt is not null
         && Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started or MissionStatus.Completed
@@ -344,6 +346,24 @@ public sealed class Mission : AuditableEntity
         FinalTotalAmount = CompanyQuotedAmount ?? CalculateAmount(actualDurationMinutes, HourlyRateAmount ?? 0);
         CompanyPayoutAmount = Math.Max(0, FinalTotalAmount.Value - PlatformCommissionAmount);
         Status = MissionStatus.Completed;
+        Touch();
+    }
+
+    public void ValidateCompletionByCustomer()
+    {
+        if (Status != MissionStatus.Completed)
+        {
+            throw new InvalidOperationException("Only completed missions can be validated by the customer.");
+        }
+
+        if (CustomerCompletionValidatedAt is not null)
+        {
+            return;
+        }
+
+        CustomerCompletionValidatedAt = DateTimeOffset.UtcNow;
+        CompanyPayoutReleasedAt = CustomerCompletionValidatedAt;
+        PaymentStatus = PaymentStatus.Paid;
         Touch();
     }
 

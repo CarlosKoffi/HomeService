@@ -265,6 +265,17 @@ public sealed class MissionDispatchService(
             .Select(group => new { CompanyId = group.Key, Count = group.Count() })
             .ToListAsync(cancellationToken);
 
+        var ratingStats = await db.MissionReviews
+            .AsNoTracking()
+            .Where(review => companyIds.Contains(review.CompanyId))
+            .GroupBy(review => review.CompanyId)
+            .Select(group => new
+            {
+                CompanyId = group.Key,
+                AverageRating = group.Average(review => (decimal?)review.OverallRating)
+            })
+            .ToListAsync(cancellationToken);
+
         var marketAverage = await db.Missions
             .AsNoTracking()
             .Where(item => item.ServiceId == mission.ServiceId && item.CompanyQuotedAmount.HasValue)
@@ -274,13 +285,14 @@ public sealed class MissionDispatchService(
             .Select(company =>
             {
                 var stats = missionStats.FirstOrDefault(item => item.CompanyId == company.Id);
+                var rating = ratingStats.FirstOrDefault(item => item.CompanyId == company.Id);
                 return new MissionDispatchCandidate(
                     company.Id,
                     company.Name,
                     company.MissionDispatchPriority,
                     CoversRequestedZone(company.InterventionZones, mission.ServiceAddress),
                     company.AcceptsUrgentMissions,
-                    AverageRating: null,
+                    rating?.AverageRating,
                     stats?.Completed ?? 0,
                     stats?.Recent ?? 0,
                     stats?.Cancelled ?? 0,

@@ -33,6 +33,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<MissionAttachment> MissionAttachments => Set<MissionAttachment>();
     public DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns => Set<MissionFinancialBreakdown>();
     public DbSet<MissionPaymentMilestone> MissionPaymentMilestones => Set<MissionPaymentMilestone>();
+    public DbSet<MissionReview> MissionReviews => Set<MissionReview>();
     public DbSet<MissionStatusHistory> MissionStatusHistories => Set<MissionStatusHistory>();
     public DbSet<MissionDispatchOffer> MissionDispatchOffers => Set<MissionDispatchOffer>();
     public DbSet<CommissionRule> CommissionRules => Set<CommissionRule>();

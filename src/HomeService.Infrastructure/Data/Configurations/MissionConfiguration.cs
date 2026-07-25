@@ -33,6 +33,7 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
         builder.HasIndex(mission => new { mission.ServicePrestationId, mission.Status });
         builder.HasIndex(mission => new { mission.CompanyId, mission.Status });
         builder.HasIndex(mission => new { mission.QuoteStatus, mission.PaymentStatus });
+        builder.HasIndex(mission => new { mission.CustomerCompletionValidatedAt, mission.CompanyPayoutReleasedAt });
         builder.HasIndex(mission => new { mission.CompanyAssignmentExpiresAt, mission.Status });
     }
 }
