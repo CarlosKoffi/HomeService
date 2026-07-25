@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<CompanyPortalQueryService>();
         services.AddScoped<MissionDispatchScoringService>();
         services.AddScoped<MissionDispatchService>();
+        services.AddScoped<ProviderAssignmentExpirationService>();
         services.AddScoped<ProviderSelfRegistrationService>();
         services.AddScoped<ProviderOnboardingService>();
         services.AddScoped<ProviderPortalAuthService>();

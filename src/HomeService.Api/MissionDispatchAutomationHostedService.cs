@@ -34,18 +34,24 @@ public sealed class MissionDispatchAutomationHostedService(
         {
             using var scope = scopeFactory.CreateScope();
             var dispatchService = scope.ServiceProvider.GetRequiredService<MissionDispatchService>();
+            var assignmentExpirationService = scope.ServiceProvider.GetRequiredService<ProviderAssignmentExpirationService>();
             var result = await dispatchService.ExpireAndReissueDueOffersAsync(
                 DateTimeOffset.UtcNow,
                 GetBatchSize(),
                 stoppingToken);
+            var assignmentResult = await assignmentExpirationService.ExpireDueAssignmentsAsync(
+                DateTimeOffset.UtcNow,
+                GetBatchSize(),
+                stoppingToken);
 
-            if (result.MissionCount > 0)
+            if (result.MissionCount > 0 || assignmentResult.ExpiredAssignmentCount > 0)
             {
                 logger.LogInformation(
-                    "Mission dispatch automation processed {MissionCount} missions, expired {ExpiredCount} offers and created {CreatedCount} offers.",
+                    "Mission dispatch automation processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers and expired {AssignmentCount} provider assignments.",
                     result.MissionCount,
                     result.ExpiredOfferCount,
-                    result.CreatedOfferCount);
+                    result.CreatedOfferCount,
+                    assignmentResult.ExpiredAssignmentCount);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
