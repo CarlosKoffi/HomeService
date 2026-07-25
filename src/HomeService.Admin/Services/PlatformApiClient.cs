@@ -8,6 +8,7 @@ using HomeService.Contracts.Companies;
 using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Monitoring;
+using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
 using Microsoft.AspNetCore.Components.Forms;
@@ -171,19 +172,22 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<AdminMissionListResponse>(
             $"/api/admin/missions/{missionId}/mark-disputed",
-            new AdminMissionActionRequest(note),
+            new CancelMissionRequest("Other", note),
             cancellationToken);
     }
 
     public async Task<AdminMissionDetailResponse?> ResolveAdminMissionDisputeAsync(
         Guid missionId,
+        string resolution,
         string note,
+        int? refundPercent,
+        int? refundAmount,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<AdminMissionDetailResponse>(
             $"/api/admin/missions/{missionId}/resolve-dispute",
-            new AdminMissionActionRequest(note),
+            new ResolveMissionDisputeRequest(resolution, note, refundPercent, refundAmount),
             cancellationToken);
     }
 

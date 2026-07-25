@@ -53,4 +53,28 @@ public sealed class CompanyPortalNotificationWriter(IAppDbContext db)
             tone,
             actionUrl));
     }
+
+    public void AddForMission(
+        Mission mission,
+        string type,
+        string title,
+        string message,
+        string tone,
+        string? actionUrl = "missions")
+    {
+        if (mission.CompanyId is null)
+        {
+            return;
+        }
+
+        db.CompanyPortalNotifications.Add(new CompanyPortalNotification(
+            mission.CompanyId.Value,
+            null,
+            null,
+            type,
+            title,
+            message,
+            tone,
+            actionUrl));
+    }
 }

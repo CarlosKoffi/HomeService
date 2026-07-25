@@ -1,5 +1,6 @@
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
+using HomeService.Application.CompanyPortal;
 using HomeService.Contracts.Missions;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -15,7 +16,7 @@ public sealed class AdminMissionDisputeServiceTests
     {
         await using var db = CreateDbContext();
         var mission = await SeedMissionAsync(db);
-        var sut = new AdminMissionDisputeService(db);
+        var sut = CreateService(db);
 
         var result = await sut.OpenAsync(
             mission.Id,
@@ -28,6 +29,7 @@ public sealed class AdminMissionDisputeServiceTests
         Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
         Assert.Equal(MissionStatus.Disputed, mission.Status);
         Assert.Equal(1, await db.MissionDisputes.CountAsync());
+        Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());
         Assert.Equal(1, await db.AuditLogEntries.CountAsync());
     }
 
@@ -36,7 +38,7 @@ public sealed class AdminMissionDisputeServiceTests
     {
         await using var db = CreateDbContext();
         var mission = await SeedMissionAsync(db);
-        var sut = new AdminMissionDisputeService(db);
+        var sut = CreateService(db);
         await sut.OpenAsync(mission.Id, "Other", "Verification necessaire", AuditActor.Admin(), null, CancellationToken.None);
 
         var result = await sut.ResolveAsync(
@@ -57,6 +59,7 @@ public sealed class AdminMissionDisputeServiceTests
         Assert.Equal(4000, dispute.RefundPercentBasisPoints);
         Assert.Equal(800, dispute.RefundAmount);
         Assert.Equal(1, await db.MissionFinancialBreakdowns.CountAsync());
+        Assert.Equal(2, await db.CompanyPortalNotifications.CountAsync());
         Assert.Equal(2, await db.AuditLogEntries.CountAsync());
     }
 
@@ -65,7 +68,7 @@ public sealed class AdminMissionDisputeServiceTests
     {
         await using var db = CreateDbContext();
         var mission = await SeedMissionAsync(db);
-        var sut = new AdminMissionDisputeService(db);
+        var sut = CreateService(db);
         await sut.OpenAsync(mission.Id, "Other", "Service conteste", AuditActor.Admin(), null, CancellationToken.None);
 
         var result = await sut.ResolveAsync(
@@ -89,7 +92,7 @@ public sealed class AdminMissionDisputeServiceTests
     {
         await using var db = CreateDbContext();
         var mission = await SeedMissionAsync(db);
-        var sut = new AdminMissionDisputeService(db);
+        var sut = CreateService(db);
 
         var result = await sut.ResolveAsync(
             mission.Id,
@@ -146,4 +149,7 @@ public sealed class AdminMissionDisputeServiceTests
 
         return new HomeServiceDbContext(options);
     }
+
+    private static AdminMissionDisputeService CreateService(HomeServiceDbContext db)
+        => new(db, new CompanyPortalNotificationWriter(db));
 }

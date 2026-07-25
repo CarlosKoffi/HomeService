@@ -1,12 +1,15 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
+using HomeService.Application.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminMissionDisputeService(IAppDbContext db)
+public sealed class AdminMissionDisputeService(
+    IAppDbContext db,
+    CompanyPortalNotificationWriter companyNotifications)
 {
     public async Task<AdminMissionDisputeResult> OpenAsync(
         Guid missionId,
@@ -56,6 +59,13 @@ public sealed class AdminMissionDisputeService(IAppDbContext db)
             auditContext,
             before: new { Status = previousStatus.ToString() },
             after: new { Status = mission.Status.ToString(), Reason = parsedReason.ToString(), Description = description.Trim() }));
+        companyNotifications.AddForMission(
+            mission,
+            "MissionDisputeOpened",
+            $"Litige ouvert sur la mission {mission.MissionNumber}",
+            "Notre equipe analyse un litige sur cette mission. Vous serez informe de la decision dans votre portail.",
+            "warning",
+            $"missions/{mission.Id}");
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -142,6 +152,13 @@ public sealed class AdminMissionDisputeService(IAppDbContext db)
                 mission.Currency,
                 110));
         }
+        companyNotifications.AddForMission(
+            mission,
+            "MissionDisputeResolved",
+            $"Litige resolu sur la mission {mission.MissionNumber}",
+            BuildCompanyDisputeResolutionMessage(parsedResolution, refundDecision, mission.Currency),
+            refundDecision.RefundAmount is > 0 ? "warning" : "success",
+            $"missions/{mission.Id}");
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -160,6 +177,25 @@ public sealed class AdminMissionDisputeService(IAppDbContext db)
         return Enum.TryParse<MissionDisputeResolution>(resolution, true, out var parsed)
             ? parsed
             : MissionDisputeResolution.Other;
+    }
+
+    private static string BuildCompanyDisputeResolutionMessage(
+        MissionDisputeResolution resolution,
+        MissionDisputeRefundDecision refundDecision,
+        string currency)
+    {
+        return resolution switch
+        {
+            MissionDisputeResolution.RefundCustomer when refundDecision.RefundAmount is > 0
+                => $"Remboursement client valide: {refundDecision.RefundAmount.Value:N0} {currency}.",
+            MissionDisputeResolution.PartialRefund when refundDecision.RefundAmount is > 0
+                => $"Remboursement partiel valide: {refundDecision.RefundAmount.Value:N0} {currency}.",
+            MissionDisputeResolution.PayCompany
+                => "Decision validee: le paiement entreprise est maintenu.",
+            MissionDisputeResolution.NoAction
+                => "Litige cloture sans action financiere.",
+            _ => "Litige cloture par l'administration."
+        };
     }
 
     private static MissionDisputeRefundDecision ResolveRefundDecision(

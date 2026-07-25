@@ -1690,13 +1690,54 @@ h3 {
     gap: .45rem;
 }
 
+.mission-dispute-box input,
+.mission-dispute-box select,
 .mission-dispute-box textarea {
     border: 1px solid #dbe3ef;
     border-radius: 12px;
     font: inherit;
+    min-height: 46px;
+    padding: .75rem .9rem;
+}
+
+.mission-dispute-box textarea {
     min-height: 120px;
-    padding: .85rem 1rem;
     resize: vertical;
+}
+
+.mission-dispute-current {
+    background: #f7f9fc;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    display: grid;
+    gap: .35rem;
+    padding: .85rem 1rem;
+}
+
+.mission-dispute-current span,
+.mission-dispute-hint {
+    color: #5b6677;
+    font-size: .84rem;
+    margin: 0;
+}
+
+.mission-dispute-current strong {
+    color: #000;
+}
+
+.mission-dispute-current p {
+    color: #000;
+    margin: 0;
+}
+
+.mission-refund-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dispute-history-panel {
+    margin-top: 1rem;
 }
 
 .mission-dispute-box button,

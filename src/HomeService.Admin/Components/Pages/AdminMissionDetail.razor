@@ -124,6 +124,44 @@ else
                 else if (Mission.Status == "Disputed")
                 {
                     <div class="mission-dispute-box">
+                        @if (Mission.Disputes.Count > 0)
+                        {
+                            var currentDispute = Mission.Disputes
+                                .Where(dispute => dispute.Status == "Open")
+                                .OrderByDescending(dispute => dispute.OpenedAt)
+                                .FirstOrDefault()
+                                ?? Mission.Disputes.OrderByDescending(dispute => dispute.OpenedAt).First();
+
+                            <div class="mission-dispute-current">
+                                <span>Litige ouvert le @FormatDate(currentDispute.OpenedAt)</span>
+                                <strong>@TranslateDisputeReason(currentDispute.Reason)</strong>
+                                <p>@currentDispute.Description</p>
+                            </div>
+                        }
+                        <label>
+                            Decision admin
+                            <select @bind="ResolutionType">
+                                <option value="PartialRefund">Remboursement partiel</option>
+                                <option value="RefundCustomer">Remboursement total</option>
+                                <option value="PayCompany">Payer l'entreprise</option>
+                                <option value="NoAction">Cloturer sans action financiere</option>
+                                <option value="Other">Autre decision</option>
+                            </select>
+                        </label>
+                        @if (RequiresRefundInput)
+                        {
+                            <div class="mission-refund-grid">
+                                <label>
+                                    Pourcentage rembourse
+                                    <input type="number" min="0" max="100" step="1" @bind="RefundPercent" placeholder="Ex: 40" />
+                                </label>
+                                <label>
+                                    Montant rembourse
+                                    <input type="number" min="0" step="100" @bind="RefundAmount" placeholder="@FormatMoney(Mission.CompanyQuotedAmount ?? Mission.EstimatedTotalAmount ?? Mission.FinalTotalAmount, Mission.Currency)" />
+                                </label>
+                            </div>
+                            <p class="mission-dispute-hint">Le montant est prioritaire. Sinon le pourcentage calcule le remboursement depuis le prix de la mission.</p>
+                        }
                         <label>
                             Note de resolution
                             <textarea @bind="ResolutionNote" placeholder="Expliquez la decision prise avant de cloturer le litige."></textarea>
@@ -137,6 +175,36 @@ else
                 }
             </article>
         </section>
+        @if (Mission.Disputes.Count > 0)
+        {
+            <section class="operator-list dispute-history-panel">
+                <header>
+                    <div>
+                        <h2>Historique litige</h2>
+                        <p>Decisions prises et remboursements valides par l'administration.</p>
+                    </div>
+                </header>
+                @foreach (var dispute in Mission.Disputes.OrderByDescending(dispute => dispute.OpenedAt))
+                {
+                    <article class="operator-row">
+                        <div>
+                            <strong>@TranslateDisputeResolution(dispute.Resolution)</strong>
+                            <p>@dispute.Description</p>
+                            <small>Ouvert le @FormatDate(dispute.OpenedAt)</small>
+                        </div>
+                        <div class="operator-meta">
+                            <span class="@GetDisputeStatusClass(dispute.Status)">@TranslateDisputeStatus(dispute.Status)</span>
+                            <small>@(dispute.ResolutionNote ?? "Pas encore de note de resolution")</small>
+                        </div>
+                        <div class="operator-kpis">
+                            <span>@(dispute.RefundPercent.HasValue ? $"{dispute.RefundPercent}% rembourse" : "Pas de %")</span>
+                            <span>@FormatMoney(dispute.RefundAmount, dispute.Currency)</span>
+                            <span>@FormatDate(dispute.ResolvedAt)</span>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
     }
     else if (SelectedTab == "assignments")
     {
@@ -209,7 +277,11 @@ else
     private string? Message { get; set; }
     private string? DisputeNote { get; set; }
     private string? ResolutionNote { get; set; }
+    private string ResolutionType { get; set; } = "PartialRefund";
+    private int? RefundPercent { get; set; }
+    private int? RefundAmount { get; set; }
     private string SelectedTab { get; set; } = "summary";
+    private bool RequiresRefundInput => ResolutionType is "PartialRefund" or "RefundCustomer";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -276,9 +348,11 @@ else
 
         try
         {
-            Mission = await ApiClient.ResolveAdminMissionDisputeAsync(Mission.Id, ResolutionNote ?? string.Empty);
+            Mission = await ApiClient.ResolveAdminMissionDisputeAsync(Mission.Id, ResolutionType, ResolutionNote ?? string.Empty, RefundPercent, RefundAmount);
             Message = "Litige cloture.";
             ResolutionNote = null;
+            RefundPercent = null;
+            RefundAmount = null;
             await LoadAsync();
         }
         catch (Exception exception)
@@ -316,6 +390,11 @@ else
     private static string TranslateLocationStatus(string status) => status switch { "Verified" => "verifiee", "OutsideTolerance" => "hors zone", "MissingProviderLocation" => "position manquante", "MissingMissionLocation" => "mission sans position", "LowAccuracy" => "precision faible", "InvalidProviderLocation" => "position invalide", _ => "non verifiee" };
     private static string TranslateSenderType(string senderType) => senderType switch { "Customer" => "Client", "Provider" => "Prestataire", "Company" => "Entreprise", "Platform" => "wélé", _ => senderType };
 
+    private static string TranslateDisputeStatus(string status) => status switch { "Open" => "Ouvert", "Resolved" => "Resolue", "Cancelled" => "Annulee", _ => status };
+    private static string TranslateDisputeReason(string reason) => reason switch { "CustomerAbsent" => "Client absent", "ProviderAbsent" => "Prestataire absent", "QualityIssue" => "Qualite contestee", "PaymentIssue" => "Paiement", "Other" => "Autre", _ => reason };
+    private static string TranslateDisputeResolution(string? resolution) => resolution switch { "RefundCustomer" => "Remboursement total client", "PartialRefund" => "Remboursement partiel", "PayCompany" => "Paiement entreprise maintenu", "NoAction" => "Aucune action financiere", "Other" => "Decision specifique", _ => "En attente de decision" };
+
     private static string GetMissionStatusClass(string status) => status switch { "Completed" or "Resolved" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetDisputeStatusClass(string status) => status switch { "Resolved" => "status-pill ok", "Cancelled" => "status-pill danger", _ => "status-pill pending" };
 }
