@@ -218,6 +218,42 @@ public static class PublicEndpoints
         .Produces<SubmitContactResponse>()
         .Produces(StatusCodes.Status400BadRequest);
 
+        app.MapPost("/api/client/mission-photos", async (
+            HttpRequest httpRequest,
+            ClientMissionPhotoUploadService uploadService,
+            ILogger<Program> logger,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                if (!httpRequest.HasFormContentType)
+                {
+                    return Results.BadRequest(new { message = "La photo doit etre envoyee au format multipart/form-data." });
+                }
+
+                var form = await httpRequest.ReadFormAsync(cancellationToken);
+                var file = form.Files.GetFile("photo") ?? form.Files.FirstOrDefault();
+                if (file is null)
+                {
+                    return Results.BadRequest(new { message = "Ajoutez une photo avant l'envoi." });
+                }
+
+                var caption = GetOptionalFormValue(form, "caption");
+                var response = await uploadService.SaveAsync(file, caption, cancellationToken);
+                return Results.Ok(response);
+            }
+            catch (InvalidOperationException exception)
+            {
+                logger.LogWarning(exception, "Client mission photo upload rejected.");
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .DisableAntiforgery()
+        .WithName("UploadClientMissionPhoto")
+        .Accepts<IFormFile>("multipart/form-data")
+        .Produces<ClientMissionPhotoUploadResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
+
         app.MapPost("/api/client/missions", async (
             CreateClientMissionRequest request,
             ClientMissionRequestService missionRequestService,
