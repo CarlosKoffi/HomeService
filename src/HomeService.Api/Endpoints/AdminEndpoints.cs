@@ -812,26 +812,18 @@ public static class AdminEndpoints
             Guid id,
             HttpRequest httpRequest,
             AdminNotificationService notificationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await notificationService.RetryAsync(id, cancellationToken);
+            var result = await notificationService.RetryAsync(
+                id,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminNotificationActionError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminNotificationRetried",
-                "NotificationOutboxMessage",
-                id,
-                "Notification relancee.",
-                after: result.Response);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -842,26 +834,19 @@ public static class AdminEndpoints
             NotificationActionRequest request,
             HttpRequest httpRequest,
             AdminNotificationService notificationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await notificationService.CancelAsync(id, request.Reason, cancellationToken);
+            var result = await notificationService.CancelAsync(
+                id,
+                request.Reason,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminNotificationActionError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminNotificationCancelled",
-                "NotificationOutboxMessage",
-                id,
-                "Notification annulee.",
-                after: result.Response);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -871,26 +856,18 @@ public static class AdminEndpoints
             Guid id,
             HttpRequest httpRequest,
             AdminNotificationService notificationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await notificationService.MarkSentAsync(id, cancellationToken);
+            var result = await notificationService.MarkSentAsync(
+                id,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminNotificationActionError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminNotificationMarkedSent",
-                "NotificationOutboxMessage",
-                id,
-                "Notification marquee envoyee.",
-                after: result.Response);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })

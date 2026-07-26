@@ -1,4 +1,5 @@
 using HomeService.Application.Admin;
+using HomeService.Application.Auditing;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using HomeService.Infrastructure.Data;
@@ -55,6 +56,28 @@ public sealed class AdminNotificationServiceTests
         Assert.Equal(AdminNotificationActionStatus.Ok, result.Status);
         Assert.Equal(NotificationStatus.Sent.ToString(), result.Response!.Status);
         Assert.NotNull(notification.SentAt);
+    }
+
+    [Fact]
+    public async Task RetryAsync_WhenAuditActorIsProvided_CreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var notification = CreateOutboxNotification();
+        notification.MarkFailed("Erreur fournisseur");
+        db.NotificationOutboxMessages.Add(notification);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminNotificationService(db).RetryAsync(
+            notification.Id,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "notification-audit"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminNotificationActionStatus.Ok, result.Status);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminNotificationRetried", log.Action);
+        Assert.Equal(notification.Id, log.EntityId);
+        Assert.Equal("notification-audit", log.CorrelationId);
     }
 
     private static NotificationOutboxMessage CreateOutboxNotification()
