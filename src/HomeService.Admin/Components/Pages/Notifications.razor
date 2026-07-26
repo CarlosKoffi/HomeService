@@ -150,6 +150,19 @@
             </button>
         </nav>
 
+        <div class="notification-template-toolbar">
+            <div>
+                <span>Canal</span>
+                <nav class="notification-subnav compact" aria-label="Filtrer les regles par canal">
+                    <button type="button" class="@GetRuleChannelButtonClass("All")" @onclick='() => SetRuleChannel("All")'>Tous <span>@DeliveryRules.Count</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("Portal")" @onclick='() => SetRuleChannel("Portal")'>Portail <span>@CountRulesByChannel("Portal")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("MobileApp")" @onclick='() => SetRuleChannel("MobileApp")'>Application <span>@CountRulesByChannel("MobileApp")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("Email")" @onclick='() => SetRuleChannel("Email")'>Email <span>@CountRulesByChannel("Email")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("WhatsApp")" @onclick='() => SetRuleChannel("WhatsApp")'>WhatsApp <span>@CountRulesByChannel("WhatsApp")</span></button>
+                </nav>
+            </div>
+        </div>
+
         @if (DeliveryRules.Count == 0 && IsLoading)
         {
             <article class="notification-rule-row">
@@ -230,7 +243,12 @@
                     <strong>Textes par evenement et canal</strong>
                 <p>Mobile, portail, email et WhatsApp utilisent la meme logique. Les liens et donnees sensibles restent generes par la plateforme.</p>
             </div>
-            <small>@FilteredNotificationTemplates.Count / @NotificationTemplates.Count modele(s)</small>
+            <div class="notification-inline-actions">
+                <small>@FilteredNotificationTemplates.Count / @NotificationTemplates.Count modele(s)</small>
+                <button type="button" @onclick="ToggleTemplateCreate">
+                    @(ShowTemplateCreate ? "Fermer" : "Nouveau modele")
+                </button>
+            </div>
         </div>
 
             <div class="notification-template-toolbar">
@@ -256,50 +274,53 @@
                 </div>
             </div>
 
-            <article class="notification-template-create">
-                <div>
-                    <span>Nouveau modele</span>
-                    <strong>Ajouter un cas specifique</strong>
-                    <p>A utiliser seulement si un evenement n'existe pas encore dans le catalogue standard.</p>
-                </div>
-                <div class="notification-template-create-grid">
-                    <label>
-                        Evenement
-                        <input @bind="NewTemplate.EventKey" @bind:event="oninput" placeholder="Ex: MissionRefundApproved" />
-                    </label>
-                    <label>
-                        Audience
-                        <select @bind="NewTemplate.Audience">
-                            <option value="Company">Entreprise</option>
-                            <option value="Provider">Prestataire</option>
-                            <option value="Customer">Client</option>
-                            <option value="Mixed">Mixte</option>
-                        </select>
-                    </label>
-                    <label>
-                        Canal
-                        <select @bind="NewTemplate.Channel">
-                            <option value="Portal">Portail</option>
-                            <option value="MobilePush">Application</option>
-                            <option value="Email">Email</option>
-                            <option value="WhatsApp">WhatsApp</option>
-                        </select>
-                    </label>
-                    <label>
-                        Libelle
-                        <input @bind="NewTemplate.Label" @bind:event="oninput" placeholder="Nom visible en admin" />
-                    </label>
-                    <label>
-                        Sujet
-                        <input @bind="NewTemplate.SubjectTemplate" @bind:event="oninput" placeholder="Sujet ou titre de notification" />
-                    </label>
-                    <label>
-                        Message
-                        <textarea rows="2" @bind="NewTemplate.BodyTemplate" @bind:event="oninput" placeholder="Message avec variables si besoin"></textarea>
-                    </label>
-                </div>
-                <button type="button" class="primary-action" @onclick="CreateTemplateAsync">Creer le modele</button>
-            </article>
+            @if (ShowTemplateCreate)
+            {
+                <article class="notification-template-create">
+                    <div>
+                        <span>Nouveau modele</span>
+                        <strong>Ajouter un cas specifique</strong>
+                        <p>A utiliser seulement si un evenement n'existe pas encore dans le catalogue standard.</p>
+                    </div>
+                    <div class="notification-template-create-grid">
+                        <label>
+                            Evenement
+                            <input @bind="NewTemplate.EventKey" @bind:event="oninput" placeholder="Ex: MissionRefundApproved" />
+                        </label>
+                        <label>
+                            Audience
+                            <select @bind="NewTemplate.Audience">
+                                <option value="Company">Entreprise</option>
+                                <option value="Provider">Prestataire</option>
+                                <option value="Customer">Client</option>
+                                <option value="Mixed">Mixte</option>
+                            </select>
+                        </label>
+                        <label>
+                            Canal
+                            <select @bind="NewTemplate.Channel">
+                                <option value="Portal">Portail</option>
+                                <option value="MobilePush">Application</option>
+                                <option value="Email">Email</option>
+                                <option value="WhatsApp">WhatsApp</option>
+                            </select>
+                        </label>
+                        <label>
+                            Libelle
+                            <input @bind="NewTemplate.Label" @bind:event="oninput" placeholder="Nom visible en admin" />
+                        </label>
+                        <label>
+                            Sujet
+                            <input @bind="NewTemplate.SubjectTemplate" @bind:event="oninput" placeholder="Sujet ou titre de notification" />
+                        </label>
+                        <label>
+                            Message
+                            <textarea rows="2" @bind="NewTemplate.BodyTemplate" @bind:event="oninput" placeholder="Message avec variables si besoin"></textarea>
+                        </label>
+                    </div>
+                    <button type="button" class="primary-action" @onclick="CreateTemplateAsync">Creer le modele</button>
+                </article>
+            }
 
             @foreach (var template in FilteredNotificationTemplates)
             {
@@ -604,8 +625,10 @@
     private string? ChannelFilter { get; set; }
     private string ActiveNotificationSection { get; set; } = "overview";
     private string ActiveRuleAudience { get; set; } = "All";
+    private string ActiveRuleChannel { get; set; } = "All";
     private string ActiveTemplateAudience { get; set; } = "All";
     private string ActiveTemplateChannel { get; set; } = "All";
+    private bool ShowTemplateCreate { get; set; }
     private NotificationTemplateDraft NewTemplate { get; set; } = new();
 
     private IReadOnlyList<NotificationOutboxMessageResponse> FilteredNotifications
@@ -642,6 +665,7 @@
     private IReadOnlyList<NotificationDeliveryRuleResponse> FilteredDeliveryRules
         => DeliveryRules
             .Where(rule => ActiveRuleAudience == "All" || string.Equals(rule.Audience, ActiveRuleAudience, StringComparison.OrdinalIgnoreCase))
+            .Where(MatchesRuleChannel)
             .OrderBy(rule => rule.Audience)
             .ThenBy(rule => rule.Label)
             .ToList();
@@ -844,6 +868,7 @@
             }
 
             NewTemplate = new NotificationTemplateDraft();
+            ShowTemplateCreate = false;
             SuccessMessage = "Modele de notification cree.";
         }
         catch (Exception exception)
@@ -936,6 +961,13 @@
         SuccessMessage = null;
     }
 
+    private void SetRuleChannel(string channel)
+    {
+        ActiveRuleChannel = channel;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
     private void SetTemplateAudience(string audience)
     {
         ActiveTemplateAudience = audience;
@@ -953,6 +985,11 @@
     private string GetRuleAudienceButtonClass(string audience)
     {
         return ActiveRuleAudience == audience ? "active" : string.Empty;
+    }
+
+    private string GetRuleChannelButtonClass(string channel)
+    {
+        return ActiveRuleChannel == channel ? "active" : string.Empty;
     }
 
     private string GetTemplateAudienceButtonClass(string audience)
@@ -1015,6 +1052,11 @@
         return DeliveryRules.Count(rule => string.Equals(rule.Audience, audience, StringComparison.OrdinalIgnoreCase));
     }
 
+    private int CountRulesByChannel(string channel)
+    {
+        return DeliveryRules.Count(rule => RuleHasChannel(rule, channel));
+    }
+
     private int CountTemplatesByAudience(string audience)
     {
         return NotificationTemplates.Count(template => string.Equals(template.Audience, audience, StringComparison.OrdinalIgnoreCase));
@@ -1063,6 +1105,30 @@
             || notification.Title.Contains(search, StringComparison.OrdinalIgnoreCase)
             || notification.Message.Contains(search, StringComparison.OrdinalIgnoreCase)
             || notification.Type.Contains(search, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool MatchesRuleChannel(NotificationDeliveryRuleResponse rule)
+    {
+        return ActiveRuleChannel == "All" || RuleHasChannel(rule, ActiveRuleChannel);
+    }
+
+    private static bool RuleHasChannel(NotificationDeliveryRuleResponse rule, string channel)
+    {
+        return channel switch
+        {
+            "Portal" => rule.PortalEnabled,
+            "MobileApp" => rule.MobileAppEnabled,
+            "Email" => rule.EmailEnabled,
+            "WhatsApp" => rule.WhatsAppEnabled,
+            _ => true
+        };
+    }
+
+    private void ToggleTemplateCreate()
+    {
+        ShowTemplateCreate = !ShowTemplateCreate;
+        ErrorMessage = null;
+        SuccessMessage = null;
     }
 
     private static string TranslateChannel(string channel) => channel switch

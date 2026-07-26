@@ -2470,6 +2470,11 @@ h3 {
     padding: .9rem;
 }
 
+.notification-rules-panel .notification-template-toolbar {
+    background: #fff;
+    margin: .8rem 0 .2rem;
+}
+
 .notification-template-toolbar > div > span {
     color: #64748b;
     display: block;
@@ -2599,6 +2604,26 @@ h3 {
     color: #1a6aff;
     font-weight: 900;
     padding: .45rem .75rem;
+}
+
+.notification-inline-actions {
+    align-items: center;
+    display: flex;
+    gap: .6rem;
+    justify-content: flex-end;
+}
+
+.notification-inline-actions button {
+    background: #000;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 900;
+    padding: .55rem .85rem;
+    white-space: nowrap;
 }
 
 .notification-rule-row {
