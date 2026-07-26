@@ -2687,6 +2687,73 @@ h3 {
     padding: 1rem;
 }
 
+.notification-template-create {
+    background: #f8fafc;
+    border: 1px solid #dbe4f0;
+    border-radius: 18px;
+    display: grid;
+    gap: .9rem;
+    padding: 1rem;
+}
+
+.notification-template-create > div:first-child span {
+    color: #64748b;
+    display: block;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.notification-template-create > div:first-child strong {
+    color: #000;
+    display: block;
+    font-size: 1rem;
+    margin-top: .2rem;
+}
+
+.notification-template-create > div:first-child p {
+    color: #000;
+    font-size: .84rem;
+    margin: .35rem 0 0;
+}
+
+.notification-template-create-grid {
+    display: grid;
+    gap: .7rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.notification-template-create-grid label {
+    color: #64748b;
+    display: grid;
+    font-size: .72rem;
+    font-weight: 900;
+    gap: .35rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.notification-template-create-grid input,
+.notification-template-create-grid select,
+.notification-template-create-grid textarea {
+    background: #fff;
+    border: 1px solid #dbe4f0;
+    border-radius: 14px;
+    color: #000;
+    font: inherit;
+    font-size: .86rem;
+    font-weight: 750;
+    min-height: 44px;
+    outline: none;
+    padding: .68rem .8rem;
+    text-transform: none;
+}
+
+.notification-template-create-grid label:nth-child(6) {
+    grid-column: span 2;
+}
+
 .notification-template-card {
     box-shadow: none;
     display: grid;
@@ -3856,6 +3923,7 @@ h3 {
     .notification-channel-grid,
     .notification-template-layout,
     .notification-template-editor,
+    .notification-template-create-grid,
     .notification-list article,
     .audit-filters,
     .service-catalog-card > header,

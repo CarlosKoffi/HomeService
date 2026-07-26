@@ -2,6 +2,7 @@ using HomeService.Application.Abstractions;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
@@ -19,6 +20,49 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
             .ThenBy(template => template.Channel)
             .Select(template => ToResponse(template))
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<AdminNotificationTemplateResult> CreateAsync(
+        CreateNotificationTemplateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var validation = Validate(request);
+        if (validation is not null)
+        {
+            return AdminNotificationTemplateResult.ValidationFailed(validation);
+        }
+
+        var channel = Enum.Parse<NotificationTemplateChannel>(request.Channel.Trim(), ignoreCase: true);
+        var eventKey = request.EventKey.Trim();
+        var exists = await db.NotificationTemplates
+            .AnyAsync(item => item.EventKey == eventKey && item.Channel == channel, cancellationToken);
+
+        if (exists)
+        {
+            return AdminNotificationTemplateResult.Conflict("Un modele existe deja pour cet evenement et ce canal.");
+        }
+
+        var template = new NotificationTemplate(
+            eventKey,
+            channel,
+            request.Label,
+            request.Audience,
+            request.SubjectTemplate,
+            request.BodyTemplate,
+            request.AvailableVariables);
+
+        template.Update(
+            request.Label,
+            request.Audience,
+            request.SubjectTemplate,
+            request.BodyTemplate,
+            request.AvailableVariables,
+            request.IsActive);
+
+        db.NotificationTemplates.Add(template);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return AdminNotificationTemplateResult.Ok(ToResponse(template));
     }
 
     public async Task<AdminNotificationTemplateResult> UpdateAsync(
@@ -113,6 +157,32 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
         return null;
     }
 
+    private static string? Validate(CreateNotificationTemplateRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.EventKey))
+        {
+            return "La cle evenement est obligatoire.";
+        }
+
+        if (request.EventKey.Trim().Length > 96)
+        {
+            return "La cle evenement est trop longue.";
+        }
+
+        if (!Enum.TryParse<NotificationTemplateChannel>(request.Channel, ignoreCase: true, out _))
+        {
+            return "Canal invalide. Utilisez Portal, MobilePush, Email ou WhatsApp.";
+        }
+
+        return Validate(new UpdateNotificationTemplateRequest(
+            request.Label,
+            request.Audience,
+            request.SubjectTemplate,
+            request.BodyTemplate,
+            request.AvailableVariables,
+            request.IsActive));
+    }
+
     private static NotificationTemplateResponse ToResponse(NotificationTemplate template)
     {
         return new NotificationTemplateResponse(
@@ -143,11 +213,15 @@ public sealed record AdminNotificationTemplateResult(
 
     public static AdminNotificationTemplateResult ValidationFailed(string message)
         => new(AdminNotificationTemplateStatus.ValidationFailed, null, message);
+
+    public static AdminNotificationTemplateResult Conflict(string message)
+        => new(AdminNotificationTemplateStatus.Conflict, null, message);
 }
 
 public enum AdminNotificationTemplateStatus
 {
     Ok,
     NotFound,
-    ValidationFailed
+    ValidationFailed,
+    Conflict
 }

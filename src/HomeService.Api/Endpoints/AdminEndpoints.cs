@@ -966,6 +966,42 @@ public static class AdminEndpoints
         .WithName("ListNotificationTemplates")
         .Produces<IReadOnlyList<NotificationTemplateResponse>>();
 
+        admin.MapPost("/notification-templates", async (
+            CreateNotificationTemplateRequest request,
+            HttpRequest httpRequest,
+            AdminNotificationTemplateService templateService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await templateService.CreateAsync(request, cancellationToken);
+            if (result.Status == AdminNotificationTemplateStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            if (result.Status == AdminNotificationTemplateStatus.Conflict)
+            {
+                return Results.Conflict(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminNotificationTemplateCreated",
+                "NotificationTemplate",
+                result.Response?.Id,
+                "Modele de notification cree.",
+                after: result.Response);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Created($"/api/admin/notification-templates/{result.Response!.Id:D}", result.Response);
+        })
+        .WithName("CreateNotificationTemplate")
+        .Produces<NotificationTemplateResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status409Conflict);
+
         admin.MapPut("/notification-templates/{id:guid}", async (
             Guid id,
             UpdateNotificationTemplateRequest request,

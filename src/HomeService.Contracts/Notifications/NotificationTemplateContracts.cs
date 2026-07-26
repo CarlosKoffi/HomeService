@@ -20,3 +20,13 @@ public sealed record UpdateNotificationTemplateRequest(
     string BodyTemplate,
     string? AvailableVariables,
     bool IsActive);
+
+public sealed record CreateNotificationTemplateRequest(
+    string EventKey,
+    string Channel,
+    string Label,
+    string Audience,
+    string SubjectTemplate,
+    string BodyTemplate,
+    string? AvailableVariables,
+    bool IsActive);

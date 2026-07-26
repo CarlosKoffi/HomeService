@@ -215,6 +215,51 @@
                 <small>@NotificationTemplates.Count modele(s)</small>
             </div>
 
+            <article class="notification-template-create">
+                <div>
+                    <span>Nouveau modele</span>
+                    <strong>Ajouter un cas specifique</strong>
+                    <p>A utiliser seulement si un evenement n'existe pas encore dans le catalogue standard.</p>
+                </div>
+                <div class="notification-template-create-grid">
+                    <label>
+                        Evenement
+                        <input @bind="NewTemplate.EventKey" @bind:event="oninput" placeholder="Ex: MissionRefundApproved" />
+                    </label>
+                    <label>
+                        Audience
+                        <select @bind="NewTemplate.Audience">
+                            <option value="Company">Entreprise</option>
+                            <option value="Provider">Prestataire</option>
+                            <option value="Customer">Client</option>
+                            <option value="Mixed">Mixte</option>
+                        </select>
+                    </label>
+                    <label>
+                        Canal
+                        <select @bind="NewTemplate.Channel">
+                            <option value="Portal">Portail</option>
+                            <option value="MobilePush">Application</option>
+                            <option value="Email">Email</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                        </select>
+                    </label>
+                    <label>
+                        Libelle
+                        <input @bind="NewTemplate.Label" @bind:event="oninput" placeholder="Nom visible en admin" />
+                    </label>
+                    <label>
+                        Sujet
+                        <input @bind="NewTemplate.SubjectTemplate" @bind:event="oninput" placeholder="Sujet ou titre de notification" />
+                    </label>
+                    <label>
+                        Message
+                        <textarea rows="2" @bind="NewTemplate.BodyTemplate" @bind:event="oninput" placeholder="Message avec variables si besoin"></textarea>
+                    </label>
+                </div>
+                <button type="button" class="primary-action" @onclick="CreateTemplateAsync">Creer le modele</button>
+            </article>
+
             @foreach (var template in NotificationTemplates)
             {
                 <article class="notification-template-card">
@@ -517,6 +562,7 @@
     private string? StatusFilter { get; set; }
     private string? ChannelFilter { get; set; }
     private string ActiveNotificationSection { get; set; } = "overview";
+    private NotificationTemplateDraft NewTemplate { get; set; } = new();
 
     private IReadOnlyList<NotificationOutboxMessageResponse> FilteredNotifications
         => ExternalNotifications
@@ -706,6 +752,43 @@
         catch (Exception exception)
         {
             ErrorMessage = $"Modification du modele impossible. Detail: {exception.Message}";
+        }
+    }
+
+    private async Task CreateTemplateAsync()
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var created = await ApiClient.CreateNotificationTemplateAsync(
+                new CreateNotificationTemplateRequest(
+                    NewTemplate.EventKey,
+                    NewTemplate.Channel,
+                    NewTemplate.Label,
+                    NewTemplate.Audience,
+                    NewTemplate.SubjectTemplate,
+                    NewTemplate.BodyTemplate,
+                    NewTemplate.AvailableVariables,
+                    true));
+
+            if (created is not null)
+            {
+                NotificationTemplates.Add(created);
+                NotificationTemplates = NotificationTemplates
+                    .OrderBy(template => template.Audience)
+                    .ThenBy(template => template.EventKey)
+                    .ThenBy(template => template.Channel)
+                    .ToList();
+            }
+
+            NewTemplate = new NotificationTemplateDraft();
+            SuccessMessage = "Modele de notification cree.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Creation du modele impossible. Detail: {exception.Message}";
         }
     }
 
@@ -962,5 +1045,16 @@
             whatsAppEnabled ?? rule.WhatsAppEnabled,
             rule.SubjectTemplate,
             rule.BodyTemplate);
+    }
+
+    private sealed class NotificationTemplateDraft
+    {
+        public string EventKey { get; set; } = string.Empty;
+        public string Channel { get; set; } = "Portal";
+        public string Label { get; set; } = string.Empty;
+        public string Audience { get; set; } = "Company";
+        public string SubjectTemplate { get; set; } = string.Empty;
+        public string BodyTemplate { get; set; } = string.Empty;
+        public string AvailableVariables { get; set; } = "{NomEntreprise}, {NomPrestataire}, {NomClient}, {Service}, {Prestation}, {DescriptionService}, {NumeroMission}, {Montant}, {DateMission}, {LienAction}, {Note}, {Motif}, {Delai}, {Adresse}, {NomTechnicien}";
     }
 }

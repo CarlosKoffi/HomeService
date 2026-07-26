@@ -2,6 +2,7 @@ using HomeService.Application.Abstractions;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
@@ -9,21 +10,16 @@ namespace HomeService.Application.Admin;
 public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
 {
     private static readonly IReadOnlyList<NotificationDeliveryRuleSeed> DefaultRules =
-    [
-        new("CompanyDocumentRejected", "Piece entreprise refusee", "Company", true, false, true, true, "Piece a reprendre", "{NomEntreprise}, une piece de votre dossier demande une correction."),
-        new("CompanyDocumentNeedsReplacement", "Complement requis sur dossier entreprise", "Company", true, false, true, true, "Complement requis", "{NomEntreprise}, notre equipe demande un complement sur votre dossier."),
-        new("CompanyDocumentReopened", "Piece entreprise reouverte", "Company", true, false, true, true, "Piece reouverte", "{NomEntreprise}, une piece de votre dossier a ete remise en verification."),
-        new("CompanyApplicationRejected", "Dossier entreprise refuse", "Company", true, false, true, true, "Dossier refuse", "{NomEntreprise}, votre demande partenaire n'a pas pu etre validee pour le moment."),
-        new("CompanyApplicationReopened", "Dossier entreprise reouvert", "Company", true, false, true, true, "Dossier reouvert", "{NomEntreprise}, votre dossier partenaire est de nouveau en analyse."),
-        new("CompanyApplicationMoreInformationRequested", "Complement requis sur dossier entreprise", "Company", true, false, true, true, "Complement requis", "{NomEntreprise}, un complement est necessaire pour terminer l'analyse."),
-        new("CompanyApplicationApproved", "Dossier entreprise valide", "Company", true, false, true, true, "Dossier valide", "{NomEntreprise}, votre entreprise est validee sur Wele."),
-        new("CompanyActivationLinkCreated", "Lien d'activation entreprise", "Company", true, false, true, true, "Activation de votre portail", "{NomEntreprise}, votre lien d'activation est pret."),
-        new("InterimCandidateReceived", "Nouvelle demande interimaire", "Company", true, false, false, false, "Nouvelle candidature", "{NomEntreprise}, {NomPrestataire} souhaite collaborer avec vous."),
-        new("InterimCandidateApproved", "Candidature interimaire acceptee", "Provider", false, true, false, true, "Candidature acceptee", "{NomPrestataire}, {NomEntreprise} a accepte votre candidature."),
-        new("MissionAssignedToProvider", "Mission affectee au prestataire", "Provider", false, true, false, true, "Nouvelle mission disponible", "Mission {Service} a accepter avant la fin du delai."),
-        new("MissionQuoteSentToCustomer", "Devis mission envoye au client", "Customer", false, true, true, true, "Devis disponible", "Votre devis pour {Service} est disponible."),
-        new("MissionStatusChanged", "Suivi de mission", "Mixed", true, true, false, false, "Suivi mission {NumeroMission}", "La mission {NumeroMission} a ete mise a jour.")
-    ];
+        NotificationTemplateCatalog.Defaults
+            .Select(seed => new NotificationDeliveryRuleSeed(
+                seed.EventKey,
+                seed.Label,
+                seed.Audience,
+                seed.Channels.Contains(NotificationTemplateChannel.Email),
+                seed.Channels.Contains(NotificationTemplateChannel.WhatsApp),
+                seed.SubjectTemplate,
+                seed.BodyTemplate))
+            .ToList();
 
     public async Task<IReadOnlyList<NotificationDeliveryRuleResponse>> ListAsync(CancellationToken cancellationToken)
     {
@@ -168,8 +164,6 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
         string EventKey,
         string Label,
         string Audience,
-        bool PortalEnabled,
-        bool MobileAppEnabled,
         bool EmailEnabled,
         bool WhatsAppEnabled,
         string SubjectTemplate,

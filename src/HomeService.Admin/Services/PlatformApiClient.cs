@@ -552,6 +552,17 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<NotificationTemplateResponse>>("/api/admin/notification-templates", cancellationToken) ?? [];
     }
 
+    public async Task<NotificationTemplateResponse?> CreateNotificationTemplateAsync(
+        CreateNotificationTemplateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<NotificationTemplateResponse>(
+            "/api/admin/notification-templates",
+            request,
+            cancellationToken);
+    }
+
     public async Task<NotificationTemplateResponse?> UpdateNotificationTemplateAsync(
         Guid templateId,
         UpdateNotificationTemplateRequest request,
