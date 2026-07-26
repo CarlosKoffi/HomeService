@@ -307,6 +307,21 @@ public static class ProviderPortalEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
 
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/accept", AcceptProviderMissionAsync)
+            .WithName("AcceptProviderMobileMission");
+
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/refuse", RefuseProviderMissionAsync)
+            .WithName("RefuseProviderMobileMission");
+
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/verify-arrival", VerifyProviderMissionArrivalAsync)
+            .WithName("VerifyProviderMobileMissionArrival");
+
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/start", StartProviderMissionAsync)
+            .WithName("StartProviderMobileMissionWithArrivalVerification");
+
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/complete", CompleteProviderMissionAsync)
+            .WithName("CompleteProviderMobileMission");
+
         group.MapPost("/mission-assignments/{assignmentId:guid}/accept", async (
             Guid assignmentId,
             ProviderAcceptMissionRequest request,
@@ -698,6 +713,326 @@ public static class ProviderPortalEndpoints
         .WithName("CompleteProviderMission");
 
         return app;
+    }
+
+    private static async Task<IResult> AcceptProviderMissionAsync(
+        Guid assignmentId,
+        ProviderAcceptMissionRequest request,
+        HttpRequest httpRequest,
+        IAppDbContext db,
+        ProviderMissionWorkflowService workflow,
+        CancellationToken cancellationToken)
+    {
+        var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+        if (session?.Provider is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var assignment = await db.ProviderMissionAssignments
+            .Include(assignment => assignment.Mission)
+            .FirstOrDefaultAsync(assignment =>
+                assignment.Id == assignmentId
+                && assignment.ProviderId == session.ProviderId,
+                cancellationToken);
+
+        if (assignment?.Mission is null)
+        {
+            return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+        }
+
+        var result = workflow.AcceptMission(session.Provider, assignment, request);
+        if (result.Status != ProviderMissionOperationStatus.Ok)
+        {
+            return ToProviderMissionHttpResult(result);
+        }
+
+        AddProviderAudit(
+            db,
+            httpRequest,
+            session.ProviderId,
+            session.Provider.FullName,
+            "ProviderMissionAccepted",
+            nameof(ProviderMissionAssignment),
+            assignment.Id,
+            "Mission acceptee par le prestataire depuis l'application mobile.",
+            after: new
+            {
+                assignment.MissionId,
+                AssignmentStatus = assignment.Status,
+                MissionStatus = assignment.Mission.Status,
+                assignment.AcceptedLatitude,
+                assignment.AcceptedLongitude,
+                assignment.AcceptedAccuracyMeters,
+                assignment.Mission.ProviderAcceptedAt,
+                assignment.Mission.ContactDetailsReleasedAt
+            });
+        await db.SaveChangesAsync(cancellationToken);
+
+        return ToProviderMissionHttpResult(result);
+    }
+
+    private static async Task<IResult> RefuseProviderMissionAsync(
+        Guid assignmentId,
+        ProviderRefuseMissionRequest request,
+        HttpRequest httpRequest,
+        IAppDbContext db,
+        ProviderMissionWorkflowService workflow,
+        CancellationToken cancellationToken)
+    {
+        var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+        if (session?.Provider is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var assignment = await db.ProviderMissionAssignments
+            .Include(assignment => assignment.Mission)
+            .FirstOrDefaultAsync(assignment =>
+                assignment.Id == assignmentId
+                && assignment.ProviderId == session.ProviderId,
+                cancellationToken);
+
+        if (assignment?.Mission is null)
+        {
+            return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+        }
+
+        var result = workflow.RefuseMission(session.Provider, assignment, request);
+        if (result.Status != ProviderMissionOperationStatus.Ok)
+        {
+            return ToProviderMissionHttpResult(result);
+        }
+
+        var reasonLabel = assignment.RefusalReason?.ToString() ?? "Non renseignee";
+        AddProviderAudit(
+            db,
+            httpRequest,
+            session.ProviderId,
+            session.Provider.FullName,
+            "ProviderMissionRefused",
+            nameof(ProviderMissionAssignment),
+            assignment.Id,
+            "Mission refusee par le prestataire depuis l'application mobile.",
+            after: new
+            {
+                assignment.MissionId,
+                AssignmentStatus = assignment.Status,
+                assignment.RefusalReason,
+                assignment.RefusalComment,
+                assignment.RespondedAt
+            });
+
+        db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+            assignment.CompanyId,
+            "mission",
+            "Mission refusee",
+            $"{session.Provider.FullName} a refuse la mission {assignment.Mission.MissionNumber}. Raison: {reasonLabel}.",
+            "orange",
+            nameof(ProviderMissionAssignment),
+            assignment.Id));
+
+        await db.SaveChangesAsync(cancellationToken);
+        return ToProviderMissionHttpResult(result);
+    }
+
+    private static async Task<IResult> VerifyProviderMissionArrivalAsync(
+        Guid assignmentId,
+        ProviderLocationVerificationRequest request,
+        HttpRequest httpRequest,
+        IAppDbContext db,
+        ProviderMissionWorkflowService workflow,
+        CancellationToken cancellationToken)
+    {
+        var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+        if (session?.Provider is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var assignment = await db.ProviderMissionAssignments
+            .Include(assignment => assignment.Mission)
+            .FirstOrDefaultAsync(assignment =>
+                assignment.Id == assignmentId
+                && assignment.ProviderId == session.ProviderId,
+                cancellationToken);
+
+        if (assignment?.Mission is null)
+        {
+            return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+        }
+
+        var result = workflow.VerifyArrival(session.Provider, assignment, request);
+        if (result.Status != ProviderMissionOperationStatus.Ok)
+        {
+            return ToProviderMissionHttpResult(result);
+        }
+
+        AddProviderAudit(
+            db,
+            httpRequest,
+            session.ProviderId,
+            session.Provider.FullName,
+            "ProviderArrivalVerified",
+            nameof(ProviderMissionAssignment),
+            assignment.Id,
+            "Arrivee prestataire verifiee depuis l'application mobile.",
+            after: new
+            {
+                assignment.MissionId,
+                assignment.ArrivalVerificationStatus,
+                assignment.ArrivalVerifiedAt,
+                assignment.ArrivalDistanceMeters
+            });
+        await db.SaveChangesAsync(cancellationToken);
+        return ToProviderMissionHttpResult(result);
+    }
+
+    private static async Task<IResult> StartProviderMissionAsync(
+        Guid assignmentId,
+        ProviderLocationVerificationRequest request,
+        HttpRequest httpRequest,
+        IAppDbContext db,
+        ProviderMissionWorkflowService workflow,
+        MissionPaymentMilestoneService milestoneService,
+        CancellationToken cancellationToken)
+    {
+        var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+        if (session?.Provider is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var assignment = await db.ProviderMissionAssignments
+            .Include(assignment => assignment.Mission)
+            .FirstOrDefaultAsync(assignment =>
+                assignment.Id == assignmentId
+                && assignment.ProviderId == session.ProviderId,
+                cancellationToken);
+
+        if (assignment?.Mission is null)
+        {
+            return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+        }
+
+        var result = workflow.StartMission(session.Provider, assignment, request);
+        if (result.Status != ProviderMissionOperationStatus.Ok)
+        {
+            if (result.Response is not null)
+            {
+                AddProviderAudit(
+                    db,
+                    httpRequest,
+                    session.ProviderId,
+                    session.Provider.FullName,
+                    "ProviderMissionStartRejected",
+                    nameof(ProviderMissionAssignment),
+                    assignment.Id,
+                    result.Message ?? "Demarrage mission refuse.",
+                    after: new
+                    {
+                        assignment.MissionId,
+                        result.Response.Status,
+                        result.Response.DistanceMeters
+                    });
+                await db.SaveChangesAsync(cancellationToken);
+            }
+
+            return ToProviderMissionHttpResult(result);
+        }
+
+        AddProviderAudit(
+            db,
+            httpRequest,
+            session.ProviderId,
+            session.Provider.FullName,
+            "ProviderMissionStarted",
+            nameof(ProviderMissionAssignment),
+            assignment.Id,
+            "Mission demarree par le prestataire depuis l'application mobile.",
+            after: new
+            {
+                assignment.MissionId,
+                AssignmentStatus = assignment.Status,
+                MissionStatus = assignment.Mission.Status,
+                assignment.StartedAt
+            });
+        await milestoneService.EnsureMissionStartedMilestoneAsync(assignment.Mission, cancellationToken);
+        db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+            assignment.CompanyId,
+            "mission",
+            "Mission demarree",
+            $"{session.Provider.FullName} a demarre la mission {assignment.Mission.MissionNumber}. Les fonds client restent securises.",
+            "blue",
+            nameof(Mission),
+            assignment.MissionId));
+        await db.SaveChangesAsync(cancellationToken);
+        return ToProviderMissionHttpResult(result);
+    }
+
+    private static async Task<IResult> CompleteProviderMissionAsync(
+        Guid assignmentId,
+        ProviderCompleteMissionRequest request,
+        HttpRequest httpRequest,
+        IAppDbContext db,
+        ProviderMissionWorkflowService workflow,
+        MissionPaymentMilestoneService milestoneService,
+        CancellationToken cancellationToken)
+    {
+        var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+        if (session?.Provider is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var assignment = await db.ProviderMissionAssignments
+            .Include(assignment => assignment.Mission)
+            .FirstOrDefaultAsync(assignment =>
+                assignment.Id == assignmentId
+                && assignment.ProviderId == session.ProviderId,
+                cancellationToken);
+
+        if (assignment?.Mission is null)
+        {
+            return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+        }
+
+        var result = workflow.CompleteMission(session.Provider, assignment, request);
+        if (result.Status != ProviderMissionOperationStatus.Ok)
+        {
+            return ToProviderMissionHttpResult(result);
+        }
+
+        AddProviderAudit(
+            db,
+            httpRequest,
+            session.ProviderId,
+            session.Provider.FullName,
+            "ProviderMissionCompleted",
+            nameof(ProviderMissionAssignment),
+            assignment.Id,
+            "Mission terminee par le prestataire depuis l'application mobile.",
+            after: new
+            {
+                assignment.MissionId,
+                AssignmentStatus = assignment.Status,
+                MissionStatus = assignment.Mission.Status,
+                request.ActualDurationMinutes,
+                assignment.CompletedAt
+            });
+
+        await milestoneService.EnsureMissionCompletedMilestoneAsync(assignment.Mission, cancellationToken);
+        db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+            assignment.CompanyId,
+            "mission",
+            "Mission terminee",
+            $"{session.Provider.FullName} a termine la mission {assignment.Mission.MissionNumber}. Paiement entreprise a liberer apres validation client.",
+            "green",
+            nameof(Mission),
+            assignment.MissionId));
+
+        await db.SaveChangesAsync(cancellationToken);
+        return ToProviderMissionHttpResult(result);
     }
 
     private static void AddProviderAudit(
