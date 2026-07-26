@@ -137,8 +137,17 @@
                 <div class="mission-admin-action">
                     @if (SelectedMissionId == mission.Id)
                     {
-                        <input type="text" @bind="DisputeNote" placeholder="Note litige obligatoire" />
-                        <button type="button" @onclick="() => ConfirmDisputeAsync(mission.Id)" disabled="@IsActionBusy">Confirmer</button>
+                        @if (SelectedAction == "cancel")
+                        {
+                            <input type="text" @bind="CancellationNote" placeholder="Note annulation obligatoire" />
+                            <input type="number" min="0" step="100" @bind="CancellationFeeAmount" placeholder="Frais retenus" />
+                            <button type="button" class="danger-action" @onclick="() => ConfirmCancelAsync(mission.Id)" disabled="@IsActionBusy">Confirmer</button>
+                        }
+                        else
+                        {
+                            <input type="text" @bind="DisputeNote" placeholder="Note litige obligatoire" />
+                            <button type="button" @onclick="() => ConfirmDisputeAsync(mission.Id)" disabled="@IsActionBusy">Confirmer</button>
+                        }
                         <button type="button" class="light-action" @onclick="CancelDispute">Annuler</button>
                     }
                     else
@@ -147,6 +156,7 @@
                         @if (mission.Status != "Disputed" && mission.Status != "Completed" && mission.Status != "Cancelled" && mission.Status != "Resolved")
                         {
                             <button type="button" class="light-action" @onclick="() => StartDispute(mission.Id)">Litige</button>
+                            <button type="button" class="danger-action" @onclick="() => StartCancel(mission.Id)">Annuler</button>
                         }
                     }
                 </div>
@@ -160,7 +170,10 @@
     private string? SelectedStatus { get; set; }
     private string? SearchTerm { get; set; }
     private Guid? SelectedMissionId { get; set; }
+    private string? SelectedAction { get; set; }
     private string? DisputeNote { get; set; }
+    private string? CancellationNote { get; set; }
+    private int? CancellationFeeAmount { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsActionBusy { get; set; }
     private string? Message { get; set; }
@@ -193,7 +206,21 @@
     private void StartDispute(Guid missionId)
     {
         SelectedMissionId = missionId;
+        SelectedAction = "dispute";
         DisputeNote = null;
+        CancellationNote = null;
+        CancellationFeeAmount = null;
+        Message = null;
+        ErrorMessage = null;
+    }
+
+    private void StartCancel(Guid missionId)
+    {
+        SelectedMissionId = missionId;
+        SelectedAction = "cancel";
+        DisputeNote = null;
+        CancellationNote = null;
+        CancellationFeeAmount = null;
         Message = null;
         ErrorMessage = null;
     }
@@ -201,7 +228,10 @@
     private void CancelDispute()
     {
         SelectedMissionId = null;
+        SelectedAction = null;
         DisputeNote = null;
+        CancellationNote = null;
+        CancellationFeeAmount = null;
     }
 
     private void OpenMission(Guid missionId)
@@ -238,6 +268,39 @@
         catch (Exception exception)
         {
             ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionBusy = false;
+        }
+    }
+
+    private async Task ConfirmCancelAsync(Guid missionId)
+    {
+        if (string.IsNullOrWhiteSpace(CancellationNote))
+        {
+            ErrorMessage = "Ajoutez une note avant d'annuler la mission. Elle servira au journal de suivi.";
+            return;
+        }
+
+        IsActionBusy = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            await ApiClient.CancelAdminMissionAsync(missionId, "Other", CancellationNote, CancellationFeeAmount);
+            SelectedStatus = "Cancelled";
+            SelectedMissionId = null;
+            SelectedAction = null;
+            CancellationNote = null;
+            CancellationFeeAmount = null;
+            Message = "Mission annulee par l'administration.";
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Annulation impossible. Detail: {exception.Message}";
         }
         finally
         {
