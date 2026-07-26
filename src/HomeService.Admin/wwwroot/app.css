@@ -3170,6 +3170,20 @@ h3 {
     gap: .4rem;
 }
 
+.audit-open-action {
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    color: #1d4ed8;
+    font-size: .78rem;
+    font-weight: 900;
+    padding: .28rem .65rem;
+}
+
+.audit-open-action:hover {
+    background: #eff6ff;
+}
+
 .audit-empty {
     color: #000000;
     font-weight: 750;

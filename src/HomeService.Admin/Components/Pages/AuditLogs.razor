@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Monitoring
 @inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Logs admin</PageTitle>
 
@@ -75,10 +76,16 @@
                         <div class="audit-log-meta">
                             <span>@entry.ActorType</span>
                             <span>@(entry.ActorDisplayName ?? "acteur non renseigne")</span>
-                            <span>@entry.EntityType</span>
+                            <span>@TranslateEntityType(entry.EntityType)</span>
                             @if (entry.EntityId.HasValue)
                             {
-                                <span>@entry.EntityId</span>
+                                <span>@ShortId(entry.EntityId.Value)</span>
+                                @if (CanOpenEntity(entry))
+                                {
+                                    <button type="button" class="audit-open-action" @onclick="() => OpenEntity(entry)">
+                                        Ouvrir
+                                    </button>
+                                }
                             }
                         </div>
                     </div>
@@ -170,5 +177,59 @@
     private static string GetActorInitial(string actorType)
     {
         return string.IsNullOrWhiteSpace(actorType) ? "?" : actorType[..1].ToUpperInvariant();
+    }
+
+    private static string ShortId(Guid id)
+    {
+        return id.ToString("N")[..8];
+    }
+
+    private static string TranslateEntityType(string entityType) => entityType switch
+    {
+        "Company" => "Entreprise",
+        "CompanyApplication" => "Demande entreprise",
+        "ProviderProfile" => "Prestataire",
+        "Mission" => "Mission",
+        "NotificationOutboxMessage" => "Notification",
+        "NotificationDeliveryRule" => "Regle notification",
+        "NotificationTemplate" => "Modele notification",
+        "Service" => "Service",
+        "ServicePrestation" => "Prestation",
+        "CompanyServiceProposal" => "Proposition service",
+        _ => entityType
+    };
+
+    private static bool CanOpenEntity(AuditLogEntryResponse entry)
+    {
+        return entry.EntityId.HasValue && ResolveEntityRoute(entry) is not null;
+    }
+
+    private void OpenEntity(AuditLogEntryResponse entry)
+    {
+        var route = ResolveEntityRoute(entry);
+        if (route is not null)
+        {
+            Navigation.NavigateTo(route);
+        }
+    }
+
+    private static string? ResolveEntityRoute(AuditLogEntryResponse entry)
+    {
+        if (!entry.EntityId.HasValue)
+        {
+            return null;
+        }
+
+        var id = entry.EntityId.Value;
+        return entry.EntityType switch
+        {
+            "Company" => $"/companies/{id:D}",
+            "CompanyApplication" => $"/company-applications/{id:D}",
+            "ProviderProfile" => $"/providers/{id:D}",
+            "Mission" => $"/missions/{id:D}",
+            "NotificationOutboxMessage" or "NotificationDeliveryRule" or "NotificationTemplate" => "/notifications",
+            "Service" or "ServicePrestation" or "CompanyServiceProposal" => "/service-proposals",
+            _ => null
+        };
     }
 }
