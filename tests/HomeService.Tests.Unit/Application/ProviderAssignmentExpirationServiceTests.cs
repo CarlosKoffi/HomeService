@@ -9,9 +9,11 @@ namespace HomeService.Tests.Unit.Application;
 public sealed class ProviderAssignmentExpirationServiceTests
 {
     [Fact]
-    public async Task ExpireDueAssignmentsAsync_WhenAssignmentIsPastDeadline_MarksItExpired()
+    public async Task ExpireDueAssignmentsAsync_WhenAssignmentIsPastDeadline_MarksItExpiredAndReleasesMission()
     {
         await using var db = CreateDbContext();
+        var providerId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
         var mission = new Mission(
             Guid.NewGuid(),
             Guid.NewGuid(),
@@ -19,10 +21,11 @@ public sealed class ProviderAssignmentExpirationServiceTests
             PaymentMethod.MobileMoney,
             null,
             90);
+        mission.Assign(providerId, companyId, hourlyRateAmount: 5000);
         var assignment = new ProviderMissionAssignment(
             mission.Id,
-            Guid.NewGuid(),
-            Guid.NewGuid(),
+            providerId,
+            companyId,
             DateTimeOffset.UtcNow.AddMinutes(-1));
 
         db.Missions.Add(mission);
@@ -36,6 +39,9 @@ public sealed class ProviderAssignmentExpirationServiceTests
 
         Assert.Equal(1, result.ExpiredAssignmentCount);
         Assert.Equal(ProviderMissionAssignmentStatus.Expired, assignment.Status);
+        Assert.Equal(MissionStatus.SearchingProvider, mission.Status);
+        Assert.Null(mission.ProviderId);
+        Assert.Null(mission.ProviderAcceptedAt);
     }
 
     [Fact]

@@ -23,6 +23,7 @@ public sealed class ProviderAssignmentExpirationService(IAppDbContext db)
         foreach (var assignment in assignments)
         {
             assignment.MarkExpired();
+            assignment.Mission?.ReleaseProviderAfterRefusal(assignment.ProviderId);
             expiredCount++;
         }
 
