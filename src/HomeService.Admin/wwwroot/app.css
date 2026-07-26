@@ -2505,6 +2505,23 @@ h3 {
     margin: .45rem 0 0;
 }
 
+.notification-group-nav {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    margin: .9rem 0;
+    padding: .45rem;
+}
+
+.notification-group-nav button {
+    background: #fff;
+}
+
+.notification-group-nav button.active {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
 .notification-template-toolbar {
     background: #f8fafc;
     border: 1px solid #e5e7eb;

@@ -132,6 +132,15 @@
             <small>@FilteredDeliveryRules.Count / @DeliveryRules.Count type(s)</small>
         </div>
 
+        <nav class="notification-subnav notification-group-nav" aria-label="Filtrer les regles par groupe metier">
+            @foreach (var group in NotificationGroups)
+            {
+                <button type="button" class="@GetRuleGroupButtonClass(group.Key)" @onclick="() => SetRuleGroup(group.Key)">
+                    @group.Label <span>@CountRulesByGroup(group.Key)</span>
+                </button>
+            }
+        </nav>
+
         <nav class="notification-subnav" aria-label="Filtrer les regles par destinataire">
             <button type="button" class="@GetRuleAudienceButtonClass("All")" @onclick='() => SetRuleAudience("All")'>
                 Tous <span>@DeliveryRules.Count</span>
@@ -261,6 +270,15 @@
                 </button>
             </div>
         </div>
+
+            <nav class="notification-subnav notification-group-nav" aria-label="Filtrer les modeles par groupe metier">
+                @foreach (var group in NotificationGroups)
+                {
+                    <button type="button" class="@GetTemplateGroupButtonClass(group.Key)" @onclick="() => SetTemplateGroup(group.Key)">
+                        @group.Label <span>@CountTemplatesByGroup(group.Key)</span>
+                    </button>
+                }
+            </nav>
 
             <div class="notification-template-toolbar">
                 <div>
@@ -648,12 +666,25 @@
     private string ActiveNotificationSection { get; set; } = "overview";
     private string ActiveRuleAudience { get; set; } = "All";
     private string ActiveRuleChannel { get; set; } = "All";
+    private string ActiveRuleGroup { get; set; } = "All";
     private string ActiveRuleTopic { get; set; } = "All";
     private string ActiveTemplateAudience { get; set; } = "All";
     private string ActiveTemplateChannel { get; set; } = "All";
+    private string ActiveTemplateGroup { get; set; } = "All";
     private string ActiveTemplateTopic { get; set; } = "All";
     private bool ShowTemplateCreate { get; set; }
     private NotificationTemplateDraft NewTemplate { get; set; } = new();
+
+    private static readonly IReadOnlyList<NotificationGroupFilter> NotificationGroups =
+    [
+        new("All", "Tous"),
+        new("Company", "Entreprises"),
+        new("Provider", "Prestataires"),
+        new("Customer", "Clients"),
+        new("Missions", "Missions"),
+        new("Payments", "Paiements"),
+        new("Disputes", "Litiges")
+    ];
 
     private IReadOnlyList<NotificationOutboxMessageResponse> FilteredNotifications
         => ExternalNotifications
@@ -688,6 +719,7 @@
 
     private IReadOnlyList<NotificationDeliveryRuleResponse> FilteredDeliveryRules
         => DeliveryRules
+            .Where(rule => MatchesNotificationGroup(rule.EventKey, rule.Audience, ActiveRuleGroup))
             .Where(rule => ActiveRuleAudience == "All" || string.Equals(rule.Audience, ActiveRuleAudience, StringComparison.OrdinalIgnoreCase))
             .Where(rule => ActiveRuleTopic == "All" || GetNotificationTopic(rule.EventKey) == ActiveRuleTopic)
             .Where(MatchesRuleChannel)
@@ -698,6 +730,7 @@
 
     private IReadOnlyList<NotificationTemplateResponse> FilteredNotificationTemplates
         => NotificationTemplates
+            .Where(template => MatchesNotificationGroup(template.EventKey, template.Audience, ActiveTemplateGroup))
             .Where(template => ActiveTemplateAudience == "All" || string.Equals(template.Audience, ActiveTemplateAudience, StringComparison.OrdinalIgnoreCase))
             .Where(template => ActiveTemplateChannel == "All" || string.Equals(template.Channel, ActiveTemplateChannel, StringComparison.OrdinalIgnoreCase))
             .Where(template => ActiveTemplateTopic == "All" || GetNotificationTopic(template.EventKey) == ActiveTemplateTopic)
@@ -996,6 +1029,13 @@
         SuccessMessage = null;
     }
 
+    private void SetRuleGroup(string group)
+    {
+        ActiveRuleGroup = group;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
     private void SetRuleTopic(string topic)
     {
         ActiveRuleTopic = topic;
@@ -1017,6 +1057,13 @@
         SuccessMessage = null;
     }
 
+    private void SetTemplateGroup(string group)
+    {
+        ActiveTemplateGroup = group;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
     private void SetTemplateTopic(string topic)
     {
         ActiveTemplateTopic = topic;
@@ -1034,6 +1081,11 @@
         return ActiveRuleChannel == channel ? "active" : string.Empty;
     }
 
+    private string GetRuleGroupButtonClass(string group)
+    {
+        return ActiveRuleGroup == group ? "active" : string.Empty;
+    }
+
     private string GetRuleTopicButtonClass(string topic)
     {
         return ActiveRuleTopic == topic ? "active" : string.Empty;
@@ -1047,6 +1099,11 @@
     private string GetTemplateChannelButtonClass(string channel)
     {
         return ActiveTemplateChannel == channel ? "active" : string.Empty;
+    }
+
+    private string GetTemplateGroupButtonClass(string group)
+    {
+        return ActiveTemplateGroup == group ? "active" : string.Empty;
     }
 
     private string GetTemplateTopicButtonClass(string topic)
@@ -1109,6 +1166,11 @@
         return DeliveryRules.Count(rule => RuleHasChannel(rule, channel));
     }
 
+    private int CountRulesByGroup(string group)
+    {
+        return DeliveryRules.Count(rule => MatchesNotificationGroup(rule.EventKey, rule.Audience, group));
+    }
+
     private int CountRulesByTopic(string topic)
     {
         return DeliveryRules.Count(rule => GetNotificationTopic(rule.EventKey) == topic);
@@ -1122,6 +1184,11 @@
     private int CountTemplatesByChannel(string channel)
     {
         return NotificationTemplates.Count(template => string.Equals(template.Channel, channel, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private int CountTemplatesByGroup(string group)
+    {
+        return NotificationTemplates.Count(template => MatchesNotificationGroup(template.EventKey, template.Audience, group));
     }
 
     private int CountTemplatesByTopic(string topic)
@@ -1184,6 +1251,22 @@
             "WhatsApp" => rule.WhatsAppEnabled,
             _ => true
         };
+    }
+
+    private static bool MatchesNotificationGroup(string eventKey, string audience, string group)
+    {
+        if (group == "All")
+        {
+            return true;
+        }
+
+        if (group is "Company" or "Provider" or "Customer")
+        {
+            return string.Equals(audience, group, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(audience, "Mixed", StringComparison.OrdinalIgnoreCase);
+        }
+
+        return GetNotificationTopic(eventKey) == group;
     }
 
     private void ToggleTemplateCreate()
@@ -1348,4 +1431,6 @@
         public string BodyTemplate { get; set; } = string.Empty;
         public string AvailableVariables { get; set; } = "{NomEntreprise}, {NomPrestataire}, {NomClient}, {Service}, {Prestation}, {DescriptionService}, {NumeroMission}, {Montant}, {DateMission}, {LienAction}, {Note}, {Motif}, {Delai}, {Adresse}, {NomTechnicien}";
     }
+
+    private sealed record NotificationGroupFilter(string Key, string Label);
 }
