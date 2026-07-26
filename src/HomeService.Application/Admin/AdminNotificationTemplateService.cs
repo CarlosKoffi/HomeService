@@ -108,6 +108,8 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
             request.AvailableVariables,
             request.IsActive);
 
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminNotificationTemplateResult.Ok(ToResponse(template));
     }
 

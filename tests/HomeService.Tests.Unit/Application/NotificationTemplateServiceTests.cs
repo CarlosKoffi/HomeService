@@ -5,6 +5,7 @@ using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using HomeService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace HomeService.Tests.Unit.Application;
 
@@ -142,6 +143,51 @@ public sealed class NotificationTemplateServiceTests
     }
 
     [Fact]
+    public async Task AdminTemplateService_UpdateAsync_ShouldPersistTemplateChanges()
+    {
+        var databaseName = Guid.NewGuid().ToString("N");
+        var databaseRoot = new InMemoryDatabaseRoot();
+        Guid templateId;
+
+        await using (var db = CreateDbContext(databaseName, databaseRoot))
+        {
+            var template = new NotificationTemplate(
+                "MissionCompleted",
+                NotificationTemplateChannel.Email,
+                "Mission terminee",
+                "Customer",
+                "Ancien sujet",
+                "Ancien message",
+                NotificationTemplateCatalog.CommonVariables);
+            db.NotificationTemplates.Add(template);
+            await db.SaveChangesAsync();
+            templateId = template.Id;
+
+            var result = await new AdminNotificationTemplateService(db).UpdateAsync(
+                templateId,
+                new UpdateNotificationTemplateRequest(
+                    "Mission terminee client",
+                    "Customer",
+                    "Nouveau sujet {NumeroMission}",
+                    "Nouveau message {NomClient}",
+                    "{NumeroMission}, {NomClient}",
+                    false),
+                CancellationToken.None);
+
+            Assert.Equal(AdminNotificationTemplateStatus.Ok, result.Status);
+        }
+
+        await using (var db = CreateDbContext(databaseName, databaseRoot))
+        {
+            var template = await db.NotificationTemplates.SingleAsync(item => item.Id == templateId);
+            Assert.Equal("Mission terminee client", template.Label);
+            Assert.Equal("Nouveau sujet {NumeroMission}", template.SubjectTemplate);
+            Assert.Equal("Nouveau message {NomClient}", template.BodyTemplate);
+            Assert.False(template.IsActive);
+        }
+    }
+
+    [Fact]
     public async Task RenderAsync_WhenTemplateExists_UsesEventAndChannelTemplate()
     {
         await using var db = CreateDbContext();
@@ -191,6 +237,15 @@ public sealed class NotificationTemplateServiceTests
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
+            .Options;
+
+        return new HomeServiceDbContext(options);
+    }
+
+    private static HomeServiceDbContext CreateDbContext(string databaseName, InMemoryDatabaseRoot databaseRoot)
+    {
+        var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
+            .UseInMemoryDatabase(databaseName, databaseRoot)
             .Options;
 
         return new HomeServiceDbContext(options);

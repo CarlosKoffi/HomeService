@@ -64,6 +64,8 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
             request.SubjectTemplate,
             request.BodyTemplate);
 
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminNotificationDeliveryRuleResult.Ok(ToResponse(rule));
     }
 
