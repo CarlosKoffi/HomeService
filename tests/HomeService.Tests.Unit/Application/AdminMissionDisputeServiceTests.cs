@@ -58,6 +58,8 @@ public sealed class AdminMissionDisputeServiceTests
         Assert.Equal(MissionDisputeResolution.PartialRefund, dispute.Resolution);
         Assert.Equal(4000, dispute.RefundPercentBasisPoints);
         Assert.Equal(800, dispute.RefundAmount);
+        Assert.Equal(800, mission.RefundAmount);
+        Assert.Equal(PaymentStatus.Refunded, mission.PaymentStatus);
         Assert.Equal(1, await db.MissionFinancialBreakdowns.CountAsync());
         Assert.Equal(2, await db.CompanyPortalNotifications.CountAsync());
         Assert.Equal(2, await db.AuditLogEntries.CountAsync());
@@ -177,6 +179,8 @@ public sealed class AdminMissionDisputeServiceTests
         provider.Approve();
         var mission = new Mission(customer.Id, service.Id, MissionMode.Instant, PaymentMethod.MobileMoney, null, 60);
         mission.Assign(provider.Id, company.Id, 2000);
+        mission.MarkProviderAccepted(provider.Id, company.Id);
+        mission.ConfirmByCustomer(300, 0, 1500);
 
         db.Services.Add(service);
         db.Customers.Add(customer);

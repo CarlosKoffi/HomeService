@@ -117,6 +117,11 @@ public sealed class AdminMissionDisputeService(
                 refundDecision.RefundPercentBasisPoints,
                 refundDecision.RefundAmount,
                 mission.Currency);
+            if (refundDecision.RefundAmount is > 0)
+            {
+                mission.ApplyDisputeRefund(refundDecision.RefundAmount.Value);
+            }
+
             mission.ResolveDispute();
         }
         catch (InvalidOperationException exception)

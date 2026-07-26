@@ -355,6 +355,22 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
+    public void ApplyDisputeRefund(int refundAmount)
+    {
+        if (refundAmount < 0)
+        {
+            throw new InvalidOperationException("Refund amount cannot be negative.");
+        }
+
+        RefundAmount = refundAmount;
+        if (RefundAmount > 0 && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid)
+        {
+            PaymentStatus = PaymentStatus.Refunded;
+        }
+
+        Touch();
+    }
+
     public bool CanStartFor(Guid providerId, Guid companyId)
     {
         if (ProviderId is not null && ProviderId != providerId)
