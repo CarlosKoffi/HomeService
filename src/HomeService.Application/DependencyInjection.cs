@@ -64,6 +64,7 @@ public static class DependencyInjection
         services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
         services.AddScoped<AdminCompanyNotificationService>();
         services.AddScoped<AdminCompanyOperationsService>();
+        services.AddScoped<AdminServiceCatalogManagementService>();
         services.AddScoped<AdminCompanyServiceProposalService>();
         services.AddScoped<AdminNotificationDeliveryRuleService>();
         services.AddScoped<AdminNotificationTemplateService>();

@@ -1719,32 +1719,16 @@ public static class AdminEndpoints
         admin.MapPost("/services", async (
             UpsertServiceRequest request,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(request.Name))
+            var result = await catalogService.CreateServiceAsync(request, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.BadRequest(new { message = "Le nom du service est obligatoire." });
+                return error;
             }
-
-            var normalizedName = CatalogNameNormalizer.Normalize(request.Name);
-            var existing = await db.Services
-                .Include(service => service.Prestations)
-                .FirstOrDefaultAsync(service => service.NormalizedName == normalizedName, cancellationToken);
-
-            if (existing is not null)
-            {
-                return Results.Conflict(new { message = "Un service avec ce nom existe deja." });
-            }
-
-            var service = new Service(request.Name, request.Description, createdByCompanyId: null);
-            service.UpdateDetails(request.Name, request.Description, request.IconName);
-            service.UpdatePriceRange(
-                request.PriceMinAmount ?? request.NormalPriceAmount,
-                request.PriceMaxAmount ?? request.PremiumPriceAmount,
-                request.Currency);
-            service.Approve();
-            db.Services.Add(service);
 
             AddAuditLog(
                 db,
@@ -1752,13 +1736,13 @@ public static class AdminEndpoints
                 AuditActor.Admin(),
                 "AdminServiceCreated",
                 nameof(Service),
-                service.Id,
-                $"Service '{service.Name}' cree dans le catalogue.",
-                before: null,
-                after: ToServiceResponse(service));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServiceResponse(service));
+            return Results.Ok(result.Response);
         })
         .WithName("CreateAdminService");
 
@@ -1766,37 +1750,16 @@ public static class AdminEndpoints
             Guid serviceId,
             UpsertServiceRequest request,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(request.Name))
+            var result = await catalogService.UpdateServiceAsync(serviceId, request, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.BadRequest(new { message = "Le nom du service est obligatoire." });
+                return error;
             }
-
-            var normalizedName = CatalogNameNormalizer.Normalize(request.Name);
-            var duplicate = await db.Services.AnyAsync(
-                service => service.Id != serviceId && service.NormalizedName == normalizedName,
-                cancellationToken);
-            if (duplicate)
-            {
-                return Results.Conflict(new { message = "Un autre service utilise deja ce nom." });
-            }
-
-            var service = await db.Services
-                .Include(item => item.Prestations)
-                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
-            if (service is null)
-            {
-                return Results.NotFound(new { message = "Service introuvable." });
-            }
-
-            var before = ToServiceResponse(service);
-            service.UpdateDetails(request.Name, request.Description, request.IconName);
-            service.UpdatePriceRange(
-                request.PriceMinAmount ?? request.NormalPriceAmount,
-                request.PriceMaxAmount ?? request.PremiumPriceAmount,
-                request.Currency);
 
             AddAuditLog(
                 db,
@@ -1804,77 +1767,73 @@ public static class AdminEndpoints
                 AuditActor.Admin(),
                 "AdminServiceUpdated",
                 nameof(Service),
-                service.Id,
-                "Service modifie dans le catalogue.",
-                before,
-                after: ToServiceResponse(service));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServiceResponse(service));
+            return Results.Ok(result.Response);
         })
         .WithName("UpdateAdminService");
 
         admin.MapPost("/services/{serviceId:guid}/activate", async (
             Guid serviceId,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var service = await db.Services
-                .Include(item => item.Prestations)
-                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
-            if (service is null)
+            var result = await catalogService.ActivateServiceAsync(serviceId, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.NotFound(new { message = "Service introuvable." });
+                return error;
             }
 
-            var before = ToServiceResponse(service);
-            service.Activate();
             AddAuditLog(
                 db,
                 httpRequest,
                 AuditActor.Admin(),
                 "AdminServiceActivated",
                 nameof(Service),
-                service.Id,
-                "Service active dans le catalogue.",
-                before,
-                after: ToServiceResponse(service));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServiceResponse(service));
+            return Results.Ok(result.Response);
         })
         .WithName("ActivateAdminService");
 
         admin.MapPost("/services/{serviceId:guid}/deactivate", async (
             Guid serviceId,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var service = await db.Services
-                .Include(item => item.Prestations)
-                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
-            if (service is null)
+            var result = await catalogService.DeactivateServiceAsync(serviceId, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.NotFound(new { message = "Service introuvable." });
+                return error;
             }
 
-            var before = ToServiceResponse(service);
-            service.Deactivate();
             AddAuditLog(
                 db,
                 httpRequest,
                 AuditActor.Admin(),
                 "AdminServiceDeactivated",
                 nameof(Service),
-                service.Id,
-                "Service desactive dans le catalogue.",
-                before,
-                after: ToServiceResponse(service));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServiceResponse(service));
+            return Results.Ok(result.Response);
         })
         .WithName("DeactivateAdminService");
 
@@ -1882,54 +1841,30 @@ public static class AdminEndpoints
             Guid serviceId,
             UpsertServicePrestationRequest request,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(request.Name))
+            var result = await catalogService.CreatePrestationAsync(serviceId, request, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.BadRequest(new { message = "Le nom de la prestation est obligatoire." });
+                return error;
             }
 
-            var service = await db.Services
-                .Include(item => item.Prestations)
-                .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
-
-            if (service is null)
-            {
-                return Results.NotFound(new { message = "Service introuvable." });
-            }
-
-            var before = new
-            {
-                service.Id,
-                service.Name,
-                Prestations = service.Prestations
-                    .OrderBy(item => item.SortOrder)
-                    .ThenBy(item => item.Name)
-                    .Select(ToServicePrestationResponse)
-                    .ToList()
-            };
-
-            var prestation = service.AddPrestation(
-                request.Name,
-                request.Description,
-                request.SortOrder,
-                request.PriceMinAmount ?? request.NormalPriceAmount,
-                request.PriceMaxAmount ?? request.PremiumPriceAmount,
-                request.Currency);
             AddAuditLog(
                 db,
                 httpRequest,
                 AuditActor.Admin(),
                 "AdminServicePrestationUpserted",
                 nameof(ServicePrestation),
-                prestation.Id,
-                $"Prestation '{prestation.Name}' rattachee au service '{service.Name}'.",
-                before,
-                after: ToServicePrestationResponse(prestation));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServicePrestationResponse(prestation));
+            return Results.Ok(result.Response);
         })
         .WithName("UpsertAdminServicePrestation");
 
@@ -1937,100 +1872,90 @@ public static class AdminEndpoints
             Guid id,
             UpsertServicePrestationRequest request,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(request.Name))
+            var result = await catalogService.UpdatePrestationAsync(id, request, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.BadRequest(new { message = "Le nom de la prestation est obligatoire." });
+                return error;
             }
 
-            var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-            if (prestation is null)
-            {
-                return Results.NotFound(new { message = "Prestation introuvable." });
-            }
-
-            var before = ToServicePrestationResponse(prestation);
-            prestation.Rename(request.Name, request.Description);
-            prestation.MoveTo(request.SortOrder);
-            prestation.UpdatePriceRange(
-                request.PriceMinAmount ?? request.NormalPriceAmount,
-                request.PriceMaxAmount ?? request.PremiumPriceAmount,
-                request.Currency);
             AddAuditLog(
                 db,
                 httpRequest,
                 AuditActor.Admin(),
                 "AdminServicePrestationUpdated",
                 nameof(ServicePrestation),
-                prestation.Id,
-                "Prestation de service modifiee.",
-                before,
-                after: ToServicePrestationResponse(prestation));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServicePrestationResponse(prestation));
+            return Results.Ok(result.Response);
         })
         .WithName("UpdateAdminServicePrestation");
 
         admin.MapPost("/service-prestations/{id:guid}/activate", async (
             Guid id,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-            if (prestation is null)
+            var result = await catalogService.ActivatePrestationAsync(id, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.NotFound(new { message = "Prestation introuvable." });
+                return error;
             }
 
-            var before = ToServicePrestationResponse(prestation);
-            prestation.Activate();
             AddAuditLog(
                 db,
                 httpRequest,
                 AuditActor.Admin(),
                 "AdminServicePrestationActivated",
                 nameof(ServicePrestation),
-                prestation.Id,
-                "Prestation de service activee.",
-                before,
-                after: ToServicePrestationResponse(prestation));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServicePrestationResponse(prestation));
+            return Results.Ok(result.Response);
         })
         .WithName("ActivateAdminServicePrestation");
 
         admin.MapPost("/service-prestations/{id:guid}/deactivate", async (
             Guid id,
             HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-            if (prestation is null)
+            var result = await catalogService.DeactivatePrestationAsync(id, cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            if (error is not null)
             {
-                return Results.NotFound(new { message = "Prestation introuvable." });
+                return error;
             }
 
-            var before = ToServicePrestationResponse(prestation);
-            prestation.Deactivate();
             AddAuditLog(
                 db,
                 httpRequest,
                 AuditActor.Admin(),
                 "AdminServicePrestationDeactivated",
                 nameof(ServicePrestation),
-                prestation.Id,
-                "Prestation de service desactivee.",
-                before,
-                after: ToServicePrestationResponse(prestation));
+                result.Response!.Id,
+                result.Message,
+                result.Before,
+                result.After);
             await db.SaveChangesAsync(cancellationToken);
 
-            return Results.Ok(ToServicePrestationResponse(prestation));
+            return Results.Ok(result.Response);
         })
         .WithName("DeactivateAdminServicePrestation");
         
@@ -2379,6 +2304,18 @@ public static class AdminEndpoints
         {
             CompanyServiceProposalActionStatus.NotFound => Results.NotFound(new { message = result.Message }),
             CompanyServiceProposalActionStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+            _ => Results.BadRequest(new { message = result.Message })
+        };
+    }
+
+    static IResult? ToAdminServiceCatalogOperationError<T>(AdminServiceCatalogOperationResult<T> result)
+    {
+        return result.Status switch
+        {
+            AdminServiceCatalogOperationStatus.Ok => null,
+            AdminServiceCatalogOperationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+            AdminServiceCatalogOperationStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+            AdminServiceCatalogOperationStatus.Conflict => Results.Conflict(new { message = result.Message }),
             _ => Results.BadRequest(new { message = result.Message })
         };
     }
