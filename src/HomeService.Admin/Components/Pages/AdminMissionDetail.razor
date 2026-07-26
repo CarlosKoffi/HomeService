@@ -149,9 +149,21 @@ else
                                 <p>@currentDispute.Description</p>
                             </div>
                         }
+                        <div class="mission-refund-summary">
+                            <div>
+                                <span>Base de calcul</span>
+                                <strong>@FormatMoney(RefundReferenceAmount, Mission.Currency)</strong>
+                                <small>Prix final, devis entreprise ou estimation client.</small>
+                            </div>
+                            <div>
+                                <span>Remboursement prepare</span>
+                                <strong>@FormatMoney(PreviewRefundAmount, Mission.Currency)</strong>
+                                <small>@GetRefundPreviewLabel()</small>
+                            </div>
+                        </div>
                         <label>
                             Decision admin
-                            <select @bind="ResolutionType">
+                            <select value="@ResolutionType" @onchange="OnResolutionTypeChanged">
                                 <option value="PartialRefund">Remboursement partiel</option>
                                 <option value="RefundCustomer">Remboursement total</option>
                                 <option value="PayCompany">Payer l'entreprise</option>
@@ -161,17 +173,25 @@ else
                         </label>
                         @if (RequiresRefundInput)
                         {
+                            <div class="mission-refund-actions">
+                                <button type="button" class="light-action" @onclick="PrepareFullRefund" disabled="@IsActionBusy">
+                                    Rembourser 100%
+                                </button>
+                                <button type="button" class="light-action" @onclick="ClearRefundDecision" disabled="@IsActionBusy">
+                                    Vider le remboursement
+                                </button>
+                            </div>
                             <div class="mission-refund-grid">
                                 <label>
                                     Pourcentage rembourse
-                                    <input type="number" min="0" max="100" step="1" @bind="RefundPercent" placeholder="Ex: 40" />
+                                    <input type="number" min="0" max="100" step="1" @bind="RefundPercent" @bind:event="oninput" placeholder="Ex: 40" />
                                 </label>
                                 <label>
                                     Montant rembourse
-                                    <input type="number" min="0" step="100" @bind="RefundAmount" placeholder="@FormatMoney(Mission.CompanyQuotedAmount ?? Mission.EstimatedTotalAmount ?? Mission.FinalTotalAmount, Mission.Currency)" />
+                                    <input type="number" min="0" step="100" @bind="RefundAmount" @bind:event="oninput" placeholder="@RefundReferenceAmount.ToString()" />
                                 </label>
                             </div>
-                            <p class="mission-dispute-hint">Le montant est prioritaire. Sinon le pourcentage calcule le remboursement depuis le prix de la mission.</p>
+                            <p class="mission-dispute-hint">Le montant est prioritaire. Sinon le pourcentage calcule le remboursement depuis la base affichee ci-dessus.</p>
                         }
                         <label>
                             Note de resolution
@@ -295,6 +315,10 @@ else
     private int? RefundAmount { get; set; }
     private string SelectedTab { get; set; } = "summary";
     private bool RequiresRefundInput => ResolutionType is "PartialRefund" or "RefundCustomer";
+    private int RefundReferenceAmount => Mission?.FinalTotalAmount ?? Mission?.CompanyQuotedAmount ?? Mission?.EstimatedTotalAmount ?? 0;
+    private int PreviewRefundAmount => RefundAmount ?? (RefundPercent.HasValue
+        ? (int)Math.Round(RefundReferenceAmount * RefundPercent.Value / 100m, MidpointRounding.AwayFromZero)
+        : ResolutionType == "RefundCustomer" ? RefundReferenceAmount : 0);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -352,6 +376,18 @@ else
     {
         if (Mission is null)
         {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(ResolutionNote))
+        {
+            ErrorMessage = "Ajoutez une note de resolution avant de cloturer le litige.";
+            return;
+        }
+
+        if (RequiresRefundInput && RefundPercent is null && RefundAmount is null)
+        {
+            ErrorMessage = "Indiquez un pourcentage ou un montant de remboursement avant de cloturer le litige.";
             return;
         }
 
@@ -420,6 +456,60 @@ else
     private void BackToList() => Navigation.NavigateTo("/missions");
     private void SelectTab(string tab) => SelectedTab = tab;
     private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;
+
+    private void OnResolutionTypeChanged(ChangeEventArgs args)
+    {
+        ResolutionType = args.Value?.ToString() ?? "PartialRefund";
+        if (ResolutionType == "RefundCustomer")
+        {
+            RefundPercent = 100;
+            RefundAmount = null;
+        }
+        else if (!RequiresRefundInput)
+        {
+            ClearRefundDecision();
+        }
+    }
+
+    private void PrepareFullRefund()
+    {
+        ResolutionType = "RefundCustomer";
+        RefundPercent = 100;
+        RefundAmount = null;
+        ErrorMessage = null;
+    }
+
+    private void ClearRefundDecision()
+    {
+        RefundPercent = null;
+        RefundAmount = null;
+        ErrorMessage = null;
+    }
+
+    private string GetRefundPreviewLabel()
+    {
+        if (!RequiresRefundInput)
+        {
+            return "Aucun remboursement pour cette decision.";
+        }
+
+        if (RefundAmount.HasValue)
+        {
+            return "Montant saisi par l'admin.";
+        }
+
+        if (RefundPercent.HasValue)
+        {
+            return $"{RefundPercent.Value}% de la base mission.";
+        }
+
+        if (ResolutionType == "RefundCustomer")
+        {
+            return "Remboursement total prepare.";
+        }
+
+        return "A renseigner avant validation.";
+    }
 
     private static string FormatMoney(int? amount, string currency) => amount is null ? "Aucun prix" : $"{amount:N0} {currency}";
     private static string FormatMoney(int amount, string currency) => $"{amount:N0} {currency}";

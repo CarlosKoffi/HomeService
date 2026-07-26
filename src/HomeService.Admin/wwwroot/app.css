@@ -1753,6 +1753,51 @@ h3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.mission-refund-summary {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mission-refund-summary > div {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    display: grid;
+    gap: .25rem;
+    padding: .85rem 1rem;
+}
+
+.mission-refund-summary span {
+    color: #5b6677;
+    font-size: .74rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.mission-refund-summary strong {
+    color: #000;
+    font-size: 1.25rem;
+}
+
+.mission-refund-summary small {
+    color: #5b6677;
+    font-weight: 700;
+}
+
+.mission-refund-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.mission-dispute-box .mission-refund-actions .light-action {
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    color: #111827;
+}
+
 .dispute-history-panel {
     margin-top: 1rem;
 }
