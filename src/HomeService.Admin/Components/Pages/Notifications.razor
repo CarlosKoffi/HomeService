@@ -129,8 +129,26 @@
                 <strong>Canaux par type de notification</strong>
                 <p>Le portail s'applique aux entreprises. L'application s'applique aux clients et prestataires. Email et WhatsApp restent configurables.</p>
             </div>
-            <small>@DeliveryRules.Count type(s)</small>
+            <small>@FilteredDeliveryRules.Count / @DeliveryRules.Count type(s)</small>
         </div>
+
+        <nav class="notification-subnav" aria-label="Filtrer les regles par destinataire">
+            <button type="button" class="@GetRuleAudienceButtonClass("All")" @onclick='() => SetRuleAudience("All")'>
+                Tous <span>@DeliveryRules.Count</span>
+            </button>
+            <button type="button" class="@GetRuleAudienceButtonClass("Company")" @onclick='() => SetRuleAudience("Company")'>
+                Entreprises <span>@CountRulesByAudience("Company")</span>
+            </button>
+            <button type="button" class="@GetRuleAudienceButtonClass("Provider")" @onclick='() => SetRuleAudience("Provider")'>
+                Prestataires <span>@CountRulesByAudience("Provider")</span>
+            </button>
+            <button type="button" class="@GetRuleAudienceButtonClass("Customer")" @onclick='() => SetRuleAudience("Customer")'>
+                Clients <span>@CountRulesByAudience("Customer")</span>
+            </button>
+            <button type="button" class="@GetRuleAudienceButtonClass("Mixed")" @onclick='() => SetRuleAudience("Mixed")'>
+                Mixtes <span>@CountRulesByAudience("Mixed")</span>
+            </button>
+        </nav>
 
         @if (DeliveryRules.Count == 0 && IsLoading)
         {
@@ -140,7 +158,7 @@
         }
         else
         {
-            @foreach (var rule in DeliveryRules)
+            @foreach (var rule in FilteredDeliveryRules)
             {
                 <article class="notification-rule-row">
                     <div class="notification-rule-copy">
@@ -210,9 +228,32 @@
                 <div>
                     <span>Modeles de messages</span>
                     <strong>Textes par evenement et canal</strong>
-                    <p>Mobile, portail, email et WhatsApp utilisent la meme logique. Les liens et donnees sensibles restent generes par la plateforme.</p>
+                <p>Mobile, portail, email et WhatsApp utilisent la meme logique. Les liens et donnees sensibles restent generes par la plateforme.</p>
+            </div>
+            <small>@FilteredNotificationTemplates.Count / @NotificationTemplates.Count modele(s)</small>
+        </div>
+
+            <div class="notification-template-toolbar">
+                <div>
+                    <span>Destinataire</span>
+                    <nav class="notification-subnav compact" aria-label="Filtrer les modeles par destinataire">
+                        <button type="button" class="@GetTemplateAudienceButtonClass("All")" @onclick='() => SetTemplateAudience("All")'>Tous <span>@NotificationTemplates.Count</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Company")" @onclick='() => SetTemplateAudience("Company")'>Entreprises <span>@CountTemplatesByAudience("Company")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Provider")" @onclick='() => SetTemplateAudience("Provider")'>Prestataires <span>@CountTemplatesByAudience("Provider")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Customer")" @onclick='() => SetTemplateAudience("Customer")'>Clients <span>@CountTemplatesByAudience("Customer")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Mixed")" @onclick='() => SetTemplateAudience("Mixed")'>Mixtes <span>@CountTemplatesByAudience("Mixed")</span></button>
+                    </nav>
                 </div>
-                <small>@NotificationTemplates.Count modele(s)</small>
+                <div>
+                    <span>Canal</span>
+                    <nav class="notification-subnav compact" aria-label="Filtrer les modeles par canal">
+                        <button type="button" class="@GetTemplateChannelButtonClass("All")" @onclick='() => SetTemplateChannel("All")'>Tous <span>@NotificationTemplates.Count</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("Portal")" @onclick='() => SetTemplateChannel("Portal")'>Portail <span>@CountTemplatesByChannel("Portal")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("MobilePush")" @onclick='() => SetTemplateChannel("MobilePush")'>Application <span>@CountTemplatesByChannel("MobilePush")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("Email")" @onclick='() => SetTemplateChannel("Email")'>Email <span>@CountTemplatesByChannel("Email")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("WhatsApp")" @onclick='() => SetTemplateChannel("WhatsApp")'>WhatsApp <span>@CountTemplatesByChannel("WhatsApp")</span></button>
+                    </nav>
+                </div>
             </div>
 
             <article class="notification-template-create">
@@ -260,7 +301,7 @@
                 <button type="button" class="primary-action" @onclick="CreateTemplateAsync">Creer le modele</button>
             </article>
 
-            @foreach (var template in NotificationTemplates)
+            @foreach (var template in FilteredNotificationTemplates)
             {
                 <article class="notification-template-card">
                     <header>
@@ -562,6 +603,9 @@
     private string? StatusFilter { get; set; }
     private string? ChannelFilter { get; set; }
     private string ActiveNotificationSection { get; set; } = "overview";
+    private string ActiveRuleAudience { get; set; } = "All";
+    private string ActiveTemplateAudience { get; set; } = "All";
+    private string ActiveTemplateChannel { get; set; } = "All";
     private NotificationTemplateDraft NewTemplate { get; set; } = new();
 
     private IReadOnlyList<NotificationOutboxMessageResponse> FilteredNotifications
@@ -593,6 +637,22 @@
             .Where(MatchesPortalFilters)
             .OrderBy(notification => notification.IsRead)
             .ThenByDescending(notification => notification.OccurredAt)
+            .ToList();
+
+    private IReadOnlyList<NotificationDeliveryRuleResponse> FilteredDeliveryRules
+        => DeliveryRules
+            .Where(rule => ActiveRuleAudience == "All" || string.Equals(rule.Audience, ActiveRuleAudience, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(rule => rule.Audience)
+            .ThenBy(rule => rule.Label)
+            .ToList();
+
+    private IReadOnlyList<NotificationTemplateResponse> FilteredNotificationTemplates
+        => NotificationTemplates
+            .Where(template => ActiveTemplateAudience == "All" || string.Equals(template.Audience, ActiveTemplateAudience, StringComparison.OrdinalIgnoreCase))
+            .Where(template => ActiveTemplateChannel == "All" || string.Equals(template.Channel, ActiveTemplateChannel, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(template => template.Audience)
+            .ThenBy(template => template.Channel)
+            .ThenBy(template => template.Label)
             .ToList();
 
     private int UnreadPortalNotifications => CompanyPortalNotifications.Count(notification => !notification.IsRead);
@@ -869,6 +929,42 @@
         return ActiveNotificationSection == section ? "active" : string.Empty;
     }
 
+    private void SetRuleAudience(string audience)
+    {
+        ActiveRuleAudience = audience;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
+    private void SetTemplateAudience(string audience)
+    {
+        ActiveTemplateAudience = audience;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
+    private void SetTemplateChannel(string channel)
+    {
+        ActiveTemplateChannel = channel;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
+    private string GetRuleAudienceButtonClass(string audience)
+    {
+        return ActiveRuleAudience == audience ? "active" : string.Empty;
+    }
+
+    private string GetTemplateAudienceButtonClass(string audience)
+    {
+        return ActiveTemplateAudience == audience ? "active" : string.Empty;
+    }
+
+    private string GetTemplateChannelButtonClass(string channel)
+    {
+        return ActiveTemplateChannel == channel ? "active" : string.Empty;
+    }
+
     private static bool CanCancel(NotificationOutboxMessageResponse notification)
     {
         return notification.Status is not "Sent" and not "Cancelled";
@@ -912,6 +1008,21 @@
     private int CountByStatus(string status)
     {
         return QueuedNotifications.Count(notification => notification.Status == status);
+    }
+
+    private int CountRulesByAudience(string audience)
+    {
+        return DeliveryRules.Count(rule => string.Equals(rule.Audience, audience, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private int CountTemplatesByAudience(string audience)
+    {
+        return NotificationTemplates.Count(template => string.Equals(template.Audience, audience, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private int CountTemplatesByChannel(string channel)
+    {
+        return NotificationTemplates.Count(template => string.Equals(template.Channel, channel, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool MatchesFilters(NotificationOutboxMessageResponse notification)
