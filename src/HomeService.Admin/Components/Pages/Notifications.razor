@@ -152,6 +152,17 @@
 
         <div class="notification-template-toolbar">
             <div>
+                <span>Domaine</span>
+                <nav class="notification-subnav compact" aria-label="Filtrer les regles par domaine">
+                    <button type="button" class="@GetRuleTopicButtonClass("All")" @onclick='() => SetRuleTopic("All")'>Tous <span>@DeliveryRules.Count</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Applications")" @onclick='() => SetRuleTopic("Applications")'>Dossiers <span>@CountRulesByTopic("Applications")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Missions")" @onclick='() => SetRuleTopic("Missions")'>Missions <span>@CountRulesByTopic("Missions")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Payments")" @onclick='() => SetRuleTopic("Payments")'>Paiements <span>@CountRulesByTopic("Payments")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Disputes")" @onclick='() => SetRuleTopic("Disputes")'>Litiges <span>@CountRulesByTopic("Disputes")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Access")" @onclick='() => SetRuleTopic("Access")'>Acces <span>@CountRulesByTopic("Access")</span></button>
+                </nav>
+            </div>
+            <div>
                 <span>Canal</span>
                 <nav class="notification-subnav compact" aria-label="Filtrer les regles par canal">
                     <button type="button" class="@GetRuleChannelButtonClass("All")" @onclick='() => SetRuleChannel("All")'>Tous <span>@DeliveryRules.Count</span></button>
@@ -252,6 +263,17 @@
         </div>
 
             <div class="notification-template-toolbar">
+                <div>
+                    <span>Domaine</span>
+                    <nav class="notification-subnav compact" aria-label="Filtrer les modeles par domaine">
+                        <button type="button" class="@GetTemplateTopicButtonClass("All")" @onclick='() => SetTemplateTopic("All")'>Tous <span>@NotificationTemplates.Count</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Applications")" @onclick='() => SetTemplateTopic("Applications")'>Dossiers <span>@CountTemplatesByTopic("Applications")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Missions")" @onclick='() => SetTemplateTopic("Missions")'>Missions <span>@CountTemplatesByTopic("Missions")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Payments")" @onclick='() => SetTemplateTopic("Payments")'>Paiements <span>@CountTemplatesByTopic("Payments")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Disputes")" @onclick='() => SetTemplateTopic("Disputes")'>Litiges <span>@CountTemplatesByTopic("Disputes")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Access")" @onclick='() => SetTemplateTopic("Access")'>Acces <span>@CountTemplatesByTopic("Access")</span></button>
+                    </nav>
+                </div>
                 <div>
                     <span>Destinataire</span>
                     <nav class="notification-subnav compact" aria-label="Filtrer les modeles par destinataire">
@@ -626,8 +648,10 @@
     private string ActiveNotificationSection { get; set; } = "overview";
     private string ActiveRuleAudience { get; set; } = "All";
     private string ActiveRuleChannel { get; set; } = "All";
+    private string ActiveRuleTopic { get; set; } = "All";
     private string ActiveTemplateAudience { get; set; } = "All";
     private string ActiveTemplateChannel { get; set; } = "All";
+    private string ActiveTemplateTopic { get; set; } = "All";
     private bool ShowTemplateCreate { get; set; }
     private NotificationTemplateDraft NewTemplate { get; set; } = new();
 
@@ -665,8 +689,10 @@
     private IReadOnlyList<NotificationDeliveryRuleResponse> FilteredDeliveryRules
         => DeliveryRules
             .Where(rule => ActiveRuleAudience == "All" || string.Equals(rule.Audience, ActiveRuleAudience, StringComparison.OrdinalIgnoreCase))
+            .Where(rule => ActiveRuleTopic == "All" || GetNotificationTopic(rule.EventKey) == ActiveRuleTopic)
             .Where(MatchesRuleChannel)
-            .OrderBy(rule => rule.Audience)
+            .OrderBy(rule => GetNotificationTopic(rule.EventKey))
+            .ThenBy(rule => rule.Audience)
             .ThenBy(rule => rule.Label)
             .ToList();
 
@@ -674,7 +700,9 @@
         => NotificationTemplates
             .Where(template => ActiveTemplateAudience == "All" || string.Equals(template.Audience, ActiveTemplateAudience, StringComparison.OrdinalIgnoreCase))
             .Where(template => ActiveTemplateChannel == "All" || string.Equals(template.Channel, ActiveTemplateChannel, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(template => template.Audience)
+            .Where(template => ActiveTemplateTopic == "All" || GetNotificationTopic(template.EventKey) == ActiveTemplateTopic)
+            .OrderBy(template => GetNotificationTopic(template.EventKey))
+            .ThenBy(template => template.Audience)
             .ThenBy(template => template.Channel)
             .ThenBy(template => template.Label)
             .ToList();
@@ -968,6 +996,13 @@
         SuccessMessage = null;
     }
 
+    private void SetRuleTopic(string topic)
+    {
+        ActiveRuleTopic = topic;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
     private void SetTemplateAudience(string audience)
     {
         ActiveTemplateAudience = audience;
@@ -982,6 +1017,13 @@
         SuccessMessage = null;
     }
 
+    private void SetTemplateTopic(string topic)
+    {
+        ActiveTemplateTopic = topic;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
     private string GetRuleAudienceButtonClass(string audience)
     {
         return ActiveRuleAudience == audience ? "active" : string.Empty;
@@ -992,6 +1034,11 @@
         return ActiveRuleChannel == channel ? "active" : string.Empty;
     }
 
+    private string GetRuleTopicButtonClass(string topic)
+    {
+        return ActiveRuleTopic == topic ? "active" : string.Empty;
+    }
+
     private string GetTemplateAudienceButtonClass(string audience)
     {
         return ActiveTemplateAudience == audience ? "active" : string.Empty;
@@ -1000,6 +1047,11 @@
     private string GetTemplateChannelButtonClass(string channel)
     {
         return ActiveTemplateChannel == channel ? "active" : string.Empty;
+    }
+
+    private string GetTemplateTopicButtonClass(string topic)
+    {
+        return ActiveTemplateTopic == topic ? "active" : string.Empty;
     }
 
     private static bool CanCancel(NotificationOutboxMessageResponse notification)
@@ -1057,6 +1109,11 @@
         return DeliveryRules.Count(rule => RuleHasChannel(rule, channel));
     }
 
+    private int CountRulesByTopic(string topic)
+    {
+        return DeliveryRules.Count(rule => GetNotificationTopic(rule.EventKey) == topic);
+    }
+
     private int CountTemplatesByAudience(string audience)
     {
         return NotificationTemplates.Count(template => string.Equals(template.Audience, audience, StringComparison.OrdinalIgnoreCase));
@@ -1065,6 +1122,11 @@
     private int CountTemplatesByChannel(string channel)
     {
         return NotificationTemplates.Count(template => string.Equals(template.Channel, channel, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private int CountTemplatesByTopic(string topic)
+    {
+        return NotificationTemplates.Count(template => GetNotificationTopic(template.EventKey) == topic);
     }
 
     private bool MatchesFilters(NotificationOutboxMessageResponse notification)
@@ -1165,6 +1227,58 @@
         "pending" => "En attente",
         _ => "Information"
     };
+
+    private static string GetNotificationTopic(string eventKey)
+    {
+        if (string.IsNullOrWhiteSpace(eventKey))
+        {
+            return "Other";
+        }
+
+        if (eventKey.Contains("Application", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Document", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Compliance", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Activation", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("ProviderProfile", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Interim", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Applications";
+        }
+
+        if (eventKey.Contains("Payment", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Payout", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Commission", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Refund", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Payments";
+        }
+
+        if (eventKey.Contains("Dispute", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Complaint", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Cancellation", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Cancel", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Disputes";
+        }
+
+        if (eventKey.Contains("Mission", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Quote", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Assignment", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Provider", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Missions";
+        }
+
+        if (eventKey.Contains("Login", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Password", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Code", StringComparison.OrdinalIgnoreCase)
+            || eventKey.Contains("Token", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Access";
+        }
+
+        return "Other";
+    }
 
     private static string GetNotificationClass(string status)
     {
