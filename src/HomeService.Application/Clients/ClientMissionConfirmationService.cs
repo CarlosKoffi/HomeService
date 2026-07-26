@@ -1,4 +1,6 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -6,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Clients;
 
-public sealed class ClientMissionConfirmationService(IAppDbContext db)
+public sealed class ClientMissionConfirmationService(
+    IAppDbContext db,
+    CompanyPortalNotificationWriter companyNotifications,
+    MobilePushNotificationQueueService mobilePushNotifications)
 {
     public async Task<ClientMissionConfirmationResult> ConfirmAsync(
         Guid missionId,
@@ -96,6 +101,25 @@ public sealed class ClientMissionConfirmationService(IAppDbContext db)
                 "green",
                 nameof(Mission),
                 mission.Id));
+
+            companyNotifications.AddForMission(
+                mission,
+                "MissionQuoteAcceptedByCustomer",
+                $"Devis accepte pour {mission.MissionNumber}",
+                $"Le client a accepte le devis de {totalAmount.Value:N0} {mission.Currency}. Les contacts sont maintenant visibles.",
+                "success",
+                $"missions/{mission.Id}");
+
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Provider,
+                mission.ProviderId.Value,
+                "Mission confirmee",
+                $"Le client a confirme la mission {mission.MissionNumber}. Preparez votre intervention.",
+                nameof(Mission),
+                mission.Id,
+                null,
+                cancellationToken,
+                saveChanges: false);
 
             await db.SaveChangesAsync(cancellationToken);
         }

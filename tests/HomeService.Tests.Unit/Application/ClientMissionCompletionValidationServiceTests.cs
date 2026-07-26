@@ -1,4 +1,6 @@
 using HomeService.Application.Clients;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using HomeService.Contracts.Clients;
@@ -16,7 +18,14 @@ public sealed class ClientMissionCompletionValidationServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedCompletedMissionAsync(db);
-        var sut = new ClientMissionCompletionValidationService(db);
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Provider,
+            scenario.Provider.Id,
+            MobileDevicePlatform.Android,
+            "provider-token",
+            "Android terrain"));
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
 
         var result = await sut.ValidateAsync(
             scenario.Mission.Id,
@@ -32,6 +41,14 @@ public sealed class ClientMissionCompletionValidationServiceTests
         Assert.Equal(17_000, result.Response.CompanyPayoutAmount);
         Assert.Equal(1, await db.MissionReviews.CountAsync());
         Assert.Equal(1, await db.CompanyPortalActivities.CountAsync());
+        Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());
+        var notification = await db.CompanyPortalNotifications.SingleAsync();
+        Assert.Equal("MissionPaymentReleased", notification.Type);
+        Assert.Equal(scenario.Company.Id, notification.CompanyId);
+        Assert.Equal(1, await db.NotificationOutboxMessages.CountAsync());
+        var push = await db.NotificationOutboxMessages.SingleAsync();
+        Assert.Equal(NotificationChannel.MobilePush, push.Channel);
+        Assert.Equal("provider-token", push.Recipient);
         var milestone = await db.MissionPaymentMilestones.SingleAsync();
         Assert.Equal(MissionPaymentMilestoneStatus.Paid, milestone.Status);
         Assert.Equal("PAYOUT-001", milestone.ExternalPaymentReference);
@@ -42,7 +59,7 @@ public sealed class ClientMissionCompletionValidationServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedCompletedMissionAsync(db);
-        var sut = new ClientMissionCompletionValidationService(db);
+        var sut = CreateService(db);
 
         var result = await sut.ValidateAsync(
             scenario.Mission.Id,
@@ -59,7 +76,7 @@ public sealed class ClientMissionCompletionValidationServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedCompletedMissionAsync(db);
-        var sut = new ClientMissionCompletionValidationService(db);
+        var sut = CreateService(db);
 
         var result = await sut.ValidateAsync(
             scenario.Mission.Id,
@@ -124,7 +141,7 @@ public sealed class ClientMissionCompletionValidationServiceTests
             20);
         db.MissionPaymentMilestones.Add(milestone);
         await db.SaveChangesAsync();
-        return new CompletionScenario(customer, mission);
+        return new CompletionScenario(customer, company, provider, mission);
     }
 
     private static HomeServiceDbContext CreateDbContext()
@@ -136,5 +153,17 @@ public sealed class ClientMissionCompletionValidationServiceTests
         return new HomeServiceDbContext(options);
     }
 
-    private sealed record CompletionScenario(CustomerProfile Customer, Mission Mission);
+    private static ClientMissionCompletionValidationService CreateService(HomeServiceDbContext db)
+    {
+        return new ClientMissionCompletionValidationService(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db));
+    }
+
+    private sealed record CompletionScenario(
+        CustomerProfile Customer,
+        Company Company,
+        ProviderProfile Provider,
+        Mission Mission);
 }

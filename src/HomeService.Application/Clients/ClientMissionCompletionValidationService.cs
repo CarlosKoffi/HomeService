@@ -1,4 +1,6 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -6,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Clients;
 
-public sealed class ClientMissionCompletionValidationService(IAppDbContext db)
+public sealed class ClientMissionCompletionValidationService(
+    IAppDbContext db,
+    CompanyPortalNotificationWriter companyNotifications,
+    MobilePushNotificationQueueService mobilePushNotifications)
 {
     public async Task<ClientMissionCompletionValidationResult> ValidateAsync(
         Guid missionId,
@@ -88,6 +93,25 @@ public sealed class ClientMissionCompletionValidationService(IAppDbContext db)
             "green",
             nameof(Mission),
             mission.Id));
+
+        companyNotifications.AddForMission(
+            mission,
+            "MissionPaymentReleased",
+            $"Mission {mission.MissionNumber} validee",
+            $"Le client a valide la mission avec une note globale de {review.OverallRating}/5. Reversement entreprise: {mission.CompanyPayoutAmount:N0} {mission.Currency}.",
+            "success",
+            $"missions/{mission.Id}");
+
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Provider,
+            mission.ProviderId.Value,
+            "Mission validee",
+            $"Le client a valide la mission {mission.MissionNumber}. Note globale: {review.OverallRating}/5.",
+            nameof(Mission),
+            mission.Id,
+            null,
+            cancellationToken,
+            saveChanges: false);
 
         await db.SaveChangesAsync(cancellationToken);
         return ClientMissionCompletionValidationResult.Ok(ToResponse(mission, review.OverallRating));

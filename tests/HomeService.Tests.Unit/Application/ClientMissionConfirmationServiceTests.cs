@@ -1,4 +1,6 @@
 using HomeService.Application.Clients;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -15,8 +17,14 @@ public sealed class ClientMissionConfirmationServiceTests
         await using var db = CreateDbContext();
         var scenario = await SeedAcceptedMissionAsync(db);
         db.CommissionRules.Add(new CommissionRule("Commission wélé", CommissionRuleTarget.PlatformConnection, 1500, 0, "XOF"));
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Provider,
+            scenario.Provider.Id,
+            MobileDevicePlatform.Android,
+            "provider-token",
+            "Android terrain"));
         await db.SaveChangesAsync();
-        var sut = new ClientMissionConfirmationService(db);
+        var sut = CreateService(db);
 
         var result = await sut.ConfirmAsync(
             scenario.Mission.Id,
@@ -34,6 +42,14 @@ public sealed class ClientMissionConfirmationServiceTests
         Assert.Equal(scenario.Provider.PhoneNumber, result.Response.ProviderPhoneNumber);
         Assert.Equal(1, await db.MissionPaymentMilestones.CountAsync());
         Assert.Equal(1, await db.CompanyPortalActivities.CountAsync());
+        Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());
+        var notification = await db.CompanyPortalNotifications.SingleAsync();
+        Assert.Equal("MissionQuoteAcceptedByCustomer", notification.Type);
+        Assert.Equal(scenario.Company.Id, notification.CompanyId);
+        Assert.Equal(1, await db.NotificationOutboxMessages.CountAsync());
+        var push = await db.NotificationOutboxMessages.SingleAsync();
+        Assert.Equal(NotificationChannel.MobilePush, push.Channel);
+        Assert.Equal("provider-token", push.Recipient);
     }
 
     [Fact]
@@ -41,7 +57,7 @@ public sealed class ClientMissionConfirmationServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedAcceptedMissionAsync(db);
-        var sut = new ClientMissionConfirmationService(db);
+        var sut = CreateService(db);
 
         var result = await sut.ConfirmAsync(
             scenario.Mission.Id,
@@ -58,7 +74,7 @@ public sealed class ClientMissionConfirmationServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedAcceptedMissionAsync(db, markProviderAccepted: false);
-        var sut = new ClientMissionConfirmationService(db);
+        var sut = CreateService(db);
 
         var result = await sut.ConfirmAsync(
             scenario.Mission.Id,
@@ -125,6 +141,14 @@ public sealed class ClientMissionConfirmationServiceTests
             .Options;
 
         return new HomeServiceDbContext(options);
+    }
+
+    private static ClientMissionConfirmationService CreateService(HomeServiceDbContext db)
+    {
+        return new ClientMissionConfirmationService(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db));
     }
 
     private sealed record ConfirmationScenario(
