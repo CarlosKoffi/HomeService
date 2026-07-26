@@ -80,13 +80,29 @@ public static class AdminEndpoints
         admin.MapPost("/contact-requests/{id:guid}/in-progress", async (
             Guid id,
             UpdateContactRequestStatusRequest request,
+            HttpRequest httpRequest,
             ContactRequestService contactRequestService,
+            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
             var result = await contactRequestService.MarkInProgressAsync(id, request, cancellationToken);
-            return result.IsSuccess
-                ? Results.Ok(result.Response)
-                : Results.NotFound(new { message = result.Message });
+            if (!result.IsSuccess)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminContactRequestInProgress",
+                nameof(ContactRequest),
+                id,
+                "Demande de contact prise en charge.",
+                after: new { result.Response!.Status, result.Response.AdminNote });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
         })
         .WithName("MarkContactRequestInProgress")
         .Produces<AdminContactRequestResponse>()
@@ -95,13 +111,29 @@ public static class AdminEndpoints
         admin.MapPost("/contact-requests/{id:guid}/close", async (
             Guid id,
             UpdateContactRequestStatusRequest request,
+            HttpRequest httpRequest,
             ContactRequestService contactRequestService,
+            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
             var result = await contactRequestService.CloseAsync(id, request, cancellationToken);
-            return result.IsSuccess
-                ? Results.Ok(result.Response)
-                : Results.NotFound(new { message = result.Message });
+            if (!result.IsSuccess)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminContactRequestClosed",
+                nameof(ContactRequest),
+                id,
+                "Demande de contact cloturee.",
+                after: new { result.Response!.Status, result.Response.AdminNote });
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
         })
         .WithName("CloseContactRequest")
         .Produces<AdminContactRequestResponse>()

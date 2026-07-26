@@ -99,13 +99,13 @@
                         }
                         <div>
                             <dt>Telephone</dt>
-                            <dd>@request.PhoneNumber</dd>
+                            <dd><a href="tel:@request.PhoneNumber">@request.PhoneNumber</a></dd>
                         </div>
                         @if (!string.IsNullOrWhiteSpace(request.Email))
                         {
                             <div>
                                 <dt>Email</dt>
-                                <dd>@request.Email</dd>
+                                <dd><a href="mailto:@request.Email">@request.Email</a></dd>
                             </div>
                         }
                         <div>
@@ -129,15 +129,15 @@
                               @oninput="eventArgs => SetNote(request.Id, eventArgs.Value?.ToString())"></textarea>
                     <button type="button"
                             class="secondary-action"
-                            disabled="@IsBusy(request.Id)"
+                            disabled="@(!CanMarkInProgress(request))"
                             @onclick="() => MarkInProgressAsync(request)">
-                        Prendre en charge
+                        @(request.Status == "InProgress" ? "Deja en cours" : "Prendre en charge")
                     </button>
                     <button type="button"
                             class="primary-action"
-                            disabled="@IsBusy(request.Id)"
+                            disabled="@(!CanClose(request))"
                             @onclick="() => CloseAsync(request)">
-                        Cloturer
+                        @(request.Status == "Closed" ? "Cloture" : "Cloturer")
                     </button>
                 </div>
             </article>
@@ -237,6 +237,7 @@
         if (index >= 0)
         {
             Requests[index] = updated;
+            Notes.Remove(updated.Id);
         }
     }
 
@@ -246,6 +247,11 @@
     }
 
     private bool IsBusy(Guid id) => BusyIds.Contains(id);
+    private bool CanMarkInProgress(AdminContactRequestResponse request)
+        => !IsBusy(request.Id) && request.Status is not ("InProgress" or "Closed");
+
+    private bool CanClose(AdminContactRequestResponse request)
+        => !IsBusy(request.Id) && request.Status != "Closed";
 
     private string? GetNote(Guid id)
     {
