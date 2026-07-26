@@ -1,4 +1,6 @@
+using HomeService.Application.CompanyPortal;
 using HomeService.Application.Missions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Missions;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -18,7 +20,7 @@ public sealed class MissionCancellationWorkflowServiceTests
         assignment.Accept();
         db.ProviderMissionAssignments.Add(assignment);
         await db.SaveChangesAsync();
-        var sut = new MissionCancellationWorkflowService(db);
+        var sut = CreateService(db);
 
         var result = await sut.CancelAsync(
             scenario.Mission.Id,
@@ -35,6 +37,7 @@ public sealed class MissionCancellationWorkflowServiceTests
         Assert.Equal(ProviderMissionAssignmentStatus.Cancelled, assignment.Status);
         Assert.Equal(2, await db.MissionPaymentMilestones.CountAsync());
         Assert.Equal(1, await db.CompanyPortalActivities.CountAsync());
+        Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());
     }
 
     [Fact]
@@ -42,7 +45,7 @@ public sealed class MissionCancellationWorkflowServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedAcceptedMissionAsync(db);
-        var sut = new MissionCancellationWorkflowService(db);
+        var sut = CreateService(db);
 
         var result = await sut.CancelAsync(
             scenario.Mission.Id,
@@ -61,7 +64,14 @@ public sealed class MissionCancellationWorkflowServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedAcceptedMissionAsync(db);
-        var sut = new MissionCancellationWorkflowService(db);
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Provider,
+            scenario.Provider.Id,
+            MobileDevicePlatform.Android,
+            "provider-device-token",
+            "Android test"));
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
 
         var result = await sut.CancelAsync(
             scenario.Mission.Id,
@@ -75,6 +85,10 @@ public sealed class MissionCancellationWorkflowServiceTests
         Assert.Equal(MissionCancellationActor.Provider, scenario.Mission.CancelledBy);
         Assert.Equal(1500, scenario.Mission.CancellationFeeAmount);
         Assert.Equal(18_500, scenario.Mission.RefundAmount);
+        Assert.Equal(1, await db.NotificationOutboxMessages.CountAsync());
+        var push = await db.NotificationOutboxMessages.SingleAsync();
+        Assert.Equal(NotificationChannel.MobilePush, push.Channel);
+        Assert.Equal("provider-device-token", push.Recipient);
     }
 
     private static async Task<CancellationWorkflowScenario> SeedAcceptedMissionAsync(HomeServiceDbContext db)
@@ -128,6 +142,14 @@ public sealed class MissionCancellationWorkflowServiceTests
             .Options;
 
         return new HomeServiceDbContext(options);
+    }
+
+    private static MissionCancellationWorkflowService CreateService(HomeServiceDbContext db)
+    {
+        return new MissionCancellationWorkflowService(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db));
     }
 
     private sealed record CancellationWorkflowScenario(

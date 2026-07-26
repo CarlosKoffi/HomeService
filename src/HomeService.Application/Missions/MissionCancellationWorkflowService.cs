@@ -1,4 +1,6 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Missions;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -6,7 +8,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Missions;
 
-public sealed class MissionCancellationWorkflowService(IAppDbContext db)
+public sealed class MissionCancellationWorkflowService(
+    IAppDbContext db,
+    CompanyPortalNotificationWriter companyNotifications,
+    MobilePushNotificationQueueService mobilePushNotifications)
 {
     private const int DefaultAfterContactReleaseFeeAmount = 2500;
 
@@ -58,6 +63,7 @@ public sealed class MissionCancellationWorkflowService(IAppDbContext db)
         TrackCancellationFinancials(mission, fee, refund);
         TrackCancellationMilestone(mission, fee);
         TrackCompanyActivity(mission, actor, reason);
+        await TrackCancellationNotificationsAsync(mission, actor, reason, refund, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -197,6 +203,51 @@ public sealed class MissionCancellationWorkflowService(IAppDbContext db)
             "orange",
             nameof(Mission),
             mission.Id));
+    }
+
+    private async Task TrackCancellationNotificationsAsync(
+        Mission mission,
+        MissionCancellationActor actor,
+        MissionCancellationReason reason,
+        int refundAmount,
+        CancellationToken cancellationToken)
+    {
+        companyNotifications.AddForMission(
+            mission,
+            "MissionCancelled",
+            $"Mission {mission.MissionNumber} annulee",
+            BuildCompanyCancellationMessage(actor, reason, refundAmount, mission.Currency),
+            refundAmount > 0 ? "warning" : "danger",
+            $"missions/{mission.Id}");
+
+        if (mission.ProviderId is null)
+        {
+            return;
+        }
+
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Provider,
+            mission.ProviderId.Value,
+            "Mission annulee",
+            $"La mission {mission.MissionNumber} a ete annulee. Raison: {reason}.",
+            nameof(Mission),
+            mission.Id,
+            null,
+            cancellationToken,
+            saveChanges: false);
+    }
+
+    private static string BuildCompanyCancellationMessage(
+        MissionCancellationActor actor,
+        MissionCancellationReason reason,
+        int refundAmount,
+        string currency)
+    {
+        var refundText = refundAmount > 0
+            ? $" Remboursement client prevu: {refundAmount:N0} {currency}."
+            : " Aucun remboursement automatique n'est prevu.";
+
+        return $"Annulation par {actor}. Raison: {reason}.{refundText}";
     }
 
     private static CancelMissionResponse ToResponse(Mission mission)
