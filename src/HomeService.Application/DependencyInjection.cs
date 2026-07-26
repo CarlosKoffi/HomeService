@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<MobilePushNotificationQueueService>();
         services.AddScoped<MobilePushOutboxDispatcherService>();
         services.AddScoped<NotificationDeliveryPreferenceService>();
+        services.AddScoped<NotificationTemplateService>();
         services.AddScoped<CompanyPortalProfileManagementService>();
         services.AddScoped<CompanyPortalQueryService>();
         services.AddScoped<MissionDispatchScoringService>();
@@ -61,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<AdminCompanyOperationsService>();
         services.AddScoped<AdminCompanyServiceProposalService>();
         services.AddScoped<AdminNotificationDeliveryRuleService>();
+        services.AddScoped<AdminNotificationTemplateService>();
         services.AddScoped<AdminNotificationService>();
         services.AddScoped<AdminTranslationService>();
         services.AddScoped<AdminMissionOperationsService>();

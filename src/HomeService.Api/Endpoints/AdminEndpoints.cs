@@ -955,6 +955,53 @@ public static class AdminEndpoints
         })
         .WithName("UpdateNotificationDeliveryRule")
         .Produces<NotificationDeliveryRuleResponse>();
+
+        admin.MapGet("/notification-templates", async (
+            AdminNotificationTemplateService templateService,
+            CancellationToken cancellationToken) =>
+        {
+            var templates = await templateService.ListAsync(cancellationToken);
+            return Results.Ok(templates);
+        })
+        .WithName("ListNotificationTemplates")
+        .Produces<IReadOnlyList<NotificationTemplateResponse>>();
+
+        admin.MapPut("/notification-templates/{id:guid}", async (
+            Guid id,
+            UpdateNotificationTemplateRequest request,
+            HttpRequest httpRequest,
+            AdminNotificationTemplateService templateService,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await templateService.UpdateAsync(id, request, cancellationToken);
+            if (result.Status == AdminNotificationTemplateStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminNotificationTemplateStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            AddAuditLog(
+                db,
+                httpRequest,
+                AuditActor.Admin(),
+                "AdminNotificationTemplateUpdated",
+                "NotificationTemplate",
+                id,
+                "Modele de notification modifie.",
+                after: result.Response);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("UpdateNotificationTemplate")
+        .Produces<NotificationTemplateResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
         
         admin.MapGet("/country-brandings/{countryCode}", async (
             string countryCode,

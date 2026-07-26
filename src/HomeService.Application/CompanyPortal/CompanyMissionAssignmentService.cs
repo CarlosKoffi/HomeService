@@ -11,7 +11,8 @@ namespace HomeService.Application.CompanyPortal;
 public sealed class CompanyMissionAssignmentService(
     IAppDbContext db,
     MobilePushNotificationQueueService mobilePushNotifications,
-    NotificationDeliveryPreferenceService notificationPreferences)
+    NotificationDeliveryPreferenceService notificationPreferences,
+    NotificationTemplateService notificationTemplates)
 {
     private static readonly TimeSpan AssignmentAcceptanceWindow = TimeSpan.FromMinutes(3);
     private const string MissionAssignedToProviderEventKey = "MissionAssignedToProvider";
@@ -202,20 +203,19 @@ public sealed class CompanyMissionAssignmentService(
             ("DelaiMinutes", ((int)AssignmentAcceptanceWindow.TotalMinutes).ToString("N0")),
             ("DateExpiration", assignment.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")));
 
-        var title = NotificationTemplateRenderer.Render(
-            preference.SubjectTemplate,
+        var message = await notificationTemplates.RenderAsync(
+            MissionAssignedToProviderEventKey,
+            NotificationTemplateChannel.MobilePush,
             "Nouvelle mission disponible",
-            variables);
-        var body = NotificationTemplateRenderer.Render(
-            preference.BodyTemplate,
             "Mission {Service} a accepter avant la fin du delai.",
-            variables);
+            variables,
+            cancellationToken);
 
         await mobilePushNotifications.QueueForOwnerAsync(
             MobileDeviceOwnerType.Provider,
             provider.Id,
-            title,
-            body,
+            message.Subject,
+            message.Body,
             nameof(ProviderMissionAssignment),
             assignment.Id,
             JsonSerializer.Serialize(new

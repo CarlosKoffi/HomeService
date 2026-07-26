@@ -2615,6 +2615,114 @@ h3 {
     box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
 }
 
+.notification-template-layout {
+    align-items: start;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(260px, .28fr) minmax(0, 1fr);
+    margin-top: 1rem;
+}
+
+.notification-variable-panel,
+.notification-template-list,
+.notification-template-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .05);
+}
+
+.notification-variable-panel {
+    padding: 1rem;
+    position: sticky;
+    top: 1rem;
+}
+
+.notification-variable-panel span,
+.notification-template-card header span {
+    color: #64748b;
+    display: block;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.notification-variable-panel strong,
+.notification-template-card header strong {
+    color: #000;
+    display: block;
+    font-size: 1rem;
+    margin-top: .2rem;
+}
+
+.notification-variable-panel p {
+    color: #000;
+    font-size: .86rem;
+    margin: .45rem 0 .9rem;
+}
+
+.notification-variable-panel dl {
+    display: grid;
+    gap: .55rem;
+    margin: 0;
+}
+
+.notification-variable-panel dt {
+    color: #1a6aff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .82rem;
+    font-weight: 900;
+}
+
+.notification-variable-panel dd {
+    color: #000;
+    font-size: .78rem;
+    margin: -.45rem 0 0;
+}
+
+.notification-template-list {
+    display: grid;
+    gap: .8rem;
+    padding: 1rem;
+}
+
+.notification-template-card {
+    box-shadow: none;
+    display: grid;
+    gap: .85rem;
+    padding: 1rem;
+}
+
+.notification-template-card header {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.notification-template-card header small,
+.notification-template-variables {
+    color: #64748b;
+    display: block;
+    font-size: .75rem;
+    font-weight: 750;
+}
+
+.notification-template-active {
+    align-items: center;
+    background: #eff4ff;
+    border: 1px solid #b9d2ff;
+    border-radius: 999px;
+    color: #000;
+    display: inline-flex;
+    font-size: .78rem;
+    font-weight: 900;
+    gap: .35rem;
+    padding: .4rem .65rem;
+    white-space: nowrap;
+}
+
 .notification-command-center {
     display: grid;
     gap: .85rem;
@@ -3746,6 +3854,8 @@ h3 {
     .notification-rules-head,
     .notification-rule-row,
     .notification-channel-grid,
+    .notification-template-layout,
+    .notification-template-editor,
     .notification-list article,
     .audit-filters,
     .service-catalog-card > header,

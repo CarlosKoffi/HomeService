@@ -69,12 +69,21 @@ public sealed class CompanyMissionAssignmentNotificationTests
             whatsAppEnabled: false,
             subjectTemplate: "Mission {NumeroMission}",
             bodyTemplate: "{NomPrestataire}, mission {Service} pour {NomEntreprise}."));
+        db.NotificationTemplates.Add(new NotificationTemplate(
+            "MissionAssignedToProvider",
+            NotificationTemplateChannel.MobilePush,
+            "Mission affectee au prestataire",
+            "Provider",
+            "Mission {NumeroMission}",
+            "{NomPrestataire}, mission {Service} pour {NomEntreprise}.",
+            NotificationTemplateCatalog.CommonVariables));
         await db.SaveChangesAsync();
 
         var assignmentService = new CompanyMissionAssignmentService(
             db,
             new MobilePushNotificationQueueService(db),
-            new NotificationDeliveryPreferenceService(db));
+            new NotificationDeliveryPreferenceService(db),
+            new NotificationTemplateService(db));
 
         var result = await assignmentService.AssignAsync(
             company.Id,

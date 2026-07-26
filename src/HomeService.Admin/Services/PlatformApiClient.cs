@@ -546,6 +546,24 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<NotificationTemplateResponse>> GetNotificationTemplatesAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<NotificationTemplateResponse>>("/api/admin/notification-templates", cancellationToken) ?? [];
+    }
+
+    public async Task<NotificationTemplateResponse?> UpdateNotificationTemplateAsync(
+        Guid templateId,
+        UpdateNotificationTemplateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<NotificationTemplateResponse>(
+            $"/api/admin/notification-templates/{templateId:D}",
+            request,
+            cancellationToken);
+    }
+
     public async Task<NotificationOutboxMessageResponse?> RetryNotificationAsync(Guid notificationId, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

@@ -44,6 +44,12 @@
         Regles
         <span>@DeliveryRules.Count</span>
     </button>
+    <button type="button"
+            class="@GetSectionButtonClass("templates")"
+            @onclick='() => SetSection("templates")'>
+        Modeles
+        <span>@NotificationTemplates.Count</span>
+    </button>
 </nav>
 
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))
@@ -141,7 +147,6 @@
                         <span>@TranslateAudience(rule.Audience)</span>
                         <strong>@rule.Label</strong>
                         <small>@rule.EventKey</small>
-                        <small>Variables: {NomEntreprise}, {NomPrestataire}, {Service}, {DescriptionService}, {NumeroMission}</small>
                     </div>
                     <div class="notification-channel-grid">
                         <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company" || rule.Audience == "Mixed")">
@@ -173,21 +178,75 @@
                             <small>Configurable</small>
                         </label>
                     </div>
-                    <div class="notification-template-editor">
-                        <label>
-                            Sujet
-                            <input value="@rule.SubjectTemplate"
-                                   @onchange="eventArgs => UpdateRuleTemplateAsync(rule, eventArgs.Value?.ToString(), rule.BodyTemplate)" />
-                        </label>
-                        <label>
-                            Message
-                            <textarea rows="2"
-                                      @onchange="eventArgs => UpdateRuleTemplateAsync(rule, rule.SubjectTemplate, eventArgs.Value?.ToString())">@rule.BodyTemplate</textarea>
-                        </label>
-                    </div>
                 </article>
             }
         }
+    </section>
+}
+
+@if (ActiveNotificationSection == "templates")
+{
+    <section class="notification-template-layout">
+        <aside class="notification-variable-panel">
+            <span>Variables disponibles</span>
+            <strong>Aide de redaction</strong>
+            <p>Inserez une variable entre accolades. Elle sera remplacee automatiquement au moment de l'envoi.</p>
+            <dl>
+                <dt>{NomEntreprise}</dt><dd>Nom de l'entreprise concernee.</dd>
+                <dt>{NomPrestataire}</dt><dd>Nom du prestataire ou candidat.</dd>
+                <dt>{NomClient}</dt><dd>Nom du client si la notification le concerne.</dd>
+                <dt>{Service}</dt><dd>Service ou prestation demandee.</dd>
+                <dt>{DescriptionService}</dt><dd>Description courte du service.</dd>
+                <dt>{NumeroMission}</dt><dd>Numero lisible de mission.</dd>
+                <dt>{Montant}</dt><dd>Montant affiche au destinataire.</dd>
+                <dt>{DateMission}</dt><dd>Date ou heure de mission.</dd>
+                <dt>{LienAction}</dt><dd>Lien d'action genere par la plateforme.</dd>
+                <dt>{Note}</dt><dd>Commentaire saisi par l'admin ou l'entreprise.</dd>
+            </dl>
+        </aside>
+
+        <section class="notification-template-list">
+            <div class="notification-rules-head">
+                <div>
+                    <span>Modeles de messages</span>
+                    <strong>Textes par evenement et canal</strong>
+                    <p>Mobile, portail, email et WhatsApp utilisent la meme logique. Les liens et donnees sensibles restent generes par la plateforme.</p>
+                </div>
+                <small>@NotificationTemplates.Count modele(s)</small>
+            </div>
+
+            @foreach (var template in NotificationTemplates)
+            {
+                <article class="notification-template-card">
+                    <header>
+                        <div>
+                            <span>@TranslateAudience(template.Audience) - @TranslateTemplateChannel(template.Channel)</span>
+                            <strong>@template.Label</strong>
+                            <small>@template.EventKey</small>
+                        </div>
+                        <label class="notification-template-active">
+                            <input type="checkbox"
+                                   checked="@template.IsActive"
+                                   @onchange="eventArgs => UpdateTemplateAsync(template, isActive: IsChecked(eventArgs))" />
+                            Actif
+                        </label>
+                    </header>
+                    <div class="notification-template-editor">
+                        <label>
+                            Sujet
+                            <input value="@template.SubjectTemplate"
+                                   @onchange="eventArgs => UpdateTemplateAsync(template, subjectTemplate: eventArgs.Value?.ToString())" />
+                        </label>
+                        <label>
+                            Message
+                            <textarea rows="3"
+                                      @onchange="eventArgs => UpdateTemplateAsync(template, bodyTemplate: eventArgs.Value?.ToString())">@template.BodyTemplate</textarea>
+                        </label>
+                    </div>
+                    <small class="notification-template-variables">@template.AvailableVariables</small>
+                </article>
+            }
+        </section>
     </section>
 }
 
@@ -447,6 +506,7 @@
     private List<NotificationOutboxMessageResponse> QueuedNotifications { get; set; } = [];
     private List<AdminCompanyPortalNotificationResponse> CompanyPortalNotifications { get; set; } = [];
     private List<NotificationDeliveryRuleResponse> DeliveryRules { get; set; } = [];
+    private List<NotificationTemplateResponse> NotificationTemplates { get; set; } = [];
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
     private string? SuccessMessage { get; set; }
@@ -508,6 +568,7 @@
             QueuedNotifications = (await ApiClient.GetNotificationsAsync()).ToList();
             CompanyPortalNotifications = (await ApiClient.GetCompanyPortalNotificationsAsync()).ToList();
             DeliveryRules = (await ApiClient.GetNotificationDeliveryRulesAsync()).ToList();
+            NotificationTemplates = (await ApiClient.GetNotificationTemplatesAsync()).ToList();
         }
         catch (Exception exception)
         {
@@ -608,30 +669,43 @@
         }
     }
 
-    private async Task UpdateRuleTemplateAsync(NotificationDeliveryRuleResponse rule, string? subjectTemplate, string? bodyTemplate)
+    private async Task UpdateTemplateAsync(
+        NotificationTemplateResponse template,
+        string? label = null,
+        string? audience = null,
+        string? subjectTemplate = null,
+        string? bodyTemplate = null,
+        string? availableVariables = null,
+        bool? isActive = null)
     {
         ErrorMessage = null;
         SuccessMessage = null;
 
         try
         {
-            var updated = await ApiClient.UpdateNotificationDeliveryRuleAsync(
-                rule.Id,
-                ToRuleRequest(rule, subjectTemplate: subjectTemplate, bodyTemplate: bodyTemplate));
+            var updated = await ApiClient.UpdateNotificationTemplateAsync(
+                template.Id,
+                new UpdateNotificationTemplateRequest(
+                    label ?? template.Label,
+                    audience ?? template.Audience,
+                    subjectTemplate ?? template.SubjectTemplate,
+                    bodyTemplate ?? template.BodyTemplate,
+                    availableVariables ?? template.AvailableVariables,
+                    isActive ?? template.IsActive));
             if (updated is not null)
             {
-                var index = DeliveryRules.FindIndex(item => item.Id == rule.Id);
+                var index = NotificationTemplates.FindIndex(item => item.Id == template.Id);
                 if (index >= 0)
                 {
-                    DeliveryRules[index] = updated;
+                    NotificationTemplates[index] = updated;
                 }
             }
 
-            SuccessMessage = "Texte de notification mis a jour.";
+            SuccessMessage = "Modele de notification mis a jour.";
         }
         catch (Exception exception)
         {
-            ErrorMessage = $"Modification du texte impossible. Detail: {exception.Message}";
+            ErrorMessage = $"Modification du modele impossible. Detail: {exception.Message}";
         }
     }
 
@@ -845,6 +919,18 @@
     private static string GetPortalNotificationClass(AdminCompanyPortalNotificationResponse notification)
         => $"notification-rule-row portal-notification-row {notification.Tone} {(notification.IsRead ? "read" : "unread")}";
 
+    private static bool IsChecked(ChangeEventArgs eventArgs)
+        => eventArgs.Value is true || string.Equals(eventArgs.Value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
+
+    private static string TranslateTemplateChannel(string channel) => channel switch
+    {
+        "Portal" => "Portail",
+        "MobilePush" => "Application",
+        "Email" => "Email",
+        "WhatsApp" => "WhatsApp",
+        _ => channel
+    };
+
     private static string GetRuleChannelClass(bool isEnabled, bool isAllowed)
         => $"notification-channel-card {(isEnabled ? "enabled" : "disabled")} {(!isAllowed ? "locked" : string.Empty)}";
 
@@ -865,9 +951,7 @@
         bool? portalEnabled = null,
         bool? mobileAppEnabled = null,
         bool? emailEnabled = null,
-        bool? whatsAppEnabled = null,
-        string? subjectTemplate = null,
-        string? bodyTemplate = null)
+        bool? whatsAppEnabled = null)
     {
         return new UpdateNotificationDeliveryRuleRequest(
             rule.Label,
@@ -876,7 +960,7 @@
             mobileAppEnabled ?? rule.MobileAppEnabled,
             emailEnabled ?? rule.EmailEnabled,
             whatsAppEnabled ?? rule.WhatsAppEnabled,
-            subjectTemplate ?? rule.SubjectTemplate,
-            bodyTemplate ?? rule.BodyTemplate);
+            rule.SubjectTemplate,
+            rule.BodyTemplate);
     }
 }
