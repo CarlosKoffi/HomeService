@@ -7,23 +7,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
+public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db, NotificationCatalogSeeder? catalogSeeder = null)
 {
-    private static readonly IReadOnlyList<NotificationDeliveryRuleSeed> DefaultRules =
-        NotificationTemplateCatalog.Defaults
-            .Select(seed => new NotificationDeliveryRuleSeed(
-                seed.EventKey,
-                seed.Label,
-                seed.Audience,
-                seed.Channels.Contains(NotificationTemplateChannel.Email),
-                seed.Channels.Contains(NotificationTemplateChannel.WhatsApp),
-                seed.SubjectTemplate,
-                seed.BodyTemplate))
-            .ToList();
-
     public async Task<IReadOnlyList<NotificationDeliveryRuleResponse>> ListAsync(CancellationToken cancellationToken)
     {
-        await EnsureDefaultsAsync(cancellationToken);
+        await (catalogSeeder ?? new NotificationCatalogSeeder(db)).EnsureDefaultsAsync(cancellationToken);
 
         return await db.NotificationDeliveryRules
             .AsNoTracking()
@@ -67,36 +55,6 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
         await db.SaveChangesAsync(cancellationToken);
 
         return AdminNotificationDeliveryRuleResult.Ok(ToResponse(rule));
-    }
-
-    private async Task EnsureDefaultsAsync(CancellationToken cancellationToken)
-    {
-        var existingKeys = await db.NotificationDeliveryRules
-            .Select(rule => rule.EventKey)
-            .ToListAsync(cancellationToken);
-        var existing = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var hasAddedRule = false;
-        foreach (var seed in DefaultRules.Where(seed => !existing.Contains(seed.EventKey)))
-        {
-            var normalized = NormalizeChannels(seed.Audience, seed.EmailEnabled, seed.WhatsAppEnabled);
-            db.NotificationDeliveryRules.Add(new NotificationDeliveryRule(
-                seed.EventKey,
-                seed.Label,
-                seed.Audience,
-                normalized.PortalEnabled,
-                normalized.MobileAppEnabled,
-                normalized.EmailEnabled,
-                normalized.WhatsAppEnabled,
-                seed.SubjectTemplate,
-                seed.BodyTemplate));
-            hasAddedRule = true;
-        }
-
-        if (hasAddedRule)
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
     }
 
     private static string? Validate(UpdateNotificationDeliveryRuleRequest request)

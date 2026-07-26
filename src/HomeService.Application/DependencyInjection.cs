@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<MobilePushNotificationQueueService>();
         services.AddScoped<MobilePushOutboxDispatcherService>();
         services.AddScoped<NotificationDeliveryPreferenceService>();
+        services.AddScoped<NotificationCatalogSeeder>();
         services.AddScoped<NotificationTemplateService>();
         services.AddScoped<CompanyPortalProfileManagementService>();
         services.AddScoped<CompanyPortalQueryService>();

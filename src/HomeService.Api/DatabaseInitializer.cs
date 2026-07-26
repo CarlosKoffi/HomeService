@@ -18,8 +18,7 @@ public static class DatabaseInitializer
         await EnsureMissionNumbersAsync(db, cancellationToken);
         await EnsureProviderServiceSchemaAsync(db, cancellationToken);
         await EnsureNotificationDeliveryRulesAsync(db, cancellationToken);
-        await EnsureNotificationDeliveryRulesFromCatalogAsync(db, cancellationToken);
-        await EnsureNotificationTemplatesAsync(db, cancellationToken);
+        await scope.ServiceProvider.GetRequiredService<NotificationCatalogSeeder>().EnsureDefaultsAsync(cancellationToken);
         await EnsureDefaultCommissionRulesAsync(db, cancellationToken);
         await NormalizeCatalogNamesAsync(db, cancellationToken);
         await SeedCountriesAsync(db, cancellationToken);
@@ -34,73 +33,6 @@ public static class DatabaseInitializer
         await SeedCompanyEditorialContentAsync(db, cancellationToken);
         await SeedProviderEditorialContentAsync(db, cancellationToken);
         await ApplyVisibleRebrandAsync(db, cancellationToken);
-    }
-
-    private static async Task EnsureNotificationTemplatesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
-    {
-        var existing = await db.NotificationTemplates
-            .Select(template => new { template.EventKey, template.Channel })
-            .ToListAsync(cancellationToken);
-        var existingKeys = existing
-            .Select(template => $"{template.EventKey}|{template.Channel}")
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var hasAdded = false;
-        foreach (var seed in NotificationTemplateCatalog.Defaults)
-        {
-            foreach (var channel in seed.Channels)
-            {
-                var key = $"{seed.EventKey}|{channel}";
-                if (existingKeys.Contains(key))
-                {
-                    continue;
-                }
-
-                db.NotificationTemplates.Add(new NotificationTemplate(
-                    seed.EventKey,
-                    channel,
-                    seed.Label,
-                    seed.Audience,
-                    seed.SubjectTemplate,
-                    seed.BodyTemplate,
-                    seed.AvailableVariables));
-                hasAdded = true;
-            }
-        }
-
-        if (hasAdded)
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-    }
-
-    private static async Task EnsureNotificationDeliveryRulesFromCatalogAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
-    {
-        var existingKeys = await db.NotificationDeliveryRules
-            .Select(rule => rule.EventKey)
-            .ToListAsync(cancellationToken);
-        var existing = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var hasAdded = false;
-        foreach (var seed in NotificationTemplateCatalog.Defaults.Where(seed => !existing.Contains(seed.EventKey)))
-        {
-            db.NotificationDeliveryRules.Add(new NotificationDeliveryRule(
-                seed.EventKey,
-                seed.Label,
-                seed.Audience,
-                seed.Audience is "Company" or "Mixed",
-                seed.Audience is "Provider" or "Customer" or "Mixed",
-                seed.Channels.Contains(NotificationTemplateChannel.Email),
-                seed.Channels.Contains(NotificationTemplateChannel.WhatsApp),
-                seed.SubjectTemplate,
-                seed.BodyTemplate));
-            hasAdded = true;
-        }
-
-        if (hasAdded)
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
     }
 
     private static async Task SeedDemoMissionsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
