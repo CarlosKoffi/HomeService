@@ -155,6 +155,75 @@ public sealed class AdminPaymentQueryServiceTests
         Assert.Equal(255_850, result.Stats.CompanyPayoutAmount);
     }
 
+    [Fact]
+    public async Task ListPaymentsAsync_WhenMissionIsRefunded_TracksRefundWithoutInflatingCollectedRevenue()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("Entreprise Test", "+2250700000000", "contact@example.ci");
+        var service = new Service("Depannage auto", "Assistance vehicule", createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var provider = new ProviderProfile(
+            company.Id,
+            "Mamadou",
+            "Diallo",
+            "+2250700000002",
+            "mamadou@example.ci",
+            new DateOnly(1995, 4, 12),
+            "Cocody",
+            ProviderGender.Male,
+            ProviderEmploymentType.CompanyEmployee,
+            yearsOfExperience: 4,
+            missionLatitude: null,
+            missionLongitude: null,
+            missionRadiusKm: 5);
+
+        var mission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Instant,
+            PaymentMethod.Card,
+            scheduledFor: DateTimeOffset.UtcNow.AddHours(-2),
+            estimatedDurationMinutes: 60,
+            description: "Batterie a verifier");
+        mission.AssignWithCompanyQuote(
+            provider.Id,
+            company.Id,
+            quotedAmount: 12_000,
+            maxAllowedAmount: 15_000,
+            overMaxJustification: null);
+        mission.MarkProviderAccepted(provider.Id, company.Id);
+        mission.ConfirmByCustomer(
+            platformCommissionAmount: 1_800,
+            transportFeeAmount: 0,
+            platformCommissionRateBasisPoints: 1_500);
+        mission.MarkDisputed();
+        mission.ApplyDisputeRefund(12_000);
+        mission.ResolveDispute();
+
+        db.Companies.Add(company);
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Providers.Add(provider);
+        db.Missions.Add(mission);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminQueryService(db).ListPaymentsAsync(
+            period: "month",
+            paymentStatus: null,
+            paymentMethod: null,
+            search: null,
+            CancellationToken.None);
+
+        Assert.Equal(12_000, result.Stats.TotalAmount);
+        Assert.Equal(0, result.Stats.PaidAmount);
+        Assert.Equal(0, result.Stats.PlatformCommissionAmount);
+        Assert.Equal(0, result.Stats.CompanyPayoutAmount);
+        Assert.Equal(12_000, result.Stats.RefundAmount);
+        Assert.Equal(12_000, result.Stats.DisputedAmount);
+        Assert.Equal(12_000, result.Items.Single().RefundAmount);
+        Assert.Equal(nameof(PaymentStatus.Refunded), result.Items.Single().PaymentStatus);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
