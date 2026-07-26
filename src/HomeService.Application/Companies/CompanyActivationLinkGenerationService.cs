@@ -19,7 +19,8 @@ public sealed class CompanyActivationLinkGenerationService(
         string changedBy,
         CancellationToken cancellationToken)
     {
-        for (var attempt = 0; attempt < 2; attempt++)
+        const int maxAttempts = 3;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
             try
             {
@@ -30,7 +31,7 @@ public sealed class CompanyActivationLinkGenerationService(
                     changedBy,
                     cancellationToken);
             }
-            catch (DbUpdateConcurrencyException) when (attempt == 0 && db is DbContext context)
+            catch (DbUpdateConcurrencyException) when (attempt < maxAttempts - 1 && db is DbContext context)
             {
                 context.ChangeTracker.Clear();
             }

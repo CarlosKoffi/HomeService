@@ -1525,6 +1525,14 @@ public static class AdminEndpoints
             catch (Exception exception)
             {
                 logger.LogError(exception, "Activation link generation failed for company application {ApplicationId}.", id);
+                if (exception is DbUpdateConcurrencyException)
+                {
+                    return Results.Conflict(new
+                    {
+                        message = "Le dossier a ete modifie pendant la generation du lien. Rechargez la fiche puis recommencez."
+                    });
+                }
+
                 return Results.Problem(
                     title: "Generation du lien d'activation impossible.",
                     detail: exception.Message,
