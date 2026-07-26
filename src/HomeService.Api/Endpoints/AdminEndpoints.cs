@@ -2078,6 +2078,37 @@ public static class AdminEndpoints
         })
         .WithName("ReopenCompanyApplicationDocument");
         
+        admin.MapGet("/company-application-documents/{id:guid}/preview", async (
+            Guid id,
+            AdminQueryService queryService,
+            CompanyApplicationUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var document = await queryService.GetCompanyApplicationDocumentFileAsync(id, cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound(new { message = "Document entreprise introuvable." });
+            }
+
+            string absolutePath;
+            try
+            {
+                absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.BadRequest(new { message = "Chemin de document invalide." });
+            }
+
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "Le fichier n'existe plus sur le serveur." });
+            }
+
+            return Results.File(absolutePath, document.ContentType, enableRangeProcessing: true);
+        })
+        .WithName("PreviewCompanyApplicationDocument");
+
         admin.MapGet("/company-application-documents/{id:guid}/download", async (
             Guid id,
             AdminQueryService queryService,
