@@ -105,7 +105,21 @@ else
             <article>
                 <h2>Rattachement</h2>
                 <dl class="detail-list">
-                    <div><dt>Entreprise</dt><dd>@(Provider.CompanyName ?? "Non rattache")</dd></div>
+                    <div>
+                        <dt>Entreprise</dt>
+                        <dd>
+                            @if (Provider.CompanyId is not null)
+                            {
+                                <button type="button" class="link-action inline-link-action" @onclick="() => OpenCompany(Provider.CompanyId.Value)">
+                                    @Provider.CompanyName
+                                </button>
+                            }
+                            else
+                            {
+                                <span>Non rattache</span>
+                            }
+                        </dd>
+                    </div>
                     <div><dt>Type</dt><dd>@TranslateEmploymentType(Provider.EmploymentType)</dd></div>
                     <div><dt>Source</dt><dd>@TranslateRegistrationSource(Provider.RegistrationSource)</dd></div>
                     <div><dt>Etat compte</dt><dd>@GetProviderAuthorizationLabel(Provider)</dd></div>
@@ -269,6 +283,9 @@ else
                         <span class="@GetInterimStatusClass(request.Status)">@TranslateInterimStatus(request.Status)</span>
                         <small>@FormatDate(request.RequestedAt)</small>
                     </div>
+                    <div class="operator-actions">
+                        <button type="button" @onclick="() => OpenCompany(request.CompanyId)">Voir entreprise</button>
+                    </div>
                 </article>
             }
         </section>
@@ -355,6 +372,7 @@ else
     }
 
     private void BackToList() => Navigation.NavigateTo("/providers");
+    private void OpenCompany(Guid companyId) => Navigation.NavigateTo($"/companies/{companyId}");
     private void OpenMission(Guid missionId) => Navigation.NavigateTo($"/missions/{missionId}");
     private void SelectTab(string tab) => SelectedTab = tab;
     private string GetTabClass(string tab) => SelectedTab == tab ? "active" : string.Empty;

@@ -922,6 +922,10 @@ h3 {
     padding: 0;
 }
 
+.inline-link-action {
+    margin-bottom: 0;
+}
+
 .admin-message {
     background: #fff7ed;
     border: 1px solid #fed7aa;
