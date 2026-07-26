@@ -1,6 +1,7 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,10 @@ namespace HomeService.Application.Admin;
 
 public sealed class AdminMissionDisputeService(
     IAppDbContext db,
-    CompanyPortalNotificationWriter companyNotifications)
+    CompanyPortalNotificationWriter companyNotifications,
+    MobilePushNotificationQueueService mobilePushNotifications,
+    NotificationDeliveryPreferenceService deliveryPreferences,
+    NotificationTemplateService notificationTemplates)
 {
     public async Task<AdminMissionDisputeResult> OpenAsync(
         Guid missionId,
@@ -165,9 +169,85 @@ public sealed class AdminMissionDisputeService(
             refundDecision.RefundAmount is > 0 ? "warning" : "success",
             $"missions/{mission.Id}");
 
+        if (refundDecision.RefundAmount is > 0)
+        {
+            await QueueCustomerRefundNotificationsAsync(mission, refundDecision.RefundAmount.Value, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
 
         return AdminMissionDisputeResult.Ok(dispute, mission, previousStatus, "Litige resolu.");
+    }
+
+    private async Task QueueCustomerRefundNotificationsAsync(
+        Mission mission,
+        int refundAmount,
+        CancellationToken cancellationToken)
+    {
+        var customer = await db.Customers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == mission.CustomerId, cancellationToken);
+        if (customer is null)
+        {
+            return;
+        }
+
+        const string eventKey = "MissionRefundApproved";
+        var variables = NotificationTemplateRenderer.Variables(
+            ("NomClient", $"{customer.FirstName} {customer.LastName}".Trim()),
+            ("NumeroMission", mission.MissionNumber),
+            ("Montant", $"{refundAmount:N0} {mission.Currency}"),
+            ("Service", null),
+            ("DescriptionService", mission.Description));
+        var preference = await deliveryPreferences.GetAsync(
+            eventKey,
+            "Customer",
+            defaultEmailEnabled: false,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+        var metadataJson = $$"""{"missionId":"{{mission.Id}}","missionNumber":"{{mission.MissionNumber}}","refundAmount":{{refundAmount}}}""";
+
+        if (preference.MobileAppEnabled)
+        {
+            var push = await notificationTemplates.RenderAsync(
+                eventKey,
+                NotificationTemplateChannel.MobilePush,
+                "Remboursement valide",
+                $"Un remboursement de {refundAmount:N0} {mission.Currency} est valide pour la mission {mission.MissionNumber}.",
+                variables,
+                cancellationToken);
+
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Customer,
+                mission.CustomerId,
+                push.Subject,
+                push.Body,
+                nameof(Mission),
+                mission.Id,
+                metadataJson,
+                cancellationToken,
+                saveChanges: false);
+        }
+
+        if (preference.WhatsAppEnabled && !string.IsNullOrWhiteSpace(customer.PhoneNumber))
+        {
+            var whatsApp = await notificationTemplates.RenderAsync(
+                eventKey,
+                NotificationTemplateChannel.WhatsApp,
+                "Remboursement valide",
+                $"Un remboursement de {refundAmount:N0} {mission.Currency} est valide pour la mission {mission.MissionNumber}.",
+                variables,
+                cancellationToken);
+
+            db.NotificationOutboxMessages.Add(new NotificationOutboxMessage(
+                NotificationChannel.WhatsApp,
+                customer.PhoneNumber,
+                whatsApp.Subject,
+                whatsApp.Body,
+                nameof(Mission),
+                mission.Id,
+                metadataJson));
+        }
     }
 
     private static MissionCancellationReason ParseReason(string? reason)

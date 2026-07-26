@@ -1,6 +1,7 @@
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Missions;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -61,6 +62,13 @@ public sealed class AdminMissionDisputeServiceTests
         Assert.Equal(800, mission.RefundAmount);
         Assert.Equal(PaymentStatus.Refunded, mission.PaymentStatus);
         Assert.Equal(1, await db.MissionFinancialBreakdowns.CountAsync());
+        Assert.Equal(2, await db.NotificationOutboxMessages.CountAsync());
+        Assert.True(await db.NotificationOutboxMessages.AnyAsync(item =>
+            item.Channel == NotificationChannel.MobilePush
+            && item.Subject == "Remboursement valide"));
+        Assert.True(await db.NotificationOutboxMessages.AnyAsync(item =>
+            item.Channel == NotificationChannel.WhatsApp
+            && item.Recipient == "+2250700000000"));
         Assert.Equal(2, await db.CompanyPortalNotifications.CountAsync());
         Assert.Equal(2, await db.AuditLogEntries.CountAsync());
     }
@@ -160,6 +168,12 @@ public sealed class AdminMissionDisputeServiceTests
     {
         var service = new Service("Menage", null, createdByCompanyId: null);
         var customer = new CustomerProfile("Aya", "Kone", "+2250700000000");
+        var customerToken = new MobileDeviceToken(
+            MobileDeviceOwnerType.Customer,
+            customer.Id,
+            MobileDevicePlatform.Android,
+            "customer-device-token",
+            "Android test");
         var company = new Company("wele Services", "+2250701111111", "ops@wele.ci");
         company.Approve();
         var provider = new ProviderProfile(
@@ -184,6 +198,7 @@ public sealed class AdminMissionDisputeServiceTests
 
         db.Services.Add(service);
         db.Customers.Add(customer);
+        db.MobileDeviceTokens.Add(customerToken);
         db.Companies.Add(company);
         db.Providers.Add(provider);
         db.Missions.Add(mission);
@@ -202,5 +217,10 @@ public sealed class AdminMissionDisputeServiceTests
     }
 
     private static AdminMissionDisputeService CreateService(HomeServiceDbContext db)
-        => new(db, new CompanyPortalNotificationWriter(db));
+        => new(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db),
+            new NotificationDeliveryPreferenceService(db),
+            new NotificationTemplateService(db));
 }
