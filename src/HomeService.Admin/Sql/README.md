@@ -65,6 +65,14 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 040 | `040_update_notification_delivery_rules.sql` | Notification delivery rules channels update |
 | 041 | `041_set_default_platform_commission.sql` | Default platform connection commission set to 15% |
 | 042 | `042_add_mission_number.sql` | Unique readable mission numbers for support and disputes |
+| 043 | `043_add_contact_requests.sql` | Public contact requests |
+| 044 | `044_add_mission_dispatch_offers.sql` | Mission dispatch offers and company priority |
+| 045 | `045_add_mission_company_assignment_deadline.sql` | Company assignment deadline for dispatch reissue |
+| 046 | `046_add_mission_reviews.sql` | Customer mission review and payout release tracking |
+| 047 | `047_add_mission_cancellation_details.sql` | Structured mission cancellation details |
+| 048 | `048_add_mission_disputes.sql` | Structured mission disputes |
+| 049 | `049_add_mission_dispute_refund_decision.sql` | Admin dispute refund decision fields |
+| 050 | `050_add_mobile_device_tokens.sql` | Mobile Firebase device tokens |
 
 ## Notes
 

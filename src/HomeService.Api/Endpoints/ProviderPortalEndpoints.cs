@@ -2,9 +2,11 @@ using HomeService.Api.Auditing;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
 using HomeService.Application.Missions;
+using HomeService.Application.Notifications;
 using HomeService.Application.ProviderPortal;
 using HomeService.Application.Security;
 using HomeService.Contracts.Missions;
+using HomeService.Contracts.Notifications;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -110,6 +112,34 @@ public static class ProviderPortalEndpoints
                 provider.IsAvailable));
         })
         .WithName("GetProviderPortalMe");
+
+        group.MapPost("/mobile/device-token", async (
+            RegisterMobileDeviceTokenRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            MobileDeviceTokenService deviceTokenService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await deviceTokenService.RegisterAsync(
+                MobileDeviceOwnerType.Provider,
+                session.ProviderId,
+                request,
+                cancellationToken);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("RegisterProviderMobileDeviceToken")
+        .Produces<MobileDeviceTokenResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/mobile/home", async (
             HttpRequest httpRequest,

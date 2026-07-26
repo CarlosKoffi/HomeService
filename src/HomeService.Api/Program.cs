@@ -18,6 +18,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplicationServices();
 builder.Services.AddMissionDispatchAutomation();
+builder.Services.AddMobilePushNotifications();
 builder.Services.AddSingleton<CompanyApplicationUploadService>();
 builder.Services.AddSingleton<CompanyProviderUploadService>();
 builder.Services.AddSingleton<CmsMediaUploadService>();
