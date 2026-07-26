@@ -52,6 +52,24 @@
     </button>
 </nav>
 
+<section class="notification-admin-guide" aria-label="Organisation des notifications">
+    <article>
+        <span>Suivi</span>
+        <strong>Files et portail</strong>
+        <p>On surveille les messages deja crees: portail entreprise, application mobile, email et WhatsApp.</p>
+    </article>
+    <article>
+        <span>Regles</span>
+        <strong>Canaux par evenement</strong>
+        <p>Portail et application sont automatiques. Email et WhatsApp restent activables selon le type de notification.</p>
+    </article>
+    <article>
+        <span>Modeles</span>
+        <strong>Textes administrables</strong>
+        <p>Les textes utilisent des variables comme {NomEntreprise}, {NumeroMission} ou {Montant}.</p>
+    </article>
+</section>
+
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))
 {
     <p class="admin-message admin-message-error">@ErrorMessage</p>

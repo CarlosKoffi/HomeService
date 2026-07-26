@@ -49,6 +49,26 @@ Variables:
 - L'API applique les migrations EF automatiquement au demarrage.
 - Volume persistant recommande: destination `/app/storage`
 
+Notifications mobile Firebase:
+
+- `FIREBASE_NOTIFICATIONS_ENABLED=true`
+- `FIREBASE_PROJECT_ID=homeservice-18c0c`
+- `FIREBASE_CREDENTIALS_JSON_BASE64=...`
+- Optionnel: `FIREBASE_NOTIFICATIONS_INTERVAL_SECONDS=30`
+- Optionnel: `FIREBASE_NOTIFICATIONS_BATCH_SIZE=50`
+
+Important Coolify: les variables Firebase doivent etre cochees **Available at Runtime** uniquement.
+Ne pas cocher **Available at Buildtime** pour `FIREBASE_CREDENTIALS_JSON` ou
+`FIREBASE_CREDENTIALS_JSON_BASE64`, sinon Docker les injecte comme `ARG` pendant le build et une cle JSON
+multiligne peut casser le deploiement.
+
+Pour generer la valeur base64 depuis Windows PowerShell:
+
+```powershell
+$json = Get-Content "C:\Users\bruce\Downloads\firebase-key.json" -Raw
+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json))
+```
+
 ### Portail entreprise
 
 - Type: Dockerfile

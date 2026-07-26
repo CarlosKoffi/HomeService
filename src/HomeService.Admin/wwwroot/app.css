@@ -2590,6 +2590,44 @@ h3 {
     color: #fff;
 }
 
+.notification-admin-guide {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: -.25rem 0 1rem;
+}
+
+.notification-admin-guide article {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid #e3ebf8;
+    border-radius: 18px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .045);
+    padding: 1rem;
+}
+
+.notification-admin-guide span {
+    color: #2563eb;
+    display: block;
+    font-size: .68rem;
+    font-weight: 950;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.notification-admin-guide strong {
+    color: #000;
+    display: block;
+    font-size: 1rem;
+    margin-top: .25rem;
+}
+
+.notification-admin-guide p {
+    color: #000;
+    font-size: .85rem;
+    line-height: 1.45;
+    margin: .35rem 0 0;
+}
+
 .notification-subnav {
     align-items: center;
     display: flex;
@@ -4352,6 +4390,7 @@ h3 {
     .notification-rules-head,
     .notification-rule-row,
     .notification-channel-grid,
+    .notification-admin-guide,
     .notification-group-summary,
     .notification-template-layout,
     .notification-template-editor,
