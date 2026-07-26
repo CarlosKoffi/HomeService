@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Application.Companies;
 using HomeService.Contracts.Services;
 using HomeService.Domain.Common;
@@ -68,6 +69,12 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
     }
 
     public async Task<CompanyServiceProposalActionResult> ReanalyseAsync(CancellationToken cancellationToken)
+        => await ReanalyseAsync(null, null, cancellationToken);
+
+    public async Task<CompanyServiceProposalActionResult> ReanalyseAsync(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var catalog = await GetCatalogAsync(cancellationToken);
         var proposals = await db.CompanyApplicationServices
@@ -106,6 +113,16 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             }
         }
 
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyServiceProposalsReanalysed",
+            entityId: null,
+            updatedCount == 0
+                ? "Aucun libelle n'a change apres reanalyse."
+                : $"{updatedCount} libelle(s) rattache(s) ou remis a verifier.",
+            before: null,
+            after: new { UpdatedCount = updatedCount });
         await db.SaveChangesAsync(cancellationToken);
 
         return CompanyServiceProposalActionResult.Ok(
@@ -117,6 +134,14 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
     public async Task<CompanyServiceProposalActionResult> AttachAsync(
         Guid proposalId,
         AttachCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken)
+        => await AttachAsync(proposalId, request, null, null, cancellationToken);
+
+    public async Task<CompanyServiceProposalActionResult> AttachAsync(
+        Guid proposalId,
+        AttachCompanyServiceProposalRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var proposal = await db.CompanyApplicationServices.FirstOrDefaultAsync(item => item.Id == proposalId, cancellationToken);
@@ -135,7 +160,16 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
                 return CompanyServiceProposalActionResult.ValidationFailed("Prestation introuvable ou inactive.");
             }
 
+            var before = ToAuditSnapshot(proposal);
             proposal.MarkAsMatchedPrestation(prestation.ServiceId, prestation.Id, 100);
+            AddAuditLog(
+                actor,
+                auditContext,
+                "AdminCompanyServiceProposalAttached",
+                proposal.Id,
+                "Service propose rattache a une prestation.",
+                before,
+                new { Request = request, Proposal = ToAuditSnapshot(proposal) });
             await db.SaveChangesAsync(cancellationToken);
             return CompanyServiceProposalActionResult.Ok("Service propose rattache a une prestation.");
         }
@@ -153,7 +187,16 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             return CompanyServiceProposalActionResult.ValidationFailed("Service introuvable ou inactif.");
         }
 
+        var serviceBefore = ToAuditSnapshot(proposal);
         proposal.MarkAsMatched(request.ServiceId.Value, 100);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyServiceProposalAttached",
+            proposal.Id,
+            "Service propose rattache au catalogue.",
+            serviceBefore,
+            new { Request = request, Proposal = ToAuditSnapshot(proposal) });
         await db.SaveChangesAsync(cancellationToken);
         return CompanyServiceProposalActionResult.Ok("Service propose rattache au catalogue.");
     }
@@ -161,6 +204,14 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
     public async Task<CompanyServiceProposalActionResult> CreatePrestationAsync(
         Guid proposalId,
         CreatePrestationFromCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken)
+        => await CreatePrestationAsync(proposalId, request, null, null, cancellationToken);
+
+    public async Task<CompanyServiceProposalActionResult> CreatePrestationAsync(
+        Guid proposalId,
+        CreatePrestationFromCompanyServiceProposalRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var proposal = await db.CompanyApplicationServices.FirstOrDefaultAsync(item => item.Id == proposalId, cancellationToken);
@@ -177,6 +228,7 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             return CompanyServiceProposalActionResult.ValidationFailed("Service parent introuvable ou inactif.");
         }
 
+        var before = ToAuditSnapshot(proposal);
         var prestation = service.AddPrestation(
             string.IsNullOrWhiteSpace(request.Name) ? proposal.RawName : request.Name,
             request.Description,
@@ -185,6 +237,19 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             service.PriceMaxAmount,
             service.Currency);
         proposal.MarkAsMatchedPrestation(service.Id, prestation.Id, 100);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyServiceProposalPrestationCreated",
+            proposal.Id,
+            "Prestation creee et service propose rattache.",
+            before,
+            new
+            {
+                Request = request,
+                CreatedPrestationId = prestation.Id,
+                Proposal = ToAuditSnapshot(proposal)
+            });
         await db.SaveChangesAsync(cancellationToken);
 
         return CompanyServiceProposalActionResult.Ok("Prestation creee et service propose rattache.");
@@ -193,6 +258,14 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
     public async Task<CompanyServiceProposalActionResult> CreateServiceAsync(
         Guid proposalId,
         CreateServiceFromCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken)
+        => await CreateServiceAsync(proposalId, request, null, null, cancellationToken);
+
+    public async Task<CompanyServiceProposalActionResult> CreateServiceAsync(
+        Guid proposalId,
+        CreateServiceFromCompanyServiceProposalRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var proposal = await db.CompanyApplicationServices.FirstOrDefaultAsync(item => item.Id == proposalId, cancellationToken);
@@ -213,7 +286,21 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             cancellationToken);
         if (existingService is not null)
         {
+            var before = ToAuditSnapshot(proposal);
             proposal.MarkAsMatched(existingService.Id, 100);
+            AddAuditLog(
+                actor,
+                auditContext,
+                "AdminCompanyServiceProposalServiceCreated",
+                proposal.Id,
+                "Un service existait deja avec ce nom. Le libelle y a ete rattache.",
+                before,
+                new
+                {
+                    Request = request,
+                    ExistingServiceId = existingService.Id,
+                    Proposal = ToAuditSnapshot(proposal)
+                });
             await db.SaveChangesAsync(cancellationToken);
             return CompanyServiceProposalActionResult.Ok("Un service existait deja avec ce nom. Le libelle y a ete rattache.");
         }
@@ -225,7 +312,21 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
         service.UpdatePriceRange(priceMinAmount, priceMaxAmount, request.Currency);
 
         db.Services.Add(service);
+        var proposalBefore = ToAuditSnapshot(proposal);
         proposal.MarkCreatedAsNewService(service.Id);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyServiceProposalServiceCreated",
+            proposal.Id,
+            "Service cree et proposition rattachee.",
+            proposalBefore,
+            new
+            {
+                Request = request,
+                CreatedServiceId = service.Id,
+                Proposal = ToAuditSnapshot(proposal)
+            });
         await db.SaveChangesAsync(cancellationToken);
 
         return CompanyServiceProposalActionResult.Ok("Service cree et proposition rattachee.");
@@ -279,6 +380,44 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             candidate.ServicePrestationName,
             candidate.Kind,
             candidate.Score);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        Guid? entityId,
+        string summary,
+        object? before,
+        object? after)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(CompanyApplicationService),
+            entityId,
+            summary,
+            auditContext,
+            before,
+            after));
+    }
+
+    private static object ToAuditSnapshot(CompanyApplicationService proposal)
+    {
+        return new
+        {
+            proposal.Id,
+            proposal.RawName,
+            proposal.MatchStatus,
+            proposal.MatchScore,
+            proposal.MatchedServiceId,
+            proposal.MatchedServicePrestationId
+        };
     }
 }
 

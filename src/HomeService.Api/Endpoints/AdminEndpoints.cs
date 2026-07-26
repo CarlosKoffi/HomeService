@@ -1475,26 +1475,16 @@ public static class AdminEndpoints
         admin.MapPost("/company-service-proposals/reanalyse", async (
             HttpRequest httpRequest,
             AdminCompanyServiceProposalService serviceProposalService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await serviceProposalService.ReanalyseAsync(cancellationToken);
+            var result = await serviceProposalService.ReanalyseAsync(
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (!result.IsSuccess)
             {
                 return ToCompanyServiceProposalActionError(result);
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyServiceProposalsReanalysed",
-                nameof(CompanyApplicationService),
-                null,
-                result.Message,
-                before: null,
-                after: null);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
         })
@@ -1506,26 +1496,18 @@ public static class AdminEndpoints
             AttachCompanyServiceProposalRequest request,
             HttpRequest httpRequest,
             AdminCompanyServiceProposalService serviceProposalService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await serviceProposalService.AttachAsync(id, request, cancellationToken);
+            var result = await serviceProposalService.AttachAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (!result.IsSuccess)
             {
                 return ToCompanyServiceProposalActionError(result);
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyServiceProposalAttached",
-                nameof(CompanyApplicationService),
-                id,
-                result.Message,
-                before: null,
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
         })
@@ -1537,26 +1519,18 @@ public static class AdminEndpoints
             CreatePrestationFromCompanyServiceProposalRequest request,
             HttpRequest httpRequest,
             AdminCompanyServiceProposalService serviceProposalService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await serviceProposalService.CreatePrestationAsync(id, request, cancellationToken);
+            var result = await serviceProposalService.CreatePrestationAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (!result.IsSuccess)
             {
                 return ToCompanyServiceProposalActionError(result);
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyServiceProposalPrestationCreated",
-                nameof(CompanyApplicationService),
-                id,
-                result.Message,
-                before: null,
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
         })
@@ -1568,26 +1542,18 @@ public static class AdminEndpoints
             CreateServiceFromCompanyServiceProposalRequest request,
             HttpRequest httpRequest,
             AdminCompanyServiceProposalService serviceProposalService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await serviceProposalService.CreateServiceAsync(id, request, cancellationToken);
+            var result = await serviceProposalService.CreateServiceAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (!result.IsSuccess)
             {
                 return ToCompanyServiceProposalActionError(result);
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyServiceProposalServiceCreated",
-                nameof(CompanyApplicationService),
-                id,
-                result.Message,
-                before: null,
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
         })
