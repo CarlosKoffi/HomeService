@@ -15,4 +15,12 @@ public sealed record CreateClientMissionRequest(
     decimal? ServiceLatitude,
     decimal? ServiceLongitude,
     bool RequiresCompanyQuote,
-    bool IsUrgent);
+    bool IsUrgent,
+    IReadOnlyList<ClientMissionPhotoRequest>? Photos = null);
+
+public sealed record ClientMissionPhotoRequest(
+    string OriginalFileName,
+    string StoragePath,
+    string ContentType,
+    long FileSizeBytes,
+    string? Caption);

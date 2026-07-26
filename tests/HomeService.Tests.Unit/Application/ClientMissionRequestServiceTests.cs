@@ -56,6 +56,40 @@ public sealed class ClientMissionRequestServiceTests
         Assert.Equal(1, await db.Missions.CountAsync());
         Assert.Equal(3, await db.MissionDispatchOffers.CountAsync());
         Assert.Equal(1, await db.Customers.CountAsync());
+        Assert.Empty(db.MissionAttachments);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenCustomerPhotosAreProvided_AttachesThemToMission()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Plomberie", "Depannage eau", createdByCompanyId: null);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var request = ValidRequest(service.Id) with
+        {
+            Photos =
+            [
+                new ClientMissionPhotoRequest(
+                    "evier.jpg",
+                    "missions/pending/evier.jpg",
+                    "image/jpeg",
+                    245_000,
+                    "Photo de la fuite")
+            ]
+        };
+
+        var result = await sut.CreateAsync(request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var attachment = await db.MissionAttachments.SingleAsync();
+        Assert.Equal(MissionAttachmentType.CustomerPhoto, attachment.AttachmentType);
+        Assert.Equal(result.Response!.MissionId, attachment.MissionId);
+        Assert.Equal("evier.jpg", attachment.OriginalFileName);
+        Assert.Equal("missions/pending/evier.jpg", attachment.StoragePath);
+        Assert.Equal("Photo de la fuite", attachment.Caption);
     }
 
     [Fact]
@@ -94,6 +128,35 @@ public sealed class ClientMissionRequestServiceTests
         Assert.False(result.IsSuccess);
         Assert.Contains(result.Errors, error => error.Contains("prestation", StringComparison.OrdinalIgnoreCase));
         Assert.Empty(db.Missions);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenAttachmentIsNotAnImage_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Electricite", null, createdByCompanyId: null);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var request = ValidRequest(service.Id) with
+        {
+            Photos =
+            [
+                new ClientMissionPhotoRequest(
+                    "detail.pdf",
+                    "missions/pending/detail.pdf",
+                    "application/pdf",
+                    120_000,
+                    null)
+            ]
+        };
+
+        var result = await sut.CreateAsync(request, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Errors, error => error.Contains("images", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(db.MissionAttachments);
     }
 
     private static ClientMissionRequestService CreateService(HomeServiceDbContext db)

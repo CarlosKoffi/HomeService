@@ -75,6 +75,7 @@ public sealed class ClientMissionRequestService(
         mission.StartCompanySearch();
 
         db.Missions.Add(mission);
+        AddCustomerPhotos(mission, request);
         await db.SaveChangesAsync(cancellationToken);
 
         var dispatchResult = await dispatchService.CreateInitialOffersAsync(
@@ -118,6 +119,26 @@ public sealed class ClientMissionRequestService(
         return customer;
     }
 
+    private void AddCustomerPhotos(Mission mission, CreateClientMissionRequest request)
+    {
+        if (request.Photos is null)
+        {
+            return;
+        }
+
+        foreach (var photo in request.Photos.Take(MaxCustomerPhotos))
+        {
+            db.MissionAttachments.Add(new MissionAttachment(
+                mission.Id,
+                MissionAttachmentType.CustomerPhoto,
+                photo.OriginalFileName,
+                photo.StoragePath,
+                photo.ContentType,
+                photo.FileSizeBytes,
+                photo.Caption));
+        }
+    }
+
     private static List<string> Validate(CreateClientMissionRequest request)
     {
         var errors = new List<string>();
@@ -157,8 +178,53 @@ public sealed class ClientMissionRequestService(
             errors.Add("La duree estimee doit etre positive.");
         }
 
+        ValidatePhotos(request.Photos, errors);
         return errors;
     }
+
+    private static void ValidatePhotos(IReadOnlyList<ClientMissionPhotoRequest>? photos, List<string> errors)
+    {
+        if (photos is null || photos.Count == 0)
+        {
+            return;
+        }
+
+        if (photos.Count > MaxCustomerPhotos)
+        {
+            errors.Add($"Ajoutez {MaxCustomerPhotos} photos maximum pour garder la demande legere.");
+        }
+
+        foreach (var photo in photos)
+        {
+            if (string.IsNullOrWhiteSpace(photo.OriginalFileName))
+            {
+                errors.Add("Chaque photo doit avoir un nom de fichier.");
+            }
+
+            if (string.IsNullOrWhiteSpace(photo.StoragePath))
+            {
+                errors.Add("Chaque photo doit avoir un chemin de stockage.");
+            }
+
+            if (string.IsNullOrWhiteSpace(photo.ContentType) || !photo.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add("Les pieces jointes client doivent etre des images.");
+            }
+
+            if (photo.FileSizeBytes <= 0)
+            {
+                errors.Add("Chaque photo doit avoir une taille valide.");
+            }
+
+            if (photo.FileSizeBytes > MaxCustomerPhotoBytes)
+            {
+                errors.Add("Chaque photo client doit rester inferieure a 5 Mo.");
+            }
+        }
+    }
+
+    private const int MaxCustomerPhotos = 5;
+    private const long MaxCustomerPhotoBytes = 5 * 1024 * 1024;
 }
 
 public sealed record ClientMissionCreationResult(
