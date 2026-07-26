@@ -28,6 +28,7 @@ public sealed record AdminPaymentMissionResponse(
     string CustomerName,
     string CustomerPhoneNumber,
     string? ProviderName,
+    string? PrestationName,
     string MissionStatus,
     string PaymentStatus,
     string PaymentMethod,

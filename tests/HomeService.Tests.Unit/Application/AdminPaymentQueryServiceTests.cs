@@ -14,6 +14,7 @@ public sealed class AdminPaymentQueryServiceTests
         await using var db = CreateDbContext();
         var company = new Company("Entreprise Test", "+2250700000000", "contact@example.ci");
         var service = new Service("Menage a domicile", "Nettoyage residentiel", createdByCompanyId: null);
+        var prestation = service.AddPrestation("Repassage", "Linge repasse", 1, 5_000, 8_000, "XOF");
         var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
         var provider = new ProviderProfile(
             company.Id,
@@ -37,6 +38,7 @@ public sealed class AdminPaymentQueryServiceTests
             PaymentMethod.MobileMoney,
             scheduledFor: DateTimeOffset.UtcNow.AddHours(2),
             estimatedDurationMinutes: 120,
+            servicePrestationId: prestation.Id,
             description: "Grand nettoyage");
         mission.AssignWithCompanyQuote(
             provider.Id,
@@ -72,7 +74,18 @@ public sealed class AdminPaymentQueryServiceTests
         Assert.Contains(result.Items, item =>
             item.MissionNumber == mission.MissionNumber
             && item.PlatformCommissionAmount == 1_500
+            && item.PrestationName == "Repassage"
             && item.PaymentStatus == nameof(PaymentStatus.Authorized));
+
+        var searchResult = await new AdminQueryService(db).ListPaymentsAsync(
+            period: "month",
+            paymentStatus: null,
+            paymentMethod: null,
+            search: "repassage",
+            CancellationToken.None);
+
+        Assert.Single(searchResult.Items);
+        Assert.Equal("Repassage", searchResult.Items[0].PrestationName);
     }
 
     [Fact]

@@ -960,6 +960,8 @@ public sealed class AdminQueryService(IAppDbContext db)
         var query =
             from mission in db.Missions.AsNoTracking()
             join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+            join prestation in db.ServicePrestations.AsNoTracking() on mission.ServicePrestationId equals prestation.Id into prestationJoin
+            from prestation in prestationJoin.DefaultIfEmpty()
             join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
             join company in db.Companies.AsNoTracking() on mission.CompanyId equals company.Id into companyJoin
             from company in companyJoin.DefaultIfEmpty()
@@ -977,6 +979,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                 CustomerName = (customer.FirstName + " " + customer.LastName).Trim(),
                 CustomerPhoneNumber = customer.PhoneNumber,
                 ProviderName = provider == null ? null : (provider.FirstName + " " + provider.LastName).Trim(),
+                PrestationName = prestation == null ? null : prestation.Name,
                 mission.Status,
                 mission.PaymentStatus,
                 mission.PaymentMethod,
@@ -1007,6 +1010,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             query = query.Where(payment =>
                 payment.ServiceName.ToLower().Contains(term)
                 || payment.MissionNumber.ToLower().Contains(term)
+                || (payment.PrestationName != null && payment.PrestationName.ToLower().Contains(term))
                 || payment.CustomerName.ToLower().Contains(term)
                 || payment.CustomerPhoneNumber.ToLower().Contains(term)
                 || (payment.CompanyName != null && payment.CompanyName.ToLower().Contains(term))
@@ -1028,6 +1032,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                 payment.CustomerName,
                 payment.CustomerPhoneNumber,
                 payment.ProviderName,
+                payment.PrestationName,
                 payment.Status.ToString(),
                 payment.PaymentStatus.ToString(),
                 payment.PaymentMethod.ToString(),

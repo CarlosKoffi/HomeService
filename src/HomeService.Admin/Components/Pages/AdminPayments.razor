@@ -136,7 +136,7 @@
         {
             <article class="operator-row payment-row">
                 <div>
-                    <strong>@payment.ServiceName</strong>
+                    <strong>@GetPaymentTitle(payment)</strong>
                     <p>@payment.CustomerName - @payment.CustomerPhoneNumber</p>
                     <small>@payment.MissionNumber - @(payment.CompanyName ?? "Entreprise non affectee")</small>
                 </div>
@@ -215,6 +215,10 @@
     }
 
     private static string Money(int amount) => $"{amount:N0} XOF";
+    private static string GetPaymentTitle(AdminPaymentMissionResponse payment)
+        => string.IsNullOrWhiteSpace(payment.PrestationName)
+            ? payment.ServiceName
+            : $"{payment.ServiceName} - {payment.PrestationName}";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
     private string ShareOfPaid(int amount)
     {
