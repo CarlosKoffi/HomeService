@@ -146,9 +146,61 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                     providerPhoto),
             offers,
             photos,
+            BuildActions(mission),
             BuildMessage(mission.Status, mission.QuoteStatus, mission.PaymentStatus));
 
         return ClientMissionStatusResult.Ok(response);
+    }
+
+    private static ClientMissionAvailableActionsResponse BuildActions(Domain.Entities.Mission mission)
+    {
+        var canAcceptQuote = mission.QuoteStatus == MissionQuoteStatus.Submitted
+            && mission.CompanyQuotedAmount is > 0
+            && mission.CustomerConfirmedAt is null
+            && mission.Status is MissionStatus.Assigned or MissionStatus.Accepted;
+        var canCancel = mission.Status is not (MissionStatus.Cancelled or MissionStatus.Completed or MissionStatus.Disputed or MissionStatus.Resolved);
+        var canCall = mission.CanRevealContactDetails;
+        var canValidateCompletion = mission.Status == MissionStatus.Completed
+            && mission.CustomerCompletionValidatedAt is null;
+        var canOpenDispute = mission.Status is MissionStatus.Started or MissionStatus.Completed
+            && mission.CustomerCompletionValidatedAt is null;
+        var canRateMission = mission.Status == MissionStatus.Completed
+            && mission.CustomerCompletionValidatedAt is null;
+
+        return new ClientMissionAvailableActionsResponse(
+            canAcceptQuote,
+            canCancel,
+            canCall && mission.CompanyId is not null,
+            canCall && mission.ProviderId is not null,
+            canValidateCompletion,
+            canRateMission,
+            canOpenDispute,
+            canAcceptQuote ? mission.CompanyQuotedAmount : null,
+            BuildPrimaryAction(canAcceptQuote, canValidateCompletion, canCall, canCancel));
+    }
+
+    private static string? BuildPrimaryAction(
+        bool canAcceptQuote,
+        bool canValidateCompletion,
+        bool canCall,
+        bool canCancel)
+    {
+        if (canAcceptQuote)
+        {
+            return "AcceptQuote";
+        }
+
+        if (canValidateCompletion)
+        {
+            return "ValidateCompletion";
+        }
+
+        if (canCall)
+        {
+            return "CallProvider";
+        }
+
+        return canCancel ? "CancelMission" : null;
     }
 
     private static string BuildMessage(MissionStatus status, MissionQuoteStatus quoteStatus, PaymentStatus paymentStatus)

@@ -33,7 +33,19 @@ public sealed record ClientMissionStatusResponse(
     ClientMissionProviderResponse? AssignedProvider,
     IReadOnlyList<ClientMissionOfferResponse> CompanyOffers,
     IReadOnlyList<ClientMissionAttachmentResponse> Photos,
+    ClientMissionAvailableActionsResponse Actions,
     string Message);
+
+public sealed record ClientMissionAvailableActionsResponse(
+    bool CanAcceptQuote,
+    bool CanCancel,
+    bool CanCallCompany,
+    bool CanCallProvider,
+    bool CanValidateCompletion,
+    bool CanRateMission,
+    bool CanOpenDispute,
+    int? AmountToPayNow,
+    string? PrimaryAction);
 
 public sealed record ClientMissionCompanyResponse(
     Guid CompanyId,

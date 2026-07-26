@@ -26,7 +26,26 @@ public sealed class ClientMissionStatusServiceTests
         Assert.False(result.Response.ContactDetailsReleased);
         Assert.Null(result.Response.AssignedCompany!.PhoneNumber);
         Assert.Null(result.Response.AssignedProvider!.PhoneNumber);
+        Assert.True(result.Response.Actions.CanAcceptQuote);
+        Assert.False(result.Response.Actions.CanCallCompany);
+        Assert.False(result.Response.Actions.CanCallProvider);
+        Assert.True(result.Response.Actions.CanCancel);
         Assert.Equal("Votre technicien est affecte. Les informations utiles sont disponibles.", result.Response.Message);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenQuoteSubmitted_ReturnsAcceptQuoteAction()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedMissionAsync(db);
+        var sut = new ClientMissionStatusService(db);
+
+        var result = await sut.GetAsync(scenario.Mission.Id, scenario.Customer.PhoneNumber, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Response!.Actions.CanAcceptQuote);
+        Assert.Equal(20_000, result.Response.Actions.AmountToPayNow);
+        Assert.Equal("AcceptQuote", result.Response.Actions.PrimaryAction);
     }
 
     [Fact]
@@ -59,6 +78,29 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal(scenario.Company.Email, result.Response.AssignedCompany.Email);
         Assert.Equal(scenario.Provider.PhoneNumber, result.Response.AssignedProvider!.PhoneNumber);
         Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
+        Assert.True(result.Response.Actions.CanCallCompany);
+        Assert.True(result.Response.Actions.CanCallProvider);
+        Assert.Equal("CallProvider", result.Response.Actions.PrimaryAction);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenMissionCompleted_ReturnsCompletionActions()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedMissionAsync(db);
+        scenario.Mission.ConfirmByCustomer(3_000, 0, 1_500, 0);
+        scenario.Mission.Start(scenario.Provider.Id, scenario.Company.Id);
+        scenario.Mission.Complete(75);
+        await db.SaveChangesAsync();
+        var sut = new ClientMissionStatusService(db);
+
+        var result = await sut.GetAsync(scenario.Mission.Id, scenario.Customer.PhoneNumber, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Response!.Actions.CanValidateCompletion);
+        Assert.True(result.Response.Actions.CanRateMission);
+        Assert.True(result.Response.Actions.CanOpenDispute);
+        Assert.Equal("ValidateCompletion", result.Response.Actions.PrimaryAction);
     }
 
     private static async Task<ClientMissionStatusScenario> SeedMissionAsync(HomeServiceDbContext db)
