@@ -721,6 +721,7 @@ public static class ProviderPortalEndpoints
         HttpRequest httpRequest,
         IAppDbContext db,
         ProviderMissionWorkflowService workflow,
+        ProviderMissionNotificationService notifications,
         CancellationToken cancellationToken)
     {
         var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -741,6 +742,7 @@ public static class ProviderPortalEndpoints
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
 
+        var previousStatus = assignment.Status;
         var result = workflow.AcceptMission(session.Provider, assignment, request);
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
@@ -767,6 +769,12 @@ public static class ProviderPortalEndpoints
                 assignment.Mission.ProviderAcceptedAt,
                 assignment.Mission.ContactDetailsReleasedAt
             });
+
+        if (previousStatus != ProviderMissionAssignmentStatus.Accepted)
+        {
+            await notifications.NotifyAcceptedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
 
         return ToProviderMissionHttpResult(result);
@@ -778,6 +786,7 @@ public static class ProviderPortalEndpoints
         HttpRequest httpRequest,
         IAppDbContext db,
         ProviderMissionWorkflowService workflow,
+        ProviderMissionNotificationService notifications,
         CancellationToken cancellationToken)
     {
         var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -798,6 +807,7 @@ public static class ProviderPortalEndpoints
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
 
+        var previousStatus = assignment.Status;
         var result = workflow.RefuseMission(session.Provider, assignment, request);
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
@@ -832,6 +842,11 @@ public static class ProviderPortalEndpoints
             nameof(ProviderMissionAssignment),
             assignment.Id));
 
+        if (previousStatus != ProviderMissionAssignmentStatus.Refused)
+        {
+            await notifications.NotifyRefusedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return ToProviderMissionHttpResult(result);
     }
@@ -842,6 +857,7 @@ public static class ProviderPortalEndpoints
         HttpRequest httpRequest,
         IAppDbContext db,
         ProviderMissionWorkflowService workflow,
+        ProviderMissionNotificationService notifications,
         CancellationToken cancellationToken)
     {
         var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -862,6 +878,7 @@ public static class ProviderPortalEndpoints
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
 
+        var wasAlreadyVerified = assignment.HasVerifiedArrival;
         var result = workflow.VerifyArrival(session.Provider, assignment, request);
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
@@ -884,6 +901,12 @@ public static class ProviderPortalEndpoints
                 assignment.ArrivalVerifiedAt,
                 assignment.ArrivalDistanceMeters
             });
+
+        if (!wasAlreadyVerified && assignment.HasVerifiedArrival)
+        {
+            await notifications.NotifyArrivedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return ToProviderMissionHttpResult(result);
     }
@@ -894,6 +917,7 @@ public static class ProviderPortalEndpoints
         HttpRequest httpRequest,
         IAppDbContext db,
         ProviderMissionWorkflowService workflow,
+        ProviderMissionNotificationService notifications,
         MissionPaymentMilestoneService milestoneService,
         CancellationToken cancellationToken)
     {
@@ -915,6 +939,7 @@ public static class ProviderPortalEndpoints
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
 
+        var previousStatus = assignment.Status;
         var result = workflow.StartMission(session.Provider, assignment, request);
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
@@ -966,6 +991,12 @@ public static class ProviderPortalEndpoints
             "blue",
             nameof(Mission),
             assignment.MissionId));
+
+        if (previousStatus != ProviderMissionAssignmentStatus.Started)
+        {
+            await notifications.NotifyStartedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return ToProviderMissionHttpResult(result);
     }
@@ -976,6 +1007,7 @@ public static class ProviderPortalEndpoints
         HttpRequest httpRequest,
         IAppDbContext db,
         ProviderMissionWorkflowService workflow,
+        ProviderMissionNotificationService notifications,
         MissionPaymentMilestoneService milestoneService,
         CancellationToken cancellationToken)
     {
@@ -997,6 +1029,7 @@ public static class ProviderPortalEndpoints
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
 
+        var previousStatus = assignment.Status;
         var result = workflow.CompleteMission(session.Provider, assignment, request);
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
@@ -1030,6 +1063,11 @@ public static class ProviderPortalEndpoints
             "green",
             nameof(Mission),
             assignment.MissionId));
+
+        if (previousStatus != ProviderMissionAssignmentStatus.Completed)
+        {
+            await notifications.NotifyCompletedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
+        }
 
         await db.SaveChangesAsync(cancellationToken);
         return ToProviderMissionHttpResult(result);
