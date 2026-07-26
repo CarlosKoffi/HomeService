@@ -219,6 +219,38 @@ public static class ProviderPortalEndpoints
         })
         .WithName("GetProviderMobileHome");
 
+        group.MapGet("/mobile/mission-assignments/{assignmentId:guid}", async (
+            Guid assignmentId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMobileMissionDetailService detailService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await detailService.GetAsync(session.ProviderId, assignmentId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ProviderMobileMissionDetailResultStatus.Forbidden => Results.Forbid(),
+                ProviderMobileMissionDetailResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("GetProviderMobileMissionDetail")
+        .Produces<ProviderMobileMissionDetailResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapPost("/mission-assignments/{assignmentId:guid}/accept", async (
             Guid assignmentId,
             ProviderAcceptMissionRequest request,
