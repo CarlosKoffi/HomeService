@@ -141,6 +141,20 @@
             }
         </nav>
 
+        <section class="notification-group-summary" aria-label="Synthese du groupe de regles">
+            <div>
+                <span>Groupe actif</span>
+                <strong>@GetActiveGroupLabel(ActiveRuleGroup)</strong>
+                <p>@GetGroupDescription(ActiveRuleGroup)</p>
+            </div>
+            <dl>
+                <div><dt>Portail</dt><dd>@CountRulesByGroupAndChannel(ActiveRuleGroup, "Portal")</dd></div>
+                <div><dt>Application</dt><dd>@CountRulesByGroupAndChannel(ActiveRuleGroup, "MobileApp")</dd></div>
+                <div><dt>Email</dt><dd>@CountRulesByGroupAndChannel(ActiveRuleGroup, "Email")</dd></div>
+                <div><dt>WhatsApp</dt><dd>@CountRulesByGroupAndChannel(ActiveRuleGroup, "WhatsApp")</dd></div>
+            </dl>
+        </section>
+
         <nav class="notification-subnav" aria-label="Filtrer les regles par destinataire">
             <button type="button" class="@GetRuleAudienceButtonClass("All")" @onclick='() => SetRuleAudience("All")'>
                 Tous <span>@DeliveryRules.Count</span>
@@ -279,6 +293,20 @@
                     </button>
                 }
             </nav>
+
+            <section class="notification-group-summary compact-summary" aria-label="Synthese du groupe de modeles">
+                <div>
+                    <span>Groupe actif</span>
+                    <strong>@GetActiveGroupLabel(ActiveTemplateGroup)</strong>
+                    <p>@GetGroupDescription(ActiveTemplateGroup)</p>
+                </div>
+                <dl>
+                    <div><dt>Portail</dt><dd>@CountTemplatesByGroupAndChannel(ActiveTemplateGroup, "Portal")</dd></div>
+                    <div><dt>Application</dt><dd>@CountTemplatesByGroupAndChannel(ActiveTemplateGroup, "MobilePush")</dd></div>
+                    <div><dt>Email</dt><dd>@CountTemplatesByGroupAndChannel(ActiveTemplateGroup, "Email")</dd></div>
+                    <div><dt>WhatsApp</dt><dd>@CountTemplatesByGroupAndChannel(ActiveTemplateGroup, "WhatsApp")</dd></div>
+                </dl>
+            </section>
 
             <div class="notification-template-toolbar">
                 <div>
@@ -1171,6 +1199,11 @@
         return DeliveryRules.Count(rule => MatchesNotificationGroup(rule.EventKey, rule.Audience, group));
     }
 
+    private int CountRulesByGroupAndChannel(string group, string channel)
+    {
+        return DeliveryRules.Count(rule => MatchesNotificationGroup(rule.EventKey, rule.Audience, group) && RuleHasChannel(rule, channel));
+    }
+
     private int CountRulesByTopic(string topic)
     {
         return DeliveryRules.Count(rule => GetNotificationTopic(rule.EventKey) == topic);
@@ -1189,6 +1222,13 @@
     private int CountTemplatesByGroup(string group)
     {
         return NotificationTemplates.Count(template => MatchesNotificationGroup(template.EventKey, template.Audience, group));
+    }
+
+    private int CountTemplatesByGroupAndChannel(string group, string channel)
+    {
+        return NotificationTemplates.Count(template =>
+            MatchesNotificationGroup(template.EventKey, template.Audience, group)
+            && string.Equals(template.Channel, channel, StringComparison.OrdinalIgnoreCase));
     }
 
     private int CountTemplatesByTopic(string topic)
@@ -1267,6 +1307,34 @@
         }
 
         return GetNotificationTopic(eventKey) == group;
+    }
+
+    private static string GetActiveGroupLabel(string group)
+    {
+        return group switch
+        {
+            "Company" => "Entreprises",
+            "Provider" => "Prestataires",
+            "Customer" => "Clients",
+            "Missions" => "Missions",
+            "Payments" => "Paiements",
+            "Disputes" => "Litiges",
+            _ => "Tous les groupes"
+        };
+    }
+
+    private static string GetGroupDescription(string group)
+    {
+        return group switch
+        {
+            "Company" => "Notifications liees aux dossiers, documents, candidatures interimaires et demandes cote entreprise.",
+            "Provider" => "Notifications envoyees aux prestataires pour candidature, profil, missions et suivi terrain.",
+            "Customer" => "Notifications visibles cote client pour devis, paiement, technicien, mission et avis.",
+            "Missions" => "Evenements de cycle mission: demande, devis, affectation, acceptation, demarrage et fin.",
+            "Payments" => "Notifications de paiement, transfert, remboursement et suivi financier.",
+            "Disputes" => "Messages lies aux litiges, decisions admin et remboursement eventuel.",
+            _ => "Vue globale de tous les types de notifications geres par la plateforme."
+        };
     }
 
     private void ToggleTemplateCreate()

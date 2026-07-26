@@ -2522,6 +2522,77 @@ h3 {
     border-color: #2563eb;
 }
 
+.notification-group-summary {
+    align-items: stretch;
+    background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+    border: 1px solid #dbe7ff;
+    border-radius: 18px;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, .7fr);
+    margin: .5rem 0 1rem;
+    padding: 1rem;
+}
+
+.notification-group-summary.compact-summary {
+    margin-top: 0;
+}
+
+.notification-group-summary span {
+    color: #64748b;
+    display: block;
+    font-size: .7rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.notification-group-summary strong {
+    color: #000000;
+    display: block;
+    font-size: 1.15rem;
+    margin-top: .15rem;
+}
+
+.notification-group-summary p {
+    color: #000000;
+    font-size: .9rem;
+    line-height: 1.45;
+    margin: .25rem 0 0;
+}
+
+.notification-group-summary dl {
+    display: grid;
+    gap: .55rem;
+    grid-template-columns: repeat(4, minmax(74px, 1fr));
+    margin: 0;
+}
+
+.notification-group-summary dl div {
+    background: #ffffff;
+    border: 1px solid #e5eaf4;
+    border-radius: 14px;
+    display: grid;
+    gap: .2rem;
+    padding: .75rem;
+}
+
+.notification-group-summary dt {
+    color: #64748b;
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.notification-group-summary dd {
+    color: #1a6aff;
+    font-size: 1.25rem;
+    font-weight: 950;
+    line-height: 1;
+    margin: 0;
+}
+
 .notification-template-toolbar {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
@@ -4145,6 +4216,7 @@ h3 {
     .notification-rules-head,
     .notification-rule-row,
     .notification-channel-grid,
+    .notification-group-summary,
     .notification-template-layout,
     .notification-template-editor,
     .notification-template-create-grid,
