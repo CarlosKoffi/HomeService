@@ -1,7 +1,9 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
@@ -12,6 +14,13 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
     NotificationDeliveryPreferenceService deliveryPreferences)
 {
     public async Task<AdminCompanyApplicationDocumentReviewResult> ApproveAsync(Guid documentId, CancellationToken cancellationToken)
+        => await ApproveAsync(documentId, null, null, cancellationToken);
+
+    public async Task<AdminCompanyApplicationDocumentReviewResult> ApproveAsync(
+        Guid documentId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var document = await db.CompanyApplicationDocuments
             .Include(document => document.CompanyApplication)
@@ -22,6 +31,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         }
 
         var previousStatus = document.ReviewStatus;
+        var before = ToAuditSnapshot(document, previousStatus);
         document.Approve();
         if (document.CompanyApplication is not null)
         {
@@ -34,10 +44,27 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
                 "success");
         }
 
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyApplicationDocumentApproved",
+            "Piece entreprise validee.",
+            document,
+            before);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyApplicationDocumentReviewResult.Ok(document, previousStatus);
     }
 
     public Task<AdminCompanyApplicationDocumentReviewResult> RejectAsync(Guid documentId, string? comment, CancellationToken cancellationToken)
+        => RejectAsync(documentId, comment, null, null, cancellationToken);
+
+    public Task<AdminCompanyApplicationDocumentReviewResult> RejectAsync(
+        Guid documentId,
+        string? comment,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         return ReviewWithRequiredCommentAsync(
             documentId,
@@ -47,10 +74,22 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
             "CompanyDocumentRejected",
             "Une piece de votre dossier a ete refusee",
             $"Une piece de votre dossier entreprise a ete refusee. Commentaire: {comment?.Trim()}",
+            actor,
+            auditContext,
+            "AdminCompanyApplicationDocumentRejected",
+            "Piece entreprise refusee.",
             cancellationToken);
     }
 
     public Task<AdminCompanyApplicationDocumentReviewResult> RequestReplacementAsync(Guid documentId, string? comment, CancellationToken cancellationToken)
+        => RequestReplacementAsync(documentId, comment, null, null, cancellationToken);
+
+    public Task<AdminCompanyApplicationDocumentReviewResult> RequestReplacementAsync(
+        Guid documentId,
+        string? comment,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         return ReviewWithRequiredCommentAsync(
             documentId,
@@ -60,10 +99,22 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
             "CompanyDocumentNeedsReplacement",
             "Complement de piece requis",
             $"Une piece de votre dossier entreprise doit etre remplacee ou completee. Commentaire: {comment?.Trim()}",
+            actor,
+            auditContext,
+            "AdminCompanyApplicationDocumentReplacementRequested",
+            "Remplacement de piece entreprise demande.",
             cancellationToken);
     }
 
     public Task<AdminCompanyApplicationDocumentReviewResult> ReopenAsync(Guid documentId, string? comment, CancellationToken cancellationToken)
+        => ReopenAsync(documentId, comment, null, null, cancellationToken);
+
+    public Task<AdminCompanyApplicationDocumentReviewResult> ReopenAsync(
+        Guid documentId,
+        string? comment,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         return ReviewWithRequiredCommentAsync(
             documentId,
@@ -73,6 +124,10 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
             "CompanyDocumentReopened",
             "Une piece refusee est reouverte",
             $"Une piece de votre dossier a ete reouverte pour verification. Commentaire: {comment?.Trim()}",
+            actor,
+            auditContext,
+            "AdminCompanyApplicationDocumentReopened",
+            "Piece entreprise reouverte.",
             cancellationToken);
     }
 
@@ -84,6 +139,10 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         string notificationEventKey,
         string notificationSubject,
         string notificationBody,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string auditAction,
+        string auditSummary,
         CancellationToken cancellationToken)
     {
         var reviewComment = ReviewNoteValidator.GetRequired(comment, requiredMessage);
@@ -101,6 +160,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         }
 
         var previousStatus = document.ReviewStatus;
+        var before = ToAuditSnapshot(document, previousStatus);
         try
         {
             applyReview(document);
@@ -126,6 +186,9 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
                 reviewComment.Value!,
                 GetTone(document.ReviewStatus));
         }
+
+        AddAuditLog(actor, auditContext, auditAction, auditSummary, document, before);
+        await db.SaveChangesAsync(cancellationToken);
 
         return AdminCompanyApplicationDocumentReviewResult.Ok(document, previousStatus);
     }
@@ -173,4 +236,39 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         HomeService.Domain.Enums.CompanyDocumentType.AddressProof => "Justificatif d'adresse",
         _ => "Piece du dossier"
     };
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        string summary,
+        CompanyApplicationDocument document,
+        object before)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(CompanyApplicationDocument),
+            document.Id,
+            summary,
+            auditContext,
+            before,
+            after: new { document.ReviewStatus, document.ReviewNote }));
+    }
+
+    private static object ToAuditSnapshot(CompanyApplicationDocument document, DocumentReviewStatus status)
+    {
+        return new
+        {
+            document.Id,
+            document.CompanyApplicationId,
+            ReviewStatus = status,
+            document.ReviewNote
+        };
+    }
 }

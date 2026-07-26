@@ -1738,10 +1738,13 @@ public static class AdminEndpoints
             Guid id,
             HttpRequest httpRequest,
             AdminCompanyApplicationDocumentReviewService documentReviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await documentReviewService.ApproveAsync(id, cancellationToken);
+            var result = await documentReviewService.ApproveAsync(
+                id,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
             if (error is not null)
             {
@@ -1749,16 +1752,6 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddCompanyApplicationDocumentReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationDocumentApproved",
-                "Piece entreprise validee.",
-                document,
-                result.PreviousStatus,
-                after: new { document.ReviewStatus });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
         })
         .WithName("ApproveCompanyApplicationDocument");
@@ -1768,10 +1761,14 @@ public static class AdminEndpoints
             CompanyApplicationDocumentReviewRequest request,
             HttpRequest httpRequest,
             AdminCompanyApplicationDocumentReviewService documentReviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await documentReviewService.RejectAsync(id, request.Comment, cancellationToken);
+            var result = await documentReviewService.RejectAsync(
+                id,
+                request.Comment,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
             if (error is not null)
             {
@@ -1779,16 +1776,6 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddCompanyApplicationDocumentReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationDocumentRejected",
-                "Piece entreprise refusee.",
-                document,
-                result.PreviousStatus,
-                after: new { document.ReviewStatus, document.ReviewNote });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
         })
         .WithName("RejectCompanyApplicationDocument");
@@ -1798,10 +1785,14 @@ public static class AdminEndpoints
             CompanyApplicationDocumentReviewRequest request,
             HttpRequest httpRequest,
             AdminCompanyApplicationDocumentReviewService documentReviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await documentReviewService.RequestReplacementAsync(id, request.Comment, cancellationToken);
+            var result = await documentReviewService.RequestReplacementAsync(
+                id,
+                request.Comment,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
             if (error is not null)
             {
@@ -1809,16 +1800,6 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddCompanyApplicationDocumentReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationDocumentReplacementRequested",
-                "Remplacement de piece entreprise demande.",
-                document,
-                result.PreviousStatus,
-                after: new { document.ReviewStatus, document.ReviewNote });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
         })
         .WithName("RequestCompanyApplicationDocumentReplacement");
@@ -1828,10 +1809,14 @@ public static class AdminEndpoints
             CompanyApplicationDocumentReviewRequest request,
             HttpRequest httpRequest,
             AdminCompanyApplicationDocumentReviewService documentReviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await documentReviewService.ReopenAsync(id, request.Comment, cancellationToken);
+            var result = await documentReviewService.ReopenAsync(
+                id,
+                request.Comment,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
             if (error is not null)
             {
@@ -1839,16 +1824,6 @@ public static class AdminEndpoints
             }
         
             var document = result.Document!;
-            AddCompanyApplicationDocumentReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationDocumentReopened",
-                "Piece entreprise reouverte.",
-                document,
-                result.PreviousStatus,
-                after: new { document.ReviewStatus, document.ReviewNote });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationDocumentReviewResponse(document));
         })
         .WithName("ReopenCompanyApplicationDocument");
@@ -2016,27 +1991,6 @@ public static class AdminEndpoints
             after);
     }
 
-    static void AddCompanyApplicationDocumentReviewAudit(
-        IAppDbContext db,
-        HttpRequest request,
-        string action,
-        string summary,
-        CompanyApplicationDocument document,
-        DocumentReviewStatus? previousStatus,
-        object? after)
-    {
-        AddAuditLog(
-            db,
-            request,
-            AuditActor.Admin(),
-            action,
-            nameof(CompanyApplicationDocument),
-            document.Id,
-            summary,
-            before: new { Status = previousStatus },
-            after);
-    }
-    
     static string GetCompanyPortalBaseUrl(HttpRequest request, IConfiguration configuration)
     {
         var configuredBaseUrl =
