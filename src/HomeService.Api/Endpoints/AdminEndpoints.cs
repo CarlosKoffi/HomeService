@@ -475,10 +475,13 @@ public static class AdminEndpoints
             Guid providerId,
             HttpRequest httpRequest,
             AdminProviderOperationsService providerOperationsService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await providerOperationsService.ApproveAsync(providerId, cancellationToken);
+            var result = await providerOperationsService.ApproveAsync(
+                providerId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminProviderOperationStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -488,18 +491,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            var provider = result.Provider!;
-            db.AuditLogEntries.Add(AuditLogFactory.Create(
-                AuditActor.Admin(),
-                "AdminProviderApproved",
-                nameof(ProviderProfile),
-                provider.Id,
-                "Prestataire valide par l'administration.",
-                HttpAuditContextFactory.Create(httpRequest),
-                before: new { Status = result.PreviousStatus?.ToString() },
-                after: new { provider.Status, provider.CompanyId }));
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.NoContent();
         })
@@ -513,10 +504,14 @@ public static class AdminEndpoints
             AdminProviderActionRequest? request,
             HttpRequest httpRequest,
             AdminProviderOperationsService providerOperationsService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await providerOperationsService.SuspendAsync(providerId, cancellationToken);
+            var result = await providerOperationsService.SuspendAsync(
+                providerId,
+                request?.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminProviderOperationStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -526,20 +521,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            var provider = result.Provider!;
-            db.AuditLogEntries.Add(AuditLogFactory.Create(
-                AuditActor.Admin(),
-                "AdminProviderSuspended",
-                nameof(ProviderProfile),
-                provider.Id,
-                string.IsNullOrWhiteSpace(request?.Note)
-                    ? "Prestataire suspendu par l'administration."
-                    : request.Note.Trim(),
-                HttpAuditContextFactory.Create(httpRequest),
-                before: new { Status = result.PreviousStatus?.ToString() },
-                after: new { provider.Status, provider.CompanyId }));
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.NoContent();
         })

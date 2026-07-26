@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,13 @@ namespace HomeService.Application.Admin;
 public sealed class AdminProviderOperationsService(IAppDbContext db)
 {
     public async Task<AdminProviderOperationResult> ApproveAsync(Guid providerId, CancellationToken cancellationToken)
+        => await ApproveAsync(providerId, null, null, cancellationToken);
+
+    public async Task<AdminProviderOperationResult> ApproveAsync(
+        Guid providerId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var provider = await db.Providers
             .Include(provider => provider.Services)
@@ -40,10 +48,27 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
 
         var previousStatus = provider.Status;
         provider.Approve();
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminProviderApproved",
+            provider,
+            previousStatus,
+            "Prestataire valide par l'administration.");
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminProviderOperationResult.Ok(provider, previousStatus);
     }
 
     public async Task<AdminProviderOperationResult> SuspendAsync(Guid providerId, CancellationToken cancellationToken)
+        => await SuspendAsync(providerId, null, null, null, cancellationToken);
+
+    public async Task<AdminProviderOperationResult> SuspendAsync(
+        Guid providerId,
+        string? note,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var provider = await db.Providers
             .FirstOrDefaultAsync(provider => provider.Id == providerId, cancellationToken);
@@ -64,7 +89,42 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
 
         var previousStatus = provider.Status;
         provider.SuspendByPlatform();
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminProviderSuspended",
+            provider,
+            previousStatus,
+            string.IsNullOrWhiteSpace(note)
+                ? "Prestataire suspendu par l'administration."
+                : note.Trim());
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminProviderOperationResult.Ok(provider, previousStatus);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        ProviderProfile provider,
+        ProviderStatus previousStatus,
+        string summary)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(ProviderProfile),
+            provider.Id,
+            summary,
+            auditContext,
+            before: new { Status = previousStatus.ToString() },
+            after: new { provider.Status, provider.CompanyId }));
     }
 }
 
