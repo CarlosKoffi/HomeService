@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Contracts.Services;
 using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
@@ -10,6 +11,13 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
 {
     public async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> CreateServiceAsync(
         UpsertServiceRequest request,
+        CancellationToken cancellationToken)
+        => await CreateServiceAsync(request, null, null, cancellationToken);
+
+    public async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> CreateServiceAsync(
+        UpsertServiceRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var validationMessage = ValidateServiceRequest(request);
@@ -34,9 +42,18 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         service.Approve();
 
         db.Services.Add(service);
+        var response = ToServiceResponse(service);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminServiceCreated",
+            nameof(Service),
+            response.Id,
+            $"Service '{service.Name}' cree dans le catalogue.",
+            before: null,
+            after: response);
         await db.SaveChangesAsync(cancellationToken);
 
-        var response = ToServiceResponse(service);
         return AdminServiceCatalogOperationResult<ServiceSummaryResponse>.Ok(
             $"Service '{service.Name}' cree dans le catalogue.",
             response,
@@ -47,6 +64,14 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
     public async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> UpdateServiceAsync(
         Guid serviceId,
         UpsertServiceRequest request,
+        CancellationToken cancellationToken)
+        => await UpdateServiceAsync(serviceId, request, null, null, cancellationToken);
+
+    public async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> UpdateServiceAsync(
+        Guid serviceId,
+        UpsertServiceRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var validationMessage = ValidateServiceRequest(request);
@@ -75,9 +100,19 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         var before = ToServiceResponse(service);
         service.UpdateDetails(request.Name, request.Description, request.IconName);
         service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
-        await db.SaveChangesAsync(cancellationToken);
 
         var after = ToServiceResponse(service);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminServiceUpdated",
+            nameof(Service),
+            after.Id,
+            "Service modifie dans le catalogue.",
+            before,
+            after);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminServiceCatalogOperationResult<ServiceSummaryResponse>.Ok(
             "Service modifie dans le catalogue.",
             after,
@@ -89,19 +124,45 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         Guid serviceId,
         CancellationToken cancellationToken)
     {
-        return SetServiceActiveStateAsync(serviceId, isActive: true, cancellationToken);
+        return ActivateServiceAsync(serviceId, null, null, cancellationToken);
+    }
+
+    public Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> ActivateServiceAsync(
+        Guid serviceId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        return SetServiceActiveStateAsync(serviceId, isActive: true, actor, auditContext, cancellationToken);
     }
 
     public Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> DeactivateServiceAsync(
         Guid serviceId,
         CancellationToken cancellationToken)
     {
-        return SetServiceActiveStateAsync(serviceId, isActive: false, cancellationToken);
+        return DeactivateServiceAsync(serviceId, null, null, cancellationToken);
+    }
+
+    public Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> DeactivateServiceAsync(
+        Guid serviceId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        return SetServiceActiveStateAsync(serviceId, isActive: false, actor, auditContext, cancellationToken);
     }
 
     public async Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> CreatePrestationAsync(
         Guid serviceId,
         UpsertServicePrestationRequest request,
+        CancellationToken cancellationToken)
+        => await CreatePrestationAsync(serviceId, request, null, null, cancellationToken);
+
+    public async Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> CreatePrestationAsync(
+        Guid serviceId,
+        UpsertServicePrestationRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var validationMessage = ValidatePrestationRequest(request);
@@ -136,9 +197,19 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             GetPriceMin(request),
             GetPriceMax(request),
             request.Currency);
-        await db.SaveChangesAsync(cancellationToken);
 
         var after = ToServicePrestationResponse(prestation);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminServicePrestationUpserted",
+            nameof(ServicePrestation),
+            after.Id,
+            $"Prestation '{prestation.Name}' rattachee au service '{service.Name}'.",
+            before,
+            after);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>.Ok(
             $"Prestation '{prestation.Name}' rattachee au service '{service.Name}'.",
             after,
@@ -149,6 +220,14 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
     public async Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> UpdatePrestationAsync(
         Guid prestationId,
         UpsertServicePrestationRequest request,
+        CancellationToken cancellationToken)
+        => await UpdatePrestationAsync(prestationId, request, null, null, cancellationToken);
+
+    public async Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> UpdatePrestationAsync(
+        Guid prestationId,
+        UpsertServicePrestationRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var validationMessage = ValidatePrestationRequest(request);
@@ -167,9 +246,19 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         prestation.Rename(request.Name, request.Description);
         prestation.MoveTo(request.SortOrder);
         prestation.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
-        await db.SaveChangesAsync(cancellationToken);
 
         var after = ToServicePrestationResponse(prestation);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminServicePrestationUpdated",
+            nameof(ServicePrestation),
+            after.Id,
+            "Prestation de service modifiee.",
+            before,
+            after);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>.Ok(
             "Prestation de service modifiee.",
             after,
@@ -181,19 +270,39 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         Guid prestationId,
         CancellationToken cancellationToken)
     {
-        return SetPrestationActiveStateAsync(prestationId, isActive: true, cancellationToken);
+        return ActivatePrestationAsync(prestationId, null, null, cancellationToken);
+    }
+
+    public Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> ActivatePrestationAsync(
+        Guid prestationId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        return SetPrestationActiveStateAsync(prestationId, isActive: true, actor, auditContext, cancellationToken);
     }
 
     public Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> DeactivatePrestationAsync(
         Guid prestationId,
         CancellationToken cancellationToken)
     {
-        return SetPrestationActiveStateAsync(prestationId, isActive: false, cancellationToken);
+        return DeactivatePrestationAsync(prestationId, null, null, cancellationToken);
+    }
+
+    public Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> DeactivatePrestationAsync(
+        Guid prestationId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        return SetPrestationActiveStateAsync(prestationId, isActive: false, actor, auditContext, cancellationToken);
     }
 
     private async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> SetServiceActiveStateAsync(
         Guid serviceId,
         bool isActive,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var service = await db.Services
@@ -214,11 +323,21 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             service.Deactivate();
         }
 
+        var after = ToServiceResponse(service);
+        var message = isActive ? "Service active dans le catalogue." : "Service desactive dans le catalogue.";
+        AddAuditLog(
+            actor,
+            auditContext,
+            isActive ? "AdminServiceActivated" : "AdminServiceDeactivated",
+            nameof(Service),
+            after.Id,
+            message,
+            before,
+            after);
         await db.SaveChangesAsync(cancellationToken);
 
-        var after = ToServiceResponse(service);
         return AdminServiceCatalogOperationResult<ServiceSummaryResponse>.Ok(
-            isActive ? "Service active dans le catalogue." : "Service desactive dans le catalogue.",
+            message,
             after,
             before,
             after);
@@ -227,6 +346,8 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
     private async Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> SetPrestationActiveStateAsync(
         Guid prestationId,
         bool isActive,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == prestationId, cancellationToken);
@@ -245,11 +366,21 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             prestation.Deactivate();
         }
 
+        var after = ToServicePrestationResponse(prestation);
+        var message = isActive ? "Prestation de service activee." : "Prestation de service desactivee.";
+        AddAuditLog(
+            actor,
+            auditContext,
+            isActive ? "AdminServicePrestationActivated" : "AdminServicePrestationDeactivated",
+            nameof(ServicePrestation),
+            after.Id,
+            message,
+            before,
+            after);
         await db.SaveChangesAsync(cancellationToken);
 
-        var after = ToServicePrestationResponse(prestation);
         return AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>.Ok(
-            isActive ? "Prestation de service activee." : "Prestation de service desactivee.",
+            message,
             after,
             before,
             after);
@@ -329,6 +460,32 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             prestation.IsActive,
             prestation.PriceMinAmount,
             prestation.PriceMaxAmount);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        string entityType,
+        Guid entityId,
+        string summary,
+        object? before,
+        object? after)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            entityType,
+            entityId,
+            summary,
+            auditContext,
+            before,
+            after));
     }
 }
 

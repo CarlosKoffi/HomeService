@@ -1,4 +1,5 @@
 using HomeService.Application.Admin;
+using HomeService.Application.Auditing;
 using HomeService.Contracts.Services;
 using HomeService.Domain.Entities;
 using HomeService.Infrastructure.Data;
@@ -25,6 +26,28 @@ public sealed class AdminServiceCatalogManagementServiceTests
         Assert.True(result.Response.IsActive);
         Assert.Equal(2500, result.Response.PriceMinAmount);
         Assert.Equal(4500, result.Response.PriceMaxAmount);
+    }
+
+    [Fact]
+    public async Task CreateServiceAsync_WhenAuditActorIsProvided_CreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var sut = new AdminServiceCatalogManagementService(db);
+
+        var result = await sut.CreateServiceAsync(
+            new UpsertServiceRequest("Depannage auto", "Assistance vehicule", "car", PriceMinAmount: 7000, PriceMaxAmount: 12000),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "service-create"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminServiceCreated", log.Action);
+        Assert.Equal(nameof(Service), log.EntityType);
+        Assert.Equal(result.Response!.Id, log.EntityId);
+        Assert.Equal("service-create", log.CorrelationId);
+        Assert.Null(log.BeforeJson);
+        Assert.Contains("Depannage auto", log.AfterJson);
     }
 
     [Fact]
@@ -82,6 +105,31 @@ public sealed class AdminServiceCatalogManagementServiceTests
         Assert.True(deactivated.IsSuccess);
         Assert.True(activated.IsSuccess);
         Assert.True((await db.ServicePrestations.SingleAsync()).IsActive);
+    }
+
+    [Fact]
+    public async Task DeactivatePrestationAsync_WhenAuditActorIsProvided_CreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Blanchisserie", null, createdByCompanyId: null);
+        var prestation = service.AddPrestation("Repassage", null, 1, 2500, 4500);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminServiceCatalogManagementService(db).DeactivatePrestationAsync(
+            prestation.Id,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "prestation-deactivate"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminServicePrestationDeactivated", log.Action);
+        Assert.Equal(nameof(ServicePrestation), log.EntityType);
+        Assert.Equal(prestation.Id, log.EntityId);
+        Assert.Equal("prestation-deactivate", log.CorrelationId);
+        Assert.Contains("Repassage", log.BeforeJson);
+        Assert.Contains("Repassage", log.AfterJson);
     }
 
     [Fact]

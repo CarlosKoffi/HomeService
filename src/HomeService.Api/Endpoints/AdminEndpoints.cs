@@ -1598,27 +1598,18 @@ public static class AdminEndpoints
             UpsertServiceRequest request,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.CreateServiceAsync(request, cancellationToken);
+            var result = await catalogService.CreateServiceAsync(
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServiceCreated",
-                nameof(Service),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -1629,27 +1620,19 @@ public static class AdminEndpoints
             UpsertServiceRequest request,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.UpdateServiceAsync(serviceId, request, cancellationToken);
+            var result = await catalogService.UpdateServiceAsync(
+                serviceId,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServiceUpdated",
-                nameof(Service),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -1659,27 +1642,18 @@ public static class AdminEndpoints
             Guid serviceId,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.ActivateServiceAsync(serviceId, cancellationToken);
+            var result = await catalogService.ActivateServiceAsync(
+                serviceId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServiceActivated",
-                nameof(Service),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -1689,27 +1663,18 @@ public static class AdminEndpoints
             Guid serviceId,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.DeactivateServiceAsync(serviceId, cancellationToken);
+            var result = await catalogService.DeactivateServiceAsync(
+                serviceId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServiceDeactivated",
-                nameof(Service),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -1720,27 +1685,19 @@ public static class AdminEndpoints
             UpsertServicePrestationRequest request,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.CreatePrestationAsync(serviceId, request, cancellationToken);
+            var result = await catalogService.CreatePrestationAsync(
+                serviceId,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServicePrestationUpserted",
-                nameof(ServicePrestation),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -1751,27 +1708,19 @@ public static class AdminEndpoints
             UpsertServicePrestationRequest request,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.UpdatePrestationAsync(id, request, cancellationToken);
+            var result = await catalogService.UpdatePrestationAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServicePrestationUpdated",
-                nameof(ServicePrestation),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -1781,27 +1730,18 @@ public static class AdminEndpoints
             Guid id,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.ActivatePrestationAsync(id, cancellationToken);
+            var result = await catalogService.ActivatePrestationAsync(
+                id,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServicePrestationActivated",
-                nameof(ServicePrestation),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -1811,27 +1751,18 @@ public static class AdminEndpoints
             Guid id,
             HttpRequest httpRequest,
             AdminServiceCatalogManagementService catalogService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await catalogService.DeactivatePrestationAsync(id, cancellationToken);
+            var result = await catalogService.DeactivatePrestationAsync(
+                id,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
             if (error is not null)
             {
                 return error;
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminServicePrestationDeactivated",
-                nameof(ServicePrestation),
-                result.Response!.Id,
-                result.Message,
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
