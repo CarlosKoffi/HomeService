@@ -251,6 +251,62 @@ public static class ProviderPortalEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        group.MapGet("/mobile/mission-assignments/{assignmentId:guid}/messages", async (
+            Guid assignmentId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMissionChatService chatService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await chatService.ListAsync(session.ProviderId, assignmentId, cancellationToken);
+            return result.Status switch
+            {
+                ProviderMissionChatResultStatus.Success => Results.Ok(result.ChatResponse),
+                ProviderMissionChatResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("ListProviderMissionMessages")
+        .Produces<ProviderMissionChatResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/messages", async (
+            Guid assignmentId,
+            SendProviderMissionMessageRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMissionChatService chatService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await chatService.SendAsync(session.ProviderId, assignmentId, request, cancellationToken);
+            return result.Status switch
+            {
+                ProviderMissionChatResultStatus.Created => Results.Created(
+                    $"/api/provider-portal/mobile/mission-assignments/{assignmentId}/messages",
+                    result.SendResponse),
+                ProviderMissionChatResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("SendProviderMissionMessage")
+        .Produces<SendProviderMissionMessageResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapPost("/mission-assignments/{assignmentId:guid}/accept", async (
             Guid assignmentId,
             ProviderAcceptMissionRequest request,

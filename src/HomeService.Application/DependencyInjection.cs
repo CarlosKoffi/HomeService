@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<ProviderOnboardingService>();
         services.AddScoped<ProviderPortalAuthService>();
         services.AddScoped<ProviderMobileMissionDetailService>();
+        services.AddScoped<ProviderMissionChatService>();
         services.AddScoped<CompanyHomeCmsQueryService>();
         services.AddScoped<ProviderHomeCmsQueryService>();
         services.AddScoped<ContactRequestService>();
