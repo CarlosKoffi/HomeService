@@ -75,6 +75,7 @@ else
 
     <section class="company-control-strip">
         <button type="button" class='@GetTabClass("summary")' @onclick='() => SelectTab("summary")'>Resume</button>
+        <button type="button" class='@GetTabClass("finances")' @onclick='() => SelectTab("finances")'>Finances</button>
         <button type="button" class='@GetTabClass("assignments")' @onclick='() => SelectTab("assignments")'>Affectations</button>
         <button type="button" class='@GetTabClass("messages")' @onclick='() => SelectTab("messages")'>Messages</button>
         <button type="button" class='@GetTabClass("logs")' @onclick='() => SelectTab("logs")'>Journal</button>
@@ -240,6 +241,60 @@ else
                 }
             </section>
         }
+    }
+    else if (SelectedTab == "finances")
+    {
+        <section class="mission-finance-panel">
+            <header>
+                <div>
+                    <h2>Lecture financiere</h2>
+                    <p>Controle du prix client, de la commission wélé, du reversement entreprise et des remboursements.</p>
+                </div>
+                <strong>@TranslatePaymentStatus(Mission.PaymentStatus)</strong>
+            </header>
+
+            <div class="mission-finance-summary">
+                <article>
+                    <span>Prix client</span>
+                    <strong>@FormatMoney(Mission.CompanyQuotedAmount ?? Mission.FinalTotalAmount ?? Mission.EstimatedTotalAmount, Mission.Currency)</strong>
+                </article>
+                <article>
+                    <span>Commission wélé</span>
+                    <strong>@FormatMoney(Mission.PlatformCommissionAmount, Mission.Currency)</strong>
+                </article>
+                <article>
+                    <span>Reversement entreprise</span>
+                    <strong>@FormatMoney(Mission.CompanyPayoutAmount, Mission.Currency)</strong>
+                </article>
+                <article>
+                    <span>Remboursement</span>
+                    <strong>@FormatMoney(Mission.RefundAmount, Mission.Currency)</strong>
+                </article>
+            </div>
+
+            @if (Mission.FinancialLines.Count == 0)
+            {
+                <article class="mission-finance-empty">
+                    <strong>Aucune ligne financiere</strong>
+                    <p>La mission n'a pas encore de devis accepte, paiement, frais ou remboursement a afficher.</p>
+                </article>
+            }
+            else
+            {
+                <div class="mission-finance-lines">
+                    @foreach (var line in Mission.FinancialLines)
+                    {
+                        <article class="@GetFinancialLineClass(line.Amount)">
+                            <div>
+                                <span>@TranslateFinancialLineType(line.LineType)</span>
+                                <strong>@line.Label</strong>
+                            </div>
+                            <strong>@FormatSignedMoney(line.Amount, line.Currency)</strong>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
     }
     else if (SelectedTab == "assignments")
     {
@@ -549,6 +604,8 @@ else
 
     private static string FormatMoney(int? amount, string currency) => amount is null ? "Aucun prix" : $"{amount:N0} {currency}";
     private static string FormatMoney(int amount, string currency) => $"{amount:N0} {currency}";
+    private static string FormatSignedMoney(int amount, string currency)
+        => amount < 0 ? $"-{Math.Abs(amount):N0} {currency}" : $"+{amount:N0} {currency}";
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non renseigne";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
     private static string FormatLocation(decimal? latitude, decimal? longitude) => latitude is null || longitude is null ? "Non renseignees" : $"{latitude}, {longitude}";
@@ -577,4 +634,16 @@ else
     private static string GetMissionStatusClass(string status) => status switch { "Completed" or "Resolved" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetDisputeStatusClass(string status) => status switch { "Resolved" => "status-pill ok", "Cancelled" => "status-pill danger", _ => "status-pill pending" };
+    private static string GetFinancialLineClass(int amount) => amount < 0 ? "mission-finance-line negative" : "mission-finance-line";
+    private static string TranslateFinancialLineType(string lineType) => lineType switch
+    {
+        "ServicePrice" => "Prix",
+        "PartsEstimate" => "Pieces",
+        "PlatformCommission" => "Commission",
+        "CompanyPayout" => "Reversement",
+        "CancellationFee" => "Annulation",
+        "Refund" => "Remboursement",
+        "Adjustment" => "Ajustement",
+        _ => lineType
+    };
 }

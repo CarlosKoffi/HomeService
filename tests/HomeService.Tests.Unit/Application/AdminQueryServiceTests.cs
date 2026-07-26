@@ -38,11 +38,19 @@ public sealed class AdminQueryServiceTests
             quotedAmount: 5000,
             maxAllowedAmount: 8000,
             overMaxJustification: null);
+        var refundLine = new MissionFinancialBreakdown(
+            mission.Id,
+            MissionFinancialLineType.Refund,
+            "Avoir commercial",
+            -500,
+            "XOF",
+            80);
 
         db.Companies.Add(company);
         db.Services.Add(service);
         db.Customers.Add(customer);
         db.Missions.Add(mission);
+        db.MissionFinancialBreakdowns.Add(refundLine);
         await db.SaveChangesAsync();
 
         var serviceUnderTest = new AdminQueryService(db);
@@ -56,6 +64,12 @@ public sealed class AdminQueryServiceTests
         Assert.Contains(missionList.Items, item => item.Id == mission.Id && item.PrestationName == "Repassage");
         Assert.NotNull(missionDetail);
         Assert.Equal("Repassage", missionDetail.PrestationName);
+        Assert.Contains(missionDetail.FinancialLines, line =>
+            line.LineType == MissionFinancialLineType.ServicePrice.ToString()
+            && line.Amount == 5000);
+        Assert.Contains(missionDetail.FinancialLines, line =>
+            line.Label == "Avoir commercial"
+            && line.Amount == -500);
     }
 
     private static HomeServiceDbContext CreateDbContext()

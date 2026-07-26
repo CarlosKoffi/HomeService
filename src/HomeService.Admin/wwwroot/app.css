@@ -1798,6 +1798,114 @@ h3 {
     color: #111827;
 }
 
+.mission-finance-panel {
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 18px;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, .06);
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.mission-finance-panel header {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.mission-finance-panel h2 {
+    color: #000;
+    font-size: 1.15rem;
+    margin: 0 0 .25rem;
+}
+
+.mission-finance-panel p {
+    color: #5b6677;
+    margin: 0;
+}
+
+.mission-finance-panel header > strong {
+    background: #eff4ff;
+    border-radius: 999px;
+    color: #1a6aff;
+    padding: .45rem .75rem;
+    white-space: nowrap;
+}
+
+.mission-finance-summary {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mission-finance-summary article,
+.mission-finance-empty {
+    background: #f8fafc;
+    border: 1px solid #e5ecf6;
+    border-radius: 14px;
+    display: grid;
+    gap: .3rem;
+    padding: .85rem 1rem;
+}
+
+.mission-finance-summary span,
+.mission-finance-line span {
+    color: #667085;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.mission-finance-summary strong {
+    color: #000;
+    font-size: 1.15rem;
+}
+
+.mission-finance-lines {
+    display: grid;
+    gap: .55rem;
+}
+
+.mission-finance-line {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: .75rem .9rem;
+}
+
+.mission-finance-line div {
+    display: grid;
+    gap: .15rem;
+}
+
+.mission-finance-line strong {
+    color: #000;
+}
+
+.mission-finance-line > strong {
+    color: #1a6aff;
+    white-space: nowrap;
+}
+
+.mission-finance-line.negative > strong {
+    color: #dc2626;
+}
+
+.mission-finance-empty strong {
+    color: #000;
+}
+
+.mission-finance-empty p {
+    color: #667085;
+}
+
 .dispute-history-panel {
     margin-top: 1rem;
 }
@@ -4228,6 +4336,7 @@ h3 {
     .prestation-row,
     .service-insights-row,
     .prestation-edit,
+    .mission-finance-summary,
     .cms-workspace,
     .cms-table > div,
     .cms-menu-table > div {

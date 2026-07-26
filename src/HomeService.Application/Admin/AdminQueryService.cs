@@ -456,7 +456,9 @@ public sealed class AdminQueryService(IAppDbContext db)
                 item.CompanyQuoteJustification,
                 item.CompanyQuotedAt,
                 item.CustomerQuoteAcceptedAt,
+                item.PartsEstimateAmount,
                 item.PlatformCommissionAmount,
+                item.CompanyPayoutAmount,
                 item.TransportFeeAmount,
                 item.CancellationFeeAmount,
                 item.RefundAmount,
@@ -540,6 +542,30 @@ public sealed class AdminQueryService(IAppDbContext db)
                 dispute.ResolvedAt))
             .ToListAsync(cancellationToken);
 
+        var storedFinancialLines = await db.MissionFinancialBreakdowns
+            .AsNoTracking()
+            .Where(line => line.MissionId == missionId)
+            .OrderBy(line => line.SortOrder)
+            .ThenBy(line => line.CreatedAt)
+            .Select(line => new AdminMissionFinancialLineResponse(
+                line.LineType.ToString(),
+                line.Label,
+                line.Amount,
+                line.Currency,
+                line.SortOrder))
+            .ToListAsync(cancellationToken);
+
+        var financialLines = BuildAdminMissionFinancialLines(
+            mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0,
+            mission.PartsEstimateAmount,
+            mission.PlatformCommissionAmount,
+            mission.CompanyPayoutAmount,
+            mission.TransportFeeAmount,
+            mission.CancellationFeeAmount,
+            mission.RefundAmount,
+            mission.Currency,
+            storedFinancialLines);
+
         return new AdminMissionDetailResponse(
             mission.Id,
             mission.MissionNumber,
@@ -563,7 +589,9 @@ public sealed class AdminQueryService(IAppDbContext db)
             mission.CompanyQuoteJustification,
             mission.CompanyQuotedAt,
             mission.CustomerQuoteAcceptedAt,
+            mission.PartsEstimateAmount,
             mission.PlatformCommissionAmount,
+            mission.CompanyPayoutAmount,
             mission.TransportFeeAmount,
             mission.CancellationFeeAmount,
             mission.RefundAmount,
@@ -581,12 +609,112 @@ public sealed class AdminQueryService(IAppDbContext db)
             mission.ContactDetailsReleasedAt,
             mission.CanRevealContactDetails,
             mission.CreatedAt,
+            financialLines,
             assignments,
             disputes,
             messages)
         {
             PrestationName = mission.PrestationName
         };
+    }
+
+    private static IReadOnlyList<AdminMissionFinancialLineResponse> BuildAdminMissionFinancialLines(
+        int clientPriceAmount,
+        int? partsEstimateAmount,
+        int platformCommissionAmount,
+        int companyPayoutAmount,
+        int transportFeeAmount,
+        int cancellationFeeAmount,
+        int refundAmount,
+        string currency,
+        IReadOnlyList<AdminMissionFinancialLineResponse> storedFinancialLines)
+    {
+        var lines = new List<AdminMissionFinancialLineResponse>();
+
+        if (clientPriceAmount > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.ServicePrice.ToString(),
+                "Prix mission client",
+                clientPriceAmount,
+                currency,
+                10));
+        }
+
+        if (partsEstimateAmount is > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.PartsEstimate.ToString(),
+                "Pieces ou materiel",
+                partsEstimateAmount.Value,
+                currency,
+                20));
+        }
+
+        if (transportFeeAmount > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.Adjustment.ToString(),
+                "Transport inclus",
+                transportFeeAmount,
+                currency,
+                30));
+        }
+
+        if (platformCommissionAmount > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.PlatformCommission.ToString(),
+                "Commission wele",
+                platformCommissionAmount,
+                currency,
+                40));
+        }
+
+        if (companyPayoutAmount > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.CompanyPayout.ToString(),
+                "Reversement entreprise",
+                companyPayoutAmount,
+                currency,
+                50));
+        }
+
+        if (cancellationFeeAmount > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.CancellationFee.ToString(),
+                "Frais d'annulation retenus",
+                cancellationFeeAmount,
+                currency,
+                60));
+        }
+
+        if (refundAmount > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.Refund.ToString(),
+                "Remboursement client",
+                -refundAmount,
+                currency,
+                70));
+        }
+
+        foreach (var storedLine in storedFinancialLines)
+        {
+            if (lines.Any(line => line.LineType == storedLine.LineType && line.Amount == storedLine.Amount))
+            {
+                continue;
+            }
+
+            lines.Add(storedLine);
+        }
+
+        return lines
+            .OrderBy(line => line.SortOrder)
+            .ThenBy(line => line.Label)
+            .ToList();
     }
 
     public async Task<AdminProviderListResponse> ListProvidersAsync(

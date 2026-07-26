@@ -56,7 +56,9 @@ public sealed record AdminMissionDetailResponse(
     string? CompanyQuoteJustification,
     DateTimeOffset? CompanyQuotedAt,
     DateTimeOffset? CustomerQuoteAcceptedAt,
+    int? PartsEstimateAmount,
     int PlatformCommissionAmount,
+    int CompanyPayoutAmount,
     int TransportFeeAmount,
     int CancellationFeeAmount,
     int RefundAmount,
@@ -74,12 +76,20 @@ public sealed record AdminMissionDetailResponse(
     DateTimeOffset? ContactDetailsReleasedAt,
     bool CanRevealContactDetails,
     DateTimeOffset CreatedAt,
+    IReadOnlyList<AdminMissionFinancialLineResponse> FinancialLines,
     IReadOnlyList<AdminMissionAssignmentResponse> Assignments,
     IReadOnlyList<AdminMissionDisputeResponse> Disputes,
     IReadOnlyList<AdminMissionConversationMessageResponse> Messages)
 {
     public string? PrestationName { get; init; }
 }
+
+public sealed record AdminMissionFinancialLineResponse(
+    string LineType,
+    string Label,
+    int Amount,
+    string Currency,
+    int SortOrder);
 
 public sealed record AdminMissionDisputeResponse(
     Guid Id,
