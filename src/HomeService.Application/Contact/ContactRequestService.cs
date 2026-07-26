@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Contracts.Contact;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -74,6 +75,8 @@ public sealed class ContactRequestService(IAppDbContext db)
     public async Task<ContactRequestAdminActionResult> MarkInProgressAsync(
         Guid id,
         UpdateContactRequestStatusRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var contactRequest = await db.ContactRequests.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -83,14 +86,29 @@ public sealed class ContactRequestService(IAppDbContext db)
         }
 
         contactRequest.MarkInProgress(request.Note);
+        AddAdminAuditLog(
+            actor,
+            auditContext,
+            "AdminContactRequestInProgress",
+            contactRequest.Id,
+            "Demande de contact prise en charge.",
+            after: new { contactRequest.Status, contactRequest.AdminNote });
         await db.SaveChangesAsync(cancellationToken);
 
         return ContactRequestAdminActionResult.Ok(ToResponse(contactRequest));
     }
 
+    public Task<ContactRequestAdminActionResult> MarkInProgressAsync(
+        Guid id,
+        UpdateContactRequestStatusRequest request,
+        CancellationToken cancellationToken)
+        => MarkInProgressAsync(id, request, null, null, cancellationToken);
+
     public async Task<ContactRequestAdminActionResult> CloseAsync(
         Guid id,
         UpdateContactRequestStatusRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var contactRequest = await db.ContactRequests.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -100,9 +118,45 @@ public sealed class ContactRequestService(IAppDbContext db)
         }
 
         contactRequest.Close(request.Note);
+        AddAdminAuditLog(
+            actor,
+            auditContext,
+            "AdminContactRequestClosed",
+            contactRequest.Id,
+            "Demande de contact cloturee.",
+            after: new { contactRequest.Status, contactRequest.AdminNote });
         await db.SaveChangesAsync(cancellationToken);
 
         return ContactRequestAdminActionResult.Ok(ToResponse(contactRequest));
+    }
+
+    public Task<ContactRequestAdminActionResult> CloseAsync(
+        Guid id,
+        UpdateContactRequestStatusRequest request,
+        CancellationToken cancellationToken)
+        => CloseAsync(id, request, null, null, cancellationToken);
+
+    private void AddAdminAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        Guid entityId,
+        string summary,
+        object? after)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(ContactRequest),
+            entityId,
+            summary,
+            auditContext,
+            after: after));
     }
 
     private static List<string> Validate(SubmitContactRequest request)

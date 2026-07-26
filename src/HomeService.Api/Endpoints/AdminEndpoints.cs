@@ -82,25 +82,18 @@ public static class AdminEndpoints
             UpdateContactRequestStatusRequest request,
             HttpRequest httpRequest,
             ContactRequestService contactRequestService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await contactRequestService.MarkInProgressAsync(id, request, cancellationToken);
+            var result = await contactRequestService.MarkInProgressAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (!result.IsSuccess)
             {
                 return Results.NotFound(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminContactRequestInProgress",
-                nameof(ContactRequest),
-                id,
-                "Demande de contact prise en charge.",
-                after: new { result.Response!.Status, result.Response.AdminNote });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -113,25 +106,18 @@ public static class AdminEndpoints
             UpdateContactRequestStatusRequest request,
             HttpRequest httpRequest,
             ContactRequestService contactRequestService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await contactRequestService.CloseAsync(id, request, cancellationToken);
+            var result = await contactRequestService.CloseAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (!result.IsSuccess)
             {
                 return Results.NotFound(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminContactRequestClosed",
-                nameof(ContactRequest),
-                id,
-                "Demande de contact cloturee.",
-                after: new { result.Response!.Status, result.Response.AdminNote });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
