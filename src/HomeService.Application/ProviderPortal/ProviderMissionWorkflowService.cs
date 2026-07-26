@@ -77,6 +77,7 @@ public sealed class ProviderMissionWorkflowService
         try
         {
             assignment.Refuse(reason, request.Comment);
+            assignment.Mission.ReleaseProviderAfterRefusal(assignment.ProviderId);
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
         }
         catch (InvalidOperationException exception)

@@ -256,6 +256,24 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
+    public void ReleaseProviderAfterRefusal(Guid providerId)
+    {
+        if (ProviderId != providerId)
+        {
+            return;
+        }
+
+        if (Status is not MissionStatus.Assigned)
+        {
+            return;
+        }
+
+        ProviderId = null;
+        ProviderAcceptedAt = null;
+        Status = MissionStatus.SearchingProvider;
+        Touch();
+    }
+
     public void ConfirmByCustomer(
         int platformCommissionAmount,
         int transportFeeAmount,

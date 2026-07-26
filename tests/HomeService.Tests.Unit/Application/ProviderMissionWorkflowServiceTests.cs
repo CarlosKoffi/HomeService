@@ -101,7 +101,7 @@ public sealed class ProviderMissionWorkflowServiceTests
     }
 
     [Fact]
-    public void RefuseMission_WhenReasonIsValid_RefusesAssignmentWithReasonAndComment()
+    public void RefuseMission_WhenReasonIsValid_RefusesAssignmentAndReleasesMissionProvider()
     {
         var provider = CreateApprovedProvider();
         var mission = CreateAssignedMission();
@@ -115,7 +115,9 @@ public sealed class ProviderMissionWorkflowServiceTests
         Assert.Equal(ProviderMissionRefusalReason.TooFar, assignment.RefusalReason);
         Assert.Equal("Le client est trop loin.", assignment.RefusalComment);
         Assert.NotNull(assignment.RespondedAt);
-        Assert.Equal(MissionStatus.Assigned, mission.Status);
+        Assert.Equal(MissionStatus.SearchingProvider, mission.Status);
+        Assert.Null(mission.ProviderId);
+        Assert.Null(mission.ProviderAcceptedAt);
     }
 
     [Fact]

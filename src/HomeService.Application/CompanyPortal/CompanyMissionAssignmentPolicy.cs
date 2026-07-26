@@ -7,7 +7,8 @@ public static class CompanyMissionAssignmentPolicy
         bool providerExists,
         bool providerIsApproved,
         bool providerCoversMissionService,
-        bool providerHasBlockingAssignment)
+        bool providerHasBlockingAssignment,
+        bool providerAlreadyRefusedMission = false)
     {
         if (!missionExists)
         {
@@ -27,6 +28,11 @@ public static class CompanyMissionAssignmentPolicy
         if (providerHasBlockingAssignment)
         {
             return CompanyMissionAssignmentPolicyResult.Invalid("Ce prestataire a deja une mission en attente ou en cours.");
+        }
+
+        if (providerAlreadyRefusedMission)
+        {
+            return CompanyMissionAssignmentPolicyResult.Invalid("Ce prestataire a deja refuse cette mission.");
         }
 
         return CompanyMissionAssignmentPolicyResult.Ok();

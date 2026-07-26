@@ -37,12 +37,22 @@ public sealed class CompanyMissionAssignmentService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
+        var refusedProviderIds = await db.ProviderMissionAssignments
+            .AsNoTracking()
+            .Where(assignment => assignment.CompanyId == companyId
+                && assignment.MissionId == missionId
+                && assignment.Status == ProviderMissionAssignmentStatus.Refused)
+            .Select(assignment => assignment.ProviderId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
         var providers = await db.Providers
             .AsNoTracking()
             .Where(provider => provider.CompanyId == companyId
                 && provider.Status == ProviderStatus.Approved
                 && provider.Services.Any(service => service.IsActive && service.ServiceId == mission.ServiceId)
-                && !busyProviderIds.Contains(provider.Id))
+                && !busyProviderIds.Contains(provider.Id)
+                && !refusedProviderIds.Contains(provider.Id))
             .OrderByDescending(provider => provider.IsAvailable)
             .ThenBy(provider => provider.LastName)
             .Select(provider => new CompanyPortalAssignableProviderResponse(
@@ -113,6 +123,11 @@ public sealed class CompanyMissionAssignmentService(
                 || assignment.Status == ProviderMissionAssignmentStatus.Accepted
                 || assignment.Status == ProviderMissionAssignmentStatus.Started),
             cancellationToken);
+        var alreadyRefusedThisMission = await db.ProviderMissionAssignments.AnyAsync(assignment =>
+            assignment.ProviderId == providerId
+            && assignment.MissionId == missionId
+            && assignment.Status == ProviderMissionAssignmentStatus.Refused,
+            cancellationToken);
 
         var providerService = mission is null || provider is null
             ? null
@@ -122,7 +137,8 @@ public sealed class CompanyMissionAssignmentService(
             provider is not null,
             provider?.Status == ProviderStatus.Approved,
             providerService is not null,
-            hasBlockingAssignment);
+            hasBlockingAssignment,
+            alreadyRefusedThisMission);
         if (!policy.IsValid)
         {
             return policy.IsNotFound

@@ -102,6 +102,90 @@ public sealed class CompanyMissionAssignmentNotificationTests
         Assert.Contains(result.Response!.AssignmentId.ToString(), notification.MetadataJson);
     }
 
+    [Fact]
+    public async Task AssignAsync_WhenProviderAlreadyRefusedMission_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedAssignableMissionAsync(db);
+        db.ProviderMissionAssignments.Add(new ProviderMissionAssignment(
+            scenario.Mission.Id,
+            scenario.Provider.Id,
+            scenario.Company.Id,
+            DateTimeOffset.UtcNow.AddMinutes(3)));
+        await db.SaveChangesAsync();
+        var refusedAssignment = await db.ProviderMissionAssignments.SingleAsync();
+        refusedAssignment.Refuse(ProviderMissionRefusalReason.Unavailable, "Pas disponible.");
+        await db.SaveChangesAsync();
+
+        var assignmentService = CreateAssignmentService(db);
+
+        var result = await assignmentService.AssignAsync(
+            scenario.Company.Id,
+            scenario.Mission.Id,
+            scenario.Provider.Id,
+            quotedAmount: 8_000,
+            overMaxJustification: null,
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("deja refuse", result.Message);
+    }
+
+    private static CompanyMissionAssignmentService CreateAssignmentService(HomeServiceDbContext db)
+    {
+        return new CompanyMissionAssignmentService(
+            db,
+            new MobilePushNotificationQueueService(db),
+            new NotificationDeliveryPreferenceService(db),
+            new NotificationTemplateService(db));
+    }
+
+    private static async Task<AssignableMissionScenario> SeedAssignableMissionAsync(HomeServiceDbContext db)
+    {
+        var company = new Company("CI Home Service", "+2250700000000", "contact@cihome.ci");
+        company.Approve();
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var service = new Service("Jardinage", "Entretien exterieur", null);
+        service.UpdatePriceRange(5_000, 12_000, "XOF");
+        var provider = new ProviderProfile(
+            company.Id,
+            "Malou",
+            "Diallo",
+            "+2250700000002",
+            "malou@example.ci",
+            new DateOnly(1994, 5, 10),
+            "Cocody",
+            ProviderGender.Male,
+            ProviderEmploymentType.CompanyEmployee,
+            6,
+            5.35m,
+            -4.02m,
+            5);
+        provider.Approve();
+        provider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)]);
+        var mission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            90,
+            description: "Taille de jardin",
+            requiresCompanyQuote: true);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+
+        db.Companies.Add(company);
+        db.Customers.Add(customer);
+        db.Services.Add(service);
+        db.Providers.Add(provider);
+        db.Missions.Add(mission);
+        await db.SaveChangesAsync();
+
+        return new AssignableMissionScenario(company, provider, mission);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
@@ -110,4 +194,9 @@ public sealed class CompanyMissionAssignmentNotificationTests
 
         return new HomeServiceDbContext(options);
     }
+
+    private sealed record AssignableMissionScenario(
+        Company Company,
+        ProviderProfile Provider,
+        Mission Mission);
 }

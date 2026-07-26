@@ -43,6 +43,16 @@ public sealed class CompanyMissionAssignmentPolicyTests
     }
 
     [Fact]
+    public void Validate_rejects_provider_who_already_refused_same_mission()
+    {
+        var result = CompanyMissionAssignmentPolicy.Validate(true, true, true, true, false, true);
+
+        Assert.False(result.IsValid);
+        Assert.False(result.IsNotFound);
+        Assert.Contains("deja refuse", result.Message);
+    }
+
+    [Fact]
     public void Validate_accepts_assignable_provider()
     {
         var result = CompanyMissionAssignmentPolicy.Validate(true, true, true, true, false);
