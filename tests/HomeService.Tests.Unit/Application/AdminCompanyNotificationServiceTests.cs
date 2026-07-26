@@ -1,4 +1,5 @@
 using HomeService.Application.Admin;
+using HomeService.Application.Auditing;
 using HomeService.Domain.Entities;
 using HomeService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +18,17 @@ public sealed class AdminCompanyNotificationServiceTests
         var result = await new AdminCompanyNotificationService(db).MarkReadAsync(
             notification.CompanyId,
             notification.Id,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "notification-read"),
             CancellationToken.None);
 
         Assert.Equal(AdminCompanyNotificationActionStatus.Ok, result.Status);
         Assert.False(result.PreviousIsRead);
         Assert.True(notification.IsRead);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminCompanyNotificationMarkedRead", audit.Action);
+        Assert.Equal(notification.Id, audit.EntityId);
+        Assert.Equal("notification-read", audit.CorrelationId);
     }
 
     [Fact]
@@ -35,11 +42,17 @@ public sealed class AdminCompanyNotificationServiceTests
         var result = await new AdminCompanyNotificationService(db).MarkUnreadAsync(
             notification.CompanyId,
             notification.Id,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "notification-unread"),
             CancellationToken.None);
 
         Assert.Equal(AdminCompanyNotificationActionStatus.Ok, result.Status);
         Assert.True(result.PreviousIsRead);
         Assert.False(notification.IsRead);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminCompanyNotificationMarkedUnread", audit.Action);
+        Assert.Equal(notification.Id, audit.EntityId);
+        Assert.Equal("notification-unread", audit.CorrelationId);
     }
 
     [Fact]
@@ -53,8 +66,9 @@ public sealed class AdminCompanyNotificationServiceTests
         var result = await new AdminCompanyNotificationService(db).ResendAsync(
             notification.CompanyId,
             notification.Id,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "notification-resend"),
             CancellationToken.None);
-        await db.SaveChangesAsync();
 
         Assert.Equal(AdminCompanyNotificationActionStatus.Ok, result.Status);
         var notifications = await db.CompanyPortalNotifications
@@ -64,6 +78,10 @@ public sealed class AdminCompanyNotificationServiceTests
         Assert.Equal(notification.Type, notifications[1].Type);
         Assert.Equal(notification.Title, notifications[1].Title);
         Assert.False(notifications[1].IsRead);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminCompanyNotificationResent", audit.Action);
+        Assert.Equal(notifications[1].Id, audit.EntityId);
+        Assert.Equal("notification-resend", audit.CorrelationId);
     }
 
     [Fact]

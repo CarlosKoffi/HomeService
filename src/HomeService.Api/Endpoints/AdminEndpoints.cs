@@ -962,10 +962,14 @@ public static class AdminEndpoints
             UpdateCompanyAssignmentModeRequest request,
             HttpRequest httpRequest,
             AdminConfigurationService configurationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await configurationService.UpdateCompanyAssignmentModeAsync(id, request, cancellationToken);
+            var result = await configurationService.UpdateCompanyAssignmentModeAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminConfigurationUpdateStatus.NotFound)
             {
                 return Results.NotFound();
@@ -976,19 +980,6 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = result.Message });
             }
         
-            var company = result.Company!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyAssignmentModeUpdated",
-                nameof(Company),
-                company.Id,
-                "Mode d'affectation entreprise modifie.",
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(result.Response);
         })
         .WithName("UpdateCompanyAssignmentMode");
@@ -998,10 +989,14 @@ public static class AdminEndpoints
             UpdateAdminCompanyDispatchSettingsRequest request,
             HttpRequest httpRequest,
             AdminConfigurationService configurationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await configurationService.UpdateCompanyDispatchSettingsAsync(id, request, cancellationToken);
+            var result = await configurationService.UpdateCompanyDispatchSettingsAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminConfigurationUpdateStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -1013,18 +1008,6 @@ public static class AdminEndpoints
             }
 
             var company = result.Company!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyDispatchSettingsUpdated",
-                nameof(Company),
-                company.Id,
-                "Parametres de reception des missions modifies.",
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
-
             return Results.Ok(new
             {
                 company.Id,
@@ -1041,10 +1024,14 @@ public static class AdminEndpoints
             AdminCompanyActionRequest? request,
             HttpRequest httpRequest,
             AdminCompanyOperationsService companyOperationsService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await companyOperationsService.SuspendAsync(id, cancellationToken);
+            var result = await companyOperationsService.SuspendAsync(
+                id,
+                request?.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminCompanyOperationStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -1054,21 +1041,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            var company = result.Company!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanySuspended",
-                nameof(Company),
-                company.Id,
-                string.IsNullOrWhiteSpace(request?.Note)
-                    ? "Entreprise suspendue par l'administration."
-                    : request.Note.Trim(),
-                result.PreviousStatus is null ? null : new { Status = result.PreviousStatus.ToString() },
-                new { company.Status });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.NoContent();
         })
@@ -1082,10 +1054,14 @@ public static class AdminEndpoints
             AdminCompanyActionRequest? request,
             HttpRequest httpRequest,
             AdminCompanyOperationsService companyOperationsService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await companyOperationsService.ReactivateAsync(id, cancellationToken);
+            var result = await companyOperationsService.ReactivateAsync(
+                id,
+                request?.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminCompanyOperationStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -1095,21 +1071,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            var company = result.Company!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyReactivated",
-                nameof(Company),
-                company.Id,
-                string.IsNullOrWhiteSpace(request?.Note)
-                    ? "Entreprise reactivee par l'administration."
-                    : request.Note.Trim(),
-                result.PreviousStatus is null ? null : new { Status = result.PreviousStatus.ToString() },
-                new { company.Status });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.NoContent();
         })
@@ -1123,27 +1084,18 @@ public static class AdminEndpoints
             Guid notificationId,
             HttpRequest httpRequest,
             AdminCompanyNotificationService notificationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await notificationService.MarkReadAsync(companyId, notificationId, cancellationToken);
+            var result = await notificationService.MarkReadAsync(
+                companyId,
+                notificationId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
             }
-
-            var notification = result.Notification!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyNotificationMarkedRead",
-                nameof(CompanyPortalNotification),
-                notification.Id,
-                "Notification entreprise marquee comme lue par l'administration.",
-                new { IsRead = result.PreviousIsRead },
-                new { notification.IsRead, notification.CompanyId });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.NoContent();
         })
@@ -1156,27 +1108,18 @@ public static class AdminEndpoints
             Guid notificationId,
             HttpRequest httpRequest,
             AdminCompanyNotificationService notificationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await notificationService.MarkUnreadAsync(companyId, notificationId, cancellationToken);
+            var result = await notificationService.MarkUnreadAsync(
+                companyId,
+                notificationId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
             }
-
-            var notification = result.Notification!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyNotificationMarkedUnread",
-                nameof(CompanyPortalNotification),
-                notification.Id,
-                "Notification entreprise remise en non lue par l'administration.",
-                new { IsRead = result.PreviousIsRead },
-                new { notification.IsRead, notification.CompanyId });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.NoContent();
         })
@@ -1189,27 +1132,18 @@ public static class AdminEndpoints
             Guid notificationId,
             HttpRequest httpRequest,
             AdminCompanyNotificationService notificationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await notificationService.ResendAsync(companyId, notificationId, cancellationToken);
+            var result = await notificationService.ResendAsync(
+                companyId,
+                notificationId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
             }
-
-            var notification = result.Notification!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCompanyNotificationResent",
-                nameof(CompanyPortalNotification),
-                notification.Id,
-                "Notification entreprise renvoyee sur le portail par l'administration.",
-                null,
-                new { notification.CompanyId, notification.Type, notification.Title, notification.IsRead });
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.NoContent();
         })

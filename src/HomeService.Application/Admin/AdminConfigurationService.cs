@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Application.Branding;
 using HomeService.Application.Companies;
 using HomeService.Contracts.Admin;
@@ -91,6 +92,14 @@ public sealed class AdminConfigurationService(IAppDbContext db)
         Guid companyId,
         UpdateCompanyAssignmentModeRequest request,
         CancellationToken cancellationToken)
+        => await UpdateCompanyAssignmentModeAsync(companyId, request, null, null, cancellationToken);
+
+    public async Task<AdminCompanyAssignmentModeUpdateResult> UpdateCompanyAssignmentModeAsync(
+        Guid companyId,
+        UpdateCompanyAssignmentModeRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId, cancellationToken);
         if (company is null)
@@ -105,17 +114,37 @@ public sealed class AdminConfigurationService(IAppDbContext db)
 
         var previousMode = company.AssignmentMode;
         company.ChangeAssignmentMode(assignmentMode);
+        var before = new { AssignmentMode = previousMode };
+        var after = new { company.AssignmentMode };
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyAssignmentModeUpdated",
+            nameof(Company),
+            company.Id,
+            "Mode d'affectation entreprise modifie.",
+            before,
+            after);
+        await db.SaveChangesAsync(cancellationToken);
 
         return AdminCompanyAssignmentModeUpdateResult.Ok(
             company,
-            new { AssignmentMode = previousMode },
-            new { company.AssignmentMode },
+            before,
+            after,
             CompanyAssignmentModePresenter.ToResponse(company));
     }
 
     public async Task<AdminCompanyDispatchSettingsUpdateResult> UpdateCompanyDispatchSettingsAsync(
         Guid companyId,
         UpdateAdminCompanyDispatchSettingsRequest request,
+        CancellationToken cancellationToken)
+        => await UpdateCompanyDispatchSettingsAsync(companyId, request, null, null, cancellationToken);
+
+    public async Task<AdminCompanyDispatchSettingsUpdateResult> UpdateCompanyDispatchSettingsAsync(
+        Guid companyId,
+        UpdateAdminCompanyDispatchSettingsRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId, cancellationToken);
@@ -142,6 +171,16 @@ public sealed class AdminConfigurationService(IAppDbContext db)
             company.MissionDispatchPriority,
             company.AcceptsUrgentMissions
         };
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyDispatchSettingsUpdated",
+            nameof(Company),
+            company.Id,
+            "Parametres de reception des missions modifies.",
+            before,
+            after);
+        await db.SaveChangesAsync(cancellationToken);
 
         return AdminCompanyDispatchSettingsUpdateResult.Ok(company, before, after);
     }
@@ -149,6 +188,32 @@ public sealed class AdminConfigurationService(IAppDbContext db)
     private static bool TryParseCompanyAssignmentMode(string? value, out CompanyAssignmentMode assignmentMode)
     {
         return Enum.TryParse(value?.Trim(), true, out assignmentMode);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        string entityType,
+        Guid? entityId,
+        string summary,
+        object? before = null,
+        object? after = null)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            entityType,
+            entityId,
+            summary,
+            auditContext,
+            before,
+            after));
     }
 }
 

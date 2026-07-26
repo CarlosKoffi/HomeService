@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,14 @@ public sealed class AdminCompanyNotificationService(IAppDbContext db)
         Guid companyId,
         Guid notificationId,
         CancellationToken cancellationToken)
+        => await MarkReadAsync(companyId, notificationId, null, null, cancellationToken);
+
+    public async Task<AdminCompanyNotificationActionResult> MarkReadAsync(
+        Guid companyId,
+        Guid notificationId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var notification = await FindAsync(companyId, notificationId, cancellationToken);
         if (notification is null)
@@ -19,12 +28,29 @@ public sealed class AdminCompanyNotificationService(IAppDbContext db)
 
         var previousIsRead = notification.IsRead;
         notification.MarkRead();
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyNotificationMarkedRead",
+            "Notification entreprise marquee comme lue par l'administration.",
+            notification,
+            previousIsRead);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyNotificationActionResult.Ok(notification, previousIsRead);
     }
 
     public async Task<AdminCompanyNotificationActionResult> MarkUnreadAsync(
         Guid companyId,
         Guid notificationId,
+        CancellationToken cancellationToken)
+        => await MarkUnreadAsync(companyId, notificationId, null, null, cancellationToken);
+
+    public async Task<AdminCompanyNotificationActionResult> MarkUnreadAsync(
+        Guid companyId,
+        Guid notificationId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var notification = await FindAsync(companyId, notificationId, cancellationToken);
@@ -35,12 +61,29 @@ public sealed class AdminCompanyNotificationService(IAppDbContext db)
 
         var previousIsRead = notification.IsRead;
         notification.MarkUnread();
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyNotificationMarkedUnread",
+            "Notification entreprise remise en non lue par l'administration.",
+            notification,
+            previousIsRead);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyNotificationActionResult.Ok(notification, previousIsRead);
     }
 
     public async Task<AdminCompanyNotificationActionResult> ResendAsync(
         Guid companyId,
         Guid notificationId,
+        CancellationToken cancellationToken)
+        => await ResendAsync(companyId, notificationId, null, null, cancellationToken);
+
+    public async Task<AdminCompanyNotificationActionResult> ResendAsync(
+        Guid companyId,
+        Guid notificationId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var notification = await FindAsync(companyId, notificationId, cancellationToken);
@@ -60,6 +103,15 @@ public sealed class AdminCompanyNotificationService(IAppDbContext db)
             notification.ActionUrl);
 
         db.CompanyPortalNotifications.Add(copy);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyNotificationResent",
+            "Notification entreprise renvoyee sur le portail par l'administration.",
+            copy,
+            previousIsRead: null);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyNotificationActionResult.Ok(copy, previousIsRead: false);
     }
 
@@ -70,6 +122,36 @@ public sealed class AdminCompanyNotificationService(IAppDbContext db)
     {
         return await db.CompanyPortalNotifications
             .FirstOrDefaultAsync(notification => notification.Id == notificationId && notification.CompanyId == companyId, cancellationToken);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        string summary,
+        CompanyPortalNotification notification,
+        bool? previousIsRead)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(CompanyPortalNotification),
+            notification.Id,
+            summary,
+            auditContext,
+            previousIsRead is null ? null : new { IsRead = previousIsRead },
+            new
+            {
+                notification.CompanyId,
+                notification.Type,
+                notification.Title,
+                notification.IsRead
+            }));
     }
 }
 

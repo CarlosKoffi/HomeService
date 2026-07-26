@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,14 @@ namespace HomeService.Application.Admin;
 public sealed class AdminCompanyOperationsService(IAppDbContext db)
 {
     public async Task<AdminCompanyOperationResult> SuspendAsync(Guid companyId, CancellationToken cancellationToken)
+        => await SuspendAsync(companyId, null, null, null, cancellationToken);
+
+    public async Task<AdminCompanyOperationResult> SuspendAsync(
+        Guid companyId,
+        string? note,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId, cancellationToken);
         if (company is null)
@@ -22,10 +31,27 @@ public sealed class AdminCompanyOperationsService(IAppDbContext db)
 
         var previousStatus = company.Status;
         company.Suspend();
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanySuspended",
+            company,
+            string.IsNullOrWhiteSpace(note) ? "Entreprise suspendue par l'administration." : note.Trim(),
+            previousStatus);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyOperationResult.Ok(company, previousStatus);
     }
 
     public async Task<AdminCompanyOperationResult> ReactivateAsync(Guid companyId, CancellationToken cancellationToken)
+        => await ReactivateAsync(companyId, null, null, null, cancellationToken);
+
+    public async Task<AdminCompanyOperationResult> ReactivateAsync(
+        Guid companyId,
+        string? note,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var company = await db.Companies.FirstOrDefaultAsync(company => company.Id == companyId, cancellationToken);
         if (company is null)
@@ -40,7 +66,40 @@ public sealed class AdminCompanyOperationsService(IAppDbContext db)
 
         var previousStatus = company.Status;
         company.Approve();
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyReactivated",
+            company,
+            string.IsNullOrWhiteSpace(note) ? "Entreprise reactivee par l'administration." : note.Trim(),
+            previousStatus);
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyOperationResult.Ok(company, previousStatus);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        Company company,
+        string summary,
+        CompanyStatus previousStatus)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(Company),
+            company.Id,
+            summary,
+            auditContext,
+            before: new { Status = previousStatus.ToString() },
+            after: new { company.Status }));
     }
 }
 
