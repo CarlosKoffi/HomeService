@@ -88,6 +88,53 @@ public sealed class AdminMissionDisputeServiceTests
     }
 
     [Fact]
+    public async Task ResolveAsync_WhenRefundExceedsMissionAmount_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedMissionAsync(db);
+        var sut = CreateService(db);
+        await sut.OpenAsync(mission.Id, "Other", "Montant conteste", AuditActor.Admin(), null, CancellationToken.None);
+
+        var result = await sut.ResolveAsync(
+            mission.Id,
+            "PartialRefund",
+            "Montant trop eleve",
+            null,
+            3_000,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        var dispute = await db.MissionDisputes.SingleAsync();
+        Assert.Equal(AdminMissionOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal(MissionStatus.Disputed, mission.Status);
+        Assert.Equal(MissionDisputeStatus.Open, dispute.Status);
+        Assert.Empty(await db.MissionFinancialBreakdowns.ToListAsync());
+    }
+
+    [Fact]
+    public async Task ResolveAsync_WhenRefundResolutionHasNoAmount_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedMissionAsync(db);
+        var sut = CreateService(db);
+        await sut.OpenAsync(mission.Id, "Other", "Remboursement demande", AuditActor.Admin(), null, CancellationToken.None);
+
+        var result = await sut.ResolveAsync(
+            mission.Id,
+            "PartialRefund",
+            "Il faut une valeur de remboursement",
+            null,
+            null,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal(MissionStatus.Disputed, mission.Status);
+    }
+
+    [Fact]
     public async Task ResolveAsync_WhenNoOpenDispute_IsRejected()
     {
         await using var db = CreateDbContext();
