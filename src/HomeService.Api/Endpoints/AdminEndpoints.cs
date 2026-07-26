@@ -642,29 +642,20 @@ public static class AdminEndpoints
             CreateAdminRoleRequest request,
             HttpRequest httpRequest,
             AdminAccessControlService accessControlService,
-            AdminQueryService queryService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await accessControlService.CreateRoleAsync(request, cancellationToken);
+            var result = await accessControlService.CreateRoleAsync(
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminAccessControlError(result);
             if (error is not null)
             {
                 return error;
             }
 
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminRoleCreated",
-                "AdminRole",
-                null,
-                $"Role admin cree: {request.Name}.",
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
-
-            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+            return Results.Ok(result.Snapshot);
         })
         .WithName("CreateAdminRole");
 
@@ -673,29 +664,21 @@ public static class AdminEndpoints
             UpdateAdminRolePermissionsRequest request,
             HttpRequest httpRequest,
             AdminAccessControlService accessControlService,
-            AdminQueryService queryService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await accessControlService.UpdateRolePermissionsAsync(roleId, request, cancellationToken);
+            var result = await accessControlService.UpdateRolePermissionsAsync(
+                roleId,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminAccessControlError(result);
             if (error is not null)
             {
                 return error;
             }
 
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminRolePermissionsUpdated",
-                "AdminRole",
-                roleId,
-                "Permissions du role admin modifiees.",
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
-
-            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+            return Results.Ok(result.Snapshot);
         })
         .WithName("UpdateAdminRolePermissions");
 
@@ -703,29 +686,20 @@ public static class AdminEndpoints
             CreateAdminUserRequest request,
             HttpRequest httpRequest,
             AdminAccessControlService accessControlService,
-            AdminQueryService queryService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await accessControlService.CreateAdminUserAsync(request, cancellationToken);
+            var result = await accessControlService.CreateAdminUserAsync(
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminAccessControlError(result);
             if (error is not null)
             {
                 return error;
             }
 
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminUserInvited",
-                "AdminUser",
-                null,
-                $"Admin invite: {request.Email}.",
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
-
-            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+            return Results.Ok(result.Snapshot);
         })
         .WithName("CreateAdminUser");
 
@@ -734,29 +708,21 @@ public static class AdminEndpoints
             UpdateAdminUserRolesRequest request,
             HttpRequest httpRequest,
             AdminAccessControlService accessControlService,
-            AdminQueryService queryService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await accessControlService.UpdateAdminUserRolesAsync(adminUserId, request, cancellationToken);
+            var result = await accessControlService.UpdateAdminUserRolesAsync(
+                adminUserId,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminAccessControlError(result);
             if (error is not null)
             {
                 return error;
             }
 
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminUserRolesUpdated",
-                "AdminUser",
-                adminUserId,
-                "Roles de l'admin modifies.",
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
-
-            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+            return Results.Ok(result.Snapshot);
         })
         .WithName("UpdateAdminUserRoles");
 
@@ -764,28 +730,20 @@ public static class AdminEndpoints
             Guid adminUserId,
             HttpRequest httpRequest,
             AdminAccessControlService accessControlService,
-            AdminQueryService queryService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await accessControlService.DeactivateAdminUserAsync(adminUserId, cancellationToken);
+            var result = await accessControlService.DeactivateAdminUserAsync(
+                adminUserId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminAccessControlError(result);
             if (error is not null)
             {
                 return error;
             }
 
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminUserDeactivated",
-                "AdminUser",
-                adminUserId,
-                "Admin desactive.");
-            await db.SaveChangesAsync(cancellationToken);
-
-            return Results.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+            return Results.Ok(result.Snapshot);
         })
         .WithName("DeactivateAdminUser");
 

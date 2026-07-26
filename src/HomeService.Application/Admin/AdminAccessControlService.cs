@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Contracts.Admin;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -9,6 +10,13 @@ namespace HomeService.Application.Admin;
 public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryService queryService)
 {
     public async Task<AdminAccessControlResult> CreateRoleAsync(CreateAdminRoleRequest request, CancellationToken cancellationToken)
+        => await CreateRoleAsync(request, null, null, cancellationToken);
+
+    public async Task<AdminAccessControlResult> CreateRoleAsync(
+        CreateAdminRoleRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var name = request.Name.Trim();
         var description = request.Description.Trim();
@@ -29,13 +37,31 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
             return AdminAccessControlResult.ValidationFailed("Un role avec ce nom existe deja.");
         }
 
-        db.AdminRoles.Add(new AdminRole(name, description));
-        return await SnapshotAsync(cancellationToken);
+        var role = new AdminRole(name, description);
+        db.AdminRoles.Add(role);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminRoleCreated",
+            nameof(AdminRole),
+            role.Id,
+            $"Role admin cree: {name}.",
+            after: request);
+
+        return await SaveAndSnapshotAsync(cancellationToken);
     }
 
     public async Task<AdminAccessControlResult> UpdateRolePermissionsAsync(
         Guid roleId,
         UpdateAdminRolePermissionsRequest request,
+        CancellationToken cancellationToken)
+        => await UpdateRolePermissionsAsync(roleId, request, null, null, cancellationToken);
+
+    public async Task<AdminAccessControlResult> UpdateRolePermissionsAsync(
+        Guid roleId,
+        UpdateAdminRolePermissionsRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var roleExists = await db.AdminRoles.AnyAsync(role => role.Id == roleId, cancellationToken);
@@ -69,16 +95,35 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
         var existingPermissions = await db.AdminRolePermissions
             .Where(permission => permission.RoleId == roleId)
             .ToListAsync(cancellationToken);
+        var before = existingPermissions
+            .Select(permission => new { permission.ModuleId, permission.Action })
+            .ToList();
 
         db.AdminRolePermissions.RemoveRange(existingPermissions);
         db.AdminRolePermissions.AddRange(parsedPermissions
             .GroupBy(permission => new { permission.ModuleId, permission.Action })
             .Select(group => group.First()));
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminRolePermissionsUpdated",
+            nameof(AdminRole),
+            roleId,
+            "Permissions du role admin modifiees.",
+            before,
+            request);
 
-        return await SnapshotAsync(cancellationToken);
+        return await SaveAndSnapshotAsync(cancellationToken);
     }
 
     public async Task<AdminAccessControlResult> CreateAdminUserAsync(CreateAdminUserRequest request, CancellationToken cancellationToken)
+        => await CreateAdminUserAsync(request, null, null, cancellationToken);
+
+    public async Task<AdminAccessControlResult> CreateAdminUserAsync(
+        CreateAdminUserRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var fullName = request.FullName.Trim();
         var email = request.Email.Trim().ToLowerInvariant();
@@ -113,12 +158,29 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
             db.AdminUserRoles.Add(new AdminUserRole(admin.Id, roleId));
         }
 
-        return await SnapshotAsync(cancellationToken);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminUserInvited",
+            nameof(AdminUser),
+            admin.Id,
+            $"Admin invite: {email}.",
+            after: request);
+
+        return await SaveAndSnapshotAsync(cancellationToken);
     }
 
     public async Task<AdminAccessControlResult> UpdateAdminUserRolesAsync(
         Guid adminUserId,
         UpdateAdminUserRolesRequest request,
+        CancellationToken cancellationToken)
+        => await UpdateAdminUserRolesAsync(adminUserId, request, null, null, cancellationToken);
+
+    public async Task<AdminAccessControlResult> UpdateAdminUserRolesAsync(
+        Guid adminUserId,
+        UpdateAdminUserRolesRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Id == adminUserId, cancellationToken);
@@ -136,14 +198,31 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
         var existingRoles = await db.AdminUserRoles
             .Where(role => role.AdminUserId == adminUserId)
             .ToListAsync(cancellationToken);
+        var before = existingRoles.Select(role => role.RoleId).ToList();
 
         db.AdminUserRoles.RemoveRange(existingRoles);
         db.AdminUserRoles.AddRange(validRoleIds.Distinct().Select(roleId => new AdminUserRole(adminUserId, roleId)));
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminUserRolesUpdated",
+            nameof(AdminUser),
+            adminUserId,
+            "Roles de l'admin modifies.",
+            before,
+            request);
 
-        return await SnapshotAsync(cancellationToken);
+        return await SaveAndSnapshotAsync(cancellationToken);
     }
 
     public async Task<AdminAccessControlResult> DeactivateAdminUserAsync(Guid adminUserId, CancellationToken cancellationToken)
+        => await DeactivateAdminUserAsync(adminUserId, null, null, cancellationToken);
+
+    public async Task<AdminAccessControlResult> DeactivateAdminUserAsync(
+        Guid adminUserId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Id == adminUserId, cancellationToken);
         if (admin is null)
@@ -151,8 +230,19 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
             return AdminAccessControlResult.NotFound("L'admin n'existe plus.");
         }
 
+        var before = new { admin.Id, admin.Email, admin.IsActive };
         admin.Deactivate();
-        return await SnapshotAsync(cancellationToken);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminUserDeactivated",
+            nameof(AdminUser),
+            adminUserId,
+            "Admin desactive.",
+            before,
+            new { admin.Id, admin.Email, admin.IsActive });
+
+        return await SaveAndSnapshotAsync(cancellationToken);
     }
 
     private async Task<List<Guid>> GetValidRoleIdsAsync(IReadOnlyList<Guid> roleIds, CancellationToken cancellationToken)
@@ -166,6 +256,38 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
     private async Task<AdminAccessControlResult> SnapshotAsync(CancellationToken cancellationToken)
     {
         return AdminAccessControlResult.Ok(await queryService.GetAccessSnapshotAsync(cancellationToken));
+    }
+
+    private async Task<AdminAccessControlResult> SaveAndSnapshotAsync(CancellationToken cancellationToken)
+    {
+        await db.SaveChangesAsync(cancellationToken);
+        return await SnapshotAsync(cancellationToken);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        string entityType,
+        Guid? entityId,
+        string summary,
+        object? before = null,
+        object? after = null)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            entityType,
+            entityId,
+            summary,
+            auditContext,
+            before,
+            after));
     }
 }
 
