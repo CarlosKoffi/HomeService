@@ -54,6 +54,48 @@ public sealed class NotificationTemplateServiceTests
     }
 
     [Fact]
+    public async Task AdminTemplateService_ListAsync_ShouldCreateDeliveryRulesMatchingEveryTemplateEvent()
+    {
+        await using var db = CreateDbContext();
+
+        var templates = await new AdminNotificationTemplateService(db).ListAsync(CancellationToken.None);
+        var rules = await db.NotificationDeliveryRules
+            .AsNoTracking()
+            .ToDictionaryAsync(rule => rule.EventKey, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in templates.GroupBy(template => template.EventKey, StringComparer.OrdinalIgnoreCase))
+        {
+            Assert.True(rules.TryGetValue(group.Key, out var rule), $"Missing delivery rule for {group.Key}.");
+
+            foreach (var template in group)
+            {
+                Assert.Equal(template.Label, rule!.Label);
+                Assert.Equal(template.Audience, rule.Audience);
+
+                if (template.Channel == NotificationTemplateChannel.Portal.ToString())
+                {
+                    Assert.True(rule.PortalEnabled, $"Portal delivery is disabled for {template.EventKey}.");
+                }
+
+                if (template.Channel == NotificationTemplateChannel.MobilePush.ToString())
+                {
+                    Assert.True(rule.MobileAppEnabled, $"Mobile delivery is disabled for {template.EventKey}.");
+                }
+
+                if (template.Channel == NotificationTemplateChannel.Email.ToString())
+                {
+                    Assert.True(rule.EmailEnabled, $"Email delivery is disabled for {template.EventKey}.");
+                }
+
+                if (template.Channel == NotificationTemplateChannel.WhatsApp.ToString())
+                {
+                    Assert.True(rule.WhatsAppEnabled, $"WhatsApp delivery is disabled for {template.EventKey}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
     public async Task AdminTemplateService_CreateAsync_WhenDuplicateEventAndChannel_ReturnsConflict()
     {
         await using var db = CreateDbContext();
