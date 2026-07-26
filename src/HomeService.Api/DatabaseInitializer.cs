@@ -18,8 +18,8 @@ public static class DatabaseInitializer
         await EnsureMissionNumbersAsync(db, cancellationToken);
         await EnsureProviderServiceSchemaAsync(db, cancellationToken);
         await EnsureNotificationDeliveryRulesAsync(db, cancellationToken);
-        await EnsureNotificationTemplatesAsync(db, cancellationToken);
         await EnsureNotificationDeliveryRulesFromCatalogAsync(db, cancellationToken);
+        await EnsureNotificationTemplatesAsync(db, cancellationToken);
         await EnsureDefaultCommissionRulesAsync(db, cancellationToken);
         await NormalizeCatalogNamesAsync(db, cancellationToken);
         await SeedCountriesAsync(db, cancellationToken);

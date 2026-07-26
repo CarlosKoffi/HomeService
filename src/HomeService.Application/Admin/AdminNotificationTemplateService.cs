@@ -113,6 +113,8 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
 
     private async Task EnsureDefaultsAsync(CancellationToken cancellationToken)
     {
+        await EnsureDeliveryRulesFromCatalogAsync(cancellationToken);
+
         var existing = await db.NotificationTemplates
             .Select(template => new { template.EventKey, template.Channel })
             .ToListAsync(cancellationToken);
@@ -141,6 +143,36 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
                     seed.AvailableVariables));
                 hasAdded = true;
             }
+        }
+
+        if (hasAdded)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private async Task EnsureDeliveryRulesFromCatalogAsync(CancellationToken cancellationToken)
+    {
+        var existingKeys = await db.NotificationDeliveryRules
+            .Select(rule => rule.EventKey)
+            .ToListAsync(cancellationToken);
+        var existing = existingKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var hasAdded = false;
+        foreach (var seed in NotificationTemplateCatalog.Defaults.Where(seed => !existing.Contains(seed.EventKey)))
+        {
+            var normalized = NormalizeChannels(seed.Audience);
+            db.NotificationDeliveryRules.Add(new NotificationDeliveryRule(
+                seed.EventKey,
+                seed.Label,
+                seed.Audience,
+                normalized.PortalEnabled,
+                normalized.MobileAppEnabled,
+                seed.Channels.Contains(NotificationTemplateChannel.Email),
+                seed.Channels.Contains(NotificationTemplateChannel.WhatsApp),
+                seed.SubjectTemplate,
+                seed.BodyTemplate));
+            hasAdded = true;
         }
 
         if (hasAdded)

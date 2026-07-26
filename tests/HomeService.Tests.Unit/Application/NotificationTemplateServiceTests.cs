@@ -41,6 +41,8 @@ public sealed class NotificationTemplateServiceTests
         Assert.Contains(templates, template => template.EventKey == "MissionCompleted" && template.Channel == "MobilePush");
         Assert.Contains(templates, template => template.EventKey == "MissionCompleted" && template.Channel == "Email");
         Assert.Contains(templates, template => template.EventKey == "MissionCompleted" && template.Channel == "WhatsApp");
+        Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionCompleted"));
+        Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "CompanyApplicationApproved"));
     }
 
     [Fact]
