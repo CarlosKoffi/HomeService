@@ -15,7 +15,8 @@ public sealed class MobilePushNotificationQueueService(IAppDbContext db)
         string? relatedEntityType,
         Guid? relatedEntityId,
         string? metadataJson,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool saveChanges = true)
     {
         var tokens = await db.MobileDeviceTokens
             .AsNoTracking()
@@ -35,7 +36,11 @@ public sealed class MobilePushNotificationQueueService(IAppDbContext db)
                 metadataJson));
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        if (saveChanges)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         return tokens.Count;
     }
 }

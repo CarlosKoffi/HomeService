@@ -141,6 +141,7 @@
                         <span>@TranslateAudience(rule.Audience)</span>
                         <strong>@rule.Label</strong>
                         <small>@rule.EventKey</small>
+                        <small>Variables: {NomEntreprise}, {NomPrestataire}, {Service}, {DescriptionService}, {NumeroMission}</small>
                     </div>
                     <div class="notification-channel-grid">
                         <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company" || rule.Audience == "Mixed")">
@@ -170,6 +171,18 @@
                                    @onchange='eventArgs => ToggleRuleChannelAsync(rule, "WhatsApp", eventArgs)' />
                             <span>WhatsApp</span>
                             <small>Configurable</small>
+                        </label>
+                    </div>
+                    <div class="notification-template-editor">
+                        <label>
+                            Sujet
+                            <input value="@rule.SubjectTemplate"
+                                   @onchange="eventArgs => UpdateRuleTemplateAsync(rule, eventArgs.Value?.ToString(), rule.BodyTemplate)" />
+                        </label>
+                        <label>
+                            Message
+                            <textarea rows="2"
+                                      @onchange="eventArgs => UpdateRuleTemplateAsync(rule, rule.SubjectTemplate, eventArgs.Value?.ToString())">@rule.BodyTemplate</textarea>
                         </label>
                     </div>
                 </article>
@@ -595,6 +608,33 @@
         }
     }
 
+    private async Task UpdateRuleTemplateAsync(NotificationDeliveryRuleResponse rule, string? subjectTemplate, string? bodyTemplate)
+    {
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var updated = await ApiClient.UpdateNotificationDeliveryRuleAsync(
+                rule.Id,
+                ToRuleRequest(rule, subjectTemplate: subjectTemplate, bodyTemplate: bodyTemplate));
+            if (updated is not null)
+            {
+                var index = DeliveryRules.FindIndex(item => item.Id == rule.Id);
+                if (index >= 0)
+                {
+                    DeliveryRules[index] = updated;
+                }
+            }
+
+            SuccessMessage = "Texte de notification mis a jour.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Modification du texte impossible. Detail: {exception.Message}";
+        }
+    }
+
     private async Task RunNotificationActionAsync(
         Guid notificationId,
         Func<Task<NotificationOutboxMessageResponse?>> action,
@@ -825,7 +865,9 @@
         bool? portalEnabled = null,
         bool? mobileAppEnabled = null,
         bool? emailEnabled = null,
-        bool? whatsAppEnabled = null)
+        bool? whatsAppEnabled = null,
+        string? subjectTemplate = null,
+        string? bodyTemplate = null)
     {
         return new UpdateNotificationDeliveryRuleRequest(
             rule.Label,
@@ -833,6 +875,8 @@
             portalEnabled ?? rule.PortalEnabled,
             mobileAppEnabled ?? rule.MobileAppEnabled,
             emailEnabled ?? rule.EmailEnabled,
-            whatsAppEnabled ?? rule.WhatsAppEnabled);
+            whatsAppEnabled ?? rule.WhatsAppEnabled,
+            subjectTemplate ?? rule.SubjectTemplate,
+            bodyTemplate ?? rule.BodyTemplate);
     }
 }

@@ -9,6 +9,8 @@ public sealed record NotificationDeliveryRuleResponse(
     bool MobileAppEnabled,
     bool EmailEnabled,
     bool WhatsAppEnabled,
+    string? SubjectTemplate,
+    string? BodyTemplate,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt);
 
@@ -18,4 +20,6 @@ public sealed record UpdateNotificationDeliveryRuleRequest(
     bool PortalEnabled,
     bool MobileAppEnabled,
     bool EmailEnabled,
-    bool WhatsAppEnabled);
+    bool WhatsAppEnabled,
+    string? SubjectTemplate,
+    string? BodyTemplate);

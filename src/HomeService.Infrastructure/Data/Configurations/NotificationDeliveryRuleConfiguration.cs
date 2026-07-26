@@ -12,6 +12,8 @@ public sealed class NotificationDeliveryRuleConfiguration : IEntityTypeConfigura
         builder.Property(rule => rule.EventKey).HasMaxLength(96).IsRequired();
         builder.Property(rule => rule.Label).HasMaxLength(180).IsRequired();
         builder.Property(rule => rule.Audience).HasMaxLength(32).IsRequired();
+        builder.Property(rule => rule.SubjectTemplate).HasMaxLength(180);
+        builder.Property(rule => rule.BodyTemplate).HasMaxLength(2000);
         builder.HasIndex(rule => rule.EventKey).IsUnique();
         builder.HasIndex(rule => new { rule.Audience, rule.EventKey });
     }

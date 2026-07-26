@@ -1,14 +1,20 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace HomeService.Application.CompanyPortal;
 
-public sealed class CompanyMissionAssignmentService(IAppDbContext db)
+public sealed class CompanyMissionAssignmentService(
+    IAppDbContext db,
+    MobilePushNotificationQueueService mobilePushNotifications,
+    NotificationDeliveryPreferenceService notificationPreferences)
 {
     private static readonly TimeSpan AssignmentAcceptanceWindow = TimeSpan.FromMinutes(3);
+    private const string MissionAssignedToProviderEventKey = "MissionAssignedToProvider";
 
     public async Task<CompanyAssignableProvidersResult> ListAssignableProvidersAsync(Guid companyId, Guid missionId, CancellationToken cancellationToken)
     {
@@ -95,6 +101,7 @@ public sealed class CompanyMissionAssignmentService(IAppDbContext db)
     {
         var mission = await db.Missions.FirstOrDefaultAsync(mission => mission.Id == missionId && mission.CompanyId == companyId, cancellationToken);
         var provider = await db.Providers
+            .Include(provider => provider.Company)
             .Include(provider => provider.Services)
                 .ThenInclude(service => service.Service)
             .FirstOrDefaultAsync(provider => provider.Id == providerId && provider.CompanyId == companyId, cancellationToken);
@@ -148,6 +155,14 @@ public sealed class CompanyMissionAssignmentService(IAppDbContext db)
             nameof(Mission),
             validMission.Id));
 
+        await QueueProviderMissionPushAsync(
+            validMission,
+            validProvider,
+            validProviderService.Service!,
+            assignment,
+            companyId,
+            cancellationToken);
+
         await db.SaveChangesAsync(cancellationToken);
 
         return CompanyMissionAssignmentResult.Ok(new AssignCompanyMissionResponse(
@@ -156,6 +171,67 @@ public sealed class CompanyMissionAssignmentService(IAppDbContext db)
             assignment.Id,
             assignment.Status.ToString(),
             assignment.ExpiresAt));
+    }
+
+    private async Task QueueProviderMissionPushAsync(
+        Mission mission,
+        ProviderProfile provider,
+        Service service,
+        ProviderMissionAssignment assignment,
+        Guid companyId,
+        CancellationToken cancellationToken)
+    {
+        var preference = await notificationPreferences.GetAsync(
+            MissionAssignedToProviderEventKey,
+            "Provider",
+            defaultEmailEnabled: false,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+
+        if (!preference.MobileAppEnabled)
+        {
+            return;
+        }
+
+        var variables = NotificationTemplateRenderer.Variables(
+            ("NomPrestataire", provider.FullName),
+            ("Service", service.Name),
+            ("DescriptionService", service.Description),
+            ("NumeroMission", mission.MissionNumber),
+            ("NomEntreprise", provider.Company?.Name),
+            ("DelaiMinutes", ((int)AssignmentAcceptanceWindow.TotalMinutes).ToString("N0")),
+            ("DateExpiration", assignment.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")));
+
+        var title = NotificationTemplateRenderer.Render(
+            preference.SubjectTemplate,
+            "Nouvelle mission disponible",
+            variables);
+        var body = NotificationTemplateRenderer.Render(
+            preference.BodyTemplate,
+            "Mission {Service} a accepter avant la fin du delai.",
+            variables);
+
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Provider,
+            provider.Id,
+            title,
+            body,
+            nameof(ProviderMissionAssignment),
+            assignment.Id,
+            JsonSerializer.Serialize(new
+            {
+                type = "provider_mission_offer",
+                missionId = mission.Id,
+                missionNumber = mission.MissionNumber,
+                assignmentId = assignment.Id,
+                serviceId = mission.ServiceId,
+                serviceName = service.Name,
+                servicePrestationId = mission.ServicePrestationId,
+                companyId,
+                expiresAt = assignment.ExpiresAt
+            }),
+            cancellationToken,
+            saveChanges: false);
     }
 }
 

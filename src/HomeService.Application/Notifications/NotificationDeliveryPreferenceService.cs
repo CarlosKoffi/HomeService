@@ -24,7 +24,9 @@ public sealed class NotificationDeliveryPreferenceService(IAppDbContext db)
             IsPortalAutomatic(normalizedAudience),
             IsMobileAppAutomatic(normalizedAudience),
             emailEnabled,
-            whatsAppEnabled);
+            whatsAppEnabled,
+            rule?.SubjectTemplate,
+            rule?.BodyTemplate);
     }
 
     public static bool IsPortalAutomatic(string audience)
@@ -49,4 +51,6 @@ public sealed record NotificationDeliveryPreference(
     bool PortalEnabled,
     bool MobileAppEnabled,
     bool EmailEnabled,
-    bool WhatsAppEnabled);
+    bool WhatsAppEnabled,
+    string? SubjectTemplate = null,
+    string? BodyTemplate = null);

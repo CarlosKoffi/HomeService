@@ -2576,6 +2576,45 @@ h3 {
     opacity: .55;
 }
 
+.notification-template-editor {
+    display: grid;
+    gap: .7rem;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(220px, .35fr) minmax(280px, 1fr);
+}
+
+.notification-template-editor label {
+    color: #64748b;
+    display: grid;
+    font-size: .72rem;
+    font-weight: 900;
+    gap: .35rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.notification-template-editor input,
+.notification-template-editor textarea {
+    background: #f8fafc;
+    border: 1px solid #dbe4f0;
+    border-radius: 14px;
+    color: #000;
+    font: inherit;
+    font-size: .86rem;
+    font-weight: 750;
+    letter-spacing: 0;
+    outline: none;
+    padding: .72rem .85rem;
+    resize: vertical;
+    text-transform: none;
+}
+
+.notification-template-editor input:focus,
+.notification-template-editor textarea:focus {
+    border-color: #1a6aff;
+    box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
+}
+
 .notification-command-center {
     display: grid;
     gap: .85rem;

@@ -73,6 +73,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 048 | `048_add_mission_disputes.sql` | Structured mission disputes |
 | 049 | `049_add_mission_dispute_refund_decision.sql` | Admin dispute refund decision fields |
 | 050 | `050_add_mobile_device_tokens.sql` | Mobile Firebase device tokens |
+| 051 | `051_add_notification_delivery_templates.sql` | Editable notification subject/body templates |
 
 ## Notes
 

@@ -10,19 +10,19 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
 {
     private static readonly IReadOnlyList<NotificationDeliveryRuleSeed> DefaultRules =
     [
-        new("CompanyDocumentRejected", "Piece entreprise refusee", "Company", true, false, true, true),
-        new("CompanyDocumentNeedsReplacement", "Complement requis sur dossier entreprise", "Company", true, false, true, true),
-        new("CompanyDocumentReopened", "Piece entreprise reouverte", "Company", true, false, true, true),
-        new("CompanyApplicationRejected", "Dossier entreprise refuse", "Company", true, false, true, true),
-        new("CompanyApplicationReopened", "Dossier entreprise reouvert", "Company", true, false, true, true),
-        new("CompanyApplicationMoreInformationRequested", "Complement requis sur dossier entreprise", "Company", true, false, true, true),
-        new("CompanyApplicationApproved", "Dossier entreprise valide", "Company", true, false, true, true),
-        new("CompanyActivationLinkCreated", "Lien d'activation entreprise", "Company", true, false, true, true),
-        new("InterimCandidateReceived", "Nouvelle demande interimaire", "Company", true, false, false, false),
-        new("InterimCandidateApproved", "Candidature interimaire acceptee", "Provider", false, true, false, true),
-        new("MissionAssignedToProvider", "Mission affectee au prestataire", "Provider", false, true, false, true),
-        new("MissionQuoteSentToCustomer", "Devis mission envoye au client", "Customer", false, true, true, true),
-        new("MissionStatusChanged", "Suivi de mission", "Mixed", true, true, false, false)
+        new("CompanyDocumentRejected", "Piece entreprise refusee", "Company", true, false, true, true, "Piece a reprendre", "{NomEntreprise}, une piece de votre dossier demande une correction."),
+        new("CompanyDocumentNeedsReplacement", "Complement requis sur dossier entreprise", "Company", true, false, true, true, "Complement requis", "{NomEntreprise}, notre equipe demande un complement sur votre dossier."),
+        new("CompanyDocumentReopened", "Piece entreprise reouverte", "Company", true, false, true, true, "Piece reouverte", "{NomEntreprise}, une piece de votre dossier a ete remise en verification."),
+        new("CompanyApplicationRejected", "Dossier entreprise refuse", "Company", true, false, true, true, "Dossier refuse", "{NomEntreprise}, votre demande partenaire n'a pas pu etre validee pour le moment."),
+        new("CompanyApplicationReopened", "Dossier entreprise reouvert", "Company", true, false, true, true, "Dossier reouvert", "{NomEntreprise}, votre dossier partenaire est de nouveau en analyse."),
+        new("CompanyApplicationMoreInformationRequested", "Complement requis sur dossier entreprise", "Company", true, false, true, true, "Complement requis", "{NomEntreprise}, un complement est necessaire pour terminer l'analyse."),
+        new("CompanyApplicationApproved", "Dossier entreprise valide", "Company", true, false, true, true, "Dossier valide", "{NomEntreprise}, votre entreprise est validee sur Wele."),
+        new("CompanyActivationLinkCreated", "Lien d'activation entreprise", "Company", true, false, true, true, "Activation de votre portail", "{NomEntreprise}, votre lien d'activation est pret."),
+        new("InterimCandidateReceived", "Nouvelle demande interimaire", "Company", true, false, false, false, "Nouvelle candidature", "{NomEntreprise}, {NomPrestataire} souhaite collaborer avec vous."),
+        new("InterimCandidateApproved", "Candidature interimaire acceptee", "Provider", false, true, false, true, "Candidature acceptee", "{NomPrestataire}, {NomEntreprise} a accepte votre candidature."),
+        new("MissionAssignedToProvider", "Mission affectee au prestataire", "Provider", false, true, false, true, "Nouvelle mission disponible", "Mission {Service} a accepter avant la fin du delai."),
+        new("MissionQuoteSentToCustomer", "Devis mission envoye au client", "Customer", false, true, true, true, "Devis disponible", "Votre devis pour {Service} est disponible."),
+        new("MissionStatusChanged", "Suivi de mission", "Mixed", true, true, false, false, "Suivi mission {NumeroMission}", "La mission {NumeroMission} a ete mise a jour.")
     ];
 
     public async Task<IReadOnlyList<NotificationDeliveryRuleResponse>> ListAsync(CancellationToken cancellationToken)
@@ -64,7 +64,9 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
             normalized.PortalEnabled,
             normalized.MobileAppEnabled,
             normalized.EmailEnabled,
-            normalized.WhatsAppEnabled);
+            normalized.WhatsAppEnabled,
+            request.SubjectTemplate,
+            request.BodyTemplate);
 
         return AdminNotificationDeliveryRuleResult.Ok(ToResponse(rule));
     }
@@ -87,7 +89,9 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
                 normalized.PortalEnabled,
                 normalized.MobileAppEnabled,
                 normalized.EmailEnabled,
-                normalized.WhatsAppEnabled));
+                normalized.WhatsAppEnabled,
+                seed.SubjectTemplate,
+                seed.BodyTemplate));
             hasAddedRule = true;
         }
 
@@ -138,7 +142,9 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
             NotificationDeliveryPreferenceService.IsPortalAutomatic(audience),
             NotificationDeliveryPreferenceService.IsMobileAppAutomatic(audience),
             emailEnabled,
-            whatsAppEnabled);
+            whatsAppEnabled,
+            null,
+            null);
     }
 
     private static NotificationDeliveryRuleResponse ToResponse(NotificationDeliveryRule rule)
@@ -152,6 +158,8 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
             rule.MobileAppEnabled,
             rule.EmailEnabled,
             rule.WhatsAppEnabled,
+            rule.SubjectTemplate,
+            rule.BodyTemplate,
             rule.CreatedAt,
             rule.UpdatedAt);
     }
@@ -163,7 +171,9 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db)
         bool PortalEnabled,
         bool MobileAppEnabled,
         bool EmailEnabled,
-        bool WhatsAppEnabled);
+        bool WhatsAppEnabled,
+        string SubjectTemplate,
+        string BodyTemplate);
 }
 
 public sealed record AdminNotificationDeliveryRuleResult(
