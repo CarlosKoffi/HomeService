@@ -12,6 +12,7 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
         Guid missionId,
         string? reason,
         string? note,
+        int? cancellationFeeAmount,
         AuditActor actor,
         AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
@@ -29,14 +30,20 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
 
         var previousStatus = mission.Status;
         var parsedReason = ParseCancellationReason(reason, MissionCancellationActor.Admin);
-        var fee = mission.ContactDetailsReleasedAt is null ? 0 : mission.CancellationFeeAmount;
+        var refundBase = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0;
+        var feeDecision = ResolveCancellationFee(mission, refundBase, cancellationFeeAmount);
+        if (!feeDecision.IsValid)
+        {
+            return AdminMissionOperationResult.ValidationFailed(feeDecision.Message!);
+        }
+
         var refund = mission.PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid
-            ? Math.Max(0, (mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? mission.FinalTotalAmount ?? 0) - fee)
+            ? Math.Max(0, refundBase - feeDecision.FeeAmount)
             : 0;
 
         try
         {
-            mission.Cancel(MissionCancellationActor.Admin, parsedReason, note, fee, refund);
+            mission.Cancel(MissionCancellationActor.Admin, parsedReason, note, feeDecision.FeeAmount, refund);
         }
         catch (InvalidOperationException exception)
         {
@@ -183,6 +190,39 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
             ? MissionCancellationReason.Other
             : MissionCancellationReason.Other;
     }
+
+    private static AdminCancellationFeeDecision ResolveCancellationFee(
+        Mission mission,
+        int refundBase,
+        int? requestedFeeAmount)
+    {
+        if (requestedFeeAmount is < 0)
+        {
+            return AdminCancellationFeeDecision.Invalid("Les frais d'annulation ne peuvent pas etre negatifs.");
+        }
+
+        if (mission.ContactDetailsReleasedAt is null)
+        {
+            return AdminCancellationFeeDecision.Valid(0);
+        }
+
+        var feeAmount = requestedFeeAmount ?? mission.CancellationFeeAmount;
+        if (feeAmount > Math.Max(0, refundBase))
+        {
+            return AdminCancellationFeeDecision.Invalid("Les frais d'annulation ne peuvent pas depasser le montant de la mission.");
+        }
+
+        return AdminCancellationFeeDecision.Valid(Math.Max(0, feeAmount));
+    }
+}
+
+internal sealed record AdminCancellationFeeDecision(bool IsValid, string? Message, int FeeAmount)
+{
+    public static AdminCancellationFeeDecision Valid(int feeAmount)
+        => new(true, null, feeAmount);
+
+    public static AdminCancellationFeeDecision Invalid(string message)
+        => new(false, message, 0);
 }
 
 public sealed record AdminMissionOperationResult(

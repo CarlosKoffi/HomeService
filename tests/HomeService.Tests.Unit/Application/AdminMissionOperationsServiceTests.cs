@@ -20,6 +20,7 @@ public sealed class AdminMissionOperationsServiceTests
             mission.Id,
             "Other",
             " ",
+            null,
             AuditActor.Admin(),
             null,
             CancellationToken.None);
@@ -45,6 +46,7 @@ public sealed class AdminMissionOperationsServiceTests
             mission.Id,
             "CustomerAbsent",
             "Client injoignable apres plusieurs tentatives",
+            null,
             AuditActor.Admin(),
             null,
             CancellationToken.None);
@@ -56,6 +58,60 @@ public sealed class AdminMissionOperationsServiceTests
         Assert.Equal(MissionCancellationActor.Admin, mission.CancelledBy);
         Assert.Equal("Client injoignable apres plusieurs tentatives", mission.CancellationComment);
         Assert.Single(await db.AuditLogEntries.ToListAsync());
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenAdminProvidesCancellationFee_UsesItForRefund()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedAcceptedMissionAsync(db);
+        mission.ConfirmByCustomer(
+            platformCommissionAmount: 1_500,
+            transportFeeAmount: 0,
+            platformCommissionRateBasisPoints: 1_500);
+        await db.SaveChangesAsync();
+        var sut = new AdminMissionOperationsService(db);
+
+        var result = await sut.CancelAsync(
+            mission.Id,
+            "Other",
+            "Annulation avec frais partiels",
+            2_500,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(MissionStatus.Cancelled, mission.Status);
+        Assert.Equal(2_500, mission.CancellationFeeAmount);
+        Assert.Equal(7_500, mission.RefundAmount);
+    }
+
+    [Fact]
+    public async Task CancelAsync_WhenAdminFeeExceedsMissionAmount_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedAcceptedMissionAsync(db);
+        mission.ConfirmByCustomer(
+            platformCommissionAmount: 1_500,
+            transportFeeAmount: 0,
+            platformCommissionRateBasisPoints: 1_500);
+        await db.SaveChangesAsync();
+        var sut = new AdminMissionOperationsService(db);
+
+        var result = await sut.CancelAsync(
+            mission.Id,
+            "Other",
+            "Frais trop eleves",
+            20_000,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
+        Assert.Equal(0, mission.CancellationFeeAmount);
+        Assert.Equal(0, mission.RefundAmount);
     }
 
     private static async Task<Mission> SeedAcceptedMissionAsync(HomeServiceDbContext db)

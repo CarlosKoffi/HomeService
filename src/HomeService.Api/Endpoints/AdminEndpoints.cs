@@ -484,6 +484,7 @@ public static class AdminEndpoints
                 missionId,
                 request.Reason,
                 request.Comment,
+                request.CancellationFeeAmount,
                 AuditActor.Admin(),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
