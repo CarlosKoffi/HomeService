@@ -493,31 +493,57 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                     <strong>@FormatAmount(InsightSnapshot.Totals.RevenueAmount, InsightSnapshot.Totals.Currency)</strong>
                     <p>Montant des missions terminees.</p>
                 </article>
+                <article>
+                    <span>Sans offre</span>
+                    <strong>@InsightSnapshot.Totals.ServicesWithoutProviders</strong>
+                    <p>Services actifs sans prestataire valide.</p>
+                </article>
+                <article>
+                    <span>Demande sans offre</span>
+                    <strong>@InsightSnapshot.Totals.ServicesWithDemandWithoutProviders</strong>
+                    <p>Services avec missions mais sans couverture.</p>
+                </article>
+                <article>
+                    <span>Prestations a couvrir</span>
+                    <strong>@InsightSnapshot.Totals.PrestationsWithoutProviders</strong>
+                    <p>Details metier sans prestataire associe.</p>
+                </article>
+                <article>
+                    <span>Propositions</span>
+                    <strong>@InsightSnapshot.Totals.PendingProposalCount</strong>
+                    <p>Libelles entreprise encore a classer.</p>
+                </article>
             </div>
         }
 
         <div class="service-insights-table">
             <div class="service-insights-row head">
                 <span>Service</span>
+                <span>Entreprises</span>
                 <span>Prestataires</span>
                 <span>Interim</span>
                 <span>Missions</span>
-                <span>Terminees</span>
                 <span>Litiges</span>
                 <span>CA termine</span>
-                <span>Propositions</span>
+                <span>A traiter</span>
             </div>
             @foreach (var service in ServiceInsights)
             {
-                <div class="service-insights-row">
+                <div class="service-insights-row @(service.HasDemandWithoutProviders ? "needs-attention" : string.Empty)">
                     <strong>@service.ServiceName</strong>
+                    <span>@service.CompanyCount</span>
                     <span>@service.ActiveProviderCount</span>
                     <span>@service.InterimProviderCount</span>
                     <span>@service.MissionCount</span>
-                    <span>@service.CompletedMissionCount</span>
                     <span class="@(service.DisputedMissionCount > 0 ? "danger-text" : string.Empty)">@service.DisputedMissionCount</span>
                     <span>@FormatAmount(service.RevenueAmount, service.Currency)</span>
-                    <span>@CountPendingProposalsFor(service.ServiceId)</span>
+                    <span class="@GetInsightActionClass(service)">
+                        @service.RecommendedAction
+                        @if (service.PendingProposalCount > 0)
+                        {
+                            <small>@service.PendingProposalCount proposition(s)</small>
+                        }
+                    </span>
                     @if (service.Prestations.Count > 0)
                     {
                         <small class="service-insights-prestations">
@@ -1134,9 +1160,33 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             .OrderByDescending(prestation => prestation.MissionCount)
             .ThenByDescending(prestation => prestation.ActiveProviderCount)
             .Take(3)
-            .Select(prestation => $"{prestation.ServicePrestationName}: {prestation.ActiveProviderCount} presta, {prestation.MissionCount} mission(s)");
+            .Select(prestation =>
+            {
+                var alert = prestation.HasDemandWithoutProviders
+                    ? " - offre manquante"
+                    : prestation.HasProviderGap
+                        ? " - a couvrir"
+                        : string.Empty;
+
+                return $"{prestation.ServicePrestationName}: {prestation.ActiveProviderCount} presta, {prestation.MissionCount} mission(s){alert}";
+            });
 
         return string.Join(" | ", top);
+    }
+
+    private static string GetInsightActionClass(ServiceCatalogInsightResponse service)
+    {
+        if (service.HasDemandWithoutProviders || service.DisputedMissionCount > 0)
+        {
+            return "insight-action danger";
+        }
+
+        if (service.PendingProposalCount > 0 || service.HasProviderGap)
+        {
+            return "insight-action warning";
+        }
+
+        return "insight-action";
     }
 
     private sealed class PrestationDraft

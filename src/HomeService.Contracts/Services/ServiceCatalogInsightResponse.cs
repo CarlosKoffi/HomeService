@@ -11,7 +11,11 @@ public sealed record ServiceCatalogInsightTotalsResponse(
     int MissionCount,
     int CompletedMissionCount,
     int RevenueAmount,
-    string Currency);
+    string Currency,
+    int ServicesWithoutProviders = 0,
+    int ServicesWithDemandWithoutProviders = 0,
+    int PrestationsWithoutProviders = 0,
+    int PendingProposalCount = 0);
 
 public sealed record ServiceCatalogInsightResponse(
     Guid ServiceId,
@@ -26,7 +30,11 @@ public sealed record ServiceCatalogInsightResponse(
     int DisputedMissionCount,
     int RevenueAmount,
     string Currency,
-    IReadOnlyList<ServicePrestationCatalogInsightResponse> Prestations);
+    IReadOnlyList<ServicePrestationCatalogInsightResponse> Prestations,
+    int PendingProposalCount = 0,
+    bool HasProviderGap = false,
+    bool HasDemandWithoutProviders = false,
+    string RecommendedAction = "Surveiller");
 
 public sealed record ServicePrestationCatalogInsightResponse(
     Guid ServicePrestationId,
@@ -34,4 +42,6 @@ public sealed record ServicePrestationCatalogInsightResponse(
     int ActiveProviderCount,
     int MissionCount,
     int CompletedMissionCount,
-    int RevenueAmount);
+    int RevenueAmount,
+    bool HasProviderGap = false,
+    bool HasDemandWithoutProviders = false);

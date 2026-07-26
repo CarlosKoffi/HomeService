@@ -2362,6 +2362,10 @@ h3 {
     padding: .85rem 1rem;
 }
 
+.service-insights-row.needs-attention {
+    background: #fff7ed;
+}
+
 .service-insights-row:last-child {
     border-bottom: 0;
 }
@@ -2385,6 +2389,30 @@ h3 {
 }
 
 .service-insights-row .danger-text {
+    color: #b91c1c;
+}
+
+.service-insights-row .insight-action {
+    align-items: flex-start;
+    color: #047857;
+    display: flex;
+    flex-direction: column;
+    font-size: .82rem;
+    font-weight: 900;
+    gap: .12rem;
+}
+
+.service-insights-row .insight-action small {
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+.service-insights-row .insight-action.warning {
+    color: #c2410c;
+}
+
+.service-insights-row .insight-action.danger {
     color: #b91c1c;
 }
 

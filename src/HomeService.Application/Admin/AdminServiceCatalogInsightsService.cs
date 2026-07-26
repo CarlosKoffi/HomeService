@@ -1,5 +1,6 @@
 using HomeService.Application.Abstractions;
 using HomeService.Contracts.Services;
+using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,6 +58,19 @@ public sealed class AdminServiceCatalogInsightsService(IAppDbContext db)
                 mission.Currency))
             .ToListAsync(cancellationToken);
 
+        var pendingProposalRows = await db.CompanyApplicationServices
+            .AsNoTracking()
+            .Where(proposal =>
+                proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
+                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
+                || proposal.MatchedServiceId == null)
+            .Select(proposal => new PendingProposalInsightRow(
+                proposal.Id,
+                proposal.MatchedServiceId,
+                proposal.MatchedServicePrestationId,
+                proposal.RawName))
+            .ToListAsync(cancellationToken);
+
         var providerByService = providerRows
             .GroupBy(row => row.ServiceId)
             .ToDictionary(group => group.Key, group => group.ToList());
@@ -70,6 +84,10 @@ public sealed class AdminServiceCatalogInsightsService(IAppDbContext db)
             .Where(row => row.ServicePrestationId.HasValue)
             .GroupBy(row => row.ServicePrestationId!.Value)
             .ToDictionary(group => group.Key, group => group.ToList());
+        var proposalsByMatchedPrestation = pendingProposalRows
+            .Where(row => row.ServicePrestationId.HasValue)
+            .GroupBy(row => row.ServicePrestationId!.Value)
+            .ToDictionary(group => group.Key, group => group.Count());
 
         var items = services.Select(service =>
         {
@@ -87,16 +105,40 @@ public sealed class AdminServiceCatalogInsightsService(IAppDbContext db)
                     prestationProviders ??= [];
                     missionsByPrestation.TryGetValue(prestation.Id, out var prestationMissions);
                     prestationMissions ??= [];
+                    proposalsByMatchedPrestation.TryGetValue(prestation.Id, out var pendingPrestationProposalCount);
+
+                    var prestationProviderCount = CountApprovedProviders(prestationProviders);
+                    var prestationMissionCount = prestationMissions.Count;
+                    var hasPrestationProviderGap = prestationProviderCount == 0;
+                    var hasPrestationDemandWithoutProviders = prestationMissionCount > 0 && prestationProviderCount == 0;
 
                     return new ServicePrestationCatalogInsightResponse(
                         prestation.Id,
                         prestation.Name,
-                        CountApprovedProviders(prestationProviders),
-                        prestationMissions.Count,
+                        prestationProviderCount,
+                        prestationMissionCount,
                         CountCompletedMissions(prestationMissions),
-                        SumCompletedRevenue(prestationMissions));
+                        SumCompletedRevenue(prestationMissions),
+                        hasPrestationProviderGap || pendingPrestationProposalCount > 0,
+                        hasPrestationDemandWithoutProviders);
                 })
                 .ToList();
+
+            var activeProviderCount = CountApprovedProviders(serviceProviders);
+            var missionCount = serviceMissions.Count;
+            var pendingProposalCount = CountPendingProposals(service, pendingProposalRows);
+            var hasProviderGap = activeProviderCount == 0;
+            var hasDemandWithoutProviders = missionCount > 0 && activeProviderCount == 0;
+            var recommendedAction = BuildRecommendedAction(
+                pendingProposalCount,
+                hasDemandWithoutProviders,
+                hasProviderGap,
+                serviceProviders
+                    .Where(provider => provider.ProviderEmploymentType == ProviderEmploymentType.TemporaryWorker)
+                    .Select(provider => provider.ProviderId)
+                    .Distinct()
+                    .Count(),
+                serviceMissions.Count(mission => mission.Status == MissionStatus.Disputed));
 
             return new ServiceCatalogInsightResponse(
                 service.Id,
@@ -104,18 +146,22 @@ public sealed class AdminServiceCatalogInsightsService(IAppDbContext db)
                 service.Prestations.Count,
                 service.Prestations.Count(prestation => prestation.IsActive),
                 serviceProviders.Select(provider => provider.CompanyId).Distinct().Count(),
-                CountApprovedProviders(serviceProviders),
+                activeProviderCount,
                 serviceProviders
                     .Where(provider => provider.ProviderEmploymentType == ProviderEmploymentType.TemporaryWorker)
                     .Select(provider => provider.ProviderId)
                     .Distinct()
                     .Count(),
-                serviceMissions.Count,
+                missionCount,
                 CountCompletedMissions(serviceMissions),
                 serviceMissions.Count(mission => mission.Status == MissionStatus.Disputed),
                 SumCompletedRevenue(serviceMissions),
                 service.Currency,
-                prestationItems);
+                prestationItems,
+                pendingProposalCount,
+                hasProviderGap,
+                hasDemandWithoutProviders,
+                recommendedAction);
         })
         .OrderByDescending(item => item.MissionCount)
         .ThenByDescending(item => item.ActiveProviderCount)
@@ -132,7 +178,11 @@ public sealed class AdminServiceCatalogInsightsService(IAppDbContext db)
                 items.Sum(item => item.MissionCount),
                 items.Sum(item => item.CompletedMissionCount),
                 items.Sum(item => item.RevenueAmount),
-                currency));
+                currency,
+                items.Count(item => item.HasProviderGap),
+                items.Count(item => item.HasDemandWithoutProviders),
+                items.Sum(item => item.Prestations.Count(prestation => prestation.HasProviderGap)),
+                items.Sum(item => item.PendingProposalCount)));
     }
 
     private static int CountApprovedProviders(IEnumerable<ServiceProviderInsightRow> rows)
@@ -165,6 +215,65 @@ public sealed class AdminServiceCatalogInsightsService(IAppDbContext db)
             .Sum(row => row.FinalTotalAmount ?? row.CompanyQuotedAmount ?? row.EstimatedTotalAmount ?? 0);
     }
 
+    private static int CountPendingProposals(Service service, IReadOnlyList<PendingProposalInsightRow> rows)
+    {
+        var normalizedServiceName = Normalize(service.Name);
+        var prestationIds = service.Prestations.Select(prestation => prestation.Id).ToHashSet();
+        var prestationNames = service.Prestations
+            .Select(prestation => Normalize(prestation.Name))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToList();
+
+        return rows.Count(row =>
+        {
+            var normalizedRawName = Normalize(row.RawName);
+            return row.ServiceId == service.Id
+                || (row.ServicePrestationId.HasValue && prestationIds.Contains(row.ServicePrestationId.Value))
+                || normalizedRawName.Contains(normalizedServiceName, StringComparison.OrdinalIgnoreCase)
+                || prestationNames.Any(prestationName => normalizedRawName.Contains(prestationName, StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    private static string BuildRecommendedAction(
+        int pendingProposalCount,
+        bool hasDemandWithoutProviders,
+        bool hasProviderGap,
+        int interimProviderCount,
+        int disputedMissionCount)
+    {
+        if (pendingProposalCount > 0)
+        {
+            return "Classer les propositions";
+        }
+
+        if (hasDemandWithoutProviders)
+        {
+            return "Recruter des prestataires";
+        }
+
+        if (hasProviderGap)
+        {
+            return "Ajouter une offre";
+        }
+
+        if (disputedMissionCount > 0)
+        {
+            return "Verifier la qualite";
+        }
+
+        if (interimProviderCount == 0)
+        {
+            return "Ouvrir l'interim";
+        }
+
+        return "Surveiller";
+    }
+
+    private static string Normalize(string value)
+    {
+        return HomeService.Domain.Common.CatalogNameNormalizer.Normalize(value);
+    }
+
     private sealed record ServiceProviderInsightRow(
         Guid ServiceId,
         Guid ProviderId,
@@ -185,4 +294,10 @@ public sealed class AdminServiceCatalogInsightsService(IAppDbContext db)
         int? CompanyQuotedAmount,
         int? EstimatedTotalAmount,
         string Currency);
+
+    private sealed record PendingProposalInsightRow(
+        Guid Id,
+        Guid? ServiceId,
+        Guid? ServicePrestationId,
+        string RawName);
 }
