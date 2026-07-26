@@ -1,5 +1,7 @@
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using HomeService.Infrastructure.Data;
@@ -14,7 +16,7 @@ public sealed class AdminMissionOperationsServiceTests
     {
         await using var db = CreateDbContext();
         var mission = await SeedAcceptedMissionAsync(db);
-        var sut = new AdminMissionOperationsService(db);
+        var sut = CreateService(db);
 
         var result = await sut.CancelAsync(
             mission.Id,
@@ -40,7 +42,7 @@ public sealed class AdminMissionOperationsServiceTests
             transportFeeAmount: 0,
             platformCommissionRateBasisPoints: 1_500);
         await db.SaveChangesAsync();
-        var sut = new AdminMissionOperationsService(db);
+        var sut = CreateService(db);
 
         var result = await sut.CancelAsync(
             mission.Id,
@@ -58,6 +60,14 @@ public sealed class AdminMissionOperationsServiceTests
         Assert.Equal(MissionCancellationActor.Admin, mission.CancelledBy);
         Assert.Equal("Client injoignable apres plusieurs tentatives", mission.CancellationComment);
         Assert.Single(await db.AuditLogEntries.ToListAsync());
+        Assert.Single(await db.CompanyPortalNotifications.ToListAsync());
+        Assert.Equal(2, await db.NotificationOutboxMessages.CountAsync());
+        Assert.True(await db.NotificationOutboxMessages.AnyAsync(item =>
+            item.Channel == NotificationChannel.MobilePush
+            && item.Subject == "Mission annulee"));
+        Assert.True(await db.NotificationOutboxMessages.AnyAsync(item =>
+            item.Channel == NotificationChannel.WhatsApp
+            && item.Recipient == "+2250700000001"));
     }
 
     [Fact]
@@ -70,7 +80,7 @@ public sealed class AdminMissionOperationsServiceTests
             transportFeeAmount: 0,
             platformCommissionRateBasisPoints: 1_500);
         await db.SaveChangesAsync();
-        var sut = new AdminMissionOperationsService(db);
+        var sut = CreateService(db);
 
         var result = await sut.CancelAsync(
             mission.Id,
@@ -97,7 +107,7 @@ public sealed class AdminMissionOperationsServiceTests
             transportFeeAmount: 0,
             platformCommissionRateBasisPoints: 1_500);
         await db.SaveChangesAsync();
-        var sut = new AdminMissionOperationsService(db);
+        var sut = CreateService(db);
 
         var result = await sut.CancelAsync(
             mission.Id,
@@ -120,6 +130,12 @@ public sealed class AdminMissionOperationsServiceTests
         company.Approve();
         var service = new Service("Menage a domicile", "Nettoyage residentiel", createdByCompanyId: null);
         var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var customerToken = new MobileDeviceToken(
+            MobileDeviceOwnerType.Customer,
+            customer.Id,
+            MobileDevicePlatform.Android,
+            "customer-device-token",
+            "Android test");
         var provider = new ProviderProfile(
             company.Id,
             "Mamadou",
@@ -155,6 +171,7 @@ public sealed class AdminMissionOperationsServiceTests
         db.Companies.Add(company);
         db.Services.Add(service);
         db.Customers.Add(customer);
+        db.MobileDeviceTokens.Add(customerToken);
         db.Providers.Add(provider);
         db.Missions.Add(mission);
         await db.SaveChangesAsync();
@@ -170,4 +187,12 @@ public sealed class AdminMissionOperationsServiceTests
 
         return new HomeServiceDbContext(options);
     }
+
+    private static AdminMissionOperationsService CreateService(HomeServiceDbContext db)
+        => new(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db),
+            new NotificationDeliveryPreferenceService(db),
+            new NotificationTemplateService(db));
 }

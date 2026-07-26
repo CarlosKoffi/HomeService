@@ -1,12 +1,19 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminMissionOperationsService(IAppDbContext db)
+public sealed class AdminMissionOperationsService(
+    IAppDbContext db,
+    CompanyPortalNotificationWriter companyNotifications,
+    MobilePushNotificationQueueService mobilePushNotifications,
+    NotificationDeliveryPreferenceService deliveryPreferences,
+    NotificationTemplateService notificationTemplates)
 {
     public async Task<AdminMissionOperationResult> CancelAsync(
         Guid missionId,
@@ -67,6 +74,14 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
             previousStatus,
             cleanNote,
             $"Mission annulee par l'administration. Note: {cleanNote}");
+        companyNotifications.AddForMission(
+            mission,
+            "MissionCancelled",
+            $"Mission {mission.MissionNumber} annulee",
+            $"La mission a ete annulee par l'administration. Motif: {cleanNote}",
+            "warning",
+            $"missions/{mission.Id}");
+        await QueueCustomerCancellationNotificationsAsync(mission, cleanNote, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -177,6 +192,78 @@ public sealed class AdminMissionOperationsService(IAppDbContext db)
             auditContext,
             before: new { Status = previousStatus.ToString() },
             after: new { Status = mission.Status.ToString(), Note = note }));
+    }
+
+    private async Task QueueCustomerCancellationNotificationsAsync(
+        Mission mission,
+        string cancellationNote,
+        CancellationToken cancellationToken)
+    {
+        var customer = await db.Customers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == mission.CustomerId, cancellationToken);
+        if (customer is null)
+        {
+            return;
+        }
+
+        const string eventKey = "MissionCancelled";
+        var variables = NotificationTemplateRenderer.Variables(
+            ("NomClient", $"{customer.FirstName} {customer.LastName}".Trim()),
+            ("NumeroMission", mission.MissionNumber),
+            ("Motif", cancellationNote),
+            ("DescriptionService", mission.Description),
+            ("Montant", $"{mission.RefundAmount:N0} {mission.Currency}"));
+        var preference = await deliveryPreferences.GetAsync(
+            eventKey,
+            "Customer",
+            defaultEmailEnabled: false,
+            defaultWhatsAppEnabled: true,
+            cancellationToken);
+        var metadataJson = $$"""{"missionId":"{{mission.Id}}","missionNumber":"{{mission.MissionNumber}}","refundAmount":{{mission.RefundAmount}}}""";
+
+        if (preference.MobileAppEnabled)
+        {
+            var push = await notificationTemplates.RenderAsync(
+                eventKey,
+                NotificationTemplateChannel.MobilePush,
+                "Mission annulee",
+                $"La mission {mission.MissionNumber} a ete annulee. {cancellationNote}",
+                variables,
+                cancellationToken);
+
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Customer,
+                mission.CustomerId,
+                push.Subject,
+                push.Body,
+                nameof(Mission),
+                mission.Id,
+                metadataJson,
+                cancellationToken,
+                saveChanges: false);
+        }
+
+        if (preference.WhatsAppEnabled && !string.IsNullOrWhiteSpace(customer.PhoneNumber))
+        {
+            var whatsApp = await notificationTemplates.RenderAsync(
+                eventKey,
+                NotificationTemplateChannel.WhatsApp,
+                "Mission annulee",
+                $"La mission {mission.MissionNumber} a ete annulee. {cancellationNote}",
+                variables,
+                cancellationToken);
+
+            db.NotificationOutboxMessages.Add(new NotificationOutboxMessage(
+                NotificationChannel.WhatsApp,
+                customer.PhoneNumber,
+                whatsApp.Subject,
+                whatsApp.Body,
+                nameof(Mission),
+                mission.Id,
+                metadataJson));
+        }
+
     }
 
     private static MissionCancellationReason ParseCancellationReason(string? reason, MissionCancellationActor actor)
