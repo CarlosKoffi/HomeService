@@ -42,6 +42,23 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
             return AdminNotificationTemplateResult.Conflict("Un modele existe deja pour cet evenement et ce canal.");
         }
 
+        var rule = await db.NotificationDeliveryRules
+            .FirstOrDefaultAsync(item => item.EventKey == eventKey, cancellationToken);
+        if (rule is null)
+        {
+            var normalized = NormalizeChannels(request.Audience);
+            db.NotificationDeliveryRules.Add(new NotificationDeliveryRule(
+                eventKey,
+                request.Label,
+                request.Audience,
+                normalized.PortalEnabled,
+                normalized.MobileAppEnabled,
+                channel == NotificationTemplateChannel.Email,
+                channel == NotificationTemplateChannel.WhatsApp,
+                request.SubjectTemplate,
+                request.BodyTemplate));
+        }
+
         var template = new NotificationTemplate(
             eventKey,
             channel,
@@ -157,6 +174,14 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
         return null;
     }
 
+    private static NotificationTemplateRuleChannels NormalizeChannels(string audience)
+    {
+        var normalized = string.IsNullOrWhiteSpace(audience) ? "Mixed" : audience.Trim();
+        return new NotificationTemplateRuleChannels(
+            normalized is "Company" or "Mixed",
+            normalized is "Provider" or "Customer" or "Mixed");
+    }
+
     private static string? Validate(CreateNotificationTemplateRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.EventKey))
@@ -198,6 +223,8 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db)
             template.CreatedAt,
             template.UpdatedAt);
     }
+
+    private sealed record NotificationTemplateRuleChannels(bool PortalEnabled, bool MobileAppEnabled);
 }
 
 public sealed record AdminNotificationTemplateResult(

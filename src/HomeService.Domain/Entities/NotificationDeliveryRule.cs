@@ -39,6 +39,7 @@ public sealed class NotificationDeliveryRule : AuditableEntity
     public bool WhatsAppEnabled { get; private set; }
     public string? SubjectTemplate { get; private set; }
     public string? BodyTemplate { get; private set; }
+    public ICollection<NotificationTemplate> Templates { get; private set; } = [];
 
     public void Update(
         string label,

@@ -18,5 +18,10 @@ public sealed class NotificationTemplateConfiguration : IEntityTypeConfiguration
         builder.Property(template => template.AvailableVariables).HasMaxLength(1000);
         builder.HasIndex(template => new { template.EventKey, template.Channel }).IsUnique();
         builder.HasIndex(template => new { template.Audience, template.Channel, template.IsActive });
+        builder.HasOne(template => template.DeliveryRule)
+            .WithMany(rule => rule.Templates)
+            .HasPrincipalKey(rule => rule.EventKey)
+            .HasForeignKey(template => template.EventKey)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

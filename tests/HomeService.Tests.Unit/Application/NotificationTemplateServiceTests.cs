@@ -66,6 +66,30 @@ public sealed class NotificationTemplateServiceTests
     }
 
     [Fact]
+    public async Task AdminTemplateService_CreateAsync_WhenRuleIsMissing_CreatesMatchingDeliveryRule()
+    {
+        await using var db = CreateDbContext();
+        var service = new AdminNotificationTemplateService(db);
+
+        var result = await service.CreateAsync(
+            new CreateNotificationTemplateRequest(
+                "CustomCompanyPortalEvent",
+                "Portal",
+                "Message portail entreprise",
+                "Company",
+                "Sujet portail",
+                "Message portail",
+                NotificationTemplateCatalog.CommonVariables,
+                true),
+            CancellationToken.None);
+
+        Assert.Equal(AdminNotificationTemplateStatus.Ok, result.Status);
+        var rule = await db.NotificationDeliveryRules.SingleAsync(rule => rule.EventKey == "CustomCompanyPortalEvent");
+        Assert.True(rule.PortalEnabled);
+        Assert.False(rule.MobileAppEnabled);
+    }
+
+    [Fact]
     public async Task RenderAsync_WhenTemplateExists_UsesEventAndChannelTemplate()
     {
         await using var db = CreateDbContext();

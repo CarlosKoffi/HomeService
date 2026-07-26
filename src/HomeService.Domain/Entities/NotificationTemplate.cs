@@ -36,6 +36,7 @@ public sealed class NotificationTemplate : AuditableEntity
     public string BodyTemplate { get; private set; } = string.Empty;
     public string? AvailableVariables { get; private set; }
     public bool IsActive { get; private set; }
+    public NotificationDeliveryRule? DeliveryRule { get; private set; }
 
     public void Update(string label, string audience, string subjectTemplate, string bodyTemplate, string? availableVariables, bool isActive)
     {
