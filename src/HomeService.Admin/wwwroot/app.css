@@ -1677,6 +1677,19 @@ h3 {
     max-width: 780px;
 }
 
+.mission-number-chip {
+    background: #eff4ff;
+    border: 1px solid #cfe0ff;
+    border-radius: 999px;
+    color: #1a6aff;
+    display: inline-flex;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    margin-bottom: .35rem;
+    padding: .26rem .55rem;
+}
+
 .mission-dispute-box {
     display: grid;
     gap: .8rem;
