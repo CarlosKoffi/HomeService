@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Contracts.Localization;
 using HomeService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -82,6 +83,13 @@ public sealed class AdminTranslationService(IAppDbContext db)
     }
 
     public async Task<AdminTranslationResult> UpsertAsync(UpsertAdminTranslationRequest request, CancellationToken cancellationToken)
+        => await UpsertAsync(request, null, null, cancellationToken);
+
+    public async Task<AdminTranslationResult> UpsertAsync(
+        UpsertAdminTranslationRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var keyName = request.Key.Trim();
         var scope = request.Scope.Trim();
@@ -121,6 +129,7 @@ public sealed class AdminTranslationService(IAppDbContext db)
 
         var key = await db.TranslationKeys
             .FirstOrDefaultAsync(item => item.Key == keyName, cancellationToken);
+        object? before = null;
 
         if (key is null)
         {
@@ -129,6 +138,13 @@ public sealed class AdminTranslationService(IAppDbContext db)
         }
         else
         {
+            before = new
+            {
+                key.Id,
+                key.Key,
+                key.Scope,
+                key.Description
+            };
             key.Update(description, scope);
         }
 
@@ -142,12 +158,28 @@ public sealed class AdminTranslationService(IAppDbContext db)
 
         if (value is null)
         {
-            db.TranslationValues.Add(new TranslationValue(key.Id, language.Id, countryId, textValue));
+            value = new TranslationValue(key.Id, language.Id, countryId, textValue);
+            db.TranslationValues.Add(value);
         }
         else
         {
+            before = new
+            {
+                Key = before,
+                Value = new
+                {
+                    value.Id,
+                    value.TranslationKeyId,
+                    value.LanguageId,
+                    value.CountryId,
+                    value.Value
+                }
+            };
             value.UpdateValue(textValue);
         }
+
+        AddAuditLog(actor, auditContext, key, value, request, before);
+        await db.SaveChangesAsync(cancellationToken);
 
         return AdminTranslationResult.Ok();
     }
@@ -155,6 +187,43 @@ public sealed class AdminTranslationService(IAppDbContext db)
     private static string NormalizeLanguage(string? language)
     {
         return string.IsNullOrWhiteSpace(language) ? "fr" : language.Trim().ToLowerInvariant();
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        TranslationKey key,
+        TranslationValue value,
+        UpsertAdminTranslationRequest request,
+        object? before)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            "AdminTranslationSaved",
+            nameof(TranslationKey),
+            key.Id,
+            $"Traduction sauvegardee: {request.Key.Trim()}.",
+            auditContext,
+            before,
+            new
+            {
+                key.Id,
+                key.Key,
+                key.Scope,
+                key.Description,
+                Value = new
+                {
+                    value.Id,
+                    value.LanguageId,
+                    value.CountryId,
+                    value.Value
+                }
+            }));
     }
 }
 

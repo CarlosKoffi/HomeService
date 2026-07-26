@@ -614,25 +614,17 @@ public static class AdminEndpoints
             UpsertAdminTranslationRequest request,
             HttpRequest httpRequest,
             AdminTranslationService translationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await translationService.UpsertAsync(request, cancellationToken);
+            var result = await translationService.UpsertAsync(
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminTranslationStatus.ValidationFailed)
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminTranslationSaved",
-                "TranslationKey",
-                null,
-                $"Traduction sauvegardee: {request.Key}.",
-                after: request);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(await translationService.ListAsync(request.Scope, request.Key, request.Language, cancellationToken));
         })
