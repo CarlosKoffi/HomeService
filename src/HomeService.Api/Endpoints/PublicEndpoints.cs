@@ -275,6 +275,33 @@ public static class PublicEndpoints
         .Produces<CreateClientMissionResponse>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest);
 
+        app.MapGet("/api/client/missions/{missionId:guid}", async (
+            Guid missionId,
+            string phoneNumber,
+            ClientMissionStatusService missionStatusService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await missionStatusService.GetAsync(missionId, phoneNumber, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionStatusResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionStatusResultStatus.Forbidden => Results.Problem(
+                    title: "Consultation interdite.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("GetClientMissionStatus")
+        .Produces<ClientMissionStatusResponse>()
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/client/missions/{missionId:guid}/confirm", async (
             Guid missionId,
             ConfirmClientMissionRequest request,
