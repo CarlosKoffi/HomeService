@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
@@ -24,6 +25,13 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db, Notificat
 
     public async Task<AdminNotificationTemplateResult> CreateAsync(
         CreateNotificationTemplateRequest request,
+        CancellationToken cancellationToken)
+        => await CreateAsync(request, null, null, cancellationToken);
+
+    public async Task<AdminNotificationTemplateResult> CreateAsync(
+        CreateNotificationTemplateRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var validation = Validate(request);
@@ -77,14 +85,31 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db, Notificat
             request.IsActive);
 
         db.NotificationTemplates.Add(template);
+        var response = ToResponse(template);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminNotificationTemplateCreated",
+            template.Id,
+            "Modele de notification cree.",
+            before: null,
+            after: response);
         await db.SaveChangesAsync(cancellationToken);
 
-        return AdminNotificationTemplateResult.Ok(ToResponse(template));
+        return AdminNotificationTemplateResult.Ok(response);
     }
 
     public async Task<AdminNotificationTemplateResult> UpdateAsync(
         Guid templateId,
         UpdateNotificationTemplateRequest request,
+        CancellationToken cancellationToken)
+        => await UpdateAsync(templateId, request, null, null, cancellationToken);
+
+    public async Task<AdminNotificationTemplateResult> UpdateAsync(
+        Guid templateId,
+        UpdateNotificationTemplateRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var template = await db.NotificationTemplates
@@ -100,6 +125,7 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db, Notificat
             return AdminNotificationTemplateResult.ValidationFailed(validation);
         }
 
+        var before = ToResponse(template);
         template.Update(
             request.Label,
             request.Audience,
@@ -108,9 +134,18 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db, Notificat
             request.AvailableVariables,
             request.IsActive);
 
+        var response = ToResponse(template);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminNotificationTemplateUpdated",
+            template.Id,
+            "Modele de notification modifie.",
+            before,
+            response);
         await db.SaveChangesAsync(cancellationToken);
 
-        return AdminNotificationTemplateResult.Ok(ToResponse(template));
+        return AdminNotificationTemplateResult.Ok(response);
     }
 
     private static string? Validate(UpdateNotificationTemplateRequest request)
@@ -186,6 +221,31 @@ public sealed class AdminNotificationTemplateService(IAppDbContext db, Notificat
             template.IsActive,
             template.CreatedAt,
             template.UpdatedAt);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        Guid templateId,
+        string summary,
+        NotificationTemplateResponse? before,
+        NotificationTemplateResponse after)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(NotificationTemplate),
+            templateId,
+            summary,
+            auditContext,
+            before,
+            after));
     }
 
     private sealed record NotificationTemplateRuleChannels(bool PortalEnabled, bool MobileAppEnabled);

@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
@@ -25,6 +26,14 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db, Notif
         Guid ruleId,
         UpdateNotificationDeliveryRuleRequest request,
         CancellationToken cancellationToken)
+        => await UpdateAsync(ruleId, request, null, null, cancellationToken);
+
+    public async Task<AdminNotificationDeliveryRuleResult> UpdateAsync(
+        Guid ruleId,
+        UpdateNotificationDeliveryRuleRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var rule = await db.NotificationDeliveryRules
             .FirstOrDefaultAsync(item => item.Id == ruleId, cancellationToken);
@@ -40,6 +49,7 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db, Notif
             return AdminNotificationDeliveryRuleResult.ValidationFailed(validation);
         }
 
+        var before = ToResponse(rule);
         var normalized = NormalizeChannels(request.Audience, request.EmailEnabled, request.WhatsAppEnabled);
 
         rule.Update(
@@ -52,9 +62,11 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db, Notif
             request.SubjectTemplate,
             request.BodyTemplate);
 
+        var response = ToResponse(rule);
+        AddAuditLog(actor, auditContext, rule.Id, before, response);
         await db.SaveChangesAsync(cancellationToken);
 
-        return AdminNotificationDeliveryRuleResult.Ok(ToResponse(rule));
+        return AdminNotificationDeliveryRuleResult.Ok(response);
     }
 
     private static string? Validate(UpdateNotificationDeliveryRuleRequest request)
@@ -120,14 +132,28 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db, Notif
             rule.UpdatedAt);
     }
 
-    private sealed record NotificationDeliveryRuleSeed(
-        string EventKey,
-        string Label,
-        string Audience,
-        bool EmailEnabled,
-        bool WhatsAppEnabled,
-        string SubjectTemplate,
-        string BodyTemplate);
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        Guid ruleId,
+        NotificationDeliveryRuleResponse before,
+        NotificationDeliveryRuleResponse after)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            "AdminNotificationDeliveryRuleUpdated",
+            nameof(NotificationDeliveryRule),
+            ruleId,
+            "Regle de diffusion notification modifiee.",
+            auditContext,
+            before,
+            after));
+    }
 }
 
 public sealed record AdminNotificationDeliveryRuleResult(

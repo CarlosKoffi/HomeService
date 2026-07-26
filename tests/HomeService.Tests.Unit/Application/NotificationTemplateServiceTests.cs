@@ -1,4 +1,5 @@
 using HomeService.Application.Admin;
+using HomeService.Application.Auditing;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
@@ -143,6 +144,36 @@ public sealed class NotificationTemplateServiceTests
     }
 
     [Fact]
+    public async Task AdminTemplateService_CreateAsync_WhenAuditActorIsProvided_CreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var service = new AdminNotificationTemplateService(db);
+
+        var result = await service.CreateAsync(
+            new CreateNotificationTemplateRequest(
+                "CustomProviderPushEvent",
+                "MobilePush",
+                "Message mobile prestataire",
+                "Provider",
+                "Sujet",
+                "Message",
+                NotificationTemplateCatalog.CommonVariables,
+                true),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "template-create"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminNotificationTemplateStatus.Ok, result.Status);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminNotificationTemplateCreated", log.Action);
+        Assert.Equal(nameof(NotificationTemplate), log.EntityType);
+        Assert.Equal(result.Response!.Id, log.EntityId);
+        Assert.Equal("template-create", log.CorrelationId);
+        Assert.Null(log.BeforeJson);
+        Assert.Contains("CustomProviderPushEvent", log.AfterJson);
+    }
+
+    [Fact]
     public async Task AdminTemplateService_UpdateAsync_ShouldPersistTemplateChanges()
     {
         var databaseName = Guid.NewGuid().ToString("N");
@@ -185,6 +216,44 @@ public sealed class NotificationTemplateServiceTests
             Assert.Equal("Nouveau message {NomClient}", template.BodyTemplate);
             Assert.False(template.IsActive);
         }
+    }
+
+    [Fact]
+    public async Task AdminTemplateService_UpdateAsync_WhenAuditActorIsProvided_CreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var template = new NotificationTemplate(
+            "MissionCompleted",
+            NotificationTemplateChannel.Email,
+            "Mission terminee",
+            "Customer",
+            "Ancien sujet",
+            "Ancien message",
+            NotificationTemplateCatalog.CommonVariables);
+        db.NotificationTemplates.Add(template);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminNotificationTemplateService(db).UpdateAsync(
+            template.Id,
+            new UpdateNotificationTemplateRequest(
+                "Mission terminee client",
+                "Customer",
+                "Nouveau sujet",
+                "Nouveau message",
+                NotificationTemplateCatalog.CommonVariables,
+                true),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "template-update"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminNotificationTemplateStatus.Ok, result.Status);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminNotificationTemplateUpdated", log.Action);
+        Assert.Equal(nameof(NotificationTemplate), log.EntityType);
+        Assert.Equal(template.Id, log.EntityId);
+        Assert.Equal("template-update", log.CorrelationId);
+        Assert.Contains("Ancien sujet", log.BeforeJson);
+        Assert.Contains("Nouveau sujet", log.AfterJson);
     }
 
     [Fact]

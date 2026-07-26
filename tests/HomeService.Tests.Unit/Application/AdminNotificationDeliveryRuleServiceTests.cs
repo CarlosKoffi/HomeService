@@ -1,4 +1,5 @@
 using HomeService.Application.Admin;
+using HomeService.Application.Auditing;
 using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Infrastructure.Data;
@@ -129,6 +130,48 @@ public sealed class AdminNotificationDeliveryRuleServiceTests
             Assert.Equal("Nouveau sujet", rule.SubjectTemplate);
             Assert.Equal("Nouveau message", rule.BodyTemplate);
         }
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenAuditActorIsProvided_CreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var rule = new NotificationDeliveryRule(
+            "MissionAssignedToProvider",
+            "Mission affectee",
+            "Provider",
+            portalEnabled: false,
+            mobileAppEnabled: true,
+            emailEnabled: true,
+            whatsAppEnabled: false,
+            subjectTemplate: "Sujet",
+            bodyTemplate: "Message");
+        db.NotificationDeliveryRules.Add(rule);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminNotificationDeliveryRuleService(db).UpdateAsync(
+            rule.Id,
+            new UpdateNotificationDeliveryRuleRequest(
+                "Mission prestataire",
+                "Provider",
+                PortalEnabled: false,
+                MobileAppEnabled: true,
+                EmailEnabled: false,
+                WhatsAppEnabled: true,
+                SubjectTemplate: "Sujet",
+                BodyTemplate: "Message"),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "rule-audit"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminNotificationDeliveryRuleStatus.Ok, result.Status);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminNotificationDeliveryRuleUpdated", log.Action);
+        Assert.Equal(nameof(NotificationDeliveryRule), log.EntityType);
+        Assert.Equal(rule.Id, log.EntityId);
+        Assert.Equal("rule-audit", log.CorrelationId);
+        Assert.Contains("Mission affectee", log.BeforeJson);
+        Assert.Contains("Mission prestataire", log.AfterJson);
     }
 
     private static HomeServiceDbContext CreateDbContext()

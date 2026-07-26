@@ -878,10 +878,14 @@ public static class AdminEndpoints
             UpdateNotificationDeliveryRuleRequest request,
             HttpRequest httpRequest,
             AdminNotificationDeliveryRuleService ruleService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await ruleService.UpdateAsync(id, request, cancellationToken);
+            var result = await ruleService.UpdateAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminNotificationDeliveryRuleStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -891,17 +895,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminNotificationDeliveryRuleUpdated",
-                "NotificationDeliveryRule",
-                id,
-                "Regle de diffusion notification modifiee.",
-                after: result.Response);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
@@ -922,10 +915,13 @@ public static class AdminEndpoints
             CreateNotificationTemplateRequest request,
             HttpRequest httpRequest,
             AdminNotificationTemplateService templateService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await templateService.CreateAsync(request, cancellationToken);
+            var result = await templateService.CreateAsync(
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminNotificationTemplateStatus.ValidationFailed)
             {
                 return Results.BadRequest(new { message = result.Message });
@@ -935,17 +931,6 @@ public static class AdminEndpoints
             {
                 return Results.Conflict(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminNotificationTemplateCreated",
-                "NotificationTemplate",
-                result.Response?.Id,
-                "Modele de notification cree.",
-                after: result.Response);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Created($"/api/admin/notification-templates/{result.Response!.Id:D}", result.Response);
         })
@@ -959,10 +944,14 @@ public static class AdminEndpoints
             UpdateNotificationTemplateRequest request,
             HttpRequest httpRequest,
             AdminNotificationTemplateService templateService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await templateService.UpdateAsync(id, request, cancellationToken);
+            var result = await templateService.UpdateAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminNotificationTemplateStatus.NotFound)
             {
                 return Results.NotFound(new { message = result.Message });
@@ -972,17 +961,6 @@ public static class AdminEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminNotificationTemplateUpdated",
-                "NotificationTemplate",
-                id,
-                "Modele de notification modifie.",
-                after: result.Response);
-            await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(result.Response);
         })
