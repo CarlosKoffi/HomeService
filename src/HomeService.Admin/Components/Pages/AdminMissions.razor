@@ -121,7 +121,7 @@
             <article class="operator-row mission-row">
                 <div>
                     <span class="mission-number-chip">@mission.MissionNumber</span>
-                    <strong>@mission.ServiceName</strong>
+                    <strong>@FormatMissionTitle(mission.ServiceName, mission.PrestationName)</strong>
                     <p>@mission.CustomerName - @mission.CustomerPhoneNumber</p>
                     <small>@(mission.CompanyName ?? "Entreprise non affectee") - @(mission.ServiceAddress ?? "Adresse non renseignee")</small>
                 </div>
@@ -288,6 +288,9 @@
         "Cancelled" or "Disputed" => "status-pill danger",
         _ => "status-pill pending"
     };
+
+    private static string FormatMissionTitle(string serviceName, string? prestationName)
+        => string.IsNullOrWhiteSpace(prestationName) ? serviceName : $"{serviceName} - {prestationName}";
 
     private string GetQuickFilterClass(string? status)
     {

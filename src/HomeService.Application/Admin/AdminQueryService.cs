@@ -191,6 +191,8 @@ public sealed class AdminQueryService(IAppDbContext db)
         var missions = await (
             from mission in db.Missions.AsNoTracking()
             join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+            join prestation in db.ServicePrestations.AsNoTracking() on mission.ServicePrestationId equals prestation.Id into prestationJoin
+            from prestation in prestationJoin.DefaultIfEmpty()
             join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
             join provider in db.Providers.AsNoTracking() on mission.ProviderId equals provider.Id into providerJoin
             from provider in providerJoin.DefaultIfEmpty()
@@ -200,7 +202,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                 mission.Id,
                 mission.MissionNumber,
                 service.Name,
-                null,
+                prestation == null ? null : prestation.Name,
                 (customer.FirstName + " " + customer.LastName).Trim(),
                 customer.PhoneNumber,
                 provider == null ? null : provider.FirstName + " " + provider.LastName,
@@ -334,6 +336,8 @@ public sealed class AdminQueryService(IAppDbContext db)
         var query =
             from mission in db.Missions.AsNoTracking()
             join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
+            join prestation in db.ServicePrestations.AsNoTracking() on mission.ServicePrestationId equals prestation.Id into prestationJoin
+            from prestation in prestationJoin.DefaultIfEmpty()
             join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
             join company in db.Companies.AsNoTracking() on mission.CompanyId equals company.Id into companyJoin
             from company in companyJoin.DefaultIfEmpty()
@@ -344,6 +348,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                 mission.Id,
                 mission.MissionNumber,
                 ServiceName = service.Name,
+                PrestationName = prestation == null ? null : prestation.Name,
                 mission.CompanyId,
                 CompanyName = company == null ? null : company.Name,
                 mission.ProviderId,
@@ -370,6 +375,7 @@ public sealed class AdminQueryService(IAppDbContext db)
             var term = search.Trim().ToLowerInvariant();
             query = query.Where(mission =>
                 mission.ServiceName.ToLower().Contains(term)
+                || (mission.PrestationName != null && mission.PrestationName.ToLower().Contains(term))
                 || mission.MissionNumber.ToLower().Contains(term)
                 || mission.CustomerName.ToLower().Contains(term)
                 || mission.CustomerPhoneNumber.ToLower().Contains(term)
@@ -396,7 +402,10 @@ public sealed class AdminQueryService(IAppDbContext db)
                 mission.Amount,
                 mission.Currency,
                 mission.ServiceAddress,
-                mission.CreatedAt))
+                mission.CreatedAt)
+            {
+                PrestationName = mission.PrestationName
+            })
             .ToListAsync(cancellationToken);
 
         var stats = new AdminMissionStatsResponse(
@@ -414,6 +423,8 @@ public sealed class AdminQueryService(IAppDbContext db)
         var mission = await (
             from item in db.Missions.AsNoTracking()
             join service in db.Services.AsNoTracking() on item.ServiceId equals service.Id
+            join prestation in db.ServicePrestations.AsNoTracking() on item.ServicePrestationId equals prestation.Id into prestationJoin
+            from prestation in prestationJoin.DefaultIfEmpty()
             join customer in db.Customers.AsNoTracking() on item.CustomerId equals customer.Id
             join company in db.Companies.AsNoTracking() on item.CompanyId equals company.Id into companyJoin
             from company in companyJoin.DefaultIfEmpty()
@@ -425,6 +436,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                 item.Id,
                 item.MissionNumber,
                 ServiceName = service.Name,
+                PrestationName = prestation == null ? null : prestation.Name,
                 CompanyName = company == null ? null : company.Name,
                 item.CompanyId,
                 CustomerName = (customer.FirstName + " " + customer.LastName).Trim(),
@@ -571,7 +583,10 @@ public sealed class AdminQueryService(IAppDbContext db)
             mission.CreatedAt,
             assignments,
             disputes,
-            messages);
+            messages)
+        {
+            PrestationName = mission.PrestationName
+        };
     }
 
     public async Task<AdminProviderListResponse> ListProvidersAsync(

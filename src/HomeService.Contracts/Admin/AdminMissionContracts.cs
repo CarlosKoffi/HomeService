@@ -26,7 +26,10 @@ public sealed record AdminMissionSummaryResponse(
     int? Amount,
     string Currency,
     string? ServiceAddress,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt)
+{
+    public string? PrestationName { get; init; }
+}
 
 public sealed record AdminMissionActionRequest(string? Note);
 
@@ -73,7 +76,10 @@ public sealed record AdminMissionDetailResponse(
     DateTimeOffset CreatedAt,
     IReadOnlyList<AdminMissionAssignmentResponse> Assignments,
     IReadOnlyList<AdminMissionDisputeResponse> Disputes,
-    IReadOnlyList<AdminMissionConversationMessageResponse> Messages);
+    IReadOnlyList<AdminMissionConversationMessageResponse> Messages)
+{
+    public string? PrestationName { get; init; }
+}
 
 public sealed record AdminMissionDisputeResponse(
     Guid Id,

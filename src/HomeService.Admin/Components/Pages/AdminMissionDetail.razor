@@ -41,7 +41,7 @@ else
         <div>
             <button type="button" class="link-action" @onclick="BackToList">Retour aux missions</button>
             <p class="eyebrow">Dossier mission</p>
-            <h1>@Mission.ServiceName</h1>
+            <h1>@FormatMissionTitle(Mission.ServiceName, Mission.PrestationName)</h1>
             <p class="lead">@Mission.MissionNumber - @Mission.CustomerName - @(Mission.ServiceAddress ?? "Adresse non renseignee")</p>
         </div>
         <div class="company-admin-status">
@@ -553,6 +553,8 @@ else
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
     private static string FormatLocation(decimal? latitude, decimal? longitude) => latitude is null || longitude is null ? "Non renseignees" : $"{latitude}, {longitude}";
     private static string FormatDistance(int? distance, int tolerance) => distance is null ? $"Tolerance {tolerance} m" : $"{distance} m / tolerance {tolerance} m";
+    private static string FormatMissionTitle(string serviceName, string? prestationName)
+        => string.IsNullOrWhiteSpace(prestationName) ? serviceName : $"{serviceName} - {prestationName}";
 
     private static string TranslateMissionMode(string mode) => mode switch { "Instant" => "Direct", "Scheduled" => "Rendez-vous", _ => mode };
     private static string TranslateMissionStatus(string status) => status switch { "Created" => "Creee", "SearchingProvider" => "Recherche", "Offered" => "Proposee", "Assigned" => "Affectee", "Accepted" => "Acceptee", "OnTheWay" => "En route", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", "Disputed" => "Litige", "Resolved" => "Resolue", _ => status };
