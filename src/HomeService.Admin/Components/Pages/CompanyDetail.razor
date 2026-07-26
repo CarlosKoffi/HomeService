@@ -123,7 +123,7 @@ else
                 <dl class="detail-list">
                     <div><dt>Zones</dt><dd>@(Company.InterventionZones ?? "Non renseigne")</dd></div>
                     <div><dt>Services</dt><dd>@(Company.PlannedServices ?? "Non renseigne")</dd></div>
-                    <div><dt>Priorite mission</dt><dd>@Company.MissionDispatchPriority</dd></div>
+                    <div><dt>Priorite mission</dt><dd>@FormatDispatchPriority(Company.MissionDispatchPriority)</dd></div>
                     <div><dt>Urgences</dt><dd>@(Company.AcceptsUrgentMissions ? "Accepte les urgences" : "Urgences desactivees")</dd></div>
                     <div><dt>Wave</dt><dd>@(Company.WavePaymentNumber ?? "Non renseigne")</dd></div>
                     <div><dt>Orange Money</dt><dd>@(Company.OrangeMoneyPaymentNumber ?? "Non renseigne")</dd></div>
@@ -625,6 +625,19 @@ else
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non planifie";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
     private static string FormatMissionTitle(AdminCompanyMissionResponse mission) => string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : $"{mission.ServiceName} - {mission.PrestationName}";
+    private static string FormatDispatchPriority(int priority)
+    {
+        var label = priority switch
+        {
+            <= 25 => "Tres prioritaire",
+            <= 75 => "Prioritaire",
+            <= 150 => "Standard",
+            _ => "Faible priorite"
+        };
+
+        return $"{label} ({priority})";
+    }
+
     private static string FormatSkills(IReadOnlyList<string> services, IReadOnlyList<string> prestations)
     {
         var values = prestations.Count > 0 ? prestations : services;
