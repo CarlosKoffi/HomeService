@@ -53,14 +53,17 @@ Notifications mobile Firebase:
 
 - `FIREBASE_NOTIFICATIONS_ENABLED=true`
 - `FIREBASE_PROJECT_ID=homeservice-18c0c`
-- `FIREBASE_CREDENTIALS_JSON_BASE64=...`
+- `FIREBASE_CREDENTIALS_BASE64=...`
 - Optionnel: `FIREBASE_NOTIFICATIONS_INTERVAL_SECONDS=30`
 - Optionnel: `FIREBASE_NOTIFICATIONS_BATCH_SIZE=50`
 
 Important Coolify: les variables Firebase doivent etre cochees **Available at Runtime** uniquement.
 Ne pas cocher **Available at Buildtime** pour `FIREBASE_CREDENTIALS_JSON` ou
-`FIREBASE_CREDENTIALS_JSON_BASE64`, sinon Docker les injecte comme `ARG` pendant le build et une cle JSON
+`FIREBASE_CREDENTIALS_BASE64`, sinon Docker les injecte comme `ARG` pendant le build et une cle JSON
 multiligne peut casser le deploiement.
+
+Si `FIREBASE_CREDENTIALS_JSON` existe encore dans Coolify, la supprimer ou la laisser vide. Utiliser uniquement
+`FIREBASE_CREDENTIALS_BASE64` en runtime.
 
 Pour generer la valeur base64 depuis Windows PowerShell:
 

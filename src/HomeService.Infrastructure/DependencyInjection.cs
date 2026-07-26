@@ -25,6 +25,7 @@ public static class DependencyInjection
             options.ProjectId = configuration["FIREBASE_PROJECT_ID"];
             options.CredentialsJson = FirebaseCredentialsJsonResolver.Resolve(
                 configuration["FIREBASE_CREDENTIALS_JSON"],
+                configuration["FIREBASE_CREDENTIALS_BASE64"],
                 configuration["FIREBASE_CREDENTIALS_JSON_BASE64"]);
         });
         services.AddSingleton<HttpClient>();

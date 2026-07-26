@@ -25,4 +25,26 @@ public sealed class FirebaseCredentialsJsonResolverTests
 
         Assert.Equal(json, result);
     }
+
+    [Fact]
+    public void Resolve_WhenFirstBase64CandidateIsEmpty_ReturnsNextDecodedJson()
+    {
+        const string json = """{"project_id":"homeservice"}""";
+        var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+
+        var result = FirebaseCredentialsJsonResolver.Resolve(null, null, encoded);
+
+        Assert.Equal(json, result);
+    }
+
+    [Fact]
+    public void Resolve_WhenFirstBase64CandidateIsInvalid_ReturnsNextDecodedJson()
+    {
+        const string json = """{"project_id":"homeservice"}""";
+        var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+
+        var result = FirebaseCredentialsJsonResolver.Resolve(null, "not-base64", encoded);
+
+        Assert.Equal(json, result);
+    }
 }
