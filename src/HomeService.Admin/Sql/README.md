@@ -75,6 +75,8 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 050 | `050_add_mobile_device_tokens.sql` | Mobile Firebase device tokens |
 | 051 | `051_add_notification_delivery_templates.sql` | Editable notification subject/body templates |
 | 052 | `052_add_notification_templates.sql` | Notification templates per event and channel |
+| 053 | `053_seed_notification_template_catalog.sql` | Seed complete notification template catalog |
+| 054 | `054_link_notification_templates_to_rules.sql` | Link notification templates to delivery rules |
 
 ## Notes
 
