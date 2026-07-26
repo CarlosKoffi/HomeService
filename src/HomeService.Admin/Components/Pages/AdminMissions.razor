@@ -37,6 +37,27 @@
     </section>
 }
 
+<nav class="mission-quick-filters" aria-label="Filtres rapides missions">
+    <button type="button" class="@GetQuickFilterClass(null)" @onclick="() => ApplyStatusFilter(null)">
+        Toutes
+    </button>
+    <button type="button" class="@GetQuickFilterClass("Disputed")" @onclick='() => ApplyStatusFilter("Disputed")'>
+        Litiges
+    </button>
+    <button type="button" class="@GetQuickFilterClass("Cancelled")" @onclick='() => ApplyStatusFilter("Cancelled")'>
+        Annulees
+    </button>
+    <button type="button" class="@GetQuickFilterClass("Started")" @onclick='() => ApplyStatusFilter("Started")'>
+        En cours
+    </button>
+    <button type="button" class="@GetQuickFilterClass("Completed")" @onclick='() => ApplyStatusFilter("Completed")'>
+        Terminees
+    </button>
+    <button type="button" class="@GetQuickFilterClass("Accepted")" @onclick='() => ApplyStatusFilter("Accepted")'>
+        Acceptees
+    </button>
+</nav>
+
 <section class="toolbar operator-toolbar">
     <label>
         Statut
@@ -188,6 +209,12 @@
         Navigation.NavigateTo($"/missions/{missionId}");
     }
 
+    private async Task ApplyStatusFilter(string? status)
+    {
+        SelectedStatus = status;
+        await LoadAsync();
+    }
+
     private async Task ConfirmDisputeAsync(Guid missionId)
     {
         if (string.IsNullOrWhiteSpace(DisputeNote))
@@ -261,4 +288,13 @@
         "Cancelled" or "Disputed" => "status-pill danger",
         _ => "status-pill pending"
     };
+
+    private string GetQuickFilterClass(string? status)
+    {
+        var isActive = string.IsNullOrWhiteSpace(status)
+            ? string.IsNullOrWhiteSpace(SelectedStatus)
+            : string.Equals(SelectedStatus, status, StringComparison.OrdinalIgnoreCase);
+
+        return isActive ? "active" : string.Empty;
+    }
 }

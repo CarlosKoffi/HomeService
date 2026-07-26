@@ -3114,6 +3114,38 @@ h3 {
     padding: .55rem .9rem;
 }
 
+.mission-quick-filters {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .045);
+    display: flex;
+    gap: .35rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+    padding: .45rem;
+}
+
+.mission-quick-filters button {
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    color: #0f172a;
+    cursor: pointer;
+    flex: 0 0 auto;
+    font: inherit;
+    font-size: .86rem;
+    font-weight: 850;
+    min-height: 40px;
+    padding: .55rem .9rem;
+}
+
+.mission-quick-filters button.active {
+    background: #2563eb;
+    color: #fff;
+}
+
 .audit-filters {
     align-items: end;
     background: #fff;
