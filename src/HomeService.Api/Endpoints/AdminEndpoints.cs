@@ -188,59 +188,33 @@ public static class AdminEndpoints
             Guid id,
             UpdateCmsContentValueRequest request,
             HttpRequest httpRequest,
-            IAppDbContext db,
+            AdminCmsContentManagementService contentService,
             CancellationToken cancellationToken) =>
         {
-            var value = await db.CmsContentValues.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-            if (value is null)
+            var result = await contentService.UpdateContentValueAsync(
+                id,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+
+            if (result.Status == AdminCmsContentManagementStatus.NotFound)
             {
-                return Results.NotFound(new { message = "Champ CMS introuvable." });
+                return Results.NotFound(new { message = result.Message });
             }
 
-            var before = new
-            {
-                value.TextValue,
-                value.JsonValue
-            };
-
-            value.SetText(request.TextValue);
-            value.SetJson(request.JsonValue);
-
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCmsContentValueUpdated",
-                nameof(CmsContentValue),
-                value.Id,
-                $"Champ CMS '{value.FieldKey}' mis a jour.",
-                before,
-                after: new { value.TextValue, value.JsonValue });
-
-            await db.SaveChangesAsync(cancellationToken);
-
-            return Results.Ok(new CmsContentValueResponse(
-                value.Id,
-                value.SectionId,
-                value.FieldKey,
-                value.ValueType.ToString(),
-                null,
-                value.TextValue,
-                value.JsonValue,
-                value.MediaAssetId,
-                null));
+            return Results.Ok(result.Response);
         })
         .WithName("UpdateAdminCmsContentValue");
 
         admin.MapPost("/cms/content-values/{id:guid}/media", async (
             Guid id,
             HttpRequest httpRequest,
-            IAppDbContext db,
+            AdminCmsContentManagementService contentService,
             CmsMediaUploadService uploadService,
             CancellationToken cancellationToken) =>
         {
-            var value = await db.CmsContentValues.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
-            if (value is null)
+            if (!await contentService.ContentValueExistsAsync(id, cancellationToken))
             {
                 return Results.NotFound(new { message = "Champ CMS introuvable." });
             }
@@ -259,37 +233,19 @@ public static class AdminEndpoints
 
             try
             {
-                var before = new
-                {
-                    value.TextValue,
-                    value.MediaAssetId
-                };
-
                 var mediaAsset = await uploadService.SaveAsync(file, cancellationToken);
-                db.CmsMediaAssets.Add(mediaAsset);
-
                 var mediaUrl = $"/api/cms/media/{mediaAsset.Id}";
-                value.AttachMedia(mediaAsset.Id, mediaUrl);
-
-                AddAuditLog(
-                    db,
-                    httpRequest,
-                    AuditActor.Admin(),
-                    "AdminCmsMediaUploaded",
-                    nameof(CmsContentValue),
-                    value.Id,
-                    $"Image CMS '{value.FieldKey}' remplacee.",
-                    before,
-                    after: new { value.TextValue, value.MediaAssetId, mediaAsset.FileName, mediaAsset.SizeInBytes });
-
-                await db.SaveChangesAsync(cancellationToken);
-
-                return Results.Ok(new CmsMediaUploadResponse(
-                    mediaAsset.Id,
-                    mediaAsset.FileName,
+                var result = await contentService.AttachMediaAsync(
+                    id,
+                    mediaAsset,
                     mediaUrl,
-                    mediaAsset.ContentType,
-                    mediaAsset.SizeInBytes));
+                    AuditActor.Admin(),
+                    GetAuditRequestContext(httpRequest),
+                    cancellationToken);
+
+                return result.Status == AdminCmsContentManagementStatus.NotFound
+                    ? Results.NotFound(new { message = result.Message })
+                    : Results.Ok(result.Response);
             }
             catch (InvalidOperationException exception)
             {

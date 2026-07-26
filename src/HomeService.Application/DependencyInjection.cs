@@ -61,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<AdminQueryService>();
         services.AddScoped<AdminAccessControlService>();
         services.AddScoped<AdminCmsQueryService>();
+        services.AddScoped<AdminCmsContentManagementService>();
         services.AddScoped<AdminCompanyApplicationReviewService>();
         services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
         services.AddScoped<AdminCompanyNotificationService>();
