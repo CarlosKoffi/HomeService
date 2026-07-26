@@ -121,7 +121,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
             portalNotifications.AddForDocument(
                 document.CompanyApplication,
                 document,
-                notificationSubject,
+                notificationEventKey,
                 notificationSubject,
                 reviewComment.Value!,
                 GetTone(document.ReviewStatus));

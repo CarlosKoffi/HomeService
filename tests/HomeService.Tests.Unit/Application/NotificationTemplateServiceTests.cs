@@ -28,6 +28,12 @@ public sealed class NotificationTemplateServiceTests
             && seed.Channels.Contains(NotificationTemplateChannel.Portal)
             && seed.Channels.Contains(NotificationTemplateChannel.Email)
             && seed.Channels.Contains(NotificationTemplateChannel.WhatsApp));
+        Assert.Contains(NotificationTemplateCatalog.Defaults, seed =>
+            seed.EventKey == "CompanyDocumentApproved"
+            && seed.Channels.Contains(NotificationTemplateChannel.Portal));
+        Assert.Contains(NotificationTemplateCatalog.Defaults, seed =>
+            seed.EventKey == "MissionDisputeResolved"
+            && seed.Channels.Contains(NotificationTemplateChannel.Portal));
     }
 
     [Fact]
@@ -41,6 +47,8 @@ public sealed class NotificationTemplateServiceTests
         Assert.Contains(templates, template => template.EventKey == "MissionCompleted" && template.Channel == "MobilePush");
         Assert.Contains(templates, template => template.EventKey == "MissionCompleted" && template.Channel == "Email");
         Assert.Contains(templates, template => template.EventKey == "MissionCompleted" && template.Channel == "WhatsApp");
+        Assert.Contains(templates, template => template.EventKey == "CompanyDocumentApproved" && template.Channel == "Portal");
+        Assert.Contains(templates, template => template.EventKey == "MissionDisputeResolved" && template.Channel == "Portal");
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionCompleted"));
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "CompanyApplicationApproved"));
     }

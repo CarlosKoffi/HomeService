@@ -8,6 +8,7 @@ public static class NotificationTemplateCatalog
 
     public static readonly IReadOnlyList<NotificationTemplateSeed> Defaults =
     [
+        Company("CompanyDocumentApproved", "Piece entreprise validee", "Piece validee", "{NomEntreprise}, une piece de votre dossier a ete validee."),
         Company("CompanyDocumentRejected", "Piece entreprise refusee", "Piece a reprendre", "{NomEntreprise}, une piece de votre dossier demande une correction. {Note}"),
         Company("CompanyDocumentNeedsReplacement", "Complement requis sur dossier entreprise", "Complement requis", "{NomEntreprise}, notre equipe demande un complement sur votre dossier. {Note}"),
         Company("CompanyDocumentReopened", "Piece entreprise reouverte", "Piece reouverte", "{NomEntreprise}, une piece de votre dossier a ete remise en verification."),
@@ -25,6 +26,7 @@ public static class NotificationTemplateCatalog
         Company("MissionProviderAccepted", "Prestataire a accepte", "Mission acceptee", "{NomPrestataire} a accepte la mission {NumeroMission}."),
         Company("MissionAdditionalQuoteRequested", "Devis complementaire demande", "Complement demande", "{NomPrestataire} demande un devis complementaire pour {NumeroMission}. {Note}"),
         Company("MissionDisputeOpened", "Litige mission ouvert", "Litige ouvert", "Un litige est ouvert sur la mission {NumeroMission}. {Motif}"),
+        Company("MissionDisputeResolved", "Litige mission resolu", "Litige resolu", "Le litige de la mission {NumeroMission} est resolu. {Note}"),
         Company("MissionPaymentReleased", "Paiement transfere", "Paiement transfere", "Le paiement de {Montant} pour {NumeroMission} est pret pour transfert."),
         Provider("InterimCandidateApproved", "Candidature interimaire acceptee", "Candidature acceptee", "{NomPrestataire}, {NomEntreprise} a accepte votre candidature."),
         Provider("InterimCandidateRejected", "Candidature interimaire refusee", "Candidature non retenue", "{NomPrestataire}, votre candidature chez {NomEntreprise} n'a pas ete retenue. {Note}"),
