@@ -1754,6 +1754,10 @@ h3 {
     padding: .65rem 1rem;
 }
 
+.mission-dispute-box button.danger-action {
+    background: #dc2626;
+}
+
 .mission-admin-action {
     align-items: center;
     display: flex;

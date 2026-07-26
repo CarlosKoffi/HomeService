@@ -120,6 +120,17 @@ else
                         </label>
                         <button type="button" @onclick="MarkDisputedAsync" disabled="@IsActionBusy">Signaler un litige</button>
                     </div>
+                    <div class="mission-dispute-box mission-cancel-box">
+                        <label>
+                            Annulation admin
+                            <textarea @bind="CancellationNote" placeholder="Expliquez pourquoi l'administration annule cette mission."></textarea>
+                        </label>
+                        <label>
+                            Frais retenus au client
+                            <input type="number" min="0" step="100" @bind="CancellationFeeAmount" placeholder="0" />
+                        </label>
+                        <button type="button" class="danger-action" @onclick="CancelMissionAsync" disabled="@IsActionBusy">Annuler la mission</button>
+                    </div>
                 }
                 else if (Mission.Status == "Disputed")
                 {
@@ -276,6 +287,8 @@ else
     private string? ErrorMessage { get; set; }
     private string? Message { get; set; }
     private string? DisputeNote { get; set; }
+    private string? CancellationNote { get; set; }
+    private int? CancellationFeeAmount { get; set; }
     private string? ResolutionNote { get; set; }
     private string ResolutionType { get; set; } = "PartialRefund";
     private int? RefundPercent { get; set; }
@@ -358,6 +371,45 @@ else
         catch (Exception exception)
         {
             ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionBusy = false;
+        }
+    }
+
+    private async Task CancelMissionAsync()
+    {
+        if (Mission is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(CancellationNote))
+        {
+            ErrorMessage = "Ajoutez une note avant d'annuler la mission.";
+            return;
+        }
+
+        IsActionBusy = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            Mission = await ApiClient.CancelAdminMissionAsync(
+                Mission.Id,
+                "Other",
+                CancellationNote,
+                CancellationFeeAmount);
+            Message = "Mission annulee par l'administration.";
+            CancellationNote = null;
+            CancellationFeeAmount = null;
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Annulation impossible. Detail: {exception.Message}";
         }
         finally
         {
