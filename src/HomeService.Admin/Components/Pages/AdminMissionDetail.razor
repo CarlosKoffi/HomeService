@@ -64,6 +64,10 @@ else
             <strong>@FormatMoney(Mission.PlatformCommissionAmount, Mission.Currency)</strong>
         </article>
         <article>
+            <span>Remboursement</span>
+            <strong>@FormatMoney(Mission.RefundAmount, Mission.Currency)</strong>
+        </article>
+        <article>
             <span>Contact</span>
             <strong>@(Mission.CanRevealContactDetails ? "Libre" : "Masque")</strong>
         </article>
@@ -391,6 +395,13 @@ else
             return;
         }
 
+        var refundValidationMessage = ValidateRefundDecision();
+        if (refundValidationMessage is not null)
+        {
+            ErrorMessage = refundValidationMessage;
+            return;
+        }
+
         IsActionBusy = true;
         ErrorMessage = null;
         Message = null;
@@ -509,6 +520,31 @@ else
         }
 
         return "A renseigner avant validation.";
+    }
+
+    private string? ValidateRefundDecision()
+    {
+        if (!RequiresRefundInput)
+        {
+            return null;
+        }
+
+        if (RefundPercent is < 0 or > 100)
+        {
+            return "Le pourcentage de remboursement doit etre compris entre 0 et 100.";
+        }
+
+        if (RefundAmount is < 0)
+        {
+            return "Le montant de remboursement ne peut pas etre negatif.";
+        }
+
+        if (RefundReferenceAmount > 0 && PreviewRefundAmount > RefundReferenceAmount)
+        {
+            return "Le remboursement ne peut pas depasser le montant de reference de la mission.";
+        }
+
+        return null;
     }
 
     private static string FormatMoney(int? amount, string currency) => amount is null ? "Aucun prix" : $"{amount:N0} {currency}";
