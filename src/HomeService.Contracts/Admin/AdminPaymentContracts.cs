@@ -12,6 +12,9 @@ public sealed record AdminPaymentStatsResponse(
     int MobileMoneyAmount,
     int CardAmount,
     int PlatformCommissionAmount,
+    int PendingPlatformCommissionAmount,
+    int CompanyPayoutAmount,
+    int RefundAmount,
     int DisputedAmount,
     int TransactionCount);
 
@@ -30,6 +33,8 @@ public sealed record AdminPaymentMissionResponse(
     string PaymentMethod,
     int Amount,
     int PlatformCommissionAmount,
+    int CompanyPayoutAmount,
+    int RefundAmount,
     int TransportFeeAmount,
     int CancellationFeeAmount,
     string Currency,

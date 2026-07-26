@@ -27,6 +27,11 @@
             <i aria-hidden="true">%</i>
         </article>
         <article>
+            <span>Reversement entreprises</span>
+            <strong>@Money(Snapshot.Stats.CompanyPayoutAmount)</strong>
+            <small>Montant net a reverser</small>
+        </article>
+        <article>
             <span>Total encaisse</span>
             <strong>@Money(Snapshot.Stats.PaidAmount)</strong>
             <small>@Snapshot.Stats.TransactionCount transaction(s)</small>
@@ -50,7 +55,12 @@
         <article>
             <span>En attente</span>
             <strong>@Money(Snapshot.Stats.PendingAmount)</strong>
-            <small>Autorisations et demandes ouvertes</small>
+            <small>Commission previsionnelle @Money(Snapshot.Stats.PendingPlatformCommissionAmount)</small>
+        </article>
+        <article>
+            <span>Litiges et remboursements</span>
+            <strong>@Money(Snapshot.Stats.DisputedAmount)</strong>
+            <small>Remboursements @Money(Snapshot.Stats.RefundAmount)</small>
         </article>
     </section>
 }
@@ -138,9 +148,14 @@
                     <span>@(payment.ProviderName ?? "Prestataire non affecte")</span>
                     <span>@Money(payment.Amount)</span>
                     <span>Commission @Money(payment.PlatformCommissionAmount)</span>
+                    <span>Entreprise @Money(payment.CompanyPayoutAmount)</span>
                 </div>
                 <div class="payment-admin-side">
                     <strong>@FormatDate(payment.ScheduledFor ?? payment.CreatedAt)</strong>
+                    @if (payment.RefundAmount > 0)
+                    {
+                        <small>Remboursement @Money(payment.RefundAmount)</small>
+                    }
                     @if (payment.CancellationFeeAmount > 0)
                     {
                         <small>Annulation @Money(payment.CancellationFeeAmount)</small>
