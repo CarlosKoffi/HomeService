@@ -885,9 +885,11 @@ public sealed class AdminQueryService(IAppDbContext db)
                 || (payment.ProviderName != null && payment.ProviderName.ToLower().Contains(term)));
         }
 
-        var items = await query
+        var paymentRecords = await query
             .OrderByDescending(payment => payment.ScheduledFor ?? payment.CreatedAt)
-            .Take(300)
+            .ToListAsync(cancellationToken);
+
+        var allItems = paymentRecords
             .Select(payment => new AdminPaymentMissionResponse(
                 payment.Id,
                 payment.MissionNumber,
@@ -910,18 +912,22 @@ public sealed class AdminQueryService(IAppDbContext db)
                 payment.Currency,
                 payment.ScheduledFor,
                 payment.CreatedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        var collectedItems = items
+        var items = allItems
+            .Take(300)
+            .ToList();
+
+        var collectedItems = allItems
             .Where(item => item.PaymentStatus is nameof(PaymentStatus.Paid) or nameof(PaymentStatus.Authorized))
             .ToList();
-        var pendingItems = items.Where(item => item.PaymentStatus == nameof(PaymentStatus.Pending)).ToList();
-        var disputedItems = items
+        var pendingItems = allItems.Where(item => item.PaymentStatus == nameof(PaymentStatus.Pending)).ToList();
+        var disputedItems = allItems
             .Where(item => item.PaymentStatus is nameof(PaymentStatus.Failed) or nameof(PaymentStatus.Refunded)
                 || item.MissionStatus == nameof(MissionStatus.Disputed))
             .ToList();
         var stats = new AdminPaymentStatsResponse(
-            items.Sum(item => item.Amount),
+            allItems.Sum(item => item.Amount),
             collectedItems.Sum(item => item.Amount),
             pendingItems.Sum(item => item.Amount),
             pendingItems.Where(item => item.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(item => item.Amount),
@@ -930,9 +936,9 @@ public sealed class AdminQueryService(IAppDbContext db)
             collectedItems.Sum(item => item.PlatformCommissionAmount),
             pendingItems.Sum(item => item.PlatformCommissionAmount),
             collectedItems.Sum(item => item.CompanyPayoutAmount),
-            items.Sum(item => item.RefundAmount),
+            allItems.Sum(item => item.RefundAmount),
             disputedItems.Sum(item => item.Amount),
-            items.Count);
+            allItems.Count);
 
         return new AdminPaymentListResponse(items, stats);
     }

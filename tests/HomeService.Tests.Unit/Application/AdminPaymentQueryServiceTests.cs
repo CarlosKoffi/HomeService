@@ -75,6 +75,73 @@ public sealed class AdminPaymentQueryServiceTests
             && item.PaymentStatus == nameof(PaymentStatus.Authorized));
     }
 
+    [Fact]
+    public async Task ListPaymentsAsync_WhenMoreThanDisplayLimit_CalculatesStatsOnAllMatchingPayments()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("Entreprise Test", "+2250700000000", "contact@example.ci");
+        var service = new Service("Menage a domicile", "Nettoyage residentiel", createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var provider = new ProviderProfile(
+            company.Id,
+            "Mamadou",
+            "Diallo",
+            "+2250700000002",
+            "mamadou@example.ci",
+            new DateOnly(1995, 4, 12),
+            "Cocody",
+            ProviderGender.Male,
+            ProviderEmploymentType.CompanyEmployee,
+            yearsOfExperience: 4,
+            missionLatitude: null,
+            missionLongitude: null,
+            missionRadiusKm: 5);
+
+        db.Companies.Add(company);
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Providers.Add(provider);
+
+        for (var index = 0; index < 301; index++)
+        {
+            var mission = new Mission(
+                customer.Id,
+                service.Id,
+                MissionMode.Instant,
+                PaymentMethod.MobileMoney,
+                scheduledFor: DateTimeOffset.UtcNow.AddMinutes(index),
+                estimatedDurationMinutes: 60,
+                description: $"Mission {index}");
+            mission.AssignWithCompanyQuote(
+                provider.Id,
+                company.Id,
+                quotedAmount: 1_000,
+                maxAllowedAmount: 2_000,
+                overMaxJustification: null);
+            mission.MarkProviderAccepted(provider.Id, company.Id);
+            mission.ConfirmByCustomer(
+                platformCommissionAmount: 150,
+                transportFeeAmount: 0,
+                platformCommissionRateBasisPoints: 1_500);
+            db.Missions.Add(mission);
+        }
+
+        await db.SaveChangesAsync();
+
+        var result = await new AdminQueryService(db).ListPaymentsAsync(
+            period: "month",
+            paymentStatus: null,
+            paymentMethod: null,
+            search: null,
+            CancellationToken.None);
+
+        Assert.Equal(300, result.Items.Count);
+        Assert.Equal(301, result.Stats.TransactionCount);
+        Assert.Equal(301_000, result.Stats.PaidAmount);
+        Assert.Equal(45_150, result.Stats.PlatformCommissionAmount);
+        Assert.Equal(255_850, result.Stats.CompanyPayoutAmount);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
