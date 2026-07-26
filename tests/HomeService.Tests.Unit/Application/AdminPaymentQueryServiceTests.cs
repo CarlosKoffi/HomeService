@@ -65,7 +65,9 @@ public sealed class AdminPaymentQueryServiceTests
             CancellationToken.None);
 
         Assert.Equal(1_500, result.Stats.PlatformCommissionAmount);
-        Assert.Equal(10_000, result.Stats.PendingAmount);
+        Assert.Equal(10_000, result.Stats.PaidAmount);
+        Assert.Equal(0, result.Stats.PendingAmount);
+        Assert.Equal(8_500, result.Stats.CompanyPayoutAmount);
         Assert.Equal(1, result.Stats.TransactionCount);
         Assert.Contains(result.Items, item =>
             item.MissionNumber == mission.MissionNumber

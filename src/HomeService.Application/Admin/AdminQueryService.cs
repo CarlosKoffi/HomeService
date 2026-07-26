@@ -897,19 +897,24 @@ public sealed class AdminQueryService(IAppDbContext db)
                 payment.CreatedAt))
             .ToListAsync(cancellationToken);
 
-        var paidItems = items.Where(item => item.PaymentStatus == PaymentStatus.Paid.ToString()).ToList();
-        var pendingItems = items.Where(item => item.PaymentStatus is nameof(PaymentStatus.Pending) or nameof(PaymentStatus.Authorized)).ToList();
-        var disputedItems = items.Where(item => item.PaymentStatus is nameof(PaymentStatus.Failed) or nameof(PaymentStatus.Refunded)).ToList();
+        var collectedItems = items
+            .Where(item => item.PaymentStatus is nameof(PaymentStatus.Paid) or nameof(PaymentStatus.Authorized))
+            .ToList();
+        var pendingItems = items.Where(item => item.PaymentStatus == nameof(PaymentStatus.Pending)).ToList();
+        var disputedItems = items
+            .Where(item => item.PaymentStatus is nameof(PaymentStatus.Failed) or nameof(PaymentStatus.Refunded)
+                || item.MissionStatus == nameof(MissionStatus.Disputed))
+            .ToList();
         var stats = new AdminPaymentStatsResponse(
             items.Sum(item => item.Amount),
-            paidItems.Sum(item => item.Amount),
+            collectedItems.Sum(item => item.Amount),
             pendingItems.Sum(item => item.Amount),
             pendingItems.Where(item => item.PaymentMethod == PaymentMethod.Cash.ToString()).Sum(item => item.Amount),
-            paidItems.Where(item => item.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(item => item.Amount),
-            paidItems.Where(item => item.PaymentMethod == PaymentMethod.Card.ToString()).Sum(item => item.Amount),
-            paidItems.Sum(item => item.PlatformCommissionAmount),
+            collectedItems.Where(item => item.PaymentMethod == PaymentMethod.MobileMoney.ToString()).Sum(item => item.Amount),
+            collectedItems.Where(item => item.PaymentMethod == PaymentMethod.Card.ToString()).Sum(item => item.Amount),
+            collectedItems.Sum(item => item.PlatformCommissionAmount),
             pendingItems.Sum(item => item.PlatformCommissionAmount),
-            paidItems.Sum(item => item.CompanyPayoutAmount),
+            collectedItems.Sum(item => item.CompanyPayoutAmount),
             items.Sum(item => item.RefundAmount),
             disputedItems.Sum(item => item.Amount),
             items.Count);
