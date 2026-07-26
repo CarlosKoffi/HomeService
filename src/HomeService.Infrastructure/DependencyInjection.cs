@@ -23,7 +23,9 @@ public static class DependencyInjection
         {
             options.Enabled = string.Equals(configuration["FIREBASE_NOTIFICATIONS_ENABLED"], "true", StringComparison.OrdinalIgnoreCase);
             options.ProjectId = configuration["FIREBASE_PROJECT_ID"];
-            options.CredentialsJson = configuration["FIREBASE_CREDENTIALS_JSON"];
+            options.CredentialsJson = FirebaseCredentialsJsonResolver.Resolve(
+                configuration["FIREBASE_CREDENTIALS_JSON"],
+                configuration["FIREBASE_CREDENTIALS_JSON_BASE64"]);
         });
         services.AddSingleton<HttpClient>();
         services.AddScoped<IMobilePushSender, FirebaseCloudMessagingSender>();
