@@ -3391,6 +3391,38 @@ h3 {
     color: #fff;
 }
 
+.audit-quick-filters {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    margin: 1.1rem 0 -.35rem;
+}
+
+.audit-quick-filters button {
+    background: #ffffff;
+    border: 1px solid #dbe3ef;
+    border-radius: 999px;
+    color: #000000;
+    cursor: pointer;
+    font: inherit;
+    font-size: .88rem;
+    font-weight: 850;
+    min-height: 38px;
+    padding: .45rem .9rem;
+}
+
+.audit-quick-filters button.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+.audit-quick-filters button:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+}
+
 .audit-filters {
     align-items: end;
     background: #fff;

@@ -15,25 +15,40 @@
     <button type="button" class="secondary-action" @onclick="RefreshAsync" disabled="@IsLoading">Actualiser</button>
 </section>
 
+<nav class="audit-quick-filters" aria-label="Filtres rapides des logs">
+    @foreach (var filter in ActorFilters)
+    {
+        <button type="button"
+                class="@GetActorFilterClass(filter.Value)"
+                @onclick="() => SelectActorAsync(filter.Value)"
+                disabled="@IsLoading">
+            @filter.Label
+        </button>
+    }
+</nav>
+
 <section class="audit-filters">
     <label>
         Recherche
-        <input type="search" @bind="Search" @bind:event="oninput" placeholder="Action, acteur, resume..." />
+        <input type="search" @bind="Search" @bind:event="oninput" placeholder="Mission, entreprise, prestataire, action..." />
     </label>
     <label>
         Acteur
         <select @bind="ActorType">
-            <option value="">Tous</option>
-            <option value="Admin">Admin</option>
-            <option value="Company">Entreprise</option>
-            <option value="Provider">Prestataire</option>
-            <option value="Anonymous">Visiteur</option>
-            <option value="System">Systeme</option>
+            @foreach (var actor in ActorFilters)
+            {
+                <option value="@actor.Value">@actor.Label</option>
+            }
         </select>
     </label>
     <label>
-        Entite
-        <input type="search" @bind="EntityType" @bind:event="oninput" placeholder="Company, Mission..." />
+        Dossier
+        <select @bind="EntityType">
+            @foreach (var entity in EntityFilters)
+            {
+                <option value="@entity.Value">@entity.Label</option>
+            }
+        </select>
     </label>
     <button type="button" @onclick="ApplyFiltersAsync" disabled="@IsLoading">Filtrer</button>
 </section>
@@ -69,12 +84,12 @@
                     <div class="audit-log-icon">@GetActorInitial(entry.ActorType)</div>
                     <div class="audit-log-main">
                         <div class="audit-log-title">
-                            <strong>@entry.Action</strong>
+                            <strong>@TranslateAction(entry.Action)</strong>
                             <span>@entry.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
                         </div>
                         <p>@(entry.Summary ?? "Action enregistree.")</p>
                         <div class="audit-log-meta">
-                            <span>@entry.ActorType</span>
+                            <span>@TranslateActorType(entry.ActorType)</span>
                             <span>@(entry.ActorDisplayName ?? "acteur non renseigne")</span>
                             <span>@TranslateEntityType(entry.EntityType)</span>
                             @if (entry.EntityId.HasValue)
@@ -112,6 +127,33 @@
     private string? ActorType { get; set; }
     private string? EntityType { get; set; }
 
+    private static readonly IReadOnlyList<FilterOption> ActorFilters =
+    [
+        new("", "Tous"),
+        new("Admin", "Admin"),
+        new("Company", "Entreprises"),
+        new("Provider", "Prestataires"),
+        new("Anonymous", "Visiteurs"),
+        new("System", "Systeme")
+    ];
+
+    private static readonly IReadOnlyList<FilterOption> EntityFilters =
+    [
+        new("", "Tous les dossiers"),
+        new("Company", "Entreprises"),
+        new("CompanyApplication", "Demandes entreprises"),
+        new("ProviderProfile", "Prestataires"),
+        new("ProviderAffiliationRequest", "Demandes interim"),
+        new("Mission", "Missions"),
+        new("ProviderMissionAssignment", "Affectations"),
+        new("NotificationOutboxMessage", "Notifications"),
+        new("NotificationDeliveryRule", "Regles notification"),
+        new("NotificationTemplate", "Modeles notification"),
+        new("Service", "Services"),
+        new("ServicePrestation", "Prestations"),
+        new("CompanyServiceProposal", "Propositions service")
+    ];
+
     private bool CanPrevious => Skip > 0;
     private bool CanNext => Skip + PageSize < Total;
     private string TotalLabel => Total == 0 ? "Aucune action" : $"{Total} action(s)";
@@ -129,6 +171,13 @@
 
     private async Task ApplyFiltersAsync()
     {
+        Skip = 0;
+        await LoadAsync();
+    }
+
+    private async Task SelectActorAsync(string? actorType)
+    {
+        ActorType = actorType;
         Skip = 0;
         await LoadAsync();
     }
@@ -179,16 +228,35 @@
         return string.IsNullOrWhiteSpace(actorType) ? "?" : actorType[..1].ToUpperInvariant();
     }
 
+    private string GetActorFilterClass(string? actorType)
+    {
+        return string.Equals(ActorType ?? string.Empty, actorType ?? string.Empty, StringComparison.OrdinalIgnoreCase)
+            ? "active"
+            : string.Empty;
+    }
+
     private static string ShortId(Guid id)
     {
         return id.ToString("N")[..8];
     }
+
+    private static string TranslateActorType(string actorType) => actorType switch
+    {
+        "Admin" => "Admin",
+        "Company" => "Entreprise",
+        "Provider" => "Prestataire",
+        "Anonymous" => "Visiteur",
+        "System" => "Systeme",
+        _ => actorType
+    };
 
     private static string TranslateEntityType(string entityType) => entityType switch
     {
         "Company" => "Entreprise",
         "CompanyApplication" => "Demande entreprise",
         "ProviderProfile" => "Prestataire",
+        "ProviderAffiliationRequest" => "Demande interim",
+        "ProviderMissionAssignment" => "Affectation",
         "Mission" => "Mission",
         "NotificationOutboxMessage" => "Notification",
         "NotificationDeliveryRule" => "Regle notification",
@@ -198,6 +266,42 @@
         "CompanyServiceProposal" => "Proposition service",
         _ => entityType
     };
+
+    private static string TranslateAction(string action) => action switch
+    {
+        "CompanyPortalLoginSucceeded" => "Connexion entreprise",
+        "CompanyApplicationSubmitted" => "Demande entreprise envoyee",
+        "CompanyApplicationApproved" => "Demande entreprise validee",
+        "CompanyApplicationRejected" => "Demande entreprise refusee",
+        "CompanyApplicationComplementRequested" => "Complement demande",
+        "CompanyApplicationActivationLinkGenerated" => "Lien d'activation genere",
+        "CompanyEmployeeCreated" => "Employe ajoute",
+        "CompanyEmployeeUpdated" => "Employe modifie",
+        "CompanyEmployeeSuspended" => "Employe suspendu",
+        "CompanyEmployeeAvailabilityUpdated" => "Disponibilite modifiee",
+        "CompanyEmployeeValidated" => "Prestataire valide",
+        "CompanyEmployeeUnvalidated" => "Prestataire suspendu",
+        "CompanyMissionAssigned" => "Mission affectee",
+        "InterimCandidateApproved" => "Interimaire valide",
+        "InterimCandidateRejected" => "Interimaire refuse",
+        "ProviderPortalActivated" => "Compte prestataire active",
+        "ProviderPortalLogin" => "Connexion prestataire",
+        "ProviderMissionAccepted" => "Mission acceptee",
+        "ProviderMissionRefused" => "Mission refusee",
+        "ProviderMissionStarted" => "Mission demarree",
+        "ProviderMissionCompleted" => "Mission terminee",
+        "AdminMissionCancelled" => "Mission annulee par admin",
+        "MissionDisputeOpened" => "Litige ouvert",
+        "MissionDisputeResolved" => "Litige resolu",
+        "NotificationRuleUpdated" => "Regle notification modifiee",
+        "NotificationTemplateCreated" => "Modele notification cree",
+        "NotificationTemplateUpdated" => "Modele notification modifie",
+        "NotificationRetried" => "Notification relancee",
+        "NotificationCancelled" => "Notification annulee",
+        _ => action
+    };
+
+    private sealed record FilterOption(string Value, string Label);
 
     private static bool CanOpenEntity(AuditLogEntryResponse entry)
     {
