@@ -1,3 +1,5 @@
+using HomeService.Application.Admin;
+using HomeService.Application.Auditing;
 using HomeService.Application.Clients;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Missions;
@@ -158,6 +160,66 @@ public sealed class ClientMissionWorkflowIntegrationTests
             && activity.Title == "Mission annulee par le client");
     }
 
+    [Fact]
+    public async Task AdminDispute_AfterCompletedMission_CanApprovePartialRefundAndNotifyCustomer()
+    {
+        await using var db = CreateDbContext();
+        var completedMission = await CreateCustomerValidatedMissionScenarioAsync(db);
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Customer,
+            completedMission.CustomerId,
+            MobileDevicePlatform.Android,
+            "customer-device-token",
+            "Telephone client"));
+        await db.SaveChangesAsync();
+
+        var disputeService = CreateDisputeService(db);
+        var openResult = await disputeService.OpenAsync(
+            completedMission.MissionId,
+            "Other",
+            "Le client conteste une partie de la prestation.",
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+        Assert.Equal(AdminMissionOperationStatus.Ok, openResult.Status);
+
+        var resolveResult = await disputeService.ResolveAsync(
+            completedMission.MissionId,
+            "PartialRefund",
+            "Remboursement partiel valide par le support.",
+            refundPercent: 25,
+            refundAmount: null,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+        Assert.Equal(AdminMissionOperationStatus.Ok, resolveResult.Status);
+
+        var mission = await db.Missions.SingleAsync(mission => mission.Id == completedMission.MissionId);
+        Assert.Equal(MissionStatus.Resolved, mission.Status);
+        Assert.Equal(PaymentStatus.Refunded, mission.PaymentStatus);
+        Assert.Equal(3000, mission.RefundAmount);
+
+        var dispute = await db.MissionDisputes.SingleAsync(dispute => dispute.MissionId == completedMission.MissionId);
+        Assert.Equal(MissionDisputeStatus.Resolved, dispute.Status);
+        Assert.Equal(MissionDisputeResolution.PartialRefund, dispute.Resolution);
+        Assert.Equal(2500, dispute.RefundPercentBasisPoints);
+        Assert.Equal(3000, dispute.RefundAmount);
+
+        Assert.Contains(await db.MissionFinancialBreakdowns.ToListAsync(), line =>
+            line.MissionId == completedMission.MissionId
+            && line.LineType == MissionFinancialLineType.Refund
+            && line.Amount == -3000);
+
+        var customerNotifications = await db.NotificationOutboxMessages
+            .Where(message => message.RelatedEntityId == completedMission.MissionId)
+            .ToListAsync();
+        Assert.Contains(customerNotifications, message => message.Channel == NotificationChannel.MobilePush);
+        Assert.Contains(customerNotifications, message => message.Channel == NotificationChannel.WhatsApp);
+        Assert.Contains(await db.CompanyPortalNotifications.ToListAsync(), notification =>
+            notification.CompanyId == completedMission.CompanyId
+            && notification.Type == "MissionDisputeResolved");
+    }
+
     private static async Task<ConfirmedMissionScenario> CreateConfirmedMissionScenarioAsync(HomeServiceDbContext db)
     {
         var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
@@ -198,6 +260,38 @@ public sealed class ClientMissionWorkflowIntegrationTests
         return new ConfirmedMissionScenario(offer.Response.MissionId, seed.Company.Id);
     }
 
+    private static async Task<CustomerValidatedMissionScenario> CreateCustomerValidatedMissionScenarioAsync(HomeServiceDbContext db)
+    {
+        var scenario = await CreateConfirmedMissionScenarioAsync(db);
+        var assignment = await db.ProviderMissionAssignments
+            .Include(item => item.Mission)
+            .SingleAsync(item => item.MissionId == scenario.MissionId);
+        var provider = await LoadProviderAsync(db, assignment.ProviderId);
+        var workflow = new ProviderMissionWorkflowService();
+
+        var startResult = workflow.StartMission(
+            provider,
+            assignment,
+            new ProviderLocationVerificationRequest(5.348850m, -4.003150m, 18));
+        Assert.Equal(ProviderMissionOperationStatus.Ok, startResult.Status);
+
+        var completeResult = workflow.CompleteMission(
+            provider,
+            assignment,
+            new ProviderCompleteMissionRequest(90, "Mission terminee.", "missions/MIS/photo-fin.jpg"));
+        Assert.Equal(ProviderMissionOperationStatus.Ok, completeResult.Status);
+        await db.SaveChangesAsync();
+
+        var validation = await CreateCompletionValidationService(db).ValidateAsync(
+            scenario.MissionId,
+            new ValidateClientMissionCompletionRequest(ClientPhoneNumber, 5, 4, 5, 4, "Service valide.", "PAYOUT-MOCK-DISPUTE"),
+            CancellationToken.None);
+        Assert.True(validation.IsSuccess);
+
+        var mission = await db.Missions.AsNoTracking().SingleAsync(item => item.Id == scenario.MissionId);
+        return new CustomerValidatedMissionScenario(scenario.MissionId, scenario.CompanyId, mission.CustomerId);
+    }
+
     private static ClientMissionRequestService CreateClientRequestService(HomeServiceDbContext db)
     {
         return new ClientMissionRequestService(
@@ -228,6 +322,16 @@ public sealed class ClientMissionWorkflowIntegrationTests
             db,
             new CompanyPortalNotificationWriter(db),
             new MobilePushNotificationQueueService(db));
+    }
+
+    private static AdminMissionDisputeService CreateDisputeService(HomeServiceDbContext db)
+    {
+        return new AdminMissionDisputeService(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db),
+            new NotificationDeliveryPreferenceService(db),
+            new NotificationTemplateService(db));
     }
 
     private static async Task<ProviderMissionAssignment> LoadAssignmentAsync(HomeServiceDbContext db, Guid assignmentId)
@@ -342,4 +446,6 @@ public sealed class ClientMissionWorkflowIntegrationTests
         ServicePrestation Prestation);
 
     private sealed record ConfirmedMissionScenario(Guid MissionId, Guid CompanyId);
+
+    private sealed record CustomerValidatedMissionScenario(Guid MissionId, Guid CompanyId, Guid CustomerId);
 }
