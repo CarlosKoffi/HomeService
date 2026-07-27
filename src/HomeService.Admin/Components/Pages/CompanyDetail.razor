@@ -141,7 +141,10 @@ else
                     <button type="button" class="secondary-action" disabled="@IsDispatchSettingsBusy" @onclick="SaveDispatchSettingsAsync">
                         Enregistrer
                     </button>
-                    <small>Plus le chiffre est bas, plus l'entreprise est prioritaire.</small>
+                    <small>
+                        Plus le chiffre est bas, plus l'entreprise recoit les demandes tot.
+                        0-25 tres prioritaire, 26-75 prioritaire, 76-150 standard, au-dela faible priorite.
+                    </small>
                 </div>
             </article>
         </section>
