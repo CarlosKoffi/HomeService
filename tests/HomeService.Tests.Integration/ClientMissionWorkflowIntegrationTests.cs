@@ -6,6 +6,7 @@ using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Application.ProviderPortal;
 using HomeService.Contracts.Clients;
+using HomeService.Contracts.Missions;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -221,6 +222,93 @@ public sealed class ClientMissionWorkflowIntegrationTests
     }
 
     [Fact]
+    public async Task AdditionalQuote_DuringStartedMission_CanBeRequestedSubmittedAndPaidWithMockedNotifications()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await CreateConfirmedMissionScenarioAsync(db);
+        var assignment = await db.ProviderMissionAssignments
+            .Include(item => item.Mission)
+            .SingleAsync(item => item.MissionId == scenario.MissionId);
+        var provider = await LoadProviderAsync(db, assignment.ProviderId);
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Customer,
+            assignment.Mission!.CustomerId,
+            MobileDevicePlatform.Android,
+            "customer-additional-quote-device-token",
+            "Telephone client complement"));
+        await db.SaveChangesAsync();
+
+        var startResult = new ProviderMissionWorkflowService().StartMission(
+            provider,
+            assignment,
+            new ProviderLocationVerificationRequest(5.348850m, -4.003150m, 18));
+        Assert.Equal(ProviderMissionOperationStatus.Ok, startResult.Status);
+        await db.SaveChangesAsync();
+
+        var quoteService = CreateAdditionalQuoteService(db);
+        var requestResult = await quoteService.RequestFromProviderAsync(
+            provider.Id,
+            scenario.MissionId,
+            new RequestMissionAdditionalQuoteRequest(
+                "Il faut ajouter un produit specifique pour terminer proprement.",
+                "missions/additional/produit.jpg"),
+            CancellationToken.None);
+        Assert.True(requestResult.IsSuccess);
+        Assert.NotNull(requestResult.Response);
+        Assert.Equal("Requested", requestResult.Response.Status);
+
+        var submitResult = await quoteService.SubmitByCompanyAsync(
+            scenario.CompanyId,
+            requestResult.Response.Id,
+            new SubmitMissionAdditionalQuoteRequest(
+                4500,
+                "XOF",
+                "Produit complementaire et temps d'application."),
+            CancellationToken.None);
+        Assert.True(submitResult.IsSuccess);
+        Assert.Equal("Submitted", submitResult.Response!.Status);
+
+        var clientStatusBeforePayment = await new ClientMissionStatusService(db).GetAsync(
+            scenario.MissionId,
+            ClientPhoneNumber,
+            CancellationToken.None);
+        Assert.True(clientStatusBeforePayment.IsSuccess);
+        var payableQuote = Assert.Single(clientStatusBeforePayment.Response!.AdditionalQuotes);
+        Assert.True(payableQuote.CanPay);
+        Assert.Equal(4500, payableQuote.Amount);
+
+        var payResult = await quoteService.PayByCustomerAsync(
+            requestResult.Response.Id,
+            new PayMissionAdditionalQuoteRequest(ClientPhoneNumber, "MM-MOCK-ADD-001"),
+            CancellationToken.None);
+        Assert.True(payResult.IsSuccess);
+        Assert.Equal("Paid", payResult.Response!.Status);
+
+        var clientStatusAfterPayment = await new ClientMissionStatusService(db).GetAsync(
+            scenario.MissionId,
+            ClientPhoneNumber,
+            CancellationToken.None);
+        Assert.False(Assert.Single(clientStatusAfterPayment.Response!.AdditionalQuotes).CanPay);
+
+        var milestone = await db.MissionPaymentMilestones.SingleAsync(item =>
+            item.MissionId == scenario.MissionId
+            && item.Trigger == MissionPaymentMilestoneTrigger.AdditionalQuote);
+        Assert.Equal(MissionPaymentMilestoneStatus.Paid, milestone.Status);
+        Assert.Equal(4500, milestone.Amount);
+
+        Assert.Contains(await db.MissionFinancialBreakdowns.ToListAsync(), line =>
+            line.MissionId == scenario.MissionId
+            && line.LineType == MissionFinancialLineType.AdditionalQuote
+            && line.Amount == 4500);
+        Assert.Contains(await db.CompanyPortalNotifications.ToListAsync(), notification =>
+            notification.CompanyId == scenario.CompanyId
+            && notification.Type == "MissionAdditionalQuotePaid");
+        Assert.Contains(await db.NotificationOutboxMessages.ToListAsync(), message =>
+            message.Channel == NotificationChannel.MobilePush
+            && message.RelatedEntityType == nameof(MissionAdditionalQuote));
+    }
+
+    [Fact]
     public async Task ProviderRefusal_RemovesProviderFromSameMissionAndAllowsAnotherProviderAssignment()
     {
         await using var db = CreateDbContext();
@@ -412,6 +500,14 @@ public sealed class ClientMissionWorkflowIntegrationTests
             new MobilePushNotificationQueueService(db),
             new NotificationDeliveryPreferenceService(db),
             new NotificationTemplateService(db));
+    }
+
+    private static MissionAdditionalQuoteWorkflowService CreateAdditionalQuoteService(HomeServiceDbContext db)
+    {
+        return new MissionAdditionalQuoteWorkflowService(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db));
     }
 
     private static async Task<ProviderMissionAssignment> LoadAssignmentAsync(HomeServiceDbContext db, Guid assignmentId)
