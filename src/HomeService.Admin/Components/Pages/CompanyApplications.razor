@@ -96,7 +96,7 @@
                 <div>
                     <div class="queue-heading">
                         <h2>@item.CompanyName</h2>
-                        <span>@item.Status</span>
+                        <span>@item.StatusLabel</span>
                     </div>
                     <p>@item.City - @item.ContactName - @item.Email</p>
                     @if (item.Services.Count > 0)
@@ -373,6 +373,7 @@
             item.ContactName,
             item.Email,
             item.Status,
+            GetApplicationStatusLabel(item.Status),
             statusClass,
             Math.Max(0, item.DocumentCount - item.PendingDocumentCount),
             item.DocumentCount,
@@ -422,6 +423,21 @@
         };
     }
 
+    private static string GetApplicationStatusLabel(string status)
+    {
+        return status switch
+        {
+            "Submitted" => "Soumis",
+            "UnderReview" => "En verification",
+            "MoreInformationRequested" => "Complement demande",
+            "Approved" => "Valide",
+            "ActivationSent" => "Lien envoye",
+            "Activated" => "Compte cree",
+            "Rejected" => "Rejete",
+            _ => status
+        };
+    }
+
     private static string GetDocumentStatusClass(string status)
     {
         return status switch
@@ -451,6 +467,7 @@
         string ContactName,
         string Email,
         string Status,
+        string StatusLabel,
         string StatusClass,
         int DocumentsReady,
         int DocumentsExpected,
