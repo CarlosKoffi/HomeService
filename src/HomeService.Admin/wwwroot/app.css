@@ -707,6 +707,58 @@ h3 {
     height: min(68vh, 620px);
 }
 
+.document-detail {
+    margin-top: .65rem;
+}
+
+.document-detail-list {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    display: grid;
+    gap: 0;
+    grid-template-columns: minmax(130px, .45fr) 1fr;
+    margin: .75rem;
+    overflow: hidden;
+}
+
+.document-detail-list dt,
+.document-detail-list dd {
+    border-bottom: 1px solid #eef2f7;
+    margin: 0;
+    padding: .55rem .7rem;
+}
+
+.document-detail-list dt {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: .75rem;
+    font-weight: 900;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.document-detail-list dd {
+    color: #000;
+    font-weight: 750;
+}
+
+.document-preview-frame {
+    display: grid;
+    gap: .6rem;
+    margin: .8rem .75rem .75rem;
+}
+
+.document-preview-frame > strong {
+    color: #000;
+    font-size: .86rem;
+}
+
+.document-preview-frame img,
+.document-preview-frame iframe {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
 .localization-grid {
     display: grid;
     gap: 1rem;

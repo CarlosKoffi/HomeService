@@ -163,33 +163,45 @@ else if (Application is not null)
                     else
                     {
                         <p>@document.OriginalFileName - @document.ContentType</p>
-                        <p class="section-help">@slot.Help</p>
-                        @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
-                        {
-                            <p class="document-review-note">Note piece: @document.ReviewNote</p>
-                        }
-                        @if (CanPreviewDocument(document.ContentType))
-                        {
-                            <details class="document-preview">
-                                <summary>Previsualiser</summary>
-                                @if (IsImageDocument(document.ContentType))
-                                {
-                                    <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                         loading="lazy"
-                                         alt="Previsualisation de @slot.Label" />
-                                }
-                                else
-                                {
-                                    <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                            loading="lazy"
-                                            title="Previsualisation de @slot.Label"></iframe>
-                                }
-                            </details>
-                        }
-                        else
-                        {
-                            <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
-                        }
+                        <details class="document-preview document-detail">
+                            <summary>Voir detail</summary>
+                            <dl class="document-detail-list">
+                                <dt>Piece attendue</dt>
+                                <dd>@slot.Help</dd>
+                                <dt>Fichier</dt>
+                                <dd>@document.OriginalFileName</dd>
+                                <dt>Format</dt>
+                                <dd>@document.ContentType</dd>
+                                <dt>Statut</dt>
+                                <dd>@GetDocumentStatusLabel(document.ReviewStatus)</dd>
+                            </dl>
+                            @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                            {
+                                <p class="document-review-note">Note piece: @document.ReviewNote</p>
+                            }
+                            @if (CanPreviewDocument(document.ContentType))
+                            {
+                                <div class="document-preview-frame">
+                                    <strong>Previsualisation</strong>
+                                    @if (IsImageDocument(document.ContentType))
+                                    {
+                                        <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                             loading="lazy"
+                                             alt="Previsualisation de @slot.Label" />
+                                    }
+                                    else
+                                    {
+                                        <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                                loading="lazy"
+                                                title="Previsualisation de @slot.Label"></iframe>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
+                            }
+                        </details>
                     }
                 </div>
                 <span class="document-status @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
@@ -226,11 +238,45 @@ else if (Application is not null)
                 <div>
                     <strong>@GetDocumentLabel(document.DocumentType)</strong>
                     <p>@document.OriginalFileName - @document.ContentType</p>
-                    <p class="section-help">@GetDocumentHelp(document.DocumentType)</p>
-                    @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
-                    {
-                        <p class="document-review-note">Note piece: @document.ReviewNote</p>
-                    }
+                    <details class="document-preview document-detail">
+                        <summary>Voir detail</summary>
+                        <dl class="document-detail-list">
+                            <dt>Piece attendue</dt>
+                            <dd>@GetDocumentHelp(document.DocumentType)</dd>
+                            <dt>Fichier</dt>
+                            <dd>@document.OriginalFileName</dd>
+                            <dt>Format</dt>
+                            <dd>@document.ContentType</dd>
+                            <dt>Statut</dt>
+                            <dd>@GetDocumentStatusLabel(document.ReviewStatus)</dd>
+                        </dl>
+                        @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                        {
+                            <p class="document-review-note">Note piece: @document.ReviewNote</p>
+                        }
+                        @if (CanPreviewDocument(document.ContentType))
+                        {
+                            <div class="document-preview-frame">
+                                <strong>Previsualisation</strong>
+                                @if (IsImageDocument(document.ContentType))
+                                {
+                                    <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                         loading="lazy"
+                                         alt="Previsualisation de @GetDocumentLabel(document.DocumentType)" />
+                                }
+                                else
+                                {
+                                    <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                            loading="lazy"
+                                            title="Previsualisation de @GetDocumentLabel(document.DocumentType)"></iframe>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
+                        }
+                    </details>
                 </div>
                 <span class="document-status @GetDocumentStatusClass(document.ReviewStatus)">@GetDocumentStatusLabel(document.ReviewStatus)</span>
                 <div class="document-actions">
