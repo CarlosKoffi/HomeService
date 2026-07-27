@@ -120,6 +120,71 @@ h3 {
     margin-top: 1.5rem;
 }
 
+.dashboard-live-grid {
+    margin: 1.25rem 0 1rem;
+}
+
+.dashboard-live-grid article small {
+    color: #475569;
+    display: block;
+    font-size: .82rem;
+    font-weight: 720;
+    margin-top: .2rem;
+}
+
+.admin-priority-strip {
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin: 1rem 0 1.25rem;
+}
+
+.priority-action {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    color: #111827;
+    display: grid;
+    gap: .25rem;
+    min-height: 118px;
+    padding: 1rem;
+    text-decoration: none;
+}
+
+.priority-action:hover {
+    border-color: #1A6AFF;
+    color: #111827;
+}
+
+.priority-action span {
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.priority-action strong {
+    font-size: 1.8rem;
+    font-weight: 850;
+    line-height: 1;
+}
+
+.priority-action small {
+    color: #111827;
+    font-weight: 650;
+}
+
+.priority-action.warning {
+    border-color: #fed7aa;
+    box-shadow: inset 4px 0 0 #f97316;
+}
+
+.priority-action.danger {
+    border-color: #fecaca;
+    box-shadow: inset 4px 0 0 #ef4444;
+}
+
 .dashboard-grid article,
 .queue-item {
     background: #fff;

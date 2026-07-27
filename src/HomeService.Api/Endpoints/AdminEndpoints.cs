@@ -27,6 +27,16 @@ public static class AdminEndpoints
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var admin = app.MapGroup("/api/admin");
+
+        admin.MapGet("/dashboard", async (
+            AdminQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.GetDashboardAsync(cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("GetAdminDashboard")
+        .Produces<AdminDashboardResponse>();
         
         admin.MapGet("/audit-logs", async (
             string? actorType,

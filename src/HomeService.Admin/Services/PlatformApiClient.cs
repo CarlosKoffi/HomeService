@@ -19,6 +19,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 {
     public Uri? BaseAddress => httpClient.BaseAddress;
 
+    public async Task<AdminDashboardResponse?> GetAdminDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminDashboardResponse>("/api/admin/dashboard", cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CompanyApplicationSummaryResponse>> GetCompanyApplicationsAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

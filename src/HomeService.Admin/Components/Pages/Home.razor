@@ -1,4 +1,7 @@
 @page "/"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
 
 <PageTitle>wélé Admin</PageTitle>
 
@@ -21,6 +24,53 @@
         <p>Identifier vite ce qui bloque: dossier incomplet, prestataire non valide, mission sensible ou paiement a verifier.</p>
     </aside>
 </section>
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+<section class="admin-metric-grid dashboard-live-grid">
+    <article>
+        <span>Dossiers a traiter</span>
+        <strong>@FormatMetric(Dashboard?.CompanyApplicationsToReview)</strong>
+        <small>@FormatMetric(Dashboard?.CompanyApplicationsWaitingActivation) activation(s) a suivre</small>
+    </article>
+    <article>
+        <span>Prestataires a verifier</span>
+        <strong>@FormatMetric(Dashboard?.ProvidersToReview)</strong>
+        <small>@FormatMetric(Dashboard?.ActiveCompanies) entreprise(s) active(s)</small>
+    </article>
+    <article>
+        <span>Missions ouvertes</span>
+        <strong>@FormatMetric(Dashboard?.OpenMissions)</strong>
+        <small>@FormatMetric(Dashboard?.DisputedMissions) litige(s)</small>
+    </article>
+    <article>
+        <span>CA wélé</span>
+        <strong>@FormatMoney(Dashboard?.PlatformCommissionAmount)</strong>
+        <small>@FormatMoney(Dashboard?.PendingPaymentsAmount) en attente</small>
+    </article>
+    <article>
+        <span>Notifications</span>
+        <strong>@FormatMetric(Dashboard?.UnreadCompanyPortalNotifications)</strong>
+        <small>@FormatMetric(Dashboard?.FailedExternalNotifications) erreur(s) externe(s)</small>
+    </article>
+</section>
+
+@if (Dashboard?.PriorityActions.Count > 0)
+{
+    <section class="admin-priority-strip">
+        @foreach (var action in Dashboard.PriorityActions)
+        {
+            <a class="@GetPriorityActionClass(action)" href="@action.Url">
+                <span>@action.Label</span>
+                <strong>@action.Count</strong>
+                <small>@action.Description</small>
+            </a>
+        }
+    </section>
+}
 
 <section class="dashboard-grid">
     <article>
@@ -91,3 +141,34 @@
         </div>
     </article>
 </section>
+
+@code {
+    private AdminDashboardResponse? Dashboard { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Dashboard = await ApiClient.GetAdminDashboardAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger le resume admin. Detail: {exception.Message}";
+        }
+    }
+
+    private static string FormatMetric(int? value)
+        => value.HasValue ? value.Value.ToString("N0") : "...";
+
+    private static string FormatMoney(int? value)
+        => value.HasValue ? $"{value.Value:N0} XOF" : "...";
+
+    private static string GetPriorityActionClass(AdminDashboardActionResponse action)
+        => action.Tone switch
+        {
+            "danger" => "priority-action danger",
+            "warning" => "priority-action warning",
+            _ => "priority-action"
+        };
+}

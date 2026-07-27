@@ -11,6 +11,63 @@ namespace HomeService.Application.Admin;
 
 public sealed class AdminQueryService(IAppDbContext db)
 {
+    public async Task<AdminDashboardResponse> GetDashboardAsync(CancellationToken cancellationToken)
+    {
+        var applicationsToReview = await db.CompanyApplications.CountAsync(
+            application => application.Status == CompanyApplicationStatus.Submitted
+                || application.Status == CompanyApplicationStatus.UnderReview
+                || application.Status == CompanyApplicationStatus.MoreInformationRequested,
+            cancellationToken);
+        var waitingActivation = await db.CompanyApplications.CountAsync(
+            application => application.Status == CompanyApplicationStatus.Approved
+                || application.Status == CompanyApplicationStatus.ActivationSent,
+            cancellationToken);
+        var activeCompanies = await db.Companies.CountAsync(
+            company => company.Status == CompanyStatus.Approved,
+            cancellationToken);
+        var providersToReview = await db.Providers.CountAsync(
+            provider => provider.Status == ProviderStatus.PendingPlatformReview,
+            cancellationToken);
+        var openMissions = await db.Missions.CountAsync(
+            mission => mission.Status != MissionStatus.Completed
+                && mission.Status != MissionStatus.Cancelled
+                && mission.Status != MissionStatus.Resolved,
+            cancellationToken);
+        var disputedMissions = await db.Missions.CountAsync(
+            mission => mission.Status == MissionStatus.Disputed,
+            cancellationToken);
+        var pendingPaymentsAmount = await db.Missions
+            .Where(mission => mission.PaymentStatus == PaymentStatus.Pending || mission.PaymentStatus == PaymentStatus.Authorized)
+            .SumAsync(mission => mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0, cancellationToken);
+        var platformCommissionAmount = await db.Missions
+            .Where(mission => mission.PaymentStatus == PaymentStatus.Paid)
+            .SumAsync(mission => mission.PlatformCommissionAmount, cancellationToken);
+        var unreadCompanyPortalNotifications = await db.CompanyPortalNotifications.CountAsync(
+            notification => !notification.IsRead,
+            cancellationToken);
+        var failedExternalNotifications = await db.NotificationOutboxMessages.CountAsync(
+            notification => notification.Status == NotificationStatus.Failed,
+            cancellationToken);
+
+        return new AdminDashboardResponse(
+            applicationsToReview,
+            waitingActivation,
+            activeCompanies,
+            providersToReview,
+            openMissions,
+            disputedMissions,
+            pendingPaymentsAmount,
+            platformCommissionAmount,
+            unreadCompanyPortalNotifications,
+            failedExternalNotifications,
+            BuildPriorityActions(
+                applicationsToReview,
+                providersToReview,
+                disputedMissions,
+                failedExternalNotifications,
+                unreadCompanyPortalNotifications));
+    }
+
     public async Task<AdminCompanyListResponse> ListCompaniesAsync(
         string? status,
         string? search,
@@ -1634,6 +1691,47 @@ public sealed class AdminQueryService(IAppDbContext db)
                 document.StoragePath,
                 document.ContentType))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private static IReadOnlyList<AdminDashboardActionResponse> BuildPriorityActions(
+        int applicationsToReview,
+        int providersToReview,
+        int disputedMissions,
+        int failedExternalNotifications,
+        int unreadCompanyPortalNotifications)
+    {
+        var actions = new List<AdminDashboardActionResponse>
+        {
+            new(
+                "Dossiers entreprises",
+                "Verifier les pieces, commentaires et activations en attente.",
+                "company-applications",
+                applicationsToReview > 0 ? "warning" : "neutral",
+                applicationsToReview),
+            new(
+                "Prestataires",
+                "Valider les profils qui ont les documents et services requis.",
+                "providers",
+                providersToReview > 0 ? "warning" : "neutral",
+                providersToReview),
+            new(
+                "Litiges missions",
+                "Traiter les missions sensibles, remboursements et notes admin.",
+                "missions?status=Disputed",
+                disputedMissions > 0 ? "danger" : "neutral",
+                disputedMissions),
+            new(
+                "Notifications",
+                "Revoir les messages portail non lus et les envois externes en erreur.",
+                "notifications",
+                failedExternalNotifications > 0 || unreadCompanyPortalNotifications > 0 ? "warning" : "neutral",
+                failedExternalNotifications + unreadCompanyPortalNotifications)
+        };
+
+        return actions
+            .OrderByDescending(action => action.Tone == "danger")
+            .ThenByDescending(action => action.Count)
+            .ToList();
     }
 }
 
