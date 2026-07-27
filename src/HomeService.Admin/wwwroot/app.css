@@ -2573,6 +2573,65 @@ h3 {
     gap: .7rem;
 }
 
+.proposal-review-table {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .05);
+    overflow: hidden;
+}
+
+.proposal-review-table .proposal-review-row {
+    align-items: center;
+    border: 0;
+    border-bottom: 1px solid #eef2f7;
+    border-radius: 0;
+    box-shadow: none;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: 130px minmax(150px, .9fr) minmax(180px, 1.1fr) minmax(220px, 1.2fr) 82px auto;
+    padding: .9rem 1rem;
+}
+
+.proposal-review-table .proposal-review-row:last-child {
+    border-bottom: 0;
+}
+
+.proposal-review-table .proposal-review-row.head {
+    background: #f8fafc;
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.proposal-review-table .proposal-date,
+.proposal-review-table .proposal-suggestion,
+.proposal-review-table .proposal-score {
+    color: #475569;
+    font-size: .86rem;
+    font-weight: 750;
+}
+
+.proposal-company-name {
+    color: #0f172a;
+    font-size: .92rem;
+}
+
+.proposal-name {
+    align-items: center;
+    color: #000;
+    display: flex;
+    flex-wrap: wrap;
+    font-weight: 900;
+    gap: .45rem;
+}
+
+.proposal-score {
+    justify-self: center;
+}
+
 .proposal-review-card {
     align-items: stretch;
     background: linear-gradient(135deg, #ffffff 0%, #fbfdff 100%);
@@ -5147,6 +5206,7 @@ h3 {
     .admin-invite-form,
     .service-admin-overview,
     .service-admin-tabs,
+    .proposal-review-table .proposal-review-row,
     .proposal-review-card,
     .proposal-list article,
     .notification-rules-head,
@@ -5192,6 +5252,14 @@ h3 {
 
     .service-catalog-card > header {
         display: grid;
+    }
+
+    .proposal-review-table .proposal-review-row.head {
+        display: none;
+    }
+
+    .proposal-review-table .proposal-row-actions {
+        justify-content: flex-start;
     }
 
     .catalog-meta,

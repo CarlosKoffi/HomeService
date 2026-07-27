@@ -48,8 +48,22 @@
         Affichage
         <select @bind="StatusFilter">
             <option value="all">Tous</option>
-            <option value="active">Services actifs</option>
-            <option value="inactive">Services inactifs</option>
+            @if (ActiveTab == ServiceAdminTab.Proposals)
+            {
+                <option value="needs-review">A verifier</option>
+                <option value="pending-match">A analyser</option>
+                <option value="matched">Rattaches</option>
+            }
+            else if (ActiveTab == ServiceAdminTab.Catalog)
+            {
+                <option value="active">Services actifs</option>
+                <option value="inactive">Services inactifs</option>
+            }
+            else if (ActiveTab == ServiceAdminTab.Insights)
+            {
+                <option value="gap">A couvrir</option>
+                <option value="demand">Demande sans offre</option>
+            }
         </select>
     </label>
     <label>
@@ -67,7 +81,7 @@
 <section class="service-admin-overview">
     <article>
         <span>A verifier</span>
-        <strong>@CompanyServiceProposals.Count</strong>
+        <strong>@FilteredCompanyServiceProposals.Count</strong>
         <p>Libelles envoyes par les entreprises a rattacher au bon service.</p>
     </article>
     <article>
@@ -120,37 +134,39 @@
     }
     else
     {
-        <div class="proposal-review-list">
+        <div class="proposal-review-table" role="table" aria-label="Services proposes par les entreprises">
+            <div class="proposal-review-row head" role="row">
+                <span>Recu le</span>
+                <span>Entreprise</span>
+                <span>Libelle propose</span>
+                <span>Suggestion</span>
+                <span>Confiance</span>
+                <span>Action</span>
+            </div>
             @foreach (var proposal in FilteredCompanyServiceProposals)
             {
                 var bestSuggestion = proposal.Suggestions.OrderByDescending(suggestion => suggestion.Score).FirstOrDefault();
 
-                <article class="proposal-review-row" @key="proposal.Id">
-                    <div>
-                        <span class="proposal-company">@proposal.CompanyName</span>
-                        <div class="proposal-review-title">
-                            <span class="status-pill pending">@GetProposalStatusLabel(proposal.MatchStatus)</span>
-                            <h3>@proposal.RawName</h3>
-                        </div>
-                        <p>@(bestSuggestion is null ? "Aucune suggestion fiable." : $"Suggestion: {FormatSuggestion(bestSuggestion)}")</p>
-                        <small>Recu le @FormatDateTime(proposal.CreatedAt)</small>
-                    </div>
-                    <div class="proposal-review-meta">
-                        <span>Confiance</span>
-                        <strong>@(proposal.MatchScore?.ToString() ?? "A verifier")</strong>
-                        <small>@GetProposalActionHint(proposal, bestSuggestion)</small>
-                    </div>
-                    <div class="proposal-row-actions">
+                <article class="proposal-review-row" role="row" @key="proposal.Id">
+                    <span class="proposal-date">@FormatDateTime(proposal.CreatedAt)</span>
+                    <strong class="proposal-company-name">@proposal.CompanyName</strong>
+                    <span class="proposal-name">
+                        @proposal.RawName
+                        <small class="status-pill pending">@GetProposalStatusLabel(proposal.MatchStatus)</small>
+                    </span>
+                    <span class="proposal-suggestion">@GetProposalActionHint(proposal, bestSuggestion)</span>
+                    <span class="proposal-score">@(proposal.MatchScore?.ToString() ?? "-")</span>
+                    <span class="proposal-row-actions">
                         @if (bestSuggestion is not null)
                         {
                             <button type="button" class="light-action" @onclick="() => ApplySuggestion(proposal.Id, bestSuggestion)">
-                                Utiliser suggestion
+                                Suggestion
                             </button>
                         }
                         <button type="button" @onclick="() => OpenProposalDecision(proposal.Id)">
-                            Traiter la demande
+                            Traiter
                         </button>
-                    </div>
+                    </span>
                 </article>
             }
         </div>
@@ -690,6 +706,14 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 query = query.Where(proposal => ProposalMatchesService(proposal, serviceId));
             }
 
+            query = StatusFilter switch
+            {
+                "needs-review" => query.Where(proposal => proposal.MatchStatus == "NeedsAdminReview"),
+                "pending-match" => query.Where(proposal => proposal.MatchStatus == "PendingMatch"),
+                "matched" => query.Where(proposal => proposal.MatchStatus == "MatchedExisting"),
+                _ => query
+            };
+
             return SortFilter switch
             {
                 "name" => query.OrderBy(proposal => proposal.RawName).ThenBy(proposal => proposal.CompanyName).ToList(),
@@ -720,6 +744,13 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             {
                 query = query.Where(service => service.ServiceId == serviceId);
             }
+
+            query = StatusFilter switch
+            {
+                "gap" => query.Where(service => service.HasProviderGap || service.Prestations.Any(prestation => prestation.HasProviderGap)),
+                "demand" => query.Where(service => service.HasDemandWithoutProviders),
+                _ => query
+            };
 
             return SortFilter switch
             {
