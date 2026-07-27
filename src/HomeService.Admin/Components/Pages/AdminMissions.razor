@@ -145,6 +145,12 @@
                         }
                         else
                         {
+                            <select @bind="DisputeReason">
+                                @foreach (var reason in DisputeReasons)
+                                {
+                                    <option value="@reason.Value">@reason.Label</option>
+                                }
+                            </select>
                             <input type="text" @bind="DisputeNote" placeholder="Note litige obligatoire" />
                             <button type="button" @onclick="() => ConfirmDisputeAsync(mission.Id)" disabled="@IsActionBusy">Confirmer</button>
                         }
@@ -171,6 +177,7 @@
     private string? SearchTerm { get; set; }
     private Guid? SelectedMissionId { get; set; }
     private string? SelectedAction { get; set; }
+    private string DisputeReason { get; set; } = "Other";
     private string? DisputeNote { get; set; }
     private string? CancellationNote { get; set; }
     private int? CancellationFeeAmount { get; set; }
@@ -207,6 +214,7 @@
     {
         SelectedMissionId = missionId;
         SelectedAction = "dispute";
+        DisputeReason = "Other";
         DisputeNote = null;
         CancellationNote = null;
         CancellationFeeAmount = null;
@@ -219,6 +227,7 @@
         SelectedMissionId = missionId;
         SelectedAction = "cancel";
         DisputeNote = null;
+        DisputeReason = "Other";
         CancellationNote = null;
         CancellationFeeAmount = null;
         Message = null;
@@ -259,10 +268,11 @@
 
         try
         {
-            Snapshot = await ApiClient.MarkAdminMissionDisputedAsync(missionId, DisputeNote);
+            Snapshot = await ApiClient.MarkAdminMissionDisputedAsync(missionId, DisputeReason, DisputeNote);
             SelectedStatus = "Disputed";
             SelectedMissionId = null;
             DisputeNote = null;
+            DisputeReason = "Other";
             Message = "Mission marquee en litige.";
         }
         catch (Exception exception)
@@ -363,4 +373,15 @@
 
         return isActive ? "active" : string.Empty;
     }
+
+    private static readonly IReadOnlyList<(string Value, string Label)> DisputeReasons =
+    [
+        ("CustomerAbsent", "Client absent"),
+        ("AccessRefused", "Acces refuse"),
+        ("CustomerUnavailable", "Client indisponible"),
+        ("ProviderNoShow", "Prestataire absent"),
+        ("ProviderUnavailable", "Prestataire indisponible"),
+        ("CompanyUnavailable", "Entreprise indisponible"),
+        ("Other", "Autre motif")
+    ];
 }

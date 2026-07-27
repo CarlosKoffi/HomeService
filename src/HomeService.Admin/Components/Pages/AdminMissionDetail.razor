@@ -120,6 +120,15 @@ else
                 {
                     <div class="mission-dispute-box">
                         <label>
+                            Motif du litige
+                            <select @bind="DisputeReason">
+                                @foreach (var reason in DisputeReasons)
+                                {
+                                    <option value="@reason.Value">@reason.Label</option>
+                                }
+                            </select>
+                        </label>
+                        <label>
                             Note litige
                             <textarea @bind="DisputeNote" placeholder="Expliquez le probleme avant de passer la mission en litige."></textarea>
                         </label>
@@ -365,6 +374,7 @@ else
     private bool IsActionBusy { get; set; }
     private string? ErrorMessage { get; set; }
     private string? Message { get; set; }
+    private string DisputeReason { get; set; } = "Other";
     private string? DisputeNote { get; set; }
     private string? CancellationNote { get; set; }
     private int? CancellationFeeAmount { get; set; }
@@ -416,9 +426,10 @@ else
 
         try
         {
-            await ApiClient.MarkAdminMissionDisputedAsync(Mission.Id, DisputeNote ?? string.Empty);
+            await ApiClient.MarkAdminMissionDisputedAsync(Mission.Id, DisputeReason, DisputeNote ?? string.Empty);
             Message = "Mission marquee en litige.";
             DisputeNote = null;
+            DisputeReason = "Other";
             await LoadAsync();
         }
         catch (Exception exception)
@@ -628,7 +639,7 @@ else
     private static string TranslateSenderType(string senderType) => senderType switch { "Customer" => "Client", "Provider" => "Prestataire", "Company" => "Entreprise", "Platform" => "wélé", _ => senderType };
 
     private static string TranslateDisputeStatus(string status) => status switch { "Open" => "Ouvert", "Resolved" => "Resolue", "Cancelled" => "Annulee", _ => status };
-    private static string TranslateDisputeReason(string reason) => reason switch { "CustomerAbsent" => "Client absent", "ProviderAbsent" => "Prestataire absent", "QualityIssue" => "Qualite contestee", "PaymentIssue" => "Paiement", "Other" => "Autre", _ => reason };
+    private static string TranslateDisputeReason(string reason) => reason switch { "CustomerAbsent" => "Client absent", "AccessRefused" => "Acces refuse", "CustomerUnavailable" => "Client indisponible", "ProviderNoShow" => "Prestataire absent", "ProviderUnavailable" => "Prestataire indisponible", "CompanyUnavailable" => "Entreprise indisponible", "Other" => "Autre", _ => reason };
     private static string TranslateDisputeResolution(string? resolution) => resolution switch { "RefundCustomer" => "Remboursement total client", "PartialRefund" => "Remboursement partiel", "PayCompany" => "Paiement entreprise maintenu", "NoAction" => "Aucune action financiere", "Other" => "Decision specifique", _ => "En attente de decision" };
 
     private static string GetMissionStatusClass(string status) => status switch { "Completed" or "Resolved" => "status-pill ok", "Cancelled" or "Disputed" => "status-pill danger", _ => "status-pill pending" };
@@ -646,4 +657,15 @@ else
         "Adjustment" => "Ajustement",
         _ => lineType
     };
+
+    private static readonly IReadOnlyList<(string Value, string Label)> DisputeReasons =
+    [
+        ("CustomerAbsent", "Client absent"),
+        ("AccessRefused", "Acces refuse"),
+        ("CustomerUnavailable", "Client indisponible"),
+        ("ProviderNoShow", "Prestataire absent"),
+        ("ProviderUnavailable", "Prestataire indisponible"),
+        ("CompanyUnavailable", "Entreprise indisponible"),
+        ("Other", "Autre motif")
+    ];
 }

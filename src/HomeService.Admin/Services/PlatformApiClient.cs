@@ -166,13 +166,14 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
     public async Task<AdminMissionListResponse?> MarkAdminMissionDisputedAsync(
         Guid missionId,
+        string reason,
         string note,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<AdminMissionListResponse>(
             $"/api/admin/missions/{missionId}/mark-disputed",
-            new CancelMissionRequest("Other", note),
+            new CancelMissionRequest(reason, note),
             cancellationToken);
     }
 

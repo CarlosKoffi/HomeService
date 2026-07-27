@@ -30,6 +30,7 @@ public sealed class AdminMissionDisputeServiceTests
         Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
         Assert.Equal(MissionStatus.Disputed, mission.Status);
         Assert.Equal(1, await db.MissionDisputes.CountAsync());
+        Assert.True(await db.MissionDisputes.AnyAsync(item => item.Reason == MissionCancellationReason.CustomerAbsent));
         Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());
         Assert.Equal(1, await db.AuditLogEntries.CountAsync());
     }
