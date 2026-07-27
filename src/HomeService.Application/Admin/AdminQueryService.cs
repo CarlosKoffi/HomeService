@@ -994,7 +994,19 @@ public sealed class AdminQueryService(IAppDbContext db)
                 mission.CreatedAt
             };
 
-        if (Enum.TryParse<PaymentStatus>(paymentStatus, true, out var parsedPaymentStatus))
+        var normalizedPaymentStatus = paymentStatus?.Trim();
+        if (string.Equals(normalizedPaymentStatus, "Collected", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(payment => payment.PaymentStatus == PaymentStatus.Paid || payment.PaymentStatus == PaymentStatus.Authorized);
+        }
+        else if (string.Equals(normalizedPaymentStatus, "Risk", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(payment =>
+                payment.PaymentStatus == PaymentStatus.Failed
+                || payment.PaymentStatus == PaymentStatus.Refunded
+                || payment.Status == MissionStatus.Disputed);
+        }
+        else if (Enum.TryParse<PaymentStatus>(normalizedPaymentStatus, true, out var parsedPaymentStatus))
         {
             query = query.Where(payment => payment.PaymentStatus == parsedPaymentStatus);
         }

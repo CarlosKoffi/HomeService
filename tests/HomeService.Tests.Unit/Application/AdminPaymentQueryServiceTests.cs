@@ -86,6 +86,17 @@ public sealed class AdminPaymentQueryServiceTests
 
         Assert.Single(searchResult.Items);
         Assert.Equal("Repassage", searchResult.Items[0].PrestationName);
+
+        var collectedResult = await new AdminQueryService(db).ListPaymentsAsync(
+            period: "month",
+            paymentStatus: "Collected",
+            paymentMethod: null,
+            search: null,
+            CancellationToken.None);
+
+        var collectedItem = Assert.Single(collectedResult.Items);
+        Assert.Equal(mission.MissionNumber, collectedItem.MissionNumber);
+        Assert.Equal(nameof(PaymentStatus.Authorized), collectedItem.PaymentStatus);
     }
 
     [Fact]
@@ -222,6 +233,17 @@ public sealed class AdminPaymentQueryServiceTests
         Assert.Equal(12_000, result.Stats.DisputedAmount);
         Assert.Equal(12_000, result.Items.Single().RefundAmount);
         Assert.Equal(nameof(PaymentStatus.Refunded), result.Items.Single().PaymentStatus);
+
+        var riskResult = await new AdminQueryService(db).ListPaymentsAsync(
+            period: "month",
+            paymentStatus: "Risk",
+            paymentMethod: null,
+            search: null,
+            CancellationToken.None);
+
+        var riskItem = Assert.Single(riskResult.Items);
+        Assert.Equal(mission.MissionNumber, riskItem.MissionNumber);
+        Assert.Equal(nameof(PaymentStatus.Refunded), riskItem.PaymentStatus);
     }
 
     [Fact]

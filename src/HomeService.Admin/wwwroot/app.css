@@ -1015,6 +1015,59 @@ h3 {
     margin-top: .35rem;
 }
 
+.payment-command-strip {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    display: grid;
+    gap: .6rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    margin: 1.25rem 0 1rem;
+    padding: .65rem;
+}
+
+.payment-command-strip button {
+    background: #f8fafc;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    color: #111827;
+    cursor: pointer;
+    display: grid;
+    gap: .3rem;
+    min-height: 76px;
+    padding: .85rem .95rem;
+    text-align: left;
+    transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.payment-command-strip button:hover,
+.payment-command-strip button.active {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    box-shadow: 0 14px 32px rgba(37, 99, 235, .10);
+    transform: translateY(-1px);
+}
+
+.payment-command-strip span {
+    color: #475569;
+    font-size: .76rem;
+    font-weight: 850;
+    letter-spacing: .035em;
+    text-transform: uppercase;
+}
+
+.payment-command-strip strong {
+    color: #111827;
+    font-size: 1.05rem;
+    font-weight: 900;
+    line-height: 1.15;
+}
+
+.payment-command-strip button.active span,
+.payment-command-strip button.active strong {
+    color: #1264f6;
+}
+
 .payment-admin-metrics .payment-admin-revenue {
     align-items: center;
     background: linear-gradient(135deg, #1264f6 0%, #0b4bc7 100%);
