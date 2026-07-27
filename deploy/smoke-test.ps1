@@ -60,13 +60,14 @@ $checks = @(
             "MissionRefundApproved")
         RequiredTemplates = @(
             @{ EventKey = "CompanyActivationLinkCreated"; Channel = "Portal" },
-            @{ EventKey = "CompanyApplicationNeedsChanges"; Channel = "Portal" },
+            @{ EventKey = "CompanyApplicationMoreInformationRequested"; Channel = "Portal" },
             @{ EventKey = "MissionAssignedToProvider"; Channel = "MobilePush" },
             @{ EventKey = "MissionAdditionalQuoteAvailable"; Channel = "MobilePush" },
             @{ EventKey = "MissionAdditionalQuotePaid"; Channel = "Portal" },
             @{ EventKey = "MissionDisputeResolvedCustomer"; Channel = "MobilePush" },
             @{ EventKey = "MissionRefundApproved"; Channel = "MobilePush" },
-            @{ EventKey = "MissionPaymentTransferred"; Channel = "Portal" })
+            @{ EventKey = "MissionPaymentReleased"; Channel = "Portal" },
+            @{ EventKey = "MissionPayoutSent"; Channel = "Portal" })
     },
     @{ Name = "Admin payments"; Path = "/api/admin/payments"; MinCount = 0 },
     @{ Name = "Admin access control"; Path = "/api/admin/access-control"; MinCount = 0 }
