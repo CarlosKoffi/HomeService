@@ -28,6 +28,9 @@ public sealed class ProviderMobileMissionDetailServiceTests
         Assert.True(result.Response.Actions.CanAccept);
         Assert.True(result.Response.Actions.CanRefuse);
         Assert.False(result.Response.Actions.CanStart);
+        Assert.Equal(20_000, result.Response.QuotedAmount);
+        Assert.Equal(3_000, result.Response.PartsEstimateAmount);
+        Assert.Equal("Joint a remplacer", result.Response.PartsDescription);
         Assert.Single(result.Response.CustomerPhotos);
         Assert.Single(result.Response.RecentMessages);
     }

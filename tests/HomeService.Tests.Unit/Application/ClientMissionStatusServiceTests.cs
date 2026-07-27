@@ -30,6 +30,9 @@ public sealed class ClientMissionStatusServiceTests
         Assert.False(result.Response.Actions.CanCallCompany);
         Assert.False(result.Response.Actions.CanCallProvider);
         Assert.True(result.Response.Actions.CanCancel);
+        Assert.Equal(20_000, result.Response.CompanyQuotedAmount);
+        Assert.Equal(3_000, result.Response.PartsEstimateAmount);
+        Assert.Equal("Joint a remplacer", result.Response.PartsDescription);
         Assert.Equal("Votre technicien est affecte. Les informations utiles sont disponibles.", result.Response.Message);
     }
 
@@ -137,7 +140,7 @@ public sealed class ClientMissionStatusServiceTests
             "Fuite sous evier",
             requiresCompanyQuote: true);
         mission.SetServiceLocation("Cocody Angre", 5.348850m, -4.003150m);
-        mission.AssignWithCompanyQuote(provider.Id, company.Id, 20_000, 25_000, null);
+        mission.AssignWithCompanyQuote(provider.Id, company.Id, 20_000, 25_000, null, 3_000, "Joint a remplacer");
         mission.MarkProviderAccepted(provider.Id, company.Id);
 
         var offer = new MissionDispatchOffer(
