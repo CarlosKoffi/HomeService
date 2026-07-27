@@ -4,15 +4,21 @@ Le projet doit rester testable par couches. L'objectif est qu'un changement meti
 
 ## Etat actuel
 
-Au dernier controle:
+Le pipeline GitHub Actions compile la solution en Release, lance les tests unitaires, lance les tests d'integration workflow, puis execute un smoke test non destructif sur l'API deployee quand la livraison part sur `main`.
 
-- `HomeService.Tests.Unit`: 170 tests passes.
-- `HomeService.Tests.Integration`: 3 tests passes.
-- total: 173 tests passes.
+Au dernier controle local:
+
+- `HomeService.Tests.Unit`: 469 tests passes.
+- `HomeService.Tests.Integration`: 10 tests passes.
+- total: 479 tests passes.
 
 Commande:
 
-`dotnet test HomeService.sln`
+`dotnet build HomeService.sln --configuration Release`
+
+`dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build`
+
+`dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build`
 
 ## Cibles de couverture
 
@@ -60,6 +66,27 @@ Exemples:
 - inscription entreprise -> validation admin -> lien activation -> creation compte;
 - prestataire cree par entreprise -> code -> activation -> connexion;
 - demande interim -> approbation entreprise -> prestataire eligible.
+- demande client -> proposition entreprise -> devis -> paiement mocke -> affectation prestataire -> acceptation/refus -> arrivee GPS -> debut/fin -> validation client -> notation.
+
+Les tests d'integration ne doivent jamais appeler les vrais prestataires externes. Les paiements restent simules et les notifications sont verifiees dans l'outbox ou les notifications portail, sans envoi Firebase, email ou WhatsApp reel.
+
+## Smoke post-deploiement
+
+Le smoke test deploiement verifie uniquement que l'application livree et la base sont alignees:
+
+- sante API;
+- catalogue services/prestations;
+- CMS entreprise et prestataire;
+- onboarding prestataire;
+- demandes entreprises;
+- missions admin;
+- parametrage mission;
+- notifications admin;
+- regles et modeles de notification;
+- paiements admin;
+- controle d'acces.
+
+Tout `404`, `500` ou `502` bloque la livraison: cela signifie que le code, les routes, les migrations ou les seeders ne sont pas coherents en environnement deployee.
 
 ## Tests frontaux
 
@@ -80,4 +107,3 @@ Le visuel n'a pas besoin d'etre teste partout au pixel, mais les parcours doiven
 - Lot API/metier: `dotnet test HomeService.sln`.
 - Lot front pur: build du projet touche + verification navigateur si possible.
 - Lot SQL: verification migration/script + test d'integration si impact fonctionnel.
-

@@ -4,7 +4,7 @@ The mission workflow is protected by two complementary test layers.
 
 ## CI integration workflows
 
-GitHub Actions runs the integration test project after every Release build. These tests use an isolated in-memory database and never call real payment or notification providers.
+GitHub Actions runs the integration test project after every Release build. These tests use an isolated in-memory database and never call real payment or notification providers. Payment is mocked and Firebase/email/WhatsApp delivery is disabled in CI; only the notification records/outbox are asserted.
 
 Covered critical paths:
 
@@ -22,6 +22,7 @@ Covered critical paths:
 - cancellation and refund accounting
 - dispute resolution and refund decision
 - additional quote request, submission and mocked payment
+- no real external notification dispatch during automated tests
 
 Notification checks verify that portal notifications and mobile push outbox messages are created with the right workflow timing and remain pending instead of being sent for real.
 

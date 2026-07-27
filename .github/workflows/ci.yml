@@ -30,10 +30,24 @@ jobs:
         run: dotnet build HomeService.sln --configuration Release --no-restore
 
       - name: Unit tests
+        env:
+          FIREBASE_NOTIFICATIONS_ENABLED: "false"
         run: dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build --logger "trx;LogFileName=unit-tests.trx"
 
-      - name: Integration workflow tests
+      - name: Integration workflow tests with mocked payments and notifications
+        env:
+          FIREBASE_NOTIFICATIONS_ENABLED: "false"
+          PAYMENT_PROVIDER_MODE: "Mock"
         run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --logger "trx;LogFileName=integration-tests.trx"
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            tests/**/TestResults/*.trx
+          if-no-files-found: warn
 
       - name: Production smoke tests after deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
