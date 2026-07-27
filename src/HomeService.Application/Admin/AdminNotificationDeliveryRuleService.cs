@@ -120,8 +120,10 @@ public sealed class AdminNotificationDeliveryRuleService(IAppDbContext db, Notif
         return new NotificationDeliveryRuleResponse(
             rule.Id,
             rule.EventKey,
+            NotificationAdminGrouping.EventGroup(rule.EventKey),
             rule.Label,
             rule.Audience,
+            NotificationAdminGrouping.AudienceGroup(rule.Audience),
             rule.PortalEnabled,
             rule.MobileAppEnabled,
             rule.EmailEnabled,

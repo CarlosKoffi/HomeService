@@ -69,6 +69,18 @@ public sealed class NotificationTemplateServiceTests
         Assert.Contains(templates, template => template.EventKey == "MissionProviderArrived" && template.Channel == "MobilePush");
         Assert.Contains(templates, template => template.EventKey == "MissionAdditionalQuotePaid" && template.Channel == "Portal");
         Assert.Contains(templates, template => template.EventKey == "MissionDisputeResolvedCustomer" && template.Channel == "MobilePush");
+        Assert.Contains(templates, template =>
+            template.EventKey == "MissionCompleted"
+            && template.Channel == "MobilePush"
+            && template.EventGroup == "Missions"
+            && template.ChannelGroup == "Application mobile"
+            && template.AudienceGroup == "Client");
+        Assert.Contains(templates, template =>
+            template.EventKey == "CompanyDocumentApproved"
+            && template.Channel == "Portal"
+            && template.EventGroup == "Dossiers entreprise"
+            && template.ChannelGroup == "Portail"
+            && template.AudienceGroup == "Entreprise");
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionCompleted"));
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "CompanyApplicationApproved"));
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionQuoteRejectedByCustomer"));
@@ -84,15 +96,20 @@ public sealed class NotificationTemplateServiceTests
         var rules = await db.NotificationDeliveryRules
             .AsNoTracking()
             .ToDictionaryAsync(rule => rule.EventKey, StringComparer.OrdinalIgnoreCase);
+        var ruleResponses = await new AdminNotificationDeliveryRuleService(db).ListAsync(CancellationToken.None);
+        var ruleResponseByEvent = ruleResponses.ToDictionary(rule => rule.EventKey, StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in templates.GroupBy(template => template.EventKey, StringComparer.OrdinalIgnoreCase))
         {
             Assert.True(rules.TryGetValue(group.Key, out var rule), $"Missing delivery rule for {group.Key}.");
+            Assert.True(ruleResponseByEvent.TryGetValue(group.Key, out var ruleResponse), $"Missing delivery rule response for {group.Key}.");
 
             foreach (var template in group)
             {
                 Assert.Equal(template.Label, rule!.Label);
                 Assert.Equal(template.Audience, rule.Audience);
+                Assert.Equal(template.EventGroup, ruleResponse!.EventGroup);
+                Assert.Equal(template.AudienceGroup, ruleResponse.AudienceGroup);
 
                 if (template.Channel == NotificationTemplateChannel.Portal.ToString())
                 {
