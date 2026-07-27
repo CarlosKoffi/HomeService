@@ -49,6 +49,21 @@ public sealed class AdminEndpointContractTests
                 .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
     }
 
+    [Theory]
+    [InlineData("GET", "/api/admin/mission-settings")]
+    [InlineData("PUT", "/api/admin/mission-settings/commission-rules/{ruleId:guid}")]
+    [InlineData("PUT", "/api/admin/mission-settings/workflow-settings/{settingId:guid}")]
+    public void AdminMissionSettingsRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
     private static IReadOnlyList<RouteEndpoint> BuildAdminEndpoints()
     {
         var builder = WebApplication.CreateBuilder();
