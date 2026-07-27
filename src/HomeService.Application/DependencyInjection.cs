@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<MissionDispatchService>();
         services.AddScoped<MissionCancellationWorkflowService>();
         services.AddScoped<MissionPaymentMilestoneService>();
+        services.AddScoped<MissionAdditionalQuoteWorkflowService>();
         services.AddScoped<ProviderAssignmentExpirationService>();
         services.AddScoped<ProviderSelfRegistrationService>();
         services.AddScoped<ProviderOnboardingService>();

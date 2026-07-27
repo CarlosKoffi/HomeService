@@ -8,5 +8,6 @@ public enum MissionFinancialLineType
     CompanyPayout = 3,
     CancellationFee = 4,
     Refund = 5,
-    Adjustment = 6
+    Adjustment = 6,
+    AdditionalQuote = 7
 }

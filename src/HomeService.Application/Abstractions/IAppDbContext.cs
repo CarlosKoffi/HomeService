@@ -29,6 +29,7 @@ public interface IAppDbContext
     DbSet<CustomerProfile> Customers { get; }
     DbSet<Mission> Missions { get; }
     DbSet<MissionAttachment> MissionAttachments { get; }
+    DbSet<MissionAdditionalQuote> MissionAdditionalQuotes { get; }
     DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns { get; }
     DbSet<MissionPaymentMilestone> MissionPaymentMilestones { get; }
     DbSet<MissionReview> MissionReviews { get; }
