@@ -4764,6 +4764,21 @@ h3 {
     padding: .45rem .65rem;
 }
 
+.translation-list article.admin-access-row {
+    align-items: center;
+    grid-template-columns: minmax(190px, 1fr) minmax(130px, .45fr) minmax(90px, .3fr) minmax(280px, 1.1fr) auto auto;
+}
+
+.compact-role-editor {
+    grid-column: auto;
+    gap: .35rem;
+}
+
+.compact-role-editor label {
+    font-size: .78rem;
+    padding: .36rem .55rem;
+}
+
 .role-list {
     display: grid;
     gap: .75rem;

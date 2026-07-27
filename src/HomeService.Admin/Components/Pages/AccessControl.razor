@@ -227,20 +227,24 @@
 
     @foreach (var admin in Admins)
     {
-        <article>
+        <article class="admin-access-row">
             <div>
                 <strong>@admin.FullName</strong>
                 <p>@admin.Email</p>
             </div>
             <span>@GetAdminRoleLabel(admin)</span>
             <span class="@GetAdminStatusClass(admin)">@GetAdminStatusLabel(admin)</span>
-            <select value="@GetAdminRoleDraft(admin.Id)" @onchange="args => OnAdminRoleDraftChanged(admin.Id, args)">
-                <option value="">Aucun role</option>
+            <div class="role-checkboxes compact-role-editor" aria-label="Roles de @admin.FullName">
                 @foreach (var role in Roles)
                 {
-                    <option value="@role.Id">@role.Name</option>
+                    <label>
+                        <input type="checkbox"
+                               checked="@HasAdminRoleDraft(admin.Id, role.Id)"
+                               @onchange="args => ToggleAdminRoleDraft(admin.Id, role.Id, args)" />
+                        @role.Name
+                    </label>
                 }
-            </select>
+            </div>
             <button type="button" @onclick="() => SaveAdminRoleAsync(admin)" disabled="@IsBusy">Modifier les acces</button>
             @if (admin.IsActive)
             {
@@ -272,7 +276,7 @@
     private string? NewAdminEmail { get; set; }
     private bool NewAdminIsSuperAdmin { get; set; }
     private HashSet<Guid> NewAdminRoleIds { get; set; } = [];
-    private Dictionary<Guid, Guid?> AdminRoleDrafts { get; set; } = [];
+    private Dictionary<Guid, HashSet<Guid>> AdminRoleDrafts { get; set; } = [];
     private AccessAdminTab ActiveTab { get; set; } = AccessAdminTab.Overview;
 
     protected override async Task OnInitializedAsync()
@@ -344,11 +348,10 @@
 
     private async Task SaveAdminRoleAsync(AdminUserSummaryResponse admin)
     {
-        AdminRoleDrafts.TryGetValue(admin.Id, out var roleId);
-        var roleIds = roleId.HasValue ? [roleId.Value] : new List<Guid>();
+        AdminRoleDrafts.TryGetValue(admin.Id, out var roleIds);
 
         await RunAccessActionAsync(
-            async () => await ApiClient.UpdateAdminUserRolesAsync(admin.Id, new UpdateAdminUserRolesRequest(roleIds)),
+            async () => await ApiClient.UpdateAdminUserRolesAsync(admin.Id, new UpdateAdminUserRolesRequest(roleIds?.ToList() ?? [])),
             "Acces admin modifies.");
     }
 
@@ -403,7 +406,10 @@
 
         AdminRoleDrafts = Admins.ToDictionary(
             admin => admin.Id,
-            admin => Roles.FirstOrDefault(role => admin.Roles.Contains(role.Name, StringComparer.OrdinalIgnoreCase))?.Id);
+            admin => Roles
+                .Where(role => admin.Roles.Contains(role.Name, StringComparer.OrdinalIgnoreCase))
+                .Select(role => role.Id)
+                .ToHashSet());
     }
 
     private void HydratePermissionDraft()
@@ -467,14 +473,27 @@
         NewAdminRoleIds.Remove(roleId);
     }
 
-    private string GetAdminRoleDraft(Guid adminId)
+    private bool HasAdminRoleDraft(Guid adminId, Guid roleId)
     {
-        return AdminRoleDrafts.TryGetValue(adminId, out var roleId) && roleId.HasValue ? roleId.Value.ToString() : string.Empty;
+        return AdminRoleDrafts.TryGetValue(adminId, out var roleIds) && roleIds.Contains(roleId);
     }
 
-    private void OnAdminRoleDraftChanged(Guid adminId, ChangeEventArgs args)
+    private void ToggleAdminRoleDraft(Guid adminId, Guid roleId, ChangeEventArgs args)
     {
-        AdminRoleDrafts[adminId] = Guid.TryParse(args.Value?.ToString(), out var roleId) ? roleId : null;
+        if (!AdminRoleDrafts.TryGetValue(adminId, out var roleIds))
+        {
+            roleIds = [];
+            AdminRoleDrafts[adminId] = roleIds;
+        }
+
+        var isChecked = args.Value is bool value && value;
+        if (isChecked)
+        {
+            roleIds.Add(roleId);
+            return;
+        }
+
+        roleIds.Remove(roleId);
     }
 
     private bool HasDraftPermission(Guid moduleId, string action)
