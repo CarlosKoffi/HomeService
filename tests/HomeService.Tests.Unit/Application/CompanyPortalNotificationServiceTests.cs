@@ -77,6 +77,28 @@ public sealed class CompanyPortalNotificationServiceTests
         Assert.DoesNotContain(result.Response.Notifications, item => item.Title == "Autre entreprise");
     }
 
+    [Fact]
+    public async Task MarkAllReadAsync_MarksOnlyTheCurrentCompanyNotifications()
+    {
+        await using var db = CreateDbContext();
+        var company = CreateApprovedCompany();
+        var otherCompany = CreateApprovedCompany();
+        var companyFirstNotification = CreateNotification(company.Id, "Piece refusee");
+        var companySecondNotification = CreateNotification(company.Id, "Complement demande");
+        var otherNotification = CreateNotification(otherCompany.Id, "Autre entreprise");
+        db.Companies.AddRange(company, otherCompany);
+        db.CompanyPortalNotifications.AddRange(companyFirstNotification, companySecondNotification, otherNotification);
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyPortalNotificationService(db).MarkAllReadAsync(company.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.UpdatedCount);
+        Assert.True(companyFirstNotification.IsRead);
+        Assert.True(companySecondNotification.IsRead);
+        Assert.False(otherNotification.IsRead);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
