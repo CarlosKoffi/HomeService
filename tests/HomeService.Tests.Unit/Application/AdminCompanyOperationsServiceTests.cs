@@ -1,6 +1,7 @@
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
 using HomeService.Contracts.Admin;
+using HomeService.Contracts.Branding;
 using HomeService.Contracts.Companies;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -112,6 +113,69 @@ public sealed class AdminCompanyOperationsServiceTests
         Assert.Equal("dispatch-settings", audit.CorrelationId);
     }
 
+    [Fact]
+    public async Task UpdateCountryBrandingAsync_WhenBrandingIsNew_PersistsBrandingAndAudit()
+    {
+        await using var db = CreateDbContext();
+        var country = new Country("CI", "Cote d'Ivoire", "XOF", true);
+        db.Countries.Add(country);
+        await db.SaveChangesAsync();
+        var sut = new AdminConfigurationService(db);
+
+        var result = await sut.UpdateCountryBrandingAsync(
+            "ci",
+            ValidBrandingRequest("wele"),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "branding-create"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminConfigurationUpdateStatus.Ok, result.Status);
+        var branding = await db.CountryBrandings.SingleAsync();
+        Assert.Equal(country.Id, branding.CountryId);
+        Assert.Equal("wele", branding.BrandName);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminCountryBrandingUpdated", audit.Action);
+        Assert.Equal(branding.Id, audit.EntityId);
+        Assert.Equal("branding-create", audit.CorrelationId);
+    }
+
+    [Fact]
+    public async Task UpdateCountryBrandingAsync_WhenBrandingExists_UpdatesBrandingAndAudit()
+    {
+        await using var db = CreateDbContext();
+        var country = new Country("CI", "Cote d'Ivoire", "XOF", true);
+        var branding = new CountryBranding(
+            country.Id,
+            "Kaza",
+            "#0a66c2",
+            "#ffffff",
+            "#111111",
+            "Ancien titre",
+            "Ancien sous titre",
+            null,
+            "apple");
+        db.Countries.Add(country);
+        db.CountryBrandings.Add(branding);
+        await db.SaveChangesAsync();
+        var sut = new AdminConfigurationService(db);
+
+        var result = await sut.UpdateCountryBrandingAsync(
+            "CI",
+            ValidBrandingRequest("wele"),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "branding-update"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminConfigurationUpdateStatus.Ok, result.Status);
+        var savedBranding = await db.CountryBrandings.SingleAsync();
+        Assert.Equal("wele", savedBranding.BrandName);
+        Assert.Equal("Nouveau titre", savedBranding.HeroTitle);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminCountryBrandingUpdated", audit.Action);
+        Assert.Equal(savedBranding.Id, audit.EntityId);
+        Assert.Equal("branding-update", audit.CorrelationId);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
@@ -120,4 +184,15 @@ public sealed class AdminCompanyOperationsServiceTests
 
         return new HomeServiceDbContext(options);
     }
+
+    private static UpdateCountryBrandingRequest ValidBrandingRequest(string brandName)
+        => new(
+            brandName,
+            "#0a66c2",
+            "#ffffff",
+            "#111111",
+            "Nouveau titre",
+            "Nouveau sous titre",
+            "https://cdn.wele.ci/hero.jpg",
+            "apple");
 }

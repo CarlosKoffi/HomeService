@@ -1,4 +1,3 @@
-using HomeService.Application.Abstractions;
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
 using HomeService.Application.Branding;
@@ -17,7 +16,6 @@ using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
-using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -915,10 +913,14 @@ public static class AdminEndpoints
             UpdateCountryBrandingRequest request,
             HttpRequest httpRequest,
             AdminConfigurationService configurationService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await configurationService.UpdateCountryBrandingAsync(countryCode, request, cancellationToken);
+            var result = await configurationService.UpdateCountryBrandingAsync(
+                countryCode,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             if (result.Status == AdminConfigurationUpdateStatus.ValidationFailed)
             {
                 return Results.BadRequest(new { message = result.Message });
@@ -929,20 +931,7 @@ public static class AdminEndpoints
                 return Results.NotFound(new { message = result.Message });
             }
         
-            var branding = result.Branding!;
             var response = result.Response!;
-            AddAuditLog(
-                db,
-                httpRequest,
-                AuditActor.Admin(),
-                "AdminCountryBrandingUpdated",
-                nameof(CountryBranding),
-                branding.Id,
-                $"Branding pays {response.CountryIsoCode} mis a jour.",
-                result.Before,
-                result.After);
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(response);
         })
         .WithName("UpdateAdminCountryBranding");
@@ -1835,28 +1824,6 @@ public static class AdminEndpoints
     {
         var configuredValue = configuration["CompanyPortal:ActivationTokenHours"] ?? configuration["COMPANY_ACTIVATION_TOKEN_HOURS"];
         return CompanyActivationTokenLifetimeResolver.ResolveHours(configuredValue);
-    }
-    
-    static void AddAuditLog(
-        IAppDbContext db,
-        HttpRequest request,
-        AuditActor actor,
-        string action,
-        string entityType,
-        Guid? entityId,
-        string? summary,
-        object? before = null,
-        object? after = null)
-    {
-        db.AuditLogEntries.Add(AuditLogFactory.Create(
-            actor,
-            action,
-            entityType,
-            entityId,
-            summary,
-            GetAuditRequestContext(request),
-            before,
-            after));
     }
     
     static AuditRequestContext GetAuditRequestContext(HttpRequest request)

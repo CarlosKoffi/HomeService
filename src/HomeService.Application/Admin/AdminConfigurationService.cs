@@ -17,6 +17,14 @@ public sealed class AdminConfigurationService(IAppDbContext db)
         string countryCode,
         UpdateCountryBrandingRequest request,
         CancellationToken cancellationToken)
+        => await UpdateCountryBrandingAsync(countryCode, request, null, null, cancellationToken);
+
+    public async Task<AdminCountryBrandingUpdateResult> UpdateCountryBrandingAsync(
+        string countryCode,
+        UpdateCountryBrandingRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var validationError = CountryBrandingValidator.Validate(request);
         if (validationError is not null)
@@ -71,21 +79,30 @@ public sealed class AdminConfigurationService(IAppDbContext db)
                 request.MotifStyle);
         }
 
-        return AdminCountryBrandingUpdateResult.Ok(
-            branding,
+        var response = new CountryBrandingResponse(
+            country.IsoCode,
+            country.Name,
+            branding.BrandName,
+            branding.PrimaryColor,
+            branding.SecondaryColor,
+            branding.AccentColor,
+            branding.HeroTitle,
+            branding.HeroSubtitle,
+            branding.HeroImageUrl,
+            branding.MotifStyle);
+
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCountryBrandingUpdated",
+            nameof(CountryBranding),
+            branding.Id,
+            $"Branding pays {country.IsoCode} mis a jour.",
             before,
-            request,
-            new CountryBrandingResponse(
-                country.IsoCode,
-                country.Name,
-                branding.BrandName,
-                branding.PrimaryColor,
-                branding.SecondaryColor,
-                branding.AccentColor,
-                branding.HeroTitle,
-                branding.HeroSubtitle,
-                branding.HeroImageUrl,
-                branding.MotifStyle));
+            request);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return AdminCountryBrandingUpdateResult.Ok(branding, before, request, response);
     }
 
     public async Task<AdminCompanyAssignmentModeUpdateResult> UpdateCompanyAssignmentModeAsync(
