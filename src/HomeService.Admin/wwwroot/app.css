@@ -966,6 +966,14 @@ h3 {
     justify-content: space-between;
 }
 
+.admin-heading-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+    justify-content: flex-end;
+}
+
 .secondary-action,
 .light-action {
     background: #fff !important;
@@ -5074,6 +5082,10 @@ h3 {
     .admin-page-heading {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .admin-heading-actions {
+        justify-content: flex-start;
     }
 
     .service-catalog-card > header {

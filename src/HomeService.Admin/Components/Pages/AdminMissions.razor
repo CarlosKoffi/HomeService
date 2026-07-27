@@ -10,9 +10,12 @@
     <div>
         <p class="eyebrow">Operations</p>
         <h1>Missions</h1>
-        <p class="lead">Surveillez les missions, les paiements et les cas sensibles depuis l'admin.</p>
+        <p class="lead">Surveillez les missions, les paiements, les litiges et le journal complet des actions.</p>
     </div>
-    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+    <div class="admin-heading-actions">
+        <button type="button" class="secondary-action" @onclick="OpenMissionSettings">Parametres missions</button>
+        <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+    </div>
 </div>
 
 @if (Snapshot is not null)
@@ -77,7 +80,7 @@
         Recherche
         <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Numero mission, client, entreprise, prestataire, service" />
     </label>
-    <button type="button" @onclick="LoadAsync" disabled="@IsLoading">Rechercher</button>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Appliquer</button>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(Message))
@@ -94,7 +97,7 @@
     <header>
         <div>
             <h2>Suivi missions</h2>
-            <p>@(Snapshot?.Items.Count ?? 0) mission(s) affichee(s)</p>
+            <p>@(Snapshot?.Items.Count ?? 0) mission(s) affichee(s). Ouvrez un dossier pour voir le journal, les messages, les paiements et les decisions de litige.</p>
         </div>
     </header>
 
@@ -246,6 +249,11 @@
     private void OpenMission(Guid missionId)
     {
         Navigation.NavigateTo($"/missions/{missionId}");
+    }
+
+    private void OpenMissionSettings()
+    {
+        Navigation.NavigateTo("/mission-settings");
     }
 
     private async Task ApplyStatusFilter(string? status)
