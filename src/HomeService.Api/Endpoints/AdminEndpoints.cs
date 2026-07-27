@@ -442,6 +442,35 @@ public static class AdminEndpoints
         })
         .WithName("CancelAdminMission");
 
+        admin.MapGet("/mission-settings", async (
+            AdminMissionSettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            return Results.Ok(await settingsService.GetAsync(cancellationToken));
+        })
+        .WithName("GetAdminMissionSettings")
+        .Produces<AdminMissionSettingsResponse>();
+
+        admin.MapPut("/mission-settings/commission-rules/{ruleId:guid}", async (
+            Guid ruleId,
+            UpdateAdminCommissionRuleRequest request,
+            AdminMissionSettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await settingsService.UpdateCommissionRuleAsync(ruleId, request, cancellationToken);
+
+            return result.Status switch
+            {
+                AdminMissionSettingsOperationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                AdminMissionSettingsOperationStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+                _ => Results.Ok(await settingsService.GetAsync(cancellationToken))
+            };
+        })
+        .WithName("UpdateAdminCommissionRule")
+        .Produces<AdminMissionSettingsResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapGet("/providers", async (
             string? status,
             string? employmentType,

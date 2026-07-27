@@ -1,0 +1,191 @@
+@page "/mission-settings"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Parametres missions</PageTitle>
+
+<section class="admin-page-heading">
+    <div>
+        <p class="eyebrow">Configuration</p>
+        <h1>Parametres missions</h1>
+        <p class="lead">
+            Ajustez les regles qui impactent les montants, les commissions et le pilotage operationnel des missions.
+        </p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message">@Message</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+<section class="mission-settings-guide">
+    <article>
+        <span>Commission</span>
+        <strong>Mise en relation</strong>
+        <p>Pourcentage preleve par wélé sur les missions payees par le client.</p>
+    </article>
+    <article>
+        <span>Affectation wélé</span>
+        <strong>Surcommission</strong>
+        <p>Regle prevue quand la plateforme affecte a la place de l'entreprise.</p>
+    </article>
+    <article>
+        <span>Prochain lot</span>
+        <strong>Delais workflow</strong>
+        <p>Les temps de reponse entreprise et prestataire auront une table dediee.</p>
+    </article>
+</section>
+
+<section class="operator-list mission-settings-list">
+    <header>
+        <div>
+            <h2>Regles de commission</h2>
+            <p>@(Snapshot?.CommissionRules.Count ?? 0) regle(s) configuree(s)</p>
+        </div>
+    </header>
+
+    @if (IsLoading)
+    {
+        <article class="admin-empty-row">
+            <strong>Chargement...</strong>
+            <p>Lecture des parametres depuis l'API.</p>
+        </article>
+    }
+    else if (Snapshot is null || Snapshot.CommissionRules.Count == 0)
+    {
+        <article class="admin-empty-row">
+            <strong>Aucune regle</strong>
+            <p>Ajoutez une regle de commission en base pour commencer le parametrage.</p>
+        </article>
+    }
+    else
+    {
+        @foreach (var rule in Snapshot.CommissionRules)
+        {
+            var draft = GetDraft(rule);
+
+            <article class="mission-settings-row" @key="rule.Id">
+                <div>
+                    <span class="status-pill @(rule.IsActive ? "ok" : "danger")">@(rule.IsActive ? "Active" : "Inactive")</span>
+                    <h3>@rule.Name</h3>
+                    <p>@rule.TargetLabel</p>
+                    @if (!string.IsNullOrWhiteSpace(rule.ScopeLabel))
+                    {
+                        <small>@rule.ScopeLabel</small>
+                    }
+                </div>
+                <label>
+                    Commission %
+                    <input type="number" min="0" max="100" step="0.1" @bind="draft.RatePercent" />
+                </label>
+                <label>
+                    Fixe
+                    <input type="number" min="0" step="100" @bind="draft.FixedAmount" />
+                </label>
+                <label>
+                    Devise
+                    <input type="text" maxlength="8" @bind="draft.Currency" />
+                </label>
+                <button type="button" @onclick="() => SaveRuleAsync(rule.Id)" disabled="@IsSaving">
+                    Enregistrer
+                </button>
+            </article>
+        }
+    }
+</section>
+
+@code {
+    private readonly Dictionary<Guid, CommissionRuleDraft> Drafts = [];
+    private AdminMissionSettingsResponse? Snapshot { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsSaving { get; set; }
+    private string? Message { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        return LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            Snapshot = await ApiClient.GetAdminMissionSettingsAsync();
+            Drafts.Clear();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de charger les parametres mission. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private CommissionRuleDraft GetDraft(AdminCommissionRuleResponse rule)
+    {
+        if (!Drafts.TryGetValue(rule.Id, out var draft))
+        {
+            draft = new CommissionRuleDraft
+            {
+                RatePercent = rule.RatePercent,
+                FixedAmount = rule.FixedAmount,
+                Currency = rule.Currency
+            };
+            Drafts[rule.Id] = draft;
+        }
+
+        return draft;
+    }
+
+    private async Task SaveRuleAsync(Guid ruleId)
+    {
+        if (!Drafts.TryGetValue(ruleId, out var draft))
+        {
+            return;
+        }
+
+        IsSaving = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            var basisPoints = (int)Math.Round(Math.Clamp(draft.RatePercent, 0m, 100m) * 100m, MidpointRounding.AwayFromZero);
+            Snapshot = await ApiClient.UpdateAdminCommissionRuleAsync(
+                ruleId,
+                new UpdateAdminCommissionRuleRequest(basisPoints, draft.FixedAmount, draft.Currency));
+            Drafts.Clear();
+            Message = "Regle de commission mise a jour.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Mise a jour impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private sealed class CommissionRuleDraft
+    {
+        public decimal RatePercent { get; set; }
+        public int FixedAmount { get; set; }
+        public string Currency { get; set; } = "XOF";
+    }
+}

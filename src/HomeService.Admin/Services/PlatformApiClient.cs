@@ -206,6 +206,24 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
+    public async Task<AdminMissionSettingsResponse?> GetAdminMissionSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminMissionSettingsResponse>("/api/admin/mission-settings", cancellationToken);
+    }
+
+    public async Task<AdminMissionSettingsResponse?> UpdateAdminCommissionRuleAsync(
+        Guid ruleId,
+        UpdateAdminCommissionRuleRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminMissionSettingsResponse>(
+            $"/api/admin/mission-settings/commission-rules/{ruleId:D}",
+            request,
+            cancellationToken);
+    }
+
     public async Task<AdminProviderListResponse?> GetAdminProvidersAsync(
         string? status,
         string? employmentType,

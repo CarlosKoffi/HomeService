@@ -1329,6 +1329,102 @@ h3 {
     padding: .58rem .8rem;
 }
 
+.mission-settings-guide {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 1rem 0 1.25rem;
+}
+
+.mission-settings-guide article {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, .05);
+    padding: 1rem;
+}
+
+.mission-settings-guide span {
+    color: #64748b;
+    display: block;
+    font-size: .74rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.mission-settings-guide strong {
+    color: #000;
+    display: block;
+    font-size: 1.05rem;
+    margin-top: .5rem;
+}
+
+.mission-settings-guide p {
+    color: #475569;
+    font-size: .9rem;
+    margin: .45rem 0 0;
+}
+
+.mission-settings-row {
+    align-items: center;
+    border-bottom: 1px solid #eef2f7;
+    display: grid;
+    gap: .9rem;
+    grid-template-columns: minmax(260px, 1.3fr) repeat(3, minmax(110px, .45fr)) auto;
+    padding: 1rem 1.15rem;
+}
+
+.mission-settings-row:last-child {
+    border-bottom: 0;
+}
+
+.mission-settings-row h3 {
+    color: #000;
+    font-size: 1rem;
+    margin: .55rem 0 .2rem;
+}
+
+.mission-settings-row p,
+.mission-settings-row small {
+    color: #475569;
+    display: block;
+    margin: .1rem 0 0;
+}
+
+.mission-settings-row label {
+    color: #64748b;
+    display: grid;
+    font-size: .76rem;
+    font-weight: 900;
+    gap: .35rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+}
+
+.mission-settings-row input {
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    color: #000;
+    font: inherit;
+    font-size: .92rem;
+    font-weight: 800;
+    min-height: 42px;
+    padding: .55rem .7rem;
+    text-transform: none;
+}
+
+.mission-settings-row button {
+    background: #2563eb;
+    border: 1px solid #2563eb;
+    border-radius: 999px;
+    color: #fff;
+    font: inherit;
+    font-size: .84rem;
+    font-weight: 900;
+    padding: .7rem .95rem;
+}
+
 .muted-action {
     color: #64748b;
     font-size: .82rem;
@@ -4599,6 +4695,8 @@ h3 {
     }
 
     .operator-row,
+    .mission-settings-guide,
+    .mission-settings-row,
     .company-detail-grid,
     .detail-list div,
     .admin-stat-grid,

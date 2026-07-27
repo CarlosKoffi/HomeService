@@ -72,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<AdminNotificationTemplateService>();
         services.AddScoped<AdminNotificationService>();
         services.AddScoped<AdminTranslationService>();
+        services.AddScoped<AdminMissionSettingsService>();
         services.AddScoped<AdminMissionOperationsService>();
         services.AddScoped<AdminMissionDisputeService>();
         services.AddScoped<AdminProviderOperationsService>();
