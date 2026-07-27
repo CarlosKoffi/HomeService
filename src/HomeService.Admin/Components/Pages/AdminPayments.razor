@@ -127,7 +127,7 @@
         Recherche
         <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Numero mission, client, entreprise, prestataire, service" />
     </label>
-    <button type="button" @onclick="LoadAsync" disabled="@IsLoading">Filtrer</button>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Appliquer</button>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))

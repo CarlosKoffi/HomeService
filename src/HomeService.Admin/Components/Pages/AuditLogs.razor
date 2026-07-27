@@ -50,7 +50,7 @@
             }
         </select>
     </label>
-    <button type="button" @onclick="ApplyFiltersAsync" disabled="@IsLoading">Filtrer</button>
+    <button type="button" class="secondary-action" @onclick="ApplyFiltersAsync" disabled="@IsLoading">Appliquer</button>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))

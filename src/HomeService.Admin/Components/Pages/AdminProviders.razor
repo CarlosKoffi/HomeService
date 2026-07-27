@@ -62,7 +62,7 @@
         Recherche
         <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Nom, telephone, entreprise, service" />
     </label>
-    <button type="button" @onclick="LoadAsync" disabled="@IsLoading">Rechercher</button>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Appliquer</button>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))

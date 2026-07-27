@@ -51,7 +51,7 @@
         Recherche
         <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Cle, scope, texte" />
     </label>
-    <button type="button" @onclick="LoadTranslationsAsync" disabled="@IsLoading">Filtrer</button>
+    <button type="button" class="secondary-action" @onclick="LoadTranslationsAsync" disabled="@IsLoading">Appliquer</button>
 </section>
 
 <section class="translation-create-panel">
