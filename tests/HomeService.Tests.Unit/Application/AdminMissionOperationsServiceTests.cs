@@ -95,6 +95,18 @@ public sealed class AdminMissionOperationsServiceTests
         Assert.Equal(MissionStatus.Cancelled, mission.Status);
         Assert.Equal(2_500, mission.CancellationFeeAmount);
         Assert.Equal(7_500, mission.RefundAmount);
+        var financialLines = await db.MissionFinancialBreakdowns
+            .OrderBy(line => line.SortOrder)
+            .ToListAsync();
+        Assert.Equal(2, financialLines.Count);
+        Assert.Contains(financialLines, line =>
+            line.LineType == MissionFinancialLineType.CancellationFee
+            && line.Amount == 2_500
+            && line.Label == "Frais d'annulation admin");
+        Assert.Contains(financialLines, line =>
+            line.LineType == MissionFinancialLineType.Refund
+            && line.Amount == -7_500
+            && line.Label == "Remboursement client apres annulation admin");
     }
 
     [Fact]

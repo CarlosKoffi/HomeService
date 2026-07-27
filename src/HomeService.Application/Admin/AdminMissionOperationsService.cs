@@ -81,6 +81,11 @@ public sealed class AdminMissionOperationsService(
             $"La mission a ete annulee par l'administration. Motif: {cleanNote}",
             "warning",
             $"missions/{mission.Id}");
+        await TrackCancellationFinancialsAsync(
+            mission,
+            feeDecision.FeeAmount,
+            refund,
+            cancellationToken);
         await QueueCustomerCancellationNotificationsAsync(mission, cleanNote, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
@@ -264,6 +269,45 @@ public sealed class AdminMissionOperationsService(
                 metadataJson));
         }
 
+    }
+
+    private async Task TrackCancellationFinancialsAsync(
+        Mission mission,
+        int cancellationFee,
+        int refundAmount,
+        CancellationToken cancellationToken)
+    {
+        if (cancellationFee > 0 && !await HasFinancialLineAsync(mission.Id, MissionFinancialLineType.CancellationFee, cancellationToken))
+        {
+            db.MissionFinancialBreakdowns.Add(new MissionFinancialBreakdown(
+                mission.Id,
+                MissionFinancialLineType.CancellationFee,
+                "Frais d'annulation admin",
+                cancellationFee,
+                mission.Currency,
+                90));
+        }
+
+        if (refundAmount > 0 && !await HasFinancialLineAsync(mission.Id, MissionFinancialLineType.Refund, cancellationToken))
+        {
+            db.MissionFinancialBreakdowns.Add(new MissionFinancialBreakdown(
+                mission.Id,
+                MissionFinancialLineType.Refund,
+                "Remboursement client apres annulation admin",
+                -refundAmount,
+                mission.Currency,
+                100));
+        }
+    }
+
+    private Task<bool> HasFinancialLineAsync(
+        Guid missionId,
+        MissionFinancialLineType lineType,
+        CancellationToken cancellationToken)
+    {
+        return db.MissionFinancialBreakdowns.AnyAsync(
+            line => line.MissionId == missionId && line.LineType == lineType,
+            cancellationToken);
     }
 
     private static MissionCancellationReason ParseCancellationReason(string? reason, MissionCancellationActor actor)
