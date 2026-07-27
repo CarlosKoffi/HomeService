@@ -133,10 +133,12 @@
                             <h3>@proposal.RawName</h3>
                         </div>
                         <p>@(bestSuggestion is null ? "Aucune suggestion fiable." : $"Suggestion: {FormatSuggestion(bestSuggestion)}")</p>
+                        <small>Recu le @FormatDateTime(proposal.CreatedAt)</small>
                     </div>
                     <div class="proposal-review-meta">
                         <span>Confiance</span>
                         <strong>@(proposal.MatchScore?.ToString() ?? "A verifier")</strong>
+                        <small>@GetProposalActionHint(proposal, bestSuggestion)</small>
                     </div>
                     <div class="proposal-row-actions">
                         @if (bestSuggestion is not null)
@@ -1026,6 +1028,38 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             "MatchedExisting" => "Rattache",
             _ => status
         };
+    }
+
+    private static string GetProposalActionHint(
+        CompanyServiceProposalResponse proposal,
+        CompanyServiceProposalSuggestionResponse? suggestion)
+    {
+        if (proposal.MatchedServicePrestationName is not null)
+        {
+            return $"Prestation: {proposal.MatchedServicePrestationName}";
+        }
+
+        if (proposal.MatchedServiceName is not null)
+        {
+            return $"Service: {proposal.MatchedServiceName}";
+        }
+
+        if (suggestion?.ServicePrestationName is not null)
+        {
+            return $"Proposition: {suggestion.ServiceName} - {suggestion.ServicePrestationName}";
+        }
+
+        if (suggestion?.ServiceName is not null)
+        {
+            return $"Proposition: {suggestion.ServiceName}";
+        }
+
+        return "Decision manuelle";
+    }
+
+    private static string FormatDateTime(DateTimeOffset value)
+    {
+        return value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
     }
 
     private PrestationDraft GetDraft(Guid serviceId)
