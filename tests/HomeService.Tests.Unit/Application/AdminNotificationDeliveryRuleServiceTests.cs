@@ -11,6 +11,29 @@ namespace HomeService.Tests.Unit.Application;
 public sealed class AdminNotificationDeliveryRuleServiceTests
 {
     [Fact]
+    public async Task ListAsync_WhenCatalogIsEmpty_SeedsDefaultDeliveryRules()
+    {
+        await using var db = CreateDbContext();
+
+        var rules = await new AdminNotificationDeliveryRuleService(db).ListAsync(CancellationToken.None);
+
+        Assert.NotEmpty(rules);
+        Assert.Contains(rules, rule =>
+            rule.EventKey == "CompanyApplicationApproved"
+            && rule.Audience == "Company"
+            && rule.PortalEnabled
+            && rule.EmailEnabled
+            && rule.WhatsAppEnabled);
+        Assert.Contains(rules, rule =>
+            rule.EventKey == "MissionTechnicianArrived"
+            && rule.Audience == "Customer"
+            && rule.MobileAppEnabled
+            && rule.EmailEnabled
+            && rule.WhatsAppEnabled);
+        Assert.Equal(rules.Count, await db.NotificationDeliveryRules.CountAsync());
+    }
+
+    [Fact]
     public async Task UpdateAsync_WhenAudienceChanges_NormalizesAutomaticChannels()
     {
         await using var db = CreateDbContext();
