@@ -119,6 +119,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
             assignment,
             new ProviderLocationVerificationRequest(5.348850m, -4.003150m, 18));
         Assert.Equal(ProviderMissionOperationStatus.Ok, startResult.Status);
+        await new MissionPaymentMilestoneService(db).EnsureMissionStartedMilestoneAsync(assignment.Mission!, CancellationToken.None);
         await providerNotifications.NotifyStartedAsync(assignment.Mission!, provider, assignment, CancellationToken.None);
         await db.SaveChangesAsync();
 
@@ -127,6 +128,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
             assignment,
             new ProviderCompleteMissionRequest(90, "Intervention terminee proprement.", "missions/MIS/photo-fin.jpg"));
         Assert.Equal(ProviderMissionOperationStatus.Ok, completeResult.Status);
+        await new MissionPaymentMilestoneService(db).EnsureMissionCompletedMilestoneAsync(assignment.Mission!, CancellationToken.None);
         await providerNotifications.NotifyCompletedAsync(assignment.Mission!, provider, assignment, CancellationToken.None);
         await db.SaveChangesAsync();
 
@@ -144,6 +146,27 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal(MissionStatus.Completed, mission.Status);
         Assert.Equal(PaymentStatus.Paid, mission.PaymentStatus);
         Assert.NotNull(mission.CompanyPayoutReleasedAt);
+
+        var review = await db.MissionReviews.SingleAsync(review => review.MissionId == mission.Id);
+        Assert.Equal(5, review.QualityRating);
+        Assert.Equal(5, review.PunctualityRating);
+        Assert.Equal(4, review.PolitenessRating);
+        Assert.Equal(5, review.CleanlinessRating);
+        Assert.Equal(5, review.OverallRating);
+        Assert.Equal("Tres bon service.", review.Comment);
+        Assert.Equal(seed.Company.Id, review.CompanyId);
+        Assert.Equal(seed.Provider.Id, review.ProviderId);
+
+        var completionMilestone = await db.MissionPaymentMilestones.SingleAsync(milestone =>
+            milestone.MissionId == mission.Id
+            && milestone.Trigger == MissionPaymentMilestoneTrigger.MissionCompleted);
+        Assert.Equal(MissionPaymentMilestoneStatus.Paid, completionMilestone.Status);
+        Assert.Equal("PAYOUT-MOCK-001", completionMilestone.ExternalPaymentReference);
+
+        Assert.Contains(await db.CompanyPortalActivities.ToListAsync(), activity =>
+            activity.CompanyId == seed.Company.Id
+            && activity.Title == "Mission validee par le client"
+            && activity.Description.Contains("5/5", StringComparison.OrdinalIgnoreCase));
 
         var mobilePushMessages = await db.NotificationOutboxMessages
             .Where(message => message.Channel == NotificationChannel.MobilePush)
