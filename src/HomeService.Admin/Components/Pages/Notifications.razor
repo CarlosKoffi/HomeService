@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Notifications
 @inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Notifications</PageTitle>
 
@@ -507,6 +508,11 @@
                                 @onclick="() => ResendPortalNotificationAsync(notification)">
                             Renvoyer sur le portail
                         </button>
+                        <button type="button"
+                                disabled="@IsBusy(notification.Id)"
+                                @onclick="() => OpenCompany(notification.CompanyId)">
+                            Ouvrir entreprise
+                        </button>
                     </div>
                 </article>
             }
@@ -869,6 +875,11 @@
             notification,
             () => ApiClient.ResendCompanyNotificationAsync(notification.CompanyId, notification.Id),
             "Notification renvoyee sur le portail entreprise.");
+    }
+
+    private void OpenCompany(Guid companyId)
+    {
+        Navigation.NavigateTo($"/companies/{companyId:D}");
     }
 
     private async Task ToggleRuleChannelAsync(NotificationDeliveryRuleResponse rule, string channel, ChangeEventArgs eventArgs)
