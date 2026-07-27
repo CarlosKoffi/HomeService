@@ -43,6 +43,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                 company.Email,
                 company.PhoneNumber,
                 company.City,
+                company.PlannedServices,
                 Status = company.Status.ToString(),
                 AssignmentMode = company.AssignmentMode.ToString(),
                 company.MissionDispatchPriority,
@@ -58,6 +59,30 @@ public sealed class AdminQueryService(IAppDbContext db)
                 DocumentCount = db.ProviderDocuments.Count(document => document.Provider!.CompanyId == company.Id)
             })
             .ToListAsync(cancellationToken);
+
+        var companyIds = companies.Select(company => company.Id).ToList();
+        var providerServices = await db.ProviderServices
+            .AsNoTracking()
+            .Where(providerService => companyIds.Contains(providerService.CompanyId)
+                && providerService.IsActive
+                && providerService.Service != null)
+            .Select(providerService => new
+            {
+                providerService.CompanyId,
+                Name = providerService.Service!.Name
+            })
+            .ToListAsync(cancellationToken);
+
+        var serviceNamesByCompany = providerServices
+            .GroupBy(providerService => providerService.CompanyId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(providerService => providerService.Name)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(name => name)
+                    .ToList());
 
         var stats = new AdminCompanyStatsResponse(
             await db.Companies.CountAsync(cancellationToken),
@@ -86,10 +111,35 @@ public sealed class AdminQueryService(IAppDbContext db)
                     company.CreatedAt)
                 {
                     MissionDispatchPriority = company.MissionDispatchPriority,
-                    AcceptsUrgentMissions = company.AcceptsUrgentMissions
+                    AcceptsUrgentMissions = company.AcceptsUrgentMissions,
+                    Services = MergeCompanyServices(company.PlannedServices, serviceNamesByCompany.GetValueOrDefault(company.Id))
                 })
                 .ToList(),
             stats);
+    }
+
+    private static IReadOnlyList<string> MergeCompanyServices(string? plannedServices, IReadOnlyList<string>? providerServices)
+    {
+        return SplitServiceLabels(plannedServices)
+            .Concat(providerServices ?? [])
+            .Where(label => !string.IsNullOrWhiteSpace(label))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(label => label)
+            .ToList();
+    }
+
+    private static IReadOnlyList<string> SplitServiceLabels(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return [];
+        }
+
+        return value
+            .Split([',', ';', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(label => !string.IsNullOrWhiteSpace(label))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     public async Task<AdminCompanyDetailResponse?> GetCompanyAsync(Guid companyId, CancellationToken cancellationToken)

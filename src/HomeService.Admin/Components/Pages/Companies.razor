@@ -49,6 +49,16 @@
         </select>
     </label>
     <label>
+        Service
+        <select @bind="SelectedService">
+            <option value="">Tous les services</option>
+            @foreach (var service in AvailableServices)
+            {
+                <option value="@service">@service</option>
+            }
+        </select>
+    </label>
+    <label>
         Recherche
         <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Nom, ville, email, telephone" />
     </label>
@@ -64,7 +74,7 @@
     <header>
         <div>
             <h2>Liste des entreprises</h2>
-            <p>@(Snapshot?.Items.Count ?? 0) entreprise(s) affichee(s)</p>
+            <p>@FilteredCompanies.Count entreprise(s) affichee(s)</p>
         </div>
     </header>
 
@@ -77,7 +87,7 @@
             </div>
         </article>
     }
-    else if (Snapshot is null || Snapshot.Items.Count == 0)
+    else if (Snapshot is null || FilteredCompanies.Count == 0)
     {
         <article class="operator-row">
             <div>
@@ -88,7 +98,7 @@
     }
     else
     {
-        @foreach (var company in Snapshot.Items)
+        @foreach (var company in FilteredCompanies)
         {
             <article class="operator-row company-row">
                 <div class="company-identity">
@@ -96,6 +106,23 @@
                     <div>
                         <strong>@company.Name</strong>
                         <p>@(company.City ?? "Ville non renseignee") - @company.PhoneNumber</p>
+                        @if (company.Services.Count > 0)
+                        {
+                            <div class="service-summary company-services">
+                                @foreach (var service in company.Services.Take(4))
+                                {
+                                    <span>@service</span>
+                                }
+                                @if (company.Services.Count > 4)
+                                {
+                                    <span>+@(company.Services.Count - 4)</span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <small class="muted-text">Aucun service renseigne</small>
+                        }
                     </div>
                 </div>
                 <div class="operator-meta">
@@ -118,9 +145,22 @@
 @code {
     private AdminCompanyListResponse? Snapshot { get; set; }
     private string? SelectedStatus { get; set; }
+    private string? SelectedService { get; set; }
     private string? SearchTerm { get; set; }
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
+
+    private IReadOnlyList<string> AvailableServices => Snapshot?.Items
+        .SelectMany(company => company.Services)
+        .Where(service => !string.IsNullOrWhiteSpace(service))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(service => service)
+        .ToList() ?? [];
+
+    private IReadOnlyList<AdminCompanySummaryResponse> FilteredCompanies => Snapshot?.Items
+        .Where(company => string.IsNullOrWhiteSpace(SelectedService)
+            || company.Services.Any(service => string.Equals(service, SelectedService, StringComparison.OrdinalIgnoreCase)))
+        .ToList() ?? [];
 
     protected override async Task OnInitializedAsync()
     {

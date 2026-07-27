@@ -30,6 +30,7 @@ public sealed record AdminCompanySummaryResponse(
 {
     public int MissionDispatchPriority { get; init; } = 100;
     public bool AcceptsUrgentMissions { get; init; }
+    public IReadOnlyList<string> Services { get; init; } = [];
 }
 
 public sealed record AdminCompanyActionRequest(string? Note);
