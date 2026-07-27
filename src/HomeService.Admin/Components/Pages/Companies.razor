@@ -74,7 +74,7 @@
     <header>
         <div>
             <h2>Liste des entreprises</h2>
-            <p>@FilteredCompanies.Count entreprise(s) affichee(s)</p>
+            <p>@FilteredCompanies.Count entreprise(s) affichee(s) - @AvailableServices.Count service(s) detecte(s)</p>
         </div>
     </header>
 
@@ -127,12 +127,16 @@
                 </div>
                 <div class="operator-meta">
                     <span class="@GetStatusClass(company.Status)">@TranslateStatus(company.Status)</span>
-                    <small>@TranslateAssignmentMode(company.AssignmentMode)</small>
+                    <small>@FormatAssignmentMode(company.AssignmentMode)</small>
+                    <small>@FormatDispatchPriority(company.MissionDispatchPriority)</small>
                 </div>
                 <div class="operator-kpis">
                     <span>@company.ActiveProviderCount / @company.ProviderCount prestataires</span>
                     <span>@company.OpenMissionCount mission(s) ouvertes</span>
                     <span>@company.DocumentCount document(s)</span>
+                    <span class="@(company.AcceptsUrgentMissions ? "kpi-ok" : "kpi-muted")">
+                        @(company.AcceptsUrgentMissions ? "Urgences acceptees" : "Urgences fermees")
+                    </span>
                 </div>
                 <div class="operator-actions">
                     <button type="button" @onclick="() => OpenCompany(company.Id)">Ouvrir le dossier</button>
@@ -197,6 +201,13 @@
         return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
     }
 
+    private static string FormatAssignmentMode(string status)
+    {
+        return string.Equals(status, "PlatformManaged", StringComparison.OrdinalIgnoreCase)
+            ? "Affectation w\u00e9l\u00e9"
+            : "Affectation entreprise";
+    }
+
     private static string TranslateAssignmentMode(string status)
     {
         return status switch
@@ -204,6 +215,18 @@
             "PlatformManaged" => "Affectation wélé",
             _ => "Affectation entreprise"
         };
+    }
+
+    private static string FormatDispatchPriority(int priority)
+    {
+        var label = priority switch
+        {
+            <= 25 => "Priorite haute",
+            <= 75 => "Priorite normale",
+            _ => "Priorite basse"
+        };
+
+        return $"{label} - score {priority}";
     }
 
     private static string TranslateStatus(string status)

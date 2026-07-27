@@ -1431,6 +1431,17 @@ h3 {
     padding: .35rem .55rem;
 }
 
+.operator-kpis .kpi-ok {
+    background: #dcfce7;
+    border-color: #bbf7d0;
+    color: #00813c;
+}
+
+.operator-kpis .kpi-muted {
+    background: #f8fafc;
+    color: #64748b;
+}
+
 .operator-actions {
     display: flex;
     gap: .45rem;
