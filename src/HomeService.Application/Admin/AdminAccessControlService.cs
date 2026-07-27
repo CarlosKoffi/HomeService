@@ -245,6 +245,36 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
         return await SaveAndSnapshotAsync(cancellationToken);
     }
 
+    public async Task<AdminAccessControlResult> ReactivateAdminUserAsync(Guid adminUserId, CancellationToken cancellationToken)
+        => await ReactivateAdminUserAsync(adminUserId, null, null, cancellationToken);
+
+    public async Task<AdminAccessControlResult> ReactivateAdminUserAsync(
+        Guid adminUserId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Id == adminUserId, cancellationToken);
+        if (admin is null)
+        {
+            return AdminAccessControlResult.NotFound("L'admin n'existe plus.");
+        }
+
+        var before = new { admin.Id, admin.Email, admin.IsActive };
+        admin.Reactivate();
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminUserReactivated",
+            nameof(AdminUser),
+            adminUserId,
+            "Admin reactive.",
+            before,
+            new { admin.Id, admin.Email, admin.IsActive });
+
+        return await SaveAndSnapshotAsync(cancellationToken);
+    }
+
     private async Task<List<Guid>> GetValidRoleIdsAsync(IReadOnlyList<Guid> roleIds, CancellationToken cancellationToken)
     {
         return await db.AdminRoles

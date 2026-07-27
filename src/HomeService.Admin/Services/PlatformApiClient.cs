@@ -713,6 +713,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await PostJsonAsync<AdminAccessSnapshotResponse>($"/api/admin/access-control/admins/{adminUserId}/deactivate", null, cancellationToken);
     }
 
+    public async Task<AdminAccessSnapshotResponse?> ReactivateAdminUserAsync(Guid adminUserId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminAccessSnapshotResponse>($"/api/admin/access-control/admins/{adminUserId}/reactivate", null, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CmsSiteSummaryResponse>> GetCmsSitesAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

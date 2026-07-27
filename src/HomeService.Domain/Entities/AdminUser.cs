@@ -29,4 +29,10 @@ public sealed class AdminUser : AuditableEntity
         IsActive = false;
         Touch();
     }
+
+    public void Reactivate()
+    {
+        IsActive = true;
+        Touch();
+    }
 }

@@ -233,6 +233,7 @@
                 <p>@admin.Email</p>
             </div>
             <span>@GetAdminRoleLabel(admin)</span>
+            <span class="@GetAdminStatusClass(admin)">@GetAdminStatusLabel(admin)</span>
             <select value="@GetAdminRoleDraft(admin.Id)" @onchange="args => OnAdminRoleDraftChanged(admin.Id, args)">
                 <option value="">Aucun role</option>
                 @foreach (var role in Roles)
@@ -241,7 +242,14 @@
                 }
             </select>
             <button type="button" @onclick="() => SaveAdminRoleAsync(admin)" disabled="@IsBusy">Modifier les acces</button>
-            <button type="button" @onclick="() => DeactivateAdminAsync(admin)" disabled="@(!admin.IsActive || IsBusy)">Desactiver</button>
+            @if (admin.IsActive)
+            {
+                <button type="button" class="ghost-danger-button" @onclick="() => DeactivateAdminAsync(admin)" disabled="@IsBusy">Suspendre</button>
+            }
+            else
+            {
+                <button type="button" @onclick="() => ReactivateAdminAsync(admin)" disabled="@IsBusy">Reactiver</button>
+            }
         </article>
     }
 </section>
@@ -348,7 +356,14 @@
     {
         await RunAccessActionAsync(
             async () => await ApiClient.DeactivateAdminUserAsync(admin.Id),
-            "Admin desactive.");
+            "Admin suspendu.");
+    }
+
+    private async Task ReactivateAdminAsync(AdminUserSummaryResponse admin)
+    {
+        await RunAccessActionAsync(
+            async () => await ApiClient.ReactivateAdminUserAsync(admin.Id),
+            "Admin reactive.");
     }
 
     private async Task RunAccessActionAsync(Func<Task<AdminAccessSnapshotResponse?>> action, string successMessage)
@@ -526,6 +541,16 @@
         }
 
         return admin.Roles.Count == 0 ? "Aucun role" : string.Join(", ", admin.Roles);
+    }
+
+    private static string GetAdminStatusLabel(AdminUserSummaryResponse admin)
+    {
+        return admin.IsActive ? "Actif" : "Suspendu";
+    }
+
+    private static string GetAdminStatusClass(AdminUserSummaryResponse admin)
+    {
+        return admin.IsActive ? "status-pill ok" : "status-pill danger";
     }
 
     private string GetAccessTabClass(AccessAdminTab tab)

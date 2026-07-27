@@ -115,6 +115,30 @@ public sealed class AdminAccessControlServiceTests
         Assert.Equal("admin-deactivate", audit.CorrelationId);
     }
 
+    [Fact]
+    public async Task ReactivateAdminUserAsync_WhenValid_PersistsAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var admin = new AdminUser("Awa Kone", "awa@wele.ci");
+        admin.Deactivate();
+        db.AdminUsers.Add(admin);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.ReactivateAdminUserAsync(
+            admin.Id,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-reactivate"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.Ok, result.Status);
+        Assert.True((await db.AdminUsers.SingleAsync(user => user.Id == admin.Id)).IsActive);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminUserReactivated", audit.Action);
+        Assert.Equal(admin.Id, audit.EntityId);
+        Assert.Equal("admin-reactivate", audit.CorrelationId);
+    }
+
     private static AdminAccessControlService CreateService(HomeServiceDbContext db)
     {
         return new AdminAccessControlService(db, new AdminQueryService(db));

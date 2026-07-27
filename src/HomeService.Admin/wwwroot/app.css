@@ -4699,6 +4699,12 @@ h3 {
     padding: .55rem .75rem;
 }
 
+.translation-list article button.ghost-danger-button {
+    background: #fff;
+    border-color: #fecaca;
+    color: #b91c1c;
+}
+
 .access-form button:disabled,
 .translation-list article button:disabled {
     cursor: not-allowed;

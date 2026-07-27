@@ -786,6 +786,27 @@ public static class AdminEndpoints
         })
         .WithName("DeactivateAdminUser");
 
+        admin.MapPost("/access-control/admins/{adminUserId:guid}/reactivate", async (
+            Guid adminUserId,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.ReactivateAdminUserAsync(
+                adminUserId,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            return Results.Ok(result.Snapshot);
+        })
+        .WithName("ReactivateAdminUser");
+
         admin.MapPost("/notifications/{id:guid}/retry", async (
             Guid id,
             HttpRequest httpRequest,
