@@ -17,9 +17,13 @@ public sealed class AdminEndpointContractTests
     [InlineData("GET", "/api/admin/notification-delivery-rules")]
     [InlineData("PUT", "/api/admin/notification-delivery-rules/{id:guid}")]
     [InlineData("GET", "/api/admin/notifications")]
+    [InlineData("GET", "/api/admin/company-portal-notifications")]
     [InlineData("POST", "/api/admin/notifications/{id:guid}/retry")]
     [InlineData("POST", "/api/admin/notifications/{id:guid}/cancel")]
     [InlineData("POST", "/api/admin/notifications/{id:guid}/mark-sent")]
+    [InlineData("POST", "/api/admin/companies/{companyId:guid}/notifications/{notificationId:guid}/mark-read")]
+    [InlineData("POST", "/api/admin/companies/{companyId:guid}/notifications/{notificationId:guid}/mark-unread")]
+    [InlineData("POST", "/api/admin/companies/{companyId:guid}/notifications/{notificationId:guid}/resend")]
     public void AdminNotificationRoutes_AreMapped(string httpMethod, string routePattern)
     {
         var endpoints = BuildAdminEndpoints();
@@ -67,6 +71,92 @@ public sealed class AdminEndpointContractTests
     [Theory]
     [InlineData("GET", "/api/admin/payments")]
     public void AdminPaymentRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/admin/companies")]
+    [InlineData("GET", "/api/admin/companies/{companyId:guid}")]
+    [InlineData("PUT", "/api/admin/companies/{id:guid}/assignment-mode")]
+    [InlineData("PUT", "/api/admin/companies/{id:guid}/dispatch-settings")]
+    [InlineData("POST", "/api/admin/companies/{id:guid}/suspend")]
+    [InlineData("POST", "/api/admin/companies/{id:guid}/reactivate")]
+    public void AdminCompanyRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/admin/providers")]
+    [InlineData("GET", "/api/admin/providers/{providerId:guid}")]
+    [InlineData("POST", "/api/admin/providers/{providerId:guid}/approve")]
+    [InlineData("POST", "/api/admin/providers/{providerId:guid}/suspend")]
+    [InlineData("GET", "/api/admin/provider-documents/{id:guid}/preview")]
+    public void AdminProviderRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/admin/company-service-proposals")]
+    [InlineData("GET", "/api/admin/service-insights")]
+    [InlineData("POST", "/api/admin/company-service-proposals/reanalyse")]
+    [InlineData("POST", "/api/admin/company-service-proposals/{id:guid}/attach")]
+    [InlineData("POST", "/api/admin/company-service-proposals/{id:guid}/create-prestation")]
+    [InlineData("POST", "/api/admin/company-service-proposals/{id:guid}/create-service")]
+    [InlineData("POST", "/api/admin/services")]
+    [InlineData("PUT", "/api/admin/services/{serviceId:guid}")]
+    [InlineData("POST", "/api/admin/services/{serviceId:guid}/activate")]
+    [InlineData("POST", "/api/admin/services/{serviceId:guid}/deactivate")]
+    [InlineData("POST", "/api/admin/services/{serviceId:guid}/prestations")]
+    [InlineData("PUT", "/api/admin/service-prestations/{id:guid}")]
+    [InlineData("POST", "/api/admin/service-prestations/{id:guid}/activate")]
+    [InlineData("POST", "/api/admin/service-prestations/{id:guid}/deactivate")]
+    public void AdminServiceCatalogRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/admin/company-applications")]
+    [InlineData("GET", "/api/admin/company-applications/{id:guid}")]
+    [InlineData("POST", "/api/admin/company-applications/{id:guid}/approve")]
+    [InlineData("POST", "/api/admin/company-applications/{id:guid}/reject")]
+    [InlineData("POST", "/api/admin/company-applications/{id:guid}/reopen")]
+    [InlineData("POST", "/api/admin/company-applications/{id:guid}/request-more-information")]
+    [InlineData("POST", "/api/admin/company-applications/{id:guid}/activation-link")]
+    [InlineData("POST", "/api/admin/company-application-documents/{id:guid}/approve")]
+    [InlineData("POST", "/api/admin/company-application-documents/{id:guid}/reject")]
+    [InlineData("POST", "/api/admin/company-application-documents/{id:guid}/request-replacement")]
+    [InlineData("POST", "/api/admin/company-application-documents/{id:guid}/reopen")]
+    [InlineData("GET", "/api/admin/company-application-documents/{id:guid}/preview")]
+    [InlineData("GET", "/api/admin/company-application-documents/{id:guid}/download")]
+    public void AdminCompanyApplicationRoutes_AreMapped(string httpMethod, string routePattern)
     {
         var endpoints = BuildAdminEndpoints();
 
