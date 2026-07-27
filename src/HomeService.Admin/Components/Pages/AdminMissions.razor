@@ -1,6 +1,7 @@
 @page "/missions"
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Admin
+@using Microsoft.AspNetCore.Components.Web
 @inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
 
@@ -62,9 +63,13 @@
 </nav>
 
 <section class="toolbar operator-toolbar">
+    <div class="operator-toolbar-intro">
+        <strong>Recherche rapide</strong>
+        <span>Filtrez par statut, numero de mission, client, entreprise, prestataire ou service.</span>
+    </div>
     <label>
         Statut
-        <select @bind="SelectedStatus">
+        <select @bind="SelectedStatus" @bind:after="LoadAsync">
             <option value="">Toutes</option>
             <option value="Created">Creees</option>
             <option value="Assigned">Affectees</option>
@@ -78,9 +83,15 @@
     </label>
     <label>
         Recherche
-        <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Numero mission, client, entreprise, prestataire, service" />
+        <input type="search" @bind="SearchTerm" @bind:event="oninput" @onkeydown="OnSearchKeyDownAsync" placeholder="Numero mission, client, entreprise, prestataire, service" />
     </label>
-    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Appliquer</button>
+    <div class="operator-toolbar-actions">
+        <button type="button" class="primary-action" @onclick="LoadAsync" disabled="@IsLoading">Rechercher</button>
+        @if (HasActiveFilters)
+        {
+            <button type="button" class="secondary-action" @onclick="ResetFiltersAsync" disabled="@IsLoading">Reinitialiser</button>
+        }
+    </div>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(Message))
@@ -191,6 +202,7 @@
     private bool IsActionBusy { get; set; }
     private string? Message { get; set; }
     private string? ErrorMessage { get; set; }
+    private bool HasActiveFilters => !string.IsNullOrWhiteSpace(SelectedStatus) || !string.IsNullOrWhiteSpace(SearchTerm);
 
     protected override async Task OnInitializedAsync()
     {
@@ -263,6 +275,21 @@
     {
         SelectedStatus = status;
         await LoadAsync();
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        SelectedStatus = null;
+        SearchTerm = null;
+        await LoadAsync();
+    }
+
+    private async Task OnSearchKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await LoadAsync();
+        }
     }
 
     private async Task ConfirmDisputeAsync(Guid missionId)

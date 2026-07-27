@@ -1291,7 +1291,39 @@ h3 {
     background: #fff;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
+    display: grid;
+    grid-template-columns: minmax(180px, .75fr) minmax(160px, .45fr) minmax(280px, 1fr) auto;
     padding: 1rem;
+}
+
+.operator-toolbar-intro {
+    align-self: center;
+    display: grid;
+    gap: .25rem;
+}
+
+.operator-toolbar-intro strong {
+    color: #000;
+    font-size: .95rem;
+}
+
+.operator-toolbar-intro span {
+    color: #475569;
+    font-size: .86rem;
+    line-height: 1.4;
+}
+
+.operator-toolbar-actions {
+    align-items: end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.operator-toolbar .primary-action,
+.operator-toolbar .secondary-action {
+    min-height: 42px;
+    white-space: nowrap;
 }
 
 .operator-list {
@@ -5407,6 +5439,7 @@ h3 {
     }
 
     .operator-row,
+    .operator-toolbar,
     .mission-settings-guide,
     .mission-settings-row,
     .company-detail-grid,
