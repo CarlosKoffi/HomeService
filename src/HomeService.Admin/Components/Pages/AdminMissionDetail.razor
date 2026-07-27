@@ -420,13 +420,19 @@ else
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(DisputeNote))
+        {
+            ErrorMessage = "Ajoutez une note avant de signaler un litige. Elle servira au suivi admin.";
+            return;
+        }
+
         IsActionBusy = true;
         ErrorMessage = null;
         Message = null;
 
         try
         {
-            await ApiClient.MarkAdminMissionDisputedAsync(Mission.Id, DisputeReason, DisputeNote ?? string.Empty);
+            await ApiClient.MarkAdminMissionDisputedAsync(Mission.Id, DisputeReason, DisputeNote);
             Message = "Mission marquee en litige.";
             DisputeNote = null;
             DisputeReason = "Other";
