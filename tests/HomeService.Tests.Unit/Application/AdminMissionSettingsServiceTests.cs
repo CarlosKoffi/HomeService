@@ -20,9 +20,34 @@ public sealed class AdminMissionSettingsServiceTests
         var result = await sut.GetAsync(CancellationToken.None);
 
         var rule = Assert.Single(result.CommissionRules);
+        Assert.Empty(result.WorkflowSettings);
         Assert.Equal("Commission mise en relation", rule.TargetLabel);
         Assert.Equal(15m, rule.RatePercent);
         Assert.Equal("XOF", rule.Currency);
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsWorkflowSettings()
+    {
+        await using var db = CreateDbContext();
+        db.MissionWorkflowSettings.Add(new MissionWorkflowSetting(
+            "provider_acceptance_minutes",
+            "Acceptation prestataire",
+            "Temps donne au prestataire pour accepter.",
+            "minutes",
+            3,
+            1,
+            30,
+            10));
+        await db.SaveChangesAsync();
+        var sut = new AdminMissionSettingsService(db);
+
+        var result = await sut.GetAsync(CancellationToken.None);
+
+        var setting = Assert.Single(result.WorkflowSettings);
+        Assert.Equal("provider_acceptance_minutes", setting.Key);
+        Assert.Equal(3, setting.Value);
+        Assert.Equal("minutes", setting.Unit);
     }
 
     [Fact]
@@ -58,6 +83,58 @@ public sealed class AdminMissionSettingsServiceTests
         var result = await sut.UpdateCommissionRuleAsync(
             rule.Id,
             new UpdateAdminCommissionRuleRequest(12000, 0, "XOF"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionSettingsOperationStatus.ValidationFailed, result.Status);
+    }
+
+    [Fact]
+    public async Task UpdateWorkflowSettingAsync_UpdatesExistingSetting()
+    {
+        await using var db = CreateDbContext();
+        var setting = new MissionWorkflowSetting(
+            "provider_acceptance_minutes",
+            "Acceptation prestataire",
+            "Temps donne au prestataire pour accepter.",
+            "minutes",
+            3,
+            1,
+            30,
+            10);
+        db.MissionWorkflowSettings.Add(setting);
+        await db.SaveChangesAsync();
+        var sut = new AdminMissionSettingsService(db);
+
+        var result = await sut.UpdateWorkflowSettingAsync(
+            setting.Id,
+            new UpdateAdminMissionWorkflowSettingRequest(5),
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionSettingsOperationStatus.Ok, result.Status);
+        var stored = await db.MissionWorkflowSettings.SingleAsync();
+        Assert.Equal(5, stored.Value);
+    }
+
+    [Fact]
+    public async Task UpdateWorkflowSettingAsync_WhenValueIsOutsideRange_ReturnsValidationFailed()
+    {
+        await using var db = CreateDbContext();
+        var setting = new MissionWorkflowSetting(
+            "provider_acceptance_minutes",
+            "Acceptation prestataire",
+            "Temps donne au prestataire pour accepter.",
+            "minutes",
+            3,
+            1,
+            30,
+            10);
+        db.MissionWorkflowSettings.Add(setting);
+        await db.SaveChangesAsync();
+        var sut = new AdminMissionSettingsService(db);
+
+        var result = await sut.UpdateWorkflowSettingAsync(
+            setting.Id,
+            new UpdateAdminMissionWorkflowSettingRequest(45),
             CancellationToken.None);
 
         Assert.Equal(AdminMissionSettingsOperationStatus.ValidationFailed, result.Status);

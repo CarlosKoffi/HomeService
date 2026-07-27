@@ -224,6 +224,18 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
+    public async Task<AdminMissionSettingsResponse?> UpdateAdminMissionWorkflowSettingAsync(
+        Guid settingId,
+        UpdateAdminMissionWorkflowSettingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminMissionSettingsResponse>(
+            $"/api/admin/mission-settings/workflow-settings/{settingId:D}",
+            request,
+            cancellationToken);
+    }
+
     public async Task<AdminProviderListResponse?> GetAdminProvidersAsync(
         string? status,
         string? employmentType,

@@ -36,6 +36,7 @@ public interface IAppDbContext
     DbSet<MissionStatusHistory> MissionStatusHistories { get; }
     DbSet<MissionDispatchOffer> MissionDispatchOffers { get; }
     DbSet<CommissionRule> CommissionRules { get; }
+    DbSet<MissionWorkflowSetting> MissionWorkflowSettings { get; }
     DbSet<ProviderMissionAssignment> ProviderMissionAssignments { get; }
     DbSet<MissionConversation> MissionConversations { get; }
     DbSet<MissionMessage> MissionMessages { get; }

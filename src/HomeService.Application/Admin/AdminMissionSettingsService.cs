@@ -33,6 +33,22 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
             })
             .ToListAsync(cancellationToken);
 
+        var workflowSettings = await db.MissionWorkflowSettings
+            .AsNoTracking()
+            .OrderBy(setting => setting.SortOrder)
+            .ThenBy(setting => setting.Label)
+            .Select(setting => new AdminMissionWorkflowSettingResponse(
+                setting.Id,
+                setting.Key,
+                setting.Label,
+                setting.Description,
+                setting.Unit,
+                setting.Value,
+                setting.MinimumValue,
+                setting.MaximumValue,
+                setting.IsActive))
+            .ToListAsync(cancellationToken);
+
         return new AdminMissionSettingsResponse(
             rules
                 .Select(rule => new AdminCommissionRuleResponse(
@@ -48,7 +64,8 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
                     rule.IsActive,
                     rule.EffectiveFrom,
                     rule.EffectiveUntil))
-                .ToList());
+                .ToList(),
+            workflowSettings);
     }
 
     public async Task<AdminMissionSettingsOperationResult> UpdateCommissionRuleAsync(
@@ -70,6 +87,31 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
         }
 
         rule.UpdatePricing(request.RateBasisPoints, request.FixedAmount, request.Currency);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return AdminMissionSettingsOperationResult.Ok();
+    }
+
+    public async Task<AdminMissionSettingsOperationResult> UpdateWorkflowSettingAsync(
+        Guid settingId,
+        UpdateAdminMissionWorkflowSettingRequest request,
+        CancellationToken cancellationToken)
+    {
+        var setting = await db.MissionWorkflowSettings
+            .FirstOrDefaultAsync(item => item.Id == settingId, cancellationToken);
+
+        if (setting is null)
+        {
+            return AdminMissionSettingsOperationResult.NotFound("Parametre workflow introuvable.");
+        }
+
+        if (!setting.IsWithinRange(request.Value))
+        {
+            return AdminMissionSettingsOperationResult.ValidationFailed(
+                $"La valeur doit etre comprise entre {setting.MinimumValue} et {setting.MaximumValue} {setting.Unit}.");
+        }
+
+        setting.UpdateValue(request.Value);
         await db.SaveChangesAsync(cancellationToken);
 
         return AdminMissionSettingsOperationResult.Ok();

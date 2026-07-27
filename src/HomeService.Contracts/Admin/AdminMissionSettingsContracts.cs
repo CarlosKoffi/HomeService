@@ -1,7 +1,8 @@
 namespace HomeService.Contracts.Admin;
 
 public sealed record AdminMissionSettingsResponse(
-    IReadOnlyList<AdminCommissionRuleResponse> CommissionRules);
+    IReadOnlyList<AdminCommissionRuleResponse> CommissionRules,
+    IReadOnlyList<AdminMissionWorkflowSettingResponse> WorkflowSettings);
 
 public sealed record AdminCommissionRuleResponse(
     Guid Id,
@@ -21,3 +22,16 @@ public sealed record UpdateAdminCommissionRuleRequest(
     int RateBasisPoints,
     int FixedAmount,
     string Currency);
+
+public sealed record AdminMissionWorkflowSettingResponse(
+    Guid Id,
+    string Key,
+    string Label,
+    string Description,
+    string Unit,
+    int Value,
+    int MinimumValue,
+    int MaximumValue,
+    bool IsActive);
+
+public sealed record UpdateAdminMissionWorkflowSettingRequest(int Value);

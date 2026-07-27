@@ -1477,6 +1477,36 @@ h3 {
     padding: .7rem .95rem;
 }
 
+.workflow-settings-row {
+    grid-template-columns: minmax(260px, 1fr) minmax(120px, 180px) minmax(90px, 120px) auto;
+}
+
+.mission-settings-unit {
+    align-self: stretch;
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    display: grid;
+    gap: .25rem;
+    justify-content: center;
+    min-height: 64px;
+    padding: .75rem .9rem;
+    text-align: center;
+}
+
+.mission-settings-unit span {
+    color: #667085;
+    font-size: .7rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.mission-settings-unit strong {
+    color: #000;
+    font-size: .95rem;
+}
+
 .muted-action {
     color: #64748b;
     font-size: .82rem;

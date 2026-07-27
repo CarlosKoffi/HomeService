@@ -38,10 +38,61 @@
         <p>Regle prevue quand la plateforme affecte a la place de l'entreprise.</p>
     </article>
     <article>
-        <span>Prochain lot</span>
+        <span>Workflow</span>
         <strong>Delais workflow</strong>
-        <p>Les temps de reponse entreprise et prestataire auront une table dediee.</p>
+        <p>Temps de reponse, validite devis et tolerance terrain configurables sans redeploiement.</p>
     </article>
+</section>
+
+<section class="operator-list mission-settings-list">
+    <header>
+        <div>
+            <h2>Delais et controles workflow</h2>
+            <p>@(Snapshot?.WorkflowSettings.Count ?? 0) parametre(s) actif(s)</p>
+        </div>
+    </header>
+
+    @if (IsLoading)
+    {
+        <article class="admin-empty-row">
+            <strong>Chargement...</strong>
+            <p>Lecture des delais depuis l'API.</p>
+        </article>
+    }
+    else if (Snapshot is null || Snapshot.WorkflowSettings.Count == 0)
+    {
+        <article class="admin-empty-row">
+            <strong>Aucun parametre workflow</strong>
+            <p>Les valeurs par defaut seront creees automatiquement au demarrage de l'API.</p>
+        </article>
+    }
+    else
+    {
+        @foreach (var setting in Snapshot.WorkflowSettings)
+        {
+            var draft = GetDraft(setting);
+
+            <article class="mission-settings-row workflow-settings-row" @key="setting.Id">
+                <div>
+                    <span class="status-pill @(setting.IsActive ? "ok" : "danger")">@(setting.IsActive ? "Actif" : "Inactif")</span>
+                    <h3>@setting.Label</h3>
+                    <p>@setting.Description</p>
+                    <small>Valeur autorisee: @setting.MinimumValue a @setting.MaximumValue @setting.Unit</small>
+                </div>
+                <label>
+                    Valeur
+                    <input type="number" min="@setting.MinimumValue" max="@setting.MaximumValue" step="1" @bind="draft.Value" />
+                </label>
+                <div class="mission-settings-unit">
+                    <span>Unite</span>
+                    <strong>@setting.Unit</strong>
+                </div>
+                <button type="button" @onclick="() => SaveWorkflowSettingAsync(setting.Id)" disabled="@IsSaving">
+                    Enregistrer
+                </button>
+            </article>
+        }
+    }
 </section>
 
 <section class="operator-list mission-settings-list">
@@ -104,6 +155,7 @@
 
 @code {
     private readonly Dictionary<Guid, CommissionRuleDraft> Drafts = [];
+    private readonly Dictionary<Guid, WorkflowSettingDraft> WorkflowDrafts = [];
     private AdminMissionSettingsResponse? Snapshot { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSaving { get; set; }
@@ -125,6 +177,7 @@
         {
             Snapshot = await ApiClient.GetAdminMissionSettingsAsync();
             Drafts.Clear();
+            WorkflowDrafts.Clear();
         }
         catch (Exception exception)
         {
@@ -152,6 +205,20 @@
         return draft;
     }
 
+    private WorkflowSettingDraft GetDraft(AdminMissionWorkflowSettingResponse setting)
+    {
+        if (!WorkflowDrafts.TryGetValue(setting.Id, out var draft))
+        {
+            draft = new WorkflowSettingDraft
+            {
+                Value = setting.Value
+            };
+            WorkflowDrafts[setting.Id] = draft;
+        }
+
+        return draft;
+    }
+
     private async Task SaveRuleAsync(Guid ruleId)
     {
         if (!Drafts.TryGetValue(ruleId, out var draft))
@@ -170,7 +237,38 @@
                 ruleId,
                 new UpdateAdminCommissionRuleRequest(basisPoints, draft.FixedAmount, draft.Currency));
             Drafts.Clear();
+            WorkflowDrafts.Clear();
             Message = "Regle de commission mise a jour.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Mise a jour impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task SaveWorkflowSettingAsync(Guid settingId)
+    {
+        if (!WorkflowDrafts.TryGetValue(settingId, out var draft))
+        {
+            return;
+        }
+
+        IsSaving = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            Snapshot = await ApiClient.UpdateAdminMissionWorkflowSettingAsync(
+                settingId,
+                new UpdateAdminMissionWorkflowSettingRequest(draft.Value));
+            Drafts.Clear();
+            WorkflowDrafts.Clear();
+            Message = "Parametre workflow mis a jour.";
         }
         catch (Exception exception)
         {
@@ -187,5 +285,10 @@
         public decimal RatePercent { get; set; }
         public int FixedAmount { get; set; }
         public string Currency { get; set; } = "XOF";
+    }
+
+    private sealed class WorkflowSettingDraft
+    {
+        public int Value { get; set; }
     }
 }

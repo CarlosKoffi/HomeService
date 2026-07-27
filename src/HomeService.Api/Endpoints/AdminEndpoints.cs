@@ -471,6 +471,26 @@ public static class AdminEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
+        admin.MapPut("/mission-settings/workflow-settings/{settingId:guid}", async (
+            Guid settingId,
+            UpdateAdminMissionWorkflowSettingRequest request,
+            AdminMissionSettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await settingsService.UpdateWorkflowSettingAsync(settingId, request, cancellationToken);
+
+            return result.Status switch
+            {
+                AdminMissionSettingsOperationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                AdminMissionSettingsOperationStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+                _ => Results.Ok(await settingsService.GetAsync(cancellationToken))
+            };
+        })
+        .WithName("UpdateAdminMissionWorkflowSetting")
+        .Produces<AdminMissionSettingsResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapGet("/providers", async (
             string? status,
             string? employmentType,
