@@ -58,6 +58,15 @@ $checks = @(
             "MissionAdditionalQuotePaid",
             "MissionDisputeResolvedCustomer",
             "MissionRefundApproved")
+        RequiredTemplates = @(
+            @{ EventKey = "CompanyActivationLinkCreated"; Channel = "Portal" },
+            @{ EventKey = "CompanyApplicationNeedsChanges"; Channel = "Portal" },
+            @{ EventKey = "MissionAssignedToProvider"; Channel = "MobilePush" },
+            @{ EventKey = "MissionAdditionalQuoteAvailable"; Channel = "MobilePush" },
+            @{ EventKey = "MissionAdditionalQuotePaid"; Channel = "Portal" },
+            @{ EventKey = "MissionDisputeResolvedCustomer"; Channel = "MobilePush" },
+            @{ EventKey = "MissionRefundApproved"; Channel = "MobilePush" },
+            @{ EventKey = "MissionPaymentTransferred"; Channel = "Portal" })
     },
     @{ Name = "Admin payments"; Path = "/api/admin/payments"; MinCount = 0 },
     @{ Name = "Admin access control"; Path = "/api/admin/access-control"; MinCount = 0 }
@@ -114,6 +123,43 @@ function Test-RequiredEventKeys($check, $payload) {
     return @($missing)
 }
 
+function Get-ItemPropertyValue($item, [string[]]$propertyNames) {
+    foreach ($propertyName in $propertyNames) {
+        if ($item.PSObject.Properties.Name -contains $propertyName) {
+            return [string]$item.$propertyName
+        }
+    }
+
+    return $null
+}
+
+function Test-RequiredTemplates($check, $payload) {
+    if (-not ($check.ContainsKey("RequiredTemplates"))) {
+        return @()
+    }
+
+    $items = Get-Items $payload
+    $available = @{}
+    foreach ($item in $items) {
+        $eventKey = Get-ItemPropertyValue $item @("eventKey", "EventKey")
+        $channel = Get-ItemPropertyValue $item @("channel", "Channel")
+
+        if (-not [string]::IsNullOrWhiteSpace($eventKey) -and -not [string]::IsNullOrWhiteSpace($channel)) {
+            $available["$eventKey|$channel"] = $true
+        }
+    }
+
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($template in $check.RequiredTemplates) {
+        $key = "$($template.EventKey)|$($template.Channel)"
+        if (-not $available.ContainsKey($key)) {
+            $missing.Add($key)
+        }
+    }
+
+    return @($missing)
+}
+
 $failures = New-Object System.Collections.Generic.List[string]
 
 foreach ($check in $checks) {
@@ -146,6 +192,12 @@ foreach ($check in $checks) {
         $missingEventKeys = Test-RequiredEventKeys $check $json
         if ($missingEventKeys.Count -gt 0) {
             $failures.Add("$($check.Name) is missing event key(s): $($missingEventKeys -join ', ').")
+            continue
+        }
+
+        $missingTemplates = Test-RequiredTemplates $check $json
+        if ($missingTemplates.Count -gt 0) {
+            $failures.Add("$($check.Name) is missing template(s): $($missingTemplates -join ', ').")
             continue
         }
 

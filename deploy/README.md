@@ -155,7 +155,8 @@ Le script `deploy/smoke-test.ps1` controle notamment:
 - acces et roles
 
 Pour les notifications, le smoke test ne se contente pas d'un endpoint joignable: il verifie aussi que
-les evenements essentiels du workflow sont bien presents apres migration et seeding, notamment:
+les evenements essentiels du workflow sont bien presents apres migration et seeding, ainsi que les
+modeles attendus par canal (`Portal`, `MobilePush`, `Email`, `WhatsApp`) pour les cas critiques:
 
 - mission affectee au prestataire
 - devis complementaire demande/disponible/paye
