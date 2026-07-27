@@ -96,6 +96,13 @@
     }
     else
     {
+        <div class="operator-row provider-row provider-list-head" aria-hidden="true">
+            <span>Prestataire</span>
+            <span>Validation</span>
+            <span>Disponibilite</span>
+            <span>Services</span>
+            <span>Actions</span>
+        </div>
         @foreach (var provider in Snapshot.Items)
         {
             <article class="operator-row provider-row">
@@ -112,8 +119,10 @@
                         <small>Validation</small>
                         <strong class="@GetProviderStatusClass(provider.Status)">@GetProviderAuthorizationLabel(provider)</strong>
                     </span>
+                </div>
+                <div class="operator-meta provider-status-stack">
                     <span>
-                        <small>Disponibilite mission</small>
+                        <small>Mission</small>
                         <strong class="@GetAvailabilityClass(provider)">@GetAvailabilityLabel(provider)</strong>
                     </span>
                 </div>
@@ -133,7 +142,7 @@
                     }
                 </div>
                 <div class="provider-doc-actions">
-                    <button type="button" @onclick="() => OpenProvider(provider.Id)">Voir fiche</button>
+                    <button type="button" class="primary-small-action" @onclick="() => OpenProvider(provider.Id)">Voir fiche</button>
                     @foreach (var document in provider.Documents.Take(3))
                     {
                         <a href="@ApiClient.GetProviderDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">
