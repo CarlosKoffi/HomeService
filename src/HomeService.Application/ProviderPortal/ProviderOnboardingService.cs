@@ -76,15 +76,16 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
     public async Task<IReadOnlyList<ProviderCompanyOpportunityResponse>> SearchOpportunitiesAsync(
         string? selectionType,
         Guid selectionId,
+        string? selectionLabel,
         string? address,
         CancellationToken cancellationToken)
     {
-        if (selectionId == Guid.Empty)
+        if (selectionId == Guid.Empty && string.IsNullOrWhiteSpace(selectionLabel))
         {
             return [];
         }
 
-        var selectedWork = await ResolveSelectedWorkAsync(selectionType, selectionId, cancellationToken);
+        var selectedWork = await ResolveSelectedWorkAsync(selectionType, selectionId, selectionLabel, cancellationToken);
         if (selectedWork is null)
         {
             return [];
@@ -302,31 +303,43 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
 
     private static bool MatchesSearch(string value, string normalizedSearch)
     {
+        var normalizedValue = NormalizeSearch(value);
         return string.IsNullOrWhiteSpace(normalizedSearch)
-            || NormalizeSearch(value).Contains(normalizedSearch, StringComparison.Ordinal);
+            || normalizedValue.Contains(normalizedSearch, StringComparison.Ordinal)
+            || normalizedSearch.Contains(normalizedValue, StringComparison.Ordinal);
     }
 
     private async Task<SelectedProviderWork?> ResolveSelectedWorkAsync(
         string? selectionType,
         Guid selectionId,
+        string? selectionLabel,
         CancellationToken cancellationToken)
     {
-        if (string.Equals(selectionType, "Prestation", StringComparison.OrdinalIgnoreCase))
+        if (selectionId != Guid.Empty && string.Equals(selectionType, "Prestation", StringComparison.OrdinalIgnoreCase))
         {
             return await ResolvePrestationAsync(selectionId, cancellationToken);
         }
 
-        var service = await db.Services
-            .AsNoTracking()
-            .Where(service => service.Id == selectionId && service.IsActive)
-            .Select(service => new SelectedProviderWork(service.Id, service.Name, null, null))
-            .FirstOrDefaultAsync(cancellationToken);
-        if (service is not null)
+        if (selectionId != Guid.Empty)
         {
-            return service;
+            var service = await db.Services
+                .AsNoTracking()
+                .Where(service => service.Id == selectionId && service.IsActive)
+                .Select(service => new SelectedProviderWork(service.Id, service.Name, null, null))
+                .FirstOrDefaultAsync(cancellationToken);
+            if (service is not null)
+            {
+                return service;
+            }
+
+            var prestation = await ResolvePrestationAsync(selectionId, cancellationToken);
+            if (prestation is not null)
+            {
+                return prestation;
+            }
         }
 
-        return await ResolvePrestationAsync(selectionId, cancellationToken);
+        return await ResolveSelectedWorkByLabelAsync(selectionLabel, cancellationToken);
     }
 
     private async Task<SelectedProviderWork?> ResolvePrestationAsync(Guid prestationId, CancellationToken cancellationToken)
@@ -340,6 +353,96 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
                 prestation.Id,
                 prestation.Name))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<SelectedProviderWork?> ResolveSelectedWorkByLabelAsync(string? selectionLabel, CancellationToken cancellationToken)
+    {
+        var normalizedLabel = NormalizeSearch(selectionLabel);
+        if (string.IsNullOrWhiteSpace(normalizedLabel))
+        {
+            return null;
+        }
+
+        var prestations = await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => prestation.IsActive && prestation.Service!.IsActive)
+            .Select(prestation => new
+            {
+                prestation.Id,
+                prestation.Name,
+                prestation.NormalizedName,
+                prestation.ServiceId,
+                ServiceName = prestation.Service!.Name,
+                ServiceNormalizedName = prestation.Service.NormalizedName
+            })
+            .ToListAsync(cancellationToken);
+
+        var prestationMatch = prestations
+            .Select(prestation => new
+            {
+                prestation,
+                Score = ScoreCatalogLabel(
+                    normalizedLabel,
+                    NormalizeSearch(prestation.Name),
+                    NormalizeSearch(prestation.ServiceName),
+                    NormalizeSearch($"{prestation.ServiceName} {prestation.Name}"))
+            })
+            .Where(item => item.Score >= 85)
+            .OrderByDescending(item => item.Score)
+            .ThenBy(item => item.prestation.ServiceName)
+            .ThenBy(item => item.prestation.Name)
+            .FirstOrDefault();
+        if (prestationMatch is not null)
+        {
+            return new SelectedProviderWork(
+                prestationMatch.prestation.ServiceId,
+                prestationMatch.prestation.ServiceName,
+                prestationMatch.prestation.Id,
+                prestationMatch.prestation.Name);
+        }
+
+        var services = await db.Services
+            .AsNoTracking()
+            .Where(service => service.IsActive)
+            .Select(service => new
+            {
+                service.Id,
+                service.Name,
+                service.NormalizedName
+            })
+            .ToListAsync(cancellationToken);
+
+        return services
+            .Select(service => new
+            {
+                service,
+                Score = ScoreCatalogLabel(normalizedLabel, NormalizeSearch(service.Name))
+            })
+            .Where(item => item.Score >= 85)
+            .OrderByDescending(item => item.Score)
+            .ThenBy(item => item.service.Name)
+            .Select(item => new SelectedProviderWork(item.service.Id, item.service.Name, null, null))
+            .FirstOrDefault();
+    }
+
+    private static int ScoreCatalogLabel(string normalizedLabel, params string[] normalizedCandidates)
+    {
+        return normalizedCandidates
+            .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+            .Select(candidate =>
+            {
+                if (normalizedLabel == candidate)
+                {
+                    return 100;
+                }
+
+                return normalizedLabel.Contains(candidate, StringComparison.Ordinal)
+                    || candidate.Contains(normalizedLabel, StringComparison.Ordinal)
+                    ? 90
+                    : 0;
+            })
+            .DefaultIfEmpty(0)
+            .Max();
     }
 
     private static IReadOnlyList<string> BuildSelectedWorkTerms(SelectedProviderWork selectedWork)

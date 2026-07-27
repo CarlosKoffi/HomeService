@@ -22,6 +22,7 @@ public static class ProviderOnboardingEndpoints
         group.MapGet("/opportunities", async (
             string? selectionType,
             Guid selectionId,
+            string? selectionLabel,
             string? address,
             ProviderOnboardingService onboardingService,
             CancellationToken cancellationToken) =>
@@ -29,6 +30,7 @@ public static class ProviderOnboardingEndpoints
             var opportunities = await onboardingService.SearchOpportunitiesAsync(
                 selectionType,
                 selectionId,
+                selectionLabel,
                 address,
                 cancellationToken);
             return Results.Ok(opportunities);

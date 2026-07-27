@@ -52,19 +52,25 @@ public sealed class ProviderApiClient(HttpClient httpClient)
     }
 
     public async Task<IReadOnlyList<ProviderCompanyOpportunityResponse>> GetOnboardingOpportunitiesAsync(
-        string selectionType,
+        string? selectionType,
         Guid selectionId,
+        string? selectionLabel,
         string? address,
         CancellationToken cancellationToken = default)
     {
-        if (selectionId == Guid.Empty)
+        if (selectionId == Guid.Empty && string.IsNullOrWhiteSpace(selectionLabel))
         {
             return [];
         }
 
         try
         {
-            var url = $"/api/provider-onboarding/opportunities?selectionType={Uri.EscapeDataString(selectionType)}&selectionId={selectionId}";
+            var url = $"/api/provider-onboarding/opportunities?selectionType={Uri.EscapeDataString(selectionType ?? string.Empty)}&selectionId={selectionId}";
+            if (!string.IsNullOrWhiteSpace(selectionLabel))
+            {
+                url += $"&selectionLabel={Uri.EscapeDataString(selectionLabel)}";
+            }
+
             if (!string.IsNullOrWhiteSpace(address))
             {
                 url += $"&address={Uri.EscapeDataString(address)}";

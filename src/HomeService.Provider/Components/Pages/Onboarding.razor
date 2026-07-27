@@ -283,15 +283,16 @@
     private async Task LoadOpportunitiesAsync()
     {
         CompanyOpportunities = [];
-        if (SelectedOption is null)
+        if (SelectedOption is null && string.IsNullOrWhiteSpace(ServiceEntry))
         {
             return;
         }
 
         IsLoadingOpportunities = true;
         CompanyOpportunities = await Api.GetOnboardingOpportunitiesAsync(
-            SelectedOption.Type,
-            SelectedOption.Id,
+            SelectedOption?.Type,
+            SelectedOption?.Id ?? Guid.Empty,
+            ServiceEntry,
             RegisterAddress);
         IsLoadingOpportunities = false;
         if (CompanyOpportunities.Count > 0)
@@ -323,9 +324,11 @@
                 NormalizeCompletionValue(option.Label).Contains(normalizedEntry, StringComparison.Ordinal)
                 || normalizedEntry.Contains(NormalizeCompletionValue(option.Label), StringComparison.Ordinal)
                 || NormalizeCompletionValue(option.ServiceName).Contains(normalizedEntry, StringComparison.Ordinal)
+                || normalizedEntry.Contains(NormalizeCompletionValue(option.ServiceName), StringComparison.Ordinal)
                 || IsSameServicePrestationLabel(option, normalizedEntry)
                 || (!string.IsNullOrWhiteSpace(option.PrestationName)
-                    && NormalizeCompletionValue(option.PrestationName).Contains(normalizedEntry, StringComparison.Ordinal)));
+                    && (NormalizeCompletionValue(option.PrestationName).Contains(normalizedEntry, StringComparison.Ordinal)
+                        || normalizedEntry.Contains(NormalizeCompletionValue(option.PrestationName), StringComparison.Ordinal))));
     }
 
     private static bool IsSameServicePrestationLabel(ProviderOnboardingOptionResponse option, string normalizedEntry)
