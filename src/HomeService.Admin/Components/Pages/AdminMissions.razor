@@ -173,6 +173,10 @@
                     else
                     {
                         <button type="button" @onclick="() => OpenMission(mission.Id)">Voir dossier</button>
+                        @if (CanDispatchOffers(mission.Status))
+                        {
+                            <button type="button" class="light-action" @onclick="() => DispatchOffersAsync(mission.Id)" disabled="@IsActionBusy">Relancer</button>
+                        }
                         @if (CanOpenDispute(mission.Status))
                         {
                             <button type="button" class="light-action" @onclick="() => StartDispute(mission.Id)">Litige</button>
@@ -323,6 +327,30 @@
         }
     }
 
+    private async Task DispatchOffersAsync(Guid missionId)
+    {
+        IsActionBusy = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            var offers = await ApiClient.CreateAdminMissionDispatchOffersAsync(missionId, urgent: false);
+            Message = offers.Count == 0
+                ? "Aucune entreprise eligible pour cette mission."
+                : $"{offers.Count} offre(s) entreprise disponible(s).";
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Relance impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionBusy = false;
+        }
+    }
+
     private async Task ConfirmCancelAsync(Guid missionId)
     {
         if (string.IsNullOrWhiteSpace(CancellationNote))
@@ -408,6 +436,11 @@
     private static bool CanCancelMission(string status)
     {
         return status is not ("Disputed" or "Completed" or "Cancelled" or "Resolved");
+    }
+
+    private static bool CanDispatchOffers(string status)
+    {
+        return status is "Created" or "SearchingProvider" or "Offered";
     }
 
     private static string FormatMissionTitle(string serviceName, string? prestationName)
