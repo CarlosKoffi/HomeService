@@ -208,15 +208,6 @@
             : "Affectation entreprise";
     }
 
-    private static string TranslateAssignmentMode(string status)
-    {
-        return status switch
-        {
-            "PlatformManaged" => "Affectation wélé",
-            _ => "Affectation entreprise"
-        };
-    }
-
     private static string FormatDispatchPriority(int priority)
     {
         var label = priority switch
