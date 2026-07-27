@@ -446,10 +446,41 @@
 
 @if (ActiveNotificationSection == "portal")
 {
+    <section class="notification-command-center compact">
+        <article>
+            <span>Visibles</span>
+            <strong>@FilteredCompanyPortalNotifications.Count</strong>
+            <small>filtre actif</small>
+        </article>
+        <article>
+            <span>Non lues</span>
+            <strong>@CountFilteredPortalReadState(false)</strong>
+            <small>entreprises</small>
+        </article>
+        <article>
+            <span>Lues</span>
+            <strong>@CountFilteredPortalReadState(true)</strong>
+            <small>entreprises</small>
+        </article>
+        <article>
+            <span>Alertes</span>
+            <strong>@CountFilteredPortalAlerts()</strong>
+            <small>orange / rouge</small>
+        </article>
+    </section>
+
     <section class="notification-filters notification-portal-search">
         <label>
             Recherche portail
             <input @bind="SearchTerm" @bind:event="oninput" placeholder="Entreprise, titre, message..." />
+        </label>
+        <label>
+            Lecture
+            <select @bind="PortalReadFilter">
+                <option value="">Toutes</option>
+                <option value="Unread">Non lues</option>
+                <option value="Read">Lues</option>
+            </select>
         </label>
     </section>
 
@@ -761,6 +792,7 @@
     private string? SearchTerm { get; set; }
     private string? StatusFilter { get; set; }
     private string? ChannelFilter { get; set; }
+    private string? PortalReadFilter { get; set; }
     private string ActiveNotificationSection { get; set; } = "overview";
     private string ActiveRuleAudience { get; set; } = "All";
     private string ActiveRuleChannel { get; set; } = "All";
@@ -1273,6 +1305,20 @@
             && string.Equals(notification.Status, status, StringComparison.OrdinalIgnoreCase));
     }
 
+    private int CountFilteredPortalReadState(bool isRead)
+    {
+        return CompanyPortalNotifications.Count(notification =>
+            MatchesPortalSearch(notification)
+            && notification.IsRead == isRead);
+    }
+
+    private int CountFilteredPortalAlerts()
+    {
+        return CompanyPortalNotifications.Count(notification =>
+            MatchesPortalSearch(notification)
+            && IsAlertTone(notification.Tone));
+    }
+
     private string GetExternalCounterScope()
     {
         return string.IsNullOrWhiteSpace(ChannelFilter) ? "email / WhatsApp" : TranslateChannel(ChannelFilter);
@@ -1367,6 +1413,26 @@
     }
 
     private bool MatchesPortalFilters(AdminCompanyPortalNotificationResponse notification)
+    {
+        if (!MatchesPortalSearch(notification))
+        {
+            return false;
+        }
+
+        if (string.Equals(PortalReadFilter, "Unread", StringComparison.OrdinalIgnoreCase))
+        {
+            return !notification.IsRead;
+        }
+
+        if (string.Equals(PortalReadFilter, "Read", StringComparison.OrdinalIgnoreCase))
+        {
+            return notification.IsRead;
+        }
+
+        return true;
+    }
+
+    private bool MatchesPortalSearch(AdminCompanyPortalNotificationResponse notification)
     {
         if (string.IsNullOrWhiteSpace(SearchTerm))
         {
@@ -1482,6 +1548,13 @@
         "pending" => "En attente",
         _ => "Information"
     };
+
+    private static bool IsAlertTone(string tone)
+    {
+        return tone.Equals("warning", StringComparison.OrdinalIgnoreCase)
+            || tone.Equals("danger", StringComparison.OrdinalIgnoreCase)
+            || tone.Equals("error", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static string GetNotificationTopic(string eventKey)
     {
