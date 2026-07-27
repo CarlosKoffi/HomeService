@@ -56,6 +56,19 @@ public sealed class NotificationOutboxMessage : AuditableEntity
         Touch();
     }
 
+    public void ScheduleAt(DateTimeOffset scheduledAt)
+    {
+        if (Status is NotificationStatus.Sent)
+        {
+            throw new InvalidOperationException("Une notification deja envoyee ne peut pas etre replanifiee.");
+        }
+
+        Status = NotificationStatus.Pending;
+        ScheduledAt = scheduledAt;
+        FailureReason = null;
+        Touch();
+    }
+
     public void Retry()
     {
         if (Status is NotificationStatus.Sent)

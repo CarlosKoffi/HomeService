@@ -18,6 +18,19 @@ public sealed class NotificationOutboxMessageTests
     }
 
     [Fact]
+    public void ScheduleAt_WhenPending_UpdatesPlannedDate()
+    {
+        var notification = CreateNotification();
+        var plannedAt = DateTimeOffset.UtcNow.AddMinutes(15);
+
+        notification.ScheduleAt(plannedAt);
+
+        Assert.Equal(NotificationStatus.Pending, notification.Status);
+        Assert.Equal(plannedAt, notification.ScheduledAt);
+        Assert.Null(notification.FailureReason);
+    }
+
+    [Fact]
     public void Cancel_WhenPending_MarksNotificationCancelled()
     {
         var notification = CreateNotification();
