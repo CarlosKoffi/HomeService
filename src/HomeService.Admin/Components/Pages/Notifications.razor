@@ -176,19 +176,19 @@
 
         <nav class="notification-subnav" aria-label="Filtrer les regles par destinataire">
             <button type="button" class="@GetRuleAudienceButtonClass("All")" @onclick='() => SetRuleAudience("All")'>
-                Tous <span>@DeliveryRules.Count</span>
+                Tous <span>@CountRulesInCurrentContext(audience: "All")</span>
             </button>
             <button type="button" class="@GetRuleAudienceButtonClass("Company")" @onclick='() => SetRuleAudience("Company")'>
-                Entreprises <span>@CountRulesByAudience("Company")</span>
+                Entreprises <span>@CountRulesInCurrentContext(audience: "Company")</span>
             </button>
             <button type="button" class="@GetRuleAudienceButtonClass("Provider")" @onclick='() => SetRuleAudience("Provider")'>
-                Prestataires <span>@CountRulesByAudience("Provider")</span>
+                Prestataires <span>@CountRulesInCurrentContext(audience: "Provider")</span>
             </button>
             <button type="button" class="@GetRuleAudienceButtonClass("Customer")" @onclick='() => SetRuleAudience("Customer")'>
-                Clients <span>@CountRulesByAudience("Customer")</span>
+                Clients <span>@CountRulesInCurrentContext(audience: "Customer")</span>
             </button>
             <button type="button" class="@GetRuleAudienceButtonClass("Mixed")" @onclick='() => SetRuleAudience("Mixed")'>
-                Mixtes <span>@CountRulesByAudience("Mixed")</span>
+                Mixtes <span>@CountRulesInCurrentContext(audience: "Mixed")</span>
             </button>
         </nav>
 
@@ -196,22 +196,22 @@
             <div>
                 <span>Domaine</span>
                 <nav class="notification-subnav compact" aria-label="Filtrer les regles par domaine">
-                    <button type="button" class="@GetRuleTopicButtonClass("All")" @onclick='() => SetRuleTopic("All")'>Tous <span>@DeliveryRules.Count</span></button>
-                    <button type="button" class="@GetRuleTopicButtonClass("Applications")" @onclick='() => SetRuleTopic("Applications")'>Dossiers <span>@CountRulesByTopic("Applications")</span></button>
-                    <button type="button" class="@GetRuleTopicButtonClass("Missions")" @onclick='() => SetRuleTopic("Missions")'>Missions <span>@CountRulesByTopic("Missions")</span></button>
-                    <button type="button" class="@GetRuleTopicButtonClass("Payments")" @onclick='() => SetRuleTopic("Payments")'>Paiements <span>@CountRulesByTopic("Payments")</span></button>
-                    <button type="button" class="@GetRuleTopicButtonClass("Disputes")" @onclick='() => SetRuleTopic("Disputes")'>Litiges <span>@CountRulesByTopic("Disputes")</span></button>
-                    <button type="button" class="@GetRuleTopicButtonClass("Access")" @onclick='() => SetRuleTopic("Access")'>Acces <span>@CountRulesByTopic("Access")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("All")" @onclick='() => SetRuleTopic("All")'>Tous <span>@CountRulesInCurrentContext(topic: "All")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Applications")" @onclick='() => SetRuleTopic("Applications")'>Dossiers <span>@CountRulesInCurrentContext(topic: "Applications")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Missions")" @onclick='() => SetRuleTopic("Missions")'>Missions <span>@CountRulesInCurrentContext(topic: "Missions")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Payments")" @onclick='() => SetRuleTopic("Payments")'>Paiements <span>@CountRulesInCurrentContext(topic: "Payments")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Disputes")" @onclick='() => SetRuleTopic("Disputes")'>Litiges <span>@CountRulesInCurrentContext(topic: "Disputes")</span></button>
+                    <button type="button" class="@GetRuleTopicButtonClass("Access")" @onclick='() => SetRuleTopic("Access")'>Acces <span>@CountRulesInCurrentContext(topic: "Access")</span></button>
                 </nav>
             </div>
             <div>
                 <span>Canal</span>
                 <nav class="notification-subnav compact" aria-label="Filtrer les regles par canal">
-                    <button type="button" class="@GetRuleChannelButtonClass("All")" @onclick='() => SetRuleChannel("All")'>Tous <span>@DeliveryRules.Count</span></button>
-                    <button type="button" class="@GetRuleChannelButtonClass("Portal")" @onclick='() => SetRuleChannel("Portal")'>Portail <span>@CountRulesByChannel("Portal")</span></button>
-                    <button type="button" class="@GetRuleChannelButtonClass("MobileApp")" @onclick='() => SetRuleChannel("MobileApp")'>Application <span>@CountRulesByChannel("MobileApp")</span></button>
-                    <button type="button" class="@GetRuleChannelButtonClass("Email")" @onclick='() => SetRuleChannel("Email")'>Email <span>@CountRulesByChannel("Email")</span></button>
-                    <button type="button" class="@GetRuleChannelButtonClass("WhatsApp")" @onclick='() => SetRuleChannel("WhatsApp")'>WhatsApp <span>@CountRulesByChannel("WhatsApp")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("All")" @onclick='() => SetRuleChannel("All")'>Tous <span>@CountRulesInCurrentContext(channel: "All")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("Portal")" @onclick='() => SetRuleChannel("Portal")'>Portail <span>@CountRulesInCurrentContext(channel: "Portal")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("MobileApp")" @onclick='() => SetRuleChannel("MobileApp")'>Application <span>@CountRulesInCurrentContext(channel: "MobileApp")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("Email")" @onclick='() => SetRuleChannel("Email")'>Email <span>@CountRulesInCurrentContext(channel: "Email")</span></button>
+                    <button type="button" class="@GetRuleChannelButtonClass("WhatsApp")" @onclick='() => SetRuleChannel("WhatsApp")'>WhatsApp <span>@CountRulesInCurrentContext(channel: "WhatsApp")</span></button>
                 </nav>
             </div>
         </div>
@@ -331,32 +331,32 @@
                 <div>
                     <span>Domaine</span>
                     <nav class="notification-subnav compact" aria-label="Filtrer les modeles par domaine">
-                        <button type="button" class="@GetTemplateTopicButtonClass("All")" @onclick='() => SetTemplateTopic("All")'>Tous <span>@NotificationTemplates.Count</span></button>
-                        <button type="button" class="@GetTemplateTopicButtonClass("Applications")" @onclick='() => SetTemplateTopic("Applications")'>Dossiers <span>@CountTemplatesByTopic("Applications")</span></button>
-                        <button type="button" class="@GetTemplateTopicButtonClass("Missions")" @onclick='() => SetTemplateTopic("Missions")'>Missions <span>@CountTemplatesByTopic("Missions")</span></button>
-                        <button type="button" class="@GetTemplateTopicButtonClass("Payments")" @onclick='() => SetTemplateTopic("Payments")'>Paiements <span>@CountTemplatesByTopic("Payments")</span></button>
-                        <button type="button" class="@GetTemplateTopicButtonClass("Disputes")" @onclick='() => SetTemplateTopic("Disputes")'>Litiges <span>@CountTemplatesByTopic("Disputes")</span></button>
-                        <button type="button" class="@GetTemplateTopicButtonClass("Access")" @onclick='() => SetTemplateTopic("Access")'>Acces <span>@CountTemplatesByTopic("Access")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("All")" @onclick='() => SetTemplateTopic("All")'>Tous <span>@CountTemplatesInCurrentContext(topic: "All")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Applications")" @onclick='() => SetTemplateTopic("Applications")'>Dossiers <span>@CountTemplatesInCurrentContext(topic: "Applications")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Missions")" @onclick='() => SetTemplateTopic("Missions")'>Missions <span>@CountTemplatesInCurrentContext(topic: "Missions")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Payments")" @onclick='() => SetTemplateTopic("Payments")'>Paiements <span>@CountTemplatesInCurrentContext(topic: "Payments")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Disputes")" @onclick='() => SetTemplateTopic("Disputes")'>Litiges <span>@CountTemplatesInCurrentContext(topic: "Disputes")</span></button>
+                        <button type="button" class="@GetTemplateTopicButtonClass("Access")" @onclick='() => SetTemplateTopic("Access")'>Acces <span>@CountTemplatesInCurrentContext(topic: "Access")</span></button>
                     </nav>
                 </div>
                 <div>
                     <span>Destinataire</span>
                     <nav class="notification-subnav compact" aria-label="Filtrer les modeles par destinataire">
-                        <button type="button" class="@GetTemplateAudienceButtonClass("All")" @onclick='() => SetTemplateAudience("All")'>Tous <span>@NotificationTemplates.Count</span></button>
-                        <button type="button" class="@GetTemplateAudienceButtonClass("Company")" @onclick='() => SetTemplateAudience("Company")'>Entreprises <span>@CountTemplatesByAudience("Company")</span></button>
-                        <button type="button" class="@GetTemplateAudienceButtonClass("Provider")" @onclick='() => SetTemplateAudience("Provider")'>Prestataires <span>@CountTemplatesByAudience("Provider")</span></button>
-                        <button type="button" class="@GetTemplateAudienceButtonClass("Customer")" @onclick='() => SetTemplateAudience("Customer")'>Clients <span>@CountTemplatesByAudience("Customer")</span></button>
-                        <button type="button" class="@GetTemplateAudienceButtonClass("Mixed")" @onclick='() => SetTemplateAudience("Mixed")'>Mixtes <span>@CountTemplatesByAudience("Mixed")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("All")" @onclick='() => SetTemplateAudience("All")'>Tous <span>@CountTemplatesInCurrentContext(audience: "All")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Company")" @onclick='() => SetTemplateAudience("Company")'>Entreprises <span>@CountTemplatesInCurrentContext(audience: "Company")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Provider")" @onclick='() => SetTemplateAudience("Provider")'>Prestataires <span>@CountTemplatesInCurrentContext(audience: "Provider")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Customer")" @onclick='() => SetTemplateAudience("Customer")'>Clients <span>@CountTemplatesInCurrentContext(audience: "Customer")</span></button>
+                        <button type="button" class="@GetTemplateAudienceButtonClass("Mixed")" @onclick='() => SetTemplateAudience("Mixed")'>Mixtes <span>@CountTemplatesInCurrentContext(audience: "Mixed")</span></button>
                     </nav>
                 </div>
                 <div>
                     <span>Canal</span>
                     <nav class="notification-subnav compact" aria-label="Filtrer les modeles par canal">
-                        <button type="button" class="@GetTemplateChannelButtonClass("All")" @onclick='() => SetTemplateChannel("All")'>Tous <span>@NotificationTemplates.Count</span></button>
-                        <button type="button" class="@GetTemplateChannelButtonClass("Portal")" @onclick='() => SetTemplateChannel("Portal")'>Portail <span>@CountTemplatesByChannel("Portal")</span></button>
-                        <button type="button" class="@GetTemplateChannelButtonClass("MobilePush")" @onclick='() => SetTemplateChannel("MobilePush")'>Application <span>@CountTemplatesByChannel("MobilePush")</span></button>
-                        <button type="button" class="@GetTemplateChannelButtonClass("Email")" @onclick='() => SetTemplateChannel("Email")'>Email <span>@CountTemplatesByChannel("Email")</span></button>
-                        <button type="button" class="@GetTemplateChannelButtonClass("WhatsApp")" @onclick='() => SetTemplateChannel("WhatsApp")'>WhatsApp <span>@CountTemplatesByChannel("WhatsApp")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("All")" @onclick='() => SetTemplateChannel("All")'>Tous <span>@CountTemplatesInCurrentContext(channel: "All")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("Portal")" @onclick='() => SetTemplateChannel("Portal")'>Portail <span>@CountTemplatesInCurrentContext(channel: "Portal")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("MobilePush")" @onclick='() => SetTemplateChannel("MobilePush")'>Application <span>@CountTemplatesInCurrentContext(channel: "MobilePush")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("Email")" @onclick='() => SetTemplateChannel("Email")'>Email <span>@CountTemplatesInCurrentContext(channel: "Email")</span></button>
+                        <button type="button" class="@GetTemplateChannelButtonClass("WhatsApp")" @onclick='() => SetTemplateChannel("WhatsApp")'>WhatsApp <span>@CountTemplatesInCurrentContext(channel: "WhatsApp")</span></button>
                     </nav>
                 </div>
             </div>
@@ -1359,6 +1359,27 @@
         return DeliveryRules.Count(rule => GetNotificationTopic(rule.EventKey) == topic);
     }
 
+    private int CountRulesInCurrentContext(string? audience = null, string? topic = null, string? channel = null)
+    {
+        return DeliveryRules.Count(rule =>
+            MatchesNotificationGroup(rule.EventKey, rule.Audience, ActiveRuleGroup)
+            && (audience is null
+                ? ActiveRuleAudience == "All" || string.Equals(rule.Audience, ActiveRuleAudience, StringComparison.OrdinalIgnoreCase)
+                : audience == "All"
+                ? true
+                : string.Equals(rule.Audience, audience, StringComparison.OrdinalIgnoreCase))
+            && (topic is null
+                ? ActiveRuleTopic == "All" || GetNotificationTopic(rule.EventKey) == ActiveRuleTopic
+                : topic == "All"
+                ? true
+                : GetNotificationTopic(rule.EventKey) == topic)
+            && (channel is null
+                ? ActiveRuleChannel == "All" || RuleHasChannel(rule, ActiveRuleChannel)
+                : channel == "All"
+                ? true
+                : RuleHasChannel(rule, channel)));
+    }
+
     private int CountTemplatesByAudience(string audience)
     {
         return NotificationTemplates.Count(template => string.Equals(template.Audience, audience, StringComparison.OrdinalIgnoreCase));
@@ -1384,6 +1405,27 @@
     private int CountTemplatesByTopic(string topic)
     {
         return NotificationTemplates.Count(template => GetNotificationTopic(template.EventKey) == topic);
+    }
+
+    private int CountTemplatesInCurrentContext(string? audience = null, string? topic = null, string? channel = null)
+    {
+        return NotificationTemplates.Count(template =>
+            MatchesNotificationGroup(template.EventKey, template.Audience, ActiveTemplateGroup)
+            && (audience is null
+                ? ActiveTemplateAudience == "All" || string.Equals(template.Audience, ActiveTemplateAudience, StringComparison.OrdinalIgnoreCase)
+                : audience == "All"
+                ? true
+                : string.Equals(template.Audience, audience, StringComparison.OrdinalIgnoreCase))
+            && (topic is null
+                ? ActiveTemplateTopic == "All" || GetNotificationTopic(template.EventKey) == ActiveTemplateTopic
+                : topic == "All"
+                ? true
+                : GetNotificationTopic(template.EventKey) == topic)
+            && (channel is null
+                ? ActiveTemplateChannel == "All" || string.Equals(template.Channel, ActiveTemplateChannel, StringComparison.OrdinalIgnoreCase)
+                : channel == "All"
+                ? true
+                : string.Equals(template.Channel, channel, StringComparison.OrdinalIgnoreCase)));
     }
 
     private bool MatchesFilters(NotificationOutboxMessageResponse notification)
