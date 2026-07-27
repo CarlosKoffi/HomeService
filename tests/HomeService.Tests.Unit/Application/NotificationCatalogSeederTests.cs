@@ -65,6 +65,35 @@ public sealed class NotificationCatalogSeederTests
         Assert.Equal(templateCount, await db.NotificationTemplates.CountAsync());
     }
 
+    [Fact]
+    public async Task EnsureDefaultsAsync_CreatesRuleAndEveryChannelTemplateForEachCatalogEvent()
+    {
+        await using var db = CreateDbContext();
+
+        await new NotificationCatalogSeeder(db).EnsureDefaultsAsync(CancellationToken.None);
+
+        var rules = await db.NotificationDeliveryRules
+            .AsNoTracking()
+            .ToListAsync();
+        var templates = await db.NotificationTemplates
+            .AsNoTracking()
+            .ToListAsync();
+
+        foreach (var seed in NotificationTemplateCatalog.Defaults)
+        {
+            Assert.Contains(rules, rule => rule.EventKey == seed.EventKey);
+
+            foreach (var channel in seed.Channels)
+            {
+                Assert.Contains(templates, template =>
+                    template.EventKey == seed.EventKey
+                    && template.Channel == channel
+                    && template.Audience == seed.Audience
+                    && template.IsActive);
+            }
+        }
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
