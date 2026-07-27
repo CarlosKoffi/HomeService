@@ -31,6 +31,8 @@ $checks = @(
     @{ Name = "Service catalog"; Path = "/api/services"; MinCount = 1 },
     @{ Name = "Company CMS"; Path = "/api/cms/company/home"; MinCount = 0 },
     @{ Name = "Provider CMS"; Path = "/api/cms/provider/home"; MinCount = 0 },
+    @{ Name = "Provider onboarding options"; Path = "/api/provider-onboarding/options"; MinCount = 1 },
+    @{ Name = "Provider onboarding companies"; Path = "/api/provider-onboarding/companies"; MinCount = 0 },
     @{ Name = "Admin company applications"; Path = "/api/admin/company-applications"; MinCount = 0 },
     @{ Name = "Admin missions"; Path = "/api/admin/missions"; MinCount = 0 },
     @{ Name = "Admin mission settings"; Path = "/api/admin/mission-settings"; MinCount = 0 },
