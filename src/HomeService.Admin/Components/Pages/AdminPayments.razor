@@ -176,7 +176,7 @@
                 <div class="operator-kpis">
                     <span>@(payment.ProviderName ?? "Prestataire non affecte")</span>
                     <span>@Money(payment.Amount)</span>
-                    <span>Commission @Money(payment.PlatformCommissionAmount)</span>
+                    <span>Commission @Money(payment.PlatformCommissionAmount) (@FormatRate(payment.PlatformCommissionRateBasisPoints))</span>
                     <span>Entreprise @Money(payment.CompanyPayoutAmount)</span>
                 </div>
                 <div class="payment-admin-side">
@@ -245,6 +245,7 @@
     }
 
     private static string Money(int amount) => $"{amount:N0} XOF";
+    private static string FormatRate(int basisPoints) => basisPoints <= 0 ? "taux non defini" : $"{basisPoints / 100m:0.##}%";
     private static string GetPaymentTitle(AdminPaymentMissionResponse payment)
         => string.IsNullOrWhiteSpace(payment.PrestationName)
             ? payment.ServiceName

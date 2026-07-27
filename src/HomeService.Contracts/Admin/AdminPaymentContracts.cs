@@ -34,6 +34,7 @@ public sealed record AdminPaymentMissionResponse(
     string PaymentMethod,
     int Amount,
     int PlatformCommissionAmount,
+    int PlatformCommissionRateBasisPoints,
     int CompanyPayoutAmount,
     int RefundAmount,
     int TransportFeeAmount,

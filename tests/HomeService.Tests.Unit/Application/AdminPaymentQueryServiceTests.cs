@@ -74,6 +74,7 @@ public sealed class AdminPaymentQueryServiceTests
         Assert.Contains(result.Items, item =>
             item.MissionNumber == mission.MissionNumber
             && item.PlatformCommissionAmount == 1_500
+            && item.PlatformCommissionRateBasisPoints == 1_500
             && item.PrestationName == "Repassage"
             && item.PaymentStatus == nameof(PaymentStatus.Authorized));
 
