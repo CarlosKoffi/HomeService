@@ -1320,6 +1320,28 @@ h3 {
     justify-items: start;
 }
 
+.provider-status-stack {
+    gap: .55rem;
+}
+
+.provider-status-stack > span {
+    display: grid;
+    gap: .25rem;
+}
+
+.provider-status-stack small {
+    color: #64748b;
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.provider-status-stack .status-pill {
+    justify-self: start;
+}
+
 .operator-kpis {
     color: #000;
     display: flex;

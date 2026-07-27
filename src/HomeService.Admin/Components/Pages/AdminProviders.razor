@@ -107,9 +107,15 @@
                         <small>@(provider.CompanyName ?? "Non rattache a une entreprise")</small>
                     </div>
                 </div>
-                <div class="operator-meta">
-                    <span class="@GetProviderStatusClass(provider.Status)">@GetProviderAuthorizationLabel(provider)</span>
-                    <span class="@GetAvailabilityClass(provider)">@GetAvailabilityLabel(provider)</span>
+                <div class="operator-meta provider-status-stack">
+                    <span>
+                        <small>Validation</small>
+                        <strong class="@GetProviderStatusClass(provider.Status)">@GetProviderAuthorizationLabel(provider)</strong>
+                    </span>
+                    <span>
+                        <small>Disponibilite mission</small>
+                        <strong class="@GetAvailabilityClass(provider)">@GetAvailabilityLabel(provider)</strong>
+                    </span>
                 </div>
                 <div class="operator-kpis">
                     <span>@provider.YearsOfExperience an(s)</span>
@@ -264,6 +270,11 @@
 
     private static string GetProviderAuthorizationLabel(AdminProviderSummaryResponse provider)
     {
+        if (provider.Status == "SuspendedByPlatform")
+        {
+            return "Suspendu wele";
+        }
+
         return provider.Status switch
         {
             "Approved" => "Valide plateforme",
