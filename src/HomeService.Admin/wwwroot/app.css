@@ -3387,6 +3387,43 @@ h3 {
     margin: .45rem 0 0;
 }
 
+.notification-search-strip {
+    align-items: end;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    margin: .75rem 0 1rem;
+    padding: .85rem;
+}
+
+.notification-search-strip label {
+    color: #000;
+    display: grid;
+    font-size: .78rem;
+    font-weight: 900;
+    gap: .35rem;
+}
+
+.notification-search-strip input {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 999px;
+    color: #000;
+    font: inherit;
+    min-height: 42px;
+    padding: .65rem .9rem;
+    width: 100%;
+}
+
+.notification-search-strip button {
+    border-radius: 999px;
+    min-height: 42px;
+    white-space: nowrap;
+}
+
 .notification-group-nav {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
@@ -5232,6 +5269,7 @@ h3 {
     .proposal-list article,
     .notification-rules-head,
     .notification-rule-row,
+    .notification-search-strip,
     .notification-channel-grid,
     .notification-admin-guide,
     .notification-group-summary,

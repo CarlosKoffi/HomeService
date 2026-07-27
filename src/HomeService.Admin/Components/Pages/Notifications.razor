@@ -174,6 +174,19 @@
             </dl>
         </section>
 
+        <section class="notification-search-strip" aria-label="Recherche dans les regles">
+            <label>
+                Rechercher une regle
+                <input type="search"
+                       @bind="RuleSearchTerm"
+                       @bind:event="oninput"
+                       placeholder="Evenement, libelle, audience..." />
+            </label>
+            <button type="button" class="light-action" @onclick="ClearRuleFilters">
+                Reinitialiser
+            </button>
+        </section>
+
         <nav class="notification-subnav" aria-label="Filtrer les regles par destinataire">
             <button type="button" class="@GetRuleAudienceButtonClass("All")" @onclick='() => SetRuleAudience("All")'>
                 Tous <span>@CountRulesInCurrentContext(audience: "All")</span>
@@ -294,15 +307,15 @@
                 <div>
                     <span>Modeles de messages</span>
                     <strong>Textes par evenement et canal</strong>
-                <p>Mobile, portail, email et WhatsApp utilisent la meme logique. Les liens et donnees sensibles restent generes par la plateforme.</p>
+                    <p>Mobile, portail, email et WhatsApp utilisent la meme logique. Les liens et donnees sensibles restent generes par la plateforme.</p>
+                </div>
+                <div class="notification-inline-actions">
+                    <small>@FilteredNotificationTemplates.Count / @NotificationTemplates.Count modele(s)</small>
+                    <button type="button" @onclick="ToggleTemplateCreate">
+                        @(ShowTemplateCreate ? "Fermer" : "Nouveau modele")
+                    </button>
+                </div>
             </div>
-            <div class="notification-inline-actions">
-                <small>@FilteredNotificationTemplates.Count / @NotificationTemplates.Count modele(s)</small>
-                <button type="button" @onclick="ToggleTemplateCreate">
-                    @(ShowTemplateCreate ? "Fermer" : "Nouveau modele")
-                </button>
-            </div>
-        </div>
 
             <nav class="notification-subnav notification-group-nav" aria-label="Filtrer les modeles par groupe metier">
                 @foreach (var group in NotificationGroups)
@@ -325,6 +338,19 @@
                     <div><dt>Email</dt><dd>@CountTemplatesByGroupAndChannel(ActiveTemplateGroup, "Email")</dd></div>
                     <div><dt>WhatsApp</dt><dd>@CountTemplatesByGroupAndChannel(ActiveTemplateGroup, "WhatsApp")</dd></div>
                 </dl>
+            </section>
+
+            <section class="notification-search-strip" aria-label="Recherche dans les modeles">
+                <label>
+                    Rechercher un modele
+                    <input type="search"
+                           @bind="TemplateSearchTerm"
+                           @bind:event="oninput"
+                           placeholder="Evenement, libelle, sujet, contenu..." />
+                </label>
+                <button type="button" class="light-action" @onclick="ClearTemplateFilters">
+                    Reinitialiser
+                </button>
             </section>
 
             <div class="notification-template-toolbar">
@@ -802,6 +828,8 @@
     private string ActiveTemplateChannel { get; set; } = "All";
     private string ActiveTemplateGroup { get; set; } = "All";
     private string ActiveTemplateTopic { get; set; } = "All";
+    private string? RuleSearchTerm { get; set; }
+    private string? TemplateSearchTerm { get; set; }
     private bool ShowTemplateCreate { get; set; }
     private NotificationTemplateDraft NewTemplate { get; set; } = new();
 
@@ -853,6 +881,7 @@
             .Where(rule => ActiveRuleAudience == "All" || string.Equals(rule.Audience, ActiveRuleAudience, StringComparison.OrdinalIgnoreCase))
             .Where(rule => ActiveRuleTopic == "All" || GetNotificationTopic(rule.EventKey) == ActiveRuleTopic)
             .Where(MatchesRuleChannel)
+            .Where(MatchesRuleSearch)
             .OrderBy(rule => GetNotificationTopic(rule.EventKey))
             .ThenBy(rule => rule.Audience)
             .ThenBy(rule => rule.Label)
@@ -864,6 +893,7 @@
             .Where(template => ActiveTemplateAudience == "All" || string.Equals(template.Audience, ActiveTemplateAudience, StringComparison.OrdinalIgnoreCase))
             .Where(template => ActiveTemplateChannel == "All" || string.Equals(template.Channel, ActiveTemplateChannel, StringComparison.OrdinalIgnoreCase))
             .Where(template => ActiveTemplateTopic == "All" || GetNotificationTopic(template.EventKey) == ActiveTemplateTopic)
+            .Where(MatchesTemplateSearch)
             .OrderBy(template => GetNotificationTopic(template.EventKey))
             .ThenBy(template => template.Audience)
             .ThenBy(template => template.Channel)
@@ -1188,6 +1218,17 @@
         SuccessMessage = null;
     }
 
+    private void ClearRuleFilters()
+    {
+        ActiveRuleAudience = "All";
+        ActiveRuleChannel = "All";
+        ActiveRuleGroup = "All";
+        ActiveRuleTopic = "All";
+        RuleSearchTerm = null;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
     private void SetTemplateAudience(string audience)
     {
         ActiveTemplateAudience = audience;
@@ -1212,6 +1253,17 @@
     private void SetTemplateTopic(string topic)
     {
         ActiveTemplateTopic = topic;
+        ErrorMessage = null;
+        SuccessMessage = null;
+    }
+
+    private void ClearTemplateFilters()
+    {
+        ActiveTemplateAudience = "All";
+        ActiveTemplateChannel = "All";
+        ActiveTemplateGroup = "All";
+        ActiveTemplateTopic = "All";
+        TemplateSearchTerm = null;
         ErrorMessage = null;
         SuccessMessage = null;
     }
@@ -1512,6 +1564,38 @@
     private bool MatchesRuleChannel(NotificationDeliveryRuleResponse rule)
     {
         return ActiveRuleChannel == "All" || RuleHasChannel(rule, ActiveRuleChannel);
+    }
+
+    private bool MatchesRuleSearch(NotificationDeliveryRuleResponse rule)
+    {
+        if (string.IsNullOrWhiteSpace(RuleSearchTerm))
+        {
+            return true;
+        }
+
+        var search = RuleSearchTerm.Trim();
+        return rule.EventKey.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || rule.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || rule.Audience.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || (rule.SubjectTemplate?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (rule.BodyTemplate?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private bool MatchesTemplateSearch(NotificationTemplateResponse template)
+    {
+        if (string.IsNullOrWhiteSpace(TemplateSearchTerm))
+        {
+            return true;
+        }
+
+        var search = TemplateSearchTerm.Trim();
+        return template.EventKey.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || template.Label.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || template.Audience.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || template.Channel.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || template.SubjectTemplate.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || template.BodyTemplate.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || (template.AvailableVariables?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 
     private static bool RuleHasChannel(NotificationDeliveryRuleResponse rule, string channel)
