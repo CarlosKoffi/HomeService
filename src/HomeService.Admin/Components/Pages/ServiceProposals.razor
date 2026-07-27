@@ -35,11 +35,31 @@
         <input type="search" placeholder="Service ou prestation" @bind="Search" @bind:event="oninput" />
     </label>
     <label>
+        Service
+        <select @bind="ServiceFilter">
+            <option value="all">Tous les services</option>
+            @foreach (var service in Services.OrderBy(service => service.Name))
+            {
+                <option value="@service.Id">@service.Name</option>
+            }
+        </select>
+    </label>
+    <label>
         Affichage
         <select @bind="StatusFilter">
             <option value="all">Tous</option>
             <option value="active">Services actifs</option>
             <option value="inactive">Services inactifs</option>
+        </select>
+    </label>
+    <label>
+        Tri
+        <select @bind="SortFilter">
+            <option value="attention">Priorite action</option>
+            <option value="missions">Missions</option>
+            <option value="revenue">CA termine</option>
+            <option value="providers">Prestataires</option>
+            <option value="name">Nom A-Z</option>
         </select>
     </label>
 </section>
@@ -65,9 +85,9 @@
 <nav class="service-admin-tabs" aria-label="Navigation catalogue services">
     <button type="button" class="@GetTabClass(ServiceAdminTab.Proposals)" @onclick="() => ActiveTab = ServiceAdminTab.Proposals">
         A classer
-        @if (CompanyServiceProposals.Count > 0)
+        @if (FilteredCompanyServiceProposals.Count > 0)
         {
-            <span>@CompanyServiceProposals.Count</span>
+            <span>@FilteredCompanyServiceProposals.Count</span>
         }
     </button>
     <button type="button" class="@GetTabClass(ServiceAdminTab.Catalog)" @onclick="() => ActiveTab = ServiceAdminTab.Catalog">
@@ -91,17 +111,17 @@
         <p>Quand une entreprise tape un libelle inconnu, vous decidez ici s'il correspond a un service existant, a une prestation, ou a un nouveau service.</p>
     </div>
 
-    @if (CompanyServiceProposals.Count == 0)
+    @if (FilteredCompanyServiceProposals.Count == 0)
     {
         <div class="info-panel compact">
             <h3>Aucun libelle orphelin</h3>
-            <p>Les services proposes sont tous rattaches au catalogue.</p>
+            <p>Les services proposes sont tous rattaches au catalogue ou aucun resultat ne correspond aux filtres.</p>
         </div>
     }
     else
     {
         <div class="proposal-review-list">
-            @foreach (var proposal in CompanyServiceProposals)
+            @foreach (var proposal in FilteredCompanyServiceProposals)
             {
                 var bestSuggestion = proposal.Suggestions.OrderByDescending(suggestion => suggestion.Score).FirstOrDefault();
 
@@ -556,7 +576,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 <span>CA termine</span>
                 <span>A traiter</span>
             </div>
-            @foreach (var service in ServiceInsights)
+            @foreach (var service in FilteredServiceInsights)
             {
                 <div class="service-insights-row @(service.HasDemandWithoutProviders ? "needs-attention" : string.Empty)">
                     <strong>@service.ServiceName</strong>
@@ -595,7 +615,9 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private ServiceCatalogInsightListResponse? InsightSnapshot { get; set; }
     private ServiceDraft NewServiceDraft { get; set; } = new();
     private string Search { get; set; } = string.Empty;
+    private string ServiceFilter { get; set; } = "all";
     private string StatusFilter { get; set; } = "all";
+    private string SortFilter { get; set; } = "attention";
     private string? Message { get; set; }
     private Guid? EditingPrestationId { get; set; }
     private Guid? EditingServiceId { get; set; }
@@ -633,7 +655,84 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                     || service.Prestations.Any(prestation => prestation.Name.Contains(search, StringComparison.OrdinalIgnoreCase)));
             }
 
+            if (Guid.TryParse(ServiceFilter, out var serviceId))
+            {
+                query = query.Where(service => service.Id == serviceId);
+            }
+
             return query.ToList();
+        }
+    }
+
+    private IReadOnlyList<CompanyServiceProposalResponse> FilteredCompanyServiceProposals
+    {
+        get
+        {
+            var query = CompanyServiceProposals.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                var search = Search.Trim();
+                query = query.Where(proposal =>
+                    proposal.RawName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || proposal.CompanyName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || (proposal.MatchedServiceName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (proposal.MatchedServicePrestationName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || proposal.Suggestions.Any(suggestion =>
+                        suggestion.ServiceName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                        || (suggestion.ServicePrestationName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)));
+            }
+
+            if (Guid.TryParse(ServiceFilter, out var serviceId))
+            {
+                query = query.Where(proposal => ProposalMatchesService(proposal, serviceId));
+            }
+
+            return SortFilter switch
+            {
+                "name" => query.OrderBy(proposal => proposal.RawName).ThenBy(proposal => proposal.CompanyName).ToList(),
+                _ => query
+                    .OrderBy(proposal => proposal.MatchStatus == "NeedsAdminReview" ? 0 : proposal.MatchStatus == "PendingMatch" ? 1 : 2)
+                    .ThenBy(proposal => proposal.MatchScore ?? 0)
+                    .ThenByDescending(proposal => proposal.CreatedAt)
+                    .ToList()
+            };
+        }
+    }
+
+    private IReadOnlyList<ServiceCatalogInsightResponse> FilteredServiceInsights
+    {
+        get
+        {
+            var query = ServiceInsights.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                var search = Search.Trim();
+                query = query.Where(service =>
+                    service.ServiceName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                    || service.Prestations.Any(prestation => prestation.ServicePrestationName.Contains(search, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (Guid.TryParse(ServiceFilter, out var serviceId))
+            {
+                query = query.Where(service => service.ServiceId == serviceId);
+            }
+
+            return SortFilter switch
+            {
+                "missions" => query.OrderByDescending(service => service.MissionCount).ThenBy(service => service.ServiceName).ToList(),
+                "revenue" => query.OrderByDescending(service => service.RevenueAmount).ThenBy(service => service.ServiceName).ToList(),
+                "providers" => query.OrderByDescending(service => service.ActiveProviderCount).ThenByDescending(service => service.InterimProviderCount).ThenBy(service => service.ServiceName).ToList(),
+                "name" => query.OrderBy(service => service.ServiceName).ToList(),
+                _ => query
+                    .OrderByDescending(service => service.HasDemandWithoutProviders)
+                    .ThenByDescending(service => service.DisputedMissionCount)
+                    .ThenByDescending(service => service.PendingProposalCount)
+                    .ThenByDescending(service => service.HasProviderGap)
+                    .ThenBy(service => service.ServiceName)
+                    .ToList()
+            };
         }
     }
 
@@ -909,6 +1008,12 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         return suggestion.ServicePrestationId.HasValue
             ? $"{suggestion.ServiceName} - {suggestion.ServicePrestationName}"
             : suggestion.ServiceName;
+    }
+
+    private static bool ProposalMatchesService(CompanyServiceProposalResponse proposal, Guid serviceId)
+    {
+        return proposal.MatchedServiceId == serviceId
+            || proposal.Suggestions.Any(suggestion => suggestion.ServiceId == serviceId);
     }
 
     private static string GetProposalStatusLabel(string status)
