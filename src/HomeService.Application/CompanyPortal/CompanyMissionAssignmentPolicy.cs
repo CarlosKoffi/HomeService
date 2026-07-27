@@ -8,7 +8,7 @@ public static class CompanyMissionAssignmentPolicy
         bool providerIsApproved,
         bool providerCoversMissionService,
         bool providerHasBlockingAssignment,
-        bool providerAlreadyRefusedMission = false)
+        bool providerAlreadyUnavailableForMission = false)
     {
         if (!missionExists)
         {
@@ -30,9 +30,9 @@ public static class CompanyMissionAssignmentPolicy
             return CompanyMissionAssignmentPolicyResult.Invalid("Ce prestataire a deja une mission en attente ou en cours.");
         }
 
-        if (providerAlreadyRefusedMission)
+        if (providerAlreadyUnavailableForMission)
         {
-            return CompanyMissionAssignmentPolicyResult.Invalid("Ce prestataire a deja refuse cette mission.");
+            return CompanyMissionAssignmentPolicyResult.Invalid("Ce prestataire a deja refuse cette mission ou depasse le delai de reponse.");
         }
 
         return CompanyMissionAssignmentPolicyResult.Ok();

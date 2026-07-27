@@ -428,6 +428,78 @@ public sealed class ClientMissionWorkflowIntegrationTests
     }
 
     [Fact]
+    public async Task ProviderAssignmentTimeout_BlocksLateAcceptanceAndAllowsAnotherProviderAssignment()
+    {
+        await using var db = CreateDbContext();
+        var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
+        var secondProvider = CreateProvider(seed.Company.Id, seed.Service.Id, "Mariam", "Coulibaly", "+225 0555000022");
+        db.Providers.Add(secondProvider);
+        await db.SaveChangesAsync();
+
+        var creation = await CreateClientRequestService(db).CreateAsync(
+            CreateMissionRequest(seed.Service.Id, seed.Prestation.Id),
+            CancellationToken.None);
+        Assert.True(creation.IsSuccess);
+
+        var offerService = new CompanyMissionOfferService(db);
+        var offers = await offerService.ListOpenOffersAsync(seed.Company.Id, CancellationToken.None);
+        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId, CancellationToken.None);
+        Assert.True(acceptedOffer.IsSuccess);
+
+        var assignmentService = CreateAssignmentService(db);
+        var firstAssignment = await assignmentService.AssignAsync(
+            seed.Company.Id,
+            acceptedOffer.Response!.MissionId,
+            seed.Provider.Id,
+            quotedAmount: 12000,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.True(firstAssignment.IsSuccess);
+
+        var expiration = await new ProviderAssignmentExpirationService(db).ExpireDueAssignmentsAsync(
+            firstAssignment.Response!.ExpiresAt.AddSeconds(1),
+            batchSize: 10,
+            CancellationToken.None);
+        Assert.Equal(1, expiration.ExpiredAssignmentCount);
+
+        var expiredAssignment = await LoadAssignmentAsync(db, firstAssignment.Response.AssignmentId);
+        var lateProvider = await LoadProviderAsync(db, seed.Provider.Id);
+        var lateAccept = new ProviderMissionWorkflowService().AcceptMission(
+            lateProvider,
+            expiredAssignment,
+            new ProviderAcceptMissionRequest(5.348850m, -4.003150m, 18));
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, lateAccept.Status);
+        Assert.Equal(ProviderMissionAssignmentStatus.Expired, expiredAssignment.Status);
+
+        var missionAfterTimeout = await db.Missions.SingleAsync(mission => mission.Id == acceptedOffer.Response.MissionId);
+        Assert.Equal(MissionStatus.SearchingProvider, missionAfterTimeout.Status);
+        Assert.Null(missionAfterTimeout.ProviderId);
+        Assert.Equal(seed.Company.Id, missionAfterTimeout.CompanyId);
+
+        var assignableAfterTimeout = await assignmentService.ListAssignableProvidersAsync(
+            seed.Company.Id,
+            acceptedOffer.Response.MissionId,
+            CancellationToken.None);
+        Assert.True(assignableAfterTimeout.IsSuccess);
+        Assert.Contains(assignableAfterTimeout.Providers, provider => provider.Id == secondProvider.Id);
+        Assert.DoesNotContain(assignableAfterTimeout.Providers, provider => provider.Id == seed.Provider.Id);
+
+        var secondAssignment = await assignmentService.AssignAsync(
+            seed.Company.Id,
+            acceptedOffer.Response.MissionId,
+            secondProvider.Id,
+            quotedAmount: 12500,
+            overMaxJustification: null,
+            CancellationToken.None);
+
+        Assert.True(secondAssignment.IsSuccess);
+        var mission = await db.Missions.SingleAsync(mission => mission.Id == acceptedOffer.Response.MissionId);
+        Assert.Equal(secondProvider.Id, mission.ProviderId);
+        Assert.Equal(MissionStatus.Assigned, mission.Status);
+    }
+
+    [Fact]
     public async Task ClientMissionCreation_DispatchesToThreeEligibleCompaniesByReceptionPriority()
     {
         await using var db = CreateDbContext();

@@ -37,11 +37,12 @@ public sealed class CompanyMissionAssignmentService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        var refusedProviderIds = await db.ProviderMissionAssignments
+        var unavailableForThisMissionProviderIds = await db.ProviderMissionAssignments
             .AsNoTracking()
             .Where(assignment => assignment.CompanyId == companyId
                 && assignment.MissionId == missionId
-                && assignment.Status == ProviderMissionAssignmentStatus.Refused)
+                && (assignment.Status == ProviderMissionAssignmentStatus.Refused
+                    || assignment.Status == ProviderMissionAssignmentStatus.Expired))
             .Select(assignment => assignment.ProviderId)
             .Distinct()
             .ToListAsync(cancellationToken);
@@ -52,7 +53,7 @@ public sealed class CompanyMissionAssignmentService(
                 && provider.Status == ProviderStatus.Approved
                 && provider.Services.Any(service => service.IsActive && service.ServiceId == mission.ServiceId)
                 && !busyProviderIds.Contains(provider.Id)
-                && !refusedProviderIds.Contains(provider.Id))
+                && !unavailableForThisMissionProviderIds.Contains(provider.Id))
             .OrderByDescending(provider => provider.IsAvailable)
             .ThenBy(provider => provider.LastName)
             .Select(provider => new CompanyPortalAssignableProviderResponse(
@@ -123,10 +124,11 @@ public sealed class CompanyMissionAssignmentService(
                 || assignment.Status == ProviderMissionAssignmentStatus.Accepted
                 || assignment.Status == ProviderMissionAssignmentStatus.Started),
             cancellationToken);
-        var alreadyRefusedThisMission = await db.ProviderMissionAssignments.AnyAsync(assignment =>
+        var alreadyUnavailableForThisMission = await db.ProviderMissionAssignments.AnyAsync(assignment =>
             assignment.ProviderId == providerId
             && assignment.MissionId == missionId
-            && assignment.Status == ProviderMissionAssignmentStatus.Refused,
+            && (assignment.Status == ProviderMissionAssignmentStatus.Refused
+                || assignment.Status == ProviderMissionAssignmentStatus.Expired),
             cancellationToken);
 
         var providerService = mission is null || provider is null
@@ -138,7 +140,7 @@ public sealed class CompanyMissionAssignmentService(
             provider?.Status == ProviderStatus.Approved,
             providerService is not null,
             hasBlockingAssignment,
-            alreadyRefusedThisMission);
+            alreadyUnavailableForThisMission);
         if (!policy.IsValid)
         {
             return policy.IsNotFound
