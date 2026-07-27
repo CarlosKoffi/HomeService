@@ -81,6 +81,23 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                     message.ReadAt))
                 .ToListAsync(cancellationToken);
 
+        var additionalQuotes = await db.MissionAdditionalQuotes
+            .AsNoTracking()
+            .Where(quote => quote.MissionId == mission.Id && quote.ProviderId == providerId)
+            .OrderByDescending(quote => quote.RequestedAt)
+            .Select(quote => new ProviderMobileMissionAdditionalQuoteResponse(
+                quote.Id,
+                quote.Status.ToString(),
+                quote.Reason,
+                quote.RequestedPhotoStoragePath,
+                quote.Amount,
+                quote.Currency,
+                quote.CompanyDescription,
+                quote.RequestedAt,
+                quote.SubmittedAt,
+                quote.PaidAt))
+            .ToListAsync(cancellationToken);
+
         var canCallCustomer = mission.CanRevealContactDetails && customer is not null;
         var now = DateTimeOffset.UtcNow;
         var response = new ProviderMobileMissionDetailResponse(
@@ -120,6 +137,7 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                 assignment.ArrivalToleranceMeters,
                 assignment.ArrivalAccuracyMeters,
                 assignment.ArrivalVerifiedAt),
+            additionalQuotes,
             photos,
             messages
                 .OrderBy(message => message.CreatedAt)

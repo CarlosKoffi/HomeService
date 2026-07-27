@@ -101,6 +101,24 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                 attachment.Caption))
             .ToListAsync(cancellationToken);
 
+        var additionalQuotes = await db.MissionAdditionalQuotes
+            .AsNoTracking()
+            .Where(quote => quote.MissionId == mission.Id)
+            .OrderByDescending(quote => quote.RequestedAt)
+            .Select(quote => new ClientMissionAdditionalQuoteResponse(
+                quote.Id,
+                quote.Status.ToString(),
+                quote.Reason,
+                quote.RequestedPhotoStoragePath,
+                quote.Amount,
+                quote.Currency,
+                quote.CompanyDescription,
+                quote.RequestedAt,
+                quote.SubmittedAt,
+                quote.PaidAt,
+                quote.Status == MissionAdditionalQuoteStatus.Submitted && quote.Amount > 0))
+            .ToListAsync(cancellationToken);
+
         var response = new ClientMissionStatusResponse(
             mission.Id,
             mission.MissionNumber,
@@ -145,6 +163,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                     mission.CanRevealContactDetails ? assignedProvider.PhoneNumber : null,
                     providerPhoto),
             offers,
+            additionalQuotes,
             photos,
             BuildActions(mission),
             BuildMessage(mission.Status, mission.QuoteStatus, mission.PaymentStatus));

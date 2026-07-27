@@ -52,6 +52,36 @@ public sealed class ClientMissionStatusServiceTests
     }
 
     [Fact]
+    public async Task GetAsync_WhenAdditionalQuoteSubmitted_ReturnsPayableAdditionalQuote()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedMissionAsync(db);
+        var additionalQuote = new MissionAdditionalQuote(
+            scenario.Mission.Id,
+            scenario.Provider.Id,
+            scenario.Company.Id,
+            "Le siphon doit etre remplace.",
+            "missions/additional/siphon.jpg");
+        additionalQuote.Submit(7_500, "XOF", "Remplacement du siphon et main d'oeuvre.");
+        db.MissionAdditionalQuotes.Add(additionalQuote);
+        await db.SaveChangesAsync();
+        var sut = new ClientMissionStatusService(db);
+
+        var result = await sut.GetAsync(scenario.Mission.Id, scenario.Customer.PhoneNumber, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var quote = Assert.Single(result.Response!.AdditionalQuotes);
+        Assert.Equal(additionalQuote.Id, quote.QuoteId);
+        Assert.Equal("Submitted", quote.Status);
+        Assert.Equal(7_500, quote.Amount);
+        Assert.Equal("XOF", quote.Currency);
+        Assert.True(quote.CanPay);
+        Assert.Equal("Le siphon doit etre remplace.", quote.Reason);
+        Assert.Equal("missions/additional/siphon.jpg", quote.RequestedPhotoStoragePath);
+        Assert.Equal("Remplacement du siphon et main d'oeuvre.", quote.CompanyDescription);
+    }
+
+    [Fact]
     public async Task GetAsync_WhenPhoneDoesNotMatch_ReturnsForbidden()
     {
         await using var db = CreateDbContext();

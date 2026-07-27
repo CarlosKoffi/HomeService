@@ -32,6 +32,7 @@ public sealed record ClientMissionStatusResponse(
     ClientMissionCompanyResponse? AssignedCompany,
     ClientMissionProviderResponse? AssignedProvider,
     IReadOnlyList<ClientMissionOfferResponse> CompanyOffers,
+    IReadOnlyList<ClientMissionAdditionalQuoteResponse> AdditionalQuotes,
     IReadOnlyList<ClientMissionAttachmentResponse> Photos,
     ClientMissionAvailableActionsResponse Actions,
     string Message);
@@ -76,3 +77,16 @@ public sealed record ClientMissionAttachmentResponse(
     string ContentType,
     long FileSizeBytes,
     string? Caption);
+
+public sealed record ClientMissionAdditionalQuoteResponse(
+    Guid QuoteId,
+    string Status,
+    string Reason,
+    string? RequestedPhotoStoragePath,
+    int? Amount,
+    string Currency,
+    string? CompanyDescription,
+    DateTimeOffset RequestedAt,
+    DateTimeOffset? SubmittedAt,
+    DateTimeOffset? PaidAt,
+    bool CanPay);

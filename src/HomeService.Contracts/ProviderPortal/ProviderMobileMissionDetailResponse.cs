@@ -27,6 +27,7 @@ public sealed record ProviderMobileMissionDetailResponse(
     string? Description,
     ProviderMobileMissionActionsResponse Actions,
     ProviderMobileMissionArrivalResponse Arrival,
+    IReadOnlyList<ProviderMobileMissionAdditionalQuoteResponse> AdditionalQuotes,
     IReadOnlyList<ProviderMobileMissionPhotoResponse> CustomerPhotos,
     IReadOnlyList<ProviderMobileMissionMessageResponse> RecentMessages);
 
@@ -52,6 +53,18 @@ public sealed record ProviderMobileMissionPhotoResponse(
     string StoragePath,
     string ContentType,
     string? Caption);
+
+public sealed record ProviderMobileMissionAdditionalQuoteResponse(
+    Guid QuoteId,
+    string Status,
+    string Reason,
+    string? RequestedPhotoStoragePath,
+    int? Amount,
+    string Currency,
+    string? CompanyDescription,
+    DateTimeOffset RequestedAt,
+    DateTimeOffset? SubmittedAt,
+    DateTimeOffset? PaidAt);
 
 public sealed record ProviderMobileMissionMessageResponse(
     Guid MessageId,

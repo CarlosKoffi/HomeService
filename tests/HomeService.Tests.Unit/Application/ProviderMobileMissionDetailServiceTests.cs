@@ -57,6 +57,35 @@ public sealed class ProviderMobileMissionDetailServiceTests
     }
 
     [Fact]
+    public async Task GetAsync_WhenProviderRequestedAdditionalQuote_ReturnsAdditionalQuoteStatus()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db);
+        var additionalQuote = new MissionAdditionalQuote(
+            scenario.Mission.Id,
+            scenario.Provider.Id,
+            scenario.Company.Id,
+            "Il faut remplacer une piece.",
+            "missions/additional/piece.jpg");
+        additionalQuote.Submit(6_000, "XOF", "Piece de remplacement et intervention.");
+        db.MissionAdditionalQuotes.Add(additionalQuote);
+        await db.SaveChangesAsync();
+        var sut = new ProviderMobileMissionDetailService(db);
+
+        var result = await sut.GetAsync(scenario.Provider.Id, scenario.Assignment.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var quote = Assert.Single(result.Response!.AdditionalQuotes);
+        Assert.Equal(additionalQuote.Id, quote.QuoteId);
+        Assert.Equal("Submitted", quote.Status);
+        Assert.Equal(6_000, quote.Amount);
+        Assert.Equal("XOF", quote.Currency);
+        Assert.Equal("Il faut remplacer une piece.", quote.Reason);
+        Assert.Equal("missions/additional/piece.jpg", quote.RequestedPhotoStoragePath);
+        Assert.Equal("Piece de remplacement et intervention.", quote.CompanyDescription);
+    }
+
+    [Fact]
     public async Task GetAsync_WhenAssignmentBelongsToAnotherProvider_ReturnsNotFound()
     {
         await using var db = CreateDbContext();
