@@ -33,6 +33,16 @@ public sealed record AdminMissionSummaryResponse(
 
 public sealed record AdminMissionActionRequest(string? Note);
 
+public sealed record AdminMissionDispatchOfferResponse(
+    Guid Id,
+    Guid MissionId,
+    Guid CompanyId,
+    int Rank,
+    int Score,
+    string ScoreDetails,
+    string Status,
+    DateTimeOffset ExpiresAt);
+
 public sealed record AdminMissionDetailResponse(
     Guid Id,
     string MissionNumber,

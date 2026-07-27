@@ -389,19 +389,20 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = result.Message });
             }
 
-            return Results.Ok(result.Offers.Select(offer => new
-            {
-                offer.Id,
-                offer.MissionId,
-                offer.CompanyId,
-                offer.Rank,
-                offer.Score,
-                offer.ScoreDetails,
-                Status = offer.Status.ToString(),
-                offer.ExpiresAt
-            }));
+            return Results.Ok(result.Offers
+                .Select(offer => new AdminMissionDispatchOfferResponse(
+                    offer.Id,
+                    offer.MissionId,
+                    offer.CompanyId,
+                    offer.Rank,
+                    offer.Score,
+                    offer.ScoreDetails,
+                    offer.Status.ToString(),
+                    offer.ExpiresAt))
+                .ToList());
         })
         .WithName("CreateAdminMissionDispatchOffers")
+        .Produces<IReadOnlyList<AdminMissionDispatchOfferResponse>>()
         .Produces(StatusCodes.Status400BadRequest);
 
         admin.MapPost("/missions/{missionId:guid}/mark-disputed", async (

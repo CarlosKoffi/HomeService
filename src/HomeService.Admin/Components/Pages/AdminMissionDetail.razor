@@ -116,6 +116,20 @@ else
             </article>
             <article>
                 <h2>Action admin</h2>
+                @if (CanDispatchOffers(Mission.Status))
+                {
+                    <div class="mission-dispute-box mission-dispatch-box">
+                        <strong>Relance entreprises</strong>
+                        <p>Renvoie cette mission aux entreprises eligibles si aucune offre ouverte n'existe deja.</p>
+                        <label class="inline-check">
+                            <input type="checkbox" @bind="DispatchAsUrgent" />
+                            Traiter comme urgence
+                        </label>
+                        <button type="button" class="light-action" @onclick="DispatchOffersAsync" disabled="@IsActionBusy">
+                            Relancer les entreprises
+                        </button>
+                    </div>
+                }
                 @if (CanOpenDispute(Mission.Status) || CanCancelMission(Mission.Status))
                 {
                     @if (CanOpenDispute(Mission.Status))
@@ -414,6 +428,7 @@ else
     private int? RefundPercent { get; set; }
     private int? RefundAmount { get; set; }
     private string SelectedTab { get; set; } = "summary";
+    private bool DispatchAsUrgent { get; set; }
     private bool RequiresRefundInput => ResolutionType is "PartialRefund" or "RefundCustomer";
     private int RefundReferenceAmount => Mission?.FinalTotalAmount ?? Mission?.CompanyQuotedAmount ?? Mission?.EstimatedTotalAmount ?? 0;
     private int PreviewRefundAmount => RefundAmount ?? (RefundPercent.HasValue
@@ -472,6 +487,35 @@ else
         catch (Exception exception)
         {
             ErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsActionBusy = false;
+        }
+    }
+
+    private async Task DispatchOffersAsync()
+    {
+        if (Mission is null)
+        {
+            return;
+        }
+
+        IsActionBusy = true;
+        ErrorMessage = null;
+        Message = null;
+
+        try
+        {
+            var offers = await ApiClient.CreateAdminMissionDispatchOffersAsync(Mission.Id, DispatchAsUrgent);
+            Message = offers.Count == 0
+                ? "Aucune entreprise eligible pour le moment."
+                : $"{offers.Count} offre(s) entreprise disponible(s) pour cette mission.";
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Relance impossible. Detail: {exception.Message}";
         }
         finally
         {
@@ -685,6 +729,7 @@ else
     private static string GetFinancialLineClass(int amount) => amount < 0 ? "mission-finance-line negative" : "mission-finance-line";
     private static bool CanOpenDispute(string status) => status is not ("Disputed" or "Cancelled" or "Resolved");
     private static bool CanCancelMission(string status) => status is not ("Disputed" or "Completed" or "Cancelled" or "Resolved");
+    private static bool CanDispatchOffers(string status) => status is "Created" or "SearchingProvider" or "Offered";
     private static string GetTimelineItemClass(string tone) => tone switch
     {
         "ok" => "mission-timeline-item ok",

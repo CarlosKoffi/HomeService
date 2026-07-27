@@ -172,6 +172,19 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminMissionDetailResponse>($"/api/admin/missions/{missionId}", cancellationToken);
     }
 
+    public async Task<IReadOnlyList<AdminMissionDispatchOfferResponse>> CreateAdminMissionDispatchOffersAsync(
+        Guid missionId,
+        bool urgent,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var suffix = urgent ? "?urgent=true" : "?urgent=false";
+        return await PostJsonAsync<IReadOnlyList<AdminMissionDispatchOfferResponse>>(
+            $"/api/admin/missions/{missionId}/dispatch-offers{suffix}",
+            null,
+            cancellationToken) ?? [];
+    }
+
     public async Task<AdminMissionListResponse?> MarkAdminMissionDisputedAsync(
         Guid missionId,
         string reason,

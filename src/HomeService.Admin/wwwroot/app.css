@@ -1050,6 +1050,25 @@ h3 {
     padding: .6rem .85rem;
 }
 
+.inline-check {
+    align-items: center;
+    display: inline-flex;
+    gap: .55rem;
+    width: fit-content;
+    font-weight: 800;
+}
+
+.inline-check input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #2563eb;
+}
+
+.mission-dispatch-box {
+    background: #f8fbff;
+    border-color: #dbeafe;
+}
+
 .secondary-action,
 .light-action,
 .operator-actions button,
