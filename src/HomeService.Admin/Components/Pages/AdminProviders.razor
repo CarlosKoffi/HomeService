@@ -109,7 +109,7 @@
                 </div>
                 <div class="operator-meta">
                     <span class="@GetProviderStatusClass(provider.Status)">@GetProviderAuthorizationLabel(provider)</span>
-                    <small>@GetAvailabilityLabel(provider)</small>
+                    <span class="@GetAvailabilityClass(provider)">@GetAvailabilityLabel(provider)</span>
                 </div>
                 <div class="operator-kpis">
                     <span>@provider.YearsOfExperience an(s)</span>
@@ -120,6 +120,10 @@
                     @if (provider.Services.Count == 0)
                     {
                         <span>Aucun service</span>
+                    }
+                    @if (provider.Prestations.Count > 0)
+                    {
+                        <span>@provider.Prestations.Count prestation(s)</span>
                     }
                 </div>
                 <div class="provider-doc-actions">
@@ -242,17 +246,27 @@
     {
         if (provider.Status != "Approved")
         {
-            return "Non affectable";
+            return "Validation requise";
         }
 
-        return provider.IsAvailable ? "Disponible terrain" : "Indisponible terrain";
+        return provider.IsAvailable ? "Disponible mission" : "Indisponible mission";
+    }
+
+    private static string GetAvailabilityClass(AdminProviderSummaryResponse provider)
+    {
+        if (provider.Status != "Approved")
+        {
+            return "status-pill pending";
+        }
+
+        return provider.IsAvailable ? "status-pill ok" : "status-pill danger";
     }
 
     private static string GetProviderAuthorizationLabel(AdminProviderSummaryResponse provider)
     {
         return provider.Status switch
         {
-            "Approved" => "Actif mission",
+            "Approved" => "Valide plateforme",
             "SuspendedByCompany" => "Suspendu entreprise",
             "SuspendedByPlatform" => "Suspendu wélé",
             "Inactive" => "Inactif",
