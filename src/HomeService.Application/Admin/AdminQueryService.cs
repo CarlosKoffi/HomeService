@@ -790,7 +790,7 @@ public sealed class AdminQueryService(IAppDbContext db)
         {
             lines.Add(new AdminMissionFinancialLineResponse(
                 MissionFinancialLineType.PlatformCommission.ToString(),
-                "Commission wele",
+                "Commission wélé",
                 platformCommissionAmount,
                 currency,
                 40));

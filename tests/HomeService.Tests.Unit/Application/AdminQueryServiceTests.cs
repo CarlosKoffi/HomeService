@@ -195,6 +195,11 @@ public sealed class AdminQueryServiceTests
             quotedAmount: 5000,
             maxAllowedAmount: 8000,
             overMaxJustification: null);
+        mission.MarkProviderAccepted(mission.ProviderId!.Value, company.Id);
+        mission.ConfirmByCustomer(
+            platformCommissionAmount: 750,
+            transportFeeAmount: 0,
+            platformCommissionRateBasisPoints: 1500);
         var refundLine = new MissionFinancialBreakdown(
             mission.Id,
             MissionFinancialLineType.Refund,
@@ -224,6 +229,9 @@ public sealed class AdminQueryServiceTests
         Assert.Contains(missionDetail.FinancialLines, line =>
             line.LineType == MissionFinancialLineType.ServicePrice.ToString()
             && line.Amount == 5000);
+        Assert.Contains(missionDetail.FinancialLines, line =>
+            line.LineType == MissionFinancialLineType.PlatformCommission.ToString()
+            && line.Label == "Commission wélé");
         Assert.Contains(missionDetail.FinancialLines, line =>
             line.Label == "Avoir commercial"
             && line.Amount == -500);
