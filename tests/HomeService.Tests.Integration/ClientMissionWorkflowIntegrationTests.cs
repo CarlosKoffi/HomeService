@@ -427,6 +427,64 @@ public sealed class ClientMissionWorkflowIntegrationTests
             && assignment.Status == ProviderMissionAssignmentStatus.Refused);
     }
 
+    [Fact]
+    public async Task ClientMissionCreation_DispatchesToThreeEligibleCompaniesByReceptionPriority()
+    {
+        await using var db = CreateDbContext();
+        var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
+        seed.Company.UpdateMissionDispatchSettings(30, true);
+
+        var priorityCompany = CreateCompanyWithProvider(
+            db,
+            seed.Service.Id,
+            "Abidjan Clean Pro",
+            "+225 0700000010",
+            "dispatch-priority@test.ci",
+            missionDispatchPriority: 1,
+            "Fatou",
+            "Bamba");
+        var secondCompany = CreateCompanyWithProvider(
+            db,
+            seed.Service.Id,
+            "Lagune Services",
+            "+225 0700000011",
+            "dispatch-second@test.ci",
+            missionDispatchPriority: 5,
+            "Moussa",
+            "Kouame");
+        var overflowCompany = CreateCompanyWithProvider(
+            db,
+            seed.Service.Id,
+            "Plateau Services Plus",
+            "+225 0700000012",
+            "dispatch-overflow@test.ci",
+            missionDispatchPriority: 20,
+            "Aminata",
+            "Traore");
+
+        await db.SaveChangesAsync();
+
+        var creation = await CreateClientRequestService(db).CreateAsync(
+            CreateMissionRequest(seed.Service.Id, seed.Prestation.Id),
+            CancellationToken.None);
+
+        Assert.True(creation.IsSuccess);
+
+        var offers = await db.MissionDispatchOffers
+            .AsNoTracking()
+            .Where(offer => offer.MissionId == creation.Response!.MissionId)
+            .OrderBy(offer => offer.Rank)
+            .ToListAsync();
+
+        Assert.Equal(3, offers.Count);
+        Assert.Equal(priorityCompany.Id, offers[0].CompanyId);
+        Assert.Equal(secondCompany.Id, offers[1].CompanyId);
+        Assert.Equal(overflowCompany.Id, offers[2].CompanyId);
+        Assert.DoesNotContain(offers, offer => offer.CompanyId == seed.Company.Id);
+        Assert.All(offers, offer => Assert.Equal(MissionDispatchOfferStatus.Sent, offer.Status));
+        Assert.Equal([1, 2, 3], offers.Select(offer => offer.Rank).ToArray());
+    }
+
     private static async Task<ConfirmedMissionScenario> CreateConfirmedMissionScenarioAsync(HomeServiceDbContext db)
     {
         var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
@@ -616,6 +674,34 @@ public sealed class ClientMissionWorkflowIntegrationTests
 
         await db.SaveChangesAsync();
         return new WorkflowSeed(company, provider, service, prestation);
+    }
+
+    private static Company CreateCompanyWithProvider(
+        HomeServiceDbContext db,
+        Guid serviceId,
+        string name,
+        string phone,
+        string email,
+        int missionDispatchPriority,
+        string providerFirstName,
+        string providerLastName)
+    {
+        var company = new Company(name, phone, email);
+        company.UpdateCompanyInformation(name, "SARL", $"RCCM-{Guid.NewGuid():N}"[..16], $"DFE-{Guid.NewGuid():N}"[..12], "Abidjan", "Cocody Angre");
+        company.UpdateOperations("Cocody, Angre, Abidjan", "Menage a domicile");
+        company.UpdateMissionDispatchSettings(missionDispatchPriority, true);
+        company.Approve();
+
+        var provider = CreateProvider(
+            company.Id,
+            serviceId,
+            providerFirstName,
+            providerLastName,
+            phone.Replace("0700", "0500", StringComparison.Ordinal));
+
+        db.Companies.Add(company);
+        db.Providers.Add(provider);
+        return company;
     }
 
     private static ProviderProfile CreateProvider(
