@@ -5,48 +5,86 @@
 
 <PageTitle>Acces et roles</PageTitle>
 
-<h1>Acces & roles</h1>
-<p class="lead">
-    Le super admin cree les roles, choisit les modules accessibles et affecte les administrateurs.
-    Chaque action sensible doit etre limitee: voir, editer, valider, rejeter, suspendre, relancer ou exporter.
-</p>
-
-<section class="info-panel">
+<section class="admin-page-heading">
     <div>
-        <h2>Principe de securite</h2>
-        <p>
-            Dans cette phase, l'admin contient surtout les dossiers entreprise: pieces fiscales,
-            informations legales, contacts responsables, services proposes et decisions de validation.
-            On doit deja separer les responsabilites: une personne peut consulter une liste sans
-            pouvoir valider, exporter ou rejeter un dossier.
+        <p class="eyebrow">Securite admin</p>
+        <h1>Acces & roles</h1>
+        <p class="lead">
+            Configurez qui peut voir, modifier, valider ou piloter chaque module admin.
         </p>
     </div>
-    <div class="check-list">
-        <span>Minimum d'acces necessaire</span>
-        <span>Actions sensibles separees</span>
-        <span>Super admin limite</span>
-        <span>Audit futur de chaque decision</span>
-    </div>
 </section>
 
-<section class="dashboard-grid">
-    <article>
-        <h2>Super admin</h2>
-        <p>Acces total. Peut creer les roles, configurer les modules et inviter les autres admins.</p>
-        <p class="section-help">A reserver a tres peu de personnes. Toute action critique devra etre auditee.</p>
-    </article>
-    <article>
-        <h2>Roles modulaires</h2>
-        <p>Un role donne acces a des modules precis: traductions, validations entreprises, services proposes.</p>
-        <p class="section-help">Un admin peut avoir plusieurs roles si ses responsabilites traversent plusieurs equipes.</p>
-    </article>
-    <article>
-        <h2>Actions controlees</h2>
-        <p>Un admin peut voir une liste sans forcement pouvoir valider, rejeter ou relancer une entreprise.</p>
-        <p class="section-help">Les boutons doivent apparaitre seulement si le role autorise l'action.</p>
-    </article>
-</section>
+<nav class="service-admin-tabs access-admin-tabs" aria-label="Navigation acces admin">
+    <button type="button" class="@GetAccessTabClass(AccessAdminTab.Overview)" @onclick="() => ActiveTab = AccessAdminTab.Overview">
+        Vue d'ensemble
+    </button>
+    <button type="button" class="@GetAccessTabClass(AccessAdminTab.Roles)" @onclick="() => ActiveTab = AccessAdminTab.Roles">
+        Roles & modules <span>@Roles.Count</span>
+    </button>
+    <button type="button" class="@GetAccessTabClass(AccessAdminTab.Admins)" @onclick="() => ActiveTab = AccessAdminTab.Admins">
+        Administrateurs <span>@Admins.Count</span>
+    </button>
+</nav>
 
+@if (ActiveTab == AccessAdminTab.Overview)
+{
+    <section class="info-panel">
+        <div>
+            <h2>Principe de securite</h2>
+            <p>
+                Chaque administrateur doit avoir uniquement les modules utiles a son travail.
+                Les actions sensibles comme valider, suspendre ou configurer restent separees.
+            </p>
+        </div>
+        <div class="check-list">
+            <span>Acces minimum necessaire</span>
+            <span>Actions sensibles separees</span>
+            <span>Super admins limites</span>
+            <span>Journalisation des decisions</span>
+        </div>
+    </section>
+
+    <section class="admin-metric-grid access-summary-grid">
+        <article>
+            <span>Roles actifs</span>
+            <strong>@Roles.Count(role => role.IsActive)</strong>
+        </article>
+        <article>
+            <span>Modules</span>
+            <strong>@Modules.Count</strong>
+        </article>
+        <article>
+            <span>Admins actifs</span>
+            <strong>@Admins.Count(admin => admin.IsActive)</strong>
+        </article>
+        <article>
+            <span>Super admins</span>
+            <strong>@Admins.Count(admin => admin.IsSuperAdmin)</strong>
+        </article>
+    </section>
+
+    <section class="dashboard-grid">
+        <article>
+            <h2>Super admin</h2>
+            <p>Acces total. Peut creer les roles, configurer les modules et inviter les autres admins.</p>
+            <p class="section-help">A reserver a tres peu de personnes. Toute action critique est journalisee.</p>
+        </article>
+        <article>
+            <h2>Roles modulaires</h2>
+            <p>Un role donne acces a des modules precis: missions, notifications, services, validations entreprises.</p>
+            <p class="section-help">Un admin peut avoir plusieurs roles si ses responsabilites traversent plusieurs equipes.</p>
+        </article>
+        <article>
+            <h2>Actions controlees</h2>
+            <p>Voir une liste ne donne pas forcement le droit de valider, rejeter, relancer ou configurer.</p>
+            <p class="section-help">L'objectif est de simplifier le quotidien sans ouvrir trop de droits.</p>
+        </article>
+    </section>
+}
+
+@if (ActiveTab == AccessAdminTab.Roles)
+{
 <section class="access-layout">
     <article>
         <div class="section-heading">
@@ -140,7 +178,10 @@
         </div>
     </article>
 </section>
+}
 
+@if (ActiveTab == AccessAdminTab.Admins)
+{
 <section class="translation-list">
     <div class="section-heading">
         <div>
@@ -204,6 +245,7 @@
         </article>
     }
 </section>
+}
 
 @code {
     private List<AdminRoleSummaryResponse> Roles { get; set; } = [];
@@ -223,6 +265,7 @@
     private bool NewAdminIsSuperAdmin { get; set; }
     private HashSet<Guid> NewAdminRoleIds { get; set; } = [];
     private Dictionary<Guid, Guid?> AdminRoleDrafts { get; set; } = [];
+    private AccessAdminTab ActiveTab { get; set; } = AccessAdminTab.Overview;
 
     protected override async Task OnInitializedAsync()
     {
@@ -483,5 +526,17 @@
         }
 
         return admin.Roles.Count == 0 ? "Aucun role" : string.Join(", ", admin.Roles);
+    }
+
+    private string GetAccessTabClass(AccessAdminTab tab)
+    {
+        return ActiveTab == tab ? "active" : string.Empty;
+    }
+
+    private enum AccessAdminTab
+    {
+        Overview,
+        Roles,
+        Admins
     }
 }
