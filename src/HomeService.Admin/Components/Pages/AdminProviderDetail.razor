@@ -46,18 +46,6 @@ else
         <div class="company-admin-status">
             <span class="@GetProviderStatusClass(Provider.Status)">@TranslateProviderStatus(Provider.Status)</span>
             <small>@TranslateEmploymentType(Provider.EmploymentType) - @GetAvailabilityLabel(Provider)</small>
-            @if (CanApproveProvider(Provider))
-            {
-                <button type="button" class="primary-action compact-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
-                    @(IsActionRunning ? "Validation..." : GetApproveButtonLabel(Provider))
-                </button>
-            }
-            @if (CanSuspendProvider(Provider))
-            {
-                <button type="button" class="secondary-action compact-action danger-action" disabled="@IsActionRunning" @onclick="SuspendProviderAsync">
-                    @(IsActionRunning ? "Suspension..." : "Suspendre")
-                </button>
-            }
         </div>
     </div>
 
