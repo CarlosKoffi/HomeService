@@ -154,6 +154,14 @@ Le script `deploy/smoke-test.ps1` controle notamment:
 - paiements
 - acces et roles
 
+Pour les notifications, le smoke test ne se contente pas d'un endpoint joignable: il verifie aussi que
+les evenements essentiels du workflow sont bien presents apres migration et seeding, notamment:
+
+- mission affectee au prestataire
+- devis complementaire demande/disponible/paye
+- litige resolu
+- remboursement valide
+
 Il echoue volontairement sur les 404, 500 ou 502 afin de detecter rapidement les regressions de deploiement.
 - Ajouter les secrets email/SMS quand les integrations seront choisies.
 

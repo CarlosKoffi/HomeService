@@ -37,31 +37,81 @@ $checks = @(
     @{ Name = "Admin missions"; Path = "/api/admin/missions"; MinCount = 0 },
     @{ Name = "Admin mission settings"; Path = "/api/admin/mission-settings"; MinCount = 0 },
     @{ Name = "Admin notifications"; Path = "/api/admin/notifications"; MinCount = 0 },
-    @{ Name = "Admin notification delivery rules"; Path = "/api/admin/notification-delivery-rules"; MinCount = 1 },
-    @{ Name = "Admin notification templates"; Path = "/api/admin/notification-templates"; MinCount = 1 },
+    @{
+        Name = "Admin notification delivery rules"
+        Path = "/api/admin/notification-delivery-rules"
+        MinCount = 1
+        RequiredEventKeys = @(
+            "MissionAssignedToProvider",
+            "MissionAdditionalQuoteRequested",
+            "MissionAdditionalQuotePaid",
+            "MissionDisputeResolved",
+            "MissionRefundApproved")
+    },
+    @{
+        Name = "Admin notification templates"
+        Path = "/api/admin/notification-templates"
+        MinCount = 1
+        RequiredEventKeys = @(
+            "MissionAssignedToProvider",
+            "MissionAdditionalQuoteAvailable",
+            "MissionAdditionalQuotePaid",
+            "MissionDisputeResolvedCustomer",
+            "MissionRefundApproved")
+    },
     @{ Name = "Admin payments"; Path = "/api/admin/payments"; MinCount = 0 },
     @{ Name = "Admin access control"; Path = "/api/admin/access-control"; MinCount = 0 }
 )
 
-function Get-ItemCount($payload) {
+function Get-Items($payload) {
     if ($null -eq $payload) {
-        return 0
+        return @()
     }
 
     if ($payload -is [array]) {
-        return $payload.Count
+        return @($payload)
     }
 
     foreach ($propertyName in @("items", "Items", "notifications", "Notifications", "missions", "Missions", "applications", "Applications", "rules", "Rules", "templates", "Templates")) {
         if ($payload.PSObject.Properties.Name -contains $propertyName) {
             $value = $payload.$propertyName
             if ($value -is [array]) {
-                return $value.Count
+                return @($value)
             }
         }
     }
 
-    return 1
+    return @($payload)
+}
+
+function Get-ItemCount($payload) {
+    return (Get-Items $payload).Count
+}
+
+function Test-RequiredEventKeys($check, $payload) {
+    if (-not ($check.ContainsKey("RequiredEventKeys"))) {
+        return @()
+    }
+
+    $items = Get-Items $payload
+    $available = @{}
+    foreach ($item in $items) {
+        if ($item.PSObject.Properties.Name -contains "eventKey") {
+            $available[[string]$item.eventKey] = $true
+        }
+        elseif ($item.PSObject.Properties.Name -contains "EventKey") {
+            $available[[string]$item.EventKey] = $true
+        }
+    }
+
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($eventKey in $check.RequiredEventKeys) {
+        if (-not $available.ContainsKey($eventKey)) {
+            $missing.Add($eventKey)
+        }
+    }
+
+    return @($missing)
 }
 
 $failures = New-Object System.Collections.Generic.List[string]
@@ -77,6 +127,7 @@ foreach ($check in $checks) {
         }
 
         $count = 0
+        $json = $null
         if (-not [string]::IsNullOrWhiteSpace($response.Content)) {
             try {
                 $json = $response.Content | ConvertFrom-Json
@@ -89,6 +140,12 @@ foreach ($check in $checks) {
 
         if ($check.MinCount -gt 0 -and $count -lt $check.MinCount) {
             $failures.Add("$($check.Name) returned $count item(s), expected at least $($check.MinCount).")
+            continue
+        }
+
+        $missingEventKeys = Test-RequiredEventKeys $check $json
+        if ($missingEventKeys.Count -gt 0) {
+            $failures.Add("$($check.Name) is missing event key(s): $($missingEventKeys -join ', ').")
             continue
         }
 
