@@ -659,15 +659,39 @@ public static class DatabaseInitializer
 
     private static async Task SeedAdminAccessAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
-        if (!await db.AdminModules.AnyAsync(cancellationToken))
+        var moduleSeeds = new[]
         {
-            db.AdminModules.AddRange(
-                new AdminModule(AdminModuleKey.Dashboard, "Tableau de bord", "Vue de synthese du back-office entreprise.", 10),
-                new AdminModule(AdminModuleKey.CompanyApplications, "Demandes entreprises", "Validation des inscriptions, documents et activation des entreprises.", 20),
-                new AdminModule(AdminModuleKey.Services, "Services", "Gestion du catalogue plat et des services proposes par les entreprises.", 30),
-                new AdminModule(AdminModuleKey.Localization, "Traductions", "Gestion des langues et textes traduisibles.", 40),
-                new AdminModule(AdminModuleKey.AdminAccess, "Acces et roles", "Gestion des roles, modules et permissions admin.", 50));
+            new AdminModuleSeed(AdminModuleKey.Dashboard, "Tableau de bord", "Vue de synthese du back-office.", 10),
+            new AdminModuleSeed(AdminModuleKey.CompanyApplications, "Demandes entreprises", "Validation des inscriptions, documents et activation des entreprises.", 20),
+            new AdminModuleSeed(AdminModuleKey.CompanyManagement, "Entreprises", "Suivi des entreprises, prestataires, documents, missions et notifications.", 30),
+            new AdminModuleSeed(AdminModuleKey.ProviderReview, "Prestataires", "Consultation, validation et suspension des prestataires.", 40),
+            new AdminModuleSeed(AdminModuleKey.Services, "Services et prestations", "Gestion du catalogue, des propositions entreprises et des chiffres par service.", 50),
+            new AdminModuleSeed(AdminModuleKey.Missions, "Missions", "Suivi des missions, affectations, litiges, annulations et journal.", 60),
+            new AdminModuleSeed(AdminModuleKey.MissionSettings, "Parametres missions", "Configuration des commissions, delais et regles operationnelles des missions.", 70),
+            new AdminModuleSeed(AdminModuleKey.Payments, "Encaissements", "Pilotage des paiements, commissions et reversements.", 80),
+            new AdminModuleSeed(AdminModuleKey.Notifications, "Notifications", "Suivi des messages portail, application, email, WhatsApp et modeles.", 90),
+            new AdminModuleSeed(AdminModuleKey.Cms, "CMS", "Edition des contenus, images et textes des sites publics.", 100),
+            new AdminModuleSeed(AdminModuleKey.Localization, "Traductions", "Gestion des langues et textes traduisibles.", 110),
+            new AdminModuleSeed(AdminModuleKey.ContactRequests, "Demandes contact", "Traitement des formulaires de contact publics.", 120),
+            new AdminModuleSeed(AdminModuleKey.Audit, "Journal", "Consultation des actions sensibles et traces metier.", 130),
+            new AdminModuleSeed(AdminModuleKey.AdminAccess, "Acces et roles", "Gestion des roles, modules et permissions admin.", 140)
+        };
 
+        var existingModuleKeys = await db.AdminModules
+            .Select(module => module.Key)
+            .ToListAsync(cancellationToken);
+
+        var existingModuleKeySet = existingModuleKeys.ToHashSet();
+        foreach (var seed in moduleSeeds)
+        {
+            if (!existingModuleKeySet.Contains(seed.Key))
+            {
+                db.AdminModules.Add(new AdminModule(seed.Key, seed.Name, seed.Description, seed.DisplayOrder));
+            }
+        }
+
+        if (db.ChangeTracker.HasChanges())
+        {
             await db.SaveChangesAsync(cancellationToken);
         }
 
@@ -681,6 +705,8 @@ public static class DatabaseInitializer
             await db.SaveChangesAsync(cancellationToken);
         }
     }
+
+    private sealed record AdminModuleSeed(AdminModuleKey Key, string Name, string Description, int DisplayOrder);
 
     private static async Task SeedTranslationsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {

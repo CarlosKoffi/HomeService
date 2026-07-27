@@ -11,5 +11,9 @@ public enum AdminModuleKey
     Payments = 6,
     Localization = 7,
     AdminAccess = 8,
-    Audit = 9
+    Audit = 9,
+    Cms = 10,
+    Notifications = 11,
+    MissionSettings = 12,
+    ContactRequests = 13
 }
