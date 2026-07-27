@@ -114,6 +114,7 @@ else
                     <div><dt>Mode affectation</dt><dd>@TranslateAssignmentMode(Company.AssignmentMode)</dd></div>
                     <div><dt>Ville</dt><dd>@(Company.City ?? "Non renseignee")</dd></div>
                     <div><dt>Adresse</dt><dd>@(Company.Address ?? "Non renseignee")</dd></div>
+                    <div><dt>Services</dt><dd>@FormatServiceList(Company.Services)</dd></div>
                     <div><dt>RCCM</dt><dd>@(Company.RegistrationNumber ?? "Non renseigne")</dd></div>
                     <div><dt>DFE</dt><dd>@(Company.TaxIdentificationNumber ?? "Non renseigne")</dd></div>
                 </dl>
@@ -122,7 +123,7 @@ else
                 <h2>Operations</h2>
                 <dl class="detail-list">
                     <div><dt>Zones</dt><dd>@(Company.InterventionZones ?? "Non renseigne")</dd></div>
-                    <div><dt>Services</dt><dd>@(Company.PlannedServices ?? "Non renseigne")</dd></div>
+                    <div><dt>Services declares</dt><dd>@(Company.PlannedServices ?? "Non renseigne")</dd></div>
                     <div><dt>Priorite mission</dt><dd>@FormatDispatchPriority(Company.MissionDispatchPriority)</dd></div>
                     <div><dt>Urgences</dt><dd>@(Company.AcceptsUrgentMissions ? "Accepte les urgences" : "Urgences desactivees")</dd></div>
                     <div><dt>Wave</dt><dd>@(Company.WavePaymentNumber ?? "Non renseigne")</dd></div>
@@ -628,6 +629,7 @@ else
     private static string FormatDate(DateTimeOffset? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Non planifie";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
     private static string FormatMissionTitle(AdminCompanyMissionResponse mission) => string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : $"{mission.ServiceName} - {mission.PrestationName}";
+    private static string FormatServiceList(IReadOnlyList<string> services) => services.Count == 0 ? "Aucun service consolide" : string.Join(", ", services);
     private static string FormatDispatchPriority(int priority)
     {
         var label = priority switch

@@ -347,6 +347,10 @@ public sealed class AdminQueryService(IAppDbContext db)
                 .Sum(mission => mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0),
             missions.FirstOrDefault()?.Currency ?? "XOF");
 
+        var companyServices = MergeCompanyServices(
+            company.PlannedServices,
+            providers.SelectMany(provider => provider.Services).ToList());
+
         return new AdminCompanyDetailResponse(
             company.Id,
             company.Name,
@@ -374,7 +378,8 @@ public sealed class AdminQueryService(IAppDbContext db)
             ApplicationDocuments = applicationDocuments,
             Notifications = notifications,
             MissionDispatchPriority = company.MissionDispatchPriority,
-            AcceptsUrgentMissions = company.AcceptsUrgentMissions
+            AcceptsUrgentMissions = company.AcceptsUrgentMissions,
+            Services = companyServices
         };
     }
 
