@@ -1155,10 +1155,13 @@ public static class AdminEndpoints
             Guid id,
             HttpRequest httpRequest,
             AdminCompanyApplicationReviewService reviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await reviewService.ApproveAsync(id, cancellationToken);
+            var result = await reviewService.ApproveAsync(
+                id,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
             if (error is not null)
             {
@@ -1166,16 +1169,6 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddCompanyApplicationReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationApproved",
-                "Demande entreprise validee.",
-                application,
-                result.PreviousStatus,
-                after: new { application.Status, application.CompanyId });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationActionResponse(application));
         })
         .WithName("ApproveCompanyApplication");
@@ -1185,10 +1178,14 @@ public static class AdminEndpoints
             CompanyApplicationReviewRequest request,
             HttpRequest httpRequest,
             AdminCompanyApplicationReviewService reviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await reviewService.RejectAsync(id, request.Note, cancellationToken);
+            var result = await reviewService.RejectAsync(
+                id,
+                request.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
             if (error is not null)
             {
@@ -1196,16 +1193,6 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddCompanyApplicationReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationRejected",
-                "Demande entreprise refusee.",
-                application,
-                result.PreviousStatus,
-                after: new { application.Status, application.ReviewNote });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationActionResponse(application));
         })
         .WithName("RejectCompanyApplication");
@@ -1215,10 +1202,14 @@ public static class AdminEndpoints
             CompanyApplicationReviewRequest request,
             HttpRequest httpRequest,
             AdminCompanyApplicationReviewService reviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await reviewService.ReopenAsync(id, request.Note, cancellationToken);
+            var result = await reviewService.ReopenAsync(
+                id,
+                request.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
             if (error is not null)
             {
@@ -1226,16 +1217,6 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddCompanyApplicationReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationReopened",
-                "Demande entreprise reouverte.",
-                application,
-                result.PreviousStatus,
-                after: new { application.Status, application.ReviewNote });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationActionResponse(application));
         })
         .WithName("ReopenCompanyApplication");
@@ -1245,10 +1226,14 @@ public static class AdminEndpoints
             CompanyApplicationReviewRequest request,
             HttpRequest httpRequest,
             AdminCompanyApplicationReviewService reviewService,
-            IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
-            var result = await reviewService.RequestMoreInformationAsync(id, request.Note, cancellationToken);
+            var result = await reviewService.RequestMoreInformationAsync(
+                id,
+                request.Note,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
             if (error is not null)
             {
@@ -1256,16 +1241,6 @@ public static class AdminEndpoints
             }
         
             var application = result.Application!;
-            AddCompanyApplicationReviewAudit(
-                db,
-                httpRequest,
-                "AdminCompanyApplicationMoreInformationRequested",
-                "Complement demande sur un dossier entreprise.",
-                application,
-                result.PreviousStatus,
-                after: new { application.Status, application.ReviewNote });
-            await db.SaveChangesAsync(cancellationToken);
-        
             return Results.Ok(ToCompanyApplicationActionResponse(application));
         })
         .WithName("RequestCompanyApplicationMoreInformation");
@@ -1274,7 +1249,6 @@ public static class AdminEndpoints
             Guid id,
             HttpRequest httpRequest,
             CompanyActivationLinkGenerationService activationLinkService,
-            IAppDbContext db,
             IConfiguration configuration,
             ILogger<Program> logger,
             CancellationToken cancellationToken) =>
@@ -1286,6 +1260,8 @@ public static class AdminEndpoints
                     GetCompanyPortalBaseUrl(httpRequest, configuration),
                     GetActivationTokenDurationHours(configuration),
                     "admin",
+                    AuditActor.Admin(),
+                    GetAuditRequestContext(httpRequest),
                     cancellationToken);
         
                 if (result.Status == CompanyActivationLinkGenerationStatus.NotFound)
@@ -1304,17 +1280,6 @@ public static class AdminEndpoints
                 }
 
                 var response = result.Response!;
-                AddAuditLog(
-                    db,
-                    httpRequest,
-                    AuditActor.Admin(),
-                    "AdminCompanyActivationLinkGenerated",
-                    nameof(HomeService.Domain.Entities.CompanyApplication),
-                    response.Id,
-                    "Lien d'activation entreprise genere.",
-                    before: new { Status = result.PreviousStatus },
-                    after: new { response.Status, response.ExpiresAt, response.ActivationLink });
-                await db.SaveChangesAsync(cancellationToken);
                 return Results.Ok(response);
             }
             catch (Exception exception)
@@ -1852,27 +1817,6 @@ public static class AdminEndpoints
             prestation.IsActive,
             prestation.PriceMinAmount,
             prestation.PriceMaxAmount);
-    }
-
-    static void AddCompanyApplicationReviewAudit(
-        IAppDbContext db,
-        HttpRequest request,
-        string action,
-        string summary,
-        HomeService.Domain.Entities.CompanyApplication application,
-        CompanyApplicationStatus? previousStatus,
-        object? after)
-    {
-        AddAuditLog(
-            db,
-            request,
-            AuditActor.Admin(),
-            action,
-            nameof(HomeService.Domain.Entities.CompanyApplication),
-            application.Id,
-            summary,
-            before: new { Status = previousStatus },
-            after);
     }
 
     static string GetCompanyPortalBaseUrl(HttpRequest request, IConfiguration configuration)

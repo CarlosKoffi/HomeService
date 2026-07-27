@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Application.Companies;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
@@ -16,6 +17,13 @@ public sealed class AdminCompanyApplicationReviewService(
     private const string AdminActor = "admin";
 
     public async Task<AdminCompanyApplicationReviewResult> ApproveAsync(Guid applicationId, CancellationToken cancellationToken)
+        => await ApproveAsync(applicationId, null, null, cancellationToken);
+
+    public async Task<AdminCompanyApplicationReviewResult> ApproveAsync(
+        Guid applicationId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var application = await db.CompanyApplications
             .Include(application => application.Documents)
@@ -31,6 +39,7 @@ public sealed class AdminCompanyApplicationReviewService(
         }
 
         var previousStatus = application.Status;
+        var before = ToAuditSnapshot(application, previousStatus);
         application.Approve(AdminActor);
         AddStatusHistory(application.Id, previousStatus, application.Status, null);
 
@@ -52,6 +61,16 @@ public sealed class AdminCompanyApplicationReviewService(
             }
         }
 
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyApplicationApproved",
+            "Demande entreprise validee.",
+            application,
+            before,
+            new { application.Status, application.CompanyId });
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
     }
 
@@ -69,6 +88,14 @@ public sealed class AdminCompanyApplicationReviewService(
     }
 
     public async Task<AdminCompanyApplicationReviewResult> RejectAsync(Guid applicationId, string? note, CancellationToken cancellationToken)
+        => await RejectAsync(applicationId, note, null, null, cancellationToken);
+
+    public async Task<AdminCompanyApplicationReviewResult> RejectAsync(
+        Guid applicationId,
+        string? note,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var reviewNote = ReviewNoteValidator.GetRequired(note, "Une note est obligatoire pour refuser une demande entreprise.");
         if (reviewNote.ErrorMessage is not null)
@@ -83,6 +110,7 @@ public sealed class AdminCompanyApplicationReviewService(
         }
 
         var previousStatus = application.Status;
+        var before = ToAuditSnapshot(application, previousStatus);
         application.Reject(reviewNote.Value!, AdminActor);
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
         var preference = await deliveryPreferences.GetAsync(
@@ -101,10 +129,28 @@ public sealed class AdminCompanyApplicationReviewService(
             "Dossier entreprise refuse",
             reviewNote.Value!,
             "danger");
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyApplicationRejected",
+            "Demande entreprise refusee.",
+            application,
+            before,
+            new { application.Status, application.ReviewNote });
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
     }
 
     public async Task<AdminCompanyApplicationReviewResult> ReopenAsync(Guid applicationId, string? note, CancellationToken cancellationToken)
+        => await ReopenAsync(applicationId, note, null, null, cancellationToken);
+
+    public async Task<AdminCompanyApplicationReviewResult> ReopenAsync(
+        Guid applicationId,
+        string? note,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var reviewNote = ReviewNoteValidator.GetRequired(note, "Une note est obligatoire pour reouvrir une demande refusee.");
         if (reviewNote.ErrorMessage is not null)
@@ -119,6 +165,7 @@ public sealed class AdminCompanyApplicationReviewService(
         }
 
         var previousStatus = application.Status;
+        var before = ToAuditSnapshot(application, previousStatus);
         try
         {
             application.Reopen(reviewNote.Value!, AdminActor);
@@ -145,10 +192,28 @@ public sealed class AdminCompanyApplicationReviewService(
             "Dossier reouvert",
             reviewNote.Value!,
             "info");
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyApplicationReopened",
+            "Demande entreprise reouverte.",
+            application,
+            before,
+            new { application.Status, application.ReviewNote });
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
     }
 
     public async Task<AdminCompanyApplicationReviewResult> RequestMoreInformationAsync(Guid applicationId, string? note, CancellationToken cancellationToken)
+        => await RequestMoreInformationAsync(applicationId, note, null, null, cancellationToken);
+
+    public async Task<AdminCompanyApplicationReviewResult> RequestMoreInformationAsync(
+        Guid applicationId,
+        string? note,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var reviewNote = ReviewNoteValidator.GetRequired(note, "Une note est obligatoire pour demander un complement.");
         if (reviewNote.ErrorMessage is not null)
@@ -163,6 +228,7 @@ public sealed class AdminCompanyApplicationReviewService(
         }
 
         var previousStatus = application.Status;
+        var before = ToAuditSnapshot(application, previousStatus);
         application.RequestMoreInformation(reviewNote.Value!, AdminActor);
         AddStatusHistory(application.Id, previousStatus, application.Status, reviewNote.Value);
         var preference = await deliveryPreferences.GetAsync(
@@ -181,6 +247,16 @@ public sealed class AdminCompanyApplicationReviewService(
             "Complement demande",
             reviewNote.Value!,
             "warning");
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyApplicationMoreInformationRequested",
+            "Complement demande sur un dossier entreprise.",
+            application,
+            before,
+            new { application.Status, application.ReviewNote });
+        await db.SaveChangesAsync(cancellationToken);
+
         return AdminCompanyApplicationReviewResult.Ok(application, previousStatus);
     }
 
@@ -201,5 +277,41 @@ public sealed class AdminCompanyApplicationReviewService(
             newStatus,
             note,
             AdminActor));
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        string action,
+        string summary,
+        CompanyApplication application,
+        object before,
+        object after)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            action,
+            nameof(CompanyApplication),
+            application.Id,
+            summary,
+            auditContext,
+            before,
+            after));
+    }
+
+    private static object ToAuditSnapshot(CompanyApplication application, CompanyApplicationStatus status)
+    {
+        return new
+        {
+            application.Id,
+            Status = status,
+            application.CompanyId,
+            application.ReviewNote
+        };
     }
 }

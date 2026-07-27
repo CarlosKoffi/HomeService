@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Auditing;
 using HomeService.Application.Notifications;
 using HomeService.Application.Security;
 using HomeService.Contracts.Companies;
@@ -18,6 +19,16 @@ public sealed class CompanyActivationLinkGenerationService(
         int tokenLifetimeHours,
         string changedBy,
         CancellationToken cancellationToken)
+        => await GenerateAsync(applicationId, companyPortalBaseUrl, tokenLifetimeHours, changedBy, null, null, cancellationToken);
+
+    public async Task<CompanyActivationLinkGenerationResult> GenerateAsync(
+        Guid applicationId,
+        string companyPortalBaseUrl,
+        int tokenLifetimeHours,
+        string changedBy,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         const int maxAttempts = 3;
         for (var attempt = 0; attempt < maxAttempts; attempt++)
@@ -29,6 +40,8 @@ public sealed class CompanyActivationLinkGenerationService(
                     companyPortalBaseUrl,
                     tokenLifetimeHours,
                     changedBy,
+                    actor,
+                    auditContext,
                     cancellationToken);
             }
             catch (DbUpdateConcurrencyException) when (attempt < maxAttempts - 1 && db is DbContext context)
@@ -49,6 +62,8 @@ public sealed class CompanyActivationLinkGenerationService(
         string companyPortalBaseUrl,
         int tokenLifetimeHours,
         string changedBy,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
         var now = DateTimeOffset.UtcNow;
@@ -106,6 +121,14 @@ public sealed class CompanyActivationLinkGenerationService(
             activationLink,
             expiresAt,
             preference));
+        AddAuditLog(
+            actor,
+            auditContext,
+            application,
+            previousStatus,
+            CompanyApplicationStatus.ActivationSent,
+            expiresAt,
+            activationLink);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -118,5 +141,30 @@ public sealed class CompanyActivationLinkGenerationService(
                 expiresAt,
                 activationLink),
             previousStatus);
+    }
+
+    private void AddAuditLog(
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CompanyApplication application,
+        CompanyApplicationStatus previousStatus,
+        CompanyApplicationStatus status,
+        DateTimeOffset expiresAt,
+        string activationLink)
+    {
+        if (actor is null)
+        {
+            return;
+        }
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            "AdminCompanyActivationLinkGenerated",
+            nameof(CompanyApplication),
+            application.Id,
+            "Lien d'activation entreprise genere.",
+            auditContext,
+            before: new { Status = previousStatus },
+            after: new { Status = status, ExpiresAt = expiresAt, ActivationLink = activationLink }));
     }
 }
