@@ -1,0 +1,36 @@
+name: Build and tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify:
+    name: Compile, unit tests and integration workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore HomeService.sln
+
+      - name: Build
+        run: dotnet build HomeService.sln --configuration Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build --logger "trx;LogFileName=unit-tests.trx"
+
+      - name: Integration workflow tests
+        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --logger "trx;LogFileName=integration-tests.trx"
