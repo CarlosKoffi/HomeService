@@ -34,6 +34,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     public async Task<AdminCompanyListResponse?> GetCompaniesAsync(
         string? status,
         string? search,
+        string? service,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -41,6 +42,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var query = new List<string>();
         AddQueryValue(query, "status", status);
         AddQueryValue(query, "search", search);
+        AddQueryValue(query, "service", service);
 
         var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
         return await GetJsonAsync<AdminCompanyListResponse>($"/api/admin/companies{suffix}", cancellationToken);

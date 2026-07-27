@@ -306,10 +306,11 @@ public static class AdminEndpoints
         admin.MapGet("/companies", async (
             string? status,
             string? search,
+            string? service,
             AdminQueryService queryService,
             CancellationToken cancellationToken) =>
         {
-            var response = await queryService.ListCompaniesAsync(status, search, cancellationToken);
+            var response = await queryService.ListCompaniesAsync(status, search, service, cancellationToken);
             return Results.Ok(response);
         })
         .WithName("ListAdminCompanies")

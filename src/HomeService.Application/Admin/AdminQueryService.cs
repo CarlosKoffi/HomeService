@@ -71,6 +71,7 @@ public sealed class AdminQueryService(IAppDbContext db)
     public async Task<AdminCompanyListResponse> ListCompaniesAsync(
         string? status,
         string? search,
+        string? service,
         CancellationToken cancellationToken)
     {
         var companiesQuery = db.Companies.AsNoTracking();
@@ -88,6 +89,18 @@ public sealed class AdminQueryService(IAppDbContext db)
                 || company.PhoneNumber.ToLower().Contains(term)
                 || (company.Email != null && company.Email.ToLower().Contains(term))
                 || (company.City != null && company.City.ToLower().Contains(term)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(service))
+        {
+            var serviceTerm = service.Trim().ToLowerInvariant();
+            companiesQuery = companiesQuery.Where(company =>
+                (company.PlannedServices != null && company.PlannedServices.ToLower().Contains(serviceTerm))
+                || db.ProviderServices.Any(providerService =>
+                    providerService.CompanyId == company.Id
+                    && providerService.IsActive
+                    && providerService.Service != null
+                    && providerService.Service.Name.ToLower().Contains(serviceTerm)));
         }
 
         var companies = await companiesQuery

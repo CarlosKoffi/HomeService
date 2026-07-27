@@ -141,6 +141,31 @@ public sealed class AdminQueryServiceTests
     }
 
     [Fact]
+    public async Task ListCompaniesAsync_ShouldFilterByDeclaredService()
+    {
+        await using var db = CreateDbContext();
+        var laundryCompany = new Company("Pressing Abidjan", "0700000010", "pressing@example.ci");
+        laundryCompany.UpdateOperations("Cocody", "Blanchisserie, Repassage");
+        var gardeningCompany = new Company("Jardin Plus", "0700000011", "jardin@example.ci");
+        gardeningCompany.UpdateOperations("Marcory", "Jardinage");
+
+        db.Companies.AddRange(laundryCompany, gardeningCompany);
+        await db.SaveChangesAsync();
+
+        var serviceUnderTest = new AdminQueryService(db);
+
+        var response = await serviceUnderTest.ListCompaniesAsync(
+            status: null,
+            search: null,
+            service: "repassage",
+            CancellationToken.None);
+
+        var company = Assert.Single(response.Items);
+        Assert.Equal(laundryCompany.Id, company.Id);
+        Assert.Contains("Repassage", company.Services);
+    }
+
+    [Fact]
     public async Task MissionQueries_ShouldExposeServicePrestationNames()
     {
         await using var db = CreateDbContext();
