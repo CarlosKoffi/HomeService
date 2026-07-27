@@ -276,8 +276,21 @@ public sealed class ClientMissionWorkflowIntegrationTests
         var customerNotifications = await db.NotificationOutboxMessages
             .Where(message => message.RelatedEntityId == completedMission.MissionId)
             .ToListAsync();
-        Assert.Contains(customerNotifications, message => message.Channel == NotificationChannel.MobilePush);
-        Assert.Contains(customerNotifications, message => message.Channel == NotificationChannel.WhatsApp);
+        var refundPush = Assert.Single(customerNotifications, message =>
+            message.Channel == NotificationChannel.MobilePush
+            && message.Subject == "Remboursement valide");
+        Assert.Contains("XOF", refundPush.Body);
+        Assert.Contains(mission.MissionNumber, refundPush.Body);
+        Assert.Contains($$""""missionNumber":"{{mission.MissionNumber}}"""", refundPush.MetadataJson);
+        Assert.Contains("\"refundAmount\":3000", refundPush.MetadataJson);
+
+        var refundWhatsApp = Assert.Single(customerNotifications, message =>
+            message.Channel == NotificationChannel.WhatsApp
+            && message.Subject == "Remboursement valide");
+        Assert.Equal(ClientPhoneNumber, refundWhatsApp.Recipient);
+        Assert.Contains("XOF", refundWhatsApp.Body);
+        Assert.Contains(mission.MissionNumber, refundWhatsApp.MetadataJson);
+
         Assert.Contains(await db.CompanyPortalNotifications.ToListAsync(), notification =>
             notification.CompanyId == completedMission.CompanyId
             && notification.Type == "MissionDisputeResolved");
