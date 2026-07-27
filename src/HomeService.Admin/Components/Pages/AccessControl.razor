@@ -27,6 +27,21 @@
     </button>
 </nav>
 
+@if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <p class="admin-message success-message">@SuccessMessage</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(ActionErrorMessage))
+{
+    <p class="admin-message error-message">@ActionErrorMessage</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
 @if (ActiveTab == AccessAdminTab.Overview)
 {
     <section class="info-panel">
@@ -103,7 +118,7 @@
                 Description
                 <input type="text" @bind="NewRoleDescription" placeholder="Ce que ce role peut faire" />
             </label>
-            <button type="button" @onclick="CreateRoleAsync" disabled="@IsBusy">Creer le role</button>
+            <button type="button" @onclick="CreateRoleAsync" disabled="@IsBusy">Creer ce role</button>
         </div>
 
         <div class="role-list">
@@ -132,7 +147,7 @@
             {
                 @foreach (var role in Roles)
                 {
-                    <div>
+                    <div class="@GetRoleCardClass(role)">
                         <strong>@role.Name</strong>
                         <p>@role.Description</p>
                         <span>@GetRolePermissionSummary(role)</span>
@@ -160,19 +175,22 @@
                     }
                 </select>
             </label>
-            <button type="button" @onclick="SaveSelectedRolePermissionsAsync" disabled="@IsBusy">Sauver les permissions</button>
+            <button type="button" @onclick="SaveSelectedRolePermissionsAsync" disabled="@IsBusy">Enregistrer les droits</button>
         </div>
 
         <div class="permission-matrix">
-            <div class="matrix-head">Module</div>
-            <div class="matrix-head">Voir</div>
-            <div class="matrix-head">Editer</div>
-            <div class="matrix-head">Valider</div>
+            <div class="matrix-head">Module admin</div>
+            <div class="matrix-head">Consulter</div>
+            <div class="matrix-head">Modifier</div>
+            <div class="matrix-head">Decider</div>
             @foreach (var module in Modules)
             {
-                <div>@module.Name</div>
-                <label><input type="checkbox" checked="@HasViewPermission(module.Id)" @onchange="args => ToggleViewPermission(module.Id, args)" /> Voir</label>
-                <label><input type="checkbox" checked="@HasEditPermission(module.Id)" @onchange="args => ToggleEditPermission(module.Id, args)" /> Editer</label>
+                <div class="module-cell">
+                    <strong>@module.Name</strong>
+                    <small>@GetModuleHint(module.Name)</small>
+                </div>
+                <label><input type="checkbox" checked="@HasViewPermission(module.Id)" @onchange="args => ToggleViewPermission(module.Id, args)" /> Lire</label>
+                <label><input type="checkbox" checked="@HasEditPermission(module.Id)" @onchange="args => ToggleEditPermission(module.Id, args)" /> Agir</label>
                 <label><input type="checkbox" checked="@HasApprovePermission(module.Id)" @onchange="args => ToggleApprovePermission(module.Id, args)" /> Valider</label>
             }
         </div>
@@ -186,7 +204,7 @@
     <div class="section-heading">
         <div>
             <h2>Administrateurs</h2>
-            <p class="section-help">Liste des comptes internes. Plus tard, invitation par email et activation avec mot de passe.</p>
+            <p class="section-help">Creez les comptes internes, attribuez leurs roles et suspendez rapidement un acces si besoin.</p>
         </div>
     </div>
 
@@ -212,18 +230,8 @@
                 </label>
             }
         </div>
-        <button type="button" @onclick="CreateAdminAsync" disabled="@IsBusy">Inviter un admin</button>
+        <button type="button" @onclick="CreateAdminAsync" disabled="@IsBusy">Creer l'acces admin</button>
     </div>
-
-    @if (!string.IsNullOrWhiteSpace(SuccessMessage))
-    {
-        <p class="admin-message">@SuccessMessage</p>
-    }
-
-    @if (!string.IsNullOrWhiteSpace(ActionErrorMessage))
-    {
-        <p class="admin-message error-message">@ActionErrorMessage</p>
-    }
 
     @foreach (var admin in Admins)
     {
@@ -245,7 +253,7 @@
                     </label>
                 }
             </div>
-            <button type="button" @onclick="() => SaveAdminRoleAsync(admin)" disabled="@IsBusy">Modifier les acces</button>
+            <button type="button" @onclick="() => SaveAdminRoleAsync(admin)" disabled="@IsBusy">Enregistrer</button>
             @if (admin.IsActive)
             {
                 <button type="button" class="ghost-danger-button" @onclick="() => DeactivateAdminAsync(admin)" disabled="@IsBusy">Suspendre</button>
@@ -550,6 +558,31 @@
             .Take(4);
 
         return string.Join(", ", modules);
+    }
+
+    private static string GetRoleCardClass(AdminRoleSummaryResponse role)
+    {
+        return role.IsActive ? "role-card active" : "role-card inactive";
+    }
+
+    private static string GetModuleHint(string moduleName)
+    {
+        return moduleName switch
+        {
+            "Dashboard" => "Vue globale et indicateurs",
+            "CompanyApplications" => "Dossiers entreprises a verifier",
+            "Companies" => "Entreprises partenaires",
+            "Providers" => "Prestataires et interimaires",
+            "Missions" => "Demandes, devis, litiges et annulations",
+            "Payments" => "Encaissements et commissions",
+            "Services" => "Catalogue services et prestations",
+            "Notifications" => "Modeles, regles et envois",
+            "Localization" => "Textes et traductions",
+            "Cms" => "Contenu editorial des sites",
+            "AccessControl" => "Admins, roles et permissions",
+            "AuditLogs" => "Journal des actions sensibles",
+            _ => "Module operationnel"
+        };
     }
 
     private static string GetAdminRoleLabel(AdminUserSummaryResponse admin)
