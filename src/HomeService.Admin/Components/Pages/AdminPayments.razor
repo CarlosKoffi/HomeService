@@ -10,7 +10,7 @@
     <div>
         <p class="eyebrow">Finance</p>
         <h1>Encaissements</h1>
-        <p class="lead">Suivez les paiements, la carte bancaire, Mobile Money et le chiffre d'affaires wÃ©lÃ©.</p>
+        <p class="lead">Suivez les paiements, la carte bancaire, Mobile Money et le chiffre d'affaires wélé.</p>
     </div>
     <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
 </div>
@@ -23,7 +23,7 @@
             <strong>@Money(Snapshot.Stats.TotalAmount)</strong>
         </button>
         <button type="button" class="@GetFinanceFocusClass("wele")" @onclick='() => ApplyFinanceFocusAsync("wele")'>
-            <span>CA wÃ©lÃ©</span>
+            <span>CA wélé</span>
             <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
         </button>
         <button type="button" class="@GetFinanceFocusClass("payout")" @onclick='() => ApplyFinanceFocusAsync("payout")'>
@@ -47,7 +47,7 @@
     <section class="admin-metric-grid compact payment-admin-metrics">
         <article class="payment-admin-revenue">
             <div>
-                <span>CA wÃ©lÃ©</span>
+                <span>CA wélé</span>
                 <strong>@Money(Snapshot.Stats.PlatformCommissionAmount)</strong>
                 <small>Commission encaissee ou bloquee</small>
             </div>
