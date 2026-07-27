@@ -128,7 +128,7 @@
                 <div class="operator-meta">
                     <span class="@GetStatusClass(company.Status)">@TranslateStatus(company.Status)</span>
                     <small>@FormatAssignmentMode(company.AssignmentMode)</small>
-                    <small>@FormatDispatchPriority(company.MissionDispatchPriority)</small>
+                    <small title="Plus le score est bas, plus l'entreprise recoit les demandes tot.">@FormatDispatchPriority(company.MissionDispatchPriority)</small>
                 </div>
                 <div class="operator-kpis">
                     <span>@company.ActiveProviderCount / @company.ProviderCount prestataires</span>
@@ -221,12 +221,13 @@
     {
         var label = priority switch
         {
-            <= 25 => "Priorite haute",
-            <= 75 => "Priorite normale",
-            _ => "Priorite basse"
+            <= 25 => "Reception tres prioritaire",
+            <= 75 => "Reception prioritaire",
+            <= 150 => "Reception standard",
+            _ => "Reception limitee"
         };
 
-        return $"{label} - score {priority}";
+        return $"{label} - score {priority}, plus bas = plus tot";
     }
 
     private static string TranslateStatus(string status)

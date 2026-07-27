@@ -132,7 +132,7 @@ else
                 </dl>
                 <div class="admin-inline-settings">
                     <label>
-                        Priorite de reception
+                        Score de reception mission
                         <input type="number" min="0" max="9999" @bind="DispatchPriority" disabled="@IsDispatchSettingsBusy" />
                     </label>
                     <label class="checkbox-line">
@@ -143,8 +143,8 @@ else
                         Enregistrer
                     </button>
                     <small>
-                        Plus le chiffre est bas, plus l'entreprise recoit les demandes tot.
-                        0-25 tres prioritaire, 26-75 prioritaire, 76-150 standard, au-dela faible priorite.
+                        @FormatDispatchPriority(DispatchPriority). Plus le score est bas, plus l'entreprise est proposee tot.
+                        0-25 tres prioritaire, 26-75 prioritaire, 76-150 standard, au-dela reception limitee.
                     </small>
                 </div>
             </article>
@@ -637,10 +637,10 @@ else
             <= 25 => "Tres prioritaire",
             <= 75 => "Prioritaire",
             <= 150 => "Standard",
-            _ => "Faible priorite"
+            _ => "Reception limitee"
         };
 
-        return $"{label} ({priority})";
+        return $"{label} - score {priority}";
     }
 
     private static string FormatSkills(IReadOnlyList<string> services, IReadOnlyList<string> prestations)
