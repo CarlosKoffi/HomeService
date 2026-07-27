@@ -2363,6 +2363,74 @@ h3 {
     padding: 1rem;
 }
 
+.proposal-review-row {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(260px, 1fr) minmax(110px, .18fr) auto;
+    padding: 1rem 1.1rem;
+}
+
+.proposal-review-row p {
+    color: #475569;
+    font-size: .9rem;
+    font-weight: 650;
+    margin: .35rem 0 0;
+}
+
+.proposal-review-meta {
+    background: #f8fafc;
+    border: 1px solid #eef2f7;
+    border-radius: 14px;
+    display: grid;
+    gap: .2rem;
+    justify-items: center;
+    padding: .65rem .8rem;
+}
+
+.proposal-review-meta span {
+    color: #64748b;
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.proposal-review-meta strong {
+    color: #0f172a;
+    font-size: .92rem;
+}
+
+.proposal-row-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: flex-end;
+}
+
+.proposal-row-actions button {
+    background: #071027;
+    border: 1px solid #071027;
+    border-radius: 999px;
+    color: #fff;
+    cursor: pointer;
+    font: inherit;
+    font-size: .84rem;
+    font-weight: 900;
+    min-height: 2.45rem;
+    padding: .55rem .9rem;
+}
+
+.proposal-row-actions .light-action {
+    background: #fff;
+    border-color: #dbe3ef;
+    color: #0f172a;
+}
+
 .proposal-review-main {
     align-content: start;
     display: grid;
@@ -2514,6 +2582,75 @@ h3 {
 .proposal-primary-action button:disabled {
     cursor: wait;
     opacity: .6;
+}
+
+.admin-modal-backdrop {
+    align-items: center;
+    background: rgba(15, 23, 42, .42);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 1.5rem;
+    position: fixed;
+    z-index: 50;
+}
+
+.admin-modal {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 24px;
+    box-shadow: 0 28px 80px rgba(15, 23, 42, .24);
+    max-height: calc(100vh - 3rem);
+    overflow: auto;
+    width: min(760px, 100%);
+}
+
+.admin-modal > header {
+    align-items: flex-start;
+    border-bottom: 1px solid #eef2f7;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    padding: 1.2rem 1.25rem;
+}
+
+.admin-modal > header h2 {
+    color: #0f172a;
+    font-size: 1.35rem;
+    margin: .2rem 0;
+}
+
+.admin-modal > header p {
+    color: #475569;
+    font-weight: 700;
+    margin: 0;
+}
+
+.admin-modal .icon-button {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 999px;
+    color: #0f172a;
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 900;
+    height: 2.25rem;
+    justify-content: center;
+    width: 2.25rem;
+}
+
+.proposal-decision-modal .proposal-suggestions {
+    border-bottom: 1px solid #eef2f7;
+    margin: 0;
+    padding: 1rem 1.25rem;
+}
+
+.proposal-decision-panel.modal-panel {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 1.25rem;
 }
 
 .service-catalog-card {

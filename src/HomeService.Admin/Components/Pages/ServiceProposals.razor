@@ -103,116 +103,145 @@
         <div class="proposal-review-list">
             @foreach (var proposal in CompanyServiceProposals)
             {
-                var draft = GetProposalDraft(proposal);
+                var bestSuggestion = proposal.Suggestions.OrderByDescending(suggestion => suggestion.Score).FirstOrDefault();
 
-                <article class="proposal-review-card" @key="proposal.Id">
-                    <div class="proposal-review-main">
+                <article class="proposal-review-row" @key="proposal.Id">
+                    <div>
                         <span class="proposal-company">@proposal.CompanyName</span>
                         <div class="proposal-review-title">
                             <span class="status-pill pending">@GetProposalStatusLabel(proposal.MatchStatus)</span>
                             <h3>@proposal.RawName</h3>
                         </div>
-                        <p>Libelle envoye par l'entreprise. Vous pouvez corriger le nom avant de le classer.</p>
-                        <small>Confiance: @(proposal.MatchScore?.ToString() ?? "a verifier")</small>
-                        @if (proposal.Suggestions.Count > 0)
-                        {
-                            <div class="proposal-suggestions">
-                                <span>Suggestion</span>
-                                @foreach (var suggestion in proposal.Suggestions.Take(3))
-                                {
-                                    <button type="button" class="light-action" @onclick="() => ApplySuggestion(proposal.Id, suggestion)">
-                                        @FormatSuggestion(suggestion)
-                                    </button>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="proposal-suggestions empty">
-                                <span>Aucune suggestion fiable</span>
-                            </div>
-                        }
+                        <p>@(bestSuggestion is null ? "Aucune suggestion fiable." : $"Suggestion: {FormatSuggestion(bestSuggestion)}")</p>
                     </div>
-                    <div class="proposal-decision-panel">
-                        <div class="proposal-step-title">
-                            <strong>Decision catalogue</strong>
-                            <span>@GetProposalActionHelp(draft.Action)</span>
-                        </div>
-                        <label class="wide">
-                            Nom final
-                            <input type="text" @bind="draft.ProposedName" placeholder="Nom a utiliser dans le catalogue" />
-                        </label>
-                        <label>
-                            Action
-                            <select @bind="draft.Action">
-                                <option value="@ProposalAction.Attach">Rattacher a l'existant</option>
-                                <option value="@ProposalAction.CreatePrestation">Nouvelle prestation</option>
-                                <option value="@ProposalAction.CreateService">Nouveau service</option>
-                            </select>
-                        </label>
-                        <label class="wide">
-                            Note interne
-                            <input type="text" @bind="draft.Description" placeholder="Optionnel, utile pour expliquer le classement" />
-                        </label>
-
-                        @if (draft.Action == ProposalAction.Attach)
+                    <div class="proposal-review-meta">
+                        <span>Confiance</span>
+                        <strong>@(proposal.MatchScore?.ToString() ?? "A verifier")</strong>
+                    </div>
+                    <div class="proposal-row-actions">
+                        @if (bestSuggestion is not null)
                         {
-                            <label class="wide">
-                                Element du catalogue
-                                <select @bind="draft.Selection">
-                                    <option value="">Choisir un service ou une prestation</option>
-                                    @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
-                                    {
-                                        <option value="@BuildServiceSelection(service.Id)">@service.Name</option>
-                                        @foreach (var prestation in service.Prestations.Where(item => item.IsActive).OrderBy(item => item.Name))
-                                        {
-                                            <option value="@BuildPrestationSelection(service.Id, prestation.Id)">@service.Name - @prestation.Name</option>
-                                        }
-                                    }
-                                </select>
-                            </label>
-                        }
-                        else if (draft.Action == ProposalAction.CreatePrestation)
-                        {
-                            <label class="wide">
-                                Service parent
-                                <select @bind="draft.CreateUnderServiceId">
-                                    <option value="">Choisir le service parent</option>
-                                    @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
-                                    {
-                                        <option value="@service.Id">@service.Name</option>
-                                    }
-                                </select>
-                            </label>
-                        }
-                        else
-                        {
-                            <label>
-                                Icone
-                                <input type="text" @bind="draft.IconName" placeholder="Ex: briefcase" />
-                            </label>
-                            <label>
-                                Prix min
-                                <input type="number" min="0" step="100" @bind="draft.PriceMinAmount" />
-                            </label>
-                            <label>
-                                Prix max
-                                <input type="number" min="0" step="100" @bind="draft.PriceMaxAmount" />
-                            </label>
-                        }
-
-                        <div class="proposal-primary-action">
-                            <p>@GetProposalActionSummary(draft.Action)</p>
-                            <button type="button" @onclick="() => ExecuteProposalActionAsync(proposal)" disabled="@IsSaving">
-                                @GetProposalActionLabel(draft.Action)
+                            <button type="button" class="light-action" @onclick="() => ApplySuggestion(proposal.Id, bestSuggestion)">
+                                Utiliser suggestion
                             </button>
-                        </div>
+                        }
+                        <button type="button" @onclick="() => OpenProposalDecision(proposal.Id)">
+                            Traiter la demande
+                        </button>
                     </div>
                 </article>
             }
         </div>
     }
 </section>
+}
+
+@if (SelectedProposalId is not null
+    && CompanyServiceProposals.FirstOrDefault(proposal => proposal.Id == SelectedProposalId.Value) is { } selectedProposal)
+{
+    var draft = GetProposalDraft(selectedProposal);
+
+    <div class="admin-modal-backdrop" @onclick="CloseProposalDecision">
+        <section class="admin-modal proposal-decision-modal" @onclick:stopPropagation="true" aria-modal="true" role="dialog">
+            <header>
+                <div>
+                    <span class="proposal-company">@selectedProposal.CompanyName</span>
+                    <h2>Traiter le service propose</h2>
+                    <p>@selectedProposal.RawName</p>
+                </div>
+                <button type="button" class="icon-button" @onclick="CloseProposalDecision">X</button>
+            </header>
+
+            @if (selectedProposal.Suggestions.Count > 0)
+            {
+                <div class="proposal-suggestions">
+                    <span>Suggestions rapides</span>
+                    @foreach (var suggestion in selectedProposal.Suggestions.Take(4))
+                    {
+                        <button type="button" class="light-action" @onclick="() => ApplySuggestion(selectedProposal.Id, suggestion)">
+                            @FormatSuggestion(suggestion)
+                        </button>
+                    }
+                </div>
+            }
+
+            <div class="proposal-decision-panel modal-panel">
+                <div class="proposal-step-title">
+                    <strong>Decision catalogue</strong>
+                    <span>@GetProposalActionHelp(draft.Action)</span>
+                </div>
+                <label class="wide">
+                    Nom final
+                    <input type="text" @bind="draft.ProposedName" placeholder="Nom a utiliser dans le catalogue" />
+                </label>
+                <label>
+                    Action
+                    <select @bind="draft.Action">
+                        <option value="@ProposalAction.Attach">Rattacher a l'existant</option>
+                        <option value="@ProposalAction.CreatePrestation">Nouvelle prestation</option>
+                        <option value="@ProposalAction.CreateService">Nouveau service</option>
+                    </select>
+                </label>
+                <label class="wide">
+                    Note interne
+                    <input type="text" @bind="draft.Description" placeholder="Optionnel, utile pour expliquer le classement" />
+                </label>
+
+                @if (draft.Action == ProposalAction.Attach)
+                {
+                    <label class="wide">
+                        Element du catalogue
+                        <select @bind="draft.Selection">
+                            <option value="">Choisir un service ou une prestation</option>
+                            @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
+                            {
+                                <option value="@BuildServiceSelection(service.Id)">@service.Name</option>
+                                @foreach (var prestation in service.Prestations.Where(item => item.IsActive).OrderBy(item => item.Name))
+                                {
+                                    <option value="@BuildPrestationSelection(service.Id, prestation.Id)">@service.Name - @prestation.Name</option>
+                                }
+                            }
+                        </select>
+                    </label>
+                }
+                else if (draft.Action == ProposalAction.CreatePrestation)
+                {
+                    <label class="wide">
+                        Service parent
+                        <select @bind="draft.CreateUnderServiceId">
+                            <option value="">Choisir le service parent</option>
+                            @foreach (var service in Services.Where(item => item.IsActive).OrderBy(item => item.Name))
+                            {
+                                <option value="@service.Id">@service.Name</option>
+                            }
+                        </select>
+                    </label>
+                }
+                else
+                {
+                    <label>
+                        Icone
+                        <input type="text" @bind="draft.IconName" placeholder="Ex: briefcase" />
+                    </label>
+                    <label>
+                        Prix min
+                        <input type="number" min="0" step="100" @bind="draft.PriceMinAmount" />
+                    </label>
+                    <label>
+                        Prix max
+                        <input type="number" min="0" step="100" @bind="draft.PriceMaxAmount" />
+                    </label>
+                }
+
+                <div class="proposal-primary-action wide">
+                    <p>@GetProposalActionSummary(draft.Action)</p>
+                    <button type="button" @onclick="() => ExecuteProposalActionAsync(selectedProposal)" disabled="@IsSaving">
+                        @GetProposalActionLabel(draft.Action)
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
 }
 
 @if (ActiveTab == ServiceAdminTab.Create)
@@ -573,6 +602,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private bool IsLoading { get; set; } = true;
     private bool IsSaving { get; set; }
     private ServiceAdminTab ActiveTab { get; set; } = ServiceAdminTab.Proposals;
+    private Guid? SelectedProposalId { get; set; }
 
     private IReadOnlyList<ServiceCatalogInsightResponse> ServiceInsights
     {
@@ -683,6 +713,16 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         ProposalDrafts[proposalId] = draft;
     }
 
+    private void OpenProposalDecision(Guid proposalId)
+    {
+        SelectedProposalId = proposalId;
+    }
+
+    private void CloseProposalDecision()
+    {
+        SelectedProposalId = null;
+    }
+
     private static string BuildDefaultProposalName(
         CompanyServiceProposalResponse proposal,
         CompanyServiceProposalSuggestionResponse? suggestion)
@@ -734,6 +774,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 proposalId,
                 new AttachCompanyServiceProposalRequest(selection.ServiceId, selection.ServicePrestationId));
             Message = "Libelle rattache au catalogue.";
+            SelectedProposalId = null;
         });
     }
 
@@ -762,6 +803,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 proposal.Id,
                 new CreatePrestationFromCompanyServiceProposalRequest(serviceId, CleanProposalName(draft, proposal), draft.Description));
             Message = "Prestation creee et libelle rattache.";
+            SelectedProposalId = null;
         });
     }
 
@@ -787,6 +829,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                     draft.PriceMaxAmount,
                     "XOF"));
             Message = "Service cree et proposition rattachee.";
+            SelectedProposalId = null;
         });
     }
 
