@@ -237,6 +237,97 @@ public sealed class AdminQueryServiceTests
             && line.Amount == -500);
     }
 
+    [Fact]
+    public async Task MissionQueries_WhenSearchingByMissionNumber_ReturnsSupportReadySummaryAndDetail()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("CI Home Service", "0707000001", "contact@cihome.ci");
+        company.Approve();
+        var provider = new ProviderProfile(
+            company.Id,
+            "Awa",
+            "Konate",
+            "0707000002",
+            "awa.konate@example.ci",
+            new DateOnly(1992, 3, 14),
+            "Cocody",
+            ProviderGender.Female,
+            ProviderEmploymentType.CompanyEmployee,
+            yearsOfExperience: 5,
+            missionLatitude: 5.360m,
+            missionLongitude: -4.008m,
+            missionRadiusKm: 8);
+        provider.Approve();
+        var service = new Service("Plomberie", "Depannage plomberie", createdByCompanyId: null);
+        var customer = new CustomerProfile("Jean", "Kouassi", "0707000003");
+        var mission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Scheduled,
+            PaymentMethod.MobileMoney,
+            DateTimeOffset.UtcNow.AddHours(4),
+            estimatedDurationMinutes: 120,
+            description: "Fuite sous evier avec piece a remplacer");
+        mission.SetServiceLocation("Cocody Angre 7e tranche", 5.372m, -3.996m);
+        mission.AssignWithCompanyQuote(
+            provider.Id,
+            company.Id,
+            quotedAmount: 18_000,
+            maxAllowedAmount: 20_000,
+            overMaxJustification: null,
+            partsEstimateAmount: 3_500,
+            partsDescription: "Flexible et joint");
+        mission.MarkProviderAccepted(provider.Id, company.Id);
+        mission.AcceptCompanyQuote();
+        mission.ConfirmByCustomer(
+            platformCommissionAmount: 2_700,
+            transportFeeAmount: 1_000,
+            platformCommissionRateBasisPoints: 1500);
+
+        db.Companies.Add(company);
+        db.Providers.Add(provider);
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Missions.Add(mission);
+        await db.SaveChangesAsync();
+
+        var serviceUnderTest = new AdminQueryService(db);
+
+        var missionList = await serviceUnderTest.ListMissionsAsync(
+            status: MissionStatus.Accepted.ToString(),
+            search: mission.MissionNumber,
+            CancellationToken.None);
+        var summary = Assert.Single(missionList.Items);
+        var missionDetail = await serviceUnderTest.GetMissionAsync(mission.Id, CancellationToken.None);
+
+        Assert.Equal(mission.Id, summary.Id);
+        Assert.Equal(mission.MissionNumber, summary.MissionNumber);
+        Assert.Equal("CI Home Service", summary.CompanyName);
+        Assert.Equal("Jean Kouassi", summary.CustomerName);
+        Assert.Equal("Awa Konate", summary.ProviderName);
+        Assert.Equal(PaymentStatus.Authorized.ToString(), summary.PaymentStatus);
+        Assert.Equal(PaymentMethod.MobileMoney.ToString(), summary.PaymentMethod);
+        Assert.Equal(18_000, summary.Amount);
+        Assert.Equal("Cocody Angre 7e tranche", summary.ServiceAddress);
+        Assert.NotNull(missionDetail);
+        Assert.Equal(mission.MissionNumber, missionDetail.MissionNumber);
+        Assert.Equal(18_000, missionDetail.CompanyQuotedAmount);
+        Assert.Equal(3_500, missionDetail.PartsEstimateAmount);
+        Assert.Equal(2_700, missionDetail.PlatformCommissionAmount);
+        Assert.Equal(15_300, missionDetail.CompanyPayoutAmount);
+        Assert.Equal(1_000, missionDetail.TransportFeeAmount);
+        Assert.True(missionDetail.CanRevealContactDetails);
+        Assert.Contains(missionDetail.FinancialLines, line =>
+            line.LineType == MissionFinancialLineType.PartsEstimate.ToString()
+            && line.Amount == 3_500);
+        Assert.Contains(missionDetail.FinancialLines, line =>
+            line.LineType == MissionFinancialLineType.PlatformCommission.ToString()
+            && line.Amount == 2_700);
+        Assert.Contains(missionDetail.FinancialLines, line =>
+            line.LineType == MissionFinancialLineType.CompanyPayout.ToString()
+            && line.Amount == 15_300);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
