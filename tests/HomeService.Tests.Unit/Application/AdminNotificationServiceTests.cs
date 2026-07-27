@@ -80,6 +80,55 @@ public sealed class AdminNotificationServiceTests
         Assert.Equal("notification-audit", log.CorrelationId);
     }
 
+    [Fact]
+    public async Task CancelAsync_WhenAuditActorIsProvided_CancelsAndCreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var notification = CreateOutboxNotification();
+        db.NotificationOutboxMessages.Add(notification);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminNotificationService(db).CancelAsync(
+            notification.Id,
+            "Doublon traite par telephone",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "notification-cancel"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminNotificationActionStatus.Ok, result.Status);
+        Assert.Equal(NotificationStatus.Cancelled.ToString(), result.Response!.Status);
+        Assert.Equal("Doublon traite par telephone", notification.FailureReason);
+
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminNotificationCancelled", log.Action);
+        Assert.Equal(notification.Id, log.EntityId);
+        Assert.Equal("notification-cancel", log.CorrelationId);
+    }
+
+    [Fact]
+    public async Task MarkSentAsync_WhenAuditActorIsProvided_MarksSentAndCreatesAuditLog()
+    {
+        await using var db = CreateDbContext();
+        var notification = CreateOutboxNotification();
+        db.NotificationOutboxMessages.Add(notification);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminNotificationService(db).MarkSentAsync(
+            notification.Id,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "notification-sent"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminNotificationActionStatus.Ok, result.Status);
+        Assert.Equal(NotificationStatus.Sent.ToString(), result.Response!.Status);
+        Assert.NotNull(notification.SentAt);
+
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminNotificationMarkedSent", log.Action);
+        Assert.Equal(notification.Id, log.EntityId);
+        Assert.Equal("notification-sent", log.CorrelationId);
+    }
+
     private static NotificationOutboxMessage CreateOutboxNotification()
         => new(
             NotificationChannel.Email,
