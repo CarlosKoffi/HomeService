@@ -522,6 +522,29 @@
 
 @if (ActiveNotificationSection == "external")
 {
+    <section class="notification-command-center compact">
+        <article>
+            <span>A envoyer</span>
+            <strong>@CountFilteredExternalByStatus("Pending")</strong>
+            <small>@GetExternalCounterScope()</small>
+        </article>
+        <article>
+            <span>Envoyees</span>
+            <strong>@CountFilteredExternalByStatus("Sent")</strong>
+            <small>@GetExternalCounterScope()</small>
+        </article>
+        <article>
+            <span>En erreur</span>
+            <strong>@CountFilteredExternalByStatus("Failed")</strong>
+            <small>@GetExternalCounterScope()</small>
+        </article>
+        <article>
+            <span>Annulees</span>
+            <strong>@CountFilteredExternalByStatus("Cancelled")</strong>
+            <small>@GetExternalCounterScope()</small>
+        </article>
+    </section>
+
     <section class="notification-filters">
         <label>
             Recherche
@@ -614,6 +637,29 @@
 
 @if (ActiveNotificationSection == "app")
 {
+    <section class="notification-command-center compact">
+        <article>
+            <span>A envoyer</span>
+            <strong>@CountFilteredAppByStatus("Pending")</strong>
+            <small>application</small>
+        </article>
+        <article>
+            <span>Envoyees</span>
+            <strong>@CountFilteredAppByStatus("Sent")</strong>
+            <small>application</small>
+        </article>
+        <article>
+            <span>En erreur</span>
+            <strong>@CountFilteredAppByStatus("Failed")</strong>
+            <small>application</small>
+        </article>
+        <article>
+            <span>Annulees</span>
+            <strong>@CountFilteredAppByStatus("Cancelled")</strong>
+            <small>application</small>
+        </article>
+    </section>
+
     <section class="notification-filters">
         <label>
             Recherche application
@@ -1213,6 +1259,25 @@
         return QueuedNotifications.Count(notification => notification.Status == status);
     }
 
+    private int CountFilteredExternalByStatus(string status)
+    {
+        return ExternalNotifications.Count(notification =>
+            MatchesSearchAndChannel(notification)
+            && string.Equals(notification.Status, status, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private int CountFilteredAppByStatus(string status)
+    {
+        return AppNotifications.Count(notification =>
+            MatchesSearchOnly(notification)
+            && string.Equals(notification.Status, status, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string GetExternalCounterScope()
+    {
+        return string.IsNullOrWhiteSpace(ChannelFilter) ? "email / WhatsApp" : TranslateChannel(ChannelFilter);
+    }
+
     private int CountRulesByAudience(string audience)
     {
         return DeliveryRules.Count(rule => string.Equals(rule.Audience, audience, StringComparison.OrdinalIgnoreCase));
@@ -1273,12 +1338,22 @@
             return false;
         }
 
+        return MatchesSearchAndChannel(notification);
+    }
+
+    private bool MatchesSearchAndChannel(NotificationOutboxMessageResponse notification)
+    {
         if (!string.IsNullOrWhiteSpace(ChannelFilter)
             && !string.Equals(notification.Channel, ChannelFilter, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
+        return MatchesSearchOnly(notification);
+    }
+
+    private bool MatchesSearchOnly(NotificationOutboxMessageResponse notification)
+    {
         if (string.IsNullOrWhiteSpace(SearchTerm))
         {
             return true;
