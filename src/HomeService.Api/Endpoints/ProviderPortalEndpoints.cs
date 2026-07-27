@@ -322,6 +322,51 @@ public static class ProviderPortalEndpoints
         group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/complete", CompleteProviderMissionAsync)
             .WithName("CompleteProviderMobileMission");
 
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/additional-quotes/request", async (
+            Guid assignmentId,
+            RequestMissionAdditionalQuoteRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            MissionAdditionalQuoteWorkflowService additionalQuoteService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var assignment = await db.ProviderMissionAssignments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item =>
+                    item.Id == assignmentId
+                    && item.ProviderId == session.ProviderId,
+                    cancellationToken);
+            if (assignment is null)
+            {
+                return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+            }
+
+            var result = await additionalQuoteService.RequestFromProviderAsync(
+                session.ProviderId,
+                assignment.MissionId,
+                request,
+                cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status == MissionAdditionalQuoteWorkflowStatus.NotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("RequestProviderMobileMissionAdditionalQuote")
+        .Produces<MissionAdditionalQuoteResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapPost("/mission-assignments/{assignmentId:guid}/accept", async (
             Guid assignmentId,
             ProviderAcceptMissionRequest request,

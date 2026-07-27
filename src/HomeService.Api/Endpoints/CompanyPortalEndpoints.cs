@@ -508,6 +508,34 @@ public static class CompanyPortalEndpoints
         })
         .WithName("AssignCompanyPortalMission");
 
+        group.MapPost("/{companyId:guid}/missions/{missionId:guid}/additional-quotes/{quoteId:guid}/submit", async (
+            Guid companyId,
+            Guid missionId,
+            Guid quoteId,
+            SubmitMissionAdditionalQuoteRequest request,
+            MissionAdditionalQuoteWorkflowService additionalQuoteService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await additionalQuoteService.SubmitByCompanyAsync(companyId, quoteId, request, cancellationToken);
+            if (result.IsSuccess && result.Response?.MissionId == missionId)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            if (result.IsSuccess)
+            {
+                return Results.NotFound(new { message = "Devis complementaire introuvable pour cette mission." });
+            }
+
+            return result.Status == MissionAdditionalQuoteWorkflowStatus.NotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("SubmitCompanyPortalMissionAdditionalQuote")
+        .Produces<MissionAdditionalQuoteResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapPost("/{companyId:guid}/missions/{missionId:guid}/cancel", async (
             Guid companyId,
             Guid missionId,

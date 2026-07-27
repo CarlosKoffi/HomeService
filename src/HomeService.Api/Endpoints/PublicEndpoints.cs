@@ -5,12 +5,14 @@ using HomeService.Application.Clients;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
 using HomeService.Application.Contact;
+using HomeService.Application.Missions;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Clients;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
+using HomeService.Contracts.Missions;
 using HomeService.Contracts.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -397,6 +399,40 @@ public static class PublicEndpoints
         })
         .WithName("ValidateClientMissionCompletion")
         .Produces<ValidateClientMissionCompletionResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
+        app.MapPost("/api/client/missions/{missionId:guid}/additional-quotes/{quoteId:guid}/pay", async (
+            Guid missionId,
+            Guid quoteId,
+            PayMissionAdditionalQuoteRequest request,
+            MissionAdditionalQuoteWorkflowService additionalQuoteService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await additionalQuoteService.PayByCustomerAsync(quoteId, request, cancellationToken);
+            if (result.IsSuccess && result.Response?.MissionId == missionId)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            if (result.IsSuccess)
+            {
+                return Results.NotFound(new { message = "Devis complementaire introuvable pour cette mission." });
+            }
+
+            return result.Status switch
+            {
+                MissionAdditionalQuoteWorkflowStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                MissionAdditionalQuoteWorkflowStatus.Forbidden => Results.Problem(
+                    title: "Paiement complementaire interdit.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("PayClientMissionAdditionalQuote")
+        .Produces<MissionAdditionalQuoteResponse>()
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
