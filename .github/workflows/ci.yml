@@ -34,3 +34,12 @@ jobs:
 
       - name: Integration workflow tests
         run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --logger "trx;LogFileName=integration-tests.trx"
+
+      - name: Production smoke tests after deploy
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          SMOKE_API_BASE_URL: ${{ secrets.SMOKE_API_BASE_URL }}
+          SMOKE_SITE_AUTH_USERNAME: ${{ secrets.SMOKE_SITE_AUTH_USERNAME }}
+          SMOKE_SITE_AUTH_PASSWORD: ${{ secrets.SMOKE_SITE_AUTH_PASSWORD }}
+          SMOKE_STARTUP_DELAY_SECONDS: ${{ vars.SMOKE_STARTUP_DELAY_SECONDS || '120' }}
+        run: pwsh ./deploy/smoke-test.ps1

@@ -1,0 +1,25 @@
+name: Post-deploy smoke tests
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types:
+      - coolify-deployed
+
+jobs:
+  smoke:
+    name: Verify deployed API
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Smoke tests
+        env:
+          SMOKE_API_BASE_URL: ${{ secrets.SMOKE_API_BASE_URL }}
+          SMOKE_SITE_AUTH_USERNAME: ${{ secrets.SMOKE_SITE_AUTH_USERNAME }}
+          SMOKE_SITE_AUTH_PASSWORD: ${{ secrets.SMOKE_SITE_AUTH_PASSWORD }}
+          SMOKE_STARTUP_DELAY_SECONDS: ${{ vars.SMOKE_STARTUP_DELAY_SECONDS || '0' }}
+        run: pwsh ./deploy/smoke-test.ps1

@@ -128,6 +128,33 @@ Dans Coolify, l'ideal est d'attacher un domaine ou sous-domaine par interface:
 - Finaliser le durcissement de l'authentification admin.
 - Decider le stockage des documents uploades: volume Docker, S3 compatible ou MinIO.
 - Creer un premier compte super admin.
+
+## Verification automatique apres deploiement
+
+La CI compile la solution, lance les tests unitaires puis les tests d'integration workflow. Les workflows critiques
+mockent le paiement et les vrais envois de notifications, mais verifient les etats mission, paiements, outbox et
+notifications portail.
+
+Pour verifier l'API deployee apres Coolify, renseigner dans GitHub:
+
+- Secret `SMOKE_API_BASE_URL`: URL publique de l'API, par exemple `https://api.votre-domaine.com`
+- Secret optionnel `SMOKE_SITE_AUTH_USERNAME`
+- Secret optionnel `SMOKE_SITE_AUTH_PASSWORD`
+- Variable optionnelle `SMOKE_STARTUP_DELAY_SECONDS`: attente avant verification, par defaut `120` dans la CI
+
+Le script `deploy/smoke-test.ps1` controle notamment:
+
+- `/health`
+- catalogue services
+- CMS entreprise et prestataire
+- demandes entreprises admin
+- missions admin
+- parametrage missions
+- notifications, regles et modeles
+- paiements
+- acces et roles
+
+Il echoue volontairement sur les 404, 500 ou 502 afin de detecter rapidement les regressions de deploiement.
 - Ajouter les secrets email/SMS quand les integrations seront choisies.
 
 ## SQL
