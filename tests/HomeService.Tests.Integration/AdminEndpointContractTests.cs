@@ -31,6 +31,24 @@ public sealed class AdminEndpointContractTests
                 .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
     }
 
+    [Theory]
+    [InlineData("GET", "/api/admin/missions")]
+    [InlineData("GET", "/api/admin/missions/{missionId:guid}")]
+    [InlineData("POST", "/api/admin/missions/{missionId:guid}/dispatch-offers")]
+    [InlineData("POST", "/api/admin/missions/{missionId:guid}/mark-disputed")]
+    [InlineData("POST", "/api/admin/missions/{missionId:guid}/resolve-dispute")]
+    [InlineData("POST", "/api/admin/missions/{missionId:guid}/cancel")]
+    public void AdminMissionRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
     private static IReadOnlyList<RouteEndpoint> BuildAdminEndpoints()
     {
         var builder = WebApplication.CreateBuilder();
