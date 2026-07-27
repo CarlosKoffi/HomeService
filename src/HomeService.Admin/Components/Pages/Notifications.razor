@@ -825,7 +825,7 @@
 
     private IReadOnlyList<NotificationOutboxMessageResponse> FilteredAppNotifications
         => AppNotifications
-            .Where(MatchesFilters)
+            .Where(MatchesAppFilters)
             .OrderBy(notification => notification.Status == "Failed" ? 0 : notification.Status == "Pending" ? 1 : 2)
             .ThenByDescending(notification => notification.ScheduledAt)
             .ToList();
@@ -1143,6 +1143,16 @@
         SuccessMessage = null;
         CancelNotificationId = null;
         CancelReason = null;
+
+        if (section != "external")
+        {
+            ChannelFilter = null;
+        }
+
+        if (section != "portal")
+        {
+            PortalReadFilter = null;
+        }
     }
 
     private string GetSectionButtonClass(string section)
@@ -1385,6 +1395,17 @@
         }
 
         return MatchesSearchAndChannel(notification);
+    }
+
+    private bool MatchesAppFilters(NotificationOutboxMessageResponse notification)
+    {
+        if (!string.IsNullOrWhiteSpace(StatusFilter)
+            && !string.Equals(notification.Status, StatusFilter, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return MatchesSearchOnly(notification);
     }
 
     private bool MatchesSearchAndChannel(NotificationOutboxMessageResponse notification)
