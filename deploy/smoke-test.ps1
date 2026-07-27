@@ -41,6 +41,7 @@ $checks = @(
         Name = "Admin notification delivery rules"
         Path = "/api/admin/notification-delivery-rules"
         MinCount = 1
+        RequiredProperties = @("eventGroup", "audienceGroup")
         RequiredEventKeys = @(
             "MissionAssignedToProvider",
             "MissionAdditionalQuoteRequested",
@@ -52,6 +53,7 @@ $checks = @(
         Name = "Admin notification templates"
         Path = "/api/admin/notification-templates"
         MinCount = 1
+        RequiredProperties = @("eventGroup", "channelGroup", "audienceGroup")
         RequiredEventKeys = @(
             "MissionAssignedToProvider",
             "MissionAdditionalQuoteAvailable",
@@ -124,6 +126,45 @@ function Test-RequiredEventKeys($check, $payload) {
     return @($missing)
 }
 
+function Test-RequiredProperties($check, $payload) {
+    if (-not ($check.ContainsKey("RequiredProperties"))) {
+        return @()
+    }
+
+    $items = Get-Items $payload
+    $missing = New-Object System.Collections.Generic.List[string]
+    if ($items.Count -eq 0) {
+        return @($missing)
+    }
+
+    foreach ($propertyName in $check.RequiredProperties) {
+        $hasProperty = $false
+        foreach ($item in $items) {
+            if ($item.PSObject.Properties.Name -contains $propertyName -or $item.PSObject.Properties.Name -contains (Get-PascalCaseName $propertyName)) {
+                $value = Get-ItemPropertyValue $item @($propertyName, (Get-PascalCaseName $propertyName))
+                if (-not [string]::IsNullOrWhiteSpace($value)) {
+                    $hasProperty = $true
+                    break
+                }
+            }
+        }
+
+        if (-not $hasProperty) {
+            $missing.Add($propertyName)
+        }
+    }
+
+    return @($missing)
+}
+
+function Get-PascalCaseName([string]$propertyName) {
+    if ([string]::IsNullOrWhiteSpace($propertyName)) {
+        return $propertyName
+    }
+
+    return $propertyName.Substring(0, 1).ToUpperInvariant() + $propertyName.Substring(1)
+}
+
 function Get-ItemPropertyValue($item, [string[]]$propertyNames) {
     foreach ($propertyName in $propertyNames) {
         if ($item.PSObject.Properties.Name -contains $propertyName) {
@@ -193,6 +234,12 @@ foreach ($check in $checks) {
         $missingEventKeys = Test-RequiredEventKeys $check $json
         if ($missingEventKeys.Count -gt 0) {
             $failures.Add("$($check.Name) is missing event key(s): $($missingEventKeys -join ', ').")
+            continue
+        }
+
+        $missingProperties = Test-RequiredProperties $check $json
+        if ($missingProperties.Count -gt 0) {
+            $failures.Add("$($check.Name) is missing response field(s): $($missingProperties -join ', ').")
             continue
         }
 
