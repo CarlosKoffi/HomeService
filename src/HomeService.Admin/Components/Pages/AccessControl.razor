@@ -121,6 +121,13 @@
             <button type="button" @onclick="CreateRoleAsync" disabled="@IsBusy">Creer ce role</button>
         </div>
 
+        <div class="access-filter-strip">
+            <label>
+                Rechercher
+                <input type="search" @bind="RoleSearchTerm" @bind:event="oninput" placeholder="Role, module ou permission" />
+            </label>
+        </div>
+
         <div class="role-list">
             @if (IsLoading)
             {
@@ -136,16 +143,16 @@
                     <p>@ErrorMessage</p>
                 </div>
             }
-            else if (Roles.Count == 0)
+            else if (FilteredRoles.Count == 0)
             {
                 <div>
                     <strong>Aucun role</strong>
-                    <p>Les roles admin seront initialises au prochain demarrage API.</p>
+                    <p>Aucun role ne correspond a la recherche actuelle.</p>
                 </div>
             }
             else
             {
-                @foreach (var role in Roles)
+                @foreach (var role in FilteredRoles)
                 {
                     <div class="@GetRoleCardClass(role)">
                         <strong>@role.Name</strong>
@@ -233,7 +240,32 @@
         <button type="button" @onclick="CreateAdminAsync" disabled="@IsBusy">Creer l'acces admin</button>
     </div>
 
-    @foreach (var admin in Admins)
+    <div class="admin-filters access-admin-filters">
+        <label>
+            Recherche
+            <input type="search" @bind="AdminSearchTerm" @bind:event="oninput" placeholder="Nom, email ou role" />
+        </label>
+        <label>
+            Statut
+            <select @bind="AdminStatusFilter">
+                <option value="all">Tous</option>
+                <option value="active">Actifs</option>
+                <option value="suspended">Suspendus</option>
+                <option value="super-admin">Super admins</option>
+            </select>
+        </label>
+        <button type="button" class="secondary-action" @onclick="ClearAdminFilters">Reinitialiser</button>
+    </div>
+
+    @if (FilteredAdmins.Count == 0)
+    {
+        <article class="admin-empty-row">
+            <strong>Aucun administrateur</strong>
+            <p>Aucun compte ne correspond aux filtres actuels.</p>
+        </article>
+    }
+
+    @foreach (var admin in FilteredAdmins)
     {
         <article class="admin-access-row">
             <div>
@@ -282,10 +314,28 @@
     private HashSet<string> PermissionDraft { get; set; } = [];
     private string? NewAdminFullName { get; set; }
     private string? NewAdminEmail { get; set; }
+    private string? RoleSearchTerm { get; set; }
+    private string? AdminSearchTerm { get; set; }
+    private string AdminStatusFilter { get; set; } = "all";
     private bool NewAdminIsSuperAdmin { get; set; }
     private HashSet<Guid> NewAdminRoleIds { get; set; } = [];
     private Dictionary<Guid, HashSet<Guid>> AdminRoleDrafts { get; set; } = [];
     private AccessAdminTab ActiveTab { get; set; } = AccessAdminTab.Overview;
+
+    private IReadOnlyList<AdminRoleSummaryResponse> FilteredRoles
+        => Roles
+            .Where(MatchesRoleFilters)
+            .OrderByDescending(role => role.IsActive)
+            .ThenBy(role => role.Name)
+            .ToList();
+
+    private IReadOnlyList<AdminUserSummaryResponse> FilteredAdmins
+        => Admins
+            .Where(MatchesAdminFilters)
+            .OrderByDescending(admin => admin.IsActive)
+            .ThenByDescending(admin => admin.IsSuperAdmin)
+            .ThenBy(admin => admin.FullName)
+            .ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -538,6 +588,55 @@
         }
 
         return new AdminPermissionAssignmentRequest(moduleId, parts[1]);
+    }
+
+    private bool MatchesRoleFilters(AdminRoleSummaryResponse role)
+    {
+        if (string.IsNullOrWhiteSpace(RoleSearchTerm))
+        {
+            return true;
+        }
+
+        var search = RoleSearchTerm.Trim();
+        return role.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || role.Description.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || role.Permissions.Any(permission =>
+                permission.ModuleName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || permission.Action.Contains(search, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private bool MatchesAdminFilters(AdminUserSummaryResponse admin)
+    {
+        var statusMatches = AdminStatusFilter switch
+        {
+            "active" => admin.IsActive,
+            "suspended" => !admin.IsActive,
+            "super-admin" => admin.IsSuperAdmin,
+            _ => true
+        };
+
+        if (!statusMatches)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(AdminSearchTerm))
+        {
+            return true;
+        }
+
+        var search = AdminSearchTerm.Trim();
+        return admin.FullName.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || admin.Email.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || admin.Roles.Any(role => role.Contains(search, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void ClearAdminFilters()
+    {
+        AdminSearchTerm = null;
+        AdminStatusFilter = "all";
+        ActionErrorMessage = null;
+        SuccessMessage = null;
     }
 
     private static string GetRolePermissionSummary(AdminRoleSummaryResponse role)
