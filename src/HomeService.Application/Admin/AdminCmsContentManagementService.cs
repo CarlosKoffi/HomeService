@@ -94,6 +94,35 @@ public sealed class AdminCmsContentManagementService(IAppDbContext db)
             mediaAsset.SizeInBytes));
     }
 
+    public async Task<CmsMediaUploadResponse> AddMediaAsync(
+        CmsMediaAsset mediaAsset,
+        string mediaUrl,
+        AuditActor actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        db.CmsMediaAssets.Add(mediaAsset);
+
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
+            actor,
+            "AdminCmsMediaAdded",
+            nameof(CmsMediaAsset),
+            mediaAsset.Id,
+            $"Image CMS '{mediaAsset.FileName}' ajoutee.",
+            auditContext,
+            before: null,
+            after: new { mediaAsset.FileName, mediaAsset.ContentType, mediaAsset.SizeInBytes, mediaUrl }));
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return new CmsMediaUploadResponse(
+            mediaAsset.Id,
+            mediaAsset.FileName,
+            mediaUrl,
+            mediaAsset.ContentType,
+            mediaAsset.SizeInBytes);
+    }
+
     private static CmsContentValueResponse ToResponse(CmsContentValue value)
     {
         return new CmsContentValueResponse(

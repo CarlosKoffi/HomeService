@@ -266,6 +266,10 @@ else
                                                                     <small>Uploader une nouvelle image</small>
                                                                     <InputFile OnChange="file => UploadMediaAsync(value, file)" accept="image/png,image/jpeg,image/webp,image/gif" />
                                                                 </label>
+                                                                @if (!string.IsNullOrWhiteSpace(previewUrl))
+                                                                {
+                                                                    <a class="cms-media-link" href="@previewUrl" target="_blank" rel="noopener">Ouvrir l'image</a>
+                                                                }
                                                             </div>
                                                         }
                                                         else if (value.ValueType == "Json" && !draft.ShowRawJson && draft.JsonItems.Count > 0)
@@ -296,7 +300,32 @@ else
                                                                             </div>
                                                                             <input type="text" @bind="item.Title" placeholder="Titre" />
                                                                             <textarea rows="3" @bind="item.Text" placeholder="Texte court"></textarea>
-                                                                            <input type="text" @bind="item.Image" placeholder="images/..." />
+                                                                            <div class="cms-json-media-editor">
+                                                                                <div class="cms-json-media-preview">
+                                                                                    @{
+                                                                                        var itemPreviewUrl = GetJsonItemImagePreviewUrl(item);
+                                                                                    }
+                                                                                    @if (!string.IsNullOrWhiteSpace(itemPreviewUrl))
+                                                                                    {
+                                                                                        <img src="@itemPreviewUrl" alt="Image de l'etape" />
+                                                                                    }
+                                                                                    else
+                                                                                    {
+                                                                                        <span>Image</span>
+                                                                                    }
+                                                                                </div>
+                                                                                <div class="cms-json-media-fields">
+                                                                                    <input type="text" @bind="item.Image" placeholder="images/..." />
+                                                                                    <label class="cms-upload-control cms-json-upload-control">
+                                                                                        <small>Uploader</small>
+                                                                                        <InputFile OnChange="file => UploadJsonItemMediaAsync(item, file)" accept="image/png,image/jpeg,image/webp,image/gif" />
+                                                                                    </label>
+                                                                                    @if (!string.IsNullOrWhiteSpace(itemPreviewUrl))
+                                                                                    {
+                                                                                        <a class="cms-media-link" href="@itemPreviewUrl" target="_blank" rel="noopener">Ouvrir l'image</a>
+                                                                                    }
+                                                                                </div>
+                                                                            </div>
                                                                         }
                                                                         else if (value.FieldKey == "stats")
                                                                         {
@@ -530,6 +559,37 @@ else
         }
     }
 
+    private async Task UploadJsonItemMediaAsync(CmsJsonItemDraft item, InputFileChangeEventArgs fileChange)
+    {
+        var file = fileChange.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        IsSaving = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+
+        try
+        {
+            var response = await ApiClient.UploadCmsMediaAsync(file);
+            if (response is not null)
+            {
+                item.Image = response.Url;
+                SuccessMessage = $"Image '{response.FileName}' ajoutee. Pensez a enregistrer la section.";
+            }
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible d'uploader l'image CMS. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
     private static bool IsLongValue(CmsContentValueResponse value)
     {
         return value.ValueType is "LongText" or "RichText" or "Json"
@@ -570,6 +630,11 @@ else
             : value.MediaUrl;
 
         return ApiClient.ToCmsMediaPreviewUrl(mediaUrl, SelectedSite?.Surface);
+    }
+
+    private string GetJsonItemImagePreviewUrl(CmsJsonItemDraft item)
+    {
+        return ApiClient.ToCmsMediaPreviewUrl(item.Image, SelectedSite?.Surface);
     }
 
     private static void ToggleRawJson(CmsValueDraft draft)

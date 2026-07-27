@@ -67,6 +67,29 @@ public sealed class AdminCmsContentManagementServiceTests
     }
 
     [Fact]
+    public async Task AddMediaAsync_StoresStandaloneMediaAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var media = new CmsMediaAsset("step.webp", "cms/2026/07/step.webp", "image/webp", 2048);
+        media.MarkAvailable();
+
+        var result = await new AdminCmsContentManagementService(db).AddMediaAsync(
+            media,
+            $"/api/cms/media/{media.Id}",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "cms-media-standalone"),
+            CancellationToken.None);
+
+        Assert.Equal(media.Id, result.MediaAssetId);
+        Assert.Equal($"/api/cms/media/{media.Id}", result.Url);
+        Assert.Equal(media.Id, await db.CmsMediaAssets.Select(item => item.Id).SingleAsync());
+        Assert.Contains(await db.AuditLogEntries.ToListAsync(), entry =>
+            entry.Action == "AdminCmsMediaAdded"
+            && entry.EntityId == media.Id
+            && entry.CorrelationId == "cms-media-standalone");
+    }
+
+    [Fact]
     public async Task UpdateContentValueAsync_WhenValueDoesNotExist_ReturnsNotFound()
     {
         await using var db = CreateDbContext();

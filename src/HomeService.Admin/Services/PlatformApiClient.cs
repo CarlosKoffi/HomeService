@@ -773,6 +773,33 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, $"/api/admin/cms/content-values/{contentValueId}/media")}. {body}");
     }
 
+    public async Task<CmsMediaUploadResponse?> UploadCmsMediaAsync(
+        IBrowserFile file,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        using var content = new MultipartFormDataContent();
+        await using var sourceStream = file.OpenReadStream(8 * 1024 * 1024, cancellationToken);
+        using var memoryStream = new MemoryStream();
+        await sourceStream.CopyToAsync(memoryStream, cancellationToken);
+
+        var fileContent = new ByteArrayContent(memoryStream.ToArray());
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
+        content.Add(fileContent, "file", file.Name);
+
+        const string path = "/api/admin/cms/media";
+        using var response = await httpClient.PostAsync(path, content, cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<CmsMediaUploadResponse>(cancellationToken);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw new PlatformApiException(
+            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+    }
+
     public string ToApiUrl(string? relativeUrl)
     {
         if (string.IsNullOrWhiteSpace(relativeUrl))

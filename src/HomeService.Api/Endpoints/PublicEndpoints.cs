@@ -194,7 +194,7 @@ public static class PublicEndpoints
                 return Results.NotFound(new { message = "Le fichier image CMS n'existe plus sur le serveur." });
             }
 
-            return Results.File(absolutePath, asset.ContentType, asset.FileName, enableRangeProcessing: true);
+            return Results.File(absolutePath, asset.ContentType, enableRangeProcessing: true);
         })
         .WithName("GetCmsMedia")
         .Produces(StatusCodes.Status404NotFound);

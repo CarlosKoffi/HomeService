@@ -191,6 +191,47 @@ public static class AdminEndpoints
         })
         .WithName("UpdateAdminCmsContentValue");
 
+        admin.MapPost("/cms/media", async (
+            HttpRequest httpRequest,
+            AdminCmsContentManagementService contentService,
+            CmsMediaUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "Le formulaire doit contenir une image." });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+            if (file is null)
+            {
+                return Results.BadRequest(new { message = "Aucune image CMS recue." });
+            }
+
+            try
+            {
+                var mediaAsset = await uploadService.SaveAsync(file, cancellationToken);
+                var mediaUrl = $"/api/cms/media/{mediaAsset.Id}";
+                var response = await contentService.AddMediaAsync(
+                    mediaAsset,
+                    mediaUrl,
+                    AuditActor.Admin(),
+                    GetAuditRequestContext(httpRequest),
+                    cancellationToken);
+
+                return Results.Ok(response);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .DisableAntiforgery()
+        .WithName("UploadStandaloneAdminCmsMedia")
+        .Produces<CmsMediaUploadResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
+
         admin.MapPost("/cms/content-values/{id:guid}/media", async (
             Guid id,
             HttpRequest httpRequest,
