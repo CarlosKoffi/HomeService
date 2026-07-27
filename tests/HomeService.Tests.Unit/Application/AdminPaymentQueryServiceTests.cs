@@ -111,6 +111,98 @@ public sealed class AdminPaymentQueryServiceTests
     }
 
     [Fact]
+    public async Task ListPaymentsAsync_WithMixedPaymentMethods_BreaksDownCollectedRevenueAndWelesCommission()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("Entreprise Test", "+2250700000000", "contact@example.ci");
+        var service = new Service("Electricite", "Depannage electrique", createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var provider = new ProviderProfile(
+            company.Id,
+            "Mamadou",
+            "Diallo",
+            "+2250700000002",
+            "mamadou@example.ci",
+            new DateOnly(1995, 4, 12),
+            "Cocody",
+            ProviderGender.Male,
+            ProviderEmploymentType.CompanyEmployee,
+            yearsOfExperience: 4,
+            missionLatitude: null,
+            missionLongitude: null,
+            missionRadiusKm: 5);
+
+        var mobileMoneyMission = CreateConfirmedMission(
+            customer.Id,
+            service.Id,
+            company.Id,
+            provider.Id,
+            PaymentMethod.MobileMoney,
+            quotedAmount: 20_000,
+            platformCommissionAmount: 3_000);
+        mobileMoneyMission.Start(provider.Id, company.Id);
+        mobileMoneyMission.Complete(60);
+        mobileMoneyMission.ValidateCompletionByCustomer();
+
+        var cardMission = CreateConfirmedMission(
+            customer.Id,
+            service.Id,
+            company.Id,
+            provider.Id,
+            PaymentMethod.Card,
+            quotedAmount: 10_000,
+            platformCommissionAmount: 1_500);
+
+        var pendingMission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            scheduledFor: DateTimeOffset.UtcNow.AddHours(1),
+            estimatedDurationMinutes: 60,
+            description: "Diagnostic en attente");
+        pendingMission.Assign(provider.Id, company.Id, hourlyRateAmount: 6_000);
+
+        var refundedMission = CreateConfirmedMission(
+            customer.Id,
+            service.Id,
+            company.Id,
+            provider.Id,
+            PaymentMethod.Card,
+            quotedAmount: 8_000,
+            platformCommissionAmount: 1_200);
+        refundedMission.MarkDisputed();
+        refundedMission.ApplyDisputeRefund(8_000);
+        refundedMission.ResolveDispute();
+
+        db.Companies.Add(company);
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Providers.Add(provider);
+        db.Missions.AddRange(mobileMoneyMission, cardMission, pendingMission, refundedMission);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminQueryService(db).ListPaymentsAsync(
+            period: "month",
+            paymentStatus: null,
+            paymentMethod: null,
+            search: null,
+            CancellationToken.None);
+
+        Assert.Equal(44_000, result.Stats.TotalAmount);
+        Assert.Equal(30_000, result.Stats.PaidAmount);
+        Assert.Equal(6_000, result.Stats.PendingAmount);
+        Assert.Equal(20_000, result.Stats.MobileMoneyAmount);
+        Assert.Equal(10_000, result.Stats.CardAmount);
+        Assert.Equal(4_500, result.Stats.PlatformCommissionAmount);
+        Assert.Equal(0, result.Stats.PendingPlatformCommissionAmount);
+        Assert.Equal(25_500, result.Stats.CompanyPayoutAmount);
+        Assert.Equal(8_000, result.Stats.RefundAmount);
+        Assert.Equal(8_000, result.Stats.DisputedAmount);
+        Assert.Equal(4, result.Stats.TransactionCount);
+    }
+
+    [Fact]
     public async Task ListPaymentsAsync_WhenMoreThanDisplayLimit_CalculatesStatsOnAllMatchingPayments()
     {
         await using var db = CreateDbContext();
@@ -339,5 +431,37 @@ public sealed class AdminPaymentQueryServiceTests
             .Options;
 
         return new HomeServiceDbContext(options);
+    }
+
+    private static Mission CreateConfirmedMission(
+        Guid customerId,
+        Guid serviceId,
+        Guid companyId,
+        Guid providerId,
+        PaymentMethod paymentMethod,
+        int quotedAmount,
+        int platformCommissionAmount)
+    {
+        var mission = new Mission(
+            customerId,
+            serviceId,
+            MissionMode.Instant,
+            paymentMethod,
+            scheduledFor: DateTimeOffset.UtcNow.AddMinutes(30),
+            estimatedDurationMinutes: 60,
+            description: "Mission test paiement");
+        mission.AssignWithCompanyQuote(
+            providerId,
+            companyId,
+            quotedAmount,
+            maxAllowedAmount: quotedAmount + 5_000,
+            overMaxJustification: null);
+        mission.MarkProviderAccepted(providerId, companyId);
+        mission.ConfirmByCustomer(
+            platformCommissionAmount,
+            transportFeeAmount: 0,
+            platformCommissionRateBasisPoints: 1_500);
+
+        return mission;
     }
 }
