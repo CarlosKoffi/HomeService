@@ -162,9 +162,12 @@
                     else
                     {
                         <button type="button" @onclick="() => OpenMission(mission.Id)">Voir dossier</button>
-                        @if (mission.Status != "Disputed" && mission.Status != "Completed" && mission.Status != "Cancelled" && mission.Status != "Resolved")
+                        @if (CanOpenDispute(mission.Status))
                         {
                             <button type="button" class="light-action" @onclick="() => StartDispute(mission.Id)">Litige</button>
+                        }
+                        @if (CanCancelMission(mission.Status))
+                        {
                             <button type="button" class="danger-action" @onclick="() => StartCancel(mission.Id)">Annuler</button>
                         }
                     }
@@ -369,6 +372,16 @@
         "Cancelled" or "Disputed" => "status-pill danger",
         _ => "status-pill pending"
     };
+
+    private static bool CanOpenDispute(string status)
+    {
+        return status is not ("Disputed" or "Cancelled" or "Resolved");
+    }
+
+    private static bool CanCancelMission(string status)
+    {
+        return status is not ("Disputed" or "Completed" or "Cancelled" or "Resolved");
+    }
 
     private static string FormatMissionTitle(string serviceName, string? prestationName)
         => string.IsNullOrWhiteSpace(prestationName) ? serviceName : $"{serviceName} - {prestationName}";

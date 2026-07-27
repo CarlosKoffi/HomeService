@@ -116,35 +116,41 @@ else
             </article>
             <article>
                 <h2>Action admin</h2>
-                @if (Mission.Status is not ("Disputed" or "Completed" or "Cancelled"))
+                @if (CanOpenDispute(Mission.Status) || CanCancelMission(Mission.Status))
                 {
-                    <div class="mission-dispute-box">
-                        <label>
-                            Motif du litige
-                            <select @bind="DisputeReason">
-                                @foreach (var reason in DisputeReasons)
-                                {
-                                    <option value="@reason.Value">@reason.Label</option>
-                                }
-                            </select>
-                        </label>
-                        <label>
-                            Note litige
-                            <textarea @bind="DisputeNote" placeholder="Expliquez le probleme avant de passer la mission en litige."></textarea>
-                        </label>
-                        <button type="button" @onclick="MarkDisputedAsync" disabled="@IsActionBusy">Signaler un litige</button>
-                    </div>
-                    <div class="mission-dispute-box mission-cancel-box">
-                        <label>
-                            Annulation admin
-                            <textarea @bind="CancellationNote" placeholder="Expliquez pourquoi l'administration annule cette mission."></textarea>
-                        </label>
-                        <label>
-                            Frais retenus au client
-                            <input type="number" min="0" step="100" @bind="CancellationFeeAmount" placeholder="0" />
-                        </label>
-                        <button type="button" class="danger-action" @onclick="CancelMissionAsync" disabled="@IsActionBusy">Annuler la mission</button>
-                    </div>
+                    @if (CanOpenDispute(Mission.Status))
+                    {
+                        <div class="mission-dispute-box">
+                            <label>
+                                Motif du litige
+                                <select @bind="DisputeReason">
+                                    @foreach (var reason in DisputeReasons)
+                                    {
+                                        <option value="@reason.Value">@reason.Label</option>
+                                    }
+                                </select>
+                            </label>
+                            <label>
+                                Note litige
+                                <textarea @bind="DisputeNote" placeholder="Expliquez le probleme avant de passer la mission en litige."></textarea>
+                            </label>
+                            <button type="button" @onclick="MarkDisputedAsync" disabled="@IsActionBusy">Signaler un litige</button>
+                        </div>
+                    }
+                    @if (CanCancelMission(Mission.Status))
+                    {
+                        <div class="mission-dispute-box mission-cancel-box">
+                            <label>
+                                Annulation admin
+                                <textarea @bind="CancellationNote" placeholder="Expliquez pourquoi l'administration annule cette mission."></textarea>
+                            </label>
+                            <label>
+                                Frais retenus au client
+                                <input type="number" min="0" step="100" @bind="CancellationFeeAmount" placeholder="0" />
+                            </label>
+                            <button type="button" class="danger-action" @onclick="CancelMissionAsync" disabled="@IsActionBusy">Annuler la mission</button>
+                        </div>
+                    }
                 }
                 else if (Mission.Status == "Disputed")
                 {
@@ -677,6 +683,8 @@ else
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetDisputeStatusClass(string status) => status switch { "Resolved" => "status-pill ok", "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetFinancialLineClass(int amount) => amount < 0 ? "mission-finance-line negative" : "mission-finance-line";
+    private static bool CanOpenDispute(string status) => status is not ("Disputed" or "Cancelled" or "Resolved");
+    private static bool CanCancelMission(string status) => status is not ("Disputed" or "Completed" or "Cancelled" or "Resolved");
     private static string GetTimelineItemClass(string tone) => tone switch
     {
         "ok" => "mission-timeline-item ok",

@@ -335,9 +335,9 @@ public sealed class Mission : AuditableEntity
 
     public void MarkDisputed()
     {
-        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
+        if (Status is MissionStatus.Cancelled or MissionStatus.Resolved)
         {
-            throw new InvalidOperationException("Completed or cancelled missions cannot be marked as disputed.");
+            throw new InvalidOperationException("Cancelled or resolved missions cannot be marked as disputed.");
         }
 
         Status = MissionStatus.Disputed;

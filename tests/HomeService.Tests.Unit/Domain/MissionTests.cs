@@ -266,8 +266,20 @@ public sealed class MissionTests
         Assert.NotNull(mission.UpdatedAt);
     }
 
+    [Fact]
+    public void MarkDisputed_WhenMissionIsCompleted_MovesToDisputeForAftercare()
+    {
+        var mission = CreateAssignedMission();
+        mission.Start(ProviderId, CompanyId);
+        mission.Complete(60);
+
+        mission.MarkDisputed();
+
+        Assert.Equal(MissionStatus.Disputed, mission.Status);
+        Assert.NotNull(mission.UpdatedAt);
+    }
+
     [Theory]
-    [InlineData(MissionStatus.Completed)]
     [InlineData(MissionStatus.Cancelled)]
     [InlineData(MissionStatus.Resolved)]
     public void MarkDisputed_WhenMissionIsClosed_Throws(MissionStatus status)
