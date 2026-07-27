@@ -16,6 +16,12 @@ public sealed class MissionCancellationWorkflowServiceTests
     {
         await using var db = CreateDbContext();
         var scenario = await SeedAcceptedMissionAsync(db);
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Customer,
+            scenario.Customer.Id,
+            MobileDevicePlatform.Android,
+            "customer-device-token",
+            "Android client"));
         var assignment = new ProviderMissionAssignment(scenario.Mission.Id, scenario.Provider.Id, scenario.Company.Id, DateTimeOffset.UtcNow.AddMinutes(3));
         assignment.Accept();
         db.ProviderMissionAssignments.Add(assignment);
@@ -38,6 +44,10 @@ public sealed class MissionCancellationWorkflowServiceTests
         Assert.Equal(2, await db.MissionPaymentMilestones.CountAsync());
         Assert.Equal(1, await db.CompanyPortalActivities.CountAsync());
         Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());
+        var push = await db.NotificationOutboxMessages.SingleAsync();
+        Assert.Equal(NotificationChannel.MobilePush, push.Channel);
+        Assert.Equal("customer-device-token", push.Recipient);
+        Assert.Equal("Mission annulee", push.Subject);
     }
 
     [Fact]

@@ -220,6 +220,17 @@ public sealed class MissionCancellationWorkflowService(
             refundAmount > 0 ? "warning" : "danger",
             $"missions/{mission.Id}");
 
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Customer,
+            mission.CustomerId,
+            "Mission annulee",
+            $"La mission {mission.MissionNumber} a ete annulee. Raison: {reason}.",
+            nameof(Mission),
+            mission.Id,
+            null,
+            cancellationToken,
+            saveChanges: false);
+
         if (mission.ProviderId is null)
         {
             return;
