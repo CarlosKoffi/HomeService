@@ -13,4 +13,5 @@ public sealed record CompanyApplicationSummaryResponse(
     DateTimeOffset? ActivationEmailSentAt,
     int DocumentCount,
     int PendingDocumentCount,
+    IReadOnlyList<string> Services,
     IReadOnlyList<CompanyApplicationDocumentSummaryResponse> Documents);

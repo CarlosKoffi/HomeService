@@ -46,6 +46,16 @@
         Recherche
         <input type="search" @bind="SearchTerm" @bind:event="oninput" placeholder="Entreprise, ville, email" />
     </label>
+    <label>
+        Service
+        <select @bind="SelectedService">
+            <option value="">Tous les services</option>
+            @foreach (var service in AvailableServices)
+            {
+                <option value="@service">@service</option>
+            }
+        </select>
+    </label>
     <button type="button" @onclick="SendDormantActivationLinksAsync" disabled="@IsBulkBusy">Relancer les validations dormantes</button>
 </section>
 
@@ -89,6 +99,19 @@
                         <span>@item.Status</span>
                     </div>
                     <p>@item.City - @item.ContactName - @item.Email</p>
+                    @if (item.Services.Count > 0)
+                    {
+                        <div class="service-summary" aria-label="Services proposes">
+                            @foreach (var service in item.Services.Take(4))
+                            {
+                                <span>@service</span>
+                            }
+                            @if (item.Services.Count > 4)
+                            {
+                                <span>+@(item.Services.Count - 4)</span>
+                            }
+                        </div>
+                    }
                     <div class="document-summary" aria-label="Etat des pieces du dossier">
                         @foreach (var document in item.Documents)
                         {
@@ -131,10 +154,18 @@
     private string? SuccessMessage { get; set; }
     private string? SearchTerm { get; set; }
     private string? SelectedStatus { get; set; }
+    private string? SelectedService { get; set; }
 
     private List<ApplicationRow> VisibleApplications => Applications
         .Where(MatchesStatus)
+        .Where(MatchesService)
         .Where(MatchesSearch)
+        .ToList();
+
+    private IReadOnlyList<string> AvailableServices => Applications
+        .SelectMany(application => application.Services)
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(service => service)
         .ToList();
 
     protected override async Task OnInitializedAsync()
@@ -287,6 +318,16 @@
             || item.Email.Contains(term, StringComparison.OrdinalIgnoreCase);
     }
 
+    private bool MatchesService(ApplicationRow item)
+    {
+        if (string.IsNullOrWhiteSpace(SelectedService))
+        {
+            return true;
+        }
+
+        return item.Services.Any(service => string.Equals(service, SelectedService, StringComparison.OrdinalIgnoreCase));
+    }
+
     private bool IsActionDisabled(ApplicationRow item)
     {
         return BusyApplicationId == item.Id || IsBulkBusy;
@@ -337,6 +378,7 @@
             item.DocumentCount,
             item.SubmittedAt is null ? "date inconnue" : item.SubmittedAt.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
             nextAction,
+            item.Services,
             BuildDocumentRows(item.Documents));
     }
 
@@ -414,6 +456,7 @@
         int DocumentsExpected,
         string SubmittedLabel,
         string NextAction,
+        IReadOnlyList<string> Services,
         IReadOnlyList<DocumentRow> Documents);
 
     private sealed record DocumentRow(

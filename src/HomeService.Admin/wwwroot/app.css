@@ -528,6 +528,23 @@ h3 {
     margin: .7rem 0 .35rem;
 }
 
+.service-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin: .65rem 0 .35rem;
+}
+
+.service-summary span {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    color: #1d4ed8;
+    font-size: .78rem;
+    font-weight: 850;
+    padding: .26rem .58rem;
+}
+
 .status-chip {
     border-radius: 999px;
     border: 1px solid transparent;

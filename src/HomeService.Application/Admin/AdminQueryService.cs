@@ -1343,11 +1343,38 @@ public sealed class AdminQueryService(IAppDbContext db)
                         document.ReviewNote))
                     .ToList());
 
+        var services = await db.CompanyApplicationServices
+            .AsNoTracking()
+            .Where(service => applicationIds.Contains(service.CompanyApplicationId))
+            .Select(service => new
+            {
+                service.CompanyApplicationId,
+                Name = service.MatchedServicePrestation != null
+                    ? service.MatchedService!.Name + " - " + service.MatchedServicePrestation.Name
+                    : service.MatchedService != null
+                        ? service.MatchedService.Name
+                        : service.RawName
+            })
+            .ToListAsync(cancellationToken);
+
+        var servicesByApplication = services
+            .GroupBy(service => service.CompanyApplicationId)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(service => service.Name)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(name => name)
+                    .ToList());
+
         return applications
             .Select(application =>
             {
                 documentsByApplication.TryGetValue(application.Id, out var applicationDocuments);
                 applicationDocuments ??= [];
+                servicesByApplication.TryGetValue(application.Id, out var applicationServices);
+                applicationServices ??= [];
 
                 return new CompanyApplicationSummaryResponse(
                     application.Id,
@@ -1362,6 +1389,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                     application.ActivationEmailSentAt,
                     applicationDocuments.Count,
                     applicationDocuments.Count(document => document.ReviewStatus == DocumentReviewStatus.Pending.ToString()),
+                    applicationServices,
                     applicationDocuments);
             })
             .ToList();
