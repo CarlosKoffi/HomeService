@@ -33,6 +33,17 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.NotEmpty(creation.Response.MissionNumber);
         Assert.Single(await db.MissionAttachments.ToListAsync());
 
+        var createdMission = await db.Missions
+            .AsNoTracking()
+            .SingleAsync(mission => mission.Id == creation.Response.MissionId);
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Customer,
+            createdMission.CustomerId,
+            MobileDevicePlatform.Android,
+            "customer-device-token",
+            "Android client"));
+        await db.SaveChangesAsync();
+
         var offerService = new CompanyMissionOfferService(db);
         var openOffers = await offerService.ListOpenOffersAsync(seed.Company.Id, CancellationToken.None);
         Assert.True(openOffers.IsSuccess);
@@ -66,6 +77,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal(NotificationStatus.Pending, providerPushAfterAssignment.Status);
 
         var workflow = new ProviderMissionWorkflowService();
+        var providerNotifications = CreateProviderNotificationService(db);
         var assignment = await LoadAssignmentAsync(db, assignmentResult.Response.AssignmentId);
         var provider = await LoadProviderAsync(db, seed.Provider.Id);
         var acceptResult = workflow.AcceptMission(
@@ -73,6 +85,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
             assignment,
             new ProviderAcceptMissionRequest(5.348850m, -4.003150m, 18));
         Assert.Equal(ProviderMissionOperationStatus.Ok, acceptResult.Status);
+        await providerNotifications.NotifyAcceptedAsync(assignment.Mission!, provider, assignment, CancellationToken.None);
         await db.SaveChangesAsync();
 
         var confirmation = await CreateClientConfirmationService(db).ConfirmAsync(
@@ -91,17 +104,30 @@ public sealed class ClientMissionWorkflowIntegrationTests
 
         assignment = await LoadAssignmentAsync(db, assignmentResult.Response.AssignmentId);
         provider = await LoadProviderAsync(db, seed.Provider.Id);
+        var arrivalResult = workflow.VerifyArrival(
+            provider,
+            assignment,
+            new ProviderLocationVerificationRequest(5.348850m, -4.003150m, 18));
+        Assert.Equal(ProviderMissionOperationStatus.Ok, arrivalResult.Status);
+        await providerNotifications.NotifyArrivedAsync(assignment.Mission!, provider, assignment, CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        assignment = await LoadAssignmentAsync(db, assignmentResult.Response.AssignmentId);
+        provider = await LoadProviderAsync(db, seed.Provider.Id);
         var startResult = workflow.StartMission(
             provider,
             assignment,
             new ProviderLocationVerificationRequest(5.348850m, -4.003150m, 18));
         Assert.Equal(ProviderMissionOperationStatus.Ok, startResult.Status);
+        await providerNotifications.NotifyStartedAsync(assignment.Mission!, provider, assignment, CancellationToken.None);
+        await db.SaveChangesAsync();
 
         var completeResult = workflow.CompleteMission(
             provider,
             assignment,
             new ProviderCompleteMissionRequest(90, "Intervention terminee proprement.", "missions/MIS/photo-fin.jpg"));
         Assert.Equal(ProviderMissionOperationStatus.Ok, completeResult.Status);
+        await providerNotifications.NotifyCompletedAsync(assignment.Mission!, provider, assignment, CancellationToken.None);
         await db.SaveChangesAsync();
 
         var validation = await CreateCompletionValidationService(db).ValidateAsync(
@@ -119,7 +145,20 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal(PaymentStatus.Paid, mission.PaymentStatus);
         Assert.NotNull(mission.CompanyPayoutReleasedAt);
 
-        Assert.Equal(3, await db.NotificationOutboxMessages.CountAsync(message => message.Channel == NotificationChannel.MobilePush));
+        var mobilePushMessages = await db.NotificationOutboxMessages
+            .Where(message => message.Channel == NotificationChannel.MobilePush)
+            .OrderBy(message => message.CreatedAt)
+            .ToListAsync();
+        Assert.Equal(8, mobilePushMessages.Count);
+        Assert.All(mobilePushMessages, message => Assert.Equal(NotificationStatus.Pending, message.Status));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Nouvelle mission", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Technicien affecte", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission confirmee", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Technicien arrive", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission demarree", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission terminee", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Votre avis compte", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission validee", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -508,6 +547,16 @@ public sealed class ClientMissionWorkflowIntegrationTests
             db,
             new CompanyPortalNotificationWriter(db),
             new MobilePushNotificationQueueService(db));
+    }
+
+    private static ProviderMissionNotificationService CreateProviderNotificationService(HomeServiceDbContext db)
+    {
+        return new ProviderMissionNotificationService(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db),
+            new NotificationDeliveryPreferenceService(db),
+            new NotificationTemplateService(db));
     }
 
     private static async Task<ProviderMissionAssignment> LoadAssignmentAsync(HomeServiceDbContext db, Guid assignmentId)
