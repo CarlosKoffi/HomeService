@@ -220,6 +220,86 @@ public sealed class ClientMissionWorkflowIntegrationTests
             && notification.Type == "MissionDisputeResolved");
     }
 
+    [Fact]
+    public async Task ProviderRefusal_RemovesProviderFromSameMissionAndAllowsAnotherProviderAssignment()
+    {
+        await using var db = CreateDbContext();
+        var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
+        var secondProvider = CreateProvider(seed.Company.Id, seed.Service.Id, "Mamadou", "Diallo", "+225 0555000011");
+        db.Providers.Add(secondProvider);
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Provider,
+            secondProvider.Id,
+            MobileDevicePlatform.Android,
+            "second-provider-device-token",
+            "Android terrain 2"));
+        await db.SaveChangesAsync();
+
+        var creation = await CreateClientRequestService(db).CreateAsync(
+            CreateMissionRequest(seed.Service.Id, seed.Prestation.Id),
+            CancellationToken.None);
+        Assert.True(creation.IsSuccess);
+
+        var offerService = new CompanyMissionOfferService(db);
+        var offers = await offerService.ListOpenOffersAsync(seed.Company.Id, CancellationToken.None);
+        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId, CancellationToken.None);
+        Assert.True(acceptedOffer.IsSuccess);
+
+        var assignmentService = CreateAssignmentService(db);
+        var firstAssignment = await assignmentService.AssignAsync(
+            seed.Company.Id,
+            acceptedOffer.Response!.MissionId,
+            seed.Provider.Id,
+            quotedAmount: 12000,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.True(firstAssignment.IsSuccess);
+
+        var workflow = new ProviderMissionWorkflowService();
+        var refusedAssignment = await LoadAssignmentAsync(db, firstAssignment.Response!.AssignmentId);
+        var refusingProvider = await LoadProviderAsync(db, seed.Provider.Id);
+        var refusal = workflow.RefuseMission(
+            refusingProvider,
+            refusedAssignment,
+            new ProviderRefuseMissionRequest(nameof(ProviderMissionRefusalReason.Unavailable), "Plus disponible."));
+        Assert.Equal(ProviderMissionOperationStatus.Ok, refusal.Status);
+        await db.SaveChangesAsync();
+
+        var assignableAfterRefusal = await assignmentService.ListAssignableProvidersAsync(
+            seed.Company.Id,
+            acceptedOffer.Response.MissionId,
+            CancellationToken.None);
+        Assert.True(assignableAfterRefusal.IsSuccess);
+        Assert.DoesNotContain(assignableAfterRefusal.Providers, provider => provider.Id == seed.Provider.Id);
+        Assert.Contains(assignableAfterRefusal.Providers, provider => provider.Id == secondProvider.Id);
+
+        var retrySameProvider = await assignmentService.AssignAsync(
+            seed.Company.Id,
+            acceptedOffer.Response.MissionId,
+            seed.Provider.Id,
+            quotedAmount: 12000,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.False(retrySameProvider.IsSuccess);
+
+        var secondAssignment = await assignmentService.AssignAsync(
+            seed.Company.Id,
+            acceptedOffer.Response.MissionId,
+            secondProvider.Id,
+            quotedAmount: 12500,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.True(secondAssignment.IsSuccess);
+
+        var mission = await db.Missions.SingleAsync(mission => mission.Id == acceptedOffer.Response.MissionId);
+        Assert.Equal(secondProvider.Id, mission.ProviderId);
+        Assert.Equal(MissionStatus.Assigned, mission.Status);
+        Assert.Equal(2, await db.ProviderMissionAssignments.CountAsync(assignment => assignment.MissionId == mission.Id));
+        Assert.Contains(await db.ProviderMissionAssignments.ToListAsync(), assignment =>
+            assignment.ProviderId == seed.Provider.Id
+            && assignment.Status == ProviderMissionAssignmentStatus.Refused);
+    }
+
     private static async Task<ConfirmedMissionScenario> CreateConfirmedMissionScenarioAsync(HomeServiceDbContext db)
     {
         var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
@@ -371,23 +451,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         company.UpdateMissionDispatchSettings(0, true);
         company.Approve();
 
-        var provider = new ProviderProfile(
-            company.Id,
-            "Awa",
-            "Konate",
-            "+225 0543543543",
-            "awa.konate@test.ci",
-            new DateOnly(1994, 5, 10),
-            "Cocody Angre",
-            ProviderGender.Female,
-            ProviderEmploymentType.CompanyEmployee,
-            5,
-            5.348850m,
-            -4.003150m,
-            5);
-        provider.Approve();
-        provider.SetAvailability(true, 5.348850m, -4.003150m);
-        provider.AddService(service.Id, ExperienceLevel.Confirmed);
+        var provider = CreateProvider(company.Id, service.Id, "Awa", "Konate", "+225 0543543543", "awa.konate@test.ci");
 
         db.Services.Add(service);
         db.Companies.Add(company);
@@ -407,6 +471,34 @@ public sealed class ClientMissionWorkflowIntegrationTests
 
         await db.SaveChangesAsync();
         return new WorkflowSeed(company, provider, service, prestation);
+    }
+
+    private static ProviderProfile CreateProvider(
+        Guid companyId,
+        Guid serviceId,
+        string firstName,
+        string lastName,
+        string phoneNumber,
+        string? email = null)
+    {
+        var provider = new ProviderProfile(
+            companyId,
+            firstName,
+            lastName,
+            phoneNumber,
+            email ?? $"{firstName.ToLowerInvariant()}.{lastName.ToLowerInvariant()}@test.ci",
+            new DateOnly(1994, 5, 10),
+            "Cocody Angre",
+            ProviderGender.Female,
+            ProviderEmploymentType.CompanyEmployee,
+            5,
+            5.348850m,
+            -4.003150m,
+            5);
+        provider.Approve();
+        provider.SetAvailability(true, 5.348850m, -4.003150m);
+        provider.AddService(serviceId, ExperienceLevel.Confirmed);
+        return provider;
     }
 
     private static CreateClientMissionRequest CreateMissionRequest(Guid serviceId, Guid prestationId)
