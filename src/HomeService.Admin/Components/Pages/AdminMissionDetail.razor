@@ -357,6 +357,31 @@ else
     }
     else if (SelectedTab == "logs")
     {
+        <section class="mission-timeline-panel">
+            <header>
+                <div>
+                    <span>Chronologie mission</span>
+                    <h2>Evenements cles</h2>
+                    <p>Lecture metier rapide pour retrouver ce qui s'est passe pendant un appel client ou un controle admin.</p>
+                </div>
+                <strong>@BuildMissionTimeline(Mission).Count evenement(s)</strong>
+            </header>
+
+            <div class="mission-timeline-list">
+                @foreach (var item in BuildMissionTimeline(Mission))
+                {
+                    <article class="@GetTimelineItemClass(item.Tone)">
+                        <span>@item.Step</span>
+                        <div>
+                            <strong>@item.Title</strong>
+                            <p>@item.Description</p>
+                            <small>@FormatDate(item.OccurredAt)</small>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+
         <AdminAuditLogPanel
             ContextType="Mission"
             ContextId="Mission.Id"
@@ -652,6 +677,129 @@ else
     private static string GetAssignmentStatusClass(string status) => status switch { "Accepted" or "Completed" => "status-pill ok", "Refused" or "Expired" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetDisputeStatusClass(string status) => status switch { "Resolved" => "status-pill ok", "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetFinancialLineClass(int amount) => amount < 0 ? "mission-finance-line negative" : "mission-finance-line";
+    private static string GetTimelineItemClass(string tone) => tone switch
+    {
+        "ok" => "mission-timeline-item ok",
+        "danger" => "mission-timeline-item danger",
+        "money" => "mission-timeline-item money",
+        _ => "mission-timeline-item"
+    };
+
+    private static IReadOnlyList<MissionTimelineItem> BuildMissionTimeline(AdminMissionDetailResponse mission)
+    {
+        var items = new List<MissionTimelineItem>
+        {
+            new("01", "Demande creee", $"{mission.CustomerName} a demande {FormatMissionTitle(mission.ServiceName, mission.PrestationName)}.", mission.CreatedAt, "neutral")
+        };
+
+        if (mission.ScheduledFor is not null)
+        {
+            items.Add(new("02", "Rendez-vous prevu", $"Intervention planifiee au {FormatDate(mission.ScheduledFor)}.", mission.ScheduledFor.Value, "neutral"));
+        }
+
+        if (mission.CompanyQuotedAt is not null)
+        {
+            items.Add(new("03", "Devis entreprise", $"{mission.CompanyName ?? "Entreprise"} a propose {FormatMoney(mission.CompanyQuotedAmount, mission.Currency)}.", mission.CompanyQuotedAt.Value, "money"));
+        }
+
+        if (mission.CustomerQuoteAcceptedAt is not null)
+        {
+            items.Add(new("04", "Devis accepte", $"Le client a accepte le prix de {FormatMoney(mission.CompanyQuotedAmount ?? mission.FinalTotalAmount, mission.Currency)}.", mission.CustomerQuoteAcceptedAt.Value, "ok"));
+        }
+
+        if (mission.ProviderAcceptedAt is not null)
+        {
+            items.Add(new("05", "Prestataire accepte", $"{mission.ProviderName ?? "Prestataire"} a accepte la mission.", mission.ProviderAcceptedAt.Value, "ok"));
+        }
+
+        if (mission.CustomerConfirmedAt is not null)
+        {
+            items.Add(new("06", "Client confirme", "Le client a confirme l'intervention.", mission.CustomerConfirmedAt.Value, "ok"));
+        }
+
+        if (mission.ContactDetailsReleasedAt is not null)
+        {
+            items.Add(new("07", "Contacts visibles", "Les contacts client et prestataire ont ete ouverts apres confirmation.", mission.ContactDetailsReleasedAt.Value, "neutral"));
+        }
+
+        foreach (var assignment in mission.Assignments)
+        {
+            items.Add(new("A", $"Affectation {TranslateAssignmentStatus(assignment.Status)}", $"{assignment.ProviderName} - {assignment.CompanyName}. Expire le {FormatDate(assignment.ExpiresAt)}.", assignment.ExpiresAt, GetAssignmentTone(assignment.Status)));
+
+            if (assignment.RespondedAt is not null)
+            {
+                items.Add(new("A", "Reponse prestataire", $"{assignment.ProviderName}: {TranslateAssignmentStatus(assignment.Status)}{FormatOptionalReason(assignment.RefusalReason)}.", assignment.RespondedAt.Value, GetAssignmentTone(assignment.Status)));
+            }
+
+            if (assignment.ArrivalVerifiedAt is not null)
+            {
+                items.Add(new("A", "Arrivee controlee", $"{assignment.ProviderName}: arrivee {TranslateLocationStatus(assignment.ArrivalVerificationStatus)} ({FormatDistance(assignment.ArrivalDistanceMeters, assignment.ArrivalToleranceMeters)}).", assignment.ArrivalVerifiedAt.Value, assignment.ArrivalVerificationStatus == "Verified" ? "ok" : "danger"));
+            }
+
+            if (assignment.StartedAt is not null)
+            {
+                items.Add(new("A", "Mission demarree", $"{assignment.ProviderName} a declare le debut de prestation.", assignment.StartedAt.Value, "ok"));
+            }
+
+            if (assignment.CompletedAt is not null)
+            {
+                items.Add(new("A", "Mission terminee", string.IsNullOrWhiteSpace(assignment.CompletionNote) ? "Fin de prestation declaree." : assignment.CompletionNote, assignment.CompletedAt.Value, "ok"));
+            }
+        }
+
+        foreach (var dispute in mission.Disputes)
+        {
+            items.Add(new("L", "Litige ouvert", $"{TranslateDisputeReason(dispute.Reason)} - {dispute.Description}", dispute.OpenedAt, "danger"));
+
+            if (dispute.ResolvedAt is not null)
+            {
+                var refund = dispute.RefundAmount is > 0
+                    ? $" Remboursement: {FormatMoney(dispute.RefundAmount, dispute.Currency)}."
+                    : string.Empty;
+                items.Add(new("L", "Litige resolu", $"{TranslateDisputeResolution(dispute.Resolution)}.{refund} {dispute.ResolutionNote}", dispute.ResolvedAt.Value, "ok"));
+            }
+        }
+
+        foreach (var message in mission.Messages)
+        {
+            items.Add(new("M", $"Message {TranslateSenderType(message.SenderType)}", message.Body, message.CreatedAt, "neutral"));
+        }
+
+        if (mission.CancelledAt is not null)
+        {
+            items.Add(new("X", "Mission annulee", $"{TranslateCancellationActor(mission.CancelledBy)} - {TranslateDisputeReason(mission.CancellationReason ?? "Other")}. {mission.CancellationComment}", mission.CancelledAt.Value, "danger"));
+        }
+
+        if (mission.PaymentStatus is "Paid" or "Authorized" or "Refunded" or "Failed")
+        {
+            items.Add(new("P", $"Paiement {TranslatePaymentStatus(mission.PaymentStatus)}", $"{TranslatePaymentMethod(mission.PaymentMethod)} - commission wélé {FormatMoney(mission.PlatformCommissionAmount, mission.Currency)} - reversement {FormatMoney(mission.CompanyPayoutAmount, mission.Currency)}.", mission.CustomerQuoteAcceptedAt ?? mission.CreatedAt, "money"));
+        }
+
+        return items
+            .OrderByDescending(item => item.OccurredAt)
+            .ThenBy(item => item.Step)
+            .ToList();
+    }
+
+    private static string GetAssignmentTone(string status) => status switch
+    {
+        "Accepted" or "Started" or "Completed" => "ok",
+        "Refused" or "Expired" or "Cancelled" => "danger",
+        _ => "neutral"
+    };
+
+    private static string FormatOptionalReason(string? reason)
+        => string.IsNullOrWhiteSpace(reason) ? string.Empty : $" ({reason})";
+
+    private static string TranslateCancellationActor(string? actor) => actor switch
+    {
+        "Customer" => "Client",
+        "Provider" => "Prestataire",
+        "Company" => "Entreprise",
+        "Platform" => "Admin wélé",
+        _ => "Annulation"
+    };
+
     private static string TranslateFinancialLineType(string lineType) => lineType switch
     {
         "ServicePrice" => "Prix",
@@ -674,4 +822,11 @@ else
         ("CompanyUnavailable", "Entreprise indisponible"),
         ("Other", "Autre motif")
     ];
+
+    private sealed record MissionTimelineItem(
+        string Step,
+        string Title,
+        string Description,
+        DateTimeOffset OccurredAt,
+        string Tone);
 }
