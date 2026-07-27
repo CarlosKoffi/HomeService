@@ -87,6 +87,16 @@ public sealed class AdminPaymentQueryServiceTests
         Assert.Single(searchResult.Items);
         Assert.Equal("Repassage", searchResult.Items[0].PrestationName);
 
+        var missionNumberResult = await new AdminQueryService(db).ListPaymentsAsync(
+            period: "month",
+            paymentStatus: null,
+            paymentMethod: null,
+            search: mission.MissionNumber,
+            CancellationToken.None);
+
+        var missionNumberItem = Assert.Single(missionNumberResult.Items);
+        Assert.Equal(mission.MissionNumber, missionNumberItem.MissionNumber);
+
         var collectedResult = await new AdminQueryService(db).ListPaymentsAsync(
             period: "month",
             paymentStatus: "Collected",
