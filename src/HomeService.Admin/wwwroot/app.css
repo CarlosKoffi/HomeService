@@ -1582,7 +1582,11 @@ h3 {
 }
 
 .provider-row {
-    grid-template-columns: minmax(240px, 1.15fr) minmax(130px, .52fr) minmax(150px, .58fr) minmax(220px, 1fr) minmax(220px, auto);
+    align-items: center;
+    gap: .85rem;
+    grid-template-columns: minmax(220px, 1.25fr) minmax(126px, .55fr) minmax(136px, .55fr) minmax(210px, 1fr) minmax(210px, .95fr);
+    min-height: 78px;
+    padding-block: .82rem;
 }
 
 .provider-list-head {
@@ -1626,15 +1630,28 @@ h3 {
 .operator-row strong {
     color: #000;
     display: block;
-    font-size: .98rem;
-    font-weight: 850;
+    font-size: .93rem;
+    font-weight: 760;
+    line-height: 1.22;
 }
 
 .company-identity p,
 .operator-row p,
 .operator-meta small {
     color: #64748b;
+    font-size: .78rem;
+    line-height: 1.35;
     margin: .18rem 0 0;
+}
+
+.company-identity small {
+    color: #94a3b8;
+    display: block;
+    font-size: .76rem;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .avatar-token {
@@ -1643,12 +1660,12 @@ h3 {
     border-radius: 999px;
     color: #2563eb;
     display: inline-flex;
-    flex: 0 0 44px;
-    font-size: .78rem;
+    flex: 0 0 38px;
+    font-size: .72rem;
     font-weight: 900;
-    height: 44px;
+    height: 38px;
     justify-content: center;
-    width: 44px;
+    width: 38px;
 }
 
 .operator-meta {
@@ -1658,7 +1675,7 @@ h3 {
 }
 
 .provider-status-stack {
-    gap: .55rem;
+    gap: .35rem;
 }
 
 .provider-status-stack > span {
@@ -1668,8 +1685,8 @@ h3 {
 
 .provider-status-stack small {
     color: #64748b;
-    font-size: .68rem;
-    font-weight: 900;
+    font-size: .62rem;
+    font-weight: 820;
     letter-spacing: .08em;
     line-height: 1;
     text-transform: uppercase;
@@ -1683,16 +1700,17 @@ h3 {
     color: #000;
     display: flex;
     flex-wrap: wrap;
-    gap: .45rem;
+    gap: .35rem;
 }
 
 .operator-kpis span {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
     border-radius: 999px;
-    font-size: .8rem;
-    font-weight: 750;
-    padding: .35rem .55rem;
+    font-size: .74rem;
+    font-weight: 680;
+    line-height: 1.15;
+    padding: .3rem .5rem;
 }
 
 .operator-kpis .kpi-ok {
@@ -1887,7 +1905,7 @@ h3 {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: .45rem;
+    gap: .35rem;
     justify-content: end;
 }
 
@@ -1898,9 +1916,11 @@ h3 {
     border-radius: 999px;
     color: #0f172a;
     font: inherit;
-    font-size: .82rem;
-    font-weight: 850;
-    padding: .55rem .75rem;
+    font-size: .75rem;
+    font-weight: 760;
+    line-height: 1.1;
+    min-height: 34px;
+    padding: .48rem .62rem;
     text-decoration: none;
 }
 
@@ -5840,6 +5860,16 @@ h3 {
 
     .provider-list-head {
         display: none;
+    }
+
+    .provider-row {
+        align-items: stretch;
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+
+    .provider-doc-actions {
+        justify-content: flex-start;
     }
 
     .catalog-meta,
