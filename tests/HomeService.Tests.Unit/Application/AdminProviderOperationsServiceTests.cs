@@ -28,6 +28,7 @@ public sealed class AdminProviderOperationsServiceTests
 
             var result = await new AdminProviderOperationsService(db).ApproveAsync(
                 providerId,
+                "Identite et test metier valides",
                 AuditActor.Admin(),
                 new AuditRequestContext("127.0.0.1", "tests", "provider-approve"),
                 CancellationToken.None);
@@ -38,6 +39,7 @@ public sealed class AdminProviderOperationsServiceTests
             Assert.Equal("AdminProviderApproved", log.Action);
             Assert.Equal(nameof(ProviderProfile), log.EntityType);
             Assert.Equal(providerId, log.EntityId);
+            Assert.Equal("Identite et test metier valides", log.Summary);
             Assert.Equal("provider-approve", log.CorrelationId);
         }
 

@@ -573,12 +573,14 @@ public static class AdminEndpoints
 
         admin.MapPost("/providers/{providerId:guid}/approve", async (
             Guid providerId,
+            AdminProviderActionRequest? request,
             HttpRequest httpRequest,
             AdminProviderOperationsService providerOperationsService,
             CancellationToken cancellationToken) =>
         {
             var result = await providerOperationsService.ApproveAsync(
                 providerId,
+                request?.Note,
                 AuditActor.Admin(),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);

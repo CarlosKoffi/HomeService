@@ -140,6 +140,10 @@ else
                 else if (CanApproveProvider(Provider))
                 {
                     <p>@(Provider.Status == "SuspendedByPlatform" ? "Ce prestataire est suspendu par wélé. Vous pouvez le reactiver apres controle." : "Validez le prestataire lorsque son identite, ses services et ses pieces sont suffisants.")</p>
+                    <label class="form-field">
+                        <span>Note de validation</span>
+                        <textarea rows="3" @bind="ApproveNote" placeholder="Ex: identite controlee, test metier valide, reactiver apres verification..."></textarea>
+                    </label>
                     <button type="button" class="primary-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
                         @(IsActionRunning ? "Validation..." : GetApproveButtonLabel(Provider))
                     </button>
@@ -332,6 +336,7 @@ else
     private bool IsActionRunning { get; set; }
     private string? ErrorMessage { get; set; }
     private string? Message { get; set; }
+    private string? ApproveNote { get; set; }
     private string? SuspendNote { get; set; }
     private string SelectedTab { get; set; } = "summary";
 
@@ -378,13 +383,14 @@ else
         var wasSuspendedByPlatform = Provider.Status == "SuspendedByPlatform";
         try
         {
-            var result = await ApiClient.ApproveAdminProviderAsync(Provider.Id);
+            var result = await ApiClient.ApproveAdminProviderAsync(Provider.Id, ApproveNote);
             if (!result.IsSuccess)
             {
                 ErrorMessage = result.ErrorMessage;
                 return;
             }
 
+            ApproveNote = null;
             await LoadAsync();
             Message = wasSuspendedByPlatform ? "Prestataire reactive." : "Prestataire valide pour mission.";
         }

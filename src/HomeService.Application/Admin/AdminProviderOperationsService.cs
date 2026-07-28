@@ -9,10 +9,11 @@ namespace HomeService.Application.Admin;
 public sealed class AdminProviderOperationsService(IAppDbContext db)
 {
     public async Task<AdminProviderOperationResult> ApproveAsync(Guid providerId, CancellationToken cancellationToken)
-        => await ApproveAsync(providerId, null, null, cancellationToken);
+        => await ApproveAsync(providerId, null, null, null, cancellationToken);
 
     public async Task<AdminProviderOperationResult> ApproveAsync(
         Guid providerId,
+        string? note,
         AuditActor? actor,
         AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
@@ -54,7 +55,9 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
             "AdminProviderApproved",
             provider,
             previousStatus,
-            "Prestataire valide par l'administration.");
+            string.IsNullOrWhiteSpace(note)
+                ? "Prestataire valide par l'administration."
+                : note.Trim());
         await db.SaveChangesAsync(cancellationToken);
 
         return AdminProviderOperationResult.Ok(provider, previousStatus);

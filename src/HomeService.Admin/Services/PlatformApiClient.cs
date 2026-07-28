@@ -280,10 +280,16 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminProviderDetailResponse>($"/api/admin/providers/{providerId}", cancellationToken);
     }
 
-    public async Task<ApiActionResult> ApproveAdminProviderAsync(Guid providerId, CancellationToken cancellationToken = default)
+    public async Task<ApiActionResult> ApproveAdminProviderAsync(
+        Guid providerId,
+        string? note,
+        CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
-        var response = await httpClient.PostAsync($"/api/admin/providers/{providerId}/approve", null, cancellationToken);
+        var response = await httpClient.PostAsJsonAsync(
+            $"/api/admin/providers/{providerId}/approve",
+            new AdminProviderActionRequest(note),
+            cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         return response.IsSuccessStatusCode
             ? new ApiActionResult(true, null)
