@@ -141,6 +141,7 @@
         width: 100%;
         font-weight: 720;
         white-space: normal;
+        word-break: normal;
     }
 
 .nav-item ::deep a.active {
@@ -159,7 +160,8 @@
 
 .nav-label {
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    hyphens: none;
 }
 
 .navbar-toggler:checked ~ .nav-scrollable {
