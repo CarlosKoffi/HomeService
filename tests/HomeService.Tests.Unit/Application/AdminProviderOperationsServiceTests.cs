@@ -89,6 +89,124 @@ public sealed class AdminProviderOperationsServiceTests
         }
     }
 
+    [Fact]
+    public async Task ApproveAsync_WhenProviderHasNoCompany_ReturnsValidationFailedWithoutAudit()
+    {
+        await using var db = CreateDbContext(Guid.NewGuid().ToString("N"), new InMemoryDatabaseRoot());
+        var provider = new ProviderProfile(
+            "Malou",
+            "Diallo",
+            "+2250700000000",
+            "malou@wele.ci",
+            new DateOnly(1996, 8, 18),
+            "Yopougon",
+            ProviderGender.Male,
+            4,
+            null,
+            null,
+            5);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminProviderOperationsService(db).ApproveAsync(
+            provider.Id,
+            "Validation admin",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "provider-no-company"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminProviderOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal("Le prestataire doit etre rattache a une entreprise avant validation.", result.Message);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_WhenProviderHasNoActiveService_ReturnsValidationFailedWithoutAudit()
+    {
+        await using var db = CreateDbContext(Guid.NewGuid().ToString("N"), new InMemoryDatabaseRoot());
+        var scenario = CreateReadyProviderScenario();
+        db.Companies.Add(scenario.Company);
+        db.Services.Add(scenario.Service);
+        db.Providers.Add(scenario.Provider);
+        await db.SaveChangesAsync();
+        var service = scenario.Provider.Services.Single();
+        service.Deactivate();
+        await db.SaveChangesAsync();
+
+        var result = await new AdminProviderOperationsService(db).ApproveAsync(
+            scenario.Provider.Id,
+            "Validation admin",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "provider-no-service"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminProviderOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal("Ajoutez au moins un service actif avant validation.", result.Message);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_WhenProviderHasNoIdentityDocument_ReturnsValidationFailedWithoutAudit()
+    {
+        await using var db = CreateDbContext(Guid.NewGuid().ToString("N"), new InMemoryDatabaseRoot());
+        var company = new Company("CI Home Service", "0700000000", "contact@ci.ci");
+        company.Approve();
+        var service = new Service("Menage a domicile", null, null);
+        var provider = new ProviderProfile(
+            company.Id,
+            "Awa",
+            "Konate",
+            "+2250102030405",
+            "awa@wele.ci",
+            new DateOnly(1994, 4, 12),
+            "Cocody",
+            ProviderGender.Female,
+            ProviderEmploymentType.CompanyEmployee,
+            5,
+            null,
+            null,
+            5);
+        provider.AddService(service.Id, ExperienceLevel.Confirmed);
+        db.Companies.Add(company);
+        db.Services.Add(service);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminProviderOperationsService(db).ApproveAsync(
+            provider.Id,
+            "Validation admin",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "provider-no-id"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminProviderOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal("Ajoutez une piece d'identite avant validation.", result.Message);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
+    [Fact]
+    public async Task SuspendAsync_WhenProviderIsAlreadySuspended_ReturnsValidationFailedWithoutAudit()
+    {
+        await using var db = CreateDbContext(Guid.NewGuid().ToString("N"), new InMemoryDatabaseRoot());
+        var scenario = CreateReadyProviderScenario();
+        scenario.Provider.SuspendByPlatform();
+        db.Companies.Add(scenario.Company);
+        db.Services.Add(scenario.Service);
+        db.Providers.Add(scenario.Provider);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminProviderOperationsService(db).SuspendAsync(
+            scenario.Provider.Id,
+            "Nouvelle suspension",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "provider-already-suspended"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminProviderOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal("Ce prestataire est deja suspendu par la plateforme.", result.Message);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
     private static ProviderScenario CreateReadyProviderScenario()
     {
         var company = new Company("CI Home Service", "0700000000", "contact@ci.ci");
