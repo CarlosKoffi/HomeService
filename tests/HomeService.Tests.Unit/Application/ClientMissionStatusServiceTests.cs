@@ -26,6 +26,10 @@ public sealed class ClientMissionStatusServiceTests
         Assert.False(result.Response.ContactDetailsReleased);
         Assert.Null(result.Response.AssignedCompany!.PhoneNumber);
         Assert.Null(result.Response.AssignedProvider!.PhoneNumber);
+        Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
+        Assert.Equal(4, result.Response.AssignedProvider.AverageRating);
+        Assert.Equal(1, result.Response.AssignedProvider.CompletedMissionCount);
+        Assert.Null(result.Response.AssignedProvider.EstimatedArrivalMinutes);
         Assert.True(result.Response.Actions.CanAcceptQuote);
         Assert.False(result.Response.Actions.CanCallCompany);
         Assert.False(result.Response.Actions.CanCallProvider);
@@ -111,6 +115,8 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal(scenario.Company.Email, result.Response.AssignedCompany.Email);
         Assert.Equal(scenario.Provider.PhoneNumber, result.Response.AssignedProvider!.PhoneNumber);
         Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
+        Assert.Equal(4, result.Response.AssignedProvider.AverageRating);
+        Assert.Equal(1, result.Response.AssignedProvider.CompletedMissionCount);
         Assert.True(result.Response.Actions.CanCallCompany);
         Assert.True(result.Response.Actions.CanCallProvider);
         Assert.Equal("CallProvider", result.Response.Actions.PrimaryAction);
@@ -194,15 +200,42 @@ public sealed class ClientMissionStatusServiceTests
             "awa.jpg",
             "provider-photo.jpg",
             "image/jpeg");
+        var previousMission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Scheduled,
+            PaymentMethod.MobileMoney,
+            DateTimeOffset.UtcNow.AddDays(-2),
+            90,
+            prestation.Id,
+            "Ancienne intervention",
+            requiresCompanyQuote: true);
+        previousMission.AssignWithCompanyQuote(provider.Id, company.Id, 18_000, 25_000, null);
+        previousMission.MarkProviderAccepted(provider.Id, company.Id);
+        previousMission.ConfirmByCustomer(2_700, 0, 1_500);
+        previousMission.Start(provider.Id, company.Id);
+        previousMission.Complete(90);
+        previousMission.ValidateCompletionByCustomer();
+        var previousReview = new MissionReview(
+            previousMission.Id,
+            customer.Id,
+            company.Id,
+            provider.Id,
+            qualityRating: 4,
+            punctualityRating: 4,
+            politenessRating: 4,
+            cleanlinessRating: 4,
+            comment: "Bonne intervention precedente.");
 
         db.Services.Add(service);
         db.Customers.Add(customer);
         db.Companies.Add(company);
         db.Providers.Add(provider);
-        db.Missions.Add(mission);
+        db.Missions.AddRange(mission, previousMission);
         db.MissionDispatchOffers.Add(offer);
         db.MissionAttachments.Add(photo);
         db.ProviderDocuments.Add(providerPhoto);
+        db.MissionReviews.Add(previousReview);
         await db.SaveChangesAsync();
 
         return new ClientMissionStatusScenario(customer, company, provider, mission);

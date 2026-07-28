@@ -58,7 +58,10 @@ public sealed record ClientMissionProviderResponse(
     Guid ProviderId,
     string FullName,
     string? PhoneNumber,
-    string? PhotoStoragePath);
+    string? PhotoStoragePath,
+    decimal? AverageRating,
+    int CompletedMissionCount,
+    int? EstimatedArrivalMinutes);
 
 public sealed record ClientMissionOfferResponse(
     Guid OfferId,

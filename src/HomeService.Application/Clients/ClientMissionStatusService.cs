@@ -66,6 +66,19 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                 .OrderByDescending(document => document.UpdatedAt ?? document.CreatedAt)
                 .Select(document => document.StoragePath)
                 .FirstOrDefaultAsync(cancellationToken);
+        var providerRating = assignedProvider is null
+            ? null
+            : await db.MissionReviews
+                .AsNoTracking()
+                .Where(review => review.ProviderId == assignedProvider.Id)
+                .AverageAsync(review => (decimal?)review.OverallRating, cancellationToken);
+        var providerCompletedMissionCount = assignedProvider is null
+            ? 0
+            : await db.Missions
+                .AsNoTracking()
+                .CountAsync(item => item.ProviderId == assignedProvider.Id
+                    && item.Status == MissionStatus.Completed
+                    && item.CustomerCompletionValidatedAt != null, cancellationToken);
 
         var offers = await db.MissionDispatchOffers
             .AsNoTracking()
@@ -161,7 +174,10 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                     assignedProvider.Id,
                     assignedProvider.FullName,
                     mission.CanRevealContactDetails ? assignedProvider.PhoneNumber : null,
-                    providerPhoto),
+                    providerPhoto,
+                    providerRating,
+                    providerCompletedMissionCount,
+                    GetEstimatedArrivalMinutes(mission.ScheduledFor)),
             offers,
             additionalQuotes,
             photos,
@@ -265,6 +281,17 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
         }
 
         return "Votre demande est enregistree.";
+    }
+
+    private static int? GetEstimatedArrivalMinutes(DateTimeOffset? scheduledFor)
+    {
+        if (scheduledFor is null)
+        {
+            return null;
+        }
+
+        var minutes = (int)Math.Ceiling((scheduledFor.Value - DateTimeOffset.UtcNow).TotalMinutes);
+        return Math.Max(0, minutes);
     }
 
     private static bool PhoneMatches(string storedPhoneNumber, string providedPhoneNumber)
