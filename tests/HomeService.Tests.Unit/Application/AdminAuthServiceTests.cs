@@ -103,6 +103,18 @@ public sealed class AdminAuthServiceTests
         Assert.True(canView);
     }
 
+    [Fact]
+    public void PromoteToSuperAdmin_ActivatesAndUnlocksAllPermissionsFlag()
+    {
+        var admin = new AdminUser("Ops", "ops@wele.ci");
+        admin.Deactivate();
+
+        admin.PromoteToSuperAdmin();
+
+        Assert.True(admin.IsSuperAdmin);
+        Assert.True(admin.IsActive);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()

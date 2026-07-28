@@ -58,6 +58,13 @@ public sealed class AdminUser : AuditableEntity
         Touch();
     }
 
+    public void PromoteToSuperAdmin()
+    {
+        IsSuperAdmin = true;
+        IsActive = true;
+        Touch();
+    }
+
     public void RecordLogin(DateTimeOffset loginAt)
     {
         LastLoginAt = loginAt;

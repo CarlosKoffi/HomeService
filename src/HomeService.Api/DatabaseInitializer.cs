@@ -1,4 +1,5 @@
 using HomeService.Application.Notifications;
+using HomeService.Application.Security;
 using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -28,7 +29,8 @@ public static class DatabaseInitializer
         await SeedServicesAsync(db, cancellationToken);
         await SeedServicePrestationsAsync(db, cancellationToken);
         await SeedDemoMissionsAsync(db, cancellationToken);
-        await SeedAdminAccessAsync(db, cancellationToken);
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        await SeedAdminAccessAsync(db, configuration, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
         await SeedCmsFoundationAsync(db, cancellationToken);
         await SeedCompanyEditorialContentAsync(db, cancellationToken);
@@ -657,7 +659,10 @@ public static class DatabaseInitializer
         int PremiumPriceAmount,
         string Currency);
 
-    private static async Task SeedAdminAccessAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    private static async Task SeedAdminAccessAsync(
+        HomeServiceDbContext db,
+        IConfiguration configuration,
+        CancellationToken cancellationToken)
     {
         var moduleSeeds = new[]
         {
@@ -704,6 +709,40 @@ public static class DatabaseInitializer
 
             await db.SaveChangesAsync(cancellationToken);
         }
+
+        await EnsureBootstrapSuperAdminAsync(db, configuration, cancellationToken);
+    }
+
+    private static async Task EnsureBootstrapSuperAdminAsync(
+        HomeServiceDbContext db,
+        IConfiguration configuration,
+        CancellationToken cancellationToken)
+    {
+        var email = (configuration["AdminBootstrap:Email"] ?? configuration["ADMIN_BOOTSTRAP_EMAIL"])?.Trim().ToLowerInvariant();
+        var password = configuration["AdminBootstrap:Password"] ?? configuration["ADMIN_BOOTSTRAP_PASSWORD"];
+        var fullName = (configuration["AdminBootstrap:FullName"] ?? configuration["ADMIN_BOOTSTRAP_FULL_NAME"] ?? "Super admin").Trim();
+
+        if (string.IsNullOrWhiteSpace(email)
+            || !email.Contains('@', StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(password)
+            || password.Length < 8)
+        {
+            return;
+        }
+
+        var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Email == email, cancellationToken);
+        if (admin is null)
+        {
+            admin = new AdminUser(fullName, email, true);
+            db.AdminUsers.Add(admin);
+        }
+        else
+        {
+            admin.PromoteToSuperAdmin();
+        }
+
+        admin.AcceptInvitation(Sha256PasswordHasher.Hash(password), DateTimeOffset.UtcNow);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private sealed record AdminModuleSeed(AdminModuleKey Key, string Name, string Description, int DisplayOrder);
