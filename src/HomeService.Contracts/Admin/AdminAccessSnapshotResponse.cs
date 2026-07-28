@@ -5,6 +5,20 @@ public sealed record AdminAccessSnapshotResponse(
     IReadOnlyList<AdminModuleSummaryResponse> Modules,
     IReadOnlyList<AdminUserSummaryResponse> Admins);
 
+public sealed record AdminInvitationResponse(
+    AdminAccessSnapshotResponse Snapshot,
+    string Token,
+    string Email,
+    DateTimeOffset ExpiresAt,
+    string Message);
+
+public sealed record AdminInvitationDetailResponse(
+    string Email,
+    string FullName,
+    DateTimeOffset ExpiresAt,
+    bool IsExpired,
+    bool IsAccepted);
+
 public sealed record AdminRoleSummaryResponse(
     Guid Id,
     string Name,
@@ -54,3 +68,7 @@ public sealed record CreateAdminUserRequest(
 
 public sealed record UpdateAdminUserRolesRequest(
     IReadOnlyList<Guid> RoleIds);
+
+public sealed record AcceptAdminInvitationRequest(
+    string Password,
+    string ConfirmPassword);

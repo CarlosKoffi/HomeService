@@ -1,5 +1,6 @@
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
+using HomeService.Application.Security;
 using HomeService.Contracts.Admin;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -90,6 +91,59 @@ public sealed class AdminAccessControlServiceTests
         Assert.Equal("AdminUserInvited", audit.Action);
         Assert.Equal(admin.Id, audit.EntityId);
         Assert.Equal("admin-create", audit.CorrelationId);
+    }
+
+    [Fact]
+    public async Task CreateAdminInvitationAsync_WhenValid_ReturnsTokenAndStoresExpiration()
+    {
+        await using var db = CreateDbContext();
+        var role = new AdminRole("Support", "Support");
+        db.AdminRoles.Add(role);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.CreateAdminInvitationAsync(
+            new CreateAdminUserRequest(string.Empty, "support@wele.ci", false, [role.Id]),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-invite"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.Ok, result.Status);
+        Assert.False(string.IsNullOrWhiteSpace(result.Invitation!.Token));
+        Assert.Equal("support@wele.ci", result.Invitation.Email);
+        var admin = await db.AdminUsers.SingleAsync(user => user.Email == "support@wele.ci");
+        Assert.NotNull(admin.InvitationTokenHash);
+        Assert.True(admin.InvitationExpiresAt > DateTimeOffset.UtcNow.AddHours(5));
+        Assert.Contains("Lien d'invitation admin genere", (await db.AuditLogEntries.OrderBy(entry => entry.CreatedAt).LastAsync()).Summary);
+    }
+
+    [Fact]
+    public async Task AcceptInvitationAsync_WhenValid_SetsPasswordAndClearsToken()
+    {
+        await using var db = CreateDbContext();
+        var role = new AdminRole("Support", "Support");
+        db.AdminRoles.Add(role);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+        var invitation = await sut.CreateAdminInvitationAsync(
+            new CreateAdminUserRequest("Support", "support@wele.ci", false, [role.Id]),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-invite"),
+            CancellationToken.None);
+
+        var result = await sut.AcceptInvitationAsync(
+            invitation.Invitation!.Token,
+            new AcceptAdminInvitationRequest("Password123", "Password123"),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-accept"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.Ok, result.Status);
+        var admin = await db.AdminUsers.SingleAsync(user => user.Email == "support@wele.ci");
+        Assert.Null(admin.InvitationTokenHash);
+        Assert.Null(admin.InvitationExpiresAt);
+        Assert.NotNull(admin.InvitationAcceptedAt);
+        Assert.True(Sha256PasswordHasher.Verify("Password123", admin.PasswordHash!));
     }
 
     [Fact]

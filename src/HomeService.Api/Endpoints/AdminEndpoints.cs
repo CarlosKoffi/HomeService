@@ -797,6 +797,64 @@ public static class AdminEndpoints
         })
         .WithName("CreateAdminUser");
 
+        admin.MapPost("/access-control/admins/invitations", async (
+            CreateAdminUserRequest request,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.CreateAdminInvitationAsync(
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            if (result.Status == AdminAccessControlStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            if (result.Status == AdminAccessControlStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            return Results.Ok(result.Invitation);
+        })
+        .WithName("CreateAdminInvitation");
+
+        admin.MapGet("/access-control/admins/invitations/{token}", async (
+            string token,
+            AdminAccessControlService accessControlService,
+            CancellationToken cancellationToken) =>
+        {
+            var invitation = await accessControlService.GetInvitationAsync(token, cancellationToken);
+            return invitation is null ? Results.NotFound(new { message = "Lien d'invitation introuvable." }) : Results.Ok(invitation);
+        })
+        .WithName("GetAdminInvitation");
+
+        admin.MapPost("/access-control/admins/invitations/{token}/password", async (
+            string token,
+            AcceptAdminInvitationRequest request,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.AcceptInvitationAsync(
+                token,
+                request,
+                AuditActor.Admin(),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            return Results.Ok(result.Snapshot);
+        })
+        .WithName("AcceptAdminInvitation");
+
         admin.MapPut("/access-control/admins/{adminUserId:guid}/roles", async (
             Guid adminUserId,
             UpdateAdminUserRolesRequest request,

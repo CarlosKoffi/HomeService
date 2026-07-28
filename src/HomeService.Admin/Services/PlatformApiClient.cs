@@ -725,6 +725,27 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await PostJsonAsync<AdminAccessSnapshotResponse>("/api/admin/access-control/admins", request, cancellationToken);
     }
 
+    public async Task<AdminInvitationResponse?> CreateAdminInvitationAsync(CreateAdminUserRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminInvitationResponse>("/api/admin/access-control/admins/invitations", request, cancellationToken);
+    }
+
+    public async Task<AdminInvitationDetailResponse?> GetAdminInvitationAsync(string token, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminInvitationDetailResponse>($"/api/admin/access-control/admins/invitations/{Uri.EscapeDataString(token)}", cancellationToken);
+    }
+
+    public async Task<AdminAccessSnapshotResponse?> AcceptAdminInvitationAsync(
+        string token,
+        AcceptAdminInvitationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminAccessSnapshotResponse>($"/api/admin/access-control/admins/invitations/{Uri.EscapeDataString(token)}/password", request, cancellationToken);
+    }
+
     public async Task<AdminAccessSnapshotResponse?> UpdateAdminUserRolesAsync(
         Guid adminUserId,
         UpdateAdminUserRolesRequest request,

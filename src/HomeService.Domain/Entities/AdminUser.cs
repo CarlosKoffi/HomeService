@@ -21,8 +21,30 @@ public sealed class AdminUser : AuditableEntity
     public string Email { get; private set; } = string.Empty;
     public bool IsSuperAdmin { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public string? PasswordHash { get; private set; }
+    public string? InvitationTokenHash { get; private set; }
+    public DateTimeOffset? InvitationExpiresAt { get; private set; }
+    public DateTimeOffset? InvitationAcceptedAt { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
     public IReadOnlyCollection<AdminUserRole> Roles => _roles;
+
+    public void SetInvitation(string tokenHash, DateTimeOffset expiresAt)
+    {
+        InvitationTokenHash = tokenHash.Trim();
+        InvitationExpiresAt = expiresAt;
+        InvitationAcceptedAt = null;
+        Touch();
+    }
+
+    public void AcceptInvitation(string passwordHash, DateTimeOffset acceptedAt)
+    {
+        PasswordHash = passwordHash.Trim();
+        InvitationTokenHash = null;
+        InvitationExpiresAt = null;
+        InvitationAcceptedAt = acceptedAt;
+        IsActive = true;
+        Touch();
+    }
 
     public void Deactivate()
     {

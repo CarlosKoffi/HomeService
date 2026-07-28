@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Admin
 @inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Acces et roles</PageTitle>
 
@@ -225,29 +226,38 @@
 
     <div class="access-form admin-invite-form">
         <label>
-            Nom complet
-            <input type="text" @bind="NewAdminFullName" placeholder="Ex: Awa Traore" />
-        </label>
-        <label>
-            Email
+            Email de l'admin
             <input type="email" @bind="NewAdminEmail" placeholder="admin@wele.ci" />
         </label>
-        <label class="checkbox-line">
-            <input type="checkbox" @bind="NewAdminIsSuperAdmin" />
-            Super admin
+        <label>
+            Role
+            <select @bind="NewAdminRoleId">
+                <option value="">Selectionner un role</option>
+                @foreach (var role in Roles.Where(role => role.IsActive).OrderBy(role => role.Name))
+                {
+                    <option value="@role.Id">@role.Name</option>
+                }
+            </select>
         </label>
-        <div class="role-checkboxes">
-            @foreach (var role in Roles)
-            {
-                <label>
-                    <input type="checkbox" checked="@NewAdminRoleIds.Contains(role.Id)" @onchange="args => ToggleNewAdminRole(role.Id, args)" />
-                    @role.Name
-                </label>
-            }
-        </div>
-        <button type="button" @onclick="CreateAdminAsync" disabled="@IsBusy">Creer l'acces admin</button>
+        <button type="button" @onclick="CreateAdminAsync" disabled="@IsBusy">Generer le lien d'invitation</button>
     </div>
 
+    @if (!string.IsNullOrWhiteSpace(LastInvitationLink))
+    {
+        <article class="admin-invite-result">
+            <div>
+                <span>Lien valable 6h</span>
+                <strong>@LastInvitationEmail</strong>
+                <a href="@LastInvitationLink" target="_blank" rel="noreferrer">@LastInvitationLink</a>
+            </div>
+            <label>
+                Message pret a envoyer
+                <textarea readonly rows="5">@LastInvitationMessage
+
+@LastInvitationLink</textarea>
+            </label>
+        </article>
+    }
     <div class="admin-filters access-admin-filters">
         <label>
             Recherche
@@ -320,13 +330,14 @@
     private string? NewRoleDescription { get; set; }
     private Guid? SelectedRoleId { get; set; }
     private HashSet<string> PermissionDraft { get; set; } = [];
-    private string? NewAdminFullName { get; set; }
     private string? NewAdminEmail { get; set; }
+    private Guid? NewAdminRoleId { get; set; }
+    private string? LastInvitationLink { get; set; }
+    private string? LastInvitationMessage { get; set; }
+    private string? LastInvitationEmail { get; set; }
     private string? RoleSearchTerm { get; set; }
     private string? AdminSearchTerm { get; set; }
     private string AdminStatusFilter { get; set; } = "all";
-    private bool NewAdminIsSuperAdmin { get; set; }
-    private HashSet<Guid> NewAdminRoleIds { get; set; } = [];
     private Dictionary<Guid, HashSet<Guid>> AdminRoleDrafts { get; set; } = [];
     private AccessAdminTab ActiveTab { get; set; } = AccessAdminTab.Overview;
 
@@ -398,18 +409,43 @@
 
     private async Task CreateAdminAsync()
     {
-        await RunAccessActionAsync(
-            async () => await ApiClient.CreateAdminUserAsync(new CreateAdminUserRequest(
-                NewAdminFullName ?? string.Empty,
-                NewAdminEmail ?? string.Empty,
-                NewAdminIsSuperAdmin,
-                NewAdminRoleIds.ToList())),
-            "Admin invite.");
+        if (NewAdminRoleId is null)
+        {
+            ActionErrorMessage = "Selectionnez un role pour cet admin.";
+            return;
+        }
 
-        NewAdminFullName = null;
+        IsBusy = true;
+        ActionErrorMessage = null;
+        SuccessMessage = null;
+        LastInvitationLink = null;
+        LastInvitationMessage = null;
+        LastInvitationEmail = null;
+
+        try
+        {
+            var invitation = await ApiClient.CreateAdminInvitationAsync(new CreateAdminUserRequest(
+                BuildDefaultFullName(NewAdminEmail),
+                NewAdminEmail ?? string.Empty,
+                false,
+                [NewAdminRoleId.Value]));
+            ApplySnapshot(invitation?.Snapshot);
+            LastInvitationEmail = invitation?.Email;
+            LastInvitationMessage = invitation?.Message;
+            LastInvitationLink = BuildInvitationLink(invitation?.Token);
+            SuccessMessage = "Lien d'invitation admin genere.";
+        }
+        catch (Exception exception)
+        {
+            ActionErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
         NewAdminEmail = null;
-        NewAdminIsSuperAdmin = false;
-        NewAdminRoleIds.Clear();
+        NewAdminRoleId = null;
     }
 
     private async Task SaveAdminRoleAsync(AdminUserSummaryResponse admin)
@@ -525,18 +561,6 @@
     private void ToggleApprovePermission(Guid moduleId, ChangeEventArgs args)
     {
         TogglePermission(moduleId, "Approve", args);
-    }
-
-    private void ToggleNewAdminRole(Guid roleId, ChangeEventArgs args)
-    {
-        var isChecked = args.Value is bool value && value;
-        if (isChecked)
-        {
-            NewAdminRoleIds.Add(roleId);
-            return;
-        }
-
-        NewAdminRoleIds.Remove(roleId);
     }
 
     private bool HasAdminRoleDraft(Guid adminId, Guid roleId)
@@ -715,6 +739,24 @@
     private string GetAccessTabClass(AccessAdminTab tab)
     {
         return ActiveTab == tab ? "active" : string.Empty;
+    }
+
+    private string? BuildInvitationLink(string? token)
+    {
+        return string.IsNullOrWhiteSpace(token)
+            ? null
+            : Navigation.ToAbsoluteUri($"/admin-invitation/{Uri.EscapeDataString(token)}").ToString();
+    }
+
+    private static string BuildDefaultFullName(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return "Nouvel admin";
+        }
+
+        var localPart = email.Split('@', 2)[0].Replace('.', ' ').Replace('_', ' ').Trim();
+        return string.IsNullOrWhiteSpace(localPart) ? "Nouvel admin" : localPart;
     }
 
     private enum AccessAdminTab

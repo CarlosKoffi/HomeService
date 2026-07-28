@@ -1,0 +1,117 @@
+@page "/admin-invitation/{Token}"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Activation admin</PageTitle>
+
+<main class="admin-invitation-page">
+    <section class="admin-invitation-card">
+        <p class="eyebrow">Acces admin</p>
+        <h1>Creer votre mot de passe</h1>
+
+        @if (IsLoading)
+        {
+            <p>Verification du lien en cours...</p>
+        }
+        else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <p class="admin-message error-message">@ErrorMessage</p>
+        }
+        else if (Invitation is not null)
+        {
+            <div class="admin-invitation-summary">
+                <span>Email</span>
+                <strong>@Invitation.Email</strong>
+                <small>Lien valable jusqu'au @Invitation.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+
+            @if (Invitation.IsAccepted)
+            {
+                <p class="admin-message success-message">Ce lien a deja ete utilise.</p>
+            }
+            else if (Invitation.IsExpired)
+            {
+                <p class="admin-message error-message">Ce lien a expire. Demandez un nouveau lien a un super admin.</p>
+            }
+            else if (IsActivated)
+            {
+                <p class="admin-message success-message">Votre acces admin est active. Vous pouvez maintenant vous connecter.</p>
+                <button type="button" class="primary-action" @onclick="GoToAdmin">Aller a l'admin</button>
+            }
+            else
+            {
+                <div class="admin-invitation-form">
+                    <label>
+                        Mot de passe
+                        <input type="password" @bind="Password" placeholder="Minimum 8 caracteres" />
+                    </label>
+                    <label>
+                        Confirmation
+                        <input type="password" @bind="ConfirmPassword" placeholder="Retapez le mot de passe" />
+                    </label>
+                    <button type="button" @onclick="ActivateAsync" disabled="@IsBusy">Activer mon acces</button>
+                </div>
+            }
+        }
+    </section>
+</main>
+
+@code {
+    [Parameter]
+    public string Token { get; set; } = string.Empty;
+
+    private AdminInvitationDetailResponse? Invitation { get; set; }
+    private string? Password { get; set; }
+    private string? ConfirmPassword { get; set; }
+    private string? ErrorMessage { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsBusy { get; set; }
+    private bool IsActivated { get; set; }
+
+    private void GoToAdmin()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Invitation = await ApiClient.GetAdminInvitationAsync(Token);
+            if (Invitation is null)
+            {
+                ErrorMessage = "Lien d'invitation introuvable.";
+            }
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Impossible de verifier ce lien. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ActivateAsync()
+    {
+        IsBusy = true;
+        ErrorMessage = null;
+
+        try
+        {
+            await ApiClient.AcceptAdminInvitationAsync(Token, new AcceptAdminInvitationRequest(Password ?? string.Empty, ConfirmPassword ?? string.Empty));
+            IsActivated = true;
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Activation impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+}
