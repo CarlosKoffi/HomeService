@@ -49,6 +49,7 @@ $checks = @(
         RequiredProperties = @("eventGroup", "audienceGroup")
         RequiredEventKeys = @(
             "MissionAssignedToProvider",
+            "MissionCancelled",
             "MissionAdditionalQuoteRequested",
             "MissionAdditionalQuotePaid",
             "MissionDisputeResolved",
@@ -69,6 +70,7 @@ $checks = @(
             @{ EventKey = "CompanyActivationLinkCreated"; Channel = "Portal" },
             @{ EventKey = "CompanyApplicationMoreInformationRequested"; Channel = "Portal" },
             @{ EventKey = "MissionAssignedToProvider"; Channel = "MobilePush" },
+            @{ EventKey = "MissionCancelled"; Channel = "MobilePush" },
             @{ EventKey = "MissionAdditionalQuoteAvailable"; Channel = "MobilePush" },
             @{ EventKey = "MissionAdditionalQuotePaid"; Channel = "Portal" },
             @{ EventKey = "MissionDisputeResolvedCustomer"; Channel = "MobilePush" },
