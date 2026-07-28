@@ -112,7 +112,9 @@ $checks = @(
         RequiredPayloadProperties = @(
             "stats.platformCommissionAmount",
             "stats.pendingPlatformCommissionAmount",
-            "stats.totalCollectedAmount")
+            "stats.paidAmount",
+            "stats.mobileMoneyAmount",
+            "stats.cardAmount")
     },
     @{ Name = "Admin access control"; Path = "/api/admin/access-control"; MinCount = 0 }
 )
