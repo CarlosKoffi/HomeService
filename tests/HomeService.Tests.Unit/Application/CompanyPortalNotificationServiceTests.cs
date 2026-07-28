@@ -78,6 +78,30 @@ public sealed class CompanyPortalNotificationServiceTests
     }
 
     [Fact]
+    public async Task MarkReadAsync_UpdatesUnreadCountOnNextList()
+    {
+        await using var db = CreateDbContext();
+        var company = CreateApprovedCompany();
+        var notification = CreateNotification(company.Id, "Mission a traiter");
+        db.Companies.Add(company);
+        db.CompanyPortalNotifications.Add(notification);
+        await db.SaveChangesAsync();
+
+        var service = new CompanyPortalNotificationService(db);
+        var before = await service.ListAsync(company.Id, CancellationToken.None);
+        var markResult = await service.MarkReadAsync(company.Id, notification.Id, CancellationToken.None);
+        var after = await service.ListAsync(company.Id, CancellationToken.None);
+
+        Assert.True(before.IsSuccess);
+        Assert.Equal(1, before.Response!.UnreadCount);
+        Assert.True(markResult.IsSuccess);
+        Assert.Equal(1, markResult.UpdatedCount);
+        Assert.True(after.IsSuccess);
+        Assert.Equal(0, after.Response!.UnreadCount);
+        Assert.All(after.Response.Notifications, item => Assert.True(item.IsRead));
+    }
+
+    [Fact]
     public async Task MarkAllReadAsync_MarksOnlyTheCurrentCompanyNotifications()
     {
         await using var db = CreateDbContext();
