@@ -140,7 +140,7 @@
         padding: .62rem .75rem;
         width: 100%;
         font-weight: 720;
-        white-space: normal;
+        white-space: nowrap;
         word-break: normal;
     }
 
@@ -160,7 +160,10 @@
 
 .nav-label {
     min-width: 0;
+    overflow: hidden;
     overflow-wrap: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     hyphens: none;
 }
 
