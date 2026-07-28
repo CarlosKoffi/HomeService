@@ -267,32 +267,42 @@ else
 
     private async Task OpenNotificationAsync(CompanyPortalNotificationResponse notification)
     {
-        await MarkNotificationReadLocallyAsync(notification);
-        Navigation.NavigateTo(PortalLink(notification.ActionUrl ?? "notifications"));
+        if (await TryMarkNotificationReadAsync(notification))
+        {
+            Navigation.NavigateTo(PortalLink(notification.ActionUrl ?? "notifications"));
+        }
     }
 
-    private async Task MarkNotificationReadLocallyAsync(CompanyPortalNotificationResponse notification)
+    private async Task<bool> TryMarkNotificationReadAsync(CompanyPortalNotificationResponse notification)
     {
         if (notification.IsRead || Session is null)
         {
-            return;
+            return true;
         }
-
-        NotificationItems = NotificationItems
-            .Select(item => item.Id == notification.Id ? item with { IsRead = true } : item)
-            .ToList();
-        StateHasChanged();
 
         if (IsPreviewMode())
         {
-            return;
+            MarkNotificationReadInMemory(notification.Id);
+            return true;
         }
 
         var result = await ApiClient.MarkCompanyNotificationReadAsync(Session.CompanyId, notification.Id);
         if (!result.IsSuccess)
         {
             Message = result.ErrorMessage ?? "Notification non marquee comme lue cote serveur.";
+            return false;
         }
+
+        MarkNotificationReadInMemory(notification.Id);
+        return true;
+    }
+
+    private void MarkNotificationReadInMemory(Guid notificationId)
+    {
+        NotificationItems = NotificationItems
+            .Select(item => item.Id == notificationId ? item with { IsRead = true } : item)
+            .ToList();
+        StateHasChanged();
     }
 
     private string GetFilterClass(string filter)
