@@ -11,6 +11,20 @@ namespace HomeService.Tests.Integration;
 public sealed class AdminEndpointContractTests
 {
     [Theory]
+    [InlineData("GET", "/api/admin/dashboard")]
+    [InlineData("GET", "/api/admin/access-control")]
+    public void AdminCoreRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
     [InlineData("GET", "/api/admin/notification-templates")]
     [InlineData("POST", "/api/admin/notification-templates")]
     [InlineData("PUT", "/api/admin/notification-templates/{id:guid}")]
