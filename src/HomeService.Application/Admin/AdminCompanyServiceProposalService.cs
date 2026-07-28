@@ -228,14 +228,23 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             return CompanyServiceProposalActionResult.ValidationFailed("Service parent introuvable ou inactif.");
         }
 
+        var prestationName = string.IsNullOrWhiteSpace(request.Name) ? proposal.RawName : request.Name.Trim();
+        var normalizedPrestationName = CatalogNameNormalizer.Normalize(prestationName);
+        var isNewPrestation = service.Prestations.All(item => item.NormalizedName != normalizedPrestationName);
+
         var before = ToAuditSnapshot(proposal);
         var prestation = service.AddPrestation(
-            string.IsNullOrWhiteSpace(request.Name) ? proposal.RawName : request.Name,
+            prestationName,
             request.Description,
             request.SortOrder,
             service.PriceMinAmount,
             service.PriceMaxAmount,
             service.Currency);
+        if (isNewPrestation)
+        {
+            db.ServicePrestations.Add(prestation);
+        }
+
         proposal.MarkAsMatchedPrestation(service.Id, prestation.Id, 100);
         AddAuditLog(
             actor,

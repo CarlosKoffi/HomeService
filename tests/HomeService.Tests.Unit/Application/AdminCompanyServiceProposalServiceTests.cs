@@ -124,6 +124,38 @@ public sealed class AdminCompanyServiceProposalServiceTests
         Assert.Equal("proposal-attach", log.CorrelationId);
     }
 
+    [Fact]
+    public async Task CreatePrestationAsync_RattachesProposalToParentServiceAndRemovesItFromReviewList()
+    {
+        await using var db = CreateDbContext();
+        var application = CreateApplication("Ivoire Catering Group", "Blanchisserie - Repassage");
+        var proposal = new CompanyApplicationService(application.Id, "Blanchisserie - Repassage");
+        var service = new Service("Blanchisserie", "Linge et pressing", createdByCompanyId: null);
+        service.UpdatePriceRange(2500, 4500, "XOF");
+        db.CompanyApplications.Add(application);
+        db.CompanyApplicationServices.Add(proposal);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var sut = new AdminCompanyServiceProposalService(db);
+        var result = await sut.CreatePrestationAsync(
+            proposal.Id,
+            new CreatePrestationFromCompanyServiceProposalRequest(service.Id, "Repassage", "Repassage de linge", 1),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(service.Id, proposal.MatchedServiceId);
+        Assert.NotNull(proposal.MatchedServicePrestationId);
+        var prestation = await db.ServicePrestations.SingleAsync(item => item.Id == proposal.MatchedServicePrestationId);
+        Assert.Equal("Repassage", prestation.Name);
+        Assert.Equal(service.Id, prestation.ServiceId);
+        Assert.Equal(2500, prestation.PriceMinAmount);
+        Assert.Equal(4500, prestation.PriceMaxAmount);
+
+        var pending = await sut.ListAsync(CancellationToken.None);
+        Assert.Empty(pending.Items);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
