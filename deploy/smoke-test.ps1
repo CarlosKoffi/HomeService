@@ -36,6 +36,8 @@ $checks = @(
     @{ Name = "Admin company applications"; Path = "/api/admin/company-applications"; MinCount = 0 },
     @{ Name = "Admin missions"; Path = "/api/admin/missions"; MinCount = 0 },
     @{ Name = "Admin mission settings"; Path = "/api/admin/mission-settings"; MinCount = 0 },
+    @{ Name = "Admin service proposals"; Path = "/api/admin/company-service-proposals"; MinCount = 0 },
+    @{ Name = "Admin service insights"; Path = "/api/admin/service-insights"; MinCount = 0 },
     @{ Name = "Admin notifications"; Path = "/api/admin/notifications"; MinCount = 0 },
     @{
         Name = "Admin notification delivery rules"
