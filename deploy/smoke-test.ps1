@@ -53,7 +53,9 @@ $checks = @(
             "MissionAdditionalQuoteRequested",
             "MissionAdditionalQuotePaid",
             "MissionDisputeResolved",
-            "MissionRefundApproved")
+            "MissionRefundApproved",
+            "MissionPaymentReleased",
+            "MissionPayoutSent")
     },
     @{
         Name = "Admin notification templates"

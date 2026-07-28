@@ -56,6 +56,12 @@ public sealed class NotificationTemplateServiceTests
         Assert.Contains(NotificationTemplateCatalog.Defaults, seed =>
             seed.EventKey == "MissionRefundSent"
             && seed.Channels.Contains(NotificationTemplateChannel.MobilePush));
+        Assert.Contains(NotificationTemplateCatalog.Defaults, seed =>
+            seed.EventKey == "MissionPaymentReleased"
+            && seed.Channels.Contains(NotificationTemplateChannel.Portal));
+        Assert.Contains(NotificationTemplateCatalog.Defaults, seed =>
+            seed.EventKey == "MissionPayoutSent"
+            && seed.Channels.Contains(NotificationTemplateChannel.Portal));
     }
 
     [Fact]
@@ -75,6 +81,8 @@ public sealed class NotificationTemplateServiceTests
         Assert.Contains(templates, template => template.EventKey == "MissionCancelled" && template.Channel == "MobilePush");
         Assert.Contains(templates, template => template.EventKey == "MissionAdditionalQuotePaid" && template.Channel == "Portal");
         Assert.Contains(templates, template => template.EventKey == "MissionDisputeResolvedCustomer" && template.Channel == "MobilePush");
+        Assert.Contains(templates, template => template.EventKey == "MissionPaymentReleased" && template.Channel == "Portal");
+        Assert.Contains(templates, template => template.EventKey == "MissionPayoutSent" && template.Channel == "Portal");
         Assert.Contains(templates, template =>
             template.EventKey == "MissionCompleted"
             && template.Channel == "MobilePush"
@@ -92,6 +100,8 @@ public sealed class NotificationTemplateServiceTests
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionQuoteRejectedByCustomer"));
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionCancelled"));
         Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionFinalPaymentReceived"));
+        Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionPaymentReleased"));
+        Assert.True(await db.NotificationDeliveryRules.AnyAsync(rule => rule.EventKey == "MissionPayoutSent"));
     }
 
     [Fact]
