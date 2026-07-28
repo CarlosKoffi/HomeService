@@ -68,10 +68,11 @@ main {
     }
 
     .sidebar {
-        width: 270px;
+        width: 286px;
         height: 100vh;
         position: sticky;
         top: 0;
+        flex: 0 0 286px;
     }
 
     .top-row {

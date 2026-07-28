@@ -19,32 +19,32 @@
     align-items: center;
     color: #111827;
     display: flex;
-    font-size: 1.1rem;
-    font-weight: 850;
+    font-size: 1rem;
+    font-weight: 700;
     gap: .55rem;
     letter-spacing: -.01em;
 }
 
 .navbar-brand img {
     display: block;
-    height: 30px;
+    height: 28px;
     object-fit: contain;
-    width: 98px;
+    width: 94px;
 }
 
 .nav-icon {
     background: currentColor;
     display: block;
     flex: 0 0 auto;
-    height: 1.25rem;
+    height: 1.12rem;
     margin-right: 0;
     mask-position: center;
     mask-repeat: no-repeat;
-    mask-size: 1.15rem;
+    mask-size: 1.05rem;
     -webkit-mask-position: center;
     -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: 1.15rem;
-    width: 1.25rem;
+    -webkit-mask-size: 1.05rem;
+    width: 1.12rem;
 }
 
 .nav-icon-dashboard {
@@ -105,16 +105,16 @@
 
 .nav-section-label {
     color: #94a3b8;
-    font-size: .68rem;
-    font-weight: 850;
-    letter-spacing: .12em;
-    margin: 1rem .9rem .35rem;
+    font-size: .64rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    margin: 1.05rem 1rem .4rem;
     text-transform: uppercase;
 }
 
 .nav-item {
-    font-size: 0.9rem;
-    padding: 0 .65rem .35rem !important;
+    font-size: 0.86rem;
+    padding: 0 .75rem .28rem !important;
     width: 100%;
 }
 
@@ -133,13 +133,13 @@
         border: none;
         border-radius: 12px;
         display: grid;
-        gap: .68rem;
-        grid-template-columns: 1.25rem minmax(0, 1fr);
-        line-height: 1.2;
-        min-height: 2.75rem;
-        padding: .62rem .75rem;
+        gap: .62rem;
+        grid-template-columns: 1.12rem minmax(0, 1fr);
+        line-height: 1.25;
+        min-height: 2.48rem;
+        padding: .55rem .72rem;
         width: 100%;
-        font-weight: 720;
+        font-weight: 620;
         white-space: nowrap;
         word-break: normal;
     }
@@ -165,6 +165,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     hyphens: none;
+    letter-spacing: 0;
 }
 
 .navbar-toggler:checked ~ .nav-scrollable {
