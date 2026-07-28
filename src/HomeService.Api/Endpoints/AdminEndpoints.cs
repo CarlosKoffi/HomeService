@@ -448,7 +448,7 @@ public static class AdminEndpoints
 
         admin.MapPost("/missions/{missionId:guid}/mark-disputed", async (
             Guid missionId,
-            CancelMissionRequest request,
+            OpenMissionDisputeRequest request,
             HttpRequest httpRequest,
             AdminQueryService queryService,
             AdminMissionDisputeService disputeService,
@@ -457,7 +457,7 @@ public static class AdminEndpoints
             var result = await disputeService.OpenAsync(
                 missionId,
                 request.Reason,
-                request.Comment,
+                request.Description,
                 AuditActor.Admin(),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);

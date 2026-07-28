@@ -218,7 +218,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<AdminMissionListResponse>(
             $"/api/admin/missions/{missionId}/mark-disputed",
-            new CancelMissionRequest(reason, note),
+            new OpenMissionDisputeRequest(reason, note),
             cancellationToken);
     }
 

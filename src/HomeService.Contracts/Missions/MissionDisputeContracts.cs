@@ -15,6 +15,10 @@ public sealed record MissionDisputeResponse(
     DateTimeOffset OpenedAt,
     DateTimeOffset? ResolvedAt);
 
+public sealed record OpenMissionDisputeRequest(
+    string Reason,
+    string Description);
+
 public sealed record ResolveMissionDisputeRequest(
     string Resolution,
     string Note,
