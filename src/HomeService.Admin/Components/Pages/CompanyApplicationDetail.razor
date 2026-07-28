@@ -179,29 +179,29 @@ else if (Application is not null)
                             {
                                 <p class="document-review-note">Note piece: @document.ReviewNote</p>
                             }
-                            @if (CanPreviewDocument(document.ContentType))
-                            {
-                                <div class="document-preview-frame">
-                                    <strong>Previsualisation</strong>
-                                    @if (IsImageDocument(document.ContentType))
-                                    {
-                                        <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                             loading="lazy"
-                                             alt="Previsualisation de @slot.Label" />
-                                    }
-                                    else
-                                    {
-                                        <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                                loading="lazy"
-                                                title="Previsualisation de @slot.Label"></iframe>
-                                    }
-                                </div>
-                            }
-                            else
-                            {
-                                <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
-                            }
                         </details>
+                        @if (CanPreviewDocument(document.ContentType))
+                        {
+                            <div class="document-preview-frame">
+                                <strong>Previsualisation</strong>
+                                @if (IsImageDocument(document.ContentType))
+                                {
+                                    <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                         loading="lazy"
+                                         alt="Previsualisation de @slot.Label" />
+                                }
+                                else
+                                {
+                                    <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                            loading="lazy"
+                                            title="Previsualisation de @slot.Label"></iframe>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
+                        }
                     }
                 </div>
                 <span class="document-status @GetDocumentStatusClass(document?.ReviewStatus)">@GetDocumentStatusLabel(document?.ReviewStatus)</span>
@@ -254,29 +254,29 @@ else if (Application is not null)
                         {
                             <p class="document-review-note">Note piece: @document.ReviewNote</p>
                         }
-                        @if (CanPreviewDocument(document.ContentType))
-                        {
-                            <div class="document-preview-frame">
-                                <strong>Previsualisation</strong>
-                                @if (IsImageDocument(document.ContentType))
-                                {
-                                    <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                         loading="lazy"
-                                         alt="Previsualisation de @GetDocumentLabel(document.DocumentType)" />
-                                }
-                                else
-                                {
-                                    <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                            loading="lazy"
-                                            title="Previsualisation de @GetDocumentLabel(document.DocumentType)"></iframe>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
-                        }
                     </details>
+                    @if (CanPreviewDocument(document.ContentType))
+                    {
+                        <div class="document-preview-frame">
+                            <strong>Previsualisation</strong>
+                            @if (IsImageDocument(document.ContentType))
+                            {
+                                <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                     loading="lazy"
+                                     alt="Previsualisation de @GetDocumentLabel(document.DocumentType)" />
+                            }
+                            else
+                            {
+                                <iframe src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                        loading="lazy"
+                                        title="Previsualisation de @GetDocumentLabel(document.DocumentType)"></iframe>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="section-help">Previsualisation non disponible pour ce format. Utilisez Ouvrir.</p>
+                    }
                 </div>
                 <span class="document-status @GetDocumentStatusClass(document.ReviewStatus)">@GetDocumentStatusLabel(document.ReviewStatus)</span>
                 <div class="document-actions">
