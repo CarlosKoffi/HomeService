@@ -622,6 +622,15 @@ h3 {
     margin-top: .45rem;
 }
 
+.priority-help {
+    color: #64748b;
+    display: block;
+    font-size: .75rem;
+    font-weight: 750;
+    line-height: 1.35;
+    margin-top: .3rem;
+}
+
 .status-chip {
     border-radius: 999px;
     border: 1px solid transparent;

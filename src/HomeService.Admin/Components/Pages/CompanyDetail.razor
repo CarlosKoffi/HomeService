@@ -128,7 +128,13 @@ else
                 <dl class="detail-list">
                     <div><dt>Zones</dt><dd>@(Company.InterventionZones ?? "Non renseigne")</dd></div>
                     <div><dt>Services declares</dt><dd>@(Company.PlannedServices ?? "Non renseigne")</dd></div>
-                    <div><dt>Priorite mission</dt><dd>@FormatDispatchPriority(Company.MissionDispatchPriority)</dd></div>
+                    <div>
+                        <dt>Priorite mission</dt>
+                        <dd>
+                            @FormatDispatchPriority(Company.MissionDispatchPriority)
+                            <small class="priority-help">Plus le nombre est bas, plus l'entreprise recoit les demandes tot.</small>
+                        </dd>
+                    </div>
                     <div><dt>Urgences</dt><dd>@(Company.AcceptsUrgentMissions ? "Accepte les urgences" : "Urgences desactivees")</dd></div>
                     <div><dt>Wave</dt><dd>@(Company.WavePaymentNumber ?? "Non renseigne")</dd></div>
                     <div><dt>Orange Money</dt><dd>@(Company.OrangeMoneyPaymentNumber ?? "Non renseigne")</dd></div>
@@ -147,8 +153,9 @@ else
                         Enregistrer
                     </button>
                     <small>
-                        @FormatDispatchPriority(DispatchPriority). Plus le score est bas, plus l'entreprise est proposee tot.
-                        0-25 tres prioritaire, 26-75 prioritaire, 76-150 standard, au-dela reception limitee.
+                        @FormatDispatchPriority(DispatchPriority). Exemple: 1 passe avant 50, 50 passe avant 150.
+                        Utilisez 0-25 pour les partenaires a favoriser, 26-75 pour les bons partenaires,
+                        76-150 pour le rythme normal, au-dela pour une reception limitee.
                     </small>
                 </div>
             </article>
