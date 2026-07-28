@@ -34,9 +34,10 @@
 
 .nav-icon {
     background: currentColor;
-    display: inline-block;
+    display: block;
+    flex: 0 0 auto;
     height: 1.25rem;
-    margin-right: 0.75rem;
+    margin-right: 0;
     mask-position: center;
     mask-repeat: no-repeat;
     mask-size: 1.15rem;
@@ -107,17 +108,18 @@
     font-size: .68rem;
     font-weight: 850;
     letter-spacing: .12em;
-    margin: 1rem 1.5rem .35rem;
+    margin: 1rem .9rem .35rem;
     text-transform: uppercase;
 }
 
 .nav-item {
     font-size: 0.9rem;
-    padding-bottom: 0.5rem;
+    padding: 0 .65rem .35rem !important;
+    width: 100%;
 }
 
     .nav-item:first-of-type {
-        padding-top: 1rem;
+        padding-top: .65rem !important;
     }
 
     .nav-item:last-of-type {
@@ -125,16 +127,20 @@
     }
 
     .nav-item ::deep .nav-link {
+        align-items: center;
         color: #475569;
         background: none;
         border: none;
         border-radius: 12px;
-        height: 3rem;
-        display: flex;
-        align-items: center;
-        line-height: 3rem;
+        display: grid;
+        gap: .68rem;
+        grid-template-columns: 1.25rem minmax(0, 1fr);
+        line-height: 1.2;
+        min-height: 2.75rem;
+        padding: .62rem .75rem;
         width: 100%;
         font-weight: 720;
+        white-space: normal;
     }
 
 .nav-item ::deep a.active {
@@ -149,6 +155,11 @@
 
 .nav-scrollable {
     display: none;
+}
+
+.nav-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .navbar-toggler:checked ~ .nav-scrollable {
