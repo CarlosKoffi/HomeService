@@ -53,10 +53,35 @@ public sealed class ClientMissionRequestServiceTests
         Assert.NotNull(result.Response);
         Assert.Equal(3, result.Response.CandidateCompanyCount);
         Assert.Equal(MissionStatus.Offered.ToString(), result.Response.Status);
+        Assert.Equal(1500, result.Response.StartingPriceAmount);
+        Assert.Equal(2500, result.Response.MaximumPriceAmount);
+        Assert.Equal("XOF", result.Response.Currency);
         Assert.Equal(1, await db.Missions.CountAsync());
         Assert.Equal(3, await db.MissionDispatchOffers.CountAsync());
         Assert.Equal(1, await db.Customers.CountAsync());
         Assert.Empty(db.MissionAttachments);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenPrestationIsSelected_ReturnsPrestationPriceRange()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Blanchisserie", "Linge et repassage", createdByCompanyId: null);
+        service.UpdatePriceRange(2_000, 4_000, "XOF");
+        var prestation = service.AddPrestation("Repassage", "Repassage a domicile", 1, 3_500, 7_500, "XOF");
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var request = ValidRequest(service.Id) with { ServicePrestationId = prestation.Id };
+
+        var result = await sut.CreateAsync(request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Response);
+        Assert.Equal(3_500, result.Response.StartingPriceAmount);
+        Assert.Equal(7_500, result.Response.MaximumPriceAmount);
+        Assert.Equal("XOF", result.Response.Currency);
     }
 
     [Fact]

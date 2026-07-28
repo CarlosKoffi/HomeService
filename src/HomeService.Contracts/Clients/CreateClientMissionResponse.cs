@@ -5,5 +5,8 @@ public sealed record CreateClientMissionResponse(
     string MissionNumber,
     string Status,
     int CandidateCompanyCount,
+    int StartingPriceAmount,
+    int MaximumPriceAmount,
+    string Currency,
     DateTimeOffset CreatedAt,
     string Message);

@@ -93,13 +93,34 @@ public sealed class ClientMissionRequestService(
             ? "Votre demande a ete transmise aux entreprises disponibles."
             : "Votre demande est enregistree. Nous recherchons une entreprise disponible.";
 
+        var priceRange = ResolvePriceRange(service, request.ServicePrestationId);
         return ClientMissionCreationResult.Ok(new CreateClientMissionResponse(
             mission.Id,
             mission.MissionNumber,
             mission.Status.ToString(),
             dispatchResult.Offers.Count,
+            priceRange.PriceMinAmount,
+            priceRange.PriceMaxAmount,
+            priceRange.Currency,
             mission.CreatedAt,
             message));
+    }
+
+    private static ClientMissionRequestPriceRange ResolvePriceRange(Service service, Guid? servicePrestationId)
+    {
+        if (servicePrestationId.HasValue)
+        {
+            var prestation = service.Prestations.First(item => item.Id == servicePrestationId.Value);
+            return new ClientMissionRequestPriceRange(
+                prestation.PriceMinAmount,
+                prestation.PriceMaxAmount,
+                prestation.Currency);
+        }
+
+        return new ClientMissionRequestPriceRange(
+            service.PriceMinAmount,
+            service.PriceMaxAmount,
+            service.Currency);
     }
 
     private async Task<CustomerProfile> FindOrCreateCustomerAsync(
@@ -225,6 +246,11 @@ public sealed class ClientMissionRequestService(
 
     private const int MaxCustomerPhotos = 5;
     private const long MaxCustomerPhotoBytes = 5 * 1024 * 1024;
+
+    private sealed record ClientMissionRequestPriceRange(
+        int PriceMinAmount,
+        int PriceMaxAmount,
+        string Currency);
 }
 
 public sealed record ClientMissionCreationResult(
