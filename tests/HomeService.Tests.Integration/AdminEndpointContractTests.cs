@@ -13,6 +13,9 @@ public sealed class AdminEndpointContractTests
     [Theory]
     [InlineData("GET", "/api/admin/dashboard")]
     [InlineData("GET", "/api/admin/access-control")]
+    [InlineData("POST", "/api/admin/access-control/admins/invitations")]
+    [InlineData("GET", "/api/admin/access-control/admins/invitations/{token}")]
+    [InlineData("POST", "/api/admin/access-control/admins/invitations/{token}/password")]
     [InlineData("GET", "/api/admin/audit-logs")]
     public void AdminCoreRoutes_AreMapped(string httpMethod, string routePattern)
     {
