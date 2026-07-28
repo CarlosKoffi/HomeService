@@ -244,19 +244,20 @@
 
     @if (!string.IsNullOrWhiteSpace(LastInvitationLink))
     {
-        <article class="admin-invite-result">
-            <div>
+        <div class="admin-invite-result">
+            <div class="admin-invite-link-card">
                 <span>Lien valable 6h</span>
                 <strong>@LastInvitationEmail</strong>
-                <a href="@LastInvitationLink" target="_blank" rel="noreferrer">@LastInvitationLink</a>
+                <a href="@LastInvitationLink" target="_blank" rel="noreferrer">Ouvrir le lien d'activation</a>
+                <code>@LastInvitationLink</code>
             </div>
-            <label>
-                Message pret a envoyer
-                <textarea readonly rows="5">@LastInvitationMessage
+            <div class="admin-invite-message-card">
+                <label for="adminInviteMessage">Message pret a envoyer</label>
+                <textarea id="adminInviteMessage" readonly rows="6">@LastInvitationMessage
 
 @LastInvitationLink</textarea>
-            </label>
-        </article>
+            </div>
+        </div>
     }
     <div class="admin-filters access-admin-filters">
         <label>

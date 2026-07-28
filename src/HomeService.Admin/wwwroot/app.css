@@ -5109,6 +5109,13 @@ h3 {
     padding: 1rem;
 }
 
+.admin-invite-link-card,
+.admin-invite-message-card {
+    display: grid;
+    gap: .55rem;
+    min-width: 0;
+}
+
 .admin-invite-result span {
     color: #2563eb;
     display: block;
@@ -5125,11 +5132,28 @@ h3 {
     overflow-wrap: anywhere;
 }
 
+.admin-invite-result a {
+    color: #2563eb;
+    font-weight: 850;
+}
+
+.admin-invite-result code {
+    background: #fff;
+    border: 1px solid #bfd1f7;
+    border-radius: 12px;
+    color: #0f172a;
+    display: block;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: .82rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    padding: .75rem;
+    white-space: normal;
+}
+
 .admin-invite-result label {
     color: #000;
-    display: grid;
     font-weight: 850;
-    gap: .45rem;
 }
 
 .admin-invite-result textarea {
@@ -5141,6 +5165,7 @@ h3 {
     min-height: 130px;
     padding: .85rem;
     resize: vertical;
+    width: 100%;
 }
 
 .checkbox-line {
