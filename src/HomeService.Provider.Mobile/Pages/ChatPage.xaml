@@ -5,22 +5,29 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     BackgroundColor="{StaticResource PageWash}"
     Title="Chat">
-    <ScrollView>
-        <VerticalStackLayout Padding="18" Spacing="14">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="18" Spacing="14">
             <Label Text="Messages clients" Style="{StaticResource ScreenTitleLabel}" />
-            <Border BackgroundColor="White" Stroke="{StaticResource WeleGreen}" StrokeShape="RoundRectangle 20" Padding="14">
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Mme Akissi" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Je vous envoie une photo du portail cote pharmacie." Style="{StaticResource BodyLabel}" />
-                    <Label Text="Mission live - il y a 1 min" Style="{StaticResource BodyLabel}" TextColor="{StaticResource WeleGreen}" />
-                </VerticalStackLayout>
+
+            <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#EEF4FF" Stroke="#CFE0FF" StrokeShape="RoundRectangle 18" Padding="14">
+                <Label x:Name="MessageLabel" Text="Chargement..." Style="{StaticResource BodyLabel}" />
             </Border>
+
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
                 <VerticalStackLayout Spacing="5">
-                    <Label Text="CI Home Service" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Confirmez votre depart apres acceptation." Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="MissionTitleLabel" Text="Aucune mission active" Style="{StaticResource CardTitleLabel}" />
+                    <Label x:Name="MissionSubtitleLabel" Text="Les messages seront disponibles quand une mission sera affectee." Style="{StaticResource BodyLabel}" />
                 </VerticalStackLayout>
             </Border>
-        </VerticalStackLayout>
-    </ScrollView>
+
+            <VerticalStackLayout x:Name="MessagesStack" Spacing="10" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Grid Grid.Row="1" Padding="18,10" ColumnDefinitions="*,Auto" ColumnSpacing="10" BackgroundColor="{StaticResource PageWash}">
+            <Entry x:Name="MessageEntry" Placeholder="Ecrire au client..." BackgroundColor="White" />
+            <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" Clicked="OnSendClicked" />
+        </Grid>
+    </Grid>
 </ContentPage>
