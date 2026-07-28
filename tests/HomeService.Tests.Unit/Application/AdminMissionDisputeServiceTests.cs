@@ -145,6 +145,35 @@ public sealed class AdminMissionDisputeServiceTests
         Assert.Equal(MissionStatus.Disputed, mission.Status);
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(101)]
+    public async Task ResolveAsync_WhenRefundPercentIsOutOfRange_IsRejected(int refundPercent)
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedMissionAsync(db);
+        var sut = CreateService(db);
+        await sut.OpenAsync(mission.Id, "Other", "Pourcentage a verifier", AuditActor.Admin(), null, CancellationToken.None);
+
+        var result = await sut.ResolveAsync(
+            mission.Id,
+            "PartialRefund",
+            "Pourcentage non valide",
+            refundPercent,
+            null,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        var dispute = await db.MissionDisputes.SingleAsync();
+        Assert.Equal(AdminMissionOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal(MissionStatus.Disputed, mission.Status);
+        Assert.Equal(MissionDisputeStatus.Open, dispute.Status);
+        Assert.Null(dispute.RefundPercentBasisPoints);
+        Assert.Null(dispute.RefundAmount);
+        Assert.Equal(0, mission.RefundAmount);
+    }
+
     [Fact]
     public async Task ResolveAsync_WhenNoOpenDispute_IsRejected()
     {
