@@ -39,7 +39,7 @@
             <strong>@Money(Snapshot.Stats.CardAmount)</strong>
         </button>
         <button type="button" class="@GetFinanceFocusClass("risk")" @onclick='() => ApplyFinanceFocusAsync("risk")'>
-            <span>Litiges / refunds</span>
+            <span>Litiges / remboursements</span>
             <strong>@Money(Snapshot.Stats.DisputedAmount + Snapshot.Stats.RefundAmount)</strong>
         </button>
     </section>
