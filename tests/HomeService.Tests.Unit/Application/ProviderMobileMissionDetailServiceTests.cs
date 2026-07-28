@@ -28,8 +28,8 @@ public sealed class ProviderMobileMissionDetailServiceTests
         Assert.True(result.Response.Actions.CanAccept);
         Assert.True(result.Response.Actions.CanRefuse);
         Assert.False(result.Response.Actions.CanStart);
-        Assert.Equal(20_000, result.Response.QuotedAmount);
-        Assert.Equal(3_000, result.Response.PartsEstimateAmount);
+        Assert.Null(result.Response.QuotedAmount);
+        Assert.Null(result.Response.PartsEstimateAmount);
         Assert.Equal("Joint a remplacer", result.Response.PartsDescription);
         Assert.Single(result.Response.CustomerPhotos);
         Assert.Single(result.Response.RecentMessages);
@@ -78,7 +78,7 @@ public sealed class ProviderMobileMissionDetailServiceTests
         var quote = Assert.Single(result.Response!.AdditionalQuotes);
         Assert.Equal(additionalQuote.Id, quote.QuoteId);
         Assert.Equal("Submitted", quote.Status);
-        Assert.Equal(6_000, quote.Amount);
+        Assert.Null(quote.Amount);
         Assert.Equal("XOF", quote.Currency);
         Assert.Equal("Il faut remplacer une piece.", quote.Reason);
         Assert.Equal("missions/additional/piece.jpg", quote.RequestedPhotoStoragePath);
