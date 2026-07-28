@@ -38,7 +38,7 @@ public static class DatabaseInitializer
 
     private static async Task SeedDemoMissionsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
-        var scriptPath = Path.Combine(AppContext.BaseDirectory, "Sql", "037_seed_demo_missions.sql");
+        var scriptPath = Path.Combine(AppContext.BaseDirectory, "Sql", "056_seed_demo_missions.sql");
         if (!File.Exists(scriptPath))
         {
             return;

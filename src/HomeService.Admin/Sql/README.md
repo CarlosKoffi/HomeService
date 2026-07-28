@@ -77,6 +77,8 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 052 | `052_add_notification_templates.sql` | Notification templates per event and channel |
 | 053 | `053_seed_notification_template_catalog.sql` | Seed complete notification template catalog |
 | 054 | `054_link_notification_templates_to_rules.sql` | Link notification templates to delivery rules |
+| 055 | `055_add_mission_workflow_settings.sql` | Mission workflow timing and GPS tolerance settings |
+| 056 | `056_seed_demo_missions.sql` | Idempotent admin/company mission and payment demo data |
 
 ## Notes
 
