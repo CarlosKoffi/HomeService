@@ -7,35 +7,39 @@
     Title="Missions">
     <ScrollView>
         <VerticalStackLayout Padding="18" Spacing="16">
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+            <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#EEF4FF" Stroke="#CFE0FF" StrokeShape="RoundRectangle 18" Padding="14">
+                <Label x:Name="MessageLabel" Text="Chargement..." Style="{StaticResource BodyLabel}" />
+            </Border>
+
+            <Border x:Name="CurrentMissionCard" BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="MISSION A CONFIRMER" Style="{StaticResource EyebrowLabel}" TextColor="{StaticResource WeleOrange}" />
-                    <Label Text="Menage a domicile" Style="{StaticResource ScreenTitleLabel}" />
-                    <Label Text="Entreprise : CI Home Service" Style="{StaticResource BodyLabel}" />
-                    <Label Text="Cocody Angre - environ 1,8 km" Style="{StaticResource BodyLabel}" />
-                    <Label Text="Temps restant pour accepter : 02:41" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleOrange}" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,8,0,0">
-                        <Button Text="Refuser" Grid.Column="0" BackgroundColor="White" BorderColor="{StaticResource Line}" BorderWidth="1" TextColor="Black" />
-                        <Button Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" />
+                    <Label x:Name="MissionStateLabel" Text="MISSION" Style="{StaticResource EyebrowLabel}" TextColor="{StaticResource WeleOrange}" />
+                    <Label x:Name="MissionTitleLabel" Text="Aucune mission" Style="{StaticResource ScreenTitleLabel}" />
+                    <Label x:Name="MissionCompanyLabel" Text="Entreprise : -" Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="MissionLocationLabel" Text="Zone : -" Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="MissionCountdownLabel" Text="" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleOrange}" />
+                    <Label x:Name="MissionCustomerLabel" Text="" Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="MissionDescriptionLabel" Text="" Style="{StaticResource BodyLabel}" />
+
+                    <Grid x:Name="OfferActionsGrid" ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,8,0,0">
+                        <Button x:Name="RefuseButton" Text="Refuser" Grid.Column="0" BackgroundColor="White" BorderColor="{StaticResource Line}" BorderWidth="1" TextColor="Black" Clicked="OnRefuseClicked" />
+                        <Button x:Name="AcceptButton" Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" Clicked="OnAcceptClicked" />
                     </Grid>
+
+                    <VerticalStackLayout x:Name="FieldActionsStack" IsVisible="False" Spacing="10" Margin="0,8,0,0">
+                        <Button x:Name="VerifyArrivalButton" Text="Verifier mon arrivee" BackgroundColor="#EEF4FF" TextColor="Black" Clicked="OnVerifyArrivalClicked" />
+                        <Button x:Name="StartButton" Text="Demarrer la prestation" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" Clicked="OnStartClicked" />
+                        <Button x:Name="CompleteButton" Text="Terminer la prestation" BackgroundColor="#111111" TextColor="White" Clicked="OnCompleteClicked" />
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
-            <Label Text="Mes prochaines missions" Style="{StaticResource CardTitleLabel}" />
+            <Label Text="Informations terrain" Style="{StaticResource CardTitleLabel}" />
 
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
                 <VerticalStackLayout Spacing="5">
-                    <Label Text="Nounou" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Aujourd'hui 16:30 - Plateau" Style="{StaticResource BodyLabel}" />
-                    <Label Text="Rendez-vous planifie par CI Home Service" FontSize="13" />
-                </VerticalStackLayout>
-            </Border>
-
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="14">
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Jardinage" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Demain 08:00 - Riviera 3" Style="{StaticResource BodyLabel}" />
-                    <Label Text="Creneau reserve apres confirmation" FontSize="13" />
+                    <Label x:Name="ArrivalStatusLabel" Text="Arrivee : non verifiee" Style="{StaticResource CardTitleLabel}" />
+                    <Label x:Name="ArrivalDetailLabel" Text="L'application verifiera votre position avec tolerance avant le demarrage." Style="{StaticResource BodyLabel}" />
                 </VerticalStackLayout>
             </Border>
 
