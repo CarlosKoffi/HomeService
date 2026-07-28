@@ -11,6 +11,9 @@ namespace HomeService.Tests.Integration;
 public sealed class AdminEndpointContractTests
 {
     [Theory]
+    [InlineData("POST", "/api/admin/auth/login")]
+    [InlineData("GET", "/api/admin/auth/me")]
+    [InlineData("POST", "/api/admin/auth/logout")]
     [InlineData("GET", "/api/admin/dashboard")]
     [InlineData("GET", "/api/admin/access-control")]
     [InlineData("POST", "/api/admin/access-control/admins/invitations")]
