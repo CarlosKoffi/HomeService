@@ -64,6 +64,68 @@ public sealed class AdminCompanyOperationsServiceTests
     }
 
     [Fact]
+    public async Task SuspendAsync_WhenCompanyIsAlreadySuspended_ReturnsValidationFailedWithoutAudit()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("WÃ©lÃ© Services", "+2250700000000", "contact@wele.ci");
+        company.Suspend();
+        db.Companies.Add(company);
+        await db.SaveChangesAsync();
+        var sut = new AdminCompanyOperationsService(db);
+
+        var result = await sut.SuspendAsync(
+            company.Id,
+            "Controle qualite",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "company-already-suspended"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminCompanyOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal("Cette entreprise est deja suspendue.", result.Message);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
+    [Fact]
+    public async Task ReactivateAsync_WhenCompanyIsNotSuspended_ReturnsValidationFailedWithoutAudit()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("WÃ©lÃ© Services", "+2250700000000", "contact@wele.ci");
+        company.Approve();
+        db.Companies.Add(company);
+        await db.SaveChangesAsync();
+        var sut = new AdminCompanyOperationsService(db);
+
+        var result = await sut.ReactivateAsync(
+            company.Id,
+            "Reactivation",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "company-not-suspended"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminCompanyOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal("Seule une entreprise suspendue peut etre reactivee.", result.Message);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
+    [Fact]
+    public async Task SuspendAsync_WhenCompanyDoesNotExist_ReturnsNotFound()
+    {
+        await using var db = CreateDbContext();
+        var sut = new AdminCompanyOperationsService(db);
+
+        var result = await sut.SuspendAsync(
+            Guid.NewGuid(),
+            "Controle qualite",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "company-not-found"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminCompanyOperationStatus.NotFound, result.Status);
+        Assert.Equal("Entreprise introuvable.", result.Message);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
+    [Fact]
     public async Task UpdateCompanyAssignmentModeAsync_WhenValid_PersistsModeAndAudit()
     {
         await using var db = CreateDbContext();
