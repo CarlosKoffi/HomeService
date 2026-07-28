@@ -34,11 +34,17 @@ jobs:
           FIREBASE_NOTIFICATIONS_ENABLED: "false"
         run: dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build --logger "trx;LogFileName=unit-tests.trx"
 
-      - name: Integration workflow tests with mocked payments and notifications
+      - name: Order workflow integration test with mocked payments and notifications
         env:
           FIREBASE_NOTIFICATIONS_ENABLED: "false"
           PAYMENT_PROVIDER_MODE: "Mock"
-        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --logger "trx;LogFileName=integration-tests.trx"
+        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --filter "FullyQualifiedName~ClientMissionWorkflowIntegrationTests" --logger "trx;LogFileName=order-workflow-tests.trx"
+
+      - name: Admin critical endpoint contract tests
+        env:
+          FIREBASE_NOTIFICATIONS_ENABLED: "false"
+          PAYMENT_PROVIDER_MODE: "Mock"
+        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --filter "FullyQualifiedName~AdminEndpointContractTests" --logger "trx;LogFileName=admin-contract-tests.trx"
 
       - name: Upload test reports
         if: always()
