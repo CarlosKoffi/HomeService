@@ -5099,21 +5099,48 @@ h3 {
 }
 
 .admin-invite-result {
-    background: #eef4ff;
-    border: 1px solid #c7d8ff;
+    background: #fff;
+    border: 1px solid #dbe3ef;
     border-radius: 18px;
     display: grid;
-    gap: 1rem;
-    grid-template-columns: minmax(260px, .8fr) minmax(320px, 1fr);
+    gap: .85rem;
+    grid-template-columns: minmax(220px, .38fr) minmax(320px, .62fr);
     margin: 1rem 0;
     padding: 1rem;
 }
 
+.admin-invite-summary-card,
 .admin-invite-link-card,
 .admin-invite-message-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
     display: grid;
     gap: .55rem;
     min-width: 0;
+    padding: .85rem;
+}
+
+.admin-invite-message-card {
+    grid-column: 1 / -1;
+}
+
+.admin-invite-link-card {
+    align-content: start;
+}
+
+.admin-invite-link-card > div {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: space-between;
+}
+
+.admin-invite-summary-card p {
+    color: #000;
+    margin: 0;
+    max-width: 54ch;
 }
 
 .admin-invite-result span {
@@ -5140,12 +5167,14 @@ h3 {
 .admin-invite-result code {
     background: #fff;
     border: 1px solid #bfd1f7;
-    border-radius: 12px;
+    border-radius: 10px;
     color: #0f172a;
     display: block;
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-    font-size: .82rem;
+    font-size: .78rem;
     line-height: 1.45;
+    max-height: 86px;
+    overflow: auto;
     overflow-wrap: anywhere;
     padding: .75rem;
     white-space: normal;
@@ -5159,10 +5188,11 @@ h3 {
 .admin-invite-result textarea {
     background: #fff;
     border: 1px solid #bfd1f7;
-    border-radius: 14px;
+    border-radius: 12px;
     color: #000;
     font: inherit;
-    min-height: 130px;
+    line-height: 1.55;
+    min-height: 150px;
     padding: .85rem;
     resize: vertical;
     width: 100%;
@@ -5531,6 +5561,7 @@ h3 {
     .access-form.compact,
     .access-admin-filters,
     .admin-invite-form,
+    .admin-invite-result,
     .service-admin-overview,
     .service-admin-tabs,
     .proposal-review-table .proposal-review-row,

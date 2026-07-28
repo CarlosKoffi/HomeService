@@ -245,10 +245,16 @@
     @if (!string.IsNullOrWhiteSpace(LastInvitationLink))
     {
         <div class="admin-invite-result">
-            <div class="admin-invite-link-card">
-                <span>Lien valable 6h</span>
+            <div class="admin-invite-summary-card">
+                <span>Invitation creee</span>
                 <strong>@LastInvitationEmail</strong>
-                <a href="@LastInvitationLink" target="_blank" rel="noreferrer">Ouvrir le lien d'activation</a>
+                <p>Lien valable 6h. Envoyez ce message a l'administrateur pour finaliser son acces.</p>
+            </div>
+            <div class="admin-invite-link-card">
+                <div>
+                    <span>Lien d'activation</span>
+                    <a href="@LastInvitationLink" target="_blank" rel="noreferrer">Ouvrir dans un nouvel onglet</a>
+                </div>
                 <code>@LastInvitationLink</code>
             </div>
             <div class="admin-invite-message-card">
