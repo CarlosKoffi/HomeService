@@ -10,9 +10,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new()
     {
-        Title = "HomeService API",
+        Title = "wélé API",
         Version = "v1",
-        Description = "API centrale pour la plateforme HomeService: services, entreprises, validation admin et futurs parcours client/prestataire."
+        Description = "API centrale pour la plateforme wélé: services, entreprises, validation admin et parcours client/prestataire."
     });
 });
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -30,8 +30,8 @@ app.UseSiteAccessGate();
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
-    options.DocumentTitle = "HomeService API";
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "HomeService API v1");
+    options.DocumentTitle = "wélé API";
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "wélé API v1");
     options.RoutePrefix = "swagger";
 });
 
