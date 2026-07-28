@@ -143,15 +143,86 @@ h3 {
     width: 100%;
 }
 
-.admin-user-chip {
+.admin-topbar {
+    align-items: center;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    gap: 1rem;
+    min-height: 4.5rem;
+}
+
+.admin-console-title {
     align-items: center;
     display: flex;
-    gap: .9rem;
+    gap: .85rem;
+    min-width: 0;
+}
+
+.admin-console-title img {
+    height: 36px;
+    width: auto;
+}
+
+.admin-console-title span {
+    display: grid;
+    gap: .08rem;
+    min-width: 0;
+}
+
+.admin-console-title strong {
+    color: #0f172a;
+    font-size: .98rem;
+    font-weight: 850;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.admin-console-title small {
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 760;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.admin-user-chip {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    display: flex;
+    gap: .75rem;
     margin-left: auto;
+    max-width: min(100%, 620px);
+    min-width: 0;
+    padding: .35rem .45rem .35rem .7rem;
 }
 
 .admin-user-chip span {
+    min-width: 0;
     text-align: right;
+}
+
+.admin-user-chip em {
+    color: #475569;
+    display: block;
+    font-size: .78rem;
+    font-style: normal;
+    font-weight: 700;
+    max-width: 310px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-user-status {
+    background: #16a34a;
+    border: 3px solid #dcfce7;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    height: .85rem;
+    width: .85rem;
 }
 
 .admin-user-chip button {
@@ -160,8 +231,9 @@ h3 {
     border-radius: 999px;
     color: #0f172a;
     font-weight: 850;
+    flex: 0 0 auto;
     min-height: 2.45rem;
-    padding: .55rem .9rem;
+    padding: .55rem 1rem;
 }
 
 .admin-user-chip button:hover {
@@ -5638,6 +5710,34 @@ h3 {
 }
 
 @media (max-width: 760px) {
+    .admin-topbar {
+        align-items: stretch;
+        flex-direction: column;
+        gap: .75rem;
+        padding-bottom: .85rem;
+        padding-top: .85rem;
+    }
+
+    .admin-user-chip {
+        align-items: stretch;
+        border-radius: 18px;
+        margin-left: 0;
+        padding: .75rem;
+        width: 100%;
+    }
+
+    .admin-user-chip span {
+        text-align: left;
+    }
+
+    .admin-user-chip em {
+        max-width: 100%;
+    }
+
+    .admin-user-chip button {
+        margin-left: auto;
+    }
+
     .admin-hero,
     .info-panel,
     .operations-board {

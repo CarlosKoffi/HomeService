@@ -21,18 +21,22 @@ else
         </div>
 
         <main>
-            <div class="top-row px-4">
-                <div>
+            <div class="top-row px-4 admin-topbar">
+                <div class="admin-console-title">
                     <img src="images/wele-logo.png" alt="wele" />
-                    <strong>Console w&eacute;l&eacute;</strong>
-                    <span>Pilotage plateforme</span>
+                    <span>
+                        <strong>Console w&eacute;l&eacute;</strong>
+                        <small>Pilotage plateforme</small>
+                    </span>
                 </div>
                 <div class="admin-user-chip">
+                    <span class="admin-user-status" aria-hidden="true"></span>
                     <span>
-                        <strong>@SessionState.CurrentUser?.FullName</strong>
-                        <small>@(SessionState.CurrentUser?.IsSuperAdmin == true ? "Super admin" : "Admin")</small>
+                        <small>Connect&eacute; en tant que</small>
+                        <strong>@GetCurrentUserName()</strong>
+                        <em>@GetCurrentUserRole() - @GetCurrentUserEmail()</em>
                     </span>
-                    <button type="button" @onclick="SignOutAsync">Deconnexion</button>
+                    <button type="button" @onclick="SignOutAsync">Se d&eacute;connecter</button>
                 </div>
             </div>
 
@@ -87,5 +91,24 @@ else
     {
         await SessionState.SignOutAsync();
         Navigation.NavigateTo("/admin-login", forceLoad: true);
+    }
+
+    private string GetCurrentUserName()
+    {
+        return string.IsNullOrWhiteSpace(SessionState.CurrentUser?.FullName)
+            ? "Administrateur"
+            : SessionState.CurrentUser.FullName;
+    }
+
+    private string GetCurrentUserEmail()
+    {
+        return string.IsNullOrWhiteSpace(SessionState.CurrentUser?.Email)
+            ? "email non renseigne"
+            : SessionState.CurrentUser.Email;
+    }
+
+    private string GetCurrentUserRole()
+    {
+        return SessionState.CurrentUser?.IsSuperAdmin == true ? "Super admin" : "Admin";
     }
 }
