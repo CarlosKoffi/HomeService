@@ -13,7 +13,59 @@ public sealed class AdminEndpointContractTests
     [Theory]
     [InlineData("GET", "/api/admin/dashboard")]
     [InlineData("GET", "/api/admin/access-control")]
+    [InlineData("GET", "/api/admin/audit-logs")]
     public void AdminCoreRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/admin/contact-requests")]
+    [InlineData("POST", "/api/admin/contact-requests/{id:guid}/in-progress")]
+    [InlineData("POST", "/api/admin/contact-requests/{id:guid}/close")]
+    public void AdminContactRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/admin/cms/sites")]
+    [InlineData("GET", "/api/admin/cms/sites/{id:guid}")]
+    [InlineData("GET", "/api/admin/cms/sites/{siteId:guid}/pages")]
+    [InlineData("GET", "/api/admin/cms/pages/{pageId:guid}")]
+    [InlineData("PUT", "/api/admin/cms/content-values/{id:guid}")]
+    [InlineData("POST", "/api/admin/cms/media")]
+    [InlineData("POST", "/api/admin/cms/content-values/{id:guid}/media")]
+    [InlineData("GET", "/api/admin/cms/component-definitions")]
+    public void AdminCmsRoutes_AreMapped(string httpMethod, string routePattern)
+    {
+        var endpoints = BuildAdminEndpoints();
+
+        Assert.Contains(endpoints, endpoint =>
+            endpoint.RoutePattern.RawText == routePattern
+            && endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/admin/translations")]
+    [InlineData("POST", "/api/admin/translations")]
+    [InlineData("GET", "/api/admin/country-brandings/{countryCode}")]
+    [InlineData("PUT", "/api/admin/country-brandings/{countryCode}")]
+    public void AdminContentConfigurationRoutes_AreMapped(string httpMethod, string routePattern)
     {
         var endpoints = BuildAdminEndpoints();
 
