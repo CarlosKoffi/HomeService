@@ -133,7 +133,7 @@ public sealed class AdminAccessControlServiceTests
 
         var result = await sut.AcceptInvitationAsync(
             invitation.Invitation!.Token,
-            new AcceptAdminInvitationRequest("Password123", "Password123"),
+            new AcceptAdminInvitationRequest("support@wele.ci", "Password123", "Password123"),
             AuditActor.Admin(),
             new AuditRequestContext("127.0.0.1", "unit-tests", "admin-accept"),
             CancellationToken.None);
@@ -144,6 +144,33 @@ public sealed class AdminAccessControlServiceTests
         Assert.Null(admin.InvitationExpiresAt);
         Assert.NotNull(admin.InvitationAcceptedAt);
         Assert.True(Sha256PasswordHasher.Verify("Password123", admin.PasswordHash!));
+    }
+
+    [Fact]
+    public async Task AcceptInvitationAsync_WhenEmailDoesNotMatch_ReturnsValidationFailed()
+    {
+        await using var db = CreateDbContext();
+        var role = new AdminRole("Support", "Support");
+        db.AdminRoles.Add(role);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+        var invitation = await sut.CreateAdminInvitationAsync(
+            new CreateAdminUserRequest("Support", "support@wele.ci", false, [role.Id]),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-invite"),
+            CancellationToken.None);
+
+        var result = await sut.AcceptInvitationAsync(
+            invitation.Invitation!.Token,
+            new AcceptAdminInvitationRequest("other@wele.ci", "Password123", "Password123"),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-accept"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.ValidationFailed, result.Status);
+        var admin = await db.AdminUsers.SingleAsync(user => user.Email == "support@wele.ci");
+        Assert.NotNull(admin.InvitationTokenHash);
+        Assert.Null(admin.PasswordHash);
     }
 
     [Fact]

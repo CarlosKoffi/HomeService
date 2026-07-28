@@ -70,5 +70,6 @@ public sealed record UpdateAdminUserRolesRequest(
     IReadOnlyList<Guid> RoleIds);
 
 public sealed record AcceptAdminInvitationRequest(
+    string Email,
     string Password,
     string ConfirmPassword);

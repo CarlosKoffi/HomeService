@@ -44,6 +44,10 @@
             {
                 <div class="admin-invitation-form">
                     <label>
+                        Email professionnel
+                        <input type="email" @bind="Email" placeholder="Votre email d'invitation" />
+                    </label>
+                    <label>
                         Mot de passe
                         <input type="password" @bind="Password" placeholder="Minimum 8 caracteres" />
                     </label>
@@ -63,6 +67,7 @@
     public string Token { get; set; } = string.Empty;
 
     private AdminInvitationDetailResponse? Invitation { get; set; }
+    private string? Email { get; set; }
     private string? Password { get; set; }
     private string? ConfirmPassword { get; set; }
     private string? ErrorMessage { get; set; }
@@ -84,6 +89,10 @@
             {
                 ErrorMessage = "Lien d'invitation introuvable.";
             }
+            else
+            {
+                Email = Invitation.Email;
+            }
         }
         catch (Exception exception)
         {
@@ -102,7 +111,7 @@
 
         try
         {
-            await ApiClient.AcceptAdminInvitationAsync(Token, new AcceptAdminInvitationRequest(Password ?? string.Empty, ConfirmPassword ?? string.Empty));
+            await ApiClient.AcceptAdminInvitationAsync(Token, new AcceptAdminInvitationRequest(Email ?? string.Empty, Password ?? string.Empty, ConfirmPassword ?? string.Empty));
             IsActivated = true;
         }
         catch (Exception exception)

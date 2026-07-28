@@ -134,6 +134,12 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
             return AdminAccessControlResult.ValidationFailed("Le lien d'invitation a expire. Demandez un nouveau lien.");
         }
 
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(email) || !string.Equals(admin.Email, email, StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminAccessControlResult.ValidationFailed("L'email saisi ne correspond pas a cette invitation.");
+        }
+
         admin.AcceptInvitation(Sha256PasswordHasher.Hash(request.Password), DateTimeOffset.UtcNow);
         AddAuditLog(
             actor,
