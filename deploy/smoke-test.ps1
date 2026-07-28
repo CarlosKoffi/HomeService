@@ -42,7 +42,12 @@ $checks = @(
     @{ Name = "Admin company applications"; Path = "/api/admin/company-applications"; MinCount = 0 },
     @{ Name = "Admin companies"; Path = "/api/admin/companies"; MinCount = 0 },
     @{ Name = "Admin providers"; Path = "/api/admin/providers"; MinCount = 0 },
-    @{ Name = "Admin missions"; Path = "/api/admin/missions"; MinCount = 0 },
+    @{
+        Name = "Admin missions"
+        Path = "/api/admin/missions"
+        MinCount = 0
+        RequiredProperties = @("missionNumber")
+    },
     @{ Name = "Admin mission settings"; Path = "/api/admin/mission-settings"; MinCount = 0 },
     @{ Name = "Admin service proposals"; Path = "/api/admin/company-service-proposals"; MinCount = 0 },
     @{ Name = "Admin service insights"; Path = "/api/admin/service-insights"; MinCount = 0 },
@@ -85,7 +90,15 @@ $checks = @(
             @{ EventKey = "MissionPaymentReleased"; Channel = "Portal" },
             @{ EventKey = "MissionPayoutSent"; Channel = "Portal" })
     },
-    @{ Name = "Admin payments"; Path = "/api/admin/payments"; MinCount = 0 },
+    @{
+        Name = "Admin payments"
+        Path = "/api/admin/payments"
+        MinCount = 0
+        RequiredPayloadProperties = @(
+            "stats.platformCommissionAmount",
+            "stats.pendingPlatformCommissionAmount",
+            "stats.totalCollectedAmount")
+    },
     @{ Name = "Admin access control"; Path = "/api/admin/access-control"; MinCount = 0 }
 )
 
@@ -171,6 +184,50 @@ function Test-RequiredProperties($check, $payload) {
     return @($missing)
 }
 
+function Test-RequiredPayloadProperties($check, $payload) {
+    if (-not ($check.ContainsKey("RequiredPayloadProperties"))) {
+        return @()
+    }
+
+    $missing = New-Object System.Collections.Generic.List[string]
+    foreach ($propertyPath in $check.RequiredPayloadProperties) {
+        if (-not (Test-PayloadPropertyPath $payload $propertyPath)) {
+            $missing.Add($propertyPath)
+        }
+    }
+
+    return @($missing)
+}
+
+function Test-PayloadPropertyPath($payload, [string]$propertyPath) {
+    if ($null -eq $payload -or [string]::IsNullOrWhiteSpace($propertyPath)) {
+        return $false
+    }
+
+    $current = $payload
+    foreach ($part in $propertyPath.Split(".")) {
+        if ($null -eq $current) {
+            return $false
+        }
+
+        $propertyNames = @($part, (Get-PascalCaseName $part))
+        $matched = $false
+        foreach ($propertyName in $propertyNames) {
+            if ($current.PSObject.Properties.Name -contains $propertyName) {
+                $current = $current.$propertyName
+                $matched = $true
+                break
+            }
+        }
+
+        if (-not $matched) {
+            return $false
+        }
+    }
+
+    return $null -ne $current
+}
+
 function Get-PascalCaseName([string]$propertyName) {
     if ([string]::IsNullOrWhiteSpace($propertyName)) {
         return $propertyName
@@ -254,6 +311,12 @@ foreach ($check in $checks) {
         $missingProperties = Test-RequiredProperties $check $json
         if ($missingProperties.Count -gt 0) {
             $failures.Add("$($check.Name) is missing response field(s): $($missingProperties -join ', ').")
+            continue
+        }
+
+        $missingPayloadProperties = Test-RequiredPayloadProperties $check $json
+        if ($missingPayloadProperties.Count -gt 0) {
+            $failures.Add("$($check.Name) is missing payload field(s): $($missingPayloadProperties -join ', ').")
             continue
         }
 
