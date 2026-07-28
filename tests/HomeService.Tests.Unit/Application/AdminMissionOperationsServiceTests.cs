@@ -136,6 +136,69 @@ public sealed class AdminMissionOperationsServiceTests
         Assert.Equal(0, mission.RefundAmount);
     }
 
+    [Fact]
+    public async Task MarkDisputedAsync_WhenNoteMissing_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedAcceptedMissionAsync(db);
+        var sut = CreateService(db);
+
+        var result = await sut.MarkDisputedAsync(
+            mission.Id,
+            " ",
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionOperationStatus.ValidationFailed, result.Status);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
+        Assert.Empty(await db.AuditLogEntries.ToListAsync());
+    }
+
+    [Fact]
+    public async Task MarkDisputedAsync_WhenMissionCanBeDisputed_UpdatesStatusAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedAcceptedMissionAsync(db);
+        var sut = CreateService(db);
+
+        var result = await sut.MarkDisputedAsync(
+            mission.Id,
+            "Client conteste la qualite de l'intervention",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "mission-dispute"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(MissionStatus.Disputed, mission.Status);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminMissionMarkedDisputed", audit.Action);
+        Assert.Equal("mission-dispute", audit.CorrelationId);
+    }
+
+    [Fact]
+    public async Task ResolveDisputeAsync_WhenMissionIsDisputed_UpdatesStatusAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedAcceptedMissionAsync(db);
+        mission.MarkDisputed();
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.ResolveDisputeAsync(
+            mission.Id,
+            "Remboursement partiel valide par l'administration",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "mission-resolved"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(MissionStatus.Resolved, mission.Status);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminMissionDisputeResolved", audit.Action);
+        Assert.Equal("mission-resolved", audit.CorrelationId);
+    }
+
     private static async Task<Mission> SeedAcceptedMissionAsync(HomeServiceDbContext db)
     {
         var company = new Company("Entreprise Test", "+2250700000000", "contact@example.ci");
