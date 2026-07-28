@@ -17,13 +17,13 @@ main {
     background-color: rgba(255, 255, 255, .92);
     border-bottom: 1px solid #e6e9ef;
     justify-content: flex-end;
-    height: 3.5rem;
+    min-height: 3.5rem;
     display: flex;
     align-items: center;
     backdrop-filter: blur(14px);
 }
 
-.top-row > div:first-child {
+.top-row > div:first-child:not(.admin-console-title) {
     align-items: center;
     display: grid;
     gap: .1rem .65rem;
@@ -31,7 +31,7 @@ main {
     justify-items: end;
 }
 
-.top-row img {
+.top-row > div:first-child:not(.admin-console-title) img {
     display: block;
     grid-row: span 2;
     height: 30px;
@@ -39,16 +39,21 @@ main {
     width: 78px;
 }
 
-.top-row strong {
+.top-row > div:first-child:not(.admin-console-title) strong {
     color: #111827;
     font-size: .92rem;
     font-weight: 800;
 }
 
-.top-row span {
+.top-row > div:first-child:not(.admin-console-title) span {
     color: #64748b;
     font-size: .78rem;
     font-weight: 650;
+}
+
+.top-row.admin-topbar {
+    height: auto;
+    justify-content: space-between;
 }
 
 @media (max-width: 640.98px) {
