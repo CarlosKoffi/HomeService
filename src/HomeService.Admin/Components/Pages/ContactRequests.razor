@@ -10,7 +10,9 @@
         <h1>Contacts</h1>
         <p class="lead">Suivez les messages envoyes depuis les sites entreprise et prestataire.</p>
     </div>
-    <button type="button" class="secondary-action" @onclick="LoadAsync">Actualiser</button>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">
+        @(IsLoading ? "Chargement..." : "Actualiser")
+    </button>
 </div>
 
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))
@@ -58,7 +60,9 @@
             <option value="ProviderLanding">Site prestataire</option>
         </select>
     </label>
-    <button type="button" class="secondary-action" @onclick="LoadAsync">Filtrer</button>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">
+        @(IsLoading ? "Filtrage..." : "Filtrer")
+    </button>
 </section>
 
 <section class="admin-list-panel">
@@ -131,13 +135,13 @@
                             class="secondary-action"
                             disabled="@(!CanMarkInProgress(request))"
                             @onclick="() => MarkInProgressAsync(request)">
-                        @(request.Status == "InProgress" ? "Deja en cours" : "Prendre en charge")
+                        @(IsBusy(request.Id) ? "Traitement..." : request.Status == "InProgress" ? "Deja en cours" : "Prendre en charge")
                     </button>
                     <button type="button"
                             class="primary-action"
                             disabled="@(!CanClose(request))"
                             @onclick="() => CloseAsync(request)">
-                        @(request.Status == "Closed" ? "Cloture" : "Cloturer")
+                        @(IsBusy(request.Id) ? "Traitement..." : request.Status == "Closed" ? "Cloture" : "Cloturer")
                     </button>
                 </div>
             </article>
