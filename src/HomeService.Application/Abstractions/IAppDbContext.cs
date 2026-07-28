@@ -51,6 +51,7 @@ public interface IAppDbContext
     DbSet<AdminModule> AdminModules { get; }
     DbSet<AdminRolePermission> AdminRolePermissions { get; }
     DbSet<AdminUserRole> AdminUserRoles { get; }
+    DbSet<AdminSession> AdminSessions { get; }
     DbSet<NotificationOutboxMessage> NotificationOutboxMessages { get; }
     DbSet<NotificationDeliveryRule> NotificationDeliveryRules { get; }
     DbSet<NotificationTemplate> NotificationTemplates { get; }

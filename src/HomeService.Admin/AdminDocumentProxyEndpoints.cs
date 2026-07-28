@@ -9,9 +9,11 @@ public static class AdminDocumentProxyEndpoints
         app.MapGet("/admin-documents/{documentId:guid}/preview", async (
             Guid documentId,
             PlatformApiClient apiClient,
+            AdminApiSessionAccessor sessionAccessor,
             HttpContext context,
             CancellationToken cancellationToken) =>
         {
+            ApplyAdminSessionCookie(context, sessionAccessor);
             return await RenderDocumentAsync(
                 () => apiClient.GetCompanyApplicationDocumentFileAsync(documentId, cancellationToken),
                 context);
@@ -20,9 +22,11 @@ public static class AdminDocumentProxyEndpoints
         app.MapGet("/admin-provider-documents/{documentId:guid}/preview", async (
             Guid documentId,
             PlatformApiClient apiClient,
+            AdminApiSessionAccessor sessionAccessor,
             HttpContext context,
             CancellationToken cancellationToken) =>
         {
+            ApplyAdminSessionCookie(context, sessionAccessor);
             return await RenderDocumentAsync(
                 () => apiClient.GetProviderDocumentFileAsync(documentId, cancellationToken),
                 context);
@@ -31,9 +35,11 @@ public static class AdminDocumentProxyEndpoints
         app.MapGet("/admin-cms-media/{mediaId:guid}/preview", async (
             Guid mediaId,
             PlatformApiClient apiClient,
+            AdminApiSessionAccessor sessionAccessor,
             HttpContext context,
             CancellationToken cancellationToken) =>
         {
+            ApplyAdminSessionCookie(context, sessionAccessor);
             return await RenderDocumentAsync(
                 () => apiClient.GetCmsMediaFileAsync(mediaId, cancellationToken),
                 context);
@@ -65,5 +71,13 @@ public static class AdminDocumentProxyEndpoints
     private static string SanitizeFileName(string fileName)
     {
         return fileName.Replace("\"", string.Empty, StringComparison.Ordinal);
+    }
+
+    private static void ApplyAdminSessionCookie(HttpContext context, AdminApiSessionAccessor sessionAccessor)
+    {
+        if (context.Request.Cookies.TryGetValue("wele-admin-session", out var token))
+        {
+            sessionAccessor.Token = token;
+        }
     }
 }

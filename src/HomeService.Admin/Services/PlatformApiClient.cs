@@ -15,9 +15,33 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace HomeService.Admin.Services;
 
-public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration configuration)
+public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration configuration, AdminApiSessionAccessor adminSessionAccessor)
 {
     public Uri? BaseAddress => httpClient.BaseAddress;
+
+    public async Task<AdminLoginResponse?> LoginAdminAsync(AdminLoginRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminLoginResponse>("/api/admin/auth/login", request, cancellationToken);
+    }
+
+    public async Task<AdminCurrentUserResponse?> GetCurrentAdminAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminCurrentUserResponse>("/api/admin/auth/me", cancellationToken);
+    }
+
+    public async Task LogoutAdminAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        using var response = await httpClient.PostAsync("/api/admin/auth/logout", null, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new PlatformApiException(
+                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, "/api/admin/auth/logout")}. {body}");
+        }
+    }
 
     public async Task<AdminDashboardResponse?> GetAdminDashboardAsync(CancellationToken cancellationToken = default)
     {
@@ -1115,6 +1139,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
     private void AddBasicAuthIfConfigured()
     {
+        httpClient.DefaultRequestHeaders.Remove("X-Admin-Session");
+        if (!string.IsNullOrWhiteSpace(adminSessionAccessor.Token))
+        {
+            httpClient.DefaultRequestHeaders.TryAddWithoutValidation("X-Admin-Session", adminSessionAccessor.Token);
+        }
+
         if (!IsAuthEnabled())
         {
             return;

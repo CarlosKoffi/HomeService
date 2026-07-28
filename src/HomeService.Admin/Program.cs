@@ -8,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddPersistentDataProtection(builder.Configuration, "HomeService.Admin");
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddScoped<AdminApiSessionAccessor>();
+builder.Services.AddScoped<AdminSessionState>();
 builder.Services.AddHttpClient<PlatformApiClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["API_BASE_URL"] ?? builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");

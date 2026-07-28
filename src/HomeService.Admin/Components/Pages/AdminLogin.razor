@@ -1,0 +1,99 @@
+@page "/admin-login"
+@using HomeService.Admin.Services
+@inject AdminSessionState SessionState
+@inject NavigationManager Navigation
+
+<PageTitle>Connexion admin</PageTitle>
+
+<main class="admin-login-page">
+    <section class="admin-login-card">
+        <div class="admin-login-brand">
+            <img src="images/wele-logo.png" alt="wélé" />
+            <div>
+                <strong>Console wélé</strong>
+                <span>Acces reserve aux administrateurs</span>
+            </div>
+        </div>
+
+        <h1>Connexion admin</h1>
+        <p>Connectez-vous avec votre compte interne pour piloter la plateforme.</p>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <p class="admin-message error-message">@ErrorMessage</p>
+        }
+
+        <div class="admin-login-form">
+            <label>
+                Email admin
+                <input type="email" @bind="Email" placeholder="admin@wele.ci" autocomplete="username" />
+            </label>
+            <label>
+                Mot de passe
+                <input type="password" @bind="Password" placeholder="Votre mot de passe" autocomplete="current-password" @onkeydown="HandleKeyDownAsync" />
+            </label>
+            <button type="button" class="primary-action" @onclick="SignInAsync" disabled="@IsBusy">Se connecter</button>
+        </div>
+    </section>
+</main>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private string Email { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string? ErrorMessage { get; set; }
+    private bool IsBusy { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await SessionState.InitializeAsync();
+        if (SessionState.IsAuthenticated)
+        {
+            Navigation.NavigateTo(SafeReturnUrl());
+        }
+    }
+
+    private async Task HandleKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SignInAsync();
+        }
+    }
+
+    private async Task SignInAsync()
+    {
+        IsBusy = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var signedIn = await SessionState.SignInAsync(Email, Password);
+            if (!signedIn)
+            {
+                ErrorMessage = "Email ou mot de passe incorrect.";
+                return;
+            }
+
+            Navigation.NavigateTo(SafeReturnUrl(), forceLoad: true);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private string SafeReturnUrl()
+    {
+        return string.IsNullOrWhiteSpace(ReturnUrl) || ReturnUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            ? "/"
+            : ReturnUrl;
+    }
+}

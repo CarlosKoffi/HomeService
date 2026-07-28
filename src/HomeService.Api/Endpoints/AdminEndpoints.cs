@@ -27,6 +27,47 @@ public static class AdminEndpoints
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var admin = app.MapGroup("/api/admin");
+        admin.AddEndpointFilter(AdminSessionEndpointFilterAsync);
+
+        admin.MapPost("/auth/login", async (
+            AdminLoginRequest request,
+            AdminAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await authService.LoginAsync(request, cancellationToken);
+            return result.IsSuccess && result.Response is not null
+                ? Results.Ok(result.Response)
+                : Results.Unauthorized();
+        })
+        .WithName("LoginAdmin")
+        .AllowAnonymous()
+        .Produces<AdminLoginResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        admin.MapGet("/auth/me", async (
+            HttpRequest request,
+            AdminAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            var currentUser = await authService.GetCurrentUserAsync(GetAdminSessionToken(request), cancellationToken);
+            return currentUser is null ? Results.Unauthorized() : Results.Ok(currentUser);
+        })
+        .WithName("GetCurrentAdmin")
+        .AllowAnonymous()
+        .Produces<AdminCurrentUserResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        admin.MapPost("/auth/logout", async (
+            HttpRequest request,
+            AdminAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            await authService.LogoutAsync(GetAdminSessionToken(request), cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("LogoutAdmin")
+        .AllowAnonymous()
+        .Produces(StatusCodes.Status204NoContent);
 
         admin.MapGet("/dashboard", async (
             AdminQueryService queryService,
@@ -1920,6 +1961,173 @@ public static class AdminEndpoints
             application.ReviewedAt,
             application.ReviewNote);
     }
+
+    static async ValueTask<object?> AdminSessionEndpointFilterAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
+    {
+        var request = context.HttpContext.Request;
+        if (ShouldSkipAdminSessionCheck(request.Path))
+        {
+            return await next(context);
+        }
+
+        var token = GetAdminSessionToken(request);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return Results.Unauthorized();
+        }
+
+        var permission = ResolveAdminPermission(request);
+        var authService = context.HttpContext.RequestServices.GetRequiredService<AdminAuthService>();
+        var canAccess = await authService.CanAccessAsync(
+            token,
+            permission.ModuleKey,
+            permission.Action,
+            context.HttpContext.RequestAborted);
+
+        return canAccess ? await next(context) : Results.Forbid();
+    }
+
+    static bool ShouldSkipAdminSessionCheck(PathString path)
+    {
+        return path.StartsWithSegments("/api/admin/auth", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/api/admin/access-control/admins/invitations", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static string GetAdminSessionToken(HttpRequest request)
+    {
+        return request.Headers.TryGetValue("X-Admin-Session", out var values)
+            ? values.FirstOrDefault()?.Trim() ?? string.Empty
+            : string.Empty;
+    }
+
+    static AdminEndpointPermission ResolveAdminPermission(HttpRequest request)
+    {
+        var path = request.Path.Value ?? string.Empty;
+        var action = ResolveAdminPermissionAction(request.Method, path);
+        var moduleKey = ResolveAdminModuleKey(path);
+        return new AdminEndpointPermission(moduleKey, action);
+    }
+
+    static AdminPermissionAction ResolveAdminPermissionAction(string method, string path)
+    {
+        if (HttpMethods.IsGet(method) || HttpMethods.IsHead(method))
+        {
+            return AdminPermissionAction.View;
+        }
+
+        if (path.Contains("/approve", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/validate", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/mark-sent", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.Approve;
+        }
+
+        if (path.Contains("/reject", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/refuse", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/cancel", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.Reject;
+        }
+
+        if (path.Contains("/suspend", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/deactivate", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.Suspend;
+        }
+
+        if (path.Contains("/resend", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/retry", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/activation-link", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.Resend;
+        }
+
+        if (path.Contains("/access-control", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.ManageRoles;
+        }
+
+        return HttpMethods.IsPost(method) ? AdminPermissionAction.Create : AdminPermissionAction.Edit;
+    }
+
+    static AdminModuleKey ResolveAdminModuleKey(string path)
+    {
+        if (path.Contains("/company-applications", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/company-application-documents", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.CompanyApplications;
+        }
+
+        if (path.Contains("/companies", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.CompanyManagement;
+        }
+
+        if (path.Contains("/providers", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/provider-documents", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.ProviderReview;
+        }
+
+        if (path.Contains("/mission-settings", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/commission-rules", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.MissionSettings;
+        }
+
+        if (path.Contains("/missions", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Missions;
+        }
+
+        if (path.Contains("/payments", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Payments;
+        }
+
+        if (path.Contains("/localization", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/translations", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Localization;
+        }
+
+        if (path.Contains("/cms", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Cms;
+        }
+
+        if (path.Contains("/service", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Services;
+        }
+
+        if (path.Contains("/notifications", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/notification-", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Notifications;
+        }
+
+        if (path.Contains("/contact-requests", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.ContactRequests;
+        }
+
+        if (path.Contains("/audit-logs", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Audit;
+        }
+
+        if (path.Contains("/access-control", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.AdminAccess;
+        }
+
+        return AdminModuleKey.Dashboard;
+    }
+
+    sealed record AdminEndpointPermission(AdminModuleKey ModuleKey, AdminPermissionAction Action);
     
     static IResult? ToAdminCompanyApplicationReviewError(AdminCompanyApplicationReviewResult result)
     {

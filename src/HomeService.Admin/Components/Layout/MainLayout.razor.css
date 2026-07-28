@@ -23,7 +23,7 @@ main {
     backdrop-filter: blur(14px);
 }
 
-.top-row > div {
+.top-row > div:first-child {
     align-items: center;
     display: grid;
     gap: .1rem .65rem;

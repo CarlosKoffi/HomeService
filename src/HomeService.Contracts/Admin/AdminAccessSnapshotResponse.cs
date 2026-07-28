@@ -19,6 +19,23 @@ public sealed record AdminInvitationDetailResponse(
     bool IsExpired,
     bool IsAccepted);
 
+public sealed record AdminLoginRequest(
+    string Email,
+    string Password);
+
+public sealed record AdminLoginResponse(
+    string Token,
+    DateTimeOffset ExpiresAt,
+    AdminCurrentUserResponse User);
+
+public sealed record AdminCurrentUserResponse(
+    Guid Id,
+    string FullName,
+    string Email,
+    bool IsSuperAdmin,
+    DateTimeOffset ExpiresAt,
+    IReadOnlyList<AdminPermissionSummaryResponse> Permissions);
+
 public sealed record AdminRoleSummaryResponse(
     Guid Id,
     string Name,

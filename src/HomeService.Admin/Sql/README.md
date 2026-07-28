@@ -79,6 +79,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 054 | `054_link_notification_templates_to_rules.sql` | Link notification templates to delivery rules |
 | 055 | `055_add_mission_workflow_settings.sql` | Mission workflow timing and GPS tolerance settings |
 | 056 | `056_seed_demo_missions.sql` | Idempotent admin/company mission and payment demo data |
+| 057 | `057_add_admin_sessions.sql` | Admin login sessions for protected back-office access |
 
 ## Notes
 

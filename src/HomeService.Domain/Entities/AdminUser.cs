@@ -57,4 +57,10 @@ public sealed class AdminUser : AuditableEntity
         IsActive = true;
         Touch();
     }
+
+    public void RecordLogin(DateTimeOffset loginAt)
+    {
+        LastLoginAt = loginAt;
+        Touch();
+    }
 }

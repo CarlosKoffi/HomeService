@@ -1,27 +1,91 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject HomeService.Admin.Services.AdminSessionState SessionState
+@inject NavigationManager Navigation
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+@if (IsPublicPage)
+{
+    @Body
+}
+else if (!HasCheckedSession)
+{
+    <div class="admin-auth-loading">
+        <img src="images/wele-logo.png" alt="wele" />
+        <p>Verification de votre session admin...</p>
     </div>
-
-    <main>
-        <div class="top-row px-4">
-            <div>
-                <img src="images/wele-logo.png" alt="wélé" />
-                <strong>Console wélé</strong>
-                <span>Pilotage plateforme</span>
-            </div>
+}
+else
+{
+    <div class="page">
+        <div class="sidebar">
+            <NavMenu />
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+        <main>
+            <div class="top-row px-4">
+                <div>
+                    <img src="images/wele-logo.png" alt="wele" />
+                    <strong>Console w&eacute;l&eacute;</strong>
+                    <span>Pilotage plateforme</span>
+                </div>
+                <div class="admin-user-chip">
+                    <span>
+                        <strong>@SessionState.CurrentUser?.FullName</strong>
+                        <small>@(SessionState.CurrentUser?.IsSuperAdmin == true ? "Super admin" : "Admin")</small>
+                    </span>
+                    <button type="button" @onclick="SignOutAsync">Deconnexion</button>
+                </div>
+            </div>
+
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">X</span>
 </div>
+
+@code {
+    private bool HasCheckedSession { get; set; }
+
+    private bool IsPublicPage
+    {
+        get
+        {
+            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0];
+            return relativePath.StartsWith("admin-login", StringComparison.OrdinalIgnoreCase)
+                || relativePath.StartsWith("admin-invitation", StringComparison.OrdinalIgnoreCase)
+                || relativePath.StartsWith("Error", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || IsPublicPage)
+        {
+            return;
+        }
+
+        await SessionState.InitializeAsync();
+        HasCheckedSession = true;
+
+        if (!SessionState.IsAuthenticated)
+        {
+            var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+            Navigation.NavigateTo($"/admin-login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task SignOutAsync()
+    {
+        await SessionState.SignOutAsync();
+        Navigation.NavigateTo("/admin-login", forceLoad: true);
+    }
+}
