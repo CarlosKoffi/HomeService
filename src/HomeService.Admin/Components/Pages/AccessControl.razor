@@ -22,6 +22,9 @@
     <button type="button" class="@GetAccessTabClass(AccessAdminTab.Roles)" @onclick="() => ActiveTab = AccessAdminTab.Roles">
         Roles & modules <span>@Roles.Count</span>
     </button>
+    <button type="button" class="@GetAccessTabClass(AccessAdminTab.Permissions)" @onclick="() => ActiveTab = AccessAdminTab.Permissions">
+        Permissions <span>@Modules.Count</span>
+    </button>
     <button type="button" class="@GetAccessTabClass(AccessAdminTab.Admins)" @onclick="() => ActiveTab = AccessAdminTab.Admins">
         Administrateurs <span>@Admins.Count</span>
     </button>
@@ -100,7 +103,7 @@
 
 @if (ActiveTab == AccessAdminTab.Roles)
 {
-<section class="access-layout">
+<section class="access-layout access-layout-single">
     <article>
         <div class="section-heading">
             <div>
@@ -163,12 +166,17 @@
             }
         </div>
     </article>
+</section>
+}
 
+@if (ActiveTab == AccessAdminTab.Permissions)
+{
+<section class="access-permission-board">
     <article>
         <div class="section-heading">
             <div>
-                <h2>Modules</h2>
-                <p class="section-help">Chaque module peut exposer des droits differents selon les equipes.</p>
+                <h2>Permissions par module</h2>
+                <p class="section-help">Selectionnez un role, puis cochez uniquement les actions necessaires a l'equipe.</p>
             </div>
         </div>
 
@@ -713,6 +721,7 @@
     {
         Overview,
         Roles,
+        Permissions,
         Admins
     }
 }

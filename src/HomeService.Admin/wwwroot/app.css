@@ -4967,7 +4967,16 @@ h3 {
     margin-top: 1.5rem;
 }
 
+.access-layout-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.access-permission-board {
+    margin-top: 1.5rem;
+}
+
 .access-layout > article,
+.access-permission-board > article,
 .role-list div {
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -5114,7 +5123,19 @@ h3 {
 
 .translation-list article.admin-access-row {
     align-items: center;
-    grid-template-columns: minmax(190px, 1fr) minmax(130px, .45fr) minmax(90px, .3fr) minmax(280px, 1.1fr) auto auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    gap: .8rem;
+    grid-template-columns: minmax(210px, 1fr) minmax(170px, .65fr) minmax(110px, .35fr) minmax(260px, 1fr) auto auto;
+    margin-bottom: .75rem;
+    padding: .9rem;
+}
+
+.admin-access-row strong,
+.admin-access-row p,
+.admin-access-row span {
+    overflow-wrap: anywhere;
 }
 
 .compact-role-editor {
@@ -5280,9 +5301,13 @@ h3 {
 }
 
 .permission-matrix {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
     display: grid;
-    gap: .5rem;
+    gap: 0;
     grid-template-columns: minmax(160px, 1fr) repeat(3, minmax(92px, auto));
+    overflow: hidden;
 }
 
 .permission-matrix > * {
@@ -5290,6 +5315,7 @@ h3 {
     border-bottom: 1px solid #e5e7eb;
     display: flex;
     min-height: 42px;
+    padding: .55rem .75rem;
 }
 
 .permission-matrix .module-cell {
