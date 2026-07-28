@@ -219,6 +219,82 @@ public static class ProviderPortalEndpoints
         })
         .WithName("GetProviderMobileHome");
 
+        group.MapGet("/mobile/profile", async (
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMobileProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await profileService.GetAsync(session.ProviderId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("GetProviderMobileProfile")
+        .Produces<ProviderMobileProfileResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet("/mobile/profile/documents/{documentId:guid}/preview", async (
+            Guid documentId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var document = await db.ProviderDocuments
+                .AsNoTracking()
+                .Where(item => item.Id == documentId && item.ProviderId == session.ProviderId)
+                .Select(item => new
+                {
+                    item.OriginalFileName,
+                    item.StoragePath,
+                    item.ContentType
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (document is null)
+            {
+                return Results.NotFound();
+            }
+
+            string absolutePath;
+            try
+            {
+                absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.NotFound(new { message = "Le chemin du fichier prestataire est invalide." });
+            }
+
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "Le fichier prestataire n'existe plus sur le serveur." });
+            }
+
+            return Results.File(
+                absolutePath,
+                string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType,
+                enableRangeProcessing: true);
+        })
+        .WithName("PreviewProviderMobileProfileDocument")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapGet("/mobile/mission-assignments/{assignmentId:guid}", async (
             Guid assignmentId,
             HttpRequest httpRequest,

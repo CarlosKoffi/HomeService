@@ -32,6 +32,8 @@ public sealed class ProviderPortalEndpointContractTests
     [Theory]
     [InlineData("POST", "/api/provider-portal/mobile/device-token")]
     [InlineData("GET", "/api/provider-portal/mobile/home")]
+    [InlineData("GET", "/api/provider-portal/mobile/profile")]
+    [InlineData("GET", "/api/provider-portal/mobile/profile/documents/{documentId:guid}/preview")]
     [InlineData("GET", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}")]
     [InlineData("GET", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/messages")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/messages")]
