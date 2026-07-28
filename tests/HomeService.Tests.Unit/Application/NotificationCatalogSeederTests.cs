@@ -94,6 +94,46 @@ public sealed class NotificationCatalogSeederTests
         }
     }
 
+    [Fact]
+    public async Task EnsureDefaultsAsync_CreatesDeliveryRuleChannelsMatchingTemplateChannels()
+    {
+        await using var db = CreateDbContext();
+
+        await new NotificationCatalogSeeder(db).EnsureDefaultsAsync(CancellationToken.None);
+
+        var rules = await db.NotificationDeliveryRules
+            .AsNoTracking()
+            .ToDictionaryAsync(rule => rule.EventKey);
+
+        foreach (var seed in NotificationTemplateCatalog.Defaults)
+        {
+            var rule = rules[seed.EventKey];
+            Assert.Equal(seed.Channels.Contains(NotificationTemplateChannel.Portal), rule.PortalEnabled);
+            Assert.Equal(seed.Channels.Contains(NotificationTemplateChannel.MobilePush), rule.MobileAppEnabled);
+            Assert.Equal(seed.Channels.Contains(NotificationTemplateChannel.Email), rule.EmailEnabled);
+            Assert.Equal(seed.Channels.Contains(NotificationTemplateChannel.WhatsApp), rule.WhatsAppEnabled);
+        }
+    }
+
+    [Fact]
+    public async Task EnsureDefaultsAsync_LinksEveryTemplateToDeliveryRule()
+    {
+        await using var db = CreateDbContext();
+
+        await new NotificationCatalogSeeder(db).EnsureDefaultsAsync(CancellationToken.None);
+
+        var templates = await db.NotificationTemplates
+            .Include(template => template.DeliveryRule)
+            .AsNoTracking()
+            .ToListAsync();
+
+        Assert.All(templates, template =>
+        {
+            Assert.NotNull(template.DeliveryRule);
+            Assert.Equal(template.EventKey, template.DeliveryRule!.EventKey);
+        });
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
