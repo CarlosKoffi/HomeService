@@ -123,6 +123,87 @@ public sealed class CompanyEmployeeManagementServiceTests
         Assert.Contains(documents, document => document.StoragePath == "providers/company/provider/new-id.png");
     }
 
+    [Fact]
+    public async Task ApproveAsync_RequiresActiveServiceAndIdentityDocument()
+    {
+        await using var db = CreateDbContext();
+        var companyId = Guid.NewGuid();
+        var provider = CreateProvider(companyId);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyEmployeeManagementService(db).ApproveAsync(companyId, provider.Id, CancellationToken.None);
+
+        Assert.Equal(CompanyEmployeeOperationStatus.ValidationFailed, result.Status);
+        Assert.Contains("service actif", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ProviderStatus.Invited, provider.Status);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_ValidatesProviderWithoutChangingAvailability()
+    {
+        await using var db = CreateDbContext();
+        var companyId = Guid.NewGuid();
+        var provider = CreateProvider(companyId);
+        var service = new Service("Menage a domicile", null, null);
+        provider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 5, ProviderServicePriceTier.Normal)]);
+        db.Providers.Add(provider);
+        db.Services.Add(service);
+        db.ProviderDocuments.Add(new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.IdentityDocument,
+            "id.png",
+            "providers/company/provider/id.png",
+            "image/png"));
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyEmployeeManagementService(db).ApproveAsync(companyId, provider.Id, CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        Assert.Equal(CompanyEmployeeOperationStatus.Ok, result.Status);
+        Assert.Equal(ProviderStatus.Approved, provider.Status);
+        Assert.False(provider.IsAvailable);
+    }
+
+    [Fact]
+    public async Task UpdateAvailabilityAsync_RejectsNonApprovedProvider()
+    {
+        await using var db = CreateDbContext();
+        var companyId = Guid.NewGuid();
+        var provider = CreateProvider(companyId);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyEmployeeManagementService(db).UpdateAvailabilityAsync(
+            companyId,
+            provider.Id,
+            new UpdateCompanyEmployeeAvailabilityRequest(true, 5.34m, -4.01m),
+            CancellationToken.None);
+
+        Assert.Equal(CompanyEmployeeOperationStatus.ValidationFailed, result.Status);
+        Assert.Contains("Validez", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.False(provider.IsAvailable);
+    }
+
+    [Fact]
+    public async Task SuspendAsync_BlocksProviderAndAvailability()
+    {
+        await using var db = CreateDbContext();
+        var companyId = Guid.NewGuid();
+        var provider = CreateProvider(companyId);
+        provider.Approve();
+        provider.SetAvailability(true, 5.34m, -4.01m);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyEmployeeManagementService(db).SuspendAsync(companyId, provider.Id, CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        Assert.Equal(CompanyEmployeeOperationStatus.Ok, result.Status);
+        Assert.Equal(ProviderStatus.SuspendedByCompany, provider.Status);
+        Assert.False(provider.IsAvailable);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()

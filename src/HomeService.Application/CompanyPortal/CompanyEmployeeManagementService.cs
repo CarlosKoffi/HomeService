@@ -209,6 +209,11 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             return CompanyEmployeeOperationResult.NotFound();
         }
 
+        if (request.IsAvailable && provider.Status != ProviderStatus.Approved)
+        {
+            return CompanyEmployeeOperationResult.ValidationFailed(provider, "Validez le prestataire avant de le rendre disponible.");
+        }
+
         var before = new { provider.IsAvailable, provider.CurrentLatitude, provider.CurrentLongitude };
         provider.SetAvailability(request.IsAvailable, request.Latitude ?? provider.CurrentLatitude, request.Longitude ?? provider.CurrentLongitude);
         return CompanyEmployeeOperationResult.Ok(

@@ -747,6 +747,11 @@ public static class CompanyPortalEndpoints
                 return Results.NotFound(new { message = result.Message });
             }
 
+            if (result.Status == CompanyEmployeeOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
             AddCompanyEmployeeAudit(
                 db,
                 httpRequest,
