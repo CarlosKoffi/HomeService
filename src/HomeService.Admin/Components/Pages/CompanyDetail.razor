@@ -10,6 +10,10 @@
 {
     <p class="admin-message error-message">@ErrorMessage</p>
 }
+else if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <p class="admin-message success-message">@SuccessMessage</p>
+}
 
 @if (IsLoading)
 {
@@ -410,6 +414,7 @@ else
     private AdminCompanyDetailResponse? Company { get; set; }
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
     private string SelectedTab { get; set; } = "summary";
     private string? CompanyActionNote { get; set; }
     private bool IsCompanyActionBusy { get; set; }
@@ -502,6 +507,7 @@ else
 
         IsDispatchSettingsBusy = true;
         ErrorMessage = null;
+        SuccessMessage = null;
 
         try
         {
@@ -516,6 +522,7 @@ else
             }
 
             await LoadAsync();
+            SuccessMessage = "Regles de reception mission mises a jour.";
         }
         catch (Exception exception)
         {
@@ -531,6 +538,7 @@ else
     {
         IsCompanyActionBusy = true;
         ErrorMessage = null;
+        SuccessMessage = null;
 
         try
         {
@@ -543,6 +551,9 @@ else
 
             CompanyActionNote = null;
             await LoadAsync();
+            SuccessMessage = Company?.Status == "Suspended"
+                ? "Entreprise suspendue."
+                : "Entreprise reactivee.";
         }
         catch (Exception exception)
         {
@@ -594,6 +605,7 @@ else
     {
         BusyNotificationId = notificationId;
         ErrorMessage = null;
+        SuccessMessage = null;
 
         try
         {
@@ -606,6 +618,7 @@ else
 
             await LoadAsync();
             SelectedTab = "notifications";
+            SuccessMessage = "Notification mise a jour.";
         }
         catch (Exception exception)
         {
