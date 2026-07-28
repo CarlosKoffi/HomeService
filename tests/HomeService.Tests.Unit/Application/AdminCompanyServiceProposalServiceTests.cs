@@ -72,6 +72,32 @@ public sealed class AdminCompanyServiceProposalServiceTests
         Assert.Equal("Repassage", item.RawName);
     }
 
+    [Theory]
+    [InlineData("Repassage")]
+    [InlineData("Blanchisserie - Repassage")]
+    [InlineData("blanchisserie repassage")]
+    public async Task ReanalyseAsync_WhenProposalMatchesExistingPrestation_RattachesItWithoutAdminReview(string rawName)
+    {
+        await using var db = CreateDbContext();
+        var application = CreateApplication("Ivoire Catering Group", rawName);
+        var proposal = new CompanyApplicationService(application.Id, rawName);
+        var service = new Service("Blanchisserie", "Linge et pressing", createdByCompanyId: null);
+        var prestation = service.AddPrestation("Repassage", "Repassage du linge", 1, 2500, 4500);
+        db.CompanyApplications.Add(application);
+        db.CompanyApplicationServices.Add(proposal);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var sut = new AdminCompanyServiceProposalService(db);
+        var result = await sut.ReanalyseAsync(CancellationToken.None);
+        var pending = await sut.ListAsync(CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(service.Id, proposal.MatchedServiceId);
+        Assert.Equal(prestation.Id, proposal.MatchedServicePrestationId);
+        Assert.Empty(pending.Items);
+    }
+
     [Fact]
     public async Task CreateServiceAsync_RattachesProposalToExistingServiceWhenNameAlreadyExists()
     {
