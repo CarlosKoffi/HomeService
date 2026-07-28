@@ -134,7 +134,7 @@ public sealed class AdminQueryServiceTests
         Assert.Equal(1, dashboard.OpenMissions);
         Assert.Equal(1, dashboard.DisputedMissions);
         Assert.Equal(10_000, dashboard.PendingPaymentsAmount);
-        Assert.Equal(3_000, dashboard.PlatformCommissionAmount);
+        Assert.Equal(4_500, dashboard.PlatformCommissionAmount);
         Assert.Equal(1, dashboard.UnreadCompanyPortalNotifications);
         Assert.Equal(1, dashboard.FailedExternalNotifications);
         Assert.Contains(dashboard.PriorityActions, action => action.Url == "missions?status=Disputed" && action.Count == 1);

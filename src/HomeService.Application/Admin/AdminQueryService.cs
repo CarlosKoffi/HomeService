@@ -40,7 +40,8 @@ public sealed class AdminQueryService(IAppDbContext db)
             .Where(mission => mission.PaymentStatus == PaymentStatus.Pending || mission.PaymentStatus == PaymentStatus.Authorized)
             .SumAsync(mission => mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0, cancellationToken);
         var platformCommissionAmount = await db.Missions
-            .Where(mission => mission.PaymentStatus == PaymentStatus.Paid)
+            .Where(mission => mission.PaymentStatus == PaymentStatus.Authorized
+                || mission.PaymentStatus == PaymentStatus.Paid)
             .SumAsync(mission => mission.PlatformCommissionAmount, cancellationToken);
         var unreadCompanyPortalNotifications = await db.CompanyPortalNotifications.CountAsync(
             notification => !notification.IsRead,
