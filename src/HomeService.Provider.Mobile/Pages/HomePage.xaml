@@ -7,52 +7,56 @@
     Title="Accueil">
     <ScrollView>
         <VerticalStackLayout Padding="18" Spacing="14">
+            <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#EEF4FF" Stroke="#CFE0FF" StrokeShape="RoundRectangle 18" Padding="14">
+                <Label x:Name="MessageLabel" Text="Chargement..." Style="{StaticResource BodyLabel}" />
+            </Border>
+
             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <VerticalStackLayout Spacing="4">
                         <Label Text="STATUT" Style="{StaticResource EyebrowLabel}" />
-                        <Label Text="Disponible" Style="{StaticResource CardTitleLabel}" TextColor="{StaticResource WeleGreen}" />
-                        <Label Text="CI Home Service peut vous affecter une mission live." Style="{StaticResource BodyLabel}" />
+                        <Label x:Name="AvailabilityLabel" Text="Disponible" Style="{StaticResource CardTitleLabel}" TextColor="{StaticResource WeleGreen}" />
+                        <Label x:Name="ProviderStatusLabel" Text="Votre entreprise peut vous affecter une mission." Style="{StaticResource BodyLabel}" />
                     </VerticalStackLayout>
                     <Border Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" StrokeShape="RoundRectangle 18" Padding="14,8">
-                        <Label Text="ON" TextColor="White" FontAttributes="Bold" />
+                        <Label x:Name="AvailabilityBadgeLabel" Text="ON" TextColor="White" FontAttributes="Bold" />
                     </Border>
                 </Grid>
             </Border>
 
-            <Border BackgroundColor="#FFF8EF" Stroke="#FFD6AD" StrokeShape="RoundRectangle 20" Padding="14">
+            <Border x:Name="ProfileCompletionBanner" BackgroundColor="#FFF8EF" Stroke="#FFD6AD" StrokeShape="RoundRectangle 20" Padding="14">
                 <VerticalStackLayout Spacing="5">
                     <Grid ColumnDefinitions="*,Auto">
                         <Label Text="PROFIL A FINALISER" Style="{StaticResource EyebrowLabel}" />
-                        <Label Grid.Column="1" Text="92%" FontAttributes="Bold" TextColor="{StaticResource WeleOrange}" />
+                        <Label x:Name="ProfilePercentLabel" Grid.Column="1" Text="92%" FontAttributes="Bold" TextColor="{StaticResource WeleOrange}" />
                     </Grid>
-                    <Label Text="Ajoutez encore 1 photo pour rendre tous vos services assignables." Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="ProfileMessageLabel" Text="Completez votre profil pour recevoir toutes les missions." Style="{StaticResource BodyLabel}" />
                 </VerticalStackLayout>
             </Border>
 
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+            <Border x:Name="UpcomingMissionCard" BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
                 <VerticalStackLayout Spacing="10">
                     <Label Text="MISSION A VENIR" Style="{StaticResource EyebrowLabel}" />
-                    <Label Text="Nounou - 16:30" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Plateau - CI Home Service. Rendez-vous confirme." Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="UpcomingMissionTitleLabel" Text="Aucune mission planifiee" Style="{StaticResource CardTitleLabel}" />
+                    <Label x:Name="UpcomingMissionDetailLabel" Text="Les prochains rendez-vous apparaitront ici." Style="{StaticResource BodyLabel}" />
                 </VerticalStackLayout>
             </Border>
 
-            <Border BackgroundColor="White" Stroke="{StaticResource WeleGreen}" StrokeShape="RoundRectangle 22" Padding="16">
+            <Border x:Name="LiveOfferCard" BackgroundColor="White" Stroke="{StaticResource WeleGreen}" StrokeShape="RoundRectangle 22" Padding="16">
                 <VerticalStackLayout Spacing="10">
                     <Grid ColumnDefinitions="*,Auto">
                         <VerticalStackLayout Spacing="3">
-                            <Label Text="MISSION PROPOSEE PAR CI HOME SERVICE" Style="{StaticResource EyebrowLabel}" />
-                            <Label Text="Awa, une mission vous attend" Style="{StaticResource ScreenTitleLabel}" />
+                            <Label x:Name="LiveOfferCompanyLabel" Text="MISSION PROPOSEE" Style="{StaticResource EyebrowLabel}" />
+                            <Label x:Name="LiveOfferTitleLabel" Text="Une mission vous attend" Style="{StaticResource ScreenTitleLabel}" />
                         </VerticalStackLayout>
                         <Border Grid.Column="1" BackgroundColor="{StaticResource WeleOrange}" StrokeShape="RoundRectangle 16" Padding="10">
-                            <Label Text="02:41" TextColor="White" FontAttributes="Bold" />
+                            <Label x:Name="LiveOfferCountdownLabel" Text="--:--" TextColor="White" FontAttributes="Bold" />
                         </Border>
                     </Grid>
-                    <Label Text="Menage a domicile - Cocody Angre - 1,8 km" Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="LiveOfferDetailLabel" Text="Service - zone" Style="{StaticResource BodyLabel}" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                        <Button Text="Refuser" Grid.Column="0" BackgroundColor="#FFF0DF" TextColor="Black" />
-                        <Button Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" />
+                        <Button x:Name="RefuseButton" Text="Refuser" Grid.Column="0" BackgroundColor="#FFF0DF" TextColor="Black" Clicked="OnRefuseClicked" />
+                        <Button x:Name="AcceptButton" Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" Clicked="OnAcceptClicked" />
                     </Grid>
                 </VerticalStackLayout>
             </Border>
