@@ -138,6 +138,15 @@ public sealed class AdminRazorActionWiringTests
                 "MarkCompanyNotificationUnreadAsync",
                 "ResendCompanyNotificationAsync"
             ],
+            ["Cms.razor"] =
+            [
+                "GetCmsSitesAsync",
+                "GetCmsSiteAsync",
+                "GetCmsPageAsync",
+                "GetCmsComponentDefinitionsAsync",
+                "UpdateCmsContentValueAsync",
+                "UploadCmsMediaAsync"
+            ],
             ["ContactRequests.razor"] =
             [
                 "MarkContactRequestInProgressAsync",

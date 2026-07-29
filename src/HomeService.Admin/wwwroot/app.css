@@ -116,12 +116,12 @@ a, .btn-link {
     border-radius: 14px;
     color: #334155;
     display: flex;
-    font-size: .92rem;
+    font-size: .9rem;
     font-weight: 720;
     gap: .72rem;
     line-height: 1.2;
     min-height: 44px;
-    padding: .7rem .75rem;
+    padding: .66rem .72rem;
     text-decoration: none;
     transition: background .15s ease, color .15s ease;
 }
@@ -172,8 +172,9 @@ a, .btn-link {
 
 .nav-label {
     min-width: 0;
-    overflow-wrap: anywhere;
-    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 main {
@@ -5630,6 +5631,21 @@ h3 {
     overflow-wrap: anywhere;
     padding: .75rem;
     white-space: normal;
+}
+
+.admin-invite-link-input {
+    background: #fff;
+    border: 1px solid #bfd1f7;
+    border-radius: 12px;
+    color: #0f172a;
+    display: block;
+    font-size: .9rem;
+    font-weight: 720;
+    min-height: 2.75rem;
+    overflow: hidden;
+    padding: .72rem .85rem;
+    text-overflow: ellipsis;
+    width: 100%;
 }
 
 .admin-invite-result label {
