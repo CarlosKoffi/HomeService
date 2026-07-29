@@ -22,9 +22,17 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/auth/logout")]
     [InlineData("GET", "/api/admin/dashboard")]
     [InlineData("GET", "/api/admin/access-control")]
+    [InlineData("POST", "/api/admin/access-control/roles")]
+    [InlineData("PUT", "/api/admin/access-control/roles/{roleId:guid}/permissions")]
+    [InlineData("POST", "/api/admin/access-control/admins")]
     [InlineData("POST", "/api/admin/access-control/admins/invitations")]
     [InlineData("GET", "/api/admin/access-control/admins/invitations/{token}")]
     [InlineData("POST", "/api/admin/access-control/admins/invitations/{token}/password")]
+    [InlineData("PUT", "/api/admin/access-control/admins/{adminUserId:guid}/profile")]
+    [InlineData("POST", "/api/admin/access-control/admins/{adminUserId:guid}/invitation")]
+    [InlineData("PUT", "/api/admin/access-control/admins/{adminUserId:guid}/roles")]
+    [InlineData("POST", "/api/admin/access-control/admins/{adminUserId:guid}/deactivate")]
+    [InlineData("POST", "/api/admin/access-control/admins/{adminUserId:guid}/reactivate")]
     [InlineData("GET", "/api/admin/audit-logs")]
     public void AdminCoreRoutes_AreMapped(string httpMethod, string routePattern)
     {
@@ -287,6 +295,10 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/company-service-proposals/reanalyse", AdminModuleKey.Services, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/services/11111111-1111-1111-1111-111111111111/activate", AdminModuleKey.Services, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/access-control/admins/invitations", AdminModuleKey.AdminAccess, AdminPermissionAction.ManageRoles)]
+    [InlineData("PUT", "/api/admin/access-control/admins/11111111-1111-1111-1111-111111111111/profile", AdminModuleKey.AdminAccess, AdminPermissionAction.ManageRoles)]
+    [InlineData("POST", "/api/admin/access-control/admins/11111111-1111-1111-1111-111111111111/invitation", AdminModuleKey.AdminAccess, AdminPermissionAction.ManageRoles)]
+    [InlineData("POST", "/api/admin/access-control/admins/11111111-1111-1111-1111-111111111111/deactivate", AdminModuleKey.AdminAccess, AdminPermissionAction.ManageRoles)]
+    [InlineData("POST", "/api/admin/access-control/admins/11111111-1111-1111-1111-111111111111/reactivate", AdminModuleKey.AdminAccess, AdminPermissionAction.ManageRoles)]
     [InlineData("GET", "/api/admin/country-brandings/CI", AdminModuleKey.Localization, AdminPermissionAction.View)]
     [InlineData("PUT", "/api/admin/country-brandings/CI", AdminModuleKey.Localization, AdminPermissionAction.Edit)]
     public void AdminPermissionResolver_MapsSensitiveActionsToExpectedModuleAndPermission(

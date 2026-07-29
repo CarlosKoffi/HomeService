@@ -18,6 +18,11 @@ public static class AdminEndpointPermissionResolver
             return AdminPermissionAction.View;
         }
 
+        if (path.Contains("/access-control", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.ManageRoles;
+        }
+
         if (path.Contains("/approve", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/validate", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/resolve-dispute", StringComparison.OrdinalIgnoreCase)
@@ -56,11 +61,6 @@ public static class AdminEndpointPermissionResolver
         if (path.Contains("/mark-disputed", StringComparison.OrdinalIgnoreCase))
         {
             return AdminPermissionAction.Edit;
-        }
-
-        if (path.Contains("/access-control", StringComparison.OrdinalIgnoreCase))
-        {
-            return AdminPermissionAction.ManageRoles;
         }
 
         if (path.Contains("/request-more-information", StringComparison.OrdinalIgnoreCase)
