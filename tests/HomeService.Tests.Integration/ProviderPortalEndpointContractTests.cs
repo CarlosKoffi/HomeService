@@ -42,6 +42,7 @@ public sealed class ProviderPortalEndpointContractTests
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/verify-arrival")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/start")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/complete")]
+    [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/cancel")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/additional-quotes/request")]
     public void ProviderMobileRoutes_AreMapped(string httpMethod, string routePattern)
     {
