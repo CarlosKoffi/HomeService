@@ -95,6 +95,8 @@ public sealed class AdminRazorActionWiringTests
                 "CreateAdminRoleAsync",
                 "UpdateAdminRolePermissionsAsync",
                 "CreateAdminInvitationAsync",
+                "UpdateAdminUserProfileAsync",
+                "RegenerateAdminInvitationAsync",
                 "UpdateAdminUserRolesAsync",
                 "DeactivateAdminUserAsync",
                 "ReactivateAdminUserAsync"
