@@ -154,7 +154,9 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
             assignment.Status == ProviderMissionAssignmentStatus.Accepted,
-            assignment.Status == ProviderMissionAssignmentStatus.Accepted && mission.CanStartFor(assignment.ProviderId, assignment.CompanyId),
+            assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                && assignment.HasVerifiedArrival
+                && mission.CanStartFor(assignment.ProviderId, assignment.CompanyId),
             assignment.Status == ProviderMissionAssignmentStatus.Started,
             assignment.Status is ProviderMissionAssignmentStatus.Offered or ProviderMissionAssignmentStatus.Accepted or ProviderMissionAssignmentStatus.Started);
     }

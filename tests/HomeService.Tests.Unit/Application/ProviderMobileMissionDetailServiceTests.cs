@@ -53,7 +53,25 @@ public sealed class ProviderMobileMissionDetailServiceTests
         Assert.Equal(scenario.Customer.PhoneNumber, result.Response.CustomerPhoneNumber);
         Assert.False(result.Response.Actions.CanAccept);
         Assert.True(result.Response.Actions.CanVerifyArrival);
-        Assert.True(result.Response.Actions.CanStart);
+        Assert.False(result.Response.Actions.CanStart);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenArrivalIsVerified_ReturnsStartAction()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db);
+        scenario.Assignment.Accept(5.348850m, -4.003150m, 25);
+        scenario.Assignment.VerifyArrival(5.348850m, -4.003150m, 25, 5.348850m, -4.003150m, 250);
+        scenario.Mission.MarkProviderAccepted(scenario.Provider.Id, scenario.Company.Id);
+        scenario.Mission.ConfirmByCustomer(3_000, 0, 1_500, 0);
+        await db.SaveChangesAsync();
+        var sut = new ProviderMobileMissionDetailService(db);
+
+        var result = await sut.GetAsync(scenario.Provider.Id, scenario.Assignment.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Response!.Actions.CanStart);
     }
 
     [Fact]
