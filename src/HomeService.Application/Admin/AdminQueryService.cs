@@ -1593,6 +1593,7 @@ public sealed class AdminQueryService(IAppDbContext db)
                     .ThenBy(permission => permission.Action)
                     .Select(permission => new AdminPermissionSummaryResponse(
                         permission.ModuleId,
+                        permission.Module!.Key.ToString(),
                         permission.Module!.Name,
                         permission.Action.ToString()))
                     .ToList()))

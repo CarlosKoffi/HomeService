@@ -1,4 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+@using HomeService.Admin.Services
+@using HomeService.Domain.Enums
+@inject AdminSessionState SessionState
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">
             <img src="images/wele-logo.png" alt="wélé" />
@@ -12,104 +16,160 @@
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
         <p class="nav-section-label">Operations</p>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="nav-icon nav-icon-dashboard" aria-hidden="true"></span>
-                <span class="nav-label">Tableau de bord</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Dashboard))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="nav-icon nav-icon-dashboard" aria-hidden="true"></span>
+                    <span class="nav-label">Tableau de bord</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="company-applications">
-                <span class="nav-icon nav-icon-applications" aria-hidden="true"></span>
-                <span class="nav-label">Demandes entreprises</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.CompanyApplications))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="company-applications">
+                    <span class="nav-icon nav-icon-applications" aria-hidden="true"></span>
+                    <span class="nav-label">Demandes entreprises</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="companies">
-                <span class="nav-icon nav-icon-companies" aria-hidden="true"></span>
-                <span class="nav-label">Entreprises</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.CompanyManagement))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="companies">
+                    <span class="nav-icon nav-icon-companies" aria-hidden="true"></span>
+                    <span class="nav-label">Entreprises</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="providers">
-                <span class="nav-icon nav-icon-providers" aria-hidden="true"></span>
-                <span class="nav-label">Prestataires</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.ProviderReview))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="providers">
+                    <span class="nav-icon nav-icon-providers" aria-hidden="true"></span>
+                    <span class="nav-label">Prestataires</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="missions">
-                <span class="nav-icon nav-icon-missions" aria-hidden="true"></span>
-                <span class="nav-label">Missions</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Missions))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="missions">
+                    <span class="nav-icon nav-icon-missions" aria-hidden="true"></span>
+                    <span class="nav-label">Missions</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="mission-settings">
-                <span class="nav-icon nav-icon-settings" aria-hidden="true"></span>
-                <span class="nav-label">Parametres missions</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.MissionSettings))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="mission-settings">
+                    <span class="nav-icon nav-icon-settings" aria-hidden="true"></span>
+                    <span class="nav-label">Parametres missions</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="payments">
-                <span class="nav-icon nav-icon-payments" aria-hidden="true"></span>
-                <span class="nav-label">Encaissements</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Payments))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="payments">
+                    <span class="nav-icon nav-icon-payments" aria-hidden="true"></span>
+                    <span class="nav-label">Encaissements</span>
+                </NavLink>
+            </div>
+        }
 
         <p class="nav-section-label">Catalogue et contenu</p>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="localization">
-                <span class="nav-icon nav-icon-translations" aria-hidden="true"></span>
-                <span class="nav-label">Traductions</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Localization))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="localization">
+                    <span class="nav-icon nav-icon-translations" aria-hidden="true"></span>
+                    <span class="nav-label">Traductions</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="cms">
-                <span class="nav-icon nav-icon-cms" aria-hidden="true"></span>
-                <span class="nav-label">CMS</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Cms))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="cms">
+                    <span class="nav-icon nav-icon-cms" aria-hidden="true"></span>
+                    <span class="nav-label">CMS</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="service-proposals">
-                <span class="nav-icon nav-icon-services" aria-hidden="true"></span>
-                <span class="nav-label">Catalogue services</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Services))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="service-proposals">
+                    <span class="nav-icon nav-icon-services" aria-hidden="true"></span>
+                    <span class="nav-label">Catalogue services</span>
+                </NavLink>
+            </div>
+        }
 
         <p class="nav-section-label">Administration</p>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="access-control">
-                <span class="nav-icon nav-icon-access" aria-hidden="true"></span>
-                <span class="nav-label">Admins et roles</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.AdminAccess))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="access-control">
+                    <span class="nav-icon nav-icon-access" aria-hidden="true"></span>
+                    <span class="nav-label">Admins et roles</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="notifications">
-                <span class="nav-icon nav-icon-notifications" aria-hidden="true"></span>
-                <span class="nav-label">Notifications</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Notifications))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="notifications">
+                    <span class="nav-icon nav-icon-notifications" aria-hidden="true"></span>
+                    <span class="nav-label">Notifications</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="contact-requests">
-                <span class="nav-icon nav-icon-contact" aria-hidden="true"></span>
-                <span class="nav-label">Contacts</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.ContactRequests))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="contact-requests">
+                    <span class="nav-icon nav-icon-contact" aria-hidden="true"></span>
+                    <span class="nav-label">Contacts</span>
+                </NavLink>
+            </div>
+        }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="audit-logs">
-                <span class="nav-icon nav-icon-logs" aria-hidden="true"></span>
-                <span class="nav-label">Logs</span>
-            </NavLink>
-        </div>
+        @if (CanView(AdminModuleKey.Audit))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="audit-logs">
+                    <span class="nav-icon nav-icon-logs" aria-hidden="true"></span>
+                    <span class="nav-label">Logs</span>
+                </NavLink>
+            </div>
+        }
     </nav>
 </div>
+
+@code {
+    private bool CanView(AdminModuleKey moduleKey)
+    {
+        if (SessionState.CurrentUser?.IsSuperAdmin == true)
+        {
+            return true;
+        }
+
+        return SessionState.CurrentUser?.Permissions.Any(permission =>
+            string.Equals(permission.ModuleKey, moduleKey.ToString(), StringComparison.Ordinal)
+            && string.Equals(permission.Action, AdminPermissionAction.View.ToString(), StringComparison.Ordinal)) == true;
+    }
+}

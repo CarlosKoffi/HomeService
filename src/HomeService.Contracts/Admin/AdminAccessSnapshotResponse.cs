@@ -54,6 +54,7 @@ public sealed record AdminModuleSummaryResponse(
 
 public sealed record AdminPermissionSummaryResponse(
     Guid ModuleId,
+    string ModuleKey,
     string ModuleName,
     string Action);
 

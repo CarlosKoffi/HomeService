@@ -169,12 +169,12 @@ public sealed class AdminAuthService(IAppDbContext db)
             .AsNoTracking()
             .Where(module => module.IsActive)
             .OrderBy(module => module.DisplayOrder)
-            .Select(module => new { module.Id, module.Name })
+            .Select(module => new { module.Id, module.Key, module.Name })
             .ToListAsync(cancellationToken);
 
         return modules
             .SelectMany(module => Enum.GetNames<AdminPermissionAction>()
-                .Select(action => new AdminPermissionSummaryResponse(module.Id, module.Name, action)))
+                .Select(action => new AdminPermissionSummaryResponse(module.Id, module.Key.ToString(), module.Name, action)))
             .ToList();
     }
 
@@ -193,6 +193,7 @@ public sealed class AdminAuthService(IAppDbContext db)
             .Where(permission => permission.Module != null && permission.Module.IsActive)
             .Select(permission => new AdminPermissionSummaryResponse(
                 permission.ModuleId,
+                permission.Module!.Key.ToString(),
                 permission.Module!.Name,
                 permission.Action.ToString()))
             .Distinct()

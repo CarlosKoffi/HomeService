@@ -121,7 +121,7 @@ a, .btn-link {
     gap: .72rem;
     line-height: 1.2;
     min-height: 44px;
-    padding: .72rem .75rem;
+    padding: .7rem .75rem;
     text-decoration: none;
     transition: background .15s ease, color .15s ease;
 }
@@ -172,9 +172,8 @@ a, .btn-link {
 
 .nav-label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 main {
