@@ -53,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ProviderOnboardingService>();
         services.AddScoped<ProviderPortalAuthService>();
         services.AddScoped<ProviderMobileProfileService>();
+        services.AddScoped<ProviderMobileProfileUpdateService>();
         services.AddScoped<ProviderMobileMissionDetailService>();
         services.AddScoped<ProviderMissionChatService>();
         services.AddScoped<ProviderMissionNotificationService>();

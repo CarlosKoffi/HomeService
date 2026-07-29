@@ -241,6 +241,99 @@ public static class ProviderPortalEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
 
+        group.MapPost("/mobile/profile/documents", async (
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            ProviderMobileProfileUpdateService profileUpdateService,
+            ILogger<CompanyProviderUploadService> logger,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "La piece doit etre envoyee au format multipart/form-data." });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            if (!TryParseProviderDocumentType(GetOptionalFormValue(form, "documentType"), out var documentType))
+            {
+                return Results.BadRequest(new { message = "Type de piece invalide." });
+            }
+
+            var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+            if (file is null)
+            {
+                return Results.BadRequest(new { message = "Aucun fichier recu." });
+            }
+
+            StoredCompanyProviderDocument stored;
+            try
+            {
+                stored = await uploadService.SaveMobileDocumentAsync(session.ProviderId, documentType, file, cancellationToken);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                logger.LogError(exception, "Provider mobile document storage failed for provider {ProviderId}.", session.ProviderId);
+                return Results.Problem(
+                    title: "Stockage de la piece impossible.",
+                    detail: "Le fichier n'a pas pu etre enregistre sur le serveur. Verifiez le volume /app/storage et ses droits d'ecriture.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            var result = await profileUpdateService.AddDocumentAsync(
+                session.ProviderId,
+                stored.DocumentType,
+                stored.OriginalFileName,
+                stored.StoragePath,
+                stored.ContentType,
+                cancellationToken);
+            if (!result.IsSuccess || result.Response is null)
+            {
+                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Provider(session.ProviderId, session.Provider.FullName),
+                "ProviderMobileDocumentUploaded",
+                nameof(ProviderDocument),
+                result.Response.Id,
+                "Piece prestataire ajoutee depuis l'application mobile.",
+                HttpAuditContextFactory.Create(httpRequest),
+                before: result.Before,
+                after: result.After));
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception)
+            {
+                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                logger.LogError(exception, "Provider mobile document upload failed for provider {ProviderId}.", session.ProviderId);
+                return Results.Problem(
+                    title: "Upload de la piece impossible.",
+                    detail: exception.GetBaseException().Message,
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            return Results.Created(result.Response.PreviewUrl, result.Response);
+        })
+        .WithName("UploadProviderMobileProfileDocument")
+        .Produces<ProviderMobileProfileDocumentResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapGet("/mobile/profile/documents/{documentId:guid}/preview", async (
             Guid documentId,
             HttpRequest httpRequest,
@@ -291,6 +384,152 @@ public static class ProviderPortalEndpoints
                 enableRangeProcessing: true);
         })
         .WithName("PreviewProviderMobileProfileDocument")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/mobile/profile/portfolio", async (
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            ProviderMobileProfileUpdateService profileUpdateService,
+            ILogger<CompanyProviderUploadService> logger,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "La photo de book doit etre envoyee au format multipart/form-data." });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            if (!Guid.TryParse(GetOptionalFormValue(form, "serviceId"), out var serviceId))
+            {
+                return Results.BadRequest(new { message = "Service obligatoire pour rattacher la photo de book." });
+            }
+
+            var file = form.Files.GetFile("file") ?? form.Files.GetFile("photo") ?? form.Files.FirstOrDefault();
+            if (file is null)
+            {
+                return Results.BadRequest(new { message = "Aucune photo recue." });
+            }
+
+            StoredProviderPortfolioFile stored;
+            try
+            {
+                stored = await uploadService.SavePortfolioImageAsync(session.ProviderId, serviceId, file, cancellationToken);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                logger.LogError(exception, "Provider mobile portfolio storage failed for provider {ProviderId}.", session.ProviderId);
+                return Results.Problem(
+                    title: "Stockage de la photo impossible.",
+                    detail: "Le fichier n'a pas pu etre enregistre sur le serveur. Verifiez le volume /app/storage et ses droits d'ecriture.",
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            var result = await profileUpdateService.AddPortfolioItemAsync(
+                session.ProviderId,
+                serviceId,
+                stored.OriginalFileName,
+                stored.StoragePath,
+                stored.ContentType,
+                cancellationToken);
+            if (!result.IsSuccess || result.Response is null)
+            {
+                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                AuditActor.Provider(session.ProviderId, session.Provider.FullName),
+                "ProviderMobilePortfolioUploaded",
+                nameof(ProviderServicePortfolioItem),
+                result.Response.Id,
+                "Photo de book prestataire ajoutee depuis l'application mobile.",
+                HttpAuditContextFactory.Create(httpRequest),
+                after: result.After));
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception)
+            {
+                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                logger.LogError(exception, "Provider mobile portfolio upload failed for provider {ProviderId}.", session.ProviderId);
+                return Results.Problem(
+                    title: "Upload de la photo impossible.",
+                    detail: exception.GetBaseException().Message,
+                    statusCode: StatusCodes.Status500InternalServerError);
+            }
+
+            return Results.Created(result.Response.PreviewUrl, result.Response);
+        })
+        .WithName("UploadProviderMobilePortfolioPhoto")
+        .Produces<ProviderMobilePortfolioUploadResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet("/mobile/profile/portfolio/{itemId:guid}/preview", async (
+            Guid itemId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var item = await db.ProviderServicePortfolioItems
+                .AsNoTracking()
+                .Where(portfolioItem => portfolioItem.Id == itemId && portfolioItem.ProviderId == session.ProviderId)
+                .Select(portfolioItem => new
+                {
+                    portfolioItem.OriginalFileName,
+                    portfolioItem.StoragePath,
+                    portfolioItem.ContentType
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (item is null)
+            {
+                return Results.NotFound();
+            }
+
+            string absolutePath;
+            try
+            {
+                absolutePath = uploadService.GetAbsolutePath(item.StoragePath);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.NotFound(new { message = "Le chemin de la photo de book est invalide." });
+            }
+
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "La photo de book n'existe plus sur le serveur." });
+            }
+
+            return Results.File(
+                absolutePath,
+                string.IsNullOrWhiteSpace(item.ContentType) ? "application/octet-stream" : item.ContentType,
+                enableRangeProcessing: true);
+        })
+        .WithName("PreviewProviderMobilePortfolioPhoto")
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
@@ -1319,6 +1558,33 @@ public static class ProviderPortalEndpoints
     private static string BuildLocationLabel(string? address)
     {
         return string.IsNullOrWhiteSpace(address) ? "Adresse a confirmer" : address.Trim();
+    }
+
+    private static string? GetOptionalFormValue(IFormCollection form, string key)
+    {
+        return form.TryGetValue(key, out var value) ? value.ToString() : null;
+    }
+
+    private static bool TryParseProviderDocumentType(string? value, out ProviderDocumentType documentType)
+    {
+        return Enum.TryParse(value, true, out documentType)
+            && documentType is ProviderDocumentType.Photo or ProviderDocumentType.IdentityDocument or ProviderDocumentType.Diploma;
+    }
+
+    private static void TryDeleteProviderFile(CompanyProviderUploadService uploadService, string storagePath)
+    {
+        try
+        {
+            var absolutePath = uploadService.GetAbsolutePath(storagePath);
+            if (File.Exists(absolutePath))
+            {
+                File.Delete(absolutePath);
+            }
+        }
+        catch (Exception)
+        {
+            // Best effort cleanup only; upload failure is already reported to the caller.
+        }
     }
 
     private static string BuildCustomerDisplayName(CustomerProfile? customer)

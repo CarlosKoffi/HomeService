@@ -43,3 +43,11 @@ public sealed record ProviderMobileProfileDocumentResponse(
     string OriginalFileName,
     string ContentType,
     string PreviewUrl);
+
+public sealed record ProviderMobilePortfolioUploadResponse(
+    Guid Id,
+    Guid ServiceId,
+    string OriginalFileName,
+    string ContentType,
+    string Status,
+    string PreviewUrl);

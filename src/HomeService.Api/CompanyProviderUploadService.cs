@@ -127,6 +127,64 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
             file.ContentType);
     }
 
+    public Task<StoredCompanyProviderDocument> SaveMobileDocumentAsync(
+        Guid providerId,
+        ProviderDocumentType documentType,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        return SaveProviderFileAsync(
+            Path.Combine("providers", "mobile", providerId.ToString("D")),
+            documentType.ToString().ToLowerInvariant(),
+            documentType,
+            file,
+            cancellationToken);
+    }
+
+    public async Task<StoredProviderPortfolioFile> SavePortfolioImageAsync(
+        Guid providerId,
+        Guid serviceId,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file.Length == 0)
+        {
+            throw new InvalidOperationException("La photo de book est vide.");
+        }
+
+        if (file.Length > MaxFileSize)
+        {
+            throw new InvalidOperationException("Chaque photo de book doit faire moins de 10 Mo.");
+        }
+
+        if (!IsAllowedImageFile(file))
+        {
+            throw new InvalidOperationException("Formats acceptes pour le book: JPG, PNG, WEBP ou photo mobile HEIC.");
+        }
+
+        var originalFileName = Path.GetFileName(file.FileName);
+        var extension = Path.GetExtension(originalFileName);
+        var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".jpg" : extension.ToLowerInvariant();
+        var relativePath = Path.Combine(
+            "providers",
+            "mobile",
+            providerId.ToString("D"),
+            "portfolio",
+            serviceId.ToString("D"),
+            $"book-{Guid.NewGuid():N}{safeExtension}");
+
+        var absolutePath = GetAbsolutePath(relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
+
+        await using var stream = File.Create(absolutePath);
+        await file.CopyToAsync(stream, cancellationToken);
+
+        return new StoredProviderPortfolioFile(
+            originalFileName,
+            relativePath.Replace('\\', '/'),
+            file.ContentType);
+    }
+
     public string GetAbsolutePath(string relativePath)
     {
         var normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
@@ -155,10 +213,64 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
             && (AllowedContentTypes.Contains(file.ContentType)
                 || file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
     }
+
+    private async Task<StoredCompanyProviderDocument> SaveProviderFileAsync(
+        string folder,
+        string filePrefix,
+        ProviderDocumentType documentType,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file.Length == 0)
+        {
+            throw new InvalidOperationException("Le fichier employe est vide.");
+        }
+
+        if (file.Length > MaxFileSize)
+        {
+            throw new InvalidOperationException("Chaque fichier employe doit faire moins de 10 Mo.");
+        }
+
+        if (!IsAllowedFile(file))
+        {
+            throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
+        }
+
+        var originalFileName = Path.GetFileName(file.FileName);
+        var extension = Path.GetExtension(originalFileName);
+        var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".bin" : extension.ToLowerInvariant();
+        var relativePath = Path.Combine(folder, $"{filePrefix}-{Guid.NewGuid():N}{safeExtension}");
+
+        var absolutePath = GetAbsolutePath(relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
+
+        await using var stream = File.Create(absolutePath);
+        await file.CopyToAsync(stream, cancellationToken);
+
+        return new StoredCompanyProviderDocument(
+            documentType,
+            originalFileName,
+            relativePath.Replace('\\', '/'),
+            file.ContentType);
+    }
+
+    private static bool IsAllowedImageFile(IFormFile file)
+    {
+        var extension = Path.GetExtension(Path.GetFileName(file.FileName));
+        return AllowedExtensions.Contains(extension)
+            && !string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase)
+            && (AllowedContentTypes.Contains(file.ContentType)
+                || file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
+    }
 }
 
 public sealed record StoredCompanyProviderDocument(
     ProviderDocumentType DocumentType,
+    string OriginalFileName,
+    string StoragePath,
+    string ContentType);
+
+public sealed record StoredProviderPortfolioFile(
     string OriginalFileName,
     string StoragePath,
     string ContentType);
