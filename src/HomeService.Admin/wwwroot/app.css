@@ -115,15 +115,17 @@ a, .btn-link {
     align-items: center;
     border-radius: 14px;
     color: #334155;
-    display: flex;
+    display: grid;
     font-size: .9rem;
     font-weight: 720;
     gap: .72rem;
+    grid-template-columns: 25px minmax(0, 1fr);
     line-height: 1.25;
     min-height: 44px;
     padding: .66rem .72rem;
     text-decoration: none;
     transition: background .15s ease, color .15s ease;
+    width: 100%;
 }
 
 .nav-link:hover {
@@ -147,6 +149,14 @@ a, .btn-link {
     height: 25px;
     justify-content: center;
     width: 25px;
+}
+
+.nav-label {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .nav-icon::before {
