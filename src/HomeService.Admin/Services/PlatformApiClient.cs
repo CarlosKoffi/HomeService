@@ -38,8 +38,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new PlatformApiException(
-                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, "/api/admin/auth/logout")}. {body}");
+            throw CreateApiException(response, "/api/admin/auth/logout", body);
         }
     }
 
@@ -856,8 +855,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new PlatformApiException(
-            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, $"/api/admin/cms/content-values/{contentValueId}/media")}. {body}");
+        throw CreateApiException(response, $"/api/admin/cms/content-values/{contentValueId}/media", body);
     }
 
     public async Task<CmsMediaUploadResponse?> UploadCmsMediaAsync(
@@ -883,8 +881,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new PlatformApiException(
-            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+        throw CreateApiException(response, path, body);
     }
 
     public string ToApiUrl(string? relativeUrl)
@@ -956,8 +953,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new PlatformApiException(
-                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+            throw CreateApiException(response, path, body);
         }
 
         var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -1066,8 +1062,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new PlatformApiException(
-                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+            throw CreateApiException(response, path, body);
         }
 
         var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -1088,8 +1083,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new PlatformApiException(
-                $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+            throw CreateApiException(response, path, body);
         }
 
         var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -1110,8 +1104,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new PlatformApiException(
-            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+        throw CreateApiException(response, path, body);
     }
 
     private static void AddQueryValue(List<string> query, string key, string? value)
@@ -1134,8 +1127,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new PlatformApiException(
-            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+        throw CreateApiException(response, path, body);
     }
 
     private async Task<T?> PutJsonAsync<T>(string path, object payload, CancellationToken cancellationToken)
@@ -1148,8 +1140,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
 
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        throw new PlatformApiException(
-            $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {new Uri(httpClient.BaseAddress!, path)}. {body}");
+        throw CreateApiException(response, path, body);
     }
 
     private void AddBasicAuthIfConfigured()
@@ -1181,6 +1172,16 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var value = configuration["SITE_AUTH_ENABLED"];
         return !string.Equals(value?.Trim(), "false", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(value?.Trim(), "0", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private PlatformApiException CreateApiException(HttpResponseMessage response, string path, string body)
+    {
+        var details = ExtractErrorMessage(body);
+        var url = new Uri(httpClient.BaseAddress!, path);
+        var prefix = $"API {(int)response.StatusCode} {response.ReasonPhrase} sur {url}.";
+        return string.IsNullOrWhiteSpace(details)
+            ? new PlatformApiException(prefix)
+            : new PlatformApiException($"{prefix} {details}");
     }
 
     private static string? ExtractErrorMessage(string body)
