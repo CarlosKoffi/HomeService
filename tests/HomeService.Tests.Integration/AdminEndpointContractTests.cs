@@ -1,6 +1,7 @@
 using HomeService.Api;
 using HomeService.Api.Endpoints;
 using HomeService.Application;
+using HomeService.Domain.Enums;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
@@ -261,6 +262,23 @@ public sealed class AdminEndpointContractTests
         Assert.True(
             missingRoutes.Count == 0,
             "Admin client calls without mapped API endpoint:" + Environment.NewLine + string.Join(Environment.NewLine, missingRoutes));
+    }
+
+    [Theory]
+    [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/notifications/22222222-2222-2222-2222-222222222222/mark-read", AdminModuleKey.Notifications, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/notifications/22222222-2222-2222-2222-222222222222/mark-unread", AdminModuleKey.Notifications, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/notifications/22222222-2222-2222-2222-222222222222/resend", AdminModuleKey.Notifications, AdminPermissionAction.Resend)]
+    [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/suspend", AdminModuleKey.CompanyManagement, AdminPermissionAction.Suspend)]
+    public void AdminPermissionResolver_MapsNestedCompanyNotificationActionsToNotificationModule(
+        string httpMethod,
+        string path,
+        AdminModuleKey expectedModule,
+        AdminPermissionAction expectedAction)
+    {
+        var permission = AdminEndpointPermissionResolver.Resolve(httpMethod, path);
+
+        Assert.Equal(expectedModule, permission.ModuleKey);
+        Assert.Equal(expectedAction, permission.Action);
     }
 
     private static IReadOnlyList<RouteEndpoint> BuildAdminEndpoints()
