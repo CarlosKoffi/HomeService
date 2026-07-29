@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.RegularExpressions;
 
 namespace HomeService.Tests.Integration;
 
@@ -239,6 +240,29 @@ public sealed class AdminEndpointContractTests
                 .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
     }
 
+    [Fact]
+    public void AdminClientRoutes_AreBackedByMappedApiEndpoints()
+    {
+        var endpointPatterns = BuildAdminEndpoints()
+            .Select(endpoint => NormalizeAdminRoute(endpoint.RoutePattern.RawText ?? string.Empty))
+            .Where(pattern => pattern.StartsWith("/api/admin", StringComparison.Ordinal))
+            .ToHashSet(StringComparer.Ordinal);
+
+        var clientRoutes = ExtractAdminClientRoutes()
+            .Select(NormalizeAdminRoute)
+            .Where(route => route.StartsWith("/api/admin", StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var missingRoutes = clientRoutes
+            .Where(route => !endpointPatterns.Contains(route))
+            .ToList();
+
+        Assert.True(
+            missingRoutes.Count == 0,
+            "Admin client calls without mapped API endpoint:" + Environment.NewLine + string.Join(Environment.NewLine, missingRoutes));
+    }
+
     private static IReadOnlyList<RouteEndpoint> BuildAdminEndpoints()
     {
         var builder = WebApplication.CreateBuilder();
@@ -252,5 +276,49 @@ public sealed class AdminEndpointContractTests
             .SelectMany(source => source.Endpoints)
             .OfType<RouteEndpoint>()
             .ToList();
+    }
+
+    private static IEnumerable<string> ExtractAdminClientRoutes()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var clientPath = Path.Combine(repositoryRoot.FullName, "src", "HomeService.Admin", "Services", "PlatformApiClient.cs");
+        var content = File.ReadAllText(clientPath);
+
+        foreach (Match match in Regex.Matches(content, "\"(?<route>/api/admin[^\"]+)\"", RegexOptions.CultureInvariant))
+        {
+            yield return match.Groups["route"].Value;
+        }
+    }
+
+    private static string NormalizeAdminRoute(string route)
+    {
+        var queryIndex = route.IndexOf('?', StringComparison.Ordinal);
+        if (queryIndex >= 0)
+        {
+            route = route[..queryIndex];
+        }
+
+        route = route.Replace("{suffix}", string.Empty, StringComparison.Ordinal);
+        route = Regex.Replace(route, "\\{[^}/]+\\}", "{}", RegexOptions.CultureInvariant);
+        route = Regex.Replace(route, "/+", "/", RegexOptions.CultureInvariant);
+
+        return route.TrimEnd('/');
+    }
+
+    private static DirectoryInfo FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
+        {
+            if (Directory.Exists(Path.Combine(directory.FullName, "src", "HomeService.Admin"))
+                && Directory.Exists(Path.Combine(directory.FullName, "tests", "HomeService.Tests.Integration")))
+            {
+                return directory;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new DirectoryNotFoundException("Repository root not found from integration test output directory.");
     }
 }
