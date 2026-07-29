@@ -5529,7 +5529,8 @@ h3 {
 }
 
 .admin-invite-form {
-    grid-template-columns: minmax(220px, .8fr) minmax(260px, 1fr) minmax(220px, .65fr) auto;
+    align-items: end;
+    grid-template-columns: minmax(220px, .9fr) minmax(260px, 1fr) minmax(220px, .75fr) auto;
 }
 
 .access-admin-filters {
@@ -5662,6 +5663,15 @@ h3 {
     grid-template-columns: minmax(0, 1fr) !important;
 }
 
+.access-admin-list > .admin-wide-panel {
+    align-items: stretch !important;
+    display: grid !important;
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) !important;
+    max-width: none;
+    width: 100%;
+}
+
 .checkbox-line {
     align-content: center;
     display: flex !important;
@@ -5737,6 +5747,7 @@ h3 {
     gap: 1rem;
     justify-content: space-between;
     margin-bottom: 1rem;
+    width: 100%;
 }
 
 .admin-profile-editor .section-heading > div {
@@ -5755,8 +5766,9 @@ h3 {
 .admin-profile-grid {
     display: grid;
     gap: .75rem;
-    grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr) minmax(260px, 1fr);
+    grid-template-columns: minmax(220px, .9fr) minmax(260px, 1fr) minmax(220px, .75fr);
     margin-top: 0;
+    width: 100%;
 }
 
 .admin-profile-grid label {
@@ -5850,6 +5862,10 @@ h3 {
     width: 100%;
 }
 
+.admin-profile-invite-result .admin-invite-link-card {
+    overflow: hidden;
+}
+
 .admin-profile-invite-result .admin-invite-summary-card {
     align-items: center;
     display: flex;
@@ -5872,6 +5888,7 @@ h3 {
     font-size: .78rem;
     min-height: 2.9rem;
     overflow-wrap: normal;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 

@@ -1118,7 +1118,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     private async Task<T?> PostJsonAsync<T>(string path, object? payload, CancellationToken cancellationToken)
     {
         using var response = payload is null
-            ? await httpClient.PostAsync(path, null, cancellationToken)
+            ? await httpClient.PostAsJsonAsync(path, new { }, cancellationToken)
             : await httpClient.PostAsJsonAsync(path, payload, cancellationToken);
 
         if (response.IsSuccessStatusCode)

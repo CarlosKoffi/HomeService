@@ -296,7 +296,7 @@
 
     @if (SelectedAdmin is not null)
     {
-        <article class="admin-profile-editor">
+        <article class="admin-profile-editor admin-wide-panel">
             <div class="section-heading">
                 <div>
                     <h2>Profil admin</h2>
@@ -338,17 +338,6 @@
                 </div>
             </div>
 
-            <div class="admin-profile-actions">
-                <button type="button" @onclick="SaveSelectedAdminProfileAsync" disabled="@IsBusy">Enregistrer le profil</button>
-                <button type="button" @onclick="() => SaveAdminRoleAsync(SelectedAdmin)" disabled="@IsBusy">Enregistrer les roles</button>
-                <button type="button"
-                        class="secondary-action"
-                        @onclick="() => RegenerateInvitationAsync(SelectedAdmin)"
-                        disabled="@(IsBusy || SelectedAdmin.HasActivatedAccess)">
-                    Regenerer le lien d'invitation
-                </button>
-            </div>
-
             @if (IsInvitationForSelectedAdmin)
             {
                 <div class="admin-invite-result admin-profile-invite-result">
@@ -374,6 +363,17 @@
                     </div>
                 </div>
             }
+
+            <div class="admin-profile-actions">
+                <button type="button" @onclick="SaveSelectedAdminProfileAsync" disabled="@IsBusy">Enregistrer le profil</button>
+                <button type="button" @onclick="() => SaveAdminRoleAsync(SelectedAdmin)" disabled="@IsBusy">Enregistrer les roles</button>
+                <button type="button"
+                        class="secondary-action"
+                        @onclick="() => RegenerateInvitationAsync(SelectedAdmin)"
+                        disabled="@(IsBusy || SelectedAdmin.HasActivatedAccess)">
+                    Regenerer le lien d'invitation
+                </button>
+            </div>
         </article>
     }
 
