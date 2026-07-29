@@ -1,6 +1,8 @@
 using HomeService.Api;
 using HomeService.Api.Endpoints;
 using HomeService.Application;
+using HomeService.Application.Auditing;
+using HomeService.Contracts.Admin;
 using HomeService.Domain.Enums;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -312,6 +314,29 @@ public sealed class AdminEndpointContractTests
         var shouldSkip = (bool)method!.Invoke(null, [new PathString(path)])!;
 
         Assert.Equal(expectedSkip, shouldSkip);
+    }
+
+    [Fact]
+    public void AdminAuditActor_UsesConnectedAdminFullName()
+    {
+        var method = typeof(AdminEndpoints).GetMethod("GetAdminAuditActor", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var httpContext = new DefaultHttpContext();
+        var adminId = Guid.NewGuid();
+        httpContext.Items["CurrentAdminUser"] = new AdminCurrentUserResponse(
+            adminId,
+            "Awa Kone",
+            "awa.kone@wele.ci",
+            true,
+            DateTimeOffset.UtcNow.AddHours(1),
+            []);
+
+        var actor = (AuditActor)method!.Invoke(null, [httpContext.Request])!;
+
+        Assert.Equal(AuditActorType.Admin, actor.Type);
+        Assert.Equal(adminId, actor.Id);
+        Assert.Equal("Awa Kone", actor.DisplayName);
     }
 
     private static IReadOnlyList<RouteEndpoint> BuildAdminEndpoints()
