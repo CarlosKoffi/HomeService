@@ -52,6 +52,36 @@ public sealed class AdminAuthServiceTests
     }
 
     [Fact]
+    public async Task LoginAsync_WhenSuperAdmin_ReturnsEveryPermissionForEveryActiveModule()
+    {
+        await using var db = CreateDbContext();
+        var admin = new AdminUser("Super Admin", "super@wele.ci", true);
+        admin.AcceptInvitation(Sha256PasswordHasher.Hash("Password123"), DateTimeOffset.UtcNow);
+        db.AdminUsers.Add(admin);
+        foreach (var moduleKey in Enum.GetValues<AdminModuleKey>())
+        {
+            db.AdminModules.Add(new AdminModule(moduleKey, moduleKey.ToString(), moduleKey.ToString(), (int)moduleKey));
+        }
+
+        await db.SaveChangesAsync();
+        var sut = new AdminAuthService(db);
+
+        var result = await sut.LoginAsync(new AdminLoginRequest("super@wele.ci", "Password123"), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var permissions = result.Response!.User.Permissions;
+        foreach (var moduleKey in Enum.GetNames<AdminModuleKey>())
+        {
+            foreach (var action in Enum.GetNames<AdminPermissionAction>())
+            {
+                Assert.Contains(
+                    permissions,
+                    permission => permission.ModuleKey == moduleKey && permission.Action == action);
+            }
+        }
+    }
+
+    [Fact]
     public async Task CanAccessAsync_WhenRoleDoesNotContainPermission_ReturnsFalse()
     {
         await using var db = CreateDbContext();
