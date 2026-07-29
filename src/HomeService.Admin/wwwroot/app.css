@@ -5556,7 +5556,7 @@ h3 {
     border-radius: 18px;
     display: grid;
     gap: .85rem;
-    grid-template-columns: minmax(220px, .38fr) minmax(320px, .62fr);
+    grid-template-columns: minmax(240px, .32fr) minmax(0, 1fr);
     margin: 1rem 0;
     padding: 1rem;
 }
@@ -5579,6 +5579,7 @@ h3 {
 
 .admin-invite-link-card {
     align-content: start;
+    min-width: 0;
 }
 
 .admin-invite-link-card > div {
@@ -5640,10 +5641,10 @@ h3 {
     display: block;
     font-size: .9rem;
     font-weight: 720;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     min-height: 2.75rem;
-    overflow: hidden;
+    overflow-x: auto;
     padding: .72rem .85rem;
-    text-overflow: ellipsis;
     width: 100%;
 }
 
@@ -5663,6 +5664,7 @@ h3 {
     padding: .85rem;
     resize: vertical;
     width: 100%;
+    word-break: break-word;
 }
 
 .checkbox-line {
