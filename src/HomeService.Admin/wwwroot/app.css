@@ -4032,6 +4032,20 @@ h3 {
     font-weight: 900;
 }
 
+.notification-channel-card .notification-auto-badge {
+    color: #64748b;
+    font-size: .58rem;
+    font-weight: 820;
+}
+
+.notification-channel-card .notification-auto-badge.enabled {
+    color: #1a6aff;
+}
+
+.notification-channel-card .notification-auto-badge.disabled {
+    color: #94a3b8;
+}
+
 .notification-channel-card small {
     color: #64748b;
     font-size: .68rem;
