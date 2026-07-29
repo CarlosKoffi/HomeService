@@ -5733,8 +5733,15 @@ h3 {
     box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
     display: grid;
     gap: 1.1rem;
+    grid-template-columns: 1fr;
+    align-items: stretch;
     margin: 1rem 0;
     padding: 1.2rem;
+}
+
+.translation-list article.admin-profile-editor {
+    align-items: stretch;
+    grid-template-columns: 1fr;
 }
 
 .admin-profile-editor .section-heading {
@@ -5742,6 +5749,10 @@ h3 {
     display: flex;
     gap: 1rem;
     justify-content: space-between;
+}
+
+.admin-profile-editor .section-heading > div {
+    min-width: 0;
 }
 
 .admin-profile-editor .section-heading h2 {
@@ -5783,6 +5794,7 @@ h3 {
     display: flex;
     flex-wrap: wrap;
     gap: .6rem;
+    justify-content: flex-end;
     margin-top: 0;
 }
 
@@ -5817,11 +5829,13 @@ h3 {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
+    gap: .85rem;
     justify-content: space-between;
 }
 
 .admin-profile-invite-result .admin-invite-summary-card p {
-    margin-left: auto;
+    flex: 1 1 320px;
+    margin: 0;
 }
 
 .admin-profile-invite-result .admin-invite-link-card,

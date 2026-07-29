@@ -120,7 +120,15 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
             $"Lien d'invitation admin regenere pour {admin.FullName}.",
             after: new { admin.FullName, admin.Email, expiresAt });
 
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return AdminInvitationResult.ValidationFailed("Le profil admin a ete modifie entre-temps. Actualisez la page puis regenerez le lien.");
+        }
+
         var snapshot = await queryService.GetAccessSnapshotAsync(cancellationToken);
         var message = $"Bonjour {admin.FullName},\n\nVotre lien d'acces admin Wele a ete regenere. Ouvrez le lien ci-dessous, renseignez votre email puis creez votre mot de passe.\n\nLien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.";
         return AdminInvitationResult.Invited(snapshot, token, admin.Email, expiresAt, message);
