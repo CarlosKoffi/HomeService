@@ -5732,16 +5732,16 @@ h3 {
     border-radius: 18px;
     box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
     display: grid;
-    gap: 1rem;
+    gap: 1.1rem;
     margin: 1rem 0;
-    padding: 1.1rem;
+    padding: 1.2rem;
 }
 
 .admin-profile-editor .section-heading {
-    align-items: flex-start;
-    display: grid;
+    align-items: center;
+    display: flex;
     gap: 1rem;
-    grid-template-columns: minmax(0, 1fr) auto;
+    justify-content: space-between;
 }
 
 .admin-profile-editor .section-heading h2 {
@@ -5756,7 +5756,7 @@ h3 {
 .admin-profile-grid {
     display: grid;
     gap: .75rem;
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr) minmax(190px, .65fr);
     margin-top: 0;
 }
 
@@ -5777,11 +5777,6 @@ h3 {
     min-height: 44px;
     padding: .65rem .8rem;
     width: 100%;
-}
-
-.admin-profile-grid label:nth-child(3) {
-    grid-column: 1 / -1;
-    max-width: 540px;
 }
 
 .admin-profile-actions {
@@ -5814,7 +5809,30 @@ h3 {
 }
 
 .admin-profile-invite-result {
+    grid-template-columns: minmax(0, 1fr);
     margin: 0;
+}
+
+.admin-profile-invite-result .admin-invite-summary-card {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.admin-profile-invite-result .admin-invite-summary-card p {
+    margin-left: auto;
+}
+
+.admin-profile-invite-result .admin-invite-link-card,
+.admin-profile-invite-result .admin-invite-message-card {
+    grid-column: 1;
+}
+
+.admin-profile-invite-result .admin-invite-link-input {
+    font-size: .78rem;
+    min-height: 2.9rem;
+    white-space: nowrap;
 }
 
 .role-list {
