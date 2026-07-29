@@ -105,16 +105,17 @@
 
 .nav-section-label {
     color: #94a3b8;
-    font-size: .62rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    margin: 1rem 1rem .35rem;
+    font-size: .6rem;
+    font-weight: 760;
+    letter-spacing: .09em;
+    line-height: 1;
+    margin: 1.05rem 1.35rem .42rem;
     text-transform: uppercase;
 }
 
 .nav-item {
-    font-size: 0.84rem;
-    padding: 0 .7rem .24rem !important;
+    font-size: .84rem;
+    padding: 0 .85rem .22rem !important;
     width: 100%;
 }
 
@@ -131,16 +132,16 @@
         color: #475569;
         background: none;
         border: none;
-        border-radius: 10px;
+        border-radius: 12px;
         display: grid;
-        gap: .56rem;
-        grid-template-columns: 1.12rem minmax(0, 1fr);
-        line-height: 1.18;
-        min-height: 2.32rem;
-        padding: .5rem .62rem;
+        gap: .68rem;
+        grid-template-columns: 1.14rem minmax(0, 1fr);
+        line-height: 1;
+        min-height: 2.38rem;
+        padding: .54rem .72rem;
         width: 100%;
-        font-weight: 640;
-        white-space: normal;
+        font-weight: 660;
+        white-space: nowrap;
         word-break: normal;
     }
 
@@ -163,10 +164,10 @@
     overflow: hidden;
     overflow-wrap: normal;
     text-overflow: ellipsis;
-    white-space: normal;
+    white-space: nowrap;
     hyphens: none;
     letter-spacing: 0;
-    max-width: 10.4rem;
+    max-width: 100%;
 }
 
 .navbar-toggler:checked ~ .nav-scrollable {
