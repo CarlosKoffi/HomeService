@@ -5739,9 +5739,11 @@ h3 {
     padding: 1.2rem;
 }
 
-.translation-list article.admin-profile-editor {
-    align-items: stretch;
-    grid-template-columns: 1fr;
+.access-admin-list > article.admin-profile-editor {
+    align-items: stretch !important;
+    display: block !important;
+    grid-template-columns: none !important;
+    width: 100%;
 }
 
 .admin-profile-editor .section-heading {
@@ -5749,6 +5751,7 @@ h3 {
     display: flex;
     gap: 1rem;
     justify-content: space-between;
+    margin-bottom: 1rem;
 }
 
 .admin-profile-editor .section-heading > div {
@@ -5790,12 +5793,47 @@ h3 {
     width: 100%;
 }
 
+.admin-profile-role-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    display: grid;
+    gap: .8rem;
+    margin-top: 1rem;
+    padding: 1rem;
+}
+
+.admin-profile-role-panel strong {
+    color: #000;
+    display: block;
+    font-weight: 900;
+}
+
+.admin-profile-role-panel p {
+    color: #000;
+    margin: .2rem 0 0;
+}
+
+.admin-profile-role-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.admin-profile-role-list label {
+    align-items: center;
+    background: #fff;
+    border-color: #dbe3ef;
+    color: #000;
+    min-height: 38px;
+}
+
 .admin-profile-actions {
     display: flex;
     flex-wrap: wrap;
     gap: .6rem;
     justify-content: flex-end;
-    margin-top: 0;
+    margin-top: 1rem;
 }
 
 .admin-profile-actions button {
@@ -5821,8 +5859,10 @@ h3 {
 }
 
 .admin-profile-invite-result {
+    display: grid !important;
     grid-template-columns: minmax(0, 1fr);
-    margin: 0;
+    margin: 1rem 0 0;
+    width: 100%;
 }
 
 .admin-profile-invite-result .admin-invite-summary-card {
@@ -5846,6 +5886,7 @@ h3 {
 .admin-profile-invite-result .admin-invite-link-input {
     font-size: .78rem;
     min-height: 2.9rem;
+    overflow-wrap: normal;
     white-space: nowrap;
 }
 

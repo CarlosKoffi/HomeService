@@ -216,7 +216,7 @@
 
 @if (ActiveTab == AccessAdminTab.Admins)
 {
-<section class="translation-list">
+<section class="translation-list access-admin-list">
     <div class="section-heading">
         <div>
             <h2>Administrateurs</h2>
@@ -318,6 +318,24 @@
                     Etat du compte
                     <input value="@GetAdminActivationLabel(SelectedAdmin)" readonly />
                 </label>
+            </div>
+
+            <div class="admin-profile-role-panel">
+                <div>
+                    <strong>Roles autorises</strong>
+                    <p>Cochez les modules que cet admin peut utiliser, puis enregistrez les roles.</p>
+                </div>
+                <div class="role-checkboxes admin-profile-role-list" aria-label="Roles de @SelectedAdmin.FullName">
+                    @foreach (var role in Roles)
+                    {
+                        <label>
+                            <input type="checkbox"
+                                   checked="@HasAdminRoleDraft(SelectedAdmin.Id, role.Id)"
+                                   @onchange="args => ToggleAdminRoleDraft(SelectedAdmin.Id, role.Id, args)" />
+                            @role.Name
+                        </label>
+                    }
+                </div>
             </div>
 
             <div class="admin-profile-actions">

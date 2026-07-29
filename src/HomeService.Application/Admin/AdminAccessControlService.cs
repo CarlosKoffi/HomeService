@@ -97,41 +97,53 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
         AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
     {
-        var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Id == adminUserId, cancellationToken);
-        if (admin is null)
+        const int maxAttempts = 2;
+
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            return AdminInvitationResult.NotFound("L'admin n'existe plus.");
+            var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Id == adminUserId, cancellationToken);
+            if (admin is null)
+            {
+                return AdminInvitationResult.NotFound("L'admin n'existe plus.");
+            }
+
+            if (admin.InvitationAcceptedAt is not null || !string.IsNullOrWhiteSpace(admin.PasswordHash))
+            {
+                return AdminInvitationResult.ValidationFailed("Cet admin a deja active son acces.");
+            }
+
+            var token = GenerateInvitationToken();
+            var expiresAt = DateTimeOffset.UtcNow.Add(InvitationLifetime);
+            admin.SetInvitation(HashToken(token), expiresAt);
+            AddAuditLog(
+                actor,
+                auditContext,
+                "AdminInvitationRegenerated",
+                nameof(AdminUser),
+                admin.Id,
+                $"Lien d'invitation admin regenere pour {admin.FullName}.",
+                after: new { admin.FullName, admin.Email, expiresAt });
+
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException) when (attempt < maxAttempts - 1 && db is DbContext context)
+            {
+                context.ChangeTracker.Clear();
+                continue;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return AdminInvitationResult.ValidationFailed("Le profil admin a ete modifie entre-temps. Actualisez la page puis regenerez le lien.");
+            }
+
+            var snapshot = await queryService.GetAccessSnapshotAsync(cancellationToken);
+            var message = $"Bonjour {admin.FullName},\n\nVotre lien d'acces admin Wele a ete regenere. Ouvrez le lien ci-dessous, renseignez votre email puis creez votre mot de passe.\n\nLien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.";
+            return AdminInvitationResult.Invited(snapshot, token, admin.Email, expiresAt, message);
         }
 
-        if (admin.InvitationAcceptedAt is not null || !string.IsNullOrWhiteSpace(admin.PasswordHash))
-        {
-            return AdminInvitationResult.ValidationFailed("Cet admin a deja active son acces.");
-        }
-
-        var token = GenerateInvitationToken();
-        var expiresAt = DateTimeOffset.UtcNow.Add(InvitationLifetime);
-        admin.SetInvitation(HashToken(token), expiresAt);
-        AddAuditLog(
-            actor,
-            auditContext,
-            "AdminInvitationRegenerated",
-            nameof(AdminUser),
-            admin.Id,
-            $"Lien d'invitation admin regenere pour {admin.FullName}.",
-            after: new { admin.FullName, admin.Email, expiresAt });
-
-        try
-        {
-            await db.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return AdminInvitationResult.ValidationFailed("Le profil admin a ete modifie entre-temps. Actualisez la page puis regenerez le lien.");
-        }
-
-        var snapshot = await queryService.GetAccessSnapshotAsync(cancellationToken);
-        var message = $"Bonjour {admin.FullName},\n\nVotre lien d'acces admin Wele a ete regenere. Ouvrez le lien ci-dessous, renseignez votre email puis creez votre mot de passe.\n\nLien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.";
-        return AdminInvitationResult.Invited(snapshot, token, admin.Email, expiresAt, message);
+        return AdminInvitationResult.ValidationFailed("Le lien n'a pas pu etre regenere. Actualisez la page puis reessayez.");
     }
 
     public async Task<AdminInvitationDetailResponse?> GetInvitationAsync(string token, CancellationToken cancellationToken)
