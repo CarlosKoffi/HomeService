@@ -1583,20 +1583,20 @@ h3 {
 
 .provider-row {
     align-items: center;
-    gap: .75rem;
-    grid-template-columns: minmax(230px, 1.18fr) minmax(128px, .56fr) minmax(138px, .56fr) minmax(230px, 1fr) minmax(230px, .98fr);
-    min-height: 72px;
-    padding-block: .72rem;
+    gap: 1rem;
+    grid-template-columns: minmax(245px, 1.3fr) minmax(136px, .62fr) minmax(144px, .62fr) minmax(260px, 1.12fr) minmax(250px, 1fr);
+    min-height: 76px;
+    padding: .8rem 1.15rem;
 }
 
 .provider-list-head {
     background: #f8fafc;
-    color: #6b7280;
-    font-size: .68rem;
-    font-weight: 760;
-    letter-spacing: .07em;
+    color: #64748b;
+    font-size: .64rem;
+    font-weight: 780;
+    letter-spacing: .075em;
     min-height: auto;
-    padding-block: .65rem;
+    padding-block: .58rem;
     text-transform: uppercase;
 }
 
@@ -1626,12 +1626,16 @@ h3 {
     min-width: 0;
 }
 
+.provider-row .company-identity {
+    gap: .72rem;
+}
+
 .company-identity strong,
 .operator-row strong {
     color: #000;
     display: block;
-    font-size: .9rem;
-    font-weight: 720;
+    font-size: .86rem;
+    font-weight: 680;
     line-height: 1.22;
 }
 
@@ -1639,7 +1643,7 @@ h3 {
 .operator-row p,
 .operator-meta small {
     color: #64748b;
-    font-size: .76rem;
+    font-size: .72rem;
     line-height: 1.35;
     margin: .18rem 0 0;
 }
@@ -1647,7 +1651,7 @@ h3 {
 .company-identity small {
     color: #94a3b8;
     display: block;
-    font-size: .76rem;
+    font-size: .72rem;
     line-height: 1.35;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1660,12 +1664,12 @@ h3 {
     border-radius: 999px;
     color: #2563eb;
     display: inline-flex;
-    flex: 0 0 38px;
-    font-size: .72rem;
-    font-weight: 900;
-    height: 38px;
+    flex: 0 0 34px;
+    font-size: .68rem;
+    font-weight: 820;
+    height: 34px;
     justify-content: center;
-    width: 38px;
+    width: 34px;
 }
 
 .operator-meta {
@@ -1685,8 +1689,8 @@ h3 {
 
 .provider-status-stack small {
     color: #64748b;
-    font-size: .6rem;
-    font-weight: 760;
+    font-size: .58rem;
+    font-weight: 740;
     letter-spacing: .08em;
     line-height: 1;
     text-transform: uppercase;
@@ -1700,17 +1704,23 @@ h3 {
     color: #000;
     display: flex;
     flex-wrap: wrap;
-    gap: .28rem;
+    gap: .32rem;
+    min-width: 0;
 }
 
 .operator-kpis span {
     background: #f8fafc;
     border: 1px solid #e5e7eb;
     border-radius: 999px;
-    font-size: .7rem;
-    font-weight: 620;
+    color: #0f172a;
+    font-size: .68rem;
+    font-weight: 560;
     line-height: 1.15;
-    padding: .28rem .46rem;
+    max-width: 150px;
+    overflow: hidden;
+    padding: .26rem .5rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .operator-kpis .kpi-ok {
@@ -1905,7 +1915,7 @@ h3 {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: .3rem;
+    gap: .28rem;
     justify-content: end;
 }
 
@@ -1914,17 +1924,18 @@ h3 {
     align-items: center;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 999px;
     color: #0f172a;
     display: inline-flex;
     font: inherit;
-    font-size: .72rem;
-    font-weight: 680;
+    font-size: .68rem;
+    font-weight: 620;
     justify-content: center;
     line-height: 1.1;
-    min-height: 32px;
-    padding: .45rem .58rem;
+    min-height: 30px;
+    padding: .38rem .58rem;
     text-decoration: none;
+    white-space: nowrap;
 }
 
 .provider-doc-actions button {
@@ -1937,7 +1948,8 @@ h3 {
     background: #1A6AFF;
     border-color: #1A6AFF;
     color: #fff;
-    font-weight: 760;
+    font-weight: 720;
+    padding-inline: .72rem;
 }
 
 .payment-admin-side {
