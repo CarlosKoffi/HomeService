@@ -282,6 +282,8 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/company-service-proposals/11111111-1111-1111-1111-111111111111/attach", AdminModuleKey.Services, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/company-service-proposals/reanalyse", AdminModuleKey.Services, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/services/11111111-1111-1111-1111-111111111111/activate", AdminModuleKey.Services, AdminPermissionAction.Edit)]
+    [InlineData("GET", "/api/admin/country-brandings/CI", AdminModuleKey.Localization, AdminPermissionAction.View)]
+    [InlineData("PUT", "/api/admin/country-brandings/CI", AdminModuleKey.Localization, AdminPermissionAction.Edit)]
     public void AdminPermissionResolver_MapsSensitiveActionsToExpectedModuleAndPermission(
         string httpMethod,
         string path,

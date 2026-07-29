@@ -121,7 +121,8 @@ public static class AdminEndpointPermissionResolver
         }
 
         if (path.Contains("/localization", StringComparison.OrdinalIgnoreCase)
-            || path.Contains("/translations", StringComparison.OrdinalIgnoreCase))
+            || path.Contains("/translations", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/country-brandings", StringComparison.OrdinalIgnoreCase))
         {
             return AdminModuleKey.Localization;
         }

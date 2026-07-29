@@ -24,6 +24,8 @@ namespace HomeService.Api.Endpoints;
 
 public static class AdminEndpoints
 {
+    private const string CurrentAdminUserItemKey = "CurrentAdminUser";
+
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var admin = app.MapGroup("/api/admin");
@@ -136,7 +138,7 @@ public static class AdminEndpoints
             var result = await contactRequestService.MarkInProgressAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (!result.IsSuccess)
@@ -160,7 +162,7 @@ public static class AdminEndpoints
             var result = await contactRequestService.CloseAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (!result.IsSuccess)
@@ -229,7 +231,7 @@ public static class AdminEndpoints
             var result = await contentService.UpdateContentValueAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
 
@@ -267,7 +269,7 @@ public static class AdminEndpoints
                 var response = await contentService.AddMediaAsync(
                     mediaAsset,
                     mediaUrl,
-                    AuditActor.Admin(),
+                    GetAdminAuditActor(httpRequest),
                     GetAuditRequestContext(httpRequest),
                     cancellationToken);
 
@@ -315,7 +317,7 @@ public static class AdminEndpoints
                     id,
                     mediaAsset,
                     mediaUrl,
-                    AuditActor.Admin(),
+                    GetAdminAuditActor(httpRequest),
                     GetAuditRequestContext(httpRequest),
                     cancellationToken);
 
@@ -458,7 +460,7 @@ public static class AdminEndpoints
                 missionId,
                 request.Reason,
                 request.Description,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminMissionOperationStatus.NotFound)
@@ -489,7 +491,7 @@ public static class AdminEndpoints
                 request.Note,
                 request.RefundPercent,
                 request.RefundAmount,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminMissionOperationStatus.NotFound)
@@ -519,7 +521,7 @@ public static class AdminEndpoints
                 request.Reason,
                 request.Comment,
                 request.CancellationFeeAmount,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminMissionOperationStatus.NotFound)
@@ -622,7 +624,7 @@ public static class AdminEndpoints
             var result = await providerOperationsService.ApproveAsync(
                 providerId,
                 request?.Note,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminProviderOperationStatus.NotFound)
@@ -652,7 +654,7 @@ public static class AdminEndpoints
             var result = await providerOperationsService.SuspendAsync(
                 providerId,
                 request?.Note,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminProviderOperationStatus.NotFound)
@@ -761,7 +763,7 @@ public static class AdminEndpoints
         {
             var result = await translationService.UpsertAsync(
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminTranslationStatus.ValidationFailed)
@@ -781,7 +783,7 @@ public static class AdminEndpoints
         {
             var result = await accessControlService.CreateRoleAsync(
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminAccessControlError(result);
@@ -804,7 +806,7 @@ public static class AdminEndpoints
             var result = await accessControlService.UpdateRolePermissionsAsync(
                 roleId,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminAccessControlError(result);
@@ -825,7 +827,7 @@ public static class AdminEndpoints
         {
             var result = await accessControlService.CreateAdminUserAsync(
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminAccessControlError(result);
@@ -846,7 +848,7 @@ public static class AdminEndpoints
         {
             var result = await accessControlService.CreateAdminInvitationAsync(
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminAccessControlStatus.ValidationFailed)
@@ -883,7 +885,7 @@ public static class AdminEndpoints
             var result = await accessControlService.AcceptInvitationAsync(
                 token,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminAccessControlError(result);
@@ -896,6 +898,54 @@ public static class AdminEndpoints
         })
         .WithName("AcceptAdminInvitation");
 
+        admin.MapPut("/access-control/admins/{adminUserId:guid}/profile", async (
+            Guid adminUserId,
+            UpdateAdminUserProfileRequest request,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.UpdateAdminUserProfileAsync(
+                adminUserId,
+                request,
+                GetAdminAuditActor(httpRequest),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            var error = ToAdminAccessControlError(result);
+            if (error is not null)
+            {
+                return error;
+            }
+
+            return Results.Ok(result.Snapshot);
+        })
+        .WithName("UpdateAdminUserProfile");
+
+        admin.MapPost("/access-control/admins/{adminUserId:guid}/invitation", async (
+            Guid adminUserId,
+            HttpRequest httpRequest,
+            AdminAccessControlService accessControlService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await accessControlService.RegenerateAdminInvitationAsync(
+                adminUserId,
+                GetAdminAuditActor(httpRequest),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            if (result.Status == AdminAccessControlStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            if (result.Status == AdminAccessControlStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            return Results.Ok(result.Invitation);
+        })
+        .WithName("RegenerateAdminInvitation");
+
         admin.MapPut("/access-control/admins/{adminUserId:guid}/roles", async (
             Guid adminUserId,
             UpdateAdminUserRolesRequest request,
@@ -906,7 +956,7 @@ public static class AdminEndpoints
             var result = await accessControlService.UpdateAdminUserRolesAsync(
                 adminUserId,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminAccessControlError(result);
@@ -927,7 +977,7 @@ public static class AdminEndpoints
         {
             var result = await accessControlService.DeactivateAdminUserAsync(
                 adminUserId,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminAccessControlError(result);
@@ -948,7 +998,7 @@ public static class AdminEndpoints
         {
             var result = await accessControlService.ReactivateAdminUserAsync(
                 adminUserId,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminAccessControlError(result);
@@ -969,7 +1019,7 @@ public static class AdminEndpoints
         {
             var result = await notificationService.RetryAsync(
                 id,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminNotificationActionError(result);
@@ -992,7 +1042,7 @@ public static class AdminEndpoints
             var result = await notificationService.CancelAsync(
                 id,
                 request.Reason,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminNotificationActionError(result);
@@ -1013,7 +1063,7 @@ public static class AdminEndpoints
         {
             var result = await notificationService.MarkSentAsync(
                 id,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminNotificationActionError(result);
@@ -1036,7 +1086,7 @@ public static class AdminEndpoints
             var result = await ruleService.UpdateAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminNotificationDeliveryRuleStatus.NotFound)
@@ -1072,7 +1122,7 @@ public static class AdminEndpoints
         {
             var result = await templateService.CreateAsync(
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminNotificationTemplateStatus.ValidationFailed)
@@ -1102,7 +1152,7 @@ public static class AdminEndpoints
             var result = await templateService.UpdateAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminNotificationTemplateStatus.NotFound)
@@ -1142,7 +1192,7 @@ public static class AdminEndpoints
             var result = await configurationService.UpdateCountryBrandingAsync(
                 countryCode,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminConfigurationUpdateStatus.ValidationFailed)
@@ -1180,7 +1230,7 @@ public static class AdminEndpoints
             var result = await configurationService.UpdateCompanyAssignmentModeAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminConfigurationUpdateStatus.NotFound)
@@ -1207,7 +1257,7 @@ public static class AdminEndpoints
             var result = await configurationService.UpdateCompanyDispatchSettingsAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminConfigurationUpdateStatus.NotFound)
@@ -1242,7 +1292,7 @@ public static class AdminEndpoints
             var result = await companyOperationsService.SuspendAsync(
                 id,
                 request?.Note,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminCompanyOperationStatus.NotFound)
@@ -1272,7 +1322,7 @@ public static class AdminEndpoints
             var result = await companyOperationsService.ReactivateAsync(
                 id,
                 request?.Note,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminCompanyOperationStatus.NotFound)
@@ -1302,7 +1352,7 @@ public static class AdminEndpoints
             var result = await notificationService.MarkReadAsync(
                 companyId,
                 notificationId,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
@@ -1326,7 +1376,7 @@ public static class AdminEndpoints
             var result = await notificationService.MarkUnreadAsync(
                 companyId,
                 notificationId,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
@@ -1350,7 +1400,7 @@ public static class AdminEndpoints
             var result = await notificationService.ResendAsync(
                 companyId,
                 notificationId,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (result.Status == AdminCompanyNotificationActionStatus.NotFound)
@@ -1372,7 +1422,7 @@ public static class AdminEndpoints
         {
             var result = await reviewService.ApproveAsync(
                 id,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
@@ -1396,7 +1446,7 @@ public static class AdminEndpoints
             var result = await reviewService.RejectAsync(
                 id,
                 request.Note,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
@@ -1420,7 +1470,7 @@ public static class AdminEndpoints
             var result = await reviewService.ReopenAsync(
                 id,
                 request.Note,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
@@ -1444,7 +1494,7 @@ public static class AdminEndpoints
             var result = await reviewService.RequestMoreInformationAsync(
                 id,
                 request.Note,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationReviewError(result);
@@ -1473,7 +1523,7 @@ public static class AdminEndpoints
                     GetCompanyPortalBaseUrl(httpRequest, configuration),
                     GetActivationTokenDurationHours(configuration),
                     "admin",
-                    AuditActor.Admin(),
+                    GetAdminAuditActor(httpRequest),
                     GetAuditRequestContext(httpRequest),
                     cancellationToken);
         
@@ -1540,7 +1590,7 @@ public static class AdminEndpoints
             CancellationToken cancellationToken) =>
         {
             var result = await serviceProposalService.ReanalyseAsync(
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (!result.IsSuccess)
@@ -1563,7 +1613,7 @@ public static class AdminEndpoints
             var result = await serviceProposalService.AttachAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (!result.IsSuccess)
@@ -1586,7 +1636,7 @@ public static class AdminEndpoints
             var result = await serviceProposalService.CreatePrestationAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (!result.IsSuccess)
@@ -1609,7 +1659,7 @@ public static class AdminEndpoints
             var result = await serviceProposalService.CreateServiceAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             if (!result.IsSuccess)
@@ -1630,7 +1680,7 @@ public static class AdminEndpoints
         {
             var result = await catalogService.CreateServiceAsync(
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1653,7 +1703,7 @@ public static class AdminEndpoints
             var result = await catalogService.UpdateServiceAsync(
                 serviceId,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1674,7 +1724,7 @@ public static class AdminEndpoints
         {
             var result = await catalogService.ActivateServiceAsync(
                 serviceId,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1695,7 +1745,7 @@ public static class AdminEndpoints
         {
             var result = await catalogService.DeactivateServiceAsync(
                 serviceId,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1718,7 +1768,7 @@ public static class AdminEndpoints
             var result = await catalogService.CreatePrestationAsync(
                 serviceId,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1741,7 +1791,7 @@ public static class AdminEndpoints
             var result = await catalogService.UpdatePrestationAsync(
                 id,
                 request,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1762,7 +1812,7 @@ public static class AdminEndpoints
         {
             var result = await catalogService.ActivatePrestationAsync(
                 id,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1783,7 +1833,7 @@ public static class AdminEndpoints
         {
             var result = await catalogService.DeactivatePrestationAsync(
                 id,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminServiceCatalogOperationError(result);
@@ -1804,7 +1854,7 @@ public static class AdminEndpoints
         {
             var result = await documentReviewService.ApproveAsync(
                 id,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
@@ -1828,7 +1878,7 @@ public static class AdminEndpoints
             var result = await documentReviewService.RejectAsync(
                 id,
                 request.Comment,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
@@ -1852,7 +1902,7 @@ public static class AdminEndpoints
             var result = await documentReviewService.RequestReplacementAsync(
                 id,
                 request.Comment,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
@@ -1876,7 +1926,7 @@ public static class AdminEndpoints
             var result = await documentReviewService.ReopenAsync(
                 id,
                 request.Comment,
-                AuditActor.Admin(),
+                GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
             var error = ToAdminCompanyApplicationDocumentReviewError(result);
@@ -1986,7 +2036,26 @@ public static class AdminEndpoints
             permission.Action,
             context.HttpContext.RequestAborted);
 
-        return canAccess ? await next(context) : Results.Forbid();
+        if (!canAccess)
+        {
+            return Results.Forbid();
+        }
+
+        var currentUser = await authService.GetCurrentUserAsync(token, context.HttpContext.RequestAborted);
+        if (currentUser is not null)
+        {
+            context.HttpContext.Items[CurrentAdminUserItemKey] = currentUser;
+        }
+
+        return await next(context);
+    }
+
+    static AuditActor GetAdminAuditActor(HttpRequest request)
+    {
+        return request.HttpContext.Items.TryGetValue(CurrentAdminUserItemKey, out var value)
+            && value is AdminCurrentUserResponse currentUser
+            ? new AuditActor(AuditActorType.Admin, currentUser.Id, currentUser.FullName)
+            : AuditActor.Admin();
     }
 
     static bool ShouldSkipAdminSessionCheck(PathString path)

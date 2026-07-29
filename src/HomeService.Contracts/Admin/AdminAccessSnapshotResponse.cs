@@ -64,6 +64,8 @@ public sealed record AdminUserSummaryResponse(
     string Email,
     bool IsSuperAdmin,
     bool IsActive,
+    bool HasActivatedAccess,
+    DateTimeOffset? InvitationExpiresAt,
     DateTimeOffset? LastLoginAt,
     IReadOnlyList<string> Roles);
 
@@ -86,6 +88,10 @@ public sealed record CreateAdminUserRequest(
 
 public sealed record UpdateAdminUserRolesRequest(
     IReadOnlyList<Guid> RoleIds);
+
+public sealed record UpdateAdminUserProfileRequest(
+    string FullName,
+    string Email);
 
 public sealed record AcceptAdminInvitationRequest(
     string Email,

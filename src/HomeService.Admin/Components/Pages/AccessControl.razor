@@ -290,6 +290,45 @@
         </article>
     }
 
+    @if (SelectedAdmin is not null)
+    {
+        <article class="admin-profile-editor">
+            <div class="section-heading">
+                <div>
+                    <h2>Profil admin</h2>
+                    <p class="section-help">Modifiez le nom affiche dans les logs, l'email de connexion et les roles.</p>
+                </div>
+                <button type="button" class="secondary-action" @onclick="CloseAdminProfile">Fermer</button>
+            </div>
+
+            <div class="admin-profile-grid">
+                <label>
+                    Nom et prenom
+                    <input type="text" @bind="AdminProfileFullNameDraft" placeholder="Ex: Awa Kone" />
+                </label>
+                <label>
+                    Email de connexion
+                    <input type="email" @bind="AdminProfileEmailDraft" placeholder="admin@wele.ci" />
+                </label>
+                <label>
+                    Etat du compte
+                    <input value="@GetAdminActivationLabel(SelectedAdmin)" readonly />
+                </label>
+            </div>
+
+            <div class="admin-profile-actions">
+                <button type="button" @onclick="SaveSelectedAdminProfileAsync" disabled="@IsBusy">Enregistrer le profil</button>
+                <button type="button" @onclick="() => SaveAdminRoleAsync(SelectedAdmin)" disabled="@IsBusy">Enregistrer les roles</button>
+                <button type="button"
+                        class="secondary-action"
+                        @onclick="() => RegenerateInvitationAsync(SelectedAdmin)"
+                        disabled="@(IsBusy || SelectedAdmin.HasActivatedAccess)">
+                    Regenerer le lien d'invitation
+                </button>
+            </div>
+        </article>
+    }
+
     @foreach (var admin in FilteredAdmins)
     {
         <article class="admin-access-row">
@@ -310,6 +349,7 @@
                     </label>
                 }
             </div>
+            <button type="button" class="secondary-action" @onclick="() => OpenAdminProfile(admin)" disabled="@IsBusy">Voir / modifier</button>
             <button type="button" @onclick="() => SaveAdminRoleAsync(admin)" disabled="@IsBusy">Enregistrer</button>
             @if (admin.IsActive)
             {
@@ -347,6 +387,9 @@
     private string AdminStatusFilter { get; set; } = "all";
     private Dictionary<Guid, HashSet<Guid>> AdminRoleDrafts { get; set; } = [];
     private AccessAdminTab ActiveTab { get; set; } = AccessAdminTab.Overview;
+    private Guid? SelectedAdminId { get; set; }
+    private string? AdminProfileFullNameDraft { get; set; }
+    private string? AdminProfileEmailDraft { get; set; }
 
     private IReadOnlyList<AdminRoleSummaryResponse> FilteredRoles
         => Roles
@@ -362,6 +405,9 @@
             .ThenByDescending(admin => admin.IsSuperAdmin)
             .ThenBy(admin => admin.FullName)
             .ToList();
+
+    private AdminUserSummaryResponse? SelectedAdmin
+        => SelectedAdminId is null ? null : Admins.FirstOrDefault(admin => admin.Id == SelectedAdminId.Value);
 
     protected override async Task OnInitializedAsync()
     {
@@ -462,6 +508,60 @@
         await RunAccessActionAsync(
             async () => await ApiClient.UpdateAdminUserRolesAsync(admin.Id, new UpdateAdminUserRolesRequest(roleIds?.ToList() ?? [])),
             "Acces admin modifies.");
+    }
+
+    private async Task SaveSelectedAdminProfileAsync()
+    {
+        if (SelectedAdmin is null)
+        {
+            ActionErrorMessage = "Selectionnez un admin a modifier.";
+            return;
+        }
+
+        await RunAccessActionAsync(
+            async () => await ApiClient.UpdateAdminUserProfileAsync(
+                SelectedAdmin.Id,
+                new UpdateAdminUserProfileRequest(AdminProfileFullNameDraft ?? string.Empty, AdminProfileEmailDraft ?? string.Empty)),
+            "Profil admin mis a jour.");
+
+        var refreshedAdmin = Admins.FirstOrDefault(admin => admin.Id == SelectedAdmin.Id);
+        if (refreshedAdmin is not null)
+        {
+            OpenAdminProfile(refreshedAdmin);
+        }
+    }
+
+    private async Task RegenerateInvitationAsync(AdminUserSummaryResponse admin)
+    {
+        IsBusy = true;
+        ActionErrorMessage = null;
+        SuccessMessage = null;
+        LastInvitationLink = null;
+        LastInvitationMessage = null;
+        LastInvitationEmail = null;
+
+        try
+        {
+            var invitation = await ApiClient.RegenerateAdminInvitationAsync(admin.Id);
+            ApplySnapshot(invitation?.Snapshot);
+            LastInvitationEmail = invitation?.Email;
+            LastInvitationMessage = invitation?.Message;
+            LastInvitationLink = BuildInvitationLink(invitation?.Token);
+            SuccessMessage = "Nouveau lien d'invitation genere.";
+            var refreshedAdmin = Admins.FirstOrDefault(item => item.Id == admin.Id);
+            if (refreshedAdmin is not null)
+            {
+                OpenAdminProfile(refreshedAdmin);
+            }
+        }
+        catch (Exception exception)
+        {
+            ActionErrorMessage = $"Action impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private async Task DeactivateAdminAsync(AdminUserSummaryResponse admin)
@@ -678,6 +778,22 @@
         SuccessMessage = null;
     }
 
+    private void OpenAdminProfile(AdminUserSummaryResponse admin)
+    {
+        SelectedAdminId = admin.Id;
+        AdminProfileFullNameDraft = admin.FullName;
+        AdminProfileEmailDraft = admin.Email;
+        ActionErrorMessage = null;
+        SuccessMessage = null;
+    }
+
+    private void CloseAdminProfile()
+    {
+        SelectedAdminId = null;
+        AdminProfileFullNameDraft = null;
+        AdminProfileEmailDraft = null;
+    }
+
     private static string GetRolePermissionSummary(AdminRoleSummaryResponse role)
     {
         if (!role.IsActive)
@@ -735,12 +851,44 @@
 
     private static string GetAdminStatusLabel(AdminUserSummaryResponse admin)
     {
-        return admin.IsActive ? "Actif" : "Suspendu";
+        if (!admin.IsActive)
+        {
+            return "Suspendu";
+        }
+
+        return admin.HasActivatedAccess ? "Actif" : "Invitation en attente";
     }
 
     private static string GetAdminStatusClass(AdminUserSummaryResponse admin)
     {
-        return admin.IsActive ? "status-pill ok" : "status-pill danger";
+        if (!admin.IsActive)
+        {
+            return "status-pill danger";
+        }
+
+        return admin.HasActivatedAccess ? "status-pill ok" : "status-pill pending";
+    }
+
+    private static string GetAdminActivationLabel(AdminUserSummaryResponse admin)
+    {
+        if (!admin.IsActive)
+        {
+            return "Compte suspendu";
+        }
+
+        if (admin.HasActivatedAccess)
+        {
+            return admin.LastLoginAt is null ? "Acces active, jamais connecte" : $"Acces active, derniere connexion {admin.LastLoginAt:dd/MM/yyyy HH:mm}";
+        }
+
+        if (admin.InvitationExpiresAt is null)
+        {
+            return "Invitation a generer";
+        }
+
+        return admin.InvitationExpiresAt <= DateTimeOffset.UtcNow
+            ? "Invitation expiree"
+            : $"Invitation valable jusqu'au {admin.InvitationExpiresAt:dd/MM/yyyy HH:mm}";
     }
 
     private string GetAccessTabClass(AccessAdminTab tab)

@@ -174,6 +174,78 @@ public sealed class AdminAccessControlServiceTests
     }
 
     [Fact]
+    public async Task UpdateAdminUserProfileAsync_WhenValid_UpdatesNameEmailAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var admin = new AdminUser("Ancien nom", "old@wele.ci");
+        db.AdminUsers.Add(admin);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.UpdateAdminUserProfileAsync(
+            admin.Id,
+            new UpdateAdminUserProfileRequest("Awa Kone", "AWA@WELE.CI"),
+            AuditActor.Admin("Super Admin"),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-profile"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.Ok, result.Status);
+        var updatedAdmin = await db.AdminUsers.SingleAsync(user => user.Id == admin.Id);
+        Assert.Equal("Awa Kone", updatedAdmin.FullName);
+        Assert.Equal("awa@wele.ci", updatedAdmin.Email);
+        var audit = await db.AuditLogEntries.SingleAsync();
+        Assert.Equal("AdminUserProfileUpdated", audit.Action);
+        Assert.Equal("Super Admin", audit.ActorDisplayName);
+    }
+
+    [Fact]
+    public async Task RegenerateAdminInvitationAsync_WhenNotActivated_ReplacesTokenAndAudits()
+    {
+        await using var db = CreateDbContext();
+        var role = new AdminRole("Support", "Support");
+        db.AdminRoles.Add(role);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+        var invitation = await sut.CreateAdminInvitationAsync(
+            new CreateAdminUserRequest("Support Admin", "support@wele.ci", false, [role.Id]),
+            AuditActor.Admin("Super Admin"),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-invite"),
+            CancellationToken.None);
+        var admin = await db.AdminUsers.SingleAsync(user => user.Email == "support@wele.ci");
+        var firstTokenHash = admin.InvitationTokenHash;
+
+        var result = await sut.RegenerateAdminInvitationAsync(
+            admin.Id,
+            AuditActor.Admin("Super Admin"),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-reinvite"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.Ok, result.Status);
+        Assert.NotEqual(invitation.Invitation!.Token, result.Invitation!.Token);
+        Assert.NotEqual(firstTokenHash, (await db.AdminUsers.SingleAsync(user => user.Id == admin.Id)).InvitationTokenHash);
+        Assert.Contains(await db.AuditLogEntries.ToListAsync(), audit => audit.Action == "AdminInvitationRegenerated");
+    }
+
+    [Fact]
+    public async Task RegenerateAdminInvitationAsync_WhenAlreadyActivated_ReturnsValidationFailed()
+    {
+        await using var db = CreateDbContext();
+        var admin = new AdminUser("Awa Kone", "awa@wele.ci");
+        admin.AcceptInvitation(Sha256PasswordHasher.Hash("Password123"), DateTimeOffset.UtcNow);
+        db.AdminUsers.Add(admin);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.RegenerateAdminInvitationAsync(
+            admin.Id,
+            AuditActor.Admin("Super Admin"),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-reinvite"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.ValidationFailed, result.Status);
+    }
+
+    [Fact]
     public async Task DeactivateAdminUserAsync_WhenValid_PersistsAndAudits()
     {
         await using var db = CreateDbContext();

@@ -36,6 +36,13 @@ public sealed class AdminUser : AuditableEntity
         Touch();
     }
 
+    public void UpdateProfile(string fullName, string email)
+    {
+        FullName = fullName.Trim();
+        Email = email.Trim().ToLowerInvariant();
+        Touch();
+    }
+
     public void AcceptInvitation(string passwordHash, DateTimeOffset acceptedAt)
     {
         PasswordHash = passwordHash.Trim();

@@ -91,6 +91,41 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
         return AdminInvitationResult.Invited(snapshot, token, admin.Email, expiresAt, message);
     }
 
+    public async Task<AdminInvitationResult> RegenerateAdminInvitationAsync(
+        Guid adminUserId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Id == adminUserId, cancellationToken);
+        if (admin is null)
+        {
+            return AdminInvitationResult.NotFound("L'admin n'existe plus.");
+        }
+
+        if (admin.InvitationAcceptedAt is not null || !string.IsNullOrWhiteSpace(admin.PasswordHash))
+        {
+            return AdminInvitationResult.ValidationFailed("Cet admin a deja active son acces.");
+        }
+
+        var token = GenerateInvitationToken();
+        var expiresAt = DateTimeOffset.UtcNow.Add(InvitationLifetime);
+        admin.SetInvitation(HashToken(token), expiresAt);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminInvitationRegenerated",
+            nameof(AdminUser),
+            admin.Id,
+            $"Lien d'invitation admin regenere pour {admin.FullName}.",
+            after: new { admin.FullName, admin.Email, expiresAt });
+
+        await db.SaveChangesAsync(cancellationToken);
+        var snapshot = await queryService.GetAccessSnapshotAsync(cancellationToken);
+        var message = $"Bonjour {admin.FullName},\n\nVotre lien d'acces admin Wele a ete regenere. Ouvrez le lien ci-dessous, renseignez votre email puis creez votre mot de passe.\n\nLien valable jusqu'au {expiresAt:dd/MM/yyyy HH:mm} UTC.";
+        return AdminInvitationResult.Invited(snapshot, token, admin.Email, expiresAt, message);
+    }
+
     public async Task<AdminInvitationDetailResponse?> GetInvitationAsync(string token, CancellationToken cancellationToken)
     {
         var tokenHash = HashToken(token);
@@ -277,6 +312,52 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
         UpdateAdminUserRolesRequest request,
         CancellationToken cancellationToken)
         => await UpdateAdminUserRolesAsync(adminUserId, request, null, null, cancellationToken);
+
+    public async Task<AdminAccessControlResult> UpdateAdminUserProfileAsync(
+        Guid adminUserId,
+        UpdateAdminUserProfileRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var admin = await db.AdminUsers.FirstOrDefaultAsync(user => user.Id == adminUserId, cancellationToken);
+        if (admin is null)
+        {
+            return AdminAccessControlResult.NotFound("L'admin n'existe plus.");
+        }
+
+        var fullName = request.FullName.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return AdminAccessControlResult.ValidationFailed("Le nom de l'admin est obligatoire.");
+        }
+
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+        {
+            return AdminAccessControlResult.ValidationFailed("Email admin invalide.");
+        }
+
+        var emailExists = await db.AdminUsers.AnyAsync(user => user.Id != adminUserId && user.Email == email, cancellationToken);
+        if (emailExists)
+        {
+            return AdminAccessControlResult.ValidationFailed("Un autre admin utilise deja cet email.");
+        }
+
+        var before = new { admin.FullName, admin.Email };
+        admin.UpdateProfile(fullName, email);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminUserProfileUpdated",
+            nameof(AdminUser),
+            adminUserId,
+            $"Profil admin modifie: {admin.FullName}.",
+            before,
+            new { admin.FullName, admin.Email });
+
+        return await SaveAndSnapshotAsync(cancellationToken);
+    }
 
     public async Task<AdminAccessControlResult> UpdateAdminUserRolesAsync(
         Guid adminUserId,
@@ -487,6 +568,12 @@ public sealed record AdminInvitationResult(
 
     public static AdminInvitationResult FromAccessResult(AdminAccessControlResult result)
         => new(result.Status, null, result.Message);
+
+    public static AdminInvitationResult NotFound(string message)
+        => new(AdminAccessControlStatus.NotFound, null, message);
+
+    public static AdminInvitationResult ValidationFailed(string message)
+        => new(AdminAccessControlStatus.ValidationFailed, null, message);
 }
 
 public enum AdminAccessControlStatus

@@ -1609,6 +1609,8 @@ public sealed class AdminQueryService(IAppDbContext db)
                 admin.Email,
                 admin.IsSuperAdmin,
                 admin.IsActive,
+                admin.InvitationAcceptedAt != null || admin.PasswordHash != null,
+                admin.InvitationExpiresAt,
                 admin.LastLoginAt,
                 admin.Roles
                     .OrderBy(userRole => userRole.Role!.Name)

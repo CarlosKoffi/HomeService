@@ -5694,7 +5694,7 @@ h3 {
     border: 1px solid #e5e7eb;
     border-radius: 16px;
     gap: .8rem;
-    grid-template-columns: minmax(210px, 1fr) minmax(170px, .65fr) minmax(110px, .35fr) minmax(260px, 1fr) auto auto;
+    grid-template-columns: minmax(210px, 1fr) minmax(160px, .55fr) minmax(140px, .42fr) minmax(240px, 1fr) auto auto auto;
     margin-bottom: .75rem;
     padding: .9rem;
 }
@@ -5713,6 +5713,70 @@ h3 {
 .compact-role-editor label {
     font-size: .78rem;
     padding: .36rem .55rem;
+}
+
+.admin-profile-editor {
+    background: #fff;
+    border: 1px solid #dbe3ef;
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+    margin: 1rem 0;
+    padding: 1rem;
+}
+
+.admin-profile-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: .85rem;
+}
+
+.admin-profile-grid label {
+    color: #000;
+    display: grid;
+    font-size: .78rem;
+    font-weight: 900;
+    gap: .35rem;
+}
+
+.admin-profile-grid input {
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    color: #000;
+    font: inherit;
+    min-height: 44px;
+    padding: .65rem .8rem;
+    width: 100%;
+}
+
+.admin-profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    margin-top: 1rem;
+}
+
+.admin-profile-actions button {
+    background: #0f172a;
+    border: 1px solid #0f172a;
+    border-radius: 999px;
+    color: #fff;
+    font: inherit;
+    font-weight: 850;
+    min-height: 42px;
+    padding: .65rem 1rem;
+}
+
+.admin-profile-actions button.secondary-action {
+    background: #fff;
+    border-color: #cbd5e1;
+    color: #0f172a;
+}
+
+.admin-profile-actions button:disabled {
+    cursor: not-allowed;
+    opacity: .45;
 }
 
 .role-list {
@@ -6058,6 +6122,7 @@ h3 {
     .access-admin-filters,
     .admin-invite-form,
     .admin-invite-result,
+    .admin-profile-grid,
     .service-admin-overview,
     .service-admin-tabs,
     .proposal-review-table .proposal-review-row,
