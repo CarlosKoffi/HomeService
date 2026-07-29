@@ -3,9 +3,11 @@ using HomeService.Api.Endpoints;
 using HomeService.Application;
 using HomeService.Domain.Enums;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace HomeService.Tests.Integration;
@@ -282,6 +284,7 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/company-service-proposals/11111111-1111-1111-1111-111111111111/attach", AdminModuleKey.Services, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/company-service-proposals/reanalyse", AdminModuleKey.Services, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/services/11111111-1111-1111-1111-111111111111/activate", AdminModuleKey.Services, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/access-control/admins/invitations", AdminModuleKey.AdminAccess, AdminPermissionAction.ManageRoles)]
     [InlineData("GET", "/api/admin/country-brandings/CI", AdminModuleKey.Localization, AdminPermissionAction.View)]
     [InlineData("PUT", "/api/admin/country-brandings/CI", AdminModuleKey.Localization, AdminPermissionAction.Edit)]
     public void AdminPermissionResolver_MapsSensitiveActionsToExpectedModuleAndPermission(
@@ -294,6 +297,21 @@ public sealed class AdminEndpointContractTests
 
         Assert.Equal(expectedModule, permission.ModuleKey);
         Assert.Equal(expectedAction, permission.Action);
+    }
+
+    [Theory]
+    [InlineData("/api/admin/auth/login", true)]
+    [InlineData("/api/admin/access-control/admins/invitations", false)]
+    [InlineData("/api/admin/access-control/admins/invitations/token-value", true)]
+    [InlineData("/api/admin/access-control/admins/invitations/token-value/password", true)]
+    public void AdminSessionBypass_OnlyAllowsAuthAndInvitationTokenRoutes(string path, bool expectedSkip)
+    {
+        var method = typeof(AdminEndpoints).GetMethod("ShouldSkipAdminSessionCheck", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var shouldSkip = (bool)method!.Invoke(null, [new PathString(path)])!;
+
+        Assert.Equal(expectedSkip, shouldSkip);
     }
 
     private static IReadOnlyList<RouteEndpoint> BuildAdminEndpoints()

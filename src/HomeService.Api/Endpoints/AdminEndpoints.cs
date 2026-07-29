@@ -2060,8 +2060,14 @@ public static class AdminEndpoints
 
     static bool ShouldSkipAdminSessionCheck(PathString path)
     {
-        return path.StartsWithSegments("/api/admin/auth", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/api/admin/access-control/admins/invitations", StringComparison.OrdinalIgnoreCase);
+        if (path.StartsWithSegments("/api/admin/auth", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var pathValue = path.Value ?? string.Empty;
+        const string InvitationBasePath = "/api/admin/access-control/admins/invitations/";
+        return pathValue.StartsWith(InvitationBasePath, StringComparison.OrdinalIgnoreCase);
     }
 
     static string GetAdminSessionToken(HttpRequest request)
