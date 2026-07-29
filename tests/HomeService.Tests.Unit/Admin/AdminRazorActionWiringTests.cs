@@ -31,15 +31,7 @@ public sealed class AdminRazorActionWiringTests
     public void AdminNavigationLinks_TargetExistingPages()
     {
         var repositoryRoot = FindRepositoryRoot();
-        var pagesDirectory = repositoryRoot
-            .GetDirectories("src", SearchOption.TopDirectoryOnly)
-            .Single()
-            .GetDirectories("HomeService.Admin", SearchOption.TopDirectoryOnly)
-            .Single()
-            .GetDirectories("Components", SearchOption.TopDirectoryOnly)
-            .Single()
-            .GetDirectories("Pages", SearchOption.TopDirectoryOnly)
-            .Single();
+        var pagesDirectory = GetAdminPagesDirectory(repositoryRoot);
 
         var pageRoutes = pagesDirectory
             .EnumerateFiles("*.razor", SearchOption.TopDirectoryOnly)
@@ -65,6 +57,30 @@ public sealed class AdminRazorActionWiringTests
         Assert.True(
             missingRoutes.Count == 0,
             "Admin navigation links without matching page route:" + Environment.NewLine + string.Join(Environment.NewLine, missingRoutes));
+    }
+
+    [Fact]
+    public void AdminPageInternalLinks_TargetExistingPages()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var pagesDirectory = GetAdminPagesDirectory(repositoryRoot);
+        var pageRoutePatterns = pagesDirectory
+            .EnumerateFiles("*.razor", SearchOption.TopDirectoryOnly)
+            .SelectMany(ReadPageRoutes)
+            .Select(NormalizeRoute)
+            .Select(ToRouteRegex)
+            .ToList();
+
+        var brokenLinks = pagesDirectory
+            .EnumerateFiles("*.razor", SearchOption.TopDirectoryOnly)
+            .SelectMany(file => ReadInternalStaticLinks(file)
+                .Where(link => !MatchesAnyRoute(link.Href, pageRoutePatterns))
+                .Select(link => $"{file.Name}:{link.LineNumber} -> {link.Href}"))
+            .ToList();
+
+        Assert.True(
+            brokenLinks.Count == 0,
+            "Admin page links without matching page route:" + Environment.NewLine + string.Join(Environment.NewLine, brokenLinks));
     }
 
     private static IEnumerable<string> FindButtonsWithoutAction(FileInfo file)
@@ -93,6 +109,32 @@ public sealed class AdminRazorActionWiringTests
             .Select(match => match.Groups["route"].Value);
     }
 
+    private static IEnumerable<AdminPageLink> ReadInternalStaticLinks(FileInfo file)
+    {
+        var content = File.ReadAllText(file.FullName);
+        var lineStarts = GetLineStarts(content);
+        foreach (Match match in Regex.Matches(content, "href\\s*=\\s*\"(?<href>[^\"]+)\"", RegexOptions.IgnoreCase))
+        {
+            var href = match.Groups["href"].Value.Trim();
+            if (ShouldIgnoreHref(href))
+            {
+                continue;
+            }
+
+            yield return new AdminPageLink(NormalizeRoute(href), GetLineNumber(lineStarts, match.Index));
+        }
+    }
+
+    private static bool ShouldIgnoreHref(string href)
+    {
+        return string.IsNullOrWhiteSpace(href)
+            || href.StartsWith('@')
+            || href.StartsWith('#')
+            || href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+            || href.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)
+            || href.StartsWith("tel:", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string NormalizeRoute(string route)
     {
         var cleanRoute = route.Split('?', '#')[0].Trim();
@@ -102,6 +144,39 @@ public sealed class AdminRazorActionWiringTests
         }
 
         return cleanRoute.Trim('/');
+    }
+
+    private static Regex ToRouteRegex(string route)
+    {
+        if (string.IsNullOrWhiteSpace(route))
+        {
+            return new Regex("^$", RegexOptions.IgnoreCase);
+        }
+
+        var segments = route.Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Select(segment => segment.StartsWith('{') && segment.EndsWith('}')
+                ? "[^/]+"
+                : Regex.Escape(segment));
+        return new Regex("^" + string.Join("/", segments) + "$", RegexOptions.IgnoreCase);
+    }
+
+    private static bool MatchesAnyRoute(string href, IReadOnlyList<Regex> routePatterns)
+    {
+        var normalized = Regex.Replace(href, "@[^/]+", "dynamic-value");
+        return routePatterns.Any(pattern => pattern.IsMatch(normalized));
+    }
+
+    private static DirectoryInfo GetAdminPagesDirectory(DirectoryInfo repositoryRoot)
+    {
+        return repositoryRoot
+            .GetDirectories("src", SearchOption.TopDirectoryOnly)
+            .Single()
+            .GetDirectories("HomeService.Admin", SearchOption.TopDirectoryOnly)
+            .Single()
+            .GetDirectories("Components", SearchOption.TopDirectoryOnly)
+            .Single()
+            .GetDirectories("Pages", SearchOption.TopDirectoryOnly)
+            .Single();
     }
 
     private static DirectoryInfo FindRepositoryRoot()
@@ -150,4 +225,6 @@ public sealed class AdminRazorActionWiringTests
 
         return lineIndex + 1;
     }
+
+    private sealed record AdminPageLink(string Href, int LineNumber);
 }
