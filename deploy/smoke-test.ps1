@@ -5,6 +5,7 @@ param(
     [string]$Password = $env:SMOKE_SITE_AUTH_PASSWORD,
     [string]$AdminEmail = $env:SMOKE_ADMIN_EMAIL,
     [string]$AdminPassword = $env:SMOKE_ADMIN_PASSWORD,
+    [string]$RequireAdmin = $env:SMOKE_REQUIRE_ADMIN,
     [int]$StartupDelaySeconds = $(if ($env:SMOKE_STARTUP_DELAY_SECONDS) { [int]$env:SMOKE_STARTUP_DELAY_SECONDS } else { 0 })
 )
 
@@ -321,6 +322,11 @@ function Test-RequiredTemplates($check, $payload) {
 }
 
 $failures = New-Object System.Collections.Generic.List[string]
+$requireAdminChecks = $RequireAdmin -match "^(1|true|yes|oui)$"
+
+if ($requireAdminChecks -and -not $headers.ContainsKey("X-Admin-Session")) {
+    $failures.Add("Admin smoke session is required. Set SMOKE_ADMIN_EMAIL and SMOKE_ADMIN_PASSWORD with a valid admin account.")
+}
 
 foreach ($check in $checks) {
     $isProtectedAdminCheck = $check.Path.StartsWith("/api/admin/", [StringComparison]::OrdinalIgnoreCase)

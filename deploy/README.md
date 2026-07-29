@@ -77,6 +77,7 @@ Smoke tests post-deploiement GitHub:
 - `SMOKE_API_BASE_URL=https://...` ou `http://...`
 - `SMOKE_SITE_AUTH_USERNAME=...` et `SMOKE_SITE_AUTH_PASSWORD=...` si le site est protege par Basic Auth.
 - `SMOKE_ADMIN_EMAIL=...` et `SMOKE_ADMIN_PASSWORD=...` pour tester aussi les routes admin protegees.
+- `SMOKE_REQUIRE_ADMIN=true` pour faire echouer le smoke test si la session admin ne peut pas etre creee.
 
 Sans `SMOKE_ADMIN_EMAIL` / `SMOKE_ADMIN_PASSWORD`, le smoke test verifie les routes publiques et saute les routes admin
 au lieu de produire un faux echec 401.
