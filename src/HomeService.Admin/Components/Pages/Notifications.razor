@@ -247,16 +247,12 @@
                     </div>
                     <div class="notification-channel-grid">
                         <label class="@GetRuleChannelClass(rule.PortalEnabled, rule.Audience == "Company" || rule.Audience == "Mixed")">
-                            <input type="checkbox"
-                                   checked="@rule.PortalEnabled"
-                                   disabled />
+                            <span class="@GetAutomaticChannelBadgeClass(rule.PortalEnabled)">Auto</span>
                             <span>Portail</span>
                             <small>@GetInternalChannelHint(rule, "Portal")</small>
                         </label>
                         <label class="@GetRuleChannelClass(rule.MobileAppEnabled, rule.Audience != "Company")">
-                            <input type="checkbox"
-                                   checked="@rule.MobileAppEnabled"
-                                   disabled />
+                            <span class="@GetAutomaticChannelBadgeClass(rule.MobileAppEnabled)">Auto</span>
                             <span>Application</span>
                             <small>@GetInternalChannelHint(rule, "MobileApp")</small>
                         </label>
@@ -1786,6 +1782,9 @@
 
     private static string GetRuleChannelClass(bool isEnabled, bool isAllowed)
         => $"notification-channel-card {(isEnabled ? "enabled" : "disabled")} {(!isAllowed ? "locked" : string.Empty)}";
+
+    private static string GetAutomaticChannelBadgeClass(bool isEnabled)
+        => $"notification-auto-badge {(isEnabled ? "enabled" : "disabled")}";
 
     private static string GetInternalChannelHint(NotificationDeliveryRuleResponse rule, string channel)
     {

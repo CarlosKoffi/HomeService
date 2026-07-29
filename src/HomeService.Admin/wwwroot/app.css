@@ -3996,6 +3996,36 @@ h3 {
     width: 18px;
 }
 
+.notification-auto-badge {
+    align-items: center;
+    align-self: start;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    color: #64748b;
+    display: inline-flex;
+    font-size: .58rem;
+    font-weight: 820;
+    grid-row: span 2;
+    height: 22px;
+    justify-content: center;
+    letter-spacing: .04em;
+    line-height: 1;
+    min-width: 42px;
+    padding: 0 .42rem;
+    text-transform: uppercase;
+}
+
+.notification-auto-badge.enabled {
+    background: #eaf2ff;
+    border-color: #b9d2ff;
+    color: #1a6aff;
+}
+
+.notification-auto-badge.disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+}
+
 .notification-channel-card span {
     color: #000;
     font-size: .82rem;
