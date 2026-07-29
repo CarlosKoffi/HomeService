@@ -38,6 +38,10 @@ public sealed class AdminSessionState(
             {
                 await ClearAsync(cancellationToken);
             }
+            else
+            {
+                await SetSessionCookieAsync(token, cancellationToken);
+            }
         }
         catch
         {
@@ -65,10 +69,7 @@ public sealed class AdminSessionState(
         sessionAccessor.Token = response.Token;
         CurrentUser = response.User;
         await jsRuntime.InvokeVoidAsync("localStorage.setItem", cancellationToken, StorageKey, response.Token);
-        await jsRuntime.InvokeVoidAsync(
-            "eval",
-            cancellationToken,
-            $"document.cookie = '{CookieName}=' + encodeURIComponent('{response.Token}') + '; path=/; max-age=28800; samesite=lax'");
+        await SetSessionCookieAsync(response.Token, cancellationToken);
         return true;
     }
 
@@ -90,5 +91,13 @@ public sealed class AdminSessionState(
         CurrentUser = null;
         await jsRuntime.InvokeVoidAsync("localStorage.removeItem", cancellationToken, StorageKey);
         await jsRuntime.InvokeVoidAsync("eval", cancellationToken, $"document.cookie = '{CookieName}=; path=/; max-age=0; samesite=lax'");
+    }
+
+    private async Task SetSessionCookieAsync(string token, CancellationToken cancellationToken)
+    {
+        await jsRuntime.InvokeVoidAsync(
+            "eval",
+            cancellationToken,
+            $"document.cookie = '{CookieName}=' + encodeURIComponent('{token}') + '; path=/; max-age=28800; samesite=lax'");
     }
 }
