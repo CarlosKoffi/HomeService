@@ -246,7 +246,7 @@
         <button type="button" @onclick="CreateAdminAsync" disabled="@IsBusy">Generer le lien d'invitation</button>
     </div>
 
-    @if (!string.IsNullOrWhiteSpace(LastInvitationLink))
+    @if (!string.IsNullOrWhiteSpace(LastInvitationLink) && !IsInvitationForSelectedAdmin)
     {
         <div class="admin-invite-result">
             <div class="admin-invite-summary-card">
@@ -330,6 +330,30 @@
                     Regenerer le lien d'invitation
                 </button>
             </div>
+
+            @if (IsInvitationForSelectedAdmin)
+            {
+                <div class="admin-invite-result admin-profile-invite-result">
+                    <div class="admin-invite-summary-card">
+                        <span>Nouveau lien genere</span>
+                        <strong>@LastInvitationEmail</strong>
+                        <p>Lien valable 6h. Envoyez ce message a l'administrateur pour finaliser son acces.</p>
+                    </div>
+                    <div class="admin-invite-link-card">
+                        <div>
+                            <span>Lien d'activation</span>
+                            <a href="@LastInvitationLink" target="_blank" rel="noreferrer">Ouvrir dans un nouvel onglet</a>
+                        </div>
+                        <input class="admin-invite-link-input" value="@LastInvitationLink" readonly />
+                    </div>
+                    <div class="admin-invite-message-card">
+                        <label for="adminProfileInviteMessage">Message pret a envoyer</label>
+                        <textarea id="adminProfileInviteMessage" readonly rows="6">@LastInvitationMessage
+
+@LastInvitationLink</textarea>
+                    </div>
+                </div>
+            }
         </article>
     }
 
@@ -413,6 +437,12 @@
 
     private AdminUserSummaryResponse? SelectedAdmin
         => SelectedAdminId is null ? null : Admins.FirstOrDefault(admin => admin.Id == SelectedAdminId.Value);
+
+    private bool IsInvitationForSelectedAdmin
+        => SelectedAdmin is not null
+            && !string.IsNullOrWhiteSpace(LastInvitationLink)
+            && !string.IsNullOrWhiteSpace(LastInvitationEmail)
+            && string.Equals(SelectedAdmin.Email, LastInvitationEmail, StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnInitializedAsync()
     {

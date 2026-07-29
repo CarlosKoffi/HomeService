@@ -227,6 +227,37 @@ public sealed class AdminAccessControlServiceTests
     }
 
     [Fact]
+    public async Task RegenerateAdminInvitationAsync_WhenInvitationExpired_ReturnsNewActiveInvitation()
+    {
+        await using var db = CreateDbContext();
+        var role = new AdminRole("Support", "Support");
+        db.AdminRoles.Add(role);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+        await sut.CreateAdminInvitationAsync(
+            new CreateAdminUserRequest("Support Admin", "support@wele.ci", false, [role.Id]),
+            AuditActor.Admin("Super Admin"),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-invite"),
+            CancellationToken.None);
+        var admin = await db.AdminUsers.SingleAsync(user => user.Email == "support@wele.ci");
+        var expiredHash = admin.InvitationTokenHash!;
+        admin.SetInvitation(expiredHash, DateTimeOffset.UtcNow.AddMinutes(-5));
+        await db.SaveChangesAsync();
+
+        var result = await sut.RegenerateAdminInvitationAsync(
+            admin.Id,
+            AuditActor.Admin("Super Admin"),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "admin-reinvite-expired"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.Ok, result.Status);
+        Assert.False(string.IsNullOrWhiteSpace(result.Invitation!.Token));
+        var updatedAdmin = await db.AdminUsers.SingleAsync(user => user.Id == admin.Id);
+        Assert.True(updatedAdmin.InvitationExpiresAt > DateTimeOffset.UtcNow.AddHours(5));
+        Assert.NotEqual(expiredHash, updatedAdmin.InvitationTokenHash);
+    }
+
+    [Fact]
     public async Task RegenerateAdminInvitationAsync_WhenAlreadyActivated_ReturnsValidationFailed()
     {
         await using var db = CreateDbContext();
