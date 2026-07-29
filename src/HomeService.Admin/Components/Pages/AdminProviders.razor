@@ -98,9 +98,9 @@
     {
         <div class="operator-row provider-row provider-list-head" aria-hidden="true">
             <span>Prestataire</span>
-            <span>Validation</span>
-            <span>Disponibilite</span>
-            <span>Services</span>
+            <span>Statut</span>
+            <span>Mission</span>
+            <span>Competences</span>
             <span>Actions</span>
         </div>
         @foreach (var provider in Snapshot.Items)
@@ -115,31 +115,27 @@
                     </div>
                 </div>
                 <div class="operator-meta provider-status-stack">
-                    <span>
-                        <small>Validation</small>
-                        <strong class="@GetProviderStatusClass(provider.Status)">@GetProviderAuthorizationLabel(provider)</strong>
-                    </span>
+                    <strong class="@GetProviderStatusClass(provider.Status)">@GetProviderAuthorizationLabel(provider)</strong>
                 </div>
                 <div class="operator-meta provider-status-stack">
-                    <span>
-                        <small>Mission</small>
-                        <strong class="@GetAvailabilityClass(provider)">@GetAvailabilityLabel(provider)</strong>
-                    </span>
+                    <strong class="@GetAvailabilityClass(provider)">@GetAvailabilityLabel(provider)</strong>
                 </div>
-                <div class="operator-kpis">
-                    <span>@provider.YearsOfExperience an(s)</span>
-                    @foreach (var service in provider.Services.Take(3))
-                    {
-                        <span>@service</span>
-                    }
-                    @if (provider.Services.Count == 0)
-                    {
-                        <span>Aucun service</span>
-                    }
-                    @if (provider.Prestations.Count > 0)
-                    {
-                        <span>@provider.Prestations.Count prestation(s)</span>
-                    }
+                <div class="provider-skill-summary">
+                    <strong>@provider.YearsOfExperience an(s) d'experience</strong>
+                    <div class="operator-kpis">
+                        @foreach (var service in provider.Services.Take(3))
+                        {
+                            <span>@service</span>
+                        }
+                        @if (provider.Services.Count == 0)
+                        {
+                            <span>Aucun service</span>
+                        }
+                        @if (provider.Prestations.Count > 0)
+                        {
+                            <span>@provider.Prestations.Count prestation(s)</span>
+                        }
+                    </div>
                 </div>
                 <div class="provider-doc-actions">
                     <button type="button" class="primary-small-action" @onclick="() => OpenProvider(provider.Id)">Voir fiche</button>

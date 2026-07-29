@@ -1583,10 +1583,10 @@ h3 {
 
 .provider-row {
     align-items: center;
-    gap: 1rem;
-    grid-template-columns: minmax(245px, 1.3fr) minmax(136px, .62fr) minmax(144px, .62fr) minmax(260px, 1.12fr) minmax(250px, 1fr);
-    min-height: 76px;
-    padding: .8rem 1.15rem;
+    gap: .85rem;
+    grid-template-columns: minmax(260px, 1.35fr) minmax(128px, .58fr) minmax(138px, .58fr) minmax(270px, 1.15fr) minmax(230px, .95fr);
+    min-height: 72px;
+    padding: .72rem 1.15rem;
 }
 
 .provider-list-head {
@@ -1679,7 +1679,7 @@ h3 {
 }
 
 .provider-status-stack {
-    gap: .35rem;
+    gap: .25rem;
 }
 
 .provider-status-stack > span {
@@ -1700,6 +1700,19 @@ h3 {
     justify-self: start;
 }
 
+.provider-skill-summary {
+    display: grid;
+    gap: .38rem;
+    min-width: 0;
+}
+
+.provider-skill-summary > strong {
+    color: #111827;
+    font-size: .76rem;
+    font-weight: 720;
+    line-height: 1.15;
+}
+
 .operator-kpis {
     color: #000;
     display: flex;
@@ -1713,12 +1726,12 @@ h3 {
     border: 1px solid #e5e7eb;
     border-radius: 999px;
     color: #0f172a;
-    font-size: .68rem;
-    font-weight: 560;
+    font-size: .66rem;
+    font-weight: 620;
     line-height: 1.15;
     max-width: 150px;
     overflow: hidden;
-    padding: .26rem .5rem;
+    padding: .22rem .48rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1915,7 +1928,7 @@ h3 {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: .28rem;
+    gap: .32rem;
     justify-content: end;
 }
 
@@ -1928,8 +1941,8 @@ h3 {
     color: #0f172a;
     display: inline-flex;
     font: inherit;
-    font-size: .68rem;
-    font-weight: 620;
+    font-size: .66rem;
+    font-weight: 680;
     justify-content: center;
     line-height: 1.1;
     min-height: 30px;
