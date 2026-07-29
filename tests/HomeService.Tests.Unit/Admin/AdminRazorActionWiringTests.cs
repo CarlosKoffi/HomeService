@@ -83,6 +83,113 @@ public sealed class AdminRazorActionWiringTests
             "Admin page links without matching page route:" + Environment.NewLine + string.Join(Environment.NewLine, brokenLinks));
     }
 
+    [Fact]
+    public void AdminActionPages_CallExpectedApiActions()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var pagesDirectory = GetAdminPagesDirectory(repositoryRoot);
+        var expectedActionsByPage = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AccessControl.razor"] =
+            [
+                "CreateAdminRoleAsync",
+                "UpdateAdminRolePermissionsAsync",
+                "CreateAdminInvitationAsync",
+                "UpdateAdminUserRolesAsync",
+                "DeactivateAdminUserAsync",
+                "ReactivateAdminUserAsync"
+            ],
+            ["AdminMissionDetail.razor"] =
+            [
+                "CreateAdminMissionDispatchOffersAsync",
+                "MarkAdminMissionDisputedAsync",
+                "ResolveAdminMissionDisputeAsync",
+                "CancelAdminMissionAsync"
+            ],
+            ["AdminMissions.razor"] =
+            [
+                "CreateAdminMissionDispatchOffersAsync",
+                "MarkAdminMissionDisputedAsync",
+                "CancelAdminMissionAsync"
+            ],
+            ["AdminProviderDetail.razor"] =
+            [
+                "ApproveAdminProviderAsync",
+                "SuspendAdminProviderAsync"
+            ],
+            ["CompanyApplicationDetail.razor"] =
+            [
+                "ApproveCompanyApplicationAsync",
+                "RejectCompanyApplicationAsync",
+                "ReopenCompanyApplicationAsync",
+                "RequestCompanyApplicationMoreInformationAsync",
+                "SendCompanyApplicationActivationLinkAsync",
+                "ApproveCompanyApplicationDocumentAsync",
+                "RejectCompanyApplicationDocumentAsync",
+                "RequestCompanyApplicationDocumentReplacementAsync",
+                "ReopenCompanyApplicationDocumentAsync"
+            ],
+            ["CompanyDetail.razor"] =
+            [
+                "SuspendAdminCompanyAsync",
+                "ReactivateAdminCompanyAsync",
+                "UpdateCompanyDispatchSettingsAsync",
+                "MarkCompanyNotificationReadAsync",
+                "MarkCompanyNotificationUnreadAsync",
+                "ResendCompanyNotificationAsync"
+            ],
+            ["ContactRequests.razor"] =
+            [
+                "MarkContactRequestInProgressAsync",
+                "CloseContactRequestAsync"
+            ],
+            ["Localization.razor"] =
+            [
+                "UpsertAdminTranslationAsync"
+            ],
+            ["MissionSettings.razor"] =
+            [
+                "UpdateAdminCommissionRuleAsync",
+                "UpdateAdminMissionWorkflowSettingAsync"
+            ],
+            ["Notifications.razor"] =
+            [
+                "RetryNotificationAsync",
+                "CancelNotificationAsync",
+                "MarkNotificationSentAsync",
+                "MarkCompanyNotificationReadAsync",
+                "MarkCompanyNotificationUnreadAsync",
+                "ResendCompanyNotificationAsync",
+                "UpdateNotificationDeliveryRuleAsync",
+                "CreateNotificationTemplateAsync",
+                "UpdateNotificationTemplateAsync"
+            ],
+            ["ServiceProposals.razor"] =
+            [
+                "AttachCompanyServiceProposalAsync",
+                "ReanalyseCompanyServiceProposalsAsync",
+                "CreatePrestationFromCompanyServiceProposalAsync",
+                "CreateServiceFromCompanyServiceProposalAsync",
+                "CreateServiceAsync",
+                "UpdateServiceAsync",
+                "ActivateServiceAsync",
+                "DeactivateServiceAsync",
+                "CreateServicePrestationAsync",
+                "UpdateServicePrestationAsync",
+                "ActivateServicePrestationAsync",
+                "DeactivateServicePrestationAsync"
+            ]
+        };
+
+        var missingActions = expectedActionsByPage
+            .SelectMany(entry => FindMissingApiActions(pagesDirectory, entry.Key, entry.Value))
+            .ToList();
+
+        Assert.True(
+            missingActions.Count == 0,
+            "Admin action pages missing expected API calls:" + Environment.NewLine + string.Join(Environment.NewLine, missingActions));
+    }
+
     private static IEnumerable<string> FindButtonsWithoutAction(FileInfo file)
     {
         var content = File.ReadAllText(file.FullName);
@@ -164,6 +271,25 @@ public sealed class AdminRazorActionWiringTests
     {
         var normalized = Regex.Replace(href, "@[^/]+", "dynamic-value");
         return routePatterns.Any(pattern => pattern.IsMatch(normalized));
+    }
+
+    private static IEnumerable<string> FindMissingApiActions(DirectoryInfo pagesDirectory, string pageName, IReadOnlyList<string> expectedActions)
+    {
+        var page = new FileInfo(Path.Combine(pagesDirectory.FullName, pageName));
+        if (!page.Exists)
+        {
+            yield return $"{pageName} -> page introuvable";
+            yield break;
+        }
+
+        var content = File.ReadAllText(page.FullName);
+        foreach (var expectedAction in expectedActions)
+        {
+            if (!content.Contains($"ApiClient.{expectedAction}", StringComparison.Ordinal))
+            {
+                yield return $"{pageName} -> {expectedAction}";
+            }
+        }
     }
 
     private static DirectoryInfo GetAdminPagesDirectory(DirectoryInfo repositoryRoot)
