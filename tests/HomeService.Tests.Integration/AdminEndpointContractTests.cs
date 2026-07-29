@@ -273,6 +273,15 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/mark-disputed", AdminModuleKey.Missions, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/resolve-dispute", AdminModuleKey.Missions, AdminPermissionAction.Approve)]
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/cancel", AdminModuleKey.Missions, AdminPermissionAction.Reject)]
+    [InlineData("POST", "/api/admin/company-applications/11111111-1111-1111-1111-111111111111/request-more-information", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/company-applications/11111111-1111-1111-1111-111111111111/reopen", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/company-application-documents/11111111-1111-1111-1111-111111111111/request-replacement", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/reactivate", AdminModuleKey.CompanyManagement, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/contact-requests/11111111-1111-1111-1111-111111111111/in-progress", AdminModuleKey.ContactRequests, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/contact-requests/11111111-1111-1111-1111-111111111111/close", AdminModuleKey.ContactRequests, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/company-service-proposals/11111111-1111-1111-1111-111111111111/attach", AdminModuleKey.Services, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/company-service-proposals/reanalyse", AdminModuleKey.Services, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/services/11111111-1111-1111-1111-111111111111/activate", AdminModuleKey.Services, AdminPermissionAction.Edit)]
     public void AdminPermissionResolver_MapsSensitiveActionsToExpectedModuleAndPermission(
         string httpMethod,
         string path,

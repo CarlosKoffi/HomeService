@@ -63,6 +63,19 @@ public static class AdminEndpointPermissionResolver
             return AdminPermissionAction.ManageRoles;
         }
 
+        if (path.Contains("/request-more-information", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/request-replacement", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/reopen", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/reactivate", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/activate", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/in-progress", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/close", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/attach", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/reanalyse", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.Edit;
+        }
+
         return HttpMethods.IsPost(method) ? AdminPermissionAction.Create : AdminPermissionAction.Edit;
     }
 
@@ -118,7 +131,8 @@ public static class AdminEndpointPermissionResolver
             return AdminModuleKey.Cms;
         }
 
-        if (path.Contains("/service", StringComparison.OrdinalIgnoreCase))
+        if (path.Contains("/service", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/company-service-proposals", StringComparison.OrdinalIgnoreCase))
         {
             return AdminModuleKey.Services;
         }
