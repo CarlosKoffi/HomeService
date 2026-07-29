@@ -5566,9 +5566,10 @@ h3 {
     border-radius: 18px;
     display: grid;
     gap: .85rem;
-    grid-template-columns: minmax(240px, .32fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     margin: 1rem 0;
     padding: 1rem;
+    width: 100%;
 }
 
 .admin-invite-summary-card,
@@ -5581,10 +5582,6 @@ h3 {
     gap: .55rem;
     min-width: 0;
     padding: .85rem;
-}
-
-.admin-invite-message-card {
-    grid-column: 1 / -1;
 }
 
 .admin-invite-link-card {
@@ -5655,6 +5652,8 @@ h3 {
     min-height: 2.75rem;
     overflow-x: auto;
     padding: .72rem .85rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     width: 100%;
 }
 
@@ -5675,6 +5674,11 @@ h3 {
     resize: vertical;
     width: 100%;
     word-break: break-word;
+}
+
+.access-admin-list > .admin-invite-result,
+.access-admin-list > .admin-profile-editor {
+    grid-template-columns: minmax(0, 1fr) !important;
 }
 
 .checkbox-line {
@@ -5710,6 +5714,12 @@ h3 {
     padding: .9rem;
 }
 
+.access-admin-list > article:not(.admin-access-row):not(.admin-empty-row) {
+    align-items: stretch;
+    display: block;
+    grid-template-columns: none;
+}
+
 .admin-access-row strong,
 .admin-access-row p,
 .admin-access-row span {
@@ -5737,12 +5747,6 @@ h3 {
     align-items: stretch;
     margin: 1rem 0;
     padding: 1.2rem;
-}
-
-.access-admin-list > article.admin-profile-editor {
-    align-items: stretch !important;
-    display: block !important;
-    grid-template-columns: none !important;
     width: 100%;
 }
 
@@ -5770,7 +5774,7 @@ h3 {
 .admin-profile-grid {
     display: grid;
     gap: .75rem;
-    grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr) minmax(190px, .65fr);
+    grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr) minmax(260px, 1fr);
     margin-top: 0;
 }
 
@@ -5860,7 +5864,7 @@ h3 {
 
 .admin-profile-invite-result {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) !important;
     margin: 1rem 0 0;
     width: 100%;
 }
@@ -5880,7 +5884,7 @@ h3 {
 
 .admin-profile-invite-result .admin-invite-link-card,
 .admin-profile-invite-result .admin-invite-message-card {
-    grid-column: 1;
+    grid-column: 1 / -1;
 }
 
 .admin-profile-invite-result .admin-invite-link-input {
