@@ -285,6 +285,8 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/mark-disputed", AdminModuleKey.Missions, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/resolve-dispute", AdminModuleKey.Missions, AdminPermissionAction.Approve)]
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/cancel", AdminModuleKey.Missions, AdminPermissionAction.Reject)]
+    [InlineData("POST", "/api/admin/providers/11111111-1111-1111-1111-111111111111/approve", AdminModuleKey.ProviderReview, AdminPermissionAction.Approve)]
+    [InlineData("POST", "/api/admin/providers/11111111-1111-1111-1111-111111111111/suspend", AdminModuleKey.ProviderReview, AdminPermissionAction.Suspend)]
     [InlineData("POST", "/api/admin/company-applications/11111111-1111-1111-1111-111111111111/request-more-information", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/company-applications/11111111-1111-1111-1111-111111111111/reopen", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/company-application-documents/11111111-1111-1111-1111-111111111111/request-replacement", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
