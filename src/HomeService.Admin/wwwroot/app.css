@@ -159,31 +159,12 @@ a, .btn-link {
     white-space: nowrap;
 }
 
-.nav-icon::before {
-    font-size: .76rem;
-    font-weight: 850;
-    line-height: 1;
-}
-
-.nav-icon-dashboard::before { content: "TB"; }
-.nav-icon-applications::before { content: "DE"; }
-.nav-icon-companies::before { content: "EN"; }
-.nav-icon-providers::before { content: "PR"; }
-.nav-icon-missions::before { content: "MI"; }
-.nav-icon-settings::before { content: "PM"; }
-.nav-icon-payments::before { content: "EC"; }
-.nav-icon-translations::before { content: "TR"; }
-.nav-icon-cms::before { content: "CM"; }
-.nav-icon-services::before { content: "SE"; }
-.nav-icon-access::before { content: "AD"; }
-.nav-icon-notifications::before { content: "NO"; }
-.nav-icon-contact::before { content: "CO"; }
-.nav-icon-logs::before { content: "LO"; }
-
 .nav-label {
     min-width: 0;
-    overflow-wrap: anywhere;
-    white-space: normal;
+    overflow: hidden;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 main {
