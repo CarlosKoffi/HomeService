@@ -119,7 +119,7 @@ a, .btn-link {
     font-size: .9rem;
     font-weight: 720;
     gap: .72rem;
-    line-height: 1.2;
+    line-height: 1.25;
     min-height: 44px;
     padding: .66rem .72rem;
     text-decoration: none;
@@ -172,9 +172,8 @@ a, .btn-link {
 
 .nav-label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    white-space: normal;
 }
 
 main {
@@ -5539,7 +5538,7 @@ h3 {
 }
 
 .admin-invite-form {
-    grid-template-columns: minmax(260px, 1fr) minmax(220px, .65fr) auto;
+    grid-template-columns: minmax(220px, .8fr) minmax(260px, 1fr) minmax(220px, .65fr) auto;
 }
 
 .access-admin-filters {

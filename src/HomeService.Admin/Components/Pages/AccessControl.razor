@@ -226,6 +226,10 @@
 
     <div class="access-form admin-invite-form">
         <label>
+            Nom et prenom
+            <input type="text" @bind="NewAdminFullName" placeholder="Ex: Awa Kone" />
+        </label>
+        <label>
             Email de l'admin
             <input type="email" @bind="NewAdminEmail" placeholder="admin@wele.ci" />
         </label>
@@ -378,6 +382,7 @@
     private Guid? SelectedRoleId { get; set; }
     private HashSet<string> PermissionDraft { get; set; } = [];
     private string? NewAdminEmail { get; set; }
+    private string? NewAdminFullName { get; set; }
     private Guid? NewAdminRoleId { get; set; }
     private string? LastInvitationLink { get; set; }
     private string? LastInvitationMessage { get; set; }
@@ -462,6 +467,12 @@
 
     private async Task CreateAdminAsync()
     {
+        if (string.IsNullOrWhiteSpace(NewAdminFullName))
+        {
+            ActionErrorMessage = "Saisissez le nom et prenom de l'admin.";
+            return;
+        }
+
         if (NewAdminRoleId is null)
         {
             ActionErrorMessage = "Selectionnez un role pour cet admin.";
@@ -478,7 +489,7 @@
         try
         {
             var invitation = await ApiClient.CreateAdminInvitationAsync(new CreateAdminUserRequest(
-                BuildDefaultFullName(NewAdminEmail),
+                NewAdminFullName,
                 NewAdminEmail ?? string.Empty,
                 false,
                 [NewAdminRoleId.Value]));
@@ -498,6 +509,7 @@
         }
 
         NewAdminEmail = null;
+        NewAdminFullName = null;
         NewAdminRoleId = null;
     }
 
