@@ -155,6 +155,15 @@ else
                     {
                         <div class="mission-dispute-box mission-cancel-box">
                             <label>
+                                Motif d'annulation
+                                <select @bind="CancellationReason">
+                                    @foreach (var reason in MissionOperationReasons)
+                                    {
+                                        <option value="@reason.Value">@reason.Label</option>
+                                    }
+                                </select>
+                            </label>
+                            <label>
                                 Annulation admin
                                 <textarea @bind="CancellationNote" placeholder="Expliquez pourquoi l'administration annule cette mission."></textarea>
                             </label>
@@ -420,6 +429,7 @@ else
     private string? ErrorMessage { get; set; }
     private string? Message { get; set; }
     private string DisputeReason { get; set; } = "Other";
+    private string CancellationReason { get; set; } = "Other";
     private string? DisputeNote { get; set; }
     private string? CancellationNote { get; set; }
     private int? CancellationFeeAmount { get; set; }
@@ -593,10 +603,11 @@ else
         {
             Mission = await ApiClient.CancelAdminMissionAsync(
                 Mission.Id,
-                "Other",
+                CancellationReason,
                 CancellationNote,
                 CancellationFeeAmount);
             Message = "Mission annulee par l'administration.";
+            CancellationReason = "Other";
             CancellationNote = null;
             CancellationFeeAmount = null;
             await LoadAsync();
@@ -865,7 +876,7 @@ else
         _ => lineType
     };
 
-    private static readonly IReadOnlyList<(string Value, string Label)> DisputeReasons =
+    private static readonly IReadOnlyList<(string Value, string Label)> MissionOperationReasons =
     [
         ("CustomerAbsent", "Client absent"),
         ("AccessRefused", "Acces refuse"),
@@ -875,6 +886,8 @@ else
         ("CompanyUnavailable", "Entreprise indisponible"),
         ("Other", "Autre motif")
     ];
+
+    private static readonly IReadOnlyList<(string Value, string Label)> DisputeReasons = MissionOperationReasons;
 
     private sealed record MissionTimelineItem(
         string Step,
