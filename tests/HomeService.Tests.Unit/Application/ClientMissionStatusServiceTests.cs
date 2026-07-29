@@ -34,6 +34,8 @@ public sealed class ClientMissionStatusServiceTests
         Assert.False(result.Response.Actions.CanCallCompany);
         Assert.False(result.Response.Actions.CanCallProvider);
         Assert.True(result.Response.Actions.CanCancel);
+        Assert.Equal(5_000, result.Response.StartingPriceAmount);
+        Assert.Equal(25_000, result.Response.MaximumPriceAmount);
         Assert.Equal(20_000, result.Response.CompanyQuotedAmount);
         Assert.Equal(3_000, result.Response.PartsEstimateAmount);
         Assert.Equal("Joint a remplacer", result.Response.PartsDescription);

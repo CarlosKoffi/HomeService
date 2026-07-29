@@ -132,6 +132,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                 quote.Status == MissionAdditionalQuoteStatus.Submitted && quote.Amount > 0))
             .ToListAsync(cancellationToken);
 
+        var priceRange = ResolvePriceRange(service, prestation);
         var response = new ClientMissionStatusResponse(
             mission.Id,
             mission.MissionNumber,
@@ -150,6 +151,8 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             mission.ProviderAcceptedAt,
             mission.CustomerConfirmedAt,
             mission.CustomerCompletionValidatedAt,
+            priceRange.StartingPriceAmount,
+            priceRange.MaximumPriceAmount,
             mission.EstimatedTotalAmount,
             mission.CompanyQuotedAmount,
             mission.PartsEstimateAmount,
@@ -185,6 +188,23 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             BuildMessage(mission.Status, mission.QuoteStatus, mission.PaymentStatus));
 
         return ClientMissionStatusResult.Ok(response);
+    }
+
+    private static ClientMissionStatusPriceRange ResolvePriceRange(
+        Domain.Entities.Service? service,
+        Domain.Entities.ServicePrestation? prestation)
+    {
+        if (prestation is not null)
+        {
+            return new ClientMissionStatusPriceRange(prestation.PriceMinAmount, prestation.PriceMaxAmount);
+        }
+
+        if (service is not null)
+        {
+            return new ClientMissionStatusPriceRange(service.PriceMinAmount, service.PriceMaxAmount);
+        }
+
+        return new ClientMissionStatusPriceRange(0, 0);
     }
 
     private static ClientMissionAvailableActionsResponse BuildActions(Domain.Entities.Mission mission)
@@ -293,6 +313,8 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
         var minutes = (int)Math.Ceiling((scheduledFor.Value - DateTimeOffset.UtcNow).TotalMinutes);
         return Math.Max(0, minutes);
     }
+
+    private sealed record ClientMissionStatusPriceRange(int StartingPriceAmount, int MaximumPriceAmount);
 
     private static bool PhoneMatches(string storedPhoneNumber, string providedPhoneNumber)
     {

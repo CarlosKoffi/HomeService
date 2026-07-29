@@ -18,6 +18,8 @@ public sealed record ClientMissionStatusResponse(
     DateTimeOffset? ProviderAcceptedAt,
     DateTimeOffset? CustomerConfirmedAt,
     DateTimeOffset? CustomerCompletionValidatedAt,
+    int StartingPriceAmount,
+    int MaximumPriceAmount,
     int? EstimatedTotalAmount,
     int? CompanyQuotedAmount,
     int? PartsEstimateAmount,
