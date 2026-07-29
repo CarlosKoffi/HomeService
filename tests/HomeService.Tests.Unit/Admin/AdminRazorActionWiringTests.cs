@@ -84,6 +84,30 @@ public sealed class AdminRazorActionWiringTests
     }
 
     [Fact]
+    public void AdminUiFiles_DoNotContainBrokenEncodingMarkers()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var adminDirectory = repositoryRoot
+            .GetDirectories("src", SearchOption.TopDirectoryOnly)
+            .Single()
+            .GetDirectories("HomeService.Admin", SearchOption.TopDirectoryOnly)
+            .Single();
+
+        var brokenMarkers = new[] { "\u00C3", "\u00C2", "\uFFFD" };
+        var brokenFiles = adminDirectory
+            .EnumerateFiles("*.*", SearchOption.AllDirectories)
+            .Where(file => file.Extension is ".razor" or ".css" or ".cs")
+            .Select(file => new { file, content = File.ReadAllText(file.FullName) })
+            .Where(item => brokenMarkers.Any(marker => item.content.Contains(marker, StringComparison.Ordinal)))
+            .Select(item => Path.GetRelativePath(repositoryRoot.FullName, item.file.FullName))
+            .ToList();
+
+        Assert.True(
+            brokenFiles.Count == 0,
+            "Admin UI files contain broken encoding markers:" + Environment.NewLine + string.Join(Environment.NewLine, brokenFiles));
+    }
+
+    [Fact]
     public void AdminActionPages_CallExpectedApiActions()
     {
         var repositoryRoot = FindRepositoryRoot();
