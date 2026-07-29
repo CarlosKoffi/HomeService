@@ -371,8 +371,7 @@ else if (Application is not null)
     [
         new("FiscalExistenceDeclaration", "DFE - Declaration Fiscale d'Existence", "Verifier le nom legal, le numero fiscal, la lisibilite et la coherence avec le registre."),
         new("BusinessRegistration", "Registre de commerce", "Comparer la raison sociale, l'adresse et l'activite declaree avec le formulaire."),
-        new("OwnerIdentity", "Identite responsable", "Le nom doit correspondre au contact responsable ou a une personne autorisee."),
-        new("AddressProof", "Justificatif d'adresse", "Document recommande pour securiser les futures relations et relances.")
+        new("OwnerIdentity", "Identite responsable", "Le nom doit correspondre au contact responsable ou a une personne autorisee.")
     ];
 
     protected override async Task OnParametersSetAsync()
