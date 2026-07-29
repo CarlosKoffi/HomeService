@@ -44,8 +44,9 @@ else
             <p class="lead">@Provider.PhoneNumber - @(Provider.Email ?? "Email non renseigne")</p>
         </div>
         <div class="company-admin-status">
-            <span class="@GetProviderStatusClass(Provider.Status)">@TranslateProviderStatus(Provider.Status)</span>
-            <small>@TranslateEmploymentType(Provider.EmploymentType) - @GetAvailabilityLabel(Provider)</small>
+            <span class="@GetProviderStatusClass(Provider.Status)">@GetProviderAuthorizationLabel(Provider)</span>
+            <small>@TranslateEmploymentType(Provider.EmploymentType)</small>
+            <span class="@GetAvailabilityStatusClass(Provider)">@GetAvailabilityLabel(Provider)</span>
         </div>
     </div>
 
@@ -474,6 +475,16 @@ else
         return provider.IsAvailable ? "Disponible" : "Indisponible";
     }
 
+    private static string GetAvailabilityStatusClass(AdminProviderDetailResponse provider)
+    {
+        if (provider.Status != "Approved")
+        {
+            return "status-pill pending";
+        }
+
+        return provider.IsAvailable ? "status-pill ok" : "status-pill danger";
+    }
+
     private static string GetProviderAuthorizationLabel(AdminProviderDetailResponse provider)
     {
         return provider.Status switch
@@ -488,3 +499,4 @@ else
         };
     }
 }
+
