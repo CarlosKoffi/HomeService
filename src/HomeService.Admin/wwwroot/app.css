@@ -1738,20 +1738,20 @@ h3 {
 
 .provider-row {
     align-items: center;
-    gap: .95rem;
-    grid-template-columns: minmax(260px, 1.25fr) minmax(132px, .55fr) minmax(140px, .55fr) minmax(250px, 1.05fr) minmax(250px, .95fr);
-    min-height: 78px;
-    padding: .85rem 1.05rem;
+    gap: .9rem;
+    grid-template-columns: minmax(250px, 1.25fr) minmax(128px, .52fr) minmax(138px, .52fr) minmax(230px, 1fr) minmax(220px, .85fr);
+    min-height: 74px;
+    padding: .78rem 1rem;
 }
 
 .provider-list-head {
     background: #f8fafc;
     color: #64748b;
-    font-size: .64rem;
+    font-size: .62rem;
     font-weight: 780;
-    letter-spacing: .075em;
+    letter-spacing: .07em;
     min-height: auto;
-    padding-block: .58rem;
+    padding-block: .55rem;
     text-transform: uppercase;
 }
 
@@ -1789,18 +1789,19 @@ h3 {
 .operator-row strong {
     color: #000;
     display: block;
-    font-size: .88rem;
-    font-weight: 760;
-    line-height: 1.22;
+    font-size: .84rem;
+    font-weight: 720;
+    line-height: 1.24;
 }
 
 .company-identity p,
 .operator-row p,
 .operator-meta small {
     color: #64748b;
-    font-size: .72rem;
+    font-size: .7rem;
+    font-weight: 560;
     line-height: 1.35;
-    margin: .18rem 0 0;
+    margin: .15rem 0 0;
 }
 
 .company-identity small {
@@ -1879,8 +1880,8 @@ h3 {
 
 .provider-skill-summary > strong {
     color: #111827;
-    font-size: .72rem;
-    font-weight: 700;
+    font-size: .7rem;
+    font-weight: 650;
     line-height: 1.25;
 }
 
@@ -1897,12 +1898,12 @@ h3 {
     border: 1px solid #e5e7eb;
     border-radius: 999px;
     color: #0f172a;
-    font-size: .66rem;
-    font-weight: 620;
+    font-size: .64rem;
+    font-weight: 600;
     line-height: 1.15;
-    max-width: 136px;
+    max-width: 128px;
     overflow: hidden;
-    padding: .22rem .48rem;
+    padding: .2rem .45rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -2113,12 +2114,12 @@ h3 {
     color: #0f172a;
     display: inline-flex;
     font: inherit;
-    font-size: .72rem;
-    font-weight: 760;
+    font-size: .68rem;
+    font-weight: 720;
     justify-content: center;
     line-height: 1;
-    min-height: 34px;
-    padding: .45rem .68rem;
+    min-height: 31px;
+    padding: .4rem .58rem;
     text-decoration: none;
     white-space: nowrap;
 }
