@@ -48,9 +48,9 @@ public sealed class CompanyActivationLinkGenerationService(
             {
                 context.ChangeTracker.Clear();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException exception)
             {
-                return CompanyActivationLinkGenerationResult.ConcurrencyConflict();
+                return CompanyActivationLinkGenerationResult.ConcurrencyConflict(exception.Message);
             }
         }
 
@@ -86,19 +86,20 @@ public sealed class CompanyActivationLinkGenerationService(
         var activationLink = CompanyActivationLinkBuilder.Build(companyPortalBaseUrl, application.Id, rawToken);
         var reminderSentAt = application.ActivationEmailSentAt is null ? application.LastReminderSentAt : DateTimeOffset.UtcNow;
 
-        await db.CompanyActivationTokens
+        var activeTokens = await db.CompanyActivationTokens
             .Where(token => token.CompanyApplicationId == application.Id
                 && token.UsedAt == null
                 && token.RevokedAt == null
                 && token.ExpiresAt > now)
-            .ExecuteUpdateAsync(
-                setters => setters
-                    .SetProperty(token => token.RevokedAt, now)
-                    .SetProperty(token => token.RevocationReason, "Remplace par un nouveau token d'activation.")
-                    .SetProperty(token => token.UpdatedAt, now),
-                cancellationToken);
+            .ToListAsync(cancellationToken);
 
-        application.CreateActivationToken(tokenHash, expiresAt, activationLink, changedBy, revokeExistingTokens: false);
+        foreach (var activeToken in activeTokens)
+        {
+            activeToken.Revoke("Remplace par un nouveau token d'activation.");
+        }
+
+        var activationToken = application.CreateActivationToken(tokenHash, expiresAt, activationLink, changedBy, revokeExistingTokens: false);
+        db.CompanyActivationTokens.Add(activationToken);
         if (previousStatus == CompanyApplicationStatus.ActivationSent)
         {
             application.MarkReminderSent();

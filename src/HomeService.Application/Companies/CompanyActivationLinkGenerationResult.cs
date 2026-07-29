@@ -15,8 +15,16 @@ public sealed record CompanyActivationLinkGenerationResult(
     public static CompanyActivationLinkGenerationResult InvalidStatus()
         => new(CompanyActivationLinkGenerationStatus.InvalidStatus, null, null, "Le lien d'activation ne peut etre genere qu'apres validation du dossier.");
 
-    public static CompanyActivationLinkGenerationResult ConcurrencyConflict()
-        => new(CompanyActivationLinkGenerationStatus.ConcurrencyConflict, null, null, "Le dossier a ete modifie pendant la generation du lien. Rechargez la fiche puis recommencez.");
+    public static CompanyActivationLinkGenerationResult ConcurrencyConflict(string? detail = null)
+    {
+        var message = "Le dossier a ete modifie pendant la generation du lien. Rechargez la fiche puis recommencez.";
+        if (!string.IsNullOrWhiteSpace(detail))
+        {
+            message = $"{message} Detail: {detail.Trim()}";
+        }
+
+        return new(CompanyActivationLinkGenerationStatus.ConcurrencyConflict, null, null, message);
+    }
 
     public static CompanyActivationLinkGenerationResult Ok(
         CompanyApplicationActivationLinkResponse response,
