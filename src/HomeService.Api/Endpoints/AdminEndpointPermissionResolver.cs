@@ -20,6 +20,7 @@ public static class AdminEndpointPermissionResolver
 
         if (path.Contains("/approve", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/validate", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/resolve-dispute", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/mark-sent", StringComparison.OrdinalIgnoreCase))
         {
             return AdminPermissionAction.Approve;
@@ -40,6 +41,7 @@ public static class AdminEndpointPermissionResolver
 
         if (path.Contains("/resend", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/retry", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/dispatch-offers", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/activation-link", StringComparison.OrdinalIgnoreCase))
         {
             return AdminPermissionAction.Resend;
@@ -47,6 +49,11 @@ public static class AdminEndpointPermissionResolver
 
         if (path.Contains("/mark-read", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/mark-unread", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminPermissionAction.Edit;
+        }
+
+        if (path.Contains("/mark-disputed", StringComparison.OrdinalIgnoreCase))
         {
             return AdminPermissionAction.Edit;
         }

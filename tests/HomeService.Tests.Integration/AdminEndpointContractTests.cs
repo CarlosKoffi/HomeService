@@ -269,7 +269,11 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/notifications/22222222-2222-2222-2222-222222222222/mark-unread", AdminModuleKey.Notifications, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/notifications/22222222-2222-2222-2222-222222222222/resend", AdminModuleKey.Notifications, AdminPermissionAction.Resend)]
     [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/suspend", AdminModuleKey.CompanyManagement, AdminPermissionAction.Suspend)]
-    public void AdminPermissionResolver_MapsNestedCompanyNotificationActionsToNotificationModule(
+    [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/dispatch-offers", AdminModuleKey.Missions, AdminPermissionAction.Resend)]
+    [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/mark-disputed", AdminModuleKey.Missions, AdminPermissionAction.Edit)]
+    [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/resolve-dispute", AdminModuleKey.Missions, AdminPermissionAction.Approve)]
+    [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/cancel", AdminModuleKey.Missions, AdminPermissionAction.Reject)]
+    public void AdminPermissionResolver_MapsSensitiveActionsToExpectedModuleAndPermission(
         string httpMethod,
         string path,
         AdminModuleKey expectedModule,
