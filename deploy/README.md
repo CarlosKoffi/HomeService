@@ -72,6 +72,15 @@ $json = Get-Content "C:\Users\bruce\Downloads\firebase-key.json" -Raw
 [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json))
 ```
 
+Smoke tests post-deploiement GitHub:
+
+- `SMOKE_API_BASE_URL=https://...` ou `http://...`
+- `SMOKE_SITE_AUTH_USERNAME=...` et `SMOKE_SITE_AUTH_PASSWORD=...` si le site est protege par Basic Auth.
+- `SMOKE_ADMIN_EMAIL=...` et `SMOKE_ADMIN_PASSWORD=...` pour tester aussi les routes admin protegees.
+
+Sans `SMOKE_ADMIN_EMAIL` / `SMOKE_ADMIN_PASSWORD`, le smoke test verifie les routes publiques et saute les routes admin
+au lieu de produire un faux echec 401.
+
 ### Portail entreprise
 
 - Type: Dockerfile

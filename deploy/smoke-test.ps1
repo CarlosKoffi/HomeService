@@ -3,6 +3,8 @@ param(
     [string]$BaseUrl = $env:SMOKE_API_BASE_URL,
     [string]$Username = $env:SMOKE_SITE_AUTH_USERNAME,
     [string]$Password = $env:SMOKE_SITE_AUTH_PASSWORD,
+    [string]$AdminEmail = $env:SMOKE_ADMIN_EMAIL,
+    [string]$AdminPassword = $env:SMOKE_ADMIN_PASSWORD,
     [int]$StartupDelaySeconds = $(if ($env:SMOKE_STARTUP_DELAY_SECONDS) { [int]$env:SMOKE_STARTUP_DELAY_SECONDS } else { 0 })
 )
 
@@ -24,6 +26,34 @@ $headers = @{}
 if (-not [string]::IsNullOrWhiteSpace($Username) -and -not [string]::IsNullOrWhiteSpace($Password)) {
     $token = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Username}:${Password}"))
     $headers["Authorization"] = "Basic $token"
+}
+
+if (-not [string]::IsNullOrWhiteSpace($AdminEmail) -and -not [string]::IsNullOrWhiteSpace($AdminPassword)) {
+    try {
+        $loginBody = @{
+            email = $AdminEmail
+            password = $AdminPassword
+        } | ConvertTo-Json
+
+        $loginResponse = Invoke-RestMethod `
+            -Uri "$base/api/admin/auth/login" `
+            -Method Post `
+            -Headers $headers `
+            -ContentType "application/json" `
+            -Body $loginBody `
+            -TimeoutSec 20
+
+        if ($null -ne $loginResponse -and -not [string]::IsNullOrWhiteSpace($loginResponse.sessionToken)) {
+            $headers["X-Admin-Session"] = [string]$loginResponse.sessionToken
+            Write-Host "[OK] Admin smoke session created"
+        }
+        else {
+            Write-Host "[WARN] Admin smoke login did not return a session token. Protected admin checks will be skipped."
+        }
+    }
+    catch {
+        Write-Host "[WARN] Admin smoke login failed: $($_.Exception.Message). Protected admin checks will be skipped."
+    }
 }
 
 $checks = @(
@@ -293,6 +323,12 @@ function Test-RequiredTemplates($check, $payload) {
 $failures = New-Object System.Collections.Generic.List[string]
 
 foreach ($check in $checks) {
+    $isProtectedAdminCheck = $check.Path.StartsWith("/api/admin/", [StringComparison]::OrdinalIgnoreCase)
+    if ($isProtectedAdminCheck -and -not $headers.ContainsKey("X-Admin-Session")) {
+        Write-Host "[SKIP] $($check.Name) requires admin session. Set SMOKE_ADMIN_EMAIL and SMOKE_ADMIN_PASSWORD to enable it."
+        continue
+    }
+
     $url = "$base$($check.Path)"
     try {
         $response = Invoke-WebRequest -Uri $url -Method Get -Headers $headers -TimeoutSec 20
