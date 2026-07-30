@@ -6,24 +6,25 @@
     Title="Accueil">
     <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="20" Spacing="18">
+            <VerticalStackLayout Padding="22,18,22,26" Spacing="20">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Wele" TextColor="{StaticResource WeleBlue}" FontSize="24" FontAttributes="Bold" />
-                        <Label x:Name="GreetingLabel" Text="Bonjour" Style="{StaticResource MutedLabel}" />
+                        <Label Text="wélé" TextColor="{StaticResource WeleBlue}" FontSize="28" FontAttributes="Bold" />
+                        <Label x:Name="GreetingLabel" Text="Bonjour" FontSize="18" FontAttributes="Bold" />
                     </VerticalStackLayout>
-                    <Button Grid.Column="1" Text="Compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnProfileClicked" />
+                    <Button Grid.Column="1" Text="Compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnProfileClicked" HeightRequest="44" MinimumHeightRequest="44" CornerRadius="22" />
                 </Grid>
 
-                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 28" Padding="20">
-                    <VerticalStackLayout Spacing="14">
-                        <Label Text="De quel service avez-vous besoin ?" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <Entry x:Name="SearchEntry" Placeholder="Plomberie, menage, climatisation..." />
-                            <Button Grid.Column="1" Text="Chercher" Clicked="OnSearchClicked" />
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Que recherchez-vous aujourd'hui ?" Style="{StaticResource MutedLabel}" />
+                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="12,2">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <Label Text="⌕" FontSize="18" TextColor="{StaticResource MutedInk}" VerticalTextAlignment="Center" />
+                            <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Plomberie, coiffure, menage..." ReturnType="Search" Completed="OnSearchCompleted" />
+                            <Button Grid.Column="2" Text="OK" WidthRequest="54" MinimumHeightRequest="40" HeightRequest="40" CornerRadius="12" Clicked="OnSearchClicked" />
                         </Grid>
-                    </VerticalStackLayout>
-                </Border>
+                    </Border>
+                </VerticalStackLayout>
 
                 <Border x:Name="LoginCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
                     <VerticalStackLayout Spacing="10">
@@ -36,21 +37,24 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Services populaires" Style="{StaticResource CardTitleLabel}" />
-                    <CollectionView x:Name="ServicesView" ItemsLayout="VerticalGrid, 2" SelectionMode="None">
+                <VerticalStackLayout Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Pour ma maison" Style="{StaticResource CardTitleLabel}" />
+                        <Label Grid.Column="1" Text="Voir plus" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" FontSize="13" VerticalTextAlignment="Center" />
+                    </Grid>
+                    <CollectionView x:Name="ServicesView" ItemsLayout="HorizontalList" SelectionMode="None" HeightRequest="112">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="14" Margin="0,0,8,8">
-                                    <VerticalStackLayout Spacing="4">
-                                        <Grid HeightRequest="32" WidthRequest="32" HorizontalOptions="Start">
-                                            <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 16" Padding="7">
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,10,0" WidthRequest="104">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Grid HeightRequest="42" WidthRequest="42" HorizontalOptions="Start">
+                                            <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 16" Padding="8">
                                                 <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
                                             </Border>
                                             <Label Text="{Binding IconFallback}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
                                         </Grid>
-                                        <Label Text="{Binding Name}" FontAttributes="Bold" />
-                                        <Label Text="{Binding Price}" Style="{StaticResource MutedLabel}" />
+                                        <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="13" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding Price}" Style="{StaticResource MutedLabel}" FontSize="11" LineBreakMode="TailTruncation" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>

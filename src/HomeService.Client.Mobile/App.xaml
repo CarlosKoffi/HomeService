@@ -20,7 +20,6 @@
         </Style>
         <Style TargetType="Label">
             <Setter Property="TextColor" Value="{StaticResource Ink}" />
-            <Setter Property="FontFamily" Value="OpenSansRegular" />
         </Style>
         <Style x:Key="EyebrowLabel" TargetType="Label">
             <Setter Property="FontSize" Value="11" />
@@ -29,7 +28,7 @@
             <Setter Property="TextColor" Value="{StaticResource WeleBlue}" />
         </Style>
         <Style x:Key="ScreenTitleLabel" TargetType="Label">
-            <Setter Property="FontSize" Value="28" />
+            <Setter Property="FontSize" Value="26" />
             <Setter Property="FontAttributes" Value="Bold" />
             <Setter Property="LineHeight" Value="1.05" />
             <Setter Property="TextColor" Value="{StaticResource Ink}" />
@@ -53,13 +52,14 @@
             <Setter Property="BackgroundColor" Value="White" />
             <Setter Property="TextColor" Value="{StaticResource Ink}" />
             <Setter Property="PlaceholderColor" Value="{StaticResource MutedInk}" />
-            <Setter Property="MinimumHeightRequest" Value="46" />
+            <Setter Property="MinimumHeightRequest" Value="52" />
+            <Setter Property="FontSize" Value="15" />
         </Style>
         <Style TargetType="Button">
-            <Setter Property="CornerRadius" Value="23" />
-            <Setter Property="MinimumHeightRequest" Value="48" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="MinimumHeightRequest" Value="52" />
             <Setter Property="FontAttributes" Value="Bold" />
-            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="BackgroundColor" Value="{StaticResource WeleBlue}" />
             <Setter Property="TextColor" Value="White" />
         </Style>

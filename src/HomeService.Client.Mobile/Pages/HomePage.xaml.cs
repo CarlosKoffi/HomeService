@@ -90,6 +90,11 @@ public partial class HomePage : ContentPage
         SearchResultsSection.IsVisible = searchResults.Count > 0;
     }
 
+    private void OnSearchCompleted(object sender, EventArgs e)
+    {
+        OnSearchClicked(sender, e);
+    }
+
     private async void OnLoginClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync(nameof(LoginPage));
