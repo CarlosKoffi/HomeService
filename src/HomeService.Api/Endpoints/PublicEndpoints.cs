@@ -330,6 +330,26 @@ public static class PublicEndpoints
         .WithName("SearchClientCatalog")
         .Produces<IReadOnlyList<ClientCatalogSearchResultResponse>>();
 
+        client.MapPost("/missions/prepare", async (
+            PrepareClientMissionRequest request,
+            ClientMissionPreparationService preparationService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await preparationService.PrepareAsync(request, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.IsNotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("PrepareClientMission")
+        .Produces<PrepareClientMissionResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         client.MapGet("/missions", async (
             string? phoneNumber,
             string? status,

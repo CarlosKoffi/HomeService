@@ -17,6 +17,7 @@ public static class DependencyInjection
     {
         services.AddScoped<ProviderMissionWorkflowService>();
         services.AddScoped<ClientMissionRequestService>();
+        services.AddScoped<ClientMissionPreparationService>();
         services.AddScoped<ClientMissionConfirmationService>();
         services.AddScoped<ClientMissionCancellationService>();
         services.AddScoped<ClientMissionCompletionValidationService>();
