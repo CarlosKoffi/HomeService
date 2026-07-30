@@ -38,7 +38,7 @@ public sealed class ClientSessionStore
 
     public string GetDisplayName()
     {
-        return Preferences.Default.Get(DisplayNameKey, "Client wélé");
+        return Preferences.Default.Get(DisplayNameKey, "Client Wele");
     }
 
     public bool HasSession()

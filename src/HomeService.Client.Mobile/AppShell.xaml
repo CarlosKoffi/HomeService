@@ -6,7 +6,7 @@
     xmlns:pages="clr-namespace:HomeService.Client.Mobile.Pages"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="False"
-    Title="wélé">
+    Title="Wele">
     <TabBar>
         <ShellContent Title="Accueil" Route="home" ContentTemplate="{DataTemplate pages:HomePage}" />
         <ShellContent Title="Demandes" Route="requests" ContentTemplate="{DataTemplate pages:RequestsPage}" />
