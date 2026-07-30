@@ -36,6 +36,18 @@ public partial class ProfilePage : ContentPage
             return;
         }
 
+        if (sessionStore.IsPreviewMode())
+        {
+            NameLabel.Text = "Carlos Konan";
+            PhoneLabel.Text = "+225 07 00 00 00 00";
+            EmailLabel.Text = "carlos@wele.ci";
+            addresses.Clear();
+            addresses.Add(new ClientAddressResponse(Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "Maison", "Cocody, Riviera 3, Abidjan", null, null, true));
+            payments.Clear();
+            payments.Add(new ClientPaymentMethodResponse(Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"), "MobileMoney", "Orange Money", "**** 0000", true, true));
+            return;
+        }
+
         var me = await apiClient.GetMeAsync();
         if (me.IsSuccess && me.Response is not null)
         {

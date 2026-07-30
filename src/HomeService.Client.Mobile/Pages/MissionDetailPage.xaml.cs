@@ -8,6 +8,7 @@ namespace HomeService.Client.Mobile.Pages;
 public partial class MissionDetailPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
+    private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<AdditionalQuoteRow> additionalQuotes = [];
     private readonly ObservableCollection<PhotoRow> photos = [];
     private readonly ObservableCollection<TimelineRow> timeline = [];
@@ -18,6 +19,7 @@ public partial class MissionDetailPage : ContentPage
     {
         InitializeComponent();
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
+        sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
         AdditionalQuotesView.ItemsSource = additionalQuotes;
         PhotosView.ItemsSource = photos;
         TimelineView.ItemsSource = timeline;
@@ -36,12 +38,23 @@ public partial class MissionDetailPage : ContentPage
         ErrorLabel.IsVisible = false;
         if (!Guid.TryParse(MissionId, out var missionId))
         {
-            ErrorLabel.Text = "Mission introuvable.";
-            ErrorLabel.IsVisible = true;
+            if (sessionStore.IsPreviewMode())
+            {
+                BindPreviewMission(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+                return;
+            }
+
+            ShowError("Mission introuvable.");
             return;
         }
 
         currentMissionId = missionId;
+        if (sessionStore.IsPreviewMode())
+        {
+            BindPreviewMission(missionId);
+            return;
+        }
+
         var result = await apiClient.GetMissionAsync(missionId);
         if (!result.IsSuccess || result.Response is null)
         {
@@ -112,6 +125,53 @@ public partial class MissionDetailPage : ContentPage
         PhotosCard.IsVisible = photos.Count > 0;
     }
 
+    private void BindPreviewMission(Guid missionId)
+    {
+        currentMissionId = missionId;
+        ErrorLabel.IsVisible = false;
+        TitleLabel.Text = "WL-000145";
+        StatusLabel.Text = "En cours";
+        ServiceLabel.Text = "Déboucher un évier";
+        AddressLabel.Text = "Cocody, Riviera 3";
+        PriceLabel.Text = "17 000 FCFA";
+        PaymentLabel.Text = "Mobile Money - payé";
+        MessageLabel.Text = "L'eau s'écoule sous l'évier depuis ce matin.";
+        TrackingLabel.Text = "Mohamed est affecté à votre demande. Vous pouvez le contacter si besoin.";
+
+        ProviderCard.IsVisible = true;
+        ProviderLabel.Text = "Mohamed Kouyaté - 48 interventions";
+        ProviderPhoneLabel.Text = "+225 07 12 34 56 78";
+        ProviderRatingLabel.Text = "★ 4.9";
+        ProviderEtaLabel.Text = "13 min";
+        currentProviderPhoneNumber = "+2250712345678";
+        CallButton.IsEnabled = true;
+        CallButton.Opacity = 1;
+        ProviderPhoto.IsVisible = false;
+
+        timeline.Clear();
+        foreach (var row in new[]
+        {
+            TimelineRow.Done("Demande envoyée", "Aujourd'hui 10:30"),
+            TimelineRow.Done("Prix proposé", "17 000 FCFA"),
+            TimelineRow.Done("Technicien attribué", "Mohamed Kouyaté"),
+            TimelineRow.Done("Paiement confirmé", "Mission confirmée"),
+            TimelineRow.Done("Technicien en route", "Arrivée dans 13 min"),
+            TimelineRow.Pending("Fin et avis", "Vous pourrez noter la prestation.")
+        })
+        {
+            timeline.Add(row);
+        }
+
+        additionalQuotes.Clear();
+        photos.Clear();
+        photos.Add(new PhotoRow("evier_cuisine.jpg", "Photo du problème envoyée par le client"));
+        PhotosCard.IsVisible = true;
+        AdditionalQuotesCard.IsVisible = false;
+        ConfirmButton.IsVisible = false;
+        CompleteButton.IsVisible = true;
+        CancelButton.IsVisible = true;
+    }
+
     private async void OnBackClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("..");
@@ -123,6 +183,12 @@ public partial class MissionDetailPage : ContentPage
         var accepted = await Shell.Current.DisplayAlert("Confirmer", "Accepter ce prix et lancer le paiement ?", "Oui", "Non");
         if (!accepted)
         {
+            return;
+        }
+
+        if (sessionStore.IsPreviewMode())
+        {
+            await Shell.Current.DisplayAlert("Aperçu", "Paiement simulé.", "OK");
             return;
         }
 
@@ -143,6 +209,12 @@ public partial class MissionDetailPage : ContentPage
         var comment = await Shell.Current.DisplayPromptAsync("Annulation", "Pourquoi souhaitez-vous annuler ?", "Annuler la mission", "Retour", "Motif", maxLength: 180);
         if (string.IsNullOrWhiteSpace(comment))
         {
+            return;
+        }
+
+        if (sessionStore.IsPreviewMode())
+        {
+            await Shell.Current.DisplayAlert("Aperçu", "Annulation simulée.", "OK");
             return;
         }
 
@@ -167,6 +239,12 @@ public partial class MissionDetailPage : ContentPage
         }
 
         rating = Math.Clamp(rating, 1, 5);
+        if (sessionStore.IsPreviewMode())
+        {
+            await Shell.Current.DisplayAlert("Merci", "Avis simulé en mode aperçu.", "OK");
+            return;
+        }
+
         var result = await apiClient.ValidateCompletionAsync(currentMissionId, rating, "Validation depuis l'application client.");
         if (!result.IsSuccess)
         {
@@ -214,6 +292,12 @@ public partial class MissionDetailPage : ContentPage
         var accepted = await Shell.Current.DisplayAlert("Devis complementaire", $"Payer {quote.AmountLabel} ?", "Oui", "Non");
         if (!accepted)
         {
+            return;
+        }
+
+        if (sessionStore.IsPreviewMode())
+        {
+            await Shell.Current.DisplayAlert("Aperçu", "Paiement complémentaire simulé.", "OK");
             return;
         }
 

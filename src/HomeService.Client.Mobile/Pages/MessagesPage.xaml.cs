@@ -50,6 +50,14 @@ public partial class MessagesPage : ContentPage
             return;
         }
 
+        if (sessionStore.IsPreviewMode())
+        {
+            missions.Add(new MissionChoice(Guid.Parse("11111111-1111-1111-1111-111111111111"), "WL-000145 - Déboucher un évier"));
+            MissionPicker.ItemsSource = missions;
+            MissionPicker.SelectedIndex = 0;
+            return;
+        }
+
         var result = await apiClient.GetMissionsAsync();
         if (!result.IsSuccess || result.Response is null || result.Response.Count == 0)
         {
@@ -79,6 +87,14 @@ public partial class MessagesPage : ContentPage
     {
         ErrorLabel.IsVisible = false;
         messages.Clear();
+        if (sessionStore.IsPreviewMode())
+        {
+            messages.Add(new MessageRow("Mohamed Kouyaté", "Bonjour, j'arrive dans 13 min.", "10:45"));
+            messages.Add(new MessageRow("Vous", "Parfait, je suis là.", "10:50"));
+            messages.Add(new MessageRow("Support Wélé", "La mission est suivie par notre équipe.", "10:52"));
+            return;
+        }
+
         var result = await apiClient.GetMissionMessagesAsync(missionId);
         if (!result.IsSuccess || result.Response is null)
         {
@@ -109,6 +125,12 @@ public partial class MessagesPage : ContentPage
         ErrorLabel.IsVisible = false;
         var body = MessageEntry.Text.Trim();
         MessageEntry.Text = string.Empty;
+        if (sessionStore.IsPreviewMode())
+        {
+            messages.Add(new MessageRow("Vous", body, DateTime.Now.ToString("HH:mm")));
+            return;
+        }
+
         SendButton.IsEnabled = false;
         var result = await apiClient.SendMissionMessageAsync(mission.MissionId, body);
         SendButton.IsEnabled = true;

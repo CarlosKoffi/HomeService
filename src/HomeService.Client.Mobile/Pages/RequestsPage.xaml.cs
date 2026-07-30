@@ -34,6 +34,13 @@ public partial class RequestsPage : ContentPage
             return;
         }
 
+        if (sessionStore.IsPreviewMode())
+        {
+            AddPreviewMissions();
+            EmptyState.IsVisible = false;
+            return;
+        }
+
         var result = await apiClient.GetMissionsAsync(currentStatus);
         if (result.IsSuccess && result.Response is not null)
         {
@@ -44,6 +51,32 @@ public partial class RequestsPage : ContentPage
         }
 
         EmptyState.IsVisible = missions.Count == 0;
+    }
+
+    private void AddPreviewMissions()
+    {
+        var all = new[]
+        {
+            MissionRow.Preview(Guid.Parse("11111111-1111-1111-1111-111111111111"), "WL-000145 - Déboucher un évier", "Cocody, Riviera 3", "Aujourd'hui 14:30", "En cours", "17 000 FCFA", "\uD83D\uDD27"),
+            MissionRow.Preview(Guid.Parse("22222222-2222-2222-2222-222222222222"), "WL-000132 - Nettoyage canapé", "Marcory Zone 4", "Hier 16:10", "Terminée", "25 000 FCFA", "\uD83E\uDDF9"),
+            MissionRow.Preview(Guid.Parse("33333333-3333-3333-3333-333333333333"), "WL-000128 - Réparation murale", "Angré 8e tranche", "22/07 10:00", "Annulée", "18 000 FCFA", "\uD83C\uDFE0")
+        };
+
+        foreach (var mission in all.Where(MatchesCurrentFilter))
+        {
+            missions.Add(mission);
+        }
+    }
+
+    private bool MatchesCurrentFilter(MissionRow mission)
+    {
+        return currentStatus switch
+        {
+            "InProgress" => mission.StatusLabel == "En cours",
+            "Completed" => mission.StatusLabel == "Terminée",
+            "Canceled" => mission.StatusLabel == "Annulée",
+            _ => true
+        };
     }
 
     private async void OnRefreshing(object sender, EventArgs e)
@@ -115,6 +148,12 @@ public partial class RequestsPage : ContentPage
         Color StatusColor,
         Color StatusBackground)
     {
+        public static MissionRow Preview(Guid missionId, string title, string address, string schedule, string status, string amount, string icon)
+        {
+            var (label, color, background) = ResolveStatus(status);
+            return new MissionRow(missionId, title, address, schedule, label, amount, icon, color, background);
+        }
+
         public static MissionRow From(ClientMissionListItemResponse item)
         {
             var title = $"{item.MissionNumber} - {item.PrestationName ?? item.ServiceName ?? "Service"}";

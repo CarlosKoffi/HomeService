@@ -31,6 +31,8 @@
         <VerticalStackLayout Grid.Row="1" Spacing="12">
             <Button Text="Se connecter" Clicked="OnLoginClicked" />
             <Button Text="Creer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
+            <Button Text="Voir l'application en aperçu" BackgroundColor="#EFF6FF" TextColor="{StaticResource WeleBlue}" BorderColor="#DBEAFE" BorderWidth="1" Clicked="OnPreviewClicked" />
+            <Button Text="Revoir la présentation" BackgroundColor="White" TextColor="{StaticResource MutedInk}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnReplayOnboardingClicked" />
             <Label Text="En continuant, vous acceptez nos conditions d'utilisation." FontSize="12" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
     </Grid>

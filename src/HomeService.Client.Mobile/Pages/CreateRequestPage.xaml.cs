@@ -52,6 +52,15 @@ public partial class CreateRequestPage : ContentPage
         {
             client = me.Response;
         }
+        else if (sessionStore.IsPreviewMode())
+        {
+            client = new ClientMeResponse(
+                Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                "Carlos",
+                "Konan",
+                "+2250700000000",
+                "carlos@wele.ci");
+        }
 
         await LoadAddressesAsync();
         await LoadPreparationAsync();
@@ -76,6 +85,16 @@ public partial class CreateRequestPage : ContentPage
 
         if (!result.IsSuccess || result.Response is null)
         {
+            if (sessionStore.IsPreviewMode())
+            {
+                TitleLabel.Text = Uri.UnescapeDataString(Name ?? "Service sélectionné");
+                PreparationTitleLabel.Text = Uri.UnescapeDataString(Name ?? "Service sélectionné");
+                PreparationPriceLabel.Text = "À partir de 15 000 FCFA - max 25 000 FCFA";
+                PreparationHintLabel.Text = "Décrivez votre besoin. Une entreprise vous proposera un prix clair.";
+                PreparationCard.IsVisible = true;
+                PhotoHintLabel.Text = "Photos recommandées si elles aident à comprendre le besoin. Maximum 3.";
+            }
+
             return;
         }
 
@@ -121,6 +140,10 @@ public partial class CreateRequestPage : ContentPage
             var defaultIndex = addresses.FindIndex(item => item.IsDefault);
             AddressPicker.SelectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
         }
+        else if (sessionStore.IsPreviewMode())
+        {
+            AddressEntry.Text = "Cocody, Riviera 3";
+        }
     }
 
     private void OnAddressChanged(object sender, EventArgs e)
@@ -153,6 +176,13 @@ public partial class CreateRequestPage : ContentPage
         if (string.IsNullOrWhiteSpace(AddressEntry.Text))
         {
             ShowError("Indiquez l'adresse de l'intervention.");
+            return;
+        }
+
+        if (sessionStore.IsPreviewMode())
+        {
+            await Shell.Current.DisplayAlert("Demande envoyée", "Aperçu : la demande est simulée et visible dans Mes demandes.", "OK");
+            await Shell.Current.GoToAsync("//requests");
             return;
         }
 

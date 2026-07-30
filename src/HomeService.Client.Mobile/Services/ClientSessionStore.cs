@@ -8,6 +8,7 @@ public sealed class ClientSessionStore
     private const string ExpiresAtKey = "ClientAuthExpiresAt";
     private const string PhoneNumberKey = "ClientPhoneNumber";
     private const string DisplayNameKey = "ClientDisplayName";
+    private const string PreviewModeKey = "ClientPreviewMode";
 
     public async Task SaveAsync(ClientAuthResponse response)
     {
@@ -32,18 +33,40 @@ public sealed class ClientSessionStore
 
     public string? GetPhoneNumber()
     {
+        if (IsPreviewMode())
+        {
+            return "+2250700000000";
+        }
+
         var phoneNumber = Preferences.Default.Get(PhoneNumberKey, string.Empty);
         return string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber;
     }
 
     public string GetDisplayName()
     {
+        if (IsPreviewMode())
+        {
+            return "Carlos";
+        }
+
         return Preferences.Default.Get(DisplayNameKey, "Client Wele");
     }
 
     public bool HasSession()
     {
-        return !string.IsNullOrWhiteSpace(Preferences.Default.Get(PhoneNumberKey, string.Empty));
+        return IsPreviewMode() || !string.IsNullOrWhiteSpace(Preferences.Default.Get(PhoneNumberKey, string.Empty));
+    }
+
+    public bool IsPreviewMode()
+    {
+        return Preferences.Default.Get(PreviewModeKey, false);
+    }
+
+    public Task StartPreviewAsync()
+    {
+        Preferences.Default.Set(PreviewModeKey, true);
+        Preferences.Default.Set(DisplayNameKey, "Carlos");
+        return Task.CompletedTask;
     }
 
     public async Task ClearAsync()
@@ -60,6 +83,7 @@ public sealed class ClientSessionStore
         Preferences.Default.Remove(ExpiresAtKey);
         Preferences.Default.Remove(PhoneNumberKey);
         Preferences.Default.Remove(DisplayNameKey);
+        Preferences.Default.Remove(PreviewModeKey);
         await Task.CompletedTask;
     }
 
