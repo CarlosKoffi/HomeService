@@ -10,17 +10,20 @@ public partial class HomePage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<ServiceItem> services = [];
+    private readonly ObservableCollection<ServiceItem> homeServices = [];
+    private readonly ObservableCollection<ServiceItem> wellbeingServices = [];
+    private readonly ObservableCollection<ServiceItem> popularServices = [];
     private readonly ObservableCollection<SearchResultItem> searchResults = [];
-    private readonly ObservableCollection<MissionItem> missions = [];
 
     public HomePage()
     {
         InitializeComponent();
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
-        ServicesView.ItemsSource = services;
+        HomeServicesView.ItemsSource = homeServices;
+        WellbeingServicesView.ItemsSource = wellbeingServices;
+        PopularServicesView.ItemsSource = popularServices;
         SearchResultsView.ItemsSource = searchResults;
-        MissionsView.ItemsSource = missions;
     }
 
     protected override async void OnAppearing()
@@ -32,34 +35,47 @@ public partial class HomePage : ContentPage
     private async Task LoadAsync()
     {
         GreetingLabel.Text = sessionStore.HasSession()
-            ? $"Bonjour {sessionStore.GetDisplayName()}"
-            : "Bonjour, trouvez rapidement un service à domicile";
-        LoginCard.IsVisible = !sessionStore.HasSession();
+            ? $"Bonjour {sessionStore.GetDisplayName()} 👋"
+            : "Bonjour 👋";
 
-        var serviceResult = await apiClient.GetServicesAsync();
-        if (serviceResult.IsSuccess && serviceResult.Response is not null)
+        var result = await apiClient.GetServicesAsync();
+        if (!result.IsSuccess || result.Response is null)
         {
-            services.Clear();
-            foreach (var service in serviceResult.Response.Where(service => service.IsActive).Take(8))
+            return;
+        }
+
+        services.Clear();
+        homeServices.Clear();
+        wellbeingServices.Clear();
+        popularServices.Clear();
+
+        foreach (var service in result.Response.Where(item => item.IsActive).Take(10))
+        {
+            services.Add(ServiceItem.From(service, apiClient));
+        }
+
+        foreach (var item in services.Take(5))
+        {
+            homeServices.Add(item);
+        }
+
+        foreach (var item in services.Skip(5).Take(5))
+        {
+            wellbeingServices.Add(item);
+        }
+
+        if (wellbeingServices.Count == 0)
+        {
+            foreach (var item in services.Take(5))
             {
-                services.Add(ServiceItem.From(service, apiClient));
+                wellbeingServices.Add(item);
             }
         }
 
-        missions.Clear();
-        if (sessionStore.HasSession())
+        foreach (var item in services.Take(4))
         {
-            var missionResult = await apiClient.GetMissionsAsync();
-            if (missionResult.IsSuccess && missionResult.Response is not null)
-            {
-                foreach (var mission in missionResult.Response.Take(4))
-                {
-                    missions.Add(MissionItem.From(mission));
-                }
-            }
+            popularServices.Add(item);
         }
-
-        MissionSection.IsVisible = missions.Count > 0;
     }
 
     private async void OnRefreshing(object sender, EventArgs e)
@@ -98,30 +114,34 @@ public partial class HomePage : ContentPage
         OnSearchClicked(sender, e);
     }
 
-    private async void OnLoginClicked(object sender, EventArgs e)
+    private async void OnNotificationsClicked(object sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync(nameof(LoginPage));
+        await DisplayAlert("Notifications", "Vos notifications apparaîtront ici.", "Fermer");
     }
 
-    private async void OnRegisterClicked(object sender, EventArgs e)
+    private async void OnRequestsTapped(object sender, TappedEventArgs e)
     {
-        await Shell.Current.GoToAsync(nameof(RegisterPage));
+        await Shell.Current.GoToAsync("//requests");
     }
 
-    private async void OnProfileClicked(object sender, EventArgs e)
+    private async void OnMessagesTapped(object sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync("//messages");
+    }
+
+    private async void OnProfileTapped(object sender, TappedEventArgs e)
     {
         await Shell.Current.GoToAsync("//profile");
     }
 
-    private async void OnMissionSelected(object sender, SelectionChangedEventArgs e)
+    private async void OnCreateRequestClicked(object sender, EventArgs e)
     {
-        if (e.CurrentSelection.FirstOrDefault() is not MissionItem mission)
+        if (services.FirstOrDefault() is not ServiceItem service)
         {
             return;
         }
 
-        MissionsView.SelectedItem = null;
-        await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={mission.MissionId:D}");
+        await OpenServiceAsync(service);
     }
 
     private async void OnSearchResultSelected(object sender, SelectionChangedEventArgs e)
@@ -143,12 +163,28 @@ public partial class HomePage : ContentPage
             return;
         }
 
-        ServicesView.SelectedItem = null;
-        var path = $"{nameof(CreateRequestPage)}?serviceId={service.ServiceId:D}&prestationId=&name={Uri.EscapeDataString(service.Name)}";
-        await Shell.Current.GoToAsync(path);
+        if (sender is CollectionView collectionView)
+        {
+            collectionView.SelectedItem = null;
+        }
+
+        await OpenServiceAsync(service);
     }
 
-    private sealed record ServiceItem(Guid ServiceId, string Name, string? IconUrl, string IconFallback, bool HasIconUrl, bool HasIconFallback, string Price)
+    private static Task OpenServiceAsync(ServiceItem service)
+    {
+        var path = $"{nameof(CreateRequestPage)}?serviceId={service.ServiceId:D}&prestationId=&name={Uri.EscapeDataString(service.Name)}";
+        return Shell.Current.GoToAsync(path);
+    }
+
+    private sealed record ServiceItem(
+        Guid ServiceId,
+        string Name,
+        string? IconUrl,
+        string IconFallback,
+        bool HasIconUrl,
+        bool HasIconFallback,
+        string Price)
     {
         public static ServiceItem From(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
         {
@@ -158,7 +194,14 @@ public partial class HomePage : ContentPage
 
             var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
             var fallback = ResolveIcon(response.IconName, response.Name);
-            return new ServiceItem(response.Id, response.Name, iconUrl, fallback, !string.IsNullOrWhiteSpace(iconUrl), string.IsNullOrWhiteSpace(iconUrl), price);
+            return new ServiceItem(
+                response.Id,
+                response.Name,
+                iconUrl,
+                fallback,
+                !string.IsNullOrWhiteSpace(iconUrl),
+                string.IsNullOrWhiteSpace(iconUrl),
+                price);
         }
 
         private static string ResolveIcon(string iconName, string name)
@@ -173,12 +216,25 @@ public partial class HomePage : ContentPage
         }
     }
 
-    private sealed record SearchResultItem(Guid ServiceId, Guid? PrestationId, string Name, string Service, string Price, string? IconUrl, string IconFallback, bool HasIconUrl, bool HasIconFallback)
+    private sealed record SearchResultItem(
+        Guid ServiceId,
+        Guid? PrestationId,
+        string Name,
+        string Service,
+        string Price,
+        string? IconUrl,
+        string IconFallback,
+        bool HasIconUrl,
+        bool HasIconFallback)
     {
-        public static SearchResultItem From(ClientCatalogSearchResultResponse response, ClientMobileApiClient apiClient)
+        public static SearchResultItem From(
+            ClientCatalogSearchResultResponse response,
+            ClientMobileApiClient apiClient)
         {
             var label = response.PrestationName ?? response.Name;
-            var service = response.PrestationName is null ? response.ServiceName : $"{response.ServiceName} - {response.PrestationName}";
+            var service = response.PrestationName is null
+                ? response.ServiceName
+                : $"{response.ServiceName} - {response.PrestationName}";
             var price = response.PriceMinAmount.HasValue
                 ? $"dès {response.PriceMinAmount:N0} {response.Currency}"
                 : "Prix à confirmer";
@@ -188,20 +244,16 @@ public partial class HomePage : ContentPage
                 ? "WE"
                 : response.ServiceName[..Math.Min(2, response.ServiceName.Length)].ToUpperInvariant();
 
-            return new SearchResultItem(response.ServiceId, response.PrestationId, label, service, price, iconUrl, fallback, !string.IsNullOrWhiteSpace(iconUrl), string.IsNullOrWhiteSpace(iconUrl));
-        }
-    }
-
-    private sealed record MissionItem(Guid MissionId, string Title, string Subtitle, string Status)
-    {
-        public static MissionItem From(ClientMissionListItemResponse response)
-        {
-            var title = $"{response.MissionNumber} - {response.PrestationName ?? response.ServiceName ?? "Mission"}";
-            var subtitle = response.ScheduledFor.HasValue
-                ? response.ScheduledFor.Value.ToString("dd/MM/yyyy HH:mm")
-                : response.CreatedAt.ToString("dd/MM/yyyy HH:mm");
-
-            return new MissionItem(response.MissionId, title, subtitle, response.PrimaryAction);
+            return new SearchResultItem(
+                response.ServiceId,
+                response.PrestationId,
+                label,
+                service,
+                price,
+                iconUrl,
+                fallback,
+                !string.IsNullOrWhiteSpace(iconUrl),
+                string.IsNullOrWhiteSpace(iconUrl));
         }
     }
 }
