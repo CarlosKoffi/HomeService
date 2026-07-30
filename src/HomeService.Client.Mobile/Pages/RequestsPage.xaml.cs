@@ -55,20 +55,28 @@ public partial class RequestsPage : ContentPage
     private async void OnAllClicked(object sender, EventArgs e)
     {
         currentStatus = null;
-        AllButton.BackgroundColor = (Color)Application.Current!.Resources["WeleBlue"];
-        AllButton.TextColor = Colors.White;
-        ActiveButton.BackgroundColor = Colors.White;
-        ActiveButton.TextColor = (Color)Application.Current.Resources["Ink"];
+        SetFilter(AllButton);
         await LoadAsync();
     }
 
     private async void OnActiveClicked(object sender, EventArgs e)
     {
         currentStatus = "InProgress";
-        ActiveButton.BackgroundColor = (Color)Application.Current!.Resources["WeleBlue"];
-        ActiveButton.TextColor = Colors.White;
-        AllButton.BackgroundColor = Colors.White;
-        AllButton.TextColor = (Color)Application.Current.Resources["Ink"];
+        SetFilter(ActiveButton);
+        await LoadAsync();
+    }
+
+    private async void OnPastClicked(object sender, EventArgs e)
+    {
+        currentStatus = "Completed";
+        SetFilter(PastButton);
+        await LoadAsync();
+    }
+
+    private async void OnCanceledClicked(object sender, EventArgs e)
+    {
+        currentStatus = "Canceled";
+        SetFilter(CanceledButton);
         await LoadAsync();
     }
 
@@ -83,7 +91,29 @@ public partial class RequestsPage : ContentPage
         await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={mission.MissionId:D}");
     }
 
-    private sealed record MissionRow(Guid MissionId, string Title, string Address, string Schedule, string Status, string Amount)
+    private void SetFilter(Button selected)
+    {
+        var ink = (Color)Application.Current!.Resources["Ink"];
+        var blue = (Color)Application.Current.Resources["WeleBlue"];
+        var buttons = new[] { AllButton, ActiveButton, PastButton, CanceledButton };
+        foreach (var button in buttons)
+        {
+            button.BackgroundColor = button == selected ? blue : Colors.White;
+            button.TextColor = button == selected ? Colors.White : ink;
+            button.BorderColor = button == selected ? blue : (Color)Application.Current.Resources["Line"];
+        }
+    }
+
+    private sealed record MissionRow(
+        Guid MissionId,
+        string Title,
+        string Address,
+        string Schedule,
+        string StatusLabel,
+        string Amount,
+        string Icon,
+        Color StatusColor,
+        Color StatusBackground)
     {
         public static MissionRow From(ClientMissionListItemResponse item)
         {
@@ -91,9 +121,43 @@ public partial class RequestsPage : ContentPage
             var schedule = item.ScheduledFor.HasValue
                 ? item.ScheduledFor.Value.ToString("dd/MM HH:mm")
                 : item.CreatedAt.ToString("dd/MM HH:mm");
-            var amount = item.Amount.HasValue ? $"{item.Amount:N0} {item.Currency}" : "Prix a venir";
+            var amount = item.Amount.HasValue ? $"{item.Amount:N0} {item.Currency}" : "Prix à venir";
+            var (label, color, background) = ResolveStatus(item.Status);
+            var icon = ResolveIcon(item.ServiceName, item.PrestationName);
 
-            return new MissionRow(item.MissionId, title, item.ServiceAddress ?? "Adresse a confirmer", schedule, item.Status, amount);
+            return new MissionRow(item.MissionId, title, item.ServiceAddress ?? "Adresse à confirmer", schedule, label, amount, icon, color, background);
+        }
+
+        private static (string Label, Color Color, Color Background) ResolveStatus(string status)
+        {
+            var normalized = status.ToLowerInvariant();
+            if (normalized.Contains("cancel") || normalized.Contains("annul"))
+            {
+                return ("Annulée", Color.FromArgb("#DC2626"), Color.FromArgb("#FEF2F2"));
+            }
+
+            if (normalized.Contains("complete") || normalized.Contains("finish") || normalized.Contains("term"))
+            {
+                return ("Terminée", Color.FromArgb("#059669"), Color.FromArgb("#ECFDF5"));
+            }
+
+            if (normalized.Contains("pending") || normalized.Contains("quote") || normalized.Contains("wait"))
+            {
+                return ("À valider", Color.FromArgb("#F97316"), Color.FromArgb("#FFF7ED"));
+            }
+
+            return ("En cours", Color.FromArgb("#2563EB"), Color.FromArgb("#EFF6FF"));
+        }
+
+        private static string ResolveIcon(string? serviceName, string? prestationName)
+        {
+            var normalized = $"{serviceName} {prestationName}".ToLowerInvariant();
+            if (normalized.Contains("electric")) return "\u26A1";
+            if (normalized.Contains("menage") || normalized.Contains("clean")) return "\uD83E\uDDF9";
+            if (normalized.Contains("jardin")) return "\uD83C\uDF3F";
+            if (normalized.Contains("auto")) return "\uD83D\uDE97";
+            if (normalized.Contains("blanch") || normalized.Contains("repass")) return "\uD83E\uDDFA";
+            return "\uD83C\uDFE0";
         }
     }
 }

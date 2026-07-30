@@ -10,18 +10,21 @@
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Mes demandes" Style="{StaticResource ScreenTitleLabel}" />
-                        <Label Text="Suivez vos services en cours et vos anciennes demandes." Style="{StaticResource MutedLabel}" />
+                        <Label Text="Suivez les interventions, devis et paiements." Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                     <Border Grid.Column="1" BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="10" HeightRequest="42" WidthRequest="42">
                         <Label Text="&#x1F514;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="16" />
                     </Border>
                 </Grid>
 
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                    <Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked" />
-                    <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnActiveClicked" />
-                    <Button Grid.Column="2" Text="Passees" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" />
-                </Grid>
+                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="12">
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+                        <Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
+                        <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnActiveClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
+                        <Button x:Name="PastButton" Grid.Column="2" Text="Passées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnPastClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
+                        <Button x:Name="CanceledButton" Grid.Column="3" Text="Annulées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCanceledClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
+                    </Grid>
+                </Border>
 
                 <CollectionView x:Name="MissionsView" SelectionMode="Single" SelectionChanged="OnMissionSelected">
                     <CollectionView.ItemTemplate>
@@ -29,7 +32,7 @@
                             <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,0,10">
                                 <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
                                     <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="54" WidthRequest="54">
-                                        <Label Text="&#x1F3E0;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="22" />
+                                        <Label Text="{Binding Icon}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="20" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                         <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold" LineBreakMode="TailTruncation" />
@@ -37,7 +40,9 @@
                                         <Label Text="{Binding Address}" FontSize="12" TextColor="{StaticResource MutedInk}" LineBreakMode="TailTruncation" />
                                     </VerticalStackLayout>
                                     <VerticalStackLayout Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center" Spacing="7">
-                                        <Label Text="{Binding Status}" FontSize="12" TextColor="{StaticResource Success}" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                                        <Border BackgroundColor="{Binding StatusBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="9,5">
+                                            <Label Text="{Binding StatusLabel}" FontSize="11" TextColor="{Binding StatusColor}" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                        </Border>
                                         <Label Text="{Binding Amount}" FontSize="12" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="End" />
                                     </VerticalStackLayout>
                                 </Grid>
@@ -49,7 +54,7 @@
                 <Border x:Name="EmptyState" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="18" IsVisible="False">
                     <VerticalStackLayout Spacing="8">
                         <Label Text="Aucune demande" Style="{StaticResource CardTitleLabel}" />
-                        <Label Text="Vos demandes apparaitront ici apres envoi." Style="{StaticResource MutedLabel}" />
+                        <Label Text="Vos demandes apparaîtront ici après envoi." Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>
