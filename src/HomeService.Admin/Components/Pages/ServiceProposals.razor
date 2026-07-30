@@ -303,6 +303,32 @@
             URL icone
             <input type="text" placeholder="/assets/services/jardinage.svg" @bind="NewServiceDraft.IconUrl" />
         </label>
+        <div class="service-icon-admin wide">
+            <div class="service-icon-preview">
+                @if (!string.IsNullOrWhiteSpace(NewServiceDraft.IconUrl))
+                {
+                    <img src="@NewServiceDraft.IconUrl" alt="" />
+                }
+                else
+                {
+                    <span>@NewServiceDraft.IconName</span>
+                }
+            </div>
+            <div>
+                <strong>Apercu icone service</strong>
+                <small>L'icone sera renvoyee par l'API client et reutilisee par l'application mobile.</small>
+            </div>
+            <label>
+                Bibliotheque Wele
+                <select @bind="NewServiceDraft.IconUrl">
+                    <option value="">Choisir une icone</option>
+                    @foreach (var icon in SuggestedServiceIcons)
+                    {
+                        <option value="@icon.Url">@icon.Label</option>
+                    }
+                </select>
+            </label>
+        </div>
         <label>
             Prix minimum
             <input type="number" min="0" step="100" @bind="NewServiceDraft.NormalPriceAmount" />
@@ -395,6 +421,32 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                     URL icone
                                     <input type="text" @bind="serviceEditDraft.IconUrl" />
                                 </label>
+                                <div class="service-icon-admin wide">
+                                    <div class="service-icon-preview">
+                                        @if (!string.IsNullOrWhiteSpace(serviceEditDraft.IconUrl))
+                                        {
+                                            <img src="@serviceEditDraft.IconUrl" alt="" />
+                                        }
+                                        else
+                                        {
+                                            <span>@serviceEditDraft.IconName</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <strong>Apercu icone service</strong>
+                                        <small>Modifiez l'icone du service principal. Les prestations l'heritent automatiquement.</small>
+                                    </div>
+                                    <label>
+                                        Bibliotheque Wele
+                                        <select @bind="serviceEditDraft.IconUrl">
+                                            <option value="">Choisir une icone</option>
+                                            @foreach (var icon in SuggestedServiceIcons)
+                                            {
+                                                <option value="@icon.Url">@icon.Label</option>
+                                            }
+                                        </select>
+                                    </label>
+                                </div>
                                 <label>
                                     Prix minimum
                                     <input type="number" min="0" step="100" @bind="serviceEditDraft.NormalPriceAmount" />
@@ -1423,6 +1475,22 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         return "insight-action";
     }
 
+    private static readonly IReadOnlyList<ServiceIconOption> SuggestedServiceIcons =
+    [
+        new("Menage", "/assets/services/menage.svg"),
+        new("Jardinage", "/assets/services/jardinage.svg"),
+        new("Electricite", "/assets/services/electricite.svg"),
+        new("Blanchisserie", "/assets/services/blanchisserie.svg"),
+        new("Depannage auto", "/assets/services/depannage-auto.svg"),
+        new("Nounou", "/assets/services/nounou.svg"),
+        new("Plomberie", "/assets/services/plomberie.svg"),
+        new("Climatisation", "/assets/services/climatisation.svg"),
+        new("Serrurerie", "/assets/services/serrurerie.svg"),
+        new("Peinture", "/assets/services/peinture.svg"),
+        new("Anti-nuisibles", "/assets/services/anti-nuisibles.svg"),
+        new("Electromenager", "/assets/services/electromenager.svg")
+    ];
+
     private sealed class PrestationDraft
     {
         public string Name { get; set; } = string.Empty;
@@ -1473,4 +1541,6 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     }
 
     private sealed record ProposalSelection(Guid? ServiceId, Guid? ServicePrestationId);
+
+    private sealed record ServiceIconOption(string Label, string Url);
 }

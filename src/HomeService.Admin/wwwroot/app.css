@@ -3455,6 +3455,62 @@ h3 {
     width: 1.35rem;
 }
 
+.service-icon-admin {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    display: grid;
+    gap: .85rem;
+    grid-template-columns: auto minmax(180px, 1fr) minmax(220px, .8fr);
+    padding: .8rem;
+}
+
+.service-icon-admin strong,
+.service-icon-admin small {
+    display: block;
+}
+
+.service-icon-admin small {
+    color: #475569;
+    font-weight: 600;
+    line-height: 1.35;
+    margin-top: .2rem;
+}
+
+.service-icon-admin label {
+    margin: 0;
+}
+
+.service-icon-admin select {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+    padding: .55rem .7rem;
+}
+
+.service-icon-preview {
+    align-items: center;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 14px;
+    color: #2563eb;
+    display: inline-flex;
+    font-size: .78rem;
+    font-weight: 900;
+    height: 3.2rem;
+    justify-content: center;
+    overflow: hidden;
+    width: 3.2rem;
+}
+
+.service-icon-preview img {
+    display: block;
+    height: 2rem;
+    object-fit: contain;
+    width: 2rem;
+}
+
 .catalog-meta {
     display: grid;
     gap: .25rem;
@@ -3666,8 +3722,10 @@ h3 {
 
 .service-admin-form input,
 .service-admin-form textarea,
+.service-admin-form select,
 .service-edit-panel input,
 .service-edit-panel textarea,
+.service-edit-panel select,
 .prestation-edit input {
     border: 1px solid #cbd5e1;
     border-radius: 8px;
@@ -3694,6 +3752,16 @@ h3 {
 .service-admin-form .wide,
 .service-edit-panel .wide {
     grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+    .service-icon-admin {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .service-icon-admin label {
+        grid-column: 1 / -1;
+    }
 }
 
 .prestation-edit {
