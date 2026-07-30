@@ -11,6 +11,19 @@
             <Label x:Name="TitleLabel" Text="Nouvelle demande" Style="{StaticResource ScreenTitleLabel}" />
             <Label Text="Expliquez simplement le besoin. L'entreprise confirme le prix avant intervention." Style="{StaticResource BodyLabel}" />
 
+            <Border x:Name="PreparationCard" Stroke="{StaticResource Line}" BackgroundColor="#EFF6FF" StrokeShape="RoundRectangle 22" Padding="16" IsVisible="False">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <Border BackgroundColor="White" Stroke="#DBEAFE" StrokeShape="RoundRectangle 18" HeightRequest="36" WidthRequest="36" Padding="8">
+                        <Image x:Name="PreparationIcon" Aspect="AspectFit" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                        <Label x:Name="PreparationTitleLabel" FontAttributes="Bold" />
+                        <Label x:Name="PreparationPriceLabel" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                        <Label x:Name="PreparationHintLabel" Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+
             <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
                 <VerticalStackLayout Spacing="12">
                     <Label Text="Adresse sauvegardee" FontAttributes="Bold" />
@@ -44,7 +57,7 @@
                     </Picker>
 
                     <Label Text="Photos utiles" FontAttributes="Bold" />
-                    <Label Text="Ajoutez jusqu'a 3 photos si cela aide a comprendre le besoin." Style="{StaticResource MutedLabel}" />
+                    <Label x:Name="PhotoHintLabel" Text="Ajoutez jusqu'a 3 photos si cela aide a comprendre le besoin." Style="{StaticResource MutedLabel}" />
                     <Button Text="Ajouter des photos" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnAddPhotosClicked" />
                     <CollectionView x:Name="PhotosView" SelectionMode="None">
                         <CollectionView.ItemTemplate>

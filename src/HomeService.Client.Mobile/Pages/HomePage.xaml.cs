@@ -42,7 +42,7 @@ public partial class HomePage : ContentPage
             services.Clear();
             foreach (var service in serviceResult.Response.Where(service => service.IsActive).Take(8))
             {
-                services.Add(ServiceItem.From(service));
+                services.Add(ServiceItem.From(service, apiClient));
             }
         }
 
@@ -83,7 +83,7 @@ public partial class HomePage : ContentPage
         {
             foreach (var item in result.Response.Take(12))
             {
-                searchResults.Add(SearchResultItem.From(item));
+                searchResults.Add(SearchResultItem.From(item, apiClient));
             }
         }
 
@@ -128,20 +128,22 @@ public partial class HomePage : ContentPage
         await Shell.Current.GoToAsync(path);
     }
 
-    private sealed record ServiceItem(string Name, string Icon, string Price)
+    private sealed record ServiceItem(string Name, string? IconUrl, string IconFallback, bool HasIconUrl, bool HasIconFallback, string Price)
     {
-        public static ServiceItem From(ServiceSummaryResponse response)
+        public static ServiceItem From(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
         {
             var price = response.PriceMinAmount.HasValue
                 ? $"A partir de {response.PriceMinAmount:N0} {response.Currency}"
                 : $"{response.NormalPriceAmount:N0} {response.Currency}";
 
-            return new ServiceItem(response.Name, ResolveIcon(response.IconName), price);
+            var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
+            var fallback = ResolveIcon(response.IconName, response.Name);
+            return new ServiceItem(response.Name, iconUrl, fallback, !string.IsNullOrWhiteSpace(iconUrl), string.IsNullOrWhiteSpace(iconUrl), price);
         }
 
-        private static string ResolveIcon(string iconName)
+        private static string ResolveIcon(string iconName, string name)
         {
-            var normalized = iconName.ToLowerInvariant();
+            var normalized = $"{iconName} {name}".ToLowerInvariant();
             if (normalized.Contains("garden") || normalized.Contains("jardin")) return "JA";
             if (normalized.Contains("clean") || normalized.Contains("menage")) return "ME";
             if (normalized.Contains("electric")) return "EL";
@@ -151,9 +153,9 @@ public partial class HomePage : ContentPage
         }
     }
 
-    private sealed record SearchResultItem(Guid ServiceId, Guid? PrestationId, string Name, string Service, string Price)
+    private sealed record SearchResultItem(Guid ServiceId, Guid? PrestationId, string Name, string Service, string Price, string? IconUrl, string IconFallback, bool HasIconUrl, bool HasIconFallback)
     {
-        public static SearchResultItem From(ClientCatalogSearchResultResponse response)
+        public static SearchResultItem From(ClientCatalogSearchResultResponse response, ClientMobileApiClient apiClient)
         {
             var label = response.PrestationName ?? response.Name;
             var service = response.PrestationName is null ? response.ServiceName : $"{response.ServiceName} - {response.PrestationName}";
@@ -161,7 +163,12 @@ public partial class HomePage : ContentPage
                 ? $"des {response.PriceMinAmount:N0} {response.Currency}"
                 : "Prix a confirmer";
 
-            return new SearchResultItem(response.ServiceId, response.PrestationId, label, service, price);
+            var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
+            var fallback = string.IsNullOrWhiteSpace(response.ServiceName)
+                ? "WE"
+                : response.ServiceName[..Math.Min(2, response.ServiceName.Length)].ToUpperInvariant();
+
+            return new SearchResultItem(response.ServiceId, response.PrestationId, label, service, price, iconUrl, fallback, !string.IsNullOrWhiteSpace(iconUrl), string.IsNullOrWhiteSpace(iconUrl));
         }
     }
 

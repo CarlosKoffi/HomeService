@@ -9,7 +9,7 @@
             <VerticalStackLayout Padding="20" Spacing="18">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="wele" TextColor="{StaticResource WeleBlue}" FontSize="24" FontAttributes="Bold" />
+                        <Label Text="Wele" TextColor="{StaticResource WeleBlue}" FontSize="24" FontAttributes="Bold" />
                         <Label x:Name="GreetingLabel" Text="Bonjour" Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                     <Button Grid.Column="1" Text="Compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnProfileClicked" />
@@ -43,7 +43,12 @@
                             <DataTemplate>
                                 <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="14" Margin="0,0,8,8">
                                     <VerticalStackLayout Spacing="4">
-                                        <Label Text="{Binding Icon}" FontSize="20" />
+                                        <Grid HeightRequest="32" WidthRequest="32" HorizontalOptions="Start">
+                                            <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 16" Padding="7">
+                                                <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
+                                            </Border>
+                                            <Label Text="{Binding IconFallback}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
+                                        </Grid>
                                         <Label Text="{Binding Name}" FontAttributes="Bold" />
                                         <Label Text="{Binding Price}" Style="{StaticResource MutedLabel}" />
                                     </VerticalStackLayout>
@@ -59,12 +64,18 @@
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="14" Margin="0,0,0,8">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                        <Grid HeightRequest="34" WidthRequest="34" VerticalOptions="Center">
+                                            <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 17" Padding="7">
+                                                <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
+                                            </Border>
+                                            <Label Text="{Binding IconFallback}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
+                                        </Grid>
                                         <VerticalStackLayout Spacing="3">
                                             <Label Text="{Binding Name}" FontAttributes="Bold" />
                                             <Label Text="{Binding Service}" Style="{StaticResource MutedLabel}" />
                                         </VerticalStackLayout>
-                                        <Label Grid.Column="1" Text="{Binding Price}" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                                        <Label Grid.Column="2" Text="{Binding Price}" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

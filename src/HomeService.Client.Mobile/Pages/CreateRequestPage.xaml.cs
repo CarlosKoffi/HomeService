@@ -14,6 +14,8 @@ public partial class CreateRequestPage : ContentPage
     private readonly ObservableCollection<PhotoSelection> selectedPhotos = [];
     private readonly List<ClientAddressResponse> addresses = [];
     private ClientMeResponse? client;
+    private PrepareClientMissionResponse? preparation;
+    private int maxPhotoCount = 3;
 
     public CreateRequestPage()
     {
@@ -52,6 +54,59 @@ public partial class CreateRequestPage : ContentPage
         }
 
         await LoadAddressesAsync();
+        await LoadPreparationAsync();
+    }
+
+    private async Task LoadPreparationAsync()
+    {
+        if (!Guid.TryParse(ServiceId, out var serviceId))
+        {
+            return;
+        }
+
+        var prestationId = Guid.TryParse(PrestationId, out var parsedPrestationId)
+            ? parsedPrestationId
+            : (Guid?)null;
+
+        var result = await apiClient.PrepareMissionAsync(new PrepareClientMissionRequest(
+            serviceId,
+            prestationId,
+            ModePicker.SelectedIndex == 0 ? "Urgent" : "Scheduled",
+            IsUrgent: ModePicker.SelectedIndex == 0));
+
+        if (!result.IsSuccess || result.Response is null)
+        {
+            return;
+        }
+
+        preparation = result.Response;
+        maxPhotoCount = Math.Max(0, preparation.MaxPhotoCount);
+        TitleLabel.Text = preparation.DisplayName;
+        PreparationTitleLabel.Text = preparation.DisplayName;
+        PreparationPriceLabel.Text = $"A partir de {preparation.StartingPriceAmount:N0} {preparation.Currency} - max {preparation.MaximumPriceAmount:N0} {preparation.Currency}";
+        PreparationHintLabel.Text = preparation.Message;
+        PreparationIcon.Source = apiClient.ToAbsoluteMediaUrl(preparation.IconUrl);
+        PreparationCard.IsVisible = true;
+        PhotoHintLabel.Text = preparation.PhotosRequired
+            ? $"Photos demandees pour faciliter le devis. Maximum {maxPhotoCount}."
+            : preparation.PhotosRecommended
+                ? $"Photos recommandees si elles aident a comprendre le besoin. Maximum {maxPhotoCount}."
+                : $"Photos facultatives. Maximum {maxPhotoCount}.";
+
+        PaymentPicker.Items.Clear();
+        foreach (var option in preparation.PaymentOptions.Where(option => option.IsAvailable))
+        {
+            PaymentPicker.Items.Add(option.Label);
+        }
+
+        if (PaymentPicker.Items.Count > 0)
+        {
+            var recommendedIndex = preparation.PaymentOptions
+                .Where(option => option.IsAvailable)
+                .Select((option, index) => new { option, index })
+                .FirstOrDefault(item => item.option.Method == preparation.RecommendedPaymentMethod)?.index ?? 0;
+            PaymentPicker.SelectedIndex = recommendedIndex;
+        }
     }
 
     private async Task LoadAddressesAsync()
@@ -129,7 +184,7 @@ public partial class CreateRequestPage : ContentPage
             serviceId,
             prestationId,
             ModePicker.SelectedIndex == 0 ? "Urgent" : "Scheduled",
-            PaymentPicker.SelectedIndex == 0 ? "MobileMoney" : "Card",
+            ResolvePaymentMethod(),
             ResolveScheduledFor(),
             90,
             DescriptionEditor.Text?.Trim(),
@@ -158,14 +213,14 @@ public partial class CreateRequestPage : ContentPage
 
     private async void OnAddPhotosClicked(object sender, EventArgs e)
     {
-        if (selectedPhotos.Count >= 3)
+        if (selectedPhotos.Count >= maxPhotoCount)
         {
-            ShowError("Ajoutez 3 photos maximum pour garder la demande legere.");
+            ShowError($"Ajoutez {maxPhotoCount} photo(s) maximum pour garder la demande legere.");
             return;
         }
 
         var files = await FilePicker.Default.PickMultipleAsync(PickOptions.Images);
-        foreach (var file in files.Take(3 - selectedPhotos.Count))
+        foreach (var file in files.Take(maxPhotoCount - selectedPhotos.Count))
         {
             selectedPhotos.Add(PhotoSelection.From(file));
         }
@@ -186,6 +241,18 @@ public partial class CreateRequestPage : ContentPage
         var date = ScheduleDatePicker.Date;
         var time = ScheduleTimePicker.Time;
         return new DateTimeOffset(date.Date.Add(time), TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.Now));
+    }
+
+    private string ResolvePaymentMethod()
+    {
+        if (preparation is null || PaymentPicker.SelectedIndex < 0)
+        {
+            return PaymentPicker.SelectedIndex == 0 ? "MobileMoney" : "Card";
+        }
+
+        return preparation.PaymentOptions
+            .Where(option => option.IsAvailable)
+            .ElementAtOrDefault(PaymentPicker.SelectedIndex)?.Method ?? preparation.RecommendedPaymentMethod;
     }
 
     private void ShowError(string? message)

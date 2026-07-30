@@ -47,6 +47,26 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendAsync<IReadOnlyList<ClientCatalogSearchResultResponse>>(HttpMethod.Get, path, bearerToken: null, body: null, cancellationToken);
     }
 
+    public async Task<ApiCallResult<PrepareClientMissionResponse>> PrepareMissionAsync(PrepareClientMissionRequest request, CancellationToken cancellationToken = default)
+    {
+        return await SendAsync<PrepareClientMissionResponse>(HttpMethod.Post, "api/client/missions/prepare", bearerToken: null, request, cancellationToken);
+    }
+
+    public string? ToAbsoluteMediaUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(url, UriKind.Absolute, out _))
+        {
+            return url;
+        }
+
+        return new Uri(httpClient.BaseAddress!, url.TrimStart('/')).ToString();
+    }
+
     public async Task<ApiCallResult<IReadOnlyList<ClientMissionListItemResponse>>> GetMissionsAsync(string? status = null, CancellationToken cancellationToken = default)
     {
         var path = string.IsNullOrWhiteSpace(status)
