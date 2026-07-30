@@ -50,7 +50,8 @@ public sealed class MissionDispatchService(
             return MissionDispatchCreationResult.Failed("Aucune entreprise eligible trouvee pour cette mission.");
         }
 
-        var expiresAt = DateTimeOffset.UtcNow.Add(DefaultCompanyResponseWindow);
+        var responseWindow = await ResolveCompanyResponseWindowAsync(isUrgent, cancellationToken);
+        var expiresAt = DateTimeOffset.UtcNow.Add(responseWindow);
         var offers = scores
             .Select(score => new MissionDispatchOffer(
                 mission.Id,
@@ -172,7 +173,8 @@ public sealed class MissionDispatchService(
             return MissionDispatchReissueResult.Ok(missionId, expiredCount + assignmentTimedOutCount, CreatedOfferCount: 0, "Aucune nouvelle entreprise candidate.");
         }
 
-        var expiresAt = now.Add(DefaultCompanyResponseWindow);
+        var responseWindow = await ResolveCompanyResponseWindowAsync(request.IsUrgent, cancellationToken);
+        var expiresAt = now.Add(responseWindow);
         var nextRankStart = offers.Count == 0 ? 1 : offers.Max(offer => offer.Rank) + 1;
         var createdOffers = scores
             .Select((score, index) => new MissionDispatchOffer(
@@ -348,5 +350,16 @@ public sealed class MissionDispatchService(
             && mission.ProviderId is null
             && mission.CompanyAssignmentExpiresAt is not null
             && mission.CompanyAssignmentExpiresAt <= now;
+    }
+
+    private Task<TimeSpan> ResolveCompanyResponseWindowAsync(bool isUrgent, CancellationToken cancellationToken)
+    {
+        return MissionWorkflowSettingsResolver.ResolveMinutesAsync(
+            db,
+            isUrgent
+                ? MissionWorkflowSettingsResolver.UrgentCompanyOfferResponseMinutes
+                : MissionWorkflowSettingsResolver.CompanyOfferResponseMinutes,
+            (int)DefaultCompanyResponseWindow.TotalMinutes,
+            cancellationToken);
     }
 }

@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Missions;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -76,7 +77,12 @@ public sealed class CompanyMissionOfferService(IAppDbContext db)
         var mission = offer.Mission;
         try
         {
-            mission.AcceptCompanyOffer(companyId, now.Add(ProviderAssignmentWindow));
+            var assignmentWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
+                db,
+                MissionWorkflowSettingsResolver.CompanyProviderAssignmentMinutes,
+                (int)ProviderAssignmentWindow.TotalMinutes,
+                cancellationToken);
+            mission.AcceptCompanyOffer(companyId, now.Add(assignmentWindow));
             offer.Accept(now);
         }
         catch (InvalidOperationException exception)
