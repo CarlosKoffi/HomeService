@@ -4,12 +4,14 @@ using HomeService.Contracts.Clients;
 
 namespace HomeService.Client.Mobile.Pages;
 
+[QueryProperty(nameof(MissionId), "missionId")]
 public partial class MessagesPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<MessageRow> messages = [];
     private readonly List<MissionChoice> missions = [];
+    private Guid? requestedMissionId;
 
     public MessagesPage()
     {
@@ -17,6 +19,16 @@ public partial class MessagesPage : ContentPage
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
         MessagesView.ItemsSource = messages;
+    }
+
+    public string? MissionId
+    {
+        set
+        {
+            requestedMissionId = Guid.TryParse(value, out var missionId)
+                ? missionId
+                : null;
+        }
     }
 
     protected override async void OnAppearing()
@@ -27,6 +39,7 @@ public partial class MessagesPage : ContentPage
 
     private async Task LoadMissionsAsync()
     {
+        ErrorLabel.IsVisible = false;
         messages.Clear();
         missions.Clear();
         MissionPicker.ItemsSource = null;
@@ -46,7 +59,12 @@ public partial class MessagesPage : ContentPage
 
         missions.AddRange(result.Response.Take(12).Select(MissionChoice.From));
         MissionPicker.ItemsSource = missions;
-        MissionPicker.SelectedIndex = 0;
+
+        var selectedMission = requestedMissionId.HasValue
+            ? missions.FindIndex(mission => mission.MissionId == requestedMissionId.Value)
+            : -1;
+
+        MissionPicker.SelectedIndex = selectedMission >= 0 ? selectedMission : 0;
     }
 
     private async void OnMissionChanged(object sender, EventArgs e)
@@ -59,9 +77,17 @@ public partial class MessagesPage : ContentPage
 
     private async Task LoadMessagesAsync(Guid missionId)
     {
+        ErrorLabel.IsVisible = false;
         messages.Clear();
         var result = await apiClient.GetMissionMessagesAsync(missionId);
-        if (!result.IsSuccess || result.Response is null || result.Response.Messages.Count == 0)
+        if (!result.IsSuccess || result.Response is null)
+        {
+            ShowError(result.ErrorMessage);
+            messages.Add(new MessageRow("Systeme", "Impossible de charger cette conversation.", string.Empty));
+            return;
+        }
+
+        if (result.Response.Messages.Count == 0)
         {
             messages.Add(new MessageRow("Systeme", "Aucun message sur cette mission.", string.Empty));
             return;
@@ -80,13 +106,27 @@ public partial class MessagesPage : ContentPage
             return;
         }
 
+        ErrorLabel.IsVisible = false;
         var body = MessageEntry.Text.Trim();
         MessageEntry.Text = string.Empty;
+        SendButton.IsEnabled = false;
         var result = await apiClient.SendMissionMessageAsync(mission.MissionId, body);
+        SendButton.IsEnabled = true;
+
         if (result.IsSuccess)
         {
             await LoadMessagesAsync(mission.MissionId);
+            return;
         }
+
+        MessageEntry.Text = body;
+        ShowError(result.ErrorMessage);
+    }
+
+    private void ShowError(string? message)
+    {
+        ErrorLabel.Text = message ?? "Action impossible.";
+        ErrorLabel.IsVisible = true;
     }
 
     private sealed record MissionChoice(Guid MissionId, string Label)

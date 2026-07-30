@@ -59,6 +59,7 @@
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Actions" Style="{StaticResource CardTitleLabel}" />
                     <Button x:Name="ConfirmButton" Text="Accepter le devis et payer" IsVisible="False" Clicked="OnConfirmClicked" />
+                    <Button Text="Envoyer un message" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" />
                     <Button x:Name="CompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" />
                     <Button x:Name="CancelButton" Text="Annuler la mission" IsVisible="False" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCancelClicked" />
                 </VerticalStackLayout>

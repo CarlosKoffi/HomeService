@@ -166,6 +166,16 @@ public partial class MissionDetailPage : ContentPage
         await LoadAsync();
     }
 
+    private async void OnOpenChatClicked(object sender, EventArgs e)
+    {
+        if (currentMissionId == Guid.Empty)
+        {
+            return;
+        }
+
+        await Shell.Current.GoToAsync($"//messages?missionId={currentMissionId:D}");
+    }
+
     private async void OnAdditionalQuoteSelected(object sender, SelectionChangedEventArgs e)
     {
         if (e.CurrentSelection.FirstOrDefault() is not AdditionalQuoteRow quote)
