@@ -533,6 +533,66 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapGet("/notifications", async (
+            bool? unreadOnly,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientNotificationInboxService notificationInboxService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(await notificationInboxService.ListAsync(customer.Id, unreadOnly == true, cancellationToken));
+        })
+        .WithName("ListClientNotifications")
+        .Produces<ClientNotificationListResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapGet("/notifications/unread-count", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientNotificationInboxService notificationInboxService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(await notificationInboxService.CountUnreadAsync(customer.Id, cancellationToken));
+        })
+        .WithName("GetClientUnreadNotificationCount")
+        .Produces<ClientNotificationUnreadCountResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapPost("/notifications/{notificationId:guid}/mark-read", async (
+            Guid notificationId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientNotificationInboxService notificationInboxService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await notificationInboxService.MarkReadAsync(customer.Id, notificationId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(new { message = result.Message })
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("MarkClientNotificationRead")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/client/mission-photos", async (
             HttpRequest httpRequest,
             ClientMissionPhotoUploadService uploadService,

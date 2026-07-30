@@ -16,8 +16,10 @@ public sealed class NotificationOutboxMessageConfiguration : IEntityTypeConfigur
         builder.Property(notification => notification.Body).HasMaxLength(2000).IsRequired();
         builder.Property(notification => notification.RelatedEntityType).HasMaxLength(80);
         builder.Property(notification => notification.MetadataJson).HasColumnType("jsonb");
+        builder.Property(notification => notification.OwnerType).HasConversion<string>().HasMaxLength(32);
         builder.Property(notification => notification.FailureReason).HasMaxLength(1000);
         builder.HasIndex(notification => new { notification.Status, notification.Channel, notification.ScheduledAt });
+        builder.HasIndex(notification => new { notification.OwnerType, notification.OwnerId, notification.ReadAt });
         builder.HasIndex(notification => new { notification.RelatedEntityType, notification.RelatedEntityId });
     }
 }

@@ -16,7 +16,9 @@ public sealed class NotificationOutboxMessage : AuditableEntity
         string body,
         string? relatedEntityType,
         Guid? relatedEntityId,
-        string? metadataJson = null)
+        string? metadataJson = null,
+        MobileDeviceOwnerType? ownerType = null,
+        Guid? ownerId = null)
     {
         Channel = channel;
         Recipient = recipient.Trim();
@@ -25,6 +27,8 @@ public sealed class NotificationOutboxMessage : AuditableEntity
         RelatedEntityType = relatedEntityType?.Trim();
         RelatedEntityId = relatedEntityId;
         MetadataJson = metadataJson?.Trim();
+        OwnerType = ownerType;
+        OwnerId = ownerId;
         Status = NotificationStatus.Pending;
         ScheduledAt = DateTimeOffset.UtcNow;
     }
@@ -37,9 +41,18 @@ public sealed class NotificationOutboxMessage : AuditableEntity
     public string? RelatedEntityType { get; private set; }
     public Guid? RelatedEntityId { get; private set; }
     public string? MetadataJson { get; private set; }
+    public MobileDeviceOwnerType? OwnerType { get; private set; }
+    public Guid? OwnerId { get; private set; }
     public DateTimeOffset ScheduledAt { get; private set; }
     public DateTimeOffset? SentAt { get; private set; }
+    public DateTimeOffset? ReadAt { get; private set; }
     public string? FailureReason { get; private set; }
+
+    public void MarkRead(DateTimeOffset readAt)
+    {
+        ReadAt ??= readAt;
+        Touch();
+    }
 
     public void MarkSent()
     {

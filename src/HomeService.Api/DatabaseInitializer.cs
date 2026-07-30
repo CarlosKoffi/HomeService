@@ -18,6 +18,7 @@ public static class DatabaseInitializer
         await db.Database.MigrateAsync(cancellationToken);
         await EnsureMissionNumbersAsync(db, cancellationToken);
         await EnsureProviderServiceSchemaAsync(db, cancellationToken);
+        await EnsureNotificationOutboxSchemaAsync(db, cancellationToken);
         await EnsureNotificationDeliveryRulesAsync(db, cancellationToken);
         await scope.ServiceProvider.GetRequiredService<NotificationCatalogSeeder>().EnsureDefaultsAsync(cancellationToken);
         await EnsureDefaultCommissionRulesAsync(db, cancellationToken);
@@ -129,6 +130,19 @@ public static class DatabaseInitializer
                     ALTER TABLE "ProviderServices" ALTER COLUMN "CompanyId" SET NOT NULL;
                 END IF;
             END $$;
+            """, cancellationToken);
+    }
+
+    private static async Task EnsureNotificationOutboxSchemaAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "NotificationOutboxMessages"
+                ADD COLUMN IF NOT EXISTS "OwnerType" character varying(32) NULL,
+                ADD COLUMN IF NOT EXISTS "OwnerId" uuid NULL,
+                ADD COLUMN IF NOT EXISTS "ReadAt" timestamp with time zone NULL;
+
+            CREATE INDEX IF NOT EXISTS "IX_NotificationOutboxMessages_OwnerType_OwnerId_ReadAt"
+                ON "NotificationOutboxMessages" ("OwnerType", "OwnerId", "ReadAt");
             """, cancellationToken);
     }
 

@@ -33,7 +33,9 @@ public sealed class MobilePushNotificationQueueService(IAppDbContext db)
                 body,
                 relatedEntityType,
                 relatedEntityId,
-                metadataJson));
+                metadataJson,
+                ownerType,
+                ownerId));
         }
 
         if (saveChanges)
