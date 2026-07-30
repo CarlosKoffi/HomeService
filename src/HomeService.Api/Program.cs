@@ -26,6 +26,7 @@ var app = builder.Build();
 await DatabaseInitializer.InitializeAsync(app.Services);
 
 app.UseSiteAccessGate();
+app.UseStaticFiles();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>

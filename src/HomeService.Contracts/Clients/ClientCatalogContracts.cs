@@ -12,4 +12,7 @@ public sealed record ClientCatalogSearchResultResponse(
     int? PriceMinAmount,
     int? PriceMaxAmount,
     string Currency,
-    string IconName);
+    string IconName,
+    string? IconUrl = null,
+    string? ImageUrl = null,
+    bool RequiresPhoto = false);

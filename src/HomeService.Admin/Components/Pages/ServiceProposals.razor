@@ -300,6 +300,10 @@
             <input type="text" placeholder="Ex: car, zap, shirt" @bind="NewServiceDraft.IconName" />
         </label>
         <label>
+            URL icone
+            <input type="text" placeholder="/assets/services/jardinage.svg" @bind="NewServiceDraft.IconUrl" />
+        </label>
+        <label>
             Prix minimum
             <input type="number" min="0" step="100" @bind="NewServiceDraft.NormalPriceAmount" />
         </label>
@@ -349,7 +353,16 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
             <article class="service-catalog-card" @key="service.Id">
                 <header>
                     <div>
-                        <span class="catalog-icon">@service.IconName</span>
+                        <span class="catalog-icon">
+                            @if (!string.IsNullOrWhiteSpace(service.IconUrl))
+                            {
+                                <img src="@service.IconUrl" alt="" />
+                            }
+                            else
+                            {
+                                @service.IconName
+                            }
+                        </span>
                         <div>
                             <h2>@service.Name</h2>
                             <p>@(string.IsNullOrWhiteSpace(service.Description) ? "Service officiel du catalogue wélé." : service.Description)</p>
@@ -377,6 +390,10 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                 <label>
                                     Icone
                                     <input type="text" @bind="serviceEditDraft.IconName" />
+                                </label>
+                                <label>
+                                    URL icone
+                                    <input type="text" @bind="serviceEditDraft.IconUrl" />
                                 </label>
                                 <label>
                                     Prix minimum
@@ -1122,6 +1139,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             Name = service.Name,
             Description = service.Description ?? string.Empty,
             IconName = service.IconName,
+            IconUrl = service.IconUrl ?? string.Empty,
+            ImageUrl = service.ImageUrl ?? string.Empty,
             NormalPriceAmount = service.PriceMinAmount ?? service.NormalPriceAmount,
             PremiumPriceAmount = service.PriceMaxAmount ?? service.PremiumPriceAmount,
             Currency = service.Currency
@@ -1263,7 +1282,9 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             draft.PremiumPriceAmount,
             draft.Currency,
             draft.NormalPriceAmount,
-            draft.PremiumPriceAmount);
+            draft.PremiumPriceAmount,
+            draft.IconUrl,
+            draft.ImageUrl);
     }
 
     private async Task UpdatePrestationAsync(Guid prestationId)
@@ -1417,6 +1438,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string IconName { get; set; } = "sparkles";
+        public string IconUrl { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
         public int NormalPriceAmount { get; set; }
         public int PremiumPriceAmount { get; set; }
         public string Currency { get; set; } = "XOF";

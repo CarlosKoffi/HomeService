@@ -61,7 +61,9 @@ public static class PublicEndpoints
                             prestation.PriceMaxAmount))
                         .ToList(),
                     service.PriceMinAmount,
-                    service.PriceMaxAmount))
+                    service.PriceMaxAmount,
+                    service.IconUrl,
+                    service.ImageUrl))
                 .ToListAsync(cancellationToken);
 
             return Results.Ok(services);

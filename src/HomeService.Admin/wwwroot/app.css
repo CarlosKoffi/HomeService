@@ -3448,6 +3448,13 @@ h3 {
     padding: .2rem;
 }
 
+.catalog-icon img {
+    display: block;
+    height: 1.35rem;
+    object-fit: contain;
+    width: 1.35rem;
+}
+
 .catalog-meta {
     display: grid;
     gap: .25rem;

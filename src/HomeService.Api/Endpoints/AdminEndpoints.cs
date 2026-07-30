@@ -2129,7 +2129,9 @@ public static class AdminEndpoints
                 .Select(ToServicePrestationResponse)
                 .ToList(),
             service.PriceMinAmount,
-            service.PriceMaxAmount);
+            service.PriceMaxAmount,
+            service.IconUrl,
+            service.ImageUrl);
     }
 
     static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)

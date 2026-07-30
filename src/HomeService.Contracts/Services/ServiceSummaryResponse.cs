@@ -12,7 +12,9 @@ public sealed record ServiceSummaryResponse(
     string Currency,
     IReadOnlyList<ServicePrestationSummaryResponse> Prestations,
     int? PriceMinAmount = null,
-    int? PriceMaxAmount = null);
+    int? PriceMaxAmount = null,
+    string? IconUrl = null,
+    string? ImageUrl = null);
 
 public sealed record ServicePrestationSummaryResponse(
     Guid Id,

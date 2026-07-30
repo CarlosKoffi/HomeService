@@ -24,6 +24,8 @@ public sealed class Service : AuditableEntity
     public string NormalizedName { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public string IconName { get; private set; } = "sparkles";
+    public string? IconUrl { get; private set; }
+    public string? ImageUrl { get; private set; }
     public int NormalPriceAmount { get; private set; } = 1500;
     public int PremiumPriceAmount { get; private set; } = 2500;
     public int PriceMinAmount { get; private set; } = 1500;
@@ -46,6 +48,13 @@ public sealed class Service : AuditableEntity
         NormalizedName = Normalize(name);
         Description = description?.Trim();
         UpdateIcon(iconName);
+        Touch();
+    }
+
+    public void UpdateMedia(string? iconUrl, string? imageUrl)
+    {
+        IconUrl = NormalizeUrl(iconUrl);
+        ImageUrl = NormalizeUrl(imageUrl);
         Touch();
     }
 
@@ -134,5 +143,10 @@ public sealed class Service : AuditableEntity
     private static string Normalize(string value)
     {
         return CatalogNameNormalizer.Normalize(value);
+    }
+
+    private static string? NormalizeUrl(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }

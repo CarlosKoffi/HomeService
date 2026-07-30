@@ -17,6 +17,7 @@ public static class DatabaseInitializer
 
         await db.Database.MigrateAsync(cancellationToken);
         await EnsureMissionNumbersAsync(db, cancellationToken);
+        await EnsureServiceMediaSchemaAsync(db, cancellationToken);
         await EnsureProviderServiceSchemaAsync(db, cancellationToken);
         await EnsureNotificationOutboxSchemaAsync(db, cancellationToken);
         await EnsureNotificationDeliveryRulesAsync(db, cancellationToken);
@@ -29,6 +30,7 @@ public static class DatabaseInitializer
         await SeedLanguagesAsync(db, cancellationToken);
         await SeedServicesAsync(db, cancellationToken);
         await SeedServicePrestationsAsync(db, cancellationToken);
+        await SeedServiceMediaAsync(db, cancellationToken);
         await SeedDemoMissionsAsync(db, cancellationToken);
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         await SeedAdminAccessAsync(db, configuration, cancellationToken);
@@ -75,6 +77,15 @@ public static class DatabaseInitializer
 
             CREATE UNIQUE INDEX IF NOT EXISTS "IX_Missions_MissionNumber"
                 ON "Missions" ("MissionNumber");
+            """, cancellationToken);
+    }
+
+    private static async Task EnsureServiceMediaSchemaAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            ALTER TABLE "Services"
+                ADD COLUMN IF NOT EXISTS "IconUrl" character varying(600) NULL,
+                ADD COLUMN IF NOT EXISTS "ImageUrl" character varying(600) NULL;
             """, cancellationToken);
     }
 
@@ -549,12 +560,53 @@ public static class DatabaseInitializer
 
             service.UpdatePricing(seed.NormalPriceAmount, seed.PremiumPriceAmount, seed.Currency);
             service.UpdateIcon(seed.IconName);
+            service.UpdateMedia(GetSeedServiceIconUrl(normalizedName), imageUrl: null);
         }
 
         if (db.ChangeTracker.HasChanges())
         {
             await db.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    private static async Task SeedServiceMediaAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var services = await db.Services.ToListAsync(cancellationToken);
+        foreach (var service in services)
+        {
+            var iconUrl = GetSeedServiceIconUrl(service.NormalizedName);
+            if (iconUrl is null)
+            {
+                continue;
+            }
+
+            service.UpdateMedia(iconUrl, service.ImageUrl);
+        }
+
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private static string? GetSeedServiceIconUrl(string normalizedName)
+    {
+        return normalizedName switch
+        {
+            "menage" or "menage a domicile" or "nettoyage" => "/assets/services/menage.svg",
+            "jardinage" => "/assets/services/jardinage.svg",
+            "electricite" => "/assets/services/electricite.svg",
+            "blanchisserie" or "pressing" or "repassage" => "/assets/services/blanchisserie.svg",
+            "depannage auto" or "assistance auto" => "/assets/services/depannage-auto.svg",
+            "nounou" or "garde enfants" or "garde d enfant" => "/assets/services/nounou.svg",
+            "plomberie" => "/assets/services/plomberie.svg",
+            "climatisation" => "/assets/services/climatisation.svg",
+            "serrurerie" => "/assets/services/serrurerie.svg",
+            "peinture" => "/assets/services/peinture.svg",
+            "anti nuisibles" or "anti-nuisibles" => "/assets/services/anti-nuisibles.svg",
+            "electromenager" => "/assets/services/electromenager.svg",
+            _ => null
+        };
     }
 
     private static async Task SeedServicePrestationsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)

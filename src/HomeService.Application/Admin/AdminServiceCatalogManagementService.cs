@@ -38,6 +38,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
 
         var service = new Service(request.Name, request.Description, createdByCompanyId: null);
         service.UpdateDetails(request.Name, request.Description, request.IconName);
+        service.UpdateMedia(request.IconUrl, request.ImageUrl);
         service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
         service.Approve();
 
@@ -99,6 +100,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
 
         var before = ToServiceResponse(service);
         service.UpdateDetails(request.Name, request.Description, request.IconName);
+        service.UpdateMedia(request.IconUrl, request.ImageUrl);
         service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
 
         var after = ToServiceResponse(service);
@@ -444,7 +446,9 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
                 .Select(ToServicePrestationResponse)
                 .ToList(),
             service.PriceMinAmount,
-            service.PriceMaxAmount);
+            service.PriceMaxAmount,
+            service.IconUrl,
+            service.ImageUrl);
     }
 
     private static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)

@@ -40,7 +40,10 @@ public sealed class ClientCatalogSearchService(IAppDbContext db)
                     service.PriceMinAmount,
                     service.PriceMaxAmount,
                     service.Currency,
-                    service.IconName));
+                    service.IconName,
+                    service.IconUrl,
+                    service.ImageUrl,
+                    RequiresPhoto(service)));
             }
 
             foreach (var prestation in service.Prestations.Where(prestation => prestation.IsActive))
@@ -67,7 +70,10 @@ public sealed class ClientCatalogSearchService(IAppDbContext db)
                     prestation.PriceMinAmount,
                     prestation.PriceMaxAmount,
                     prestation.Currency,
-                    service.IconName));
+                    service.IconName,
+                    service.IconUrl,
+                    service.ImageUrl,
+                    RequiresPhoto(service)));
             }
         }
 
@@ -94,5 +100,10 @@ public sealed class ClientCatalogSearchService(IAppDbContext db)
         }
 
         return builder.ToString().Normalize(NormalizationForm.FormC);
+    }
+
+    private static bool RequiresPhoto(Domain.Entities.Service service)
+    {
+        return service.RequiresCompletionPhoto || service.RequiresBeforeAfterPhotos;
     }
 }
