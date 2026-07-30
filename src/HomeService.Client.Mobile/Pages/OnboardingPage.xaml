@@ -4,34 +4,75 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Shell.NavBarIsVisible="False"
+    BackgroundColor="White"
     Title="Présentation">
-    <Grid BackgroundColor="White" Padding="0">
-        <CarouselView
-            x:Name="SlidesView"
-            ItemsSource="{Binding Slides}"
-            PositionChanged="OnPositionChanged">
-            <CarouselView.ItemTemplate>
-                <DataTemplate>
-                    <Grid BackgroundColor="White">
-                        <Image
-                            Source="{Binding ImageSource}"
-                            Aspect="AspectFit"
-                            HorizontalOptions="Center"
-                            VerticalOptions="Center" />
-                    </Grid>
-                </DataTemplate>
-            </CarouselView.ItemTemplate>
-        </CarouselView>
+    <Grid>
+        <Grid
+            Padding="28,40,28,26"
+            RowDefinitions="Auto,Auto,*,Auto,Auto"
+            RowSpacing="18"
+            HorizontalOptions="Center"
+            MaximumWidthRequest="440">
+            <Label
+                x:Name="BrandLabel"
+                Text="wélé"
+                FontSize="31"
+                FontAttributes="Bold"
+                TextColor="{StaticResource WeleBlue}" />
 
-        <Button
-            x:Name="NextButton"
-            BackgroundColor="Transparent"
-            BorderWidth="0"
-            Clicked="OnNextClicked"
-            HeightRequest="86"
-            HorizontalOptions="Fill"
-            Opacity="0.01"
-            Text=""
-            VerticalOptions="End" />
+            <VerticalStackLayout Grid.Row="1" Spacing="12">
+                <Label
+                    x:Name="TitleLabel"
+                    FontSize="28"
+                    FontAttributes="Bold"
+                    LineHeight="1.15"
+                    TextColor="#080B16" />
+                <Label
+                    x:Name="LeadLabel"
+                    FontSize="18"
+                    FontAttributes="Bold"
+                    LineHeight="1.3"
+                    TextColor="#111827" />
+                <Label
+                    x:Name="BodyLabel"
+                    FontSize="15"
+                    LineHeight="1.45"
+                    TextColor="#586174" />
+            </VerticalStackLayout>
+
+            <Grid
+                x:Name="IllustrationViewport"
+                Grid.Row="2"
+                HeightRequest="310"
+                IsClippedToBounds="True"
+                VerticalOptions="Center">
+                <Image
+                    x:Name="IllustrationImage"
+                    WidthRequest="390"
+                    HeightRequest="850"
+                    Aspect="AspectFit"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Start" />
+            </Grid>
+
+            <HorizontalStackLayout
+                Grid.Row="3"
+                HorizontalOptions="Center"
+                Spacing="7">
+                <Ellipse x:Name="DotOne" WidthRequest="8" HeightRequest="8" />
+                <Ellipse x:Name="DotTwo" WidthRequest="8" HeightRequest="8" />
+                <Ellipse x:Name="DotThree" WidthRequest="8" HeightRequest="8" />
+            </HorizontalStackLayout>
+
+            <Button
+                x:Name="NextButton"
+                Grid.Row="4"
+                Text="Suivant"
+                CornerRadius="7"
+                HeightRequest="54"
+                FontSize="16"
+                FontAttributes="Bold"
+                Clicked="OnNextClicked" />
+        </Grid>
     </Grid>
 </ContentPage>

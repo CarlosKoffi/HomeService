@@ -6,7 +6,7 @@
     <Application.Resources>
         <Color x:Key="Ink">#111827</Color>
         <Color x:Key="MutedInk">#6B7280</Color>
-        <Color x:Key="WeleBlue">#2563EB</Color>
+        <Color x:Key="WeleBlue">#155EEF</Color>
         <Color x:Key="WeleBlueDark">#0F172A</Color>
         <Color x:Key="Success">#059669</Color>
         <Color x:Key="Warning">#F97316</Color>
@@ -19,6 +19,7 @@
             <Setter Property="BackgroundColor" Value="{StaticResource PageWash}" />
         </Style>
         <Style TargetType="Label">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
             <Setter Property="TextColor" Value="{StaticResource Ink}" />
         </Style>
         <Style x:Key="EyebrowLabel" TargetType="Label">
@@ -49,6 +50,7 @@
             <Setter Property="TextColor" Value="{StaticResource MutedInk}" />
         </Style>
         <Style TargetType="Entry">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
             <Setter Property="BackgroundColor" Value="White" />
             <Setter Property="TextColor" Value="{StaticResource Ink}" />
             <Setter Property="PlaceholderColor" Value="{StaticResource MutedInk}" />
@@ -56,6 +58,7 @@
             <Setter Property="FontSize" Value="15" />
         </Style>
         <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
             <Setter Property="CornerRadius" Value="14" />
             <Setter Property="MinimumHeightRequest" Value="52" />
             <Setter Property="FontAttributes" Value="Bold" />

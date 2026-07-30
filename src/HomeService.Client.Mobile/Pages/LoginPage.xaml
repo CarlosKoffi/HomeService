@@ -7,7 +7,11 @@
     BackgroundColor="White"
     Title="Connexion">
     <ScrollView>
-        <VerticalStackLayout Padding="24,76,24,32" Spacing="30">
+        <VerticalStackLayout
+            Padding="24,76,24,32"
+            Spacing="30"
+            HorizontalOptions="Fill"
+            MaximumWidthRequest="430">
             <Label
                 Text="Se connecter"
                 FontSize="24"
