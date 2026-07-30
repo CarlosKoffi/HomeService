@@ -592,11 +592,15 @@ public static class PublicEndpoints
 
         app.MapGet("/api/client/missions/{missionId:guid}", async (
             Guid missionId,
-            string phoneNumber,
+            string? phoneNumber,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
             ClientMissionStatusService missionStatusService,
             CancellationToken cancellationToken) =>
         {
-            var result = await missionStatusService.GetAsync(missionId, phoneNumber, cancellationToken);
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            var resolvedPhoneNumber = customer?.PhoneNumber ?? phoneNumber ?? string.Empty;
+            var result = await missionStatusService.GetAsync(missionId, resolvedPhoneNumber, cancellationToken);
             if (result.IsSuccess)
             {
                 return Results.Ok(result.Response);
@@ -620,9 +624,17 @@ public static class PublicEndpoints
         app.MapPost("/api/client/missions/{missionId:guid}/confirm", async (
             Guid missionId,
             ConfirmClientMissionRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
             ClientMissionConfirmationService confirmationService,
             CancellationToken cancellationToken) =>
         {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is not null && string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                request = request with { PhoneNumber = customer.PhoneNumber };
+            }
+
             var result = await confirmationService.ConfirmAsync(missionId, request, cancellationToken);
             if (result.IsSuccess)
             {
@@ -653,9 +665,17 @@ public static class PublicEndpoints
         app.MapPost("/api/client/missions/{missionId:guid}/cancel", async (
             Guid missionId,
             CancelClientMissionRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
             ClientMissionCancellationService cancellationService,
             CancellationToken cancellationToken) =>
         {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is not null && string.IsNullOrWhiteSpace(request.CustomerPhoneNumber))
+            {
+                request = request with { CustomerPhoneNumber = customer.PhoneNumber };
+            }
+
             var result = await cancellationService.CancelAsync(missionId, request, cancellationToken);
             if (result.IsSuccess)
             {
@@ -686,9 +706,17 @@ public static class PublicEndpoints
         app.MapPost("/api/client/missions/{missionId:guid}/validate-completion", async (
             Guid missionId,
             ValidateClientMissionCompletionRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
             ClientMissionCompletionValidationService completionValidationService,
             CancellationToken cancellationToken) =>
         {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is not null && string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                request = request with { PhoneNumber = customer.PhoneNumber };
+            }
+
             var result = await completionValidationService.ValidateAsync(missionId, request, cancellationToken);
             if (result.IsSuccess)
             {
@@ -720,9 +748,17 @@ public static class PublicEndpoints
             Guid missionId,
             Guid quoteId,
             PayMissionAdditionalQuoteRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
             MissionAdditionalQuoteWorkflowService additionalQuoteService,
             CancellationToken cancellationToken) =>
         {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is not null && string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                request = request with { PhoneNumber = customer.PhoneNumber };
+            }
+
             var result = await additionalQuoteService.PayByCustomerAsync(quoteId, request, cancellationToken);
             if (result.IsSuccess && result.Response?.MissionId == missionId)
             {
