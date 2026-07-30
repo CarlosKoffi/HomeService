@@ -307,7 +307,7 @@
             <div class="service-icon-preview">
                 @if (!string.IsNullOrWhiteSpace(NewServiceDraft.IconUrl))
                 {
-                    <img src="@NewServiceDraft.IconUrl" alt="" />
+                    <img src="@ResolveServiceIconUrl(NewServiceDraft.IconUrl)" alt="" />
                 }
                 else
                 {
@@ -382,7 +382,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                         <span class="catalog-icon">
                             @if (!string.IsNullOrWhiteSpace(service.IconUrl))
                             {
-                                <img src="@service.IconUrl" alt="" />
+                                <img src="@ResolveServiceIconUrl(service.IconUrl)" alt="" />
                             }
                             else
                             {
@@ -391,7 +391,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                         </span>
                         <div>
                             <h2>@service.Name</h2>
-                            <p>@(string.IsNullOrWhiteSpace(service.Description) ? "Service officiel du catalogue wélé." : service.Description)</p>
+                            <p>@(string.IsNullOrWhiteSpace(service.Description) ? "Service officiel du catalogue Wele." : service.Description)</p>
                         </div>
                     </div>
                     <div class="catalog-meta">
@@ -425,7 +425,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                     <div class="service-icon-preview">
                                         @if (!string.IsNullOrWhiteSpace(serviceEditDraft.IconUrl))
                                         {
-                                            <img src="@serviceEditDraft.IconUrl" alt="" />
+                                            <img src="@ResolveServiceIconUrl(serviceEditDraft.IconUrl)" alt="" />
                                         }
                                         else
                                         {
@@ -1409,6 +1409,11 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         return priceMinAmount == max
             ? $"{priceMinAmount:N0} {currency}"
             : $"{priceMinAmount:N0} - {max:N0} {currency}";
+    }
+
+    private string ResolveServiceIconUrl(string? iconUrl)
+    {
+        return ApiClient.ToApiUrl(iconUrl);
     }
 
     private string GetTabClass(ServiceAdminTab tab)
