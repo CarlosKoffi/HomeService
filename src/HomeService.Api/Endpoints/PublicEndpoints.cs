@@ -681,6 +681,41 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapGet("/api/client/missions/{missionId:guid}/screen", async (
+            Guid missionId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionScreenService missionScreenService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await missionScreenService.GetAsync(missionId, customer.PhoneNumber, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionStatusResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionStatusResultStatus.Forbidden => Results.Problem(
+                    title: "Consultation interdite.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("GetClientMissionScreen")
+        .Produces<ClientMissionScreenResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/client/missions/{missionId:guid}/confirm", async (
             Guid missionId,
             ConfirmClientMissionRequest request,
