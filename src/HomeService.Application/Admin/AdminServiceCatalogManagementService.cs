@@ -198,7 +198,8 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             request.SortOrder,
             GetPriceMin(request),
             GetPriceMax(request),
-            request.Currency);
+            request.Currency,
+            request.IllustrationUrl);
 
         var after = ToServicePrestationResponse(prestation);
         AddAuditLog(
@@ -248,6 +249,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         prestation.Rename(request.Name, request.Description);
         prestation.MoveTo(request.SortOrder);
         prestation.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
+        prestation.UpdateIllustration(request.IllustrationUrl);
 
         var after = ToServicePrestationResponse(prestation);
         AddAuditLog(
@@ -463,7 +465,8 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             prestation.Currency,
             prestation.IsActive,
             prestation.PriceMinAmount,
-            prestation.PriceMaxAmount);
+            prestation.PriceMaxAmount,
+            prestation.IllustrationUrl);
     }
 
     private void AddAuditLog(

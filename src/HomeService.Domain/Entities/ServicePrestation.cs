@@ -15,7 +15,8 @@ public sealed class ServicePrestation : AuditableEntity
         int sortOrder,
         int normalPriceAmount = 0,
         int premiumPriceAmount = 0,
-        string? currency = null)
+        string? currency = null,
+        string? illustrationUrl = null)
     {
         ServiceId = serviceId;
         Name = name.Trim();
@@ -23,6 +24,7 @@ public sealed class ServicePrestation : AuditableEntity
         Description = description?.Trim();
         SortOrder = Math.Max(0, sortOrder);
         UpdatePricing(normalPriceAmount, premiumPriceAmount, currency);
+        IllustrationUrl = NormalizeUrl(illustrationUrl);
     }
 
     public Guid ServiceId { get; private set; }
@@ -36,6 +38,7 @@ public sealed class ServicePrestation : AuditableEntity
     public int PriceMinAmount { get; private set; }
     public int PriceMaxAmount { get; private set; }
     public string Currency { get; private set; } = "XOF";
+    public string? IllustrationUrl { get; private set; }
     public bool IsActive { get; private set; } = true;
 
     public void Rename(string name, string? description)
@@ -67,6 +70,12 @@ public sealed class ServicePrestation : AuditableEntity
         Touch();
     }
 
+    public void UpdateIllustration(string? illustrationUrl)
+    {
+        IllustrationUrl = NormalizeUrl(illustrationUrl);
+        Touch();
+    }
+
     public void Activate()
     {
         IsActive = true;
@@ -82,5 +91,10 @@ public sealed class ServicePrestation : AuditableEntity
     private static string Normalize(string value)
     {
         return CatalogNameNormalizer.Normalize(value);
+    }
+
+    private static string? NormalizeUrl(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }

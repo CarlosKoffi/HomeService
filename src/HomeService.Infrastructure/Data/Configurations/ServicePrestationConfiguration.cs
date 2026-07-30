@@ -16,6 +16,7 @@ public sealed class ServicePrestationConfiguration : IEntityTypeConfiguration<Se
         builder.Property(prestation => prestation.PriceMinAmount).HasDefaultValue(0);
         builder.Property(prestation => prestation.PriceMaxAmount).HasDefaultValue(0);
         builder.Property(prestation => prestation.Currency).HasMaxLength(8);
+        builder.Property(prestation => prestation.IllustrationUrl).HasMaxLength(1000);
         builder.Property(prestation => prestation.IsActive).HasDefaultValue(true);
 
         builder.HasOne(prestation => prestation.Service)

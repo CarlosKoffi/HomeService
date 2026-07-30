@@ -64,7 +64,8 @@ public sealed class Service : AuditableEntity
         int sortOrder,
         int normalPriceAmount = 0,
         int premiumPriceAmount = 0,
-        string? currency = null)
+        string? currency = null,
+        string? illustrationUrl = null)
     {
         var normalizedName = Normalize(name);
         var existing = _prestations.FirstOrDefault(prestation => prestation.NormalizedName == normalizedName);
@@ -73,12 +74,13 @@ public sealed class Service : AuditableEntity
             existing.Rename(name, description);
             existing.MoveTo(sortOrder);
             existing.UpdatePricing(normalPriceAmount, premiumPriceAmount, currency);
+            existing.UpdateIllustration(illustrationUrl);
             existing.Activate();
             Touch();
             return existing;
         }
 
-        var prestation = new ServicePrestation(Id, name, description, sortOrder, normalPriceAmount, premiumPriceAmount, currency);
+        var prestation = new ServicePrestation(Id, name, description, sortOrder, normalPriceAmount, premiumPriceAmount, currency, illustrationUrl);
         _prestations.Add(prestation);
         Touch();
         return prestation;

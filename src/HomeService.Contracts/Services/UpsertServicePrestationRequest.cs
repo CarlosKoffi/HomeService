@@ -8,4 +8,5 @@ public sealed record UpsertServicePrestationRequest(
     int PremiumPriceAmount = 0,
     string Currency = "XOF",
     int? PriceMinAmount = null,
-    int? PriceMaxAmount = null);
+    int? PriceMaxAmount = null,
+    string? IllustrationUrl = null);

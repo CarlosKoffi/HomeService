@@ -2146,7 +2146,8 @@ public static class AdminEndpoints
             prestation.Currency,
             prestation.IsActive,
             prestation.PriceMinAmount,
-            prestation.PriceMaxAmount);
+            prestation.PriceMaxAmount,
+            prestation.IllustrationUrl);
     }
 
     static string GetCompanyPortalBaseUrl(HttpRequest request, IConfiguration configuration)

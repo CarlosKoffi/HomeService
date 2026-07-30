@@ -12,13 +12,13 @@
             <ScrollView>
                 <VerticalStackLayout Padding="18,20,18,24" Spacing="18">
                     <Grid ColumnDefinitions="*,32">
-                        <Label x:Name="GreetingLabel" Text="Bonjour 👋" FontSize="14" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                        <Button Grid.Column="1" Text="♧" FontSize="17" FontAttributes="None" MinimumHeightRequest="0" HeightRequest="32" WidthRequest="32" Padding="0" BackgroundColor="Transparent" TextColor="#111827" Clicked="OnNotificationsClicked" />
+                        <Label x:Name="GreetingLabel" Text="Bonjour" FontSize="14" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                        <ImageButton Grid.Column="1" Source="app_bell.svg" HeightRequest="22" WidthRequest="22" Padding="2" BackgroundColor="Transparent" Clicked="OnNotificationsClicked" />
                     </Grid>
 
                     <Border HeightRequest="38" Stroke="#EDF0F4" BackgroundColor="#F7F8FA" StrokeShape="RoundRectangle 10" Padding="11,0">
                         <Grid ColumnDefinitions="20,*" ColumnSpacing="6">
-                            <Label Text="⌕" FontSize="16" TextColor="#8992A3" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                            <Image Source="app_search.svg" HeightRequest="16" WidthRequest="16" />
                             <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Que recherchez-vous aujourd'hui ?" FontSize="10" MinimumHeightRequest="0" HeightRequest="36" ReturnType="Search" Completed="OnSearchCompleted" />
                         </Grid>
                     </Border>
@@ -72,14 +72,14 @@
                             <Label Text="Les plus demandés" FontSize="12" FontAttributes="Bold" />
                             <Label Grid.Column="1" Text="Voir plus" FontSize="9" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
                         </Grid>
-                        <CollectionView x:Name="PopularServicesView" HeightRequest="112" ItemsLayout="HorizontalList" SelectionMode="Single" SelectionChanged="OnServiceSelected">
+                        <CollectionView x:Name="PopularServicesView" HeightRequest="112" ItemsLayout="HorizontalList" SelectionMode="Single" SelectionChanged="OnPopularSelected">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
                                     <VerticalStackLayout WidthRequest="82" Spacing="5" Margin="0,0,8,0">
                                         <Border HeightRequest="72" Padding="0" BackgroundColor="#F2F4F7" Stroke="#E9EDF2" StrokeShape="RoundRectangle 9">
                                             <Grid>
-                                                <Image Source="{Binding IconUrl}" Aspect="AspectFill" IsVisible="{Binding HasIconUrl}" />
-                                                <Label Text="{Binding IconFallback}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
+                                                <Image Source="{Binding IllustrationUrl}" Aspect="AspectFill" IsVisible="{Binding HasIllustration}" />
+                                                <Label Text="{Binding Fallback}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasFallback}" />
                                             </Grid>
                                         </Border>
                                         <Label Text="{Binding Name}" FontSize="8" FontAttributes="Bold" MaxLines="2" LineBreakMode="TailTruncation" />
@@ -116,23 +116,23 @@
 
         <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" BackgroundColor="White" Padding="8,5,8,3">
             <VerticalStackLayout Grid.Column="0" Spacing="1">
-                <Label Text="⌂" FontSize="18" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
+                <Image Source="nav_home.svg" HeightRequest="19" WidthRequest="19" HorizontalOptions="Center" />
                 <Label Text="Accueil" FontSize="8" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
             <VerticalStackLayout Grid.Column="1" Spacing="1">
                 <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnRequestsTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Label Text="▣" FontSize="17" TextColor="#6B7280" HorizontalTextAlignment="Center" />
+                <Image Source="nav_requests.svg" HeightRequest="18" WidthRequest="18" HorizontalOptions="Center" />
                 <Label Text="Demandes" FontSize="8" TextColor="#6B7280" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
             <Button Grid.Column="2" Text="+" FontSize="24" MinimumHeightRequest="0" HeightRequest="46" WidthRequest="46" Padding="0" CornerRadius="23" VerticalOptions="Start" TranslationY="-10" Clicked="OnCreateRequestClicked" />
             <VerticalStackLayout Grid.Column="3" Spacing="1">
                 <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnMessagesTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Label Text="▢" FontSize="17" TextColor="#6B7280" HorizontalTextAlignment="Center" />
+                <Image Source="nav_messages.svg" HeightRequest="18" WidthRequest="18" HorizontalOptions="Center" />
                 <Label Text="Messages" FontSize="8" TextColor="#6B7280" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
             <VerticalStackLayout Grid.Column="4" Spacing="1">
                 <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnProfileTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Label Text="♙" FontSize="17" TextColor="#6B7280" HorizontalTextAlignment="Center" />
+                <Image Source="nav_profile.svg" HeightRequest="18" WidthRequest="18" HorizontalOptions="Center" />
                 <Label Text="Profil" FontSize="8" TextColor="#6B7280" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
         </Grid>

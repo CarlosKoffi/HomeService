@@ -12,7 +12,7 @@ public partial class HomePage : ContentPage
     private readonly ObservableCollection<ServiceItem> services = [];
     private readonly ObservableCollection<ServiceItem> homeServices = [];
     private readonly ObservableCollection<ServiceItem> wellbeingServices = [];
-    private readonly ObservableCollection<ServiceItem> popularServices = [];
+    private readonly ObservableCollection<PopularItem> popularServices = [];
     private readonly ObservableCollection<SearchResultItem> searchResults = [];
 
     public HomePage()
@@ -72,9 +72,45 @@ public partial class HomePage : ContentPage
             }
         }
 
-        foreach (var item in services.Take(4))
+        foreach (var service in result.Response.Where(item => item.IsActive))
         {
-            popularServices.Add(item);
+            foreach (var prestation in service.Prestations.Where(item => item.IsActive))
+            {
+                var illustrationUrl = apiClient.ToAbsoluteMediaUrl(prestation.IllustrationUrl);
+                popularServices.Add(new PopularItem(
+                    service.Id,
+                    prestation.Id,
+                    prestation.Name,
+                    illustrationUrl,
+                    string.IsNullOrWhiteSpace(prestation.Name) ? "WE" : prestation.Name[..Math.Min(2, prestation.Name.Length)].ToUpperInvariant(),
+                    !string.IsNullOrWhiteSpace(illustrationUrl),
+                    string.IsNullOrWhiteSpace(illustrationUrl)));
+
+                if (popularServices.Count == 4)
+                {
+                    break;
+                }
+            }
+
+            if (popularServices.Count == 4)
+            {
+                break;
+            }
+        }
+
+        if (popularServices.Count == 0)
+        {
+            foreach (var service in services.Take(4))
+            {
+                popularServices.Add(new PopularItem(
+                    service.ServiceId,
+                    null,
+                    service.Name,
+                    service.IconUrl,
+                    service.IconFallback,
+                    service.HasIconUrl,
+                    service.HasIconFallback));
+            }
         }
     }
 
@@ -171,6 +207,18 @@ public partial class HomePage : ContentPage
         await OpenServiceAsync(service);
     }
 
+    private async void OnPopularSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not PopularItem item)
+        {
+            return;
+        }
+
+        PopularServicesView.SelectedItem = null;
+        var path = $"{nameof(CreateRequestPage)}?serviceId={item.ServiceId:D}&prestationId={item.PrestationId?.ToString("D") ?? string.Empty}&name={Uri.EscapeDataString(item.Name)}";
+        await Shell.Current.GoToAsync(path);
+    }
+
     private static Task OpenServiceAsync(ServiceItem service)
     {
         var path = $"{nameof(CreateRequestPage)}?serviceId={service.ServiceId:D}&prestationId=&name={Uri.EscapeDataString(service.Name)}";
@@ -256,4 +304,13 @@ public partial class HomePage : ContentPage
                 string.IsNullOrWhiteSpace(iconUrl));
         }
     }
+
+    private sealed record PopularItem(
+        Guid ServiceId,
+        Guid? PrestationId,
+        string Name,
+        string? IllustrationUrl,
+        string Fallback,
+        bool HasIllustration,
+        bool HasFallback);
 }

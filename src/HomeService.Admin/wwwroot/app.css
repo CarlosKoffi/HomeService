@@ -3511,6 +3511,51 @@ h3 {
     width: 2rem;
 }
 
+.catalog-media-editor {
+    display: grid;
+    grid-template-columns: minmax(120px, 180px) minmax(180px, 1fr);
+    gap: 14px;
+    align-items: center;
+}
+
+.catalog-media-preview {
+    display: grid;
+    place-items: center;
+    min-height: 96px;
+    overflow: hidden;
+    border: 1px solid #dce3ed;
+    border-radius: 8px;
+    background: #f7f9fc;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.catalog-media-preview img {
+    width: 100%;
+    height: 112px;
+    object-fit: cover;
+}
+
+.catalog-upload {
+    display: grid;
+    gap: 7px;
+}
+
+.catalog-upload input[type="file"] {
+    width: 100%;
+    padding: 9px;
+    border: 1px dashed #9bb2d6;
+    border-radius: 7px;
+    background: #fff;
+    font-size: 12px;
+}
+
+@media (max-width: 760px) {
+    .catalog-media-editor {
+        grid-template-columns: 1fr;
+    }
+}
+
 .catalog-meta {
     display: grid;
     gap: .25rem;

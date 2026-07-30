@@ -26,4 +26,5 @@ public sealed record ServicePrestationSummaryResponse(
     string Currency,
     bool IsActive,
     int? PriceMinAmount = null,
-    int? PriceMaxAmount = null);
+    int? PriceMaxAmount = null,
+    string? IllustrationUrl = null);

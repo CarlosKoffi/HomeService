@@ -328,6 +328,10 @@
                     }
                 </select>
             </label>
+            <label class="catalog-upload">
+                Importer une icone
+                <InputFile OnChange="file => UploadServiceIconAsync(NewServiceDraft, file.File)" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+            </label>
         </div>
         <label>
             Prix minimum
@@ -446,6 +450,10 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                             }
                                         </select>
                                     </label>
+                                    <label class="catalog-upload">
+                                        Remplacer l'icone
+                                        <InputFile OnChange="file => UploadServiceIconAsync(serviceEditDraft, file.File)" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                                    </label>
                                 </div>
                                 <label>
                                     Prix minimum
@@ -523,6 +531,26 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                                 Description courte
                                                 <input type="text" @bind="editDraft.Description" />
                                             </label>
+                                            <label class="wide">
+                                                URL illustration
+                                                <input type="text" @bind="editDraft.IllustrationUrl" placeholder="/api/cms/media/..." />
+                                            </label>
+                                            <div class="catalog-media-editor wide">
+                                                <div class="catalog-media-preview">
+                                                    @if (!string.IsNullOrWhiteSpace(editDraft.IllustrationUrl))
+                                                    {
+                                                        <img src="@ResolveServiceIconUrl(editDraft.IllustrationUrl)" alt="Apercu de @editDraft.Name" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Photo facultative</span>
+                                                    }
+                                                </div>
+                                                <label class="catalog-upload">
+                                                    Importer une photo
+                                                    <InputFile OnChange="file => UploadPrestationIllustrationAsync(editDraft, file.File)" accept="image/png,image/jpeg,image/webp" />
+                                                </label>
+                                            </div>
                                         </div>
                                         <div class="easy-actions">
                                             <button type="button" @onclick="() => UpdatePrestationAsync(prestation.Id)" disabled="@IsSaving">Enregistrer</button>
@@ -585,6 +613,26 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                             Devise
                             <input type="text" maxlength="8" @bind="draft.Currency" />
                         </label>
+                        <label>
+                            URL illustration (facultatif)
+                            <input type="text" @bind="draft.IllustrationUrl" placeholder="/api/cms/media/..." />
+                        </label>
+                        <div class="catalog-media-editor">
+                            <div class="catalog-media-preview">
+                                @if (!string.IsNullOrWhiteSpace(draft.IllustrationUrl))
+                                {
+                                    <img src="@ResolveServiceIconUrl(draft.IllustrationUrl)" alt="Apercu de la prestation" />
+                                }
+                                else
+                                {
+                                    <span>Photo facultative</span>
+                                }
+                            </div>
+                            <label class="catalog-upload">
+                                Importer une photo
+                                <InputFile OnChange="file => UploadPrestationIllustrationAsync(draft, file.File)" accept="image/png,image/jpeg,image/webp" />
+                            </label>
+                        </div>
                         <button type="button" @onclick="() => SaveNewPrestationAsync(service.Id)" disabled="@IsSaving">
                             Ajouter
                         </button>
@@ -1221,7 +1269,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 SortOrder = prestation.SortOrder,
                 NormalPriceAmount = prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
                 PremiumPriceAmount = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount,
-                Currency = prestation.Currency
+                Currency = prestation.Currency,
+                IllustrationUrl = prestation.IllustrationUrl ?? string.Empty
             };
             EditDrafts[prestation.Id] = draft;
         }
@@ -1239,7 +1288,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             SortOrder = prestation.SortOrder,
             NormalPriceAmount = prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
             PremiumPriceAmount = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount,
-            Currency = prestation.Currency
+            Currency = prestation.Currency,
+            IllustrationUrl = prestation.IllustrationUrl ?? string.Empty
         };
     }
 
@@ -1267,7 +1317,10 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                     draft.SortOrder,
                     draft.NormalPriceAmount,
                     draft.PremiumPriceAmount,
-                    draft.Currency));
+                    draft.Currency,
+                    draft.NormalPriceAmount,
+                    draft.PremiumPriceAmount,
+                    draft.IllustrationUrl));
             Drafts[serviceId] = new PrestationDraft();
             Message = "Prestation ajoutee au catalogue.";
         });
@@ -1360,7 +1413,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                     draft.PremiumPriceAmount,
                     draft.Currency,
                     draft.NormalPriceAmount,
-                    draft.PremiumPriceAmount));
+                    draft.PremiumPriceAmount,
+                    draft.IllustrationUrl));
             EditingPrestationId = null;
             Message = "Prestation modifiee.";
         });
@@ -1414,6 +1468,38 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private string ResolveServiceIconUrl(string? iconUrl)
     {
         return ApiClient.ToApiUrl(iconUrl);
+    }
+
+    private async Task UploadServiceIconAsync(ServiceDraft draft, IBrowserFile file)
+    {
+        await UploadCatalogMediaAsync(file, url => draft.IconUrl = url);
+    }
+
+    private async Task UploadPrestationIllustrationAsync(PrestationDraft draft, IBrowserFile file)
+    {
+        await UploadCatalogMediaAsync(file, url => draft.IllustrationUrl = url);
+    }
+
+    private async Task UploadCatalogMediaAsync(IBrowserFile file, Action<string> applyUrl)
+    {
+        IsSaving = true;
+        try
+        {
+            var upload = await ApiClient.UploadCmsMediaAsync(file);
+            if (upload is not null)
+            {
+                applyUrl(upload.Url);
+                Message = "Image importee. Enregistrez pour confirmer la modification.";
+            }
+        }
+        catch (Exception exception)
+        {
+            Message = $"Import impossible. Detail: {exception.Message}";
+        }
+        finally
+        {
+            IsSaving = false;
+        }
     }
 
     private string GetTabClass(ServiceAdminTab tab)
@@ -1504,6 +1590,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         public int NormalPriceAmount { get; set; }
         public int PremiumPriceAmount { get; set; }
         public string Currency { get; set; } = "XOF";
+        public string IllustrationUrl { get; set; } = string.Empty;
     }
 
     private sealed class ServiceDraft

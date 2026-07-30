@@ -58,7 +58,8 @@ public static class PublicEndpoints
                             prestation.Currency,
                             prestation.IsActive,
                             prestation.PriceMinAmount,
-                            prestation.PriceMaxAmount))
+                            prestation.PriceMaxAmount,
+                            prestation.IllustrationUrl))
                         .ToList(),
                     service.PriceMinAmount,
                     service.PriceMaxAmount,
