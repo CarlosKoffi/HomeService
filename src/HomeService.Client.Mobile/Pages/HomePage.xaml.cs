@@ -33,7 +33,7 @@ public partial class HomePage : ContentPage
     {
         GreetingLabel.Text = sessionStore.HasSession()
             ? $"Bonjour {sessionStore.GetDisplayName()}"
-            : "Bonjour, trouvez rapidement un service a domicile";
+            : "Bonjour, trouvez rapidement un service à domicile";
         LoginCard.IsVisible = !sessionStore.HasSession();
 
         var serviceResult = await apiClient.GetServicesAsync();
@@ -87,6 +87,9 @@ public partial class HomePage : ContentPage
             }
         }
 
+        SearchCountLabel.Text = searchResults.Count <= 1
+            ? $"{searchResults.Count} résultat"
+            : $"{searchResults.Count} résultats";
         SearchResultsSection.IsVisible = searchResults.Count > 0;
     }
 
@@ -133,17 +136,29 @@ public partial class HomePage : ContentPage
         await Shell.Current.GoToAsync(path);
     }
 
-    private sealed record ServiceItem(string Name, string? IconUrl, string IconFallback, bool HasIconUrl, bool HasIconFallback, string Price)
+    private async void OnServiceSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not ServiceItem service)
+        {
+            return;
+        }
+
+        ServicesView.SelectedItem = null;
+        var path = $"{nameof(CreateRequestPage)}?serviceId={service.ServiceId:D}&prestationId=&name={Uri.EscapeDataString(service.Name)}";
+        await Shell.Current.GoToAsync(path);
+    }
+
+    private sealed record ServiceItem(Guid ServiceId, string Name, string? IconUrl, string IconFallback, bool HasIconUrl, bool HasIconFallback, string Price)
     {
         public static ServiceItem From(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
         {
             var price = response.PriceMinAmount.HasValue
-                ? $"A partir de {response.PriceMinAmount:N0} {response.Currency}"
+                ? $"À partir de {response.PriceMinAmount:N0} {response.Currency}"
                 : $"{response.NormalPriceAmount:N0} {response.Currency}";
 
             var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
             var fallback = ResolveIcon(response.IconName, response.Name);
-            return new ServiceItem(response.Name, iconUrl, fallback, !string.IsNullOrWhiteSpace(iconUrl), string.IsNullOrWhiteSpace(iconUrl), price);
+            return new ServiceItem(response.Id, response.Name, iconUrl, fallback, !string.IsNullOrWhiteSpace(iconUrl), string.IsNullOrWhiteSpace(iconUrl), price);
         }
 
         private static string ResolveIcon(string iconName, string name)
@@ -165,8 +180,8 @@ public partial class HomePage : ContentPage
             var label = response.PrestationName ?? response.Name;
             var service = response.PrestationName is null ? response.ServiceName : $"{response.ServiceName} - {response.PrestationName}";
             var price = response.PriceMinAmount.HasValue
-                ? $"des {response.PriceMinAmount:N0} {response.Currency}"
-                : "Prix a confirmer";
+                ? $"dès {response.PriceMinAmount:N0} {response.Currency}"
+                : "Prix à confirmer";
 
             var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
             var fallback = string.IsNullOrWhiteSpace(response.ServiceName)

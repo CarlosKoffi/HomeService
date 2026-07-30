@@ -6,33 +6,32 @@
     Title="Accueil">
     <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="22,18,22,26" Spacing="20">
+            <VerticalStackLayout Padding="20,18,20,26" Spacing="20">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <VerticalStackLayout Spacing="4">
+                    <VerticalStackLayout Spacing="5">
                         <Label Text="wélé" TextColor="{StaticResource WeleBlue}" FontSize="28" FontAttributes="Bold" />
                         <Label x:Name="GreetingLabel" Text="Bonjour" FontSize="18" FontAttributes="Bold" />
                     </VerticalStackLayout>
-                    <Button Grid.Column="1" Text="Compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnProfileClicked" HeightRequest="44" MinimumHeightRequest="44" CornerRadius="22" />
+                    <Border Grid.Column="1" BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="10" HeightRequest="44" WidthRequest="44">
+                        <Label Text="&#x1F514;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="16" />
+                    </Border>
                 </Grid>
 
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Que recherchez-vous aujourd'hui ?" Style="{StaticResource MutedLabel}" />
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="12,2">
-                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                            <Label Text="⌕" FontSize="18" TextColor="{StaticResource MutedInk}" VerticalTextAlignment="Center" />
-                            <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Plomberie, coiffure, menage..." ReturnType="Search" Completed="OnSearchCompleted" />
-                            <Button Grid.Column="2" Text="OK" WidthRequest="54" MinimumHeightRequest="40" HeightRequest="40" CornerRadius="12" Clicked="OnSearchClicked" />
-                        </Grid>
-                    </Border>
-                </VerticalStackLayout>
+                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12,2">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <Label Text="&#x1F50D;" FontSize="16" TextColor="{StaticResource MutedInk}" VerticalTextAlignment="Center" />
+                        <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Que recherchez-vous aujourd'hui ?" ReturnType="Search" Completed="OnSearchCompleted" />
+                        <Button Grid.Column="2" Text="OK" WidthRequest="54" MinimumHeightRequest="40" HeightRequest="40" CornerRadius="12" Clicked="OnSearchClicked" />
+                    </Grid>
+                </Border>
 
                 <Border x:Name="LoginCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
-                    <VerticalStackLayout Spacing="10">
+                    <VerticalStackLayout Spacing="12">
                         <Label Text="Connectez-vous pour suivre vos demandes" Style="{StaticResource CardTitleLabel}" />
-                        <Label Text="Vos messages, paiements et interventions restent au meme endroit." Style="{StaticResource MutedLabel}" />
+                        <Label Text="Vos messages, paiements et interventions restent au même endroit." Style="{StaticResource MutedLabel}" />
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <Button Text="Connexion" Clicked="OnLoginClicked" />
-                            <Button Grid.Column="1" Text="Creer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
+                            <Button Grid.Column="1" Text="Créer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
                         </Grid>
                     </VerticalStackLayout>
                 </Border>
@@ -42,10 +41,10 @@
                         <Label Text="Pour ma maison" Style="{StaticResource CardTitleLabel}" />
                         <Label Grid.Column="1" Text="Voir plus" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" FontSize="13" VerticalTextAlignment="Center" />
                     </Grid>
-                    <CollectionView x:Name="ServicesView" ItemsLayout="HorizontalList" SelectionMode="None" HeightRequest="112">
+                    <CollectionView x:Name="ServicesView" ItemsLayout="HorizontalList" SelectionMode="Single" SelectionChanged="OnServiceSelected" HeightRequest="114">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,10,0" WidthRequest="104">
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,10,0" WidthRequest="106">
                                     <VerticalStackLayout Spacing="8">
                                         <Grid HeightRequest="42" WidthRequest="42" HorizontalOptions="Start">
                                             <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 16" Padding="8">
@@ -63,19 +62,22 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout x:Name="SearchResultsSection" Spacing="10" IsVisible="False">
-                    <Label Text="Resultats" Style="{StaticResource CardTitleLabel}" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="Résultats" Style="{StaticResource CardTitleLabel}" />
+                        <Label x:Name="SearchCountLabel" Grid.Column="1" Text="0 résultat" Style="{StaticResource MutedLabel}" VerticalTextAlignment="Center" />
+                    </Grid>
                     <CollectionView x:Name="SearchResultsView" SelectionMode="Single" SelectionChanged="OnSearchResultSelected">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="14" Margin="0,0,0,8">
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                                        <Grid HeightRequest="34" WidthRequest="34" VerticalOptions="Center">
-                                            <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 17" Padding="7">
+                                        <Grid HeightRequest="38" WidthRequest="38" VerticalOptions="Center">
+                                            <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 16" Padding="8">
                                                 <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
                                             </Border>
                                             <Label Text="{Binding IconFallback}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
                                         </Grid>
-                                        <VerticalStackLayout Spacing="3">
+                                        <VerticalStackLayout Grid.Column="1" Spacing="3">
                                             <Label Text="{Binding Name}" FontAttributes="Bold" />
                                             <Label Text="{Binding Service}" Style="{StaticResource MutedLabel}" />
                                         </VerticalStackLayout>
@@ -88,7 +90,7 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout x:Name="MissionSection" Spacing="10">
-                    <Label Text="Vos dernieres demandes" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Vos dernières demandes" Style="{StaticResource CardTitleLabel}" />
                     <CollectionView x:Name="MissionsView" SelectionMode="Single" SelectionChanged="OnMissionSelected">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
