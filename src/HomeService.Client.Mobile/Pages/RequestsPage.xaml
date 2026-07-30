@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.RequestsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Demandes">
+    <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="18">
+                <Label Text="DEMANDES" Style="{StaticResource EyebrowLabel}" />
+                <Label Text="Vos interventions" Style="{StaticResource ScreenTitleLabel}" />
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked" />
+                    <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnActiveClicked" />
+                </Grid>
+
+                <CollectionView x:Name="MissionsView" SelectionMode="Single" SelectionChanged="OnMissionSelected">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="16" Margin="0,0,0,10">
+                                <VerticalStackLayout Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <Label Text="{Binding Title}" Style="{StaticResource CardTitleLabel}" />
+                                        <Label Grid.Column="1" Text="{Binding Amount}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                                    </Grid>
+                                    <Label Text="{Binding Address}" Style="{StaticResource MutedLabel}" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <Label Text="{Binding Schedule}" Style="{StaticResource MutedLabel}" />
+                                        <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="#EFF6FF" StrokeShape="RoundRectangle 12" Padding="10,5">
+                                            <Label Text="{Binding Status}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                        </Border>
+                                    </Grid>
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Border x:Name="EmptyState" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18" IsVisible="False">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Aucune demande pour le moment" Style="{StaticResource CardTitleLabel}" />
+                        <Label Text="Vos prochaines demandes apparaitront ici des leur creation." Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

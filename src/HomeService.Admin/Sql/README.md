@@ -80,6 +80,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 055 | `055_add_mission_workflow_settings.sql` | Mission workflow timing and GPS tolerance settings |
 | 056 | `056_seed_demo_missions.sql` | Idempotent admin/company mission and payment demo data |
 | 057 | `057_add_admin_sessions.sql` | Admin login sessions for protected back-office access |
+| 058 | `058_add_client_mobile_api_foundation.sql` | Client mobile sessions, addresses and payment methods |
 
 ## Notes
 

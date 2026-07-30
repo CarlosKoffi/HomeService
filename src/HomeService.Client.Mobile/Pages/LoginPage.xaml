@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.LoginPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Connexion">
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="18">
+            <Label Text="WELE CLIENT" Style="{StaticResource EyebrowLabel}" />
+            <Label Text="Se connecter" Style="{StaticResource ScreenTitleLabel}" />
+            <Label Text="Retrouvez vos demandes, vos messages et vos interventions." Style="{StaticResource BodyLabel}" />
+
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Numero de telephone" FontAttributes="Bold" />
+                    <Entry x:Name="PhoneEntry" Placeholder="Ex: 0707127068" Keyboard="Telephone" />
+                    <Label Text="Mot de passe" FontAttributes="Bold" />
+                    <Entry x:Name="PasswordEntry" Placeholder="Votre mot de passe" IsPassword="True" />
+                    <HorizontalStackLayout Spacing="10">
+                        <CheckBox x:Name="RememberCheckBox" IsChecked="True" Color="{StaticResource WeleBlue}" />
+                        <Label Text="Rester connecte" VerticalTextAlignment="Center" />
+                    </HorizontalStackLayout>
+                    <Button Text="Connexion" Clicked="OnLoginClicked" />
+                    <Button Text="Creer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

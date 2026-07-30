@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.HomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Accueil">
+    <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="wele" TextColor="{StaticResource WeleBlue}" FontSize="24" FontAttributes="Bold" />
+                        <Label x:Name="GreetingLabel" Text="Bonjour" Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+                    <Button Grid.Column="1" Text="Compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnProfileClicked" />
+                </Grid>
+
+                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 28" Padding="20">
+                    <VerticalStackLayout Spacing="14">
+                        <Label Text="De quel service avez-vous besoin ?" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Entry x:Name="SearchEntry" Placeholder="Plomberie, menage, climatisation..." />
+                            <Button Grid.Column="1" Text="Chercher" Clicked="OnSearchClicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="LoginCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Connectez-vous pour suivre vos demandes" Style="{StaticResource CardTitleLabel}" />
+                        <Label Text="Vos messages, paiements et interventions restent au meme endroit." Style="{StaticResource MutedLabel}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Text="Connexion" Clicked="OnLoginClicked" />
+                            <Button Grid.Column="1" Text="Creer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Services populaires" Style="{StaticResource CardTitleLabel}" />
+                    <CollectionView x:Name="ServicesView" ItemsLayout="VerticalGrid, 2" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="14" Margin="0,0,8,8">
+                                    <VerticalStackLayout Spacing="4">
+                                        <Label Text="{Binding Icon}" FontSize="20" />
+                                        <Label Text="{Binding Name}" FontAttributes="Bold" />
+                                        <Label Text="{Binding Price}" Style="{StaticResource MutedLabel}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="SearchResultsSection" Spacing="10" IsVisible="False">
+                    <Label Text="Resultats" Style="{StaticResource CardTitleLabel}" />
+                    <CollectionView x:Name="SearchResultsView" SelectionMode="Single" SelectionChanged="OnSearchResultSelected">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="14" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                        <VerticalStackLayout Spacing="3">
+                                            <Label Text="{Binding Name}" FontAttributes="Bold" />
+                                            <Label Text="{Binding Service}" Style="{StaticResource MutedLabel}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding Price}" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout x:Name="MissionSection" Spacing="10">
+                    <Label Text="Vos dernieres demandes" Style="{StaticResource CardTitleLabel}" />
+                    <CollectionView x:Name="MissionsView" SelectionMode="Single" SelectionChanged="OnMissionSelected">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="14" Margin="0,0,0,8">
+                                    <VerticalStackLayout Spacing="5">
+                                        <Label Text="{Binding Title}" FontAttributes="Bold" />
+                                        <Label Text="{Binding Subtitle}" Style="{StaticResource MutedLabel}" />
+                                        <Label Text="{Binding Status}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

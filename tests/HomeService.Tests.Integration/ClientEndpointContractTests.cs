@@ -14,13 +14,30 @@ namespace HomeService.Tests.Integration;
 public sealed class ClientEndpointContractTests
 {
     [Theory]
+    [InlineData("POST", "/api/client/auth/register")]
+    [InlineData("POST", "/api/client/auth/login")]
+    [InlineData("POST", "/api/client/auth/logout")]
+    [InlineData("GET", "/api/client/me")]
+    [InlineData("PUT", "/api/client/me")]
+    [InlineData("GET", "/api/client/catalog/search")]
+    [InlineData("GET", "/api/client/missions")]
     [InlineData("POST", "/api/client/mission-photos")]
     [InlineData("POST", "/api/client/missions")]
     [InlineData("GET", "/api/client/missions/{missionId:guid}")]
+    [InlineData("GET", "/api/client/missions/{missionId:guid}/messages")]
+    [InlineData("POST", "/api/client/missions/{missionId:guid}/messages")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/confirm")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/cancel")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/validate-completion")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/additional-quotes/{quoteId:guid}/pay")]
+    [InlineData("GET", "/api/client/addresses")]
+    [InlineData("POST", "/api/client/addresses")]
+    [InlineData("PUT", "/api/client/addresses/{addressId:guid}")]
+    [InlineData("DELETE", "/api/client/addresses/{addressId:guid}")]
+    [InlineData("GET", "/api/client/payment-methods")]
+    [InlineData("POST", "/api/client/payment-methods")]
+    [InlineData("DELETE", "/api/client/payment-methods/{paymentMethodId:guid}")]
+    [InlineData("POST", "/api/client/mobile/device-token")]
     public void ClientMissionRoutes_AreMapped(string httpMethod, string routePattern)
     {
         var endpoints = BuildPublicEndpoints();

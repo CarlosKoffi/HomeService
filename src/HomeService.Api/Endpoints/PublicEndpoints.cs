@@ -6,6 +6,7 @@ using HomeService.Application.Cms;
 using HomeService.Application.Companies;
 using HomeService.Application.Contact;
 using HomeService.Application.Missions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Clients;
 using HomeService.Contracts.Cms;
@@ -13,7 +14,10 @@ using HomeService.Contracts.Companies;
 using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
 using HomeService.Contracts.Missions;
+using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
+using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Api.Endpoints;
@@ -219,6 +223,315 @@ public static class PublicEndpoints
         .WithName("SubmitContactRequest")
         .Produces<SubmitContactResponse>()
         .Produces(StatusCodes.Status400BadRequest);
+
+        var client = app.MapGroup("/api/client");
+
+        client.MapPost("/auth/register", async (
+            RegisterClientRequest request,
+            ClientAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await authService.RegisterAsync(request, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = "Inscription client invalide.", errors = result.Errors });
+        })
+        .WithName("RegisterClient")
+        .Produces<ClientAuthResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
+
+        client.MapPost("/auth/login", async (
+            LoginClientRequest request,
+            ClientAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await authService.LoginAsync(request, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = "Connexion client impossible.", errors = result.Errors });
+        })
+        .WithName("LoginClient")
+        .Produces<ClientAuthResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
+
+        client.MapPost("/auth/logout", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            var loggedOut = await authService.LogoutAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            return loggedOut ? Results.Ok(new { message = "Session client fermee." }) : Results.Unauthorized();
+        })
+        .WithName("LogoutClient")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapGet("/me", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            return customer is null ? Results.Unauthorized() : Results.Ok(profileService.ToMe(customer));
+        })
+        .WithName("GetClientMe")
+        .Produces<ClientMeResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapPut("/me", async (
+            UpdateClientProfileRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var response = await profileService.UpdateAsync(customer, request, cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("UpdateClientMe")
+        .Produces<ClientMeResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapGet("/catalog/search", async (
+            string? q,
+            ClientCatalogSearchService searchService,
+            CancellationToken cancellationToken) =>
+        {
+            var results = await searchService.SearchAsync(q, cancellationToken);
+            return Results.Ok(results);
+        })
+        .WithName("SearchClientCatalog")
+        .Produces<IReadOnlyList<ClientCatalogSearchResultResponse>>();
+
+        client.MapGet("/missions", async (
+            string? phoneNumber,
+            string? status,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionListService missionListService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            var result = await missionListService.ListAsync(customer?.Id, phoneNumber, status, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Missions)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("ListClientMissions")
+        .Produces<IReadOnlyList<ClientMissionListItemResponse>>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapGet("/missions/{missionId:guid}/messages", async (
+            Guid missionId,
+            string phoneNumber,
+            ClientMissionChatService chatService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await chatService.ListAsync(missionId, phoneNumber, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.ChatResponse)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("ListClientMissionMessages")
+        .Produces<ClientMissionChatResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapPost("/missions/{missionId:guid}/messages", async (
+            Guid missionId,
+            SendClientMissionMessageRequest request,
+            ClientMissionChatService chatService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await chatService.SendAsync(missionId, request, cancellationToken);
+            if (result.Status == ClientMissionChatResultStatus.Created)
+            {
+                return Results.Created($"/api/client/missions/{missionId}/messages", result.SendResponse);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionChatResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("SendClientMissionMessage")
+        .Produces<SendClientMissionMessageResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapGet("/addresses", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            return customer is null
+                ? Results.Unauthorized()
+                : Results.Ok(await profileService.ListAddressesAsync(customer.Id, cancellationToken));
+        })
+        .WithName("ListClientAddresses")
+        .Produces<IReadOnlyList<ClientAddressResponse>>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapPost("/addresses", async (
+            UpsertClientAddressRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var response = await profileService.AddAddressAsync(customer.Id, request, cancellationToken);
+            return Results.Created($"/api/client/addresses/{response.Id}", response);
+        })
+        .WithName("CreateClientAddress")
+        .Produces<ClientAddressResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapPut("/addresses/{addressId:guid}", async (
+            Guid addressId,
+            UpsertClientAddressRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await profileService.UpdateAddressAsync(customer.Id, addressId, request, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Response) : Results.NotFound();
+        })
+        .WithName("UpdateClientAddress")
+        .Produces<ClientAddressResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapDelete("/addresses/{addressId:guid}", async (
+            Guid addressId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return await profileService.DeleteAddressAsync(customer.Id, addressId, cancellationToken)
+                ? Results.NoContent()
+                : Results.NotFound();
+        })
+        .WithName("DeleteClientAddress")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapGet("/payment-methods", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            return customer is null
+                ? Results.Unauthorized()
+                : Results.Ok(await profileService.ListPaymentMethodsAsync(customer.Id, cancellationToken));
+        })
+        .WithName("ListClientPaymentMethods")
+        .Produces<IReadOnlyList<ClientPaymentMethodResponse>>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapPost("/payment-methods", async (
+            UpsertClientPaymentMethodRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await profileService.AddPaymentMethodAsync(customer.Id, request, cancellationToken);
+            return result.IsSuccess
+                ? Results.Created($"/api/client/payment-methods/{result.Response!.Id}", result.Response)
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("CreateClientPaymentMethod")
+        .Produces<ClientPaymentMethodResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapDelete("/payment-methods/{paymentMethodId:guid}", async (
+            Guid paymentMethodId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return await profileService.DeletePaymentMethodAsync(customer.Id, paymentMethodId, cancellationToken)
+                ? Results.NoContent()
+                : Results.NotFound();
+        })
+        .WithName("DeleteClientPaymentMethod")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapPost("/mobile/device-token", async (
+            RegisterMobileDeviceTokenRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            MobileDeviceTokenService deviceTokenService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await deviceTokenService.RegisterAsync(
+                MobileDeviceOwnerType.Customer,
+                customer.Id,
+                request,
+                cancellationToken);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("RegisterClientMobileDeviceToken")
+        .Produces<MobileDeviceTokenResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
 
         app.MapPost("/api/client/mission-photos", async (
             HttpRequest httpRequest,

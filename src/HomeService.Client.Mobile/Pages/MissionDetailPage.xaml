@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.MissionDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Mission">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Button Text="Retour" HorizontalOptions="Start" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnBackClicked" />
+            <Label Text="MISSION" Style="{StaticResource EyebrowLabel}" />
+            <Label x:Name="TitleLabel" Text="Chargement..." Style="{StaticResource ScreenTitleLabel}" />
+
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label x:Name="StatusLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                    <Label x:Name="ServiceLabel" Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="AddressLabel" Style="{StaticResource MutedLabel}" />
+                    <Label x:Name="PriceLabel" FontAttributes="Bold" />
+                    <Label x:Name="MessageLabel" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border x:Name="ProviderCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18" IsVisible="False">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Technicien affecte" Style="{StaticResource CardTitleLabel}" />
+                    <Label x:Name="ProviderLabel" Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="ProviderPhoneLabel" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Actions" Style="{StaticResource CardTitleLabel}" />
+                    <Button x:Name="ConfirmButton" Text="Accepter le devis et payer" IsVisible="False" Clicked="OnConfirmClicked" />
+                    <Button x:Name="CompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" />
+                    <Button x:Name="CancelButton" Text="Annuler la mission" IsVisible="False" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCancelClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

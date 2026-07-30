@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Shell
+    x:Class="HomeService.Client.Mobile.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:pages="clr-namespace:HomeService.Client.Mobile.Pages"
+    Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False"
+    Title="wélé">
+    <TabBar>
+        <ShellContent Title="Accueil" Route="home" ContentTemplate="{DataTemplate pages:HomePage}" />
+        <ShellContent Title="Demandes" Route="requests" ContentTemplate="{DataTemplate pages:RequestsPage}" />
+        <ShellContent Title="Messages" Route="messages" ContentTemplate="{DataTemplate pages:MessagesPage}" />
+        <ShellContent Title="Profil" Route="profile" ContentTemplate="{DataTemplate pages:ProfilePage}" />
+    </TabBar>
+</Shell>

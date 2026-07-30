@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.CreateRequestPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Nouvelle demande">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Button Text="Retour" HorizontalOptions="Start" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnBackClicked" />
+            <Label Text="DEMANDE" Style="{StaticResource EyebrowLabel}" />
+            <Label x:Name="TitleLabel" Text="Nouvelle demande" Style="{StaticResource ScreenTitleLabel}" />
+            <Label Text="Expliquez simplement le besoin. L'entreprise confirme le prix avant intervention." Style="{StaticResource BodyLabel}" />
+
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Adresse sauvegardee" FontAttributes="Bold" />
+                    <Picker x:Name="AddressPicker" Title="Choisir une adresse" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
+
+                    <Label Text="Adresse" FontAttributes="Bold" />
+                    <Entry x:Name="AddressEntry" Placeholder="Ex: Cocody Angre, 7e tranche" />
+
+                    <Label Text="Description" FontAttributes="Bold" />
+                    <Editor x:Name="DescriptionEditor" Placeholder="Ex: fuite sous l'evier, photo possible..." AutoSize="TextChanges" MinimumHeightRequest="100" />
+
+                    <Label Text="Delai souhaite" FontAttributes="Bold" />
+                    <Picker x:Name="ModePicker" SelectedIndexChanged="OnModeChanged">
+                        <Picker.Items>
+                            <x:String>Aujourd'hui</x:String>
+                            <x:String>Programmee</x:String>
+                        </Picker.Items>
+                    </Picker>
+
+                    <Grid x:Name="ScheduleGrid" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
+                        <DatePicker x:Name="ScheduleDatePicker" />
+                        <TimePicker Grid.Column="1" x:Name="ScheduleTimePicker" />
+                    </Grid>
+
+                    <Label Text="Paiement" FontAttributes="Bold" />
+                    <Picker x:Name="PaymentPicker">
+                        <Picker.Items>
+                            <x:String>Mobile Money</x:String>
+                            <x:String>Carte bancaire</x:String>
+                        </Picker.Items>
+                    </Picker>
+
+                    <Label Text="Photos utiles" FontAttributes="Bold" />
+                    <Label Text="Ajoutez jusqu'a 3 photos si cela aide a comprendre le besoin." Style="{StaticResource MutedLabel}" />
+                    <Button Text="Ajouter des photos" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnAddPhotosClicked" />
+                    <CollectionView x:Name="PhotosView" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 14" Padding="10" Margin="0,0,0,6">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <VerticalStackLayout Spacing="2">
+                                            <Label Text="{Binding FileName}" FontAttributes="Bold" />
+                                            <Label Text="{Binding SizeLabel}" Style="{StaticResource MutedLabel}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding Status}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <Button Text="Envoyer la demande" Clicked="OnCreateClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

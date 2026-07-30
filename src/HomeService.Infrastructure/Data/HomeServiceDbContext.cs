@@ -29,6 +29,9 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<ProviderServicePrestation> ProviderServicePrestations => Set<ProviderServicePrestation>();
     public DbSet<ProviderServicePortfolioItem> ProviderServicePortfolioItems => Set<ProviderServicePortfolioItem>();
     public DbSet<CustomerProfile> Customers => Set<CustomerProfile>();
+    public DbSet<CustomerSession> CustomerSessions => Set<CustomerSession>();
+    public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
+    public DbSet<CustomerPaymentMethod> CustomerPaymentMethods => Set<CustomerPaymentMethod>();
     public DbSet<Mission> Missions => Set<Mission>();
     public DbSet<MissionAttachment> MissionAttachments => Set<MissionAttachment>();
     public DbSet<MissionAdditionalQuote> MissionAdditionalQuotes => Set<MissionAdditionalQuote>();

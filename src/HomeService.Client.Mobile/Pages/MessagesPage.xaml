@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.MessagesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Messages">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20" RowSpacing="14">
+        <VerticalStackLayout Spacing="4">
+            <Label Text="MESSAGES" Style="{StaticResource EyebrowLabel}" />
+            <Label Text="Conversation mission" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
+            <Picker x:Name="MissionPicker" Title="Choisir une mission" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnMissionChanged" />
+        </VerticalStackLayout>
+
+        <CollectionView Grid.Row="1" x:Name="MessagesView" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,0,8">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding Sender}" Style="{StaticResource EyebrowLabel}" />
+                            <Label Text="{Binding Body}" Style="{StaticResource BodyLabel}" />
+                            <Label Text="{Binding SentAt}" Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <Entry x:Name="MessageEntry" Placeholder="Votre message..." />
+            <Button Grid.Column="1" Text="Envoyer" Clicked="OnSendClicked" />
+        </Grid>
+    </Grid>
+</ContentPage>
