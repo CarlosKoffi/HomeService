@@ -5,32 +5,33 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Shell.NavBarIsVisible="False"
     Title="Présentation">
-    <Grid RowDefinitions="*,Auto" Padding="18,14,18,24" BackgroundColor="White">
+    <Grid BackgroundColor="White" Padding="0">
         <CarouselView
             x:Name="SlidesView"
             ItemsSource="{Binding Slides}"
-            IndicatorView="{x:Reference SlidesIndicator}"
             PositionChanged="OnPositionChanged">
             <CarouselView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Padding="0">
+                    <Grid BackgroundColor="White">
                         <Image
                             Source="{Binding ImageSource}"
                             Aspect="AspectFit"
                             HorizontalOptions="Center"
-                            VerticalOptions="Fill" />
+                            VerticalOptions="Center" />
                     </Grid>
                 </DataTemplate>
             </CarouselView.ItemTemplate>
         </CarouselView>
 
-        <VerticalStackLayout Grid.Row="1" Spacing="16">
-            <IndicatorView
-                x:Name="SlidesIndicator"
-                IndicatorColor="#DBEAFE"
-                SelectedIndicatorColor="{StaticResource WeleBlue}"
-                HorizontalOptions="Center" />
-            <Button x:Name="NextButton" Text="Suivant" Clicked="OnNextClicked" />
-        </VerticalStackLayout>
+        <Button
+            x:Name="NextButton"
+            BackgroundColor="Transparent"
+            BorderWidth="0"
+            Clicked="OnNextClicked"
+            HeightRequest="86"
+            HorizontalOptions="Fill"
+            Opacity="0.01"
+            Text=""
+            VerticalOptions="End" />
     </Grid>
 </ContentPage>

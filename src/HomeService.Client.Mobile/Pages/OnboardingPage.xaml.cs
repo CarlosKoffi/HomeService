@@ -17,7 +17,6 @@ public partial class OnboardingPage : ContentPage
         };
 
         BindingContext = this;
-        SlidesIndicator.ItemsSource = Slides;
     }
 
     public ObservableCollection<OnboardingSlide> Slides { get; }
