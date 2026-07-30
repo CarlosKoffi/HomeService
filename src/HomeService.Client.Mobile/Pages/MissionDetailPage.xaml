@@ -9,81 +9,98 @@
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                 <Button Text="&#x2039;" WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnBackClicked" />
                 <VerticalStackLayout Grid.Column="1" Spacing="3">
-                    <Label Text="Detail de la demande" Style="{StaticResource ScreenTitleLabel}" />
+                    <Label Text="Détail de la demande" Style="{StaticResource ScreenTitleLabel}" />
                     <Label x:Name="TitleLabel" Text="Chargement..." Style="{StaticResource MutedLabel}" />
                 </VerticalStackLayout>
             </Grid>
 
-            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="18">
-                <VerticalStackLayout Spacing="16">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <VerticalStackLayout Spacing="5">
-                            <Label x:Name="ServiceLabel" Style="{StaticResource CardTitleLabel}" />
-                            <Label x:Name="AddressLabel" Style="{StaticResource MutedLabel}" />
+            <Border BackgroundColor="{StaticResource WeleBlueDark}" StrokeThickness="0" StrokeShape="RoundRectangle 26" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="MISSION" FontSize="11" FontAttributes="Bold" TextColor="#94A3B8" CharacterSpacing="1.2" />
+                            <Label x:Name="ServiceLabel" FontSize="21" FontAttributes="Bold" TextColor="White" LineBreakMode="WordWrap" />
+                            <Label x:Name="AddressLabel" FontSize="13" TextColor="#CBD5E1" />
                         </VerticalStackLayout>
-                        <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="#EFF6FF" StrokeShape="RoundRectangle 12" Padding="10,5" VerticalOptions="Start">
-                            <Label x:Name="StatusLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" FontSize="12" />
+                        <Border Grid.Column="1" BackgroundColor="#1D4ED8" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="10,6" VerticalOptions="Start">
+                            <Label x:Name="StatusLabel" FontAttributes="Bold" TextColor="White" FontSize="12" />
                         </Border>
                     </Grid>
 
-                    <Grid ColumnDefinitions="24,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
-                        <Border BackgroundColor="{StaticResource WeleBlue}" StrokeThickness="0" StrokeShape="RoundRectangle 8" HeightRequest="12" WidthRequest="12" HorizontalOptions="Center" />
-                        <Label Grid.Column="1" Text="Demande envoyee" FontSize="13" FontAttributes="Bold" />
+                    <Label x:Name="TrackingLabel" FontSize="14" TextColor="White" LineHeight="1.25" />
+                </VerticalStackLayout>
+            </Border>
 
-                        <BoxView Grid.Row="1" WidthRequest="2" HeightRequest="18" BackgroundColor="#DBEAFE" HorizontalOptions="Center" />
-                        <Label Grid.Row="1" Grid.Column="1" Text="Recherche d'un professionnel" Style="{StaticResource MutedLabel}" />
-
-                        <BoxView Grid.Row="2" WidthRequest="2" HeightRequest="18" BackgroundColor="#DBEAFE" HorizontalOptions="Center" />
-                        <Label Grid.Row="2" Grid.Column="1" Text="Technicien attribue" Style="{StaticResource MutedLabel}" />
-
-                        <BoxView Grid.Row="3" WidthRequest="2" HeightRequest="18" BackgroundColor="#DBEAFE" HorizontalOptions="Center" />
-                        <Label Grid.Row="3" Grid.Column="1" Text="En route" Style="{StaticResource MutedLabel}" />
-
-                        <BoxView Grid.Row="4" WidthRequest="2" HeightRequest="18" BackgroundColor="#DBEAFE" HorizontalOptions="Center" />
-                        <Label Grid.Row="4" Grid.Column="1" Text="Intervention" Style="{StaticResource MutedLabel}" />
-
-                        <Border Grid.Row="5" BackgroundColor="#F8FAFC" StrokeThickness="0" StrokeShape="RoundRectangle 8" HeightRequest="12" WidthRequest="12" HorizontalOptions="Center" />
-                        <Label Grid.Row="5" Grid.Column="1" Text="Terminee" Style="{StaticResource MutedLabel}" />
+            <Border x:Name="ProviderCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="16" IsVisible="False">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="58,*,Auto" ColumnSpacing="12">
+                        <Grid HeightRequest="58" WidthRequest="58">
+                            <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 20">
+                                <Label Text="&#x1F464;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="22" />
+                            </Border>
+                            <Image x:Name="ProviderPhoto" Aspect="AspectFill" IsVisible="False" />
+                        </Grid>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Votre professionnel" FontSize="12" TextColor="{StaticResource MutedInk}" />
+                            <Label x:Name="ProviderLabel" FontAttributes="Bold" />
+                            <Label x:Name="ProviderPhoneLabel" Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2" Spacing="3" HorizontalOptions="End" VerticalOptions="Center">
+                            <Label x:Name="ProviderRatingLabel" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End" />
+                            <Label x:Name="ProviderEtaLabel" FontSize="12" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="End" />
+                        </VerticalStackLayout>
                     </Grid>
 
-                    <Label x:Name="TrackingLabel" Style="{StaticResource BodyLabel}" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Text="Message" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" MinimumHeightRequest="46" />
+                        <Button Grid.Column="1" x:Name="CallButton" Text="Appeler" BackgroundColor="#EFF6FF" TextColor="{StaticResource WeleBlue}" Clicked="OnCallClicked" MinimumHeightRequest="46" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Suivi de la mission" Style="{StaticResource CardTitleLabel}" />
+                    <CollectionView x:Name="TimelineView" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="26,*" Padding="0,0,0,12">
+                                    <Border BackgroundColor="{Binding DotColor}" StrokeThickness="0" StrokeShape="RoundRectangle 8" HeightRequest="12" WidthRequest="12" HorizontalOptions="Center" VerticalOptions="Start" Margin="0,4,0,0" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                        <Label Text="{Binding Title}" FontSize="13" FontAttributes="Bold" TextColor="{Binding TextColor}" />
+                                        <Label Text="{Binding Subtitle}" FontSize="12" TextColor="{StaticResource MutedInk}" IsVisible="{Binding HasSubtitle}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </VerticalStackLayout>
             </Border>
 
             <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="18">
                 <VerticalStackLayout Spacing="12">
-                    <Label Text="Details" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Prix et paiement" Style="{StaticResource CardTitleLabel}" />
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <Label Text="Prix" Style="{StaticResource MutedLabel}" />
-                        <Label Grid.Column="1" x:Name="PriceLabel" FontAttributes="Bold" />
+                        <Label Text="Montant" Style="{StaticResource MutedLabel}" />
+                        <Label Grid.Column="1" x:Name="PriceLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <Label Text="Paiement" Style="{StaticResource MutedLabel}" />
+                        <Label Grid.Column="1" x:Name="PaymentLabel" FontAttributes="Bold" />
                     </Grid>
                     <Label x:Name="MessageLabel" Style="{StaticResource MutedLabel}" />
                 </VerticalStackLayout>
             </Border>
 
-            <Border x:Name="ProviderCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="16" IsVisible="False">
-                <Grid ColumnDefinitions="54,*" ColumnSpacing="12">
-                    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 18" HeightRequest="54" WidthRequest="54">
-                        <Label Text="&#x1F464;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="22" />
-                    </Border>
-                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                        <Label Text="Votre technicien" FontSize="13" TextColor="{StaticResource MutedInk}" />
-                        <Label x:Name="ProviderLabel" FontAttributes="Bold" />
-                        <Label x:Name="ProviderPhoneLabel" Style="{StaticResource MutedLabel}" />
-                    </VerticalStackLayout>
-                </Grid>
-            </Border>
-
             <VerticalStackLayout Spacing="10">
                 <Button x:Name="ConfirmButton" Text="Accepter le devis et payer" IsVisible="False" Clicked="OnConfirmClicked" />
-                <Button Text="Contacter" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" />
                 <Button x:Name="CompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" />
                 <Button x:Name="CancelButton" Text="Annuler la mission" IsVisible="False" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCancelClicked" />
             </VerticalStackLayout>
 
             <Border x:Name="AdditionalQuotesCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="18" IsVisible="False">
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="Devis complementaire" Style="{StaticResource CardTitleLabel}" />
+                    <Label Text="Devis complémentaire" Style="{StaticResource CardTitleLabel}" />
                     <CollectionView x:Name="AdditionalQuotesView" SelectionMode="Single" SelectionChanged="OnAdditionalQuoteSelected">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
