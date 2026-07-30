@@ -7,6 +7,14 @@
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="False"
     Title="Wele">
+    <ShellContent
+        Route="onboarding"
+        ContentTemplate="{DataTemplate pages:OnboardingPage}"
+        Shell.TabBarIsVisible="False" />
+    <ShellContent
+        Route="welcome"
+        ContentTemplate="{DataTemplate pages:WelcomePage}"
+        Shell.TabBarIsVisible="False" />
     <TabBar>
         <ShellContent Title="Accueil" Route="home" ContentTemplate="{DataTemplate pages:HomePage}" />
         <ShellContent Title="Demandes" Route="requests" ContentTemplate="{DataTemplate pages:RequestsPage}" />

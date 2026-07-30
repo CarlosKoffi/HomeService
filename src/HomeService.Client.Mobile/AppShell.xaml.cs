@@ -9,8 +9,6 @@ public partial class AppShell : Shell
         InitializeComponent();
         Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
         Routing.RegisterRoute(nameof(RegisterPage), typeof(RegisterPage));
-        Routing.RegisterRoute(nameof(OnboardingPage), typeof(OnboardingPage));
-        Routing.RegisterRoute(nameof(WelcomePage), typeof(WelcomePage));
         Routing.RegisterRoute(nameof(MissionDetailPage), typeof(MissionDetailPage));
         Routing.RegisterRoute(nameof(CreateRequestPage), typeof(CreateRequestPage));
 
@@ -19,11 +17,15 @@ public partial class AppShell : Shell
             await Task.Delay(100);
             if (!Preferences.Default.Get("ClientOnboardingSeen", false))
             {
-                await GoToAsync(nameof(OnboardingPage));
+                await GoToAsync("//onboarding");
             }
             else if (string.IsNullOrWhiteSpace(Preferences.Default.Get("ClientPhoneNumber", string.Empty)))
             {
-                await GoToAsync(nameof(WelcomePage));
+                await GoToAsync("//welcome");
+            }
+            else
+            {
+                await GoToAsync("//home");
             }
         });
     }

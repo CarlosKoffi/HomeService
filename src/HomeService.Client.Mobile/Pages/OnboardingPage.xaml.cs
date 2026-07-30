@@ -30,7 +30,7 @@ public partial class OnboardingPage : ContentPage
         }
 
         Preferences.Default.Set(OnboardingSeenKey, true);
-        await Shell.Current.GoToAsync(nameof(WelcomePage));
+        await Shell.Current.GoToAsync("//welcome");
     }
 
     private void OnPositionChanged(object sender, PositionChangedEventArgs e)
