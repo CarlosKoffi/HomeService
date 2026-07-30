@@ -6,41 +6,50 @@
     Title="Demandes">
     <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="20" Spacing="18">
-                <Label Text="DEMANDES" Style="{StaticResource EyebrowLabel}" />
-                <Label Text="Vos interventions" Style="{StaticResource ScreenTitleLabel}" />
+            <VerticalStackLayout Padding="20,18,20,28" Spacing="16">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Mes demandes" Style="{StaticResource ScreenTitleLabel}" />
+                        <Label Text="Suivez vos services en cours et vos anciennes demandes." Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+                    <Border Grid.Column="1" BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="10" HeightRequest="42" WidthRequest="42">
+                        <Label Text="&#x1F514;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="16" />
+                    </Border>
+                </Grid>
 
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                     <Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked" />
                     <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnActiveClicked" />
+                    <Button Grid.Column="2" Text="Passees" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" />
                 </Grid>
 
                 <CollectionView x:Name="MissionsView" SelectionMode="Single" SelectionChanged="OnMissionSelected">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="16" Margin="0,0,0,10">
-                                <VerticalStackLayout Spacing="8">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <Label Text="{Binding Title}" Style="{StaticResource CardTitleLabel}" />
-                                        <Label Grid.Column="1" Text="{Binding Amount}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
-                                    </Grid>
-                                    <Label Text="{Binding Address}" Style="{StaticResource MutedLabel}" />
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,0,10">
+                                <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
+                                    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="54" WidthRequest="54">
+                                        <Label Text="&#x1F3E0;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="22" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                        <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold" LineBreakMode="TailTruncation" />
                                         <Label Text="{Binding Schedule}" Style="{StaticResource MutedLabel}" />
-                                        <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="#EFF6FF" StrokeShape="RoundRectangle 12" Padding="10,5">
-                                            <Label Text="{Binding Status}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
-                                        </Border>
-                                    </Grid>
-                                </VerticalStackLayout>
+                                        <Label Text="{Binding Address}" FontSize="12" TextColor="{StaticResource MutedInk}" LineBreakMode="TailTruncation" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center" Spacing="7">
+                                        <Label Text="{Binding Status}" FontSize="12" TextColor="{StaticResource Success}" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                                        <Label Text="{Binding Amount}" FontSize="12" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                                    </VerticalStackLayout>
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Border x:Name="EmptyState" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18" IsVisible="False">
+                <Border x:Name="EmptyState" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="18" IsVisible="False">
                     <VerticalStackLayout Spacing="8">
-                        <Label Text="Aucune demande pour le moment" Style="{StaticResource CardTitleLabel}" />
-                        <Label Text="Vos prochaines demandes apparaitront ici des leur creation." Style="{StaticResource MutedLabel}" />
+                        <Label Text="Aucune demande" Style="{StaticResource CardTitleLabel}" />
+                        <Label Text="Vos demandes apparaitront ici apres envoi." Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>

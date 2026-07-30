@@ -10,7 +10,6 @@ public partial class MissionDetailPage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly ObservableCollection<AdditionalQuoteRow> additionalQuotes = [];
     private readonly ObservableCollection<PhotoRow> photos = [];
-    private readonly ObservableCollection<OfferRow> offers = [];
     private Guid currentMissionId;
 
     public MissionDetailPage()
@@ -19,7 +18,6 @@ public partial class MissionDetailPage : ContentPage
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         AdditionalQuotesView.ItemsSource = additionalQuotes;
         PhotosView.ItemsSource = photos;
-        OffersView.ItemsSource = offers;
     }
 
     public string? MissionId { get; set; }
@@ -59,8 +57,6 @@ public partial class MissionDetailPage : ContentPage
             : $"A partir de {mission.StartingPriceAmount:N0} {mission.Currency}";
         MessageLabel.Text = mission.Message;
         TrackingLabel.Text = BuildTrackingMessage(mission);
-        UpdateProgress(mission);
-
         ProviderCard.IsVisible = mission.AssignedProvider is not null;
         if (mission.AssignedProvider is not null)
         {
@@ -89,15 +85,8 @@ public partial class MissionDetailPage : ContentPage
             photos.Add(PhotoRow.From(photo));
         }
 
-        offers.Clear();
-        foreach (var offer in mission.CompanyOffers)
-        {
-            offers.Add(OfferRow.From(offer));
-        }
-
         AdditionalQuotesCard.IsVisible = additionalQuotes.Count > 0;
         PhotosCard.IsVisible = photos.Count > 0;
-        OffersCard.IsVisible = offers.Count > 0;
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
@@ -216,21 +205,6 @@ public partial class MissionDetailPage : ContentPage
         ErrorLabel.IsVisible = true;
     }
 
-    private void UpdateProgress(ClientMissionStatusResponse mission)
-    {
-        var neutral = Color.FromArgb("#F8FAFC");
-
-        StepQuote.BackgroundColor = mission.QuoteStatus is "Submitted" or "Accepted" || mission.CustomerConfirmedAt is not null
-            ? Color.FromArgb("#EFF6FF")
-            : neutral;
-        StepProvider.BackgroundColor = mission.AssignedProvider is not null || mission.ProviderAcceptedAt is not null
-            ? Color.FromArgb("#EFF6FF")
-            : neutral;
-        StepDone.BackgroundColor = mission.Status == "Completed"
-            ? Color.FromArgb("#ECFDF5")
-            : neutral;
-    }
-
     private static string BuildTrackingMessage(ClientMissionStatusResponse mission)
     {
         if (mission.Status == "Cancelled")
@@ -299,11 +273,4 @@ public partial class MissionDetailPage : ContentPage
         }
     }
 
-    private sealed record OfferRow(string CompanyName, string RankLabel, string Status)
-    {
-        public static OfferRow From(ClientMissionOfferResponse offer)
-        {
-            return new OfferRow(offer.CompanyName, $"Priorite {offer.Rank} - score {offer.Score}", offer.Status);
-        }
-    }
 }
