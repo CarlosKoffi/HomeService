@@ -5,36 +5,63 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Compte client">
     <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="18">
-            <Label Text="NOUVEAU CLIENT" Style="{StaticResource EyebrowLabel}" />
-            <Label Text="Creer votre compte" Style="{StaticResource ScreenTitleLabel}" />
-            <Label Text="Un compte suffit pour demander un service, suivre la mission et parler avec l'equipe." Style="{StaticResource BodyLabel}" />
+        <VerticalStackLayout Padding="22,24,22,28" Spacing="22">
+            <VerticalStackLayout Spacing="8">
+                <Label Text="wélé" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                <Label Text="Creer un compte" Style="{StaticResource ScreenTitleLabel}" />
+                <Label Text="Demandez un service, suivez l'intervention et retrouvez vos factures." Style="{StaticResource BodyLabel}" />
+            </VerticalStackLayout>
 
-            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
-                <VerticalStackLayout Spacing="12">
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Prenom" FontAttributes="Bold" />
-                            <Entry x:Name="FirstNameEntry" Placeholder="Awa" />
-                        </VerticalStackLayout>
-                        <VerticalStackLayout Grid.Column="1" Spacing="6">
-                            <Label Text="Nom" FontAttributes="Bold" />
-                            <Entry x:Name="LastNameEntry" Placeholder="Kone" />
-                        </VerticalStackLayout>
+            <VerticalStackLayout Spacing="14">
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Nom complet" FontSize="13" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
+                            <Entry x:Name="FirstNameEntry" Placeholder="Prenom" />
+                        </Border>
+                        <Border Grid.Column="1" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
+                            <Entry x:Name="LastNameEntry" Placeholder="Nom" />
+                        </Border>
                     </Grid>
-                    <Label Text="Telephone" FontAttributes="Bold" />
-                    <Entry x:Name="PhoneEntry" Placeholder="Ex: 0707127068" Keyboard="Telephone" />
-                    <Label Text="Email" FontAttributes="Bold" />
-                    <Entry x:Name="EmailEntry" Placeholder="optionnel" Keyboard="Email" />
-                    <Label Text="Mot de passe" FontAttributes="Bold" />
-                    <Entry x:Name="PasswordEntry" Placeholder="Minimum 8 caracteres" IsPassword="True" />
-                    <Label Text="Confirmation" FontAttributes="Bold" />
-                    <Entry x:Name="ConfirmPasswordEntry" Placeholder="Retapez le mot de passe" IsPassword="True" />
-                    <Button Text="Creer mon compte" Clicked="OnRegisterClicked" />
                 </VerticalStackLayout>
-            </Border>
 
-            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Telephone" FontSize="13" FontAttributes="Bold" />
+                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
+                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Email optionnel" FontSize="13" FontAttributes="Bold" />
+                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
+                        <Entry x:Name="EmailEntry" Placeholder="carlos@email.com" Keyboard="Email" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Mot de passe" FontSize="13" FontAttributes="Bold" />
+                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
+                        <Entry x:Name="PasswordEntry" Placeholder="Minimum 8 caracteres" IsPassword="True" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Confirmation" FontSize="13" FontAttributes="Bold" />
+                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
+                        <Entry x:Name="ConfirmPasswordEntry" Placeholder="Retapez le mot de passe" IsPassword="True" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <HorizontalStackLayout Spacing="8">
+                    <CheckBox IsChecked="True" Color="{StaticResource WeleBlue}" />
+                    <Label Text="J'accepte les conditions d'utilisation." FontSize="12" VerticalTextAlignment="Center" />
+                </HorizontalStackLayout>
+
+                <Button Text="Creer mon compte" Clicked="OnRegisterClicked" />
+            </VerticalStackLayout>
+
+            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" FontAttributes="Bold" IsVisible="False" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
