@@ -1,7 +1,3 @@
-ALTER TABLE "Services"
-    ADD COLUMN IF NOT EXISTS "IconUrl" character varying(600),
-    ADD COLUMN IF NOT EXISTS "ImageUrl" character varying(600);
-
 UPDATE "Services"
 SET "IconUrl" = CASE
     WHEN "NormalizedName" IN ('menage', 'menage a domicile', 'nettoyage') THEN '/assets/services/menage.png'
@@ -18,5 +14,25 @@ SET "IconUrl" = CASE
     WHEN "NormalizedName" = 'electromenager' THEN '/assets/services/electromenager.png'
     ELSE "IconUrl"
 END
-WHERE "IconUrl" IS NULL
-   OR trim("IconUrl") = '';
+WHERE "NormalizedName" IN (
+    'menage',
+    'menage a domicile',
+    'nettoyage',
+    'jardinage',
+    'electricite',
+    'blanchisserie',
+    'pressing',
+    'repassage',
+    'depannage auto',
+    'assistance auto',
+    'nounou',
+    'garde enfants',
+    'garde d enfant',
+    'plomberie',
+    'climatisation',
+    'serrurerie',
+    'peinture',
+    'anti nuisibles',
+    'anti-nuisibles',
+    'electromenager'
+);

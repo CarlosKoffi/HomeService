@@ -593,18 +593,18 @@ public static class DatabaseInitializer
     {
         return normalizedName switch
         {
-            "menage" or "menage a domicile" or "nettoyage" => "/assets/services/menage.svg",
-            "jardinage" => "/assets/services/jardinage.svg",
-            "electricite" => "/assets/services/electricite.svg",
-            "blanchisserie" or "pressing" or "repassage" => "/assets/services/blanchisserie.svg",
-            "depannage auto" or "assistance auto" => "/assets/services/depannage-auto.svg",
-            "nounou" or "garde enfants" or "garde d enfant" => "/assets/services/nounou.svg",
-            "plomberie" => "/assets/services/plomberie.svg",
-            "climatisation" => "/assets/services/climatisation.svg",
-            "serrurerie" => "/assets/services/serrurerie.svg",
-            "peinture" => "/assets/services/peinture.svg",
-            "anti nuisibles" or "anti-nuisibles" => "/assets/services/anti-nuisibles.svg",
-            "electromenager" => "/assets/services/electromenager.svg",
+            "menage" or "menage a domicile" or "nettoyage" => "/assets/services/menage.png",
+            "jardinage" => "/assets/services/jardinage.png",
+            "electricite" => "/assets/services/electricite.png",
+            "blanchisserie" or "pressing" or "repassage" => "/assets/services/blanchisserie.png",
+            "depannage auto" or "assistance auto" => "/assets/services/depannage-auto.png",
+            "nounou" or "garde enfants" or "garde d enfant" => "/assets/services/nounou.png",
+            "plomberie" => "/assets/services/plomberie.png",
+            "climatisation" => "/assets/services/climatisation.png",
+            "serrurerie" => "/assets/services/serrurerie.png",
+            "peinture" => "/assets/services/peinture.png",
+            "anti nuisibles" or "anti-nuisibles" => "/assets/services/anti-nuisibles.png",
+            "electromenager" => "/assets/services/electromenager.png",
             _ => null
         };
     }
