@@ -68,7 +68,7 @@
                     Stroke="#E2E5EA"
                     StrokeShape="RoundRectangle 11">
                     <ImageButton
-                        Source="auth_google.svg"
+                        Source="auth_google.png"
                         Padding="17"
                         BackgroundColor="White"
                         AutomationId="GoogleSignInButton"
@@ -81,7 +81,7 @@
                     Stroke="#E2E5EA"
                     StrokeShape="RoundRectangle 11">
                     <ImageButton
-                        Source="auth_apple.svg"
+                        Source="auth_apple.png"
                         Padding="17"
                         BackgroundColor="White"
                         AutomationId="AppleSignInButton"
@@ -94,7 +94,7 @@
                     Stroke="#E2E5EA"
                     StrokeShape="RoundRectangle 11">
                     <ImageButton
-                        Source="auth_phone.svg"
+                        Source="auth_phone.png"
                         Padding="17"
                         BackgroundColor="White"
                         AutomationId="PhoneSignInButton"

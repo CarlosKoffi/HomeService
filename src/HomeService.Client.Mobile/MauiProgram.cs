@@ -1,4 +1,9 @@
 using HomeService.Client.Mobile.Services;
+#if WINDOWS
+using Microsoft.Maui.Handlers;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+#endif
 
 namespace HomeService.Client.Mobile;
 
@@ -6,6 +11,14 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+#if WINDOWS
+        EntryHandler.Mapper.AppendToMapping("BorderlessEntry", (handler, _) =>
+        {
+            handler.PlatformView.BorderThickness = new Microsoft.UI.Xaml.Thickness(0);
+            handler.PlatformView.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        });
+#endif
+
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()

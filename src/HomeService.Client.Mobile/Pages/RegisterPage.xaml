@@ -8,51 +8,55 @@
     Title="Créer un compte">
     <ScrollView>
         <VerticalStackLayout
-            Padding="24,58,24,32"
-            Spacing="24"
+            Padding="24,38,24,28"
+            Spacing="22"
             HorizontalOptions="Fill"
-            MaximumWidthRequest="430">
+            MaximumWidthRequest="390">
             <Label
                 Text="Créer un compte"
-                FontSize="22"
+                FontSize="20"
                 FontAttributes="Bold"
                 TextColor="#09090B" />
 
-            <VerticalStackLayout Spacing="15">
-                <VerticalStackLayout Spacing="7">
-                    <Label Text="Nom complet" FontSize="11" TextColor="#374151" />
-                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Entry x:Name="FullNameEntry" Placeholder="Carlos Konan" HeightRequest="47" />
+            <VerticalStackLayout Spacing="13">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Nom complet" FontSize="10" TextColor="#374151" />
+                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                        <Entry x:Name="FullNameEntry" Placeholder="Carlos Konan" FontSize="12" MinimumHeightRequest="0" HeightRequest="38" />
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="7">
-                    <Label Text="Téléphone" FontSize="11" TextColor="#374151" />
-                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" HeightRequest="47" />
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Téléphone" FontSize="10" TextColor="#374151" />
+                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" FontSize="12" MinimumHeightRequest="0" HeightRequest="38" />
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="7">
-                    <Label Text="Email (optionnel)" FontSize="11" TextColor="#374151" />
-                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Entry x:Name="EmailEntry" Placeholder="carlos@gmail.com" Keyboard="Email" HeightRequest="47" />
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Email (optionnel)" FontSize="10" TextColor="#374151" />
+                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                        <Entry x:Name="EmailEntry" Placeholder="carlos@gmail.com" Keyboard="Email" FontSize="12" MinimumHeightRequest="0" HeightRequest="38" />
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="7">
-                    <Label Text="Mot de passe" FontSize="11" TextColor="#374151" />
-                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Grid ColumnDefinitions="*,36">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Mot de passe" FontSize="10" TextColor="#374151" />
+                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                        <Grid ColumnDefinitions="*,28">
                             <Entry
                                 x:Name="PasswordEntry"
                                 Placeholder="Minimum 8 caractères"
                                 IsPassword="True"
-                                HeightRequest="47" />
+                                FontSize="12"
+                                MinimumHeightRequest="0"
+                                HeightRequest="38" />
                             <Button
                                 Grid.Column="1"
                                 Text="◉"
-                                FontSize="15"
+                                FontSize="12"
+                                MinimumHeightRequest="0"
+                                HeightRequest="30"
                                 Padding="0"
                                 BackgroundColor="Transparent"
                                 TextColor="#6B7280"
@@ -61,25 +65,28 @@
                     </Border>
                 </VerticalStackLayout>
 
-                <HorizontalStackLayout Spacing="8">
-                    <CheckBox x:Name="TermsCheckBox" IsChecked="True" Color="{StaticResource WeleBlue}" />
+                <Grid ColumnDefinitions="22,*" ColumnSpacing="8">
+                    <CheckBox x:Name="TermsCheckBox" IsChecked="True" Color="{StaticResource WeleBlue}" Scale="0.78" />
                     <Label
+                        Grid.Column="1"
                         Text="J'accepte les CGU et la politique de confidentialité."
-                        FontSize="11"
+                        FontSize="9"
                         VerticalTextAlignment="Center" />
-                </HorizontalStackLayout>
+                </Grid>
 
                 <Button
                     Text="Créer mon compte"
-                    CornerRadius="8"
-                    HeightRequest="50"
+                    CornerRadius="6"
+                    FontSize="12"
+                    MinimumHeightRequest="0"
+                    HeightRequest="42"
                     Clicked="OnRegisterClicked" />
             </VerticalStackLayout>
 
             <Label
                 x:Name="ErrorLabel"
                 TextColor="{StaticResource Danger}"
-                FontSize="12"
+                FontSize="11"
                 FontAttributes="Bold"
                 IsVisible="False" />
         </VerticalStackLayout>

@@ -8,35 +8,37 @@
     Title="Connexion">
     <ScrollView>
         <VerticalStackLayout
-            Padding="24,58,24,32"
-            Spacing="28"
+            Padding="24,38,24,28"
+            Spacing="24"
             HorizontalOptions="Fill"
-            MaximumWidthRequest="430">
+            MaximumWidthRequest="390">
             <Label
                 Text="Se connecter"
-                FontSize="22"
+                FontSize="20"
                 FontAttributes="Bold"
                 TextColor="#09090B" />
 
-            <VerticalStackLayout Spacing="17">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Téléphone ou email" FontSize="11" TextColor="#374151" />
-                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
+            <VerticalStackLayout Spacing="14">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="Téléphone ou email" FontSize="10" TextColor="#374151" />
+                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
                         <Entry
                             x:Name="PhoneEntry"
                             Placeholder="07 12 34 56 78"
                             Keyboard="Email"
-                            HeightRequest="48" />
+                            FontSize="12"
+                            MinimumHeightRequest="0"
+                            HeightRequest="38" />
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="8">
+                <VerticalStackLayout Spacing="5">
                     <Grid ColumnDefinitions="*,Auto">
-                        <Label Text="Mot de passe" FontSize="11" TextColor="#374151" />
+                        <Label Text="Mot de passe" FontSize="10" TextColor="#374151" />
                         <Label
                             Grid.Column="1"
                             Text="Mot de passe oublié ?"
-                            FontSize="11"
+                            FontSize="9"
                             FontAttributes="Bold"
                             TextColor="{StaticResource WeleBlue}">
                             <Label.GestureRecognizers>
@@ -44,17 +46,21 @@
                             </Label.GestureRecognizers>
                         </Label>
                     </Grid>
-                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Grid ColumnDefinitions="*,36">
+                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                        <Grid ColumnDefinitions="*,28">
                             <Entry
                                 x:Name="PasswordEntry"
                                 Placeholder="Votre mot de passe"
                                 IsPassword="True"
-                                HeightRequest="48" />
+                                FontSize="12"
+                                MinimumHeightRequest="0"
+                                HeightRequest="38" />
                             <Button
                                 Grid.Column="1"
                                 Text="◉"
-                                FontSize="15"
+                                FontSize="12"
+                                MinimumHeightRequest="0"
+                                HeightRequest="30"
                                 Padding="0"
                                 BackgroundColor="Transparent"
                                 TextColor="#6B7280"
@@ -65,16 +71,18 @@
 
                 <Button
                     Text="Se connecter"
-                    Margin="0,4,0,0"
-                    CornerRadius="7"
-                    HeightRequest="50"
+                    Margin="0,3,0,0"
+                    CornerRadius="6"
+                    FontSize="12"
+                    MinimumHeightRequest="0"
+                    HeightRequest="42"
                     Clicked="OnLoginClicked" />
             </VerticalStackLayout>
 
             <Label
                 x:Name="ErrorLabel"
                 TextColor="{StaticResource Danger}"
-                FontSize="12"
+                FontSize="11"
                 FontAttributes="Bold"
                 IsVisible="False" />
         </VerticalStackLayout>
