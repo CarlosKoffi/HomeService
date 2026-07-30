@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using HomeService.Contracts.Clients;
 using HomeService.Contracts.Missions;
+using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
 
 namespace HomeService.Client.Mobile.Services;
@@ -22,6 +23,17 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
     public async Task<ApiCallResult<ClientMeResponse>> GetMeAsync(CancellationToken cancellationToken = default)
     {
         return await SendWithSessionAsync<ClientMeResponse>(HttpMethod.Get, "api/client/me", body: null, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<MobileDeviceTokenResponse>> RegisterDeviceTokenAsync(
+        RegisterMobileDeviceTokenRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<MobileDeviceTokenResponse>(
+            HttpMethod.Post,
+            "api/client/mobile/device-token",
+            request,
+            cancellationToken);
     }
 
     public async Task<ApiCallResult<IReadOnlyList<ServiceSummaryResponse>>> GetServicesAsync(CancellationToken cancellationToken = default)

@@ -7,12 +7,14 @@ public partial class RegisterPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
+    private readonly ClientDeviceRegistrationService deviceRegistrationService;
 
     public RegisterPage()
     {
         InitializeComponent();
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
+        deviceRegistrationService = MobileServiceLocator.GetRequiredService<ClientDeviceRegistrationService>();
     }
 
     private async void OnRegisterClicked(object sender, EventArgs e)
@@ -39,6 +41,7 @@ public partial class RegisterPage : ContentPage
         }
 
         await sessionStore.SaveAsync(result.Response);
+        await deviceRegistrationService.RegisterCurrentDeviceAsync();
         await Shell.Current.GoToAsync("//home");
     }
 
