@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "796391633139",
+    "project_id": "homeservice-18c0c",
+    "storage_bucket": "homeservice-18c0c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:796391633139:android:75e7b127c0a07771f04786",
+        "android_client_info": {
+          "package_name": "ci.wele.client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaWYaSixwBmD1BP7b1A1Fls2l-VrUQ1o8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

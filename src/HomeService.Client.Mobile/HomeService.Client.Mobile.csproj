@@ -25,6 +25,14 @@
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.14" />
   </ItemGroup>
 
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <GoogleServicesJson Include="google-services.json" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+    <BundleResource Include="GoogleService-Info.plist" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\HomeService.Contracts\HomeService.Contracts.csproj" />
   </ItemGroup>
