@@ -23,7 +23,7 @@ public partial class LoginPage : ContentPage
         var request = new LoginClientRequest(
             PhoneEntry.Text?.Trim() ?? string.Empty,
             PasswordEntry.Text ?? string.Empty,
-            RememberCheckBox.IsChecked);
+            true);
 
         var result = await apiClient.LoginAsync(request);
         if (!result.IsSuccess || result.Response is null)

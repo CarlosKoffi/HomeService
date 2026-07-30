@@ -8,31 +8,31 @@
     Title="Connexion">
     <ScrollView>
         <VerticalStackLayout
-            Padding="24,76,24,32"
-            Spacing="30"
+            Padding="24,58,24,32"
+            Spacing="28"
             HorizontalOptions="Fill"
             MaximumWidthRequest="430">
             <Label
                 Text="Se connecter"
-                FontSize="24"
+                FontSize="22"
                 FontAttributes="Bold"
                 TextColor="#09090B" />
 
-            <VerticalStackLayout Spacing="18">
+            <VerticalStackLayout Spacing="17">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Téléphone ou email" FontSize="12" TextColor="#374151" />
+                    <Label Text="Téléphone ou email" FontSize="11" TextColor="#374151" />
                     <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
                         <Entry
                             x:Name="PhoneEntry"
                             Placeholder="07 12 34 56 78"
                             Keyboard="Email"
-                            HeightRequest="52" />
+                            HeightRequest="48" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="*,Auto">
-                        <Label Text="Mot de passe" FontSize="12" TextColor="#374151" />
+                        <Label Text="Mot de passe" FontSize="11" TextColor="#374151" />
                         <Label
                             Grid.Column="1"
                             Text="Mot de passe oublié ?"
@@ -50,7 +50,7 @@
                                 x:Name="PasswordEntry"
                                 Placeholder="Votre mot de passe"
                                 IsPassword="True"
-                                HeightRequest="52" />
+                                HeightRequest="48" />
                             <Button
                                 Grid.Column="1"
                                 Text="◉"
@@ -63,15 +63,11 @@
                     </Border>
                 </VerticalStackLayout>
 
-                <HorizontalStackLayout Spacing="8">
-                    <CheckBox x:Name="RememberCheckBox" IsChecked="True" Color="{StaticResource WeleBlue}" />
-                    <Label Text="Rester connecté" FontSize="12" VerticalTextAlignment="Center" />
-                </HorizontalStackLayout>
-
                 <Button
                     Text="Se connecter"
-                    CornerRadius="8"
-                    HeightRequest="52"
+                    Margin="0,4,0,0"
+                    CornerRadius="7"
+                    HeightRequest="50"
                     Clicked="OnLoginClicked" />
             </VerticalStackLayout>
 

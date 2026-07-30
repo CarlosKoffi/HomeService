@@ -8,47 +8,47 @@
     Title="Créer un compte">
     <ScrollView>
         <VerticalStackLayout
-            Padding="24,76,24,32"
-            Spacing="28"
+            Padding="24,58,24,32"
+            Spacing="24"
             HorizontalOptions="Fill"
             MaximumWidthRequest="430">
             <Label
                 Text="Créer un compte"
-                FontSize="24"
+                FontSize="22"
                 FontAttributes="Bold"
                 TextColor="#09090B" />
 
             <VerticalStackLayout Spacing="15">
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Nom complet" FontSize="12" TextColor="#374151" />
+                    <Label Text="Nom complet" FontSize="11" TextColor="#374151" />
                     <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Entry x:Name="FullNameEntry" Placeholder="Carlos Konan" HeightRequest="50" />
+                        <Entry x:Name="FullNameEntry" Placeholder="Carlos Konan" HeightRequest="47" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Téléphone" FontSize="12" TextColor="#374151" />
+                    <Label Text="Téléphone" FontSize="11" TextColor="#374151" />
                     <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" HeightRequest="50" />
+                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" HeightRequest="47" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Email (optionnel)" FontSize="12" TextColor="#374151" />
+                    <Label Text="Email (optionnel)" FontSize="11" TextColor="#374151" />
                     <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
-                        <Entry x:Name="EmailEntry" Placeholder="carlos@gmail.com" Keyboard="Email" HeightRequest="50" />
+                        <Entry x:Name="EmailEntry" Placeholder="carlos@gmail.com" Keyboard="Email" HeightRequest="47" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Mot de passe" FontSize="12" TextColor="#374151" />
+                    <Label Text="Mot de passe" FontSize="11" TextColor="#374151" />
                     <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
                         <Grid ColumnDefinitions="*,36">
                             <Entry
                                 x:Name="PasswordEntry"
                                 Placeholder="Minimum 8 caractères"
                                 IsPassword="True"
-                                HeightRequest="50" />
+                                HeightRequest="47" />
                             <Button
                                 Grid.Column="1"
                                 Text="◉"
@@ -72,7 +72,7 @@
                 <Button
                     Text="Créer mon compte"
                     CornerRadius="8"
-                    HeightRequest="52"
+                    HeightRequest="50"
                     Clicked="OnRegisterClicked" />
             </VerticalStackLayout>
 
