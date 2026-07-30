@@ -5,60 +5,49 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Nouvelle demande">
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="16">
-            <Button Text="Retour" HorizontalOptions="Start" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnBackClicked" />
-            <Label Text="DEMANDE" Style="{StaticResource EyebrowLabel}" />
-            <Label x:Name="TitleLabel" Text="Nouvelle demande" Style="{StaticResource ScreenTitleLabel}" />
-            <Label Text="Expliquez simplement le besoin. L'entreprise confirme le prix avant intervention." Style="{StaticResource BodyLabel}" />
+        <VerticalStackLayout Padding="22,22,22,28" Spacing="18">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Button Text="‹" WidthRequest="44" HeightRequest="44" Padding="0" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnBackClicked" />
+                <VerticalStackLayout Grid.Column="1" Spacing="3">
+                    <Label Text="Nouvelle demande" Style="{StaticResource ScreenTitleLabel}" />
+                    <Label x:Name="TitleLabel" Text="Service selectionne" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+            </Grid>
 
-            <Border x:Name="PreparationCard" Stroke="{StaticResource Line}" BackgroundColor="#EFF6FF" StrokeShape="RoundRectangle 22" Padding="16" IsVisible="False">
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Border BackgroundColor="{StaticResource WeleBlue}" StrokeShape="RoundRectangle 12" Padding="0" HeightRequest="5" />
+                <Border Grid.Column="1" BackgroundColor="#DBEAFE" StrokeShape="RoundRectangle 12" Padding="0" HeightRequest="5" />
+                <Border Grid.Column="2" BackgroundColor="#DBEAFE" StrokeShape="RoundRectangle 12" Padding="0" HeightRequest="5" />
+            </Grid>
+
+            <Border x:Name="PreparationCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="14" IsVisible="False">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Border BackgroundColor="White" Stroke="#DBEAFE" StrokeShape="RoundRectangle 18" HeightRequest="36" WidthRequest="36" Padding="8">
+                    <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 16" HeightRequest="42" WidthRequest="42" Padding="8">
                         <Image x:Name="PreparationIcon" Aspect="AspectFit" />
                     </Border>
                     <VerticalStackLayout Grid.Column="1" Spacing="4">
-                        <Label x:Name="PreparationTitleLabel" FontAttributes="Bold" />
+                        <Label x:Name="PreparationTitleLabel" Style="{StaticResource CardTitleLabel}" />
                         <Label x:Name="PreparationPriceLabel" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
                         <Label x:Name="PreparationHintLabel" Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
                 </Grid>
             </Border>
 
-            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Adresse sauvegardee" FontAttributes="Bold" />
-                    <Picker x:Name="AddressPicker" Title="Choisir une adresse" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="16">
+                <VerticalStackLayout Spacing="14">
+                    <VerticalStackLayout Spacing="7">
+                        <Label Text="Decrivez votre besoin" FontSize="13" FontAttributes="Bold" />
+                        <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 14" Padding="12">
+                            <Editor x:Name="DescriptionEditor" Placeholder="Ex: l'eau coule sous l'evier depuis ce matin..." AutoSize="TextChanges" MinimumHeightRequest="96" />
+                        </Border>
+                    </VerticalStackLayout>
 
-                    <Label Text="Adresse" FontAttributes="Bold" />
-                    <Entry x:Name="AddressEntry" Placeholder="Ex: Cocody Angre, 7e tranche" />
+                    <VerticalStackLayout Spacing="7">
+                        <Label Text="Photos" FontSize="13" FontAttributes="Bold" />
+                        <Label x:Name="PhotoHintLabel" Text="Ajoutez jusqu'a 3 photos si cela aide a comprendre le besoin." Style="{StaticResource MutedLabel}" />
+                        <Button Text="+ Ajouter des photos" BackgroundColor="#EFF6FF" TextColor="{StaticResource WeleBlue}" BorderColor="#DBEAFE" BorderWidth="1" Clicked="OnAddPhotosClicked" />
+                    </VerticalStackLayout>
 
-                    <Label Text="Description" FontAttributes="Bold" />
-                    <Editor x:Name="DescriptionEditor" Placeholder="Ex: fuite sous l'evier, photo possible..." AutoSize="TextChanges" MinimumHeightRequest="100" />
-
-                    <Label Text="Delai souhaite" FontAttributes="Bold" />
-                    <Picker x:Name="ModePicker" SelectedIndexChanged="OnModeChanged">
-                        <Picker.Items>
-                            <x:String>Aujourd'hui</x:String>
-                            <x:String>Programmee</x:String>
-                        </Picker.Items>
-                    </Picker>
-
-                    <Grid x:Name="ScheduleGrid" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
-                        <DatePicker x:Name="ScheduleDatePicker" />
-                        <TimePicker Grid.Column="1" x:Name="ScheduleTimePicker" />
-                    </Grid>
-
-                    <Label Text="Paiement" FontAttributes="Bold" />
-                    <Picker x:Name="PaymentPicker">
-                        <Picker.Items>
-                            <x:String>Mobile Money</x:String>
-                            <x:String>Carte bancaire</x:String>
-                        </Picker.Items>
-                    </Picker>
-
-                    <Label Text="Photos utiles" FontAttributes="Bold" />
-                    <Label x:Name="PhotoHintLabel" Text="Ajoutez jusqu'a 3 photos si cela aide a comprendre le besoin." Style="{StaticResource MutedLabel}" />
-                    <Button Text="Ajouter des photos" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnAddPhotosClicked" />
                     <CollectionView x:Name="PhotosView" SelectionMode="None">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
@@ -74,11 +63,47 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-
-                    <Button Text="Envoyer la demande" Clicked="OnCreateClicked" />
                 </VerticalStackLayout>
             </Border>
 
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="16">
+                <VerticalStackLayout Spacing="14">
+                    <VerticalStackLayout Spacing="7">
+                        <Label Text="Adresse" FontSize="13" FontAttributes="Bold" />
+                        <Picker x:Name="AddressPicker" Title="Adresse sauvegardee" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
+                        <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 14" Padding="14,0">
+                            <Entry x:Name="AddressEntry" Placeholder="Cocody, Riviera 3" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="7">
+                        <Label Text="Date et heure" FontSize="13" FontAttributes="Bold" />
+                        <Picker x:Name="ModePicker" SelectedIndexChanged="OnModeChanged">
+                            <Picker.Items>
+                                <x:String>Maintenant</x:String>
+                                <x:String>Programmer</x:String>
+                            </Picker.Items>
+                        </Picker>
+                    </VerticalStackLayout>
+
+                    <Grid x:Name="ScheduleGrid" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
+                        <DatePicker x:Name="ScheduleDatePicker" />
+                        <TimePicker Grid.Column="1" x:Name="ScheduleTimePicker" />
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="7">
+                        <Label Text="Paiement" FontSize="13" FontAttributes="Bold" />
+                        <Picker x:Name="PaymentPicker">
+                            <Picker.Items>
+                                <x:String>Mobile Money</x:String>
+                                <x:String>Carte bancaire</x:String>
+                            </Picker.Items>
+                        </Picker>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Envoyer la demande" Clicked="OnCreateClicked" />
             <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
         </VerticalStackLayout>
     </ScrollView>
