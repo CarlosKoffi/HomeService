@@ -3,43 +3,80 @@
     x:Class="HomeService.Client.Mobile.Pages.LoginPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="White"
     Title="Connexion">
     <ScrollView>
-        <VerticalStackLayout Padding="22,24,22,28" Spacing="22">
-            <VerticalStackLayout Spacing="8">
-                <Label Text="wélé" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
-                <Label Text="Se connecter" Style="{StaticResource ScreenTitleLabel}" />
-                <Label Text="Suivez vos demandes et parlez au professionnel depuis votre compte." Style="{StaticResource BodyLabel}" />
-            </VerticalStackLayout>
+        <VerticalStackLayout Padding="24,76,24,32" Spacing="30">
+            <Label
+                Text="Se connecter"
+                FontSize="24"
+                FontAttributes="Bold"
+                TextColor="#09090B" />
 
-            <VerticalStackLayout Spacing="14">
-                <VerticalStackLayout Spacing="7">
-                    <Label Text="Telephone ou email" FontSize="13" FontAttributes="Bold" />
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" />
+            <VerticalStackLayout Spacing="18">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Téléphone ou email" FontSize="12" TextColor="#374151" />
+                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
+                        <Entry
+                            x:Name="PhoneEntry"
+                            Placeholder="07 12 34 56 78"
+                            Keyboard="Email"
+                            HeightRequest="52" />
                     </Border>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="7">
+                <VerticalStackLayout Spacing="8">
                     <Grid ColumnDefinitions="*,Auto">
-                        <Label Text="Mot de passe" FontSize="13" FontAttributes="Bold" />
-                        <Label Grid.Column="1" Text="Mot de passe oublie ?" FontSize="12" TextColor="{StaticResource WeleBlue}" />
+                        <Label Text="Mot de passe" FontSize="12" TextColor="#374151" />
+                        <Label
+                            Grid.Column="1"
+                            Text="Mot de passe oublié ?"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource WeleBlue}">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnForgotPasswordTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
                     </Grid>
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                        <Entry x:Name="PasswordEntry" Placeholder="Votre mot de passe" IsPassword="True" />
+                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
+                        <Grid ColumnDefinitions="*,36">
+                            <Entry
+                                x:Name="PasswordEntry"
+                                Placeholder="Votre mot de passe"
+                                IsPassword="True"
+                                HeightRequest="52" />
+                            <Button
+                                Grid.Column="1"
+                                Text="◉"
+                                FontSize="15"
+                                Padding="0"
+                                BackgroundColor="Transparent"
+                                TextColor="#6B7280"
+                                Clicked="OnTogglePasswordClicked" />
+                        </Grid>
                     </Border>
                 </VerticalStackLayout>
 
                 <HorizontalStackLayout Spacing="8">
                     <CheckBox x:Name="RememberCheckBox" IsChecked="True" Color="{StaticResource WeleBlue}" />
-                    <Label Text="Rester connecte" FontSize="13" VerticalTextAlignment="Center" />
+                    <Label Text="Rester connecté" FontSize="12" VerticalTextAlignment="Center" />
                 </HorizontalStackLayout>
 
-                <Button Text="Se connecter" Clicked="OnLoginClicked" />
-                <Button Text="Creer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
+                <Button
+                    Text="Se connecter"
+                    CornerRadius="8"
+                    HeightRequest="52"
+                    Clicked="OnLoginClicked" />
             </VerticalStackLayout>
 
-            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" FontAttributes="Bold" IsVisible="False" />
+            <Label
+                x:Name="ErrorLabel"
+                TextColor="{StaticResource Danger}"
+                FontSize="12"
+                FontAttributes="Bold"
+                IsVisible="False" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

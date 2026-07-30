@@ -42,6 +42,19 @@ public partial class LoginPage : ContentPage
         await Shell.Current.GoToAsync(nameof(RegisterPage));
     }
 
+    private void OnTogglePasswordClicked(object sender, EventArgs e)
+    {
+        PasswordEntry.IsPassword = !PasswordEntry.IsPassword;
+    }
+
+    private async void OnForgotPasswordTapped(object sender, TappedEventArgs e)
+    {
+        await DisplayAlert(
+            "Mot de passe oublié",
+            "La récupération sécurisée du compte sera disponible avec l'authentification Firebase.",
+            "Compris");
+    }
+
     private void ShowError(string? message)
     {
         ErrorLabel.Text = message ?? "Connexion impossible.";

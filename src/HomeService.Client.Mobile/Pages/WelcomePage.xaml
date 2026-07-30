@@ -4,36 +4,105 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Shell.NavBarIsVisible="False"
+    BackgroundColor="White"
     Title="Bienvenue">
-    <Grid RowDefinitions="*,Auto" Padding="22,28,22,28">
-        <VerticalStackLayout Spacing="22" VerticalOptions="Center">
-            <Label Text="wélé" FontSize="34" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
-            <VerticalStackLayout Spacing="8">
-                <Label Text="Bonjour" Style="{StaticResource ScreenTitleLabel}" />
-                <Label Text="Connectez-vous ou creez votre compte pour commander un service." Style="{StaticResource BodyLabel}" />
+    <Grid Padding="24,44,24,26" RowDefinitions="Auto,*,Auto">
+        <VerticalStackLayout Spacing="34">
+            <Label
+                Text="wélé"
+                FontSize="30"
+                FontAttributes="Bold"
+                TextColor="{StaticResource WeleBlue}" />
+
+            <VerticalStackLayout Spacing="14">
+                <Label
+                    Text="Bonjour 👋"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    TextColor="#09090B" />
+                <Label
+                    Text="Connectez-vous ou créez votre compte pour continuer."
+                    FontSize="14"
+                    LineHeight="1.4"
+                    TextColor="#374151" />
             </VerticalStackLayout>
-
-            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 28" Padding="24" HeightRequest="230">
-                <Grid>
-                    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 100" HeightRequest="112" WidthRequest="112" HorizontalOptions="Center" VerticalOptions="Center">
-                        <Label Text="&#x1F44B;" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="46" />
-                    </Border>
-                    <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="12" HorizontalOptions="End" VerticalOptions="End">
-                        <VerticalStackLayout Spacing="2">
-                            <Label Text="Fiable. Rapide." FontAttributes="Bold" />
-                            <Label Text="Professionnel." Style="{StaticResource MutedLabel}" />
-                        </VerticalStackLayout>
-                    </Border>
-                </Grid>
-            </Border>
         </VerticalStackLayout>
 
-        <VerticalStackLayout Grid.Row="1" Spacing="12">
-            <Button Text="Se connecter" Clicked="OnLoginClicked" />
-            <Button Text="Creer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
-            <Button Text="Voir l'application en aperçu" BackgroundColor="#EFF6FF" TextColor="{StaticResource WeleBlue}" BorderColor="#DBEAFE" BorderWidth="1" Clicked="OnPreviewClicked" />
-            <Button Text="Revoir la présentation" BackgroundColor="White" TextColor="{StaticResource MutedInk}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnReplayOnboardingClicked" />
-            <Label Text="En continuant, vous acceptez nos conditions d'utilisation." FontSize="12" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" />
+        <VerticalStackLayout
+            Grid.Row="1"
+            Margin="0,32,0,0"
+            Spacing="14">
+            <Button
+                Text="Se connecter"
+                CornerRadius="8"
+                HeightRequest="52"
+                Clicked="OnLoginClicked" />
+            <Button
+                Text="Créer un compte"
+                CornerRadius="8"
+                HeightRequest="52"
+                BackgroundColor="White"
+                TextColor="#111827"
+                BorderColor="#D1D5DB"
+                BorderWidth="1"
+                Clicked="OnRegisterClicked" />
+
+            <Grid Margin="0,22,0,14" ColumnDefinitions="*,Auto,*" ColumnSpacing="12">
+                <BoxView HeightRequest="1" Color="#E5E7EB" VerticalOptions="Center" />
+                <Label
+                    Grid.Column="1"
+                    Text="ou continuer avec"
+                    FontSize="12"
+                    TextColor="#6B7280" />
+                <BoxView Grid.Column="2" HeightRequest="1" Color="#E5E7EB" VerticalOptions="Center" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Button
+                    Text="G"
+                    FontSize="20"
+                    FontAttributes="Bold"
+                    CornerRadius="12"
+                    HeightRequest="56"
+                    BackgroundColor="White"
+                    TextColor="#4285F4"
+                    BorderColor="#D1D5DB"
+                    BorderWidth="1"
+                    AutomationId="GoogleSignInButton"
+                    Clicked="OnGoogleClicked" />
+                <Button
+                    Grid.Column="1"
+                    Text="●"
+                    FontSize="21"
+                    CornerRadius="12"
+                    HeightRequest="56"
+                    BackgroundColor="White"
+                    TextColor="#000000"
+                    BorderColor="#D1D5DB"
+                    BorderWidth="1"
+                    AutomationId="AppleSignInButton"
+                    Clicked="OnAppleClicked" />
+                <Button
+                    Grid.Column="2"
+                    Text="☎"
+                    FontSize="20"
+                    CornerRadius="12"
+                    HeightRequest="56"
+                    BackgroundColor="White"
+                    TextColor="{StaticResource WeleBlue}"
+                    BorderColor="#D1D5DB"
+                    BorderWidth="1"
+                    AutomationId="PhoneSignInButton"
+                    Clicked="OnPhoneClicked" />
+            </Grid>
         </VerticalStackLayout>
+
+        <Label
+            Grid.Row="2"
+            Text="En continuant, vous acceptez nos Conditions d'utilisation et notre Politique de confidentialité."
+            FontSize="11"
+            LineHeight="1.35"
+            TextColor="#6B7280"
+            HorizontalTextAlignment="Center" />
     </Grid>
 </ContentPage>

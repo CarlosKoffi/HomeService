@@ -3,65 +3,81 @@
     x:Class="HomeService.Client.Mobile.Pages.RegisterPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Compte client">
+    Shell.NavBarIsVisible="False"
+    BackgroundColor="White"
+    Title="Créer un compte">
     <ScrollView>
-        <VerticalStackLayout Padding="22,24,22,28" Spacing="22">
-            <VerticalStackLayout Spacing="8">
-                <Label Text="wélé" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
-                <Label Text="Creer un compte" Style="{StaticResource ScreenTitleLabel}" />
-                <Label Text="Demandez un service, suivez l'intervention et retrouvez vos factures." Style="{StaticResource BodyLabel}" />
-            </VerticalStackLayout>
+        <VerticalStackLayout Padding="24,76,24,32" Spacing="28">
+            <Label
+                Text="Créer un compte"
+                FontSize="24"
+                FontAttributes="Bold"
+                TextColor="#09090B" />
 
-            <VerticalStackLayout Spacing="14">
+            <VerticalStackLayout Spacing="15">
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Nom complet" FontSize="13" FontAttributes="Bold" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                        <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                            <Entry x:Name="FirstNameEntry" Placeholder="Prenom" />
-                        </Border>
-                        <Border Grid.Column="1" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                            <Entry x:Name="LastNameEntry" Placeholder="Nom" />
-                        </Border>
-                    </Grid>
-                </VerticalStackLayout>
-
-                <VerticalStackLayout Spacing="7">
-                    <Label Text="Telephone" FontSize="13" FontAttributes="Bold" />
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" />
+                    <Label Text="Nom complet" FontSize="12" TextColor="#374151" />
+                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
+                        <Entry x:Name="FullNameEntry" Placeholder="Carlos Konan" HeightRequest="50" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Email optionnel" FontSize="13" FontAttributes="Bold" />
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                        <Entry x:Name="EmailEntry" Placeholder="carlos@email.com" Keyboard="Email" />
+                    <Label Text="Téléphone" FontSize="12" TextColor="#374151" />
+                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
+                        <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" HeightRequest="50" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Mot de passe" FontSize="13" FontAttributes="Bold" />
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                        <Entry x:Name="PasswordEntry" Placeholder="Minimum 8 caracteres" IsPassword="True" />
+                    <Label Text="Email (optionnel)" FontSize="12" TextColor="#374151" />
+                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
+                        <Entry x:Name="EmailEntry" Placeholder="carlos@gmail.com" Keyboard="Email" HeightRequest="50" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="7">
-                    <Label Text="Confirmation" FontSize="13" FontAttributes="Bold" />
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="14,0">
-                        <Entry x:Name="ConfirmPasswordEntry" Placeholder="Retapez le mot de passe" IsPassword="True" />
+                    <Label Text="Mot de passe" FontSize="12" TextColor="#374151" />
+                    <Border Stroke="#D1D5DB" BackgroundColor="White" StrokeShape="RoundRectangle 8" Padding="14,0">
+                        <Grid ColumnDefinitions="*,36">
+                            <Entry
+                                x:Name="PasswordEntry"
+                                Placeholder="Minimum 8 caractères"
+                                IsPassword="True"
+                                HeightRequest="50" />
+                            <Button
+                                Grid.Column="1"
+                                Text="◉"
+                                FontSize="15"
+                                Padding="0"
+                                BackgroundColor="Transparent"
+                                TextColor="#6B7280"
+                                Clicked="OnTogglePasswordClicked" />
+                        </Grid>
                     </Border>
                 </VerticalStackLayout>
 
                 <HorizontalStackLayout Spacing="8">
-                    <CheckBox IsChecked="True" Color="{StaticResource WeleBlue}" />
-                    <Label Text="J'accepte les conditions d'utilisation." FontSize="12" VerticalTextAlignment="Center" />
+                    <CheckBox x:Name="TermsCheckBox" IsChecked="True" Color="{StaticResource WeleBlue}" />
+                    <Label
+                        Text="J'accepte les CGU et la politique de confidentialité."
+                        FontSize="11"
+                        VerticalTextAlignment="Center" />
                 </HorizontalStackLayout>
 
-                <Button Text="Creer mon compte" Clicked="OnRegisterClicked" />
+                <Button
+                    Text="Créer mon compte"
+                    CornerRadius="8"
+                    HeightRequest="52"
+                    Clicked="OnRegisterClicked" />
             </VerticalStackLayout>
 
-            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" FontAttributes="Bold" IsVisible="False" />
+            <Label
+                x:Name="ErrorLabel"
+                TextColor="{StaticResource Danger}"
+                FontSize="12"
+                FontAttributes="Bold"
+                IsVisible="False" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

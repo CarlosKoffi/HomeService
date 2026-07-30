@@ -20,6 +20,21 @@ public partial class WelcomePage : ContentPage
         await Shell.Current.GoToAsync(nameof(RegisterPage));
     }
 
+    private async void OnGoogleClicked(object sender, EventArgs e)
+    {
+        await DisplayAlert("Connexion Google", "La configuration Firebase est prête. L'authentification Google sera branchée dans le prochain lot.", "Compris");
+    }
+
+    private async void OnAppleClicked(object sender, EventArgs e)
+    {
+        await DisplayAlert("Connexion Apple", "Cette option sera activée dès que le compte Apple Developer sera disponible.", "Compris");
+    }
+
+    private async void OnPhoneClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(LoginPage));
+    }
+
     private async void OnPreviewClicked(object sender, EventArgs e)
     {
         await sessionStore.StartPreviewAsync();

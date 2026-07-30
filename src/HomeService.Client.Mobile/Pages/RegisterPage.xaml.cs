@@ -20,15 +20,21 @@ public partial class RegisterPage : ContentPage
     private async void OnRegisterClicked(object sender, EventArgs e)
     {
         ErrorLabel.IsVisible = false;
-        if (PasswordEntry.Text != ConfirmPasswordEntry.Text)
+        if (!TermsCheckBox.IsChecked)
         {
-            ShowError("Les deux mots de passe doivent etre identiques.");
+            ShowError("Vous devez accepter les conditions d'utilisation.");
             return;
         }
 
+        var nameParts = (FullNameEntry.Text ?? string.Empty)
+            .Trim()
+            .Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        var firstName = nameParts.ElementAtOrDefault(0) ?? string.Empty;
+        var lastName = nameParts.ElementAtOrDefault(1) ?? string.Empty;
+
         var request = new RegisterClientRequest(
-            FirstNameEntry.Text?.Trim() ?? string.Empty,
-            LastNameEntry.Text?.Trim() ?? string.Empty,
+            firstName,
+            lastName,
             PhoneEntry.Text?.Trim() ?? string.Empty,
             string.IsNullOrWhiteSpace(EmailEntry.Text) ? null : EmailEntry.Text.Trim(),
             PasswordEntry.Text ?? string.Empty);
@@ -43,6 +49,11 @@ public partial class RegisterPage : ContentPage
         await sessionStore.SaveAsync(result.Response);
         await deviceRegistrationService.RegisterCurrentDeviceAsync();
         await Shell.Current.GoToAsync("//home");
+    }
+
+    private void OnTogglePasswordClicked(object sender, EventArgs e)
+    {
+        PasswordEntry.IsPassword = !PasswordEntry.IsPassword;
     }
 
     private void ShowError(string? message)
