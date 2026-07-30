@@ -9,7 +9,17 @@ public partial class AppShell : Shell
         InitializeComponent();
         Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
         Routing.RegisterRoute(nameof(RegisterPage), typeof(RegisterPage));
+        Routing.RegisterRoute(nameof(WelcomePage), typeof(WelcomePage));
         Routing.RegisterRoute(nameof(MissionDetailPage), typeof(MissionDetailPage));
         Routing.RegisterRoute(nameof(CreateRequestPage), typeof(CreateRequestPage));
+
+        Dispatcher.Dispatch(async () =>
+        {
+            await Task.Delay(100);
+            if (string.IsNullOrWhiteSpace(Preferences.Default.Get("ClientPhoneNumber", string.Empty)))
+            {
+                await GoToAsync(nameof(WelcomePage));
+            }
+        });
     }
 }
