@@ -279,6 +279,24 @@ public static class PublicEndpoints
         .Produces<ClientMeResponse>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapGet("/home", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientHomeService homeService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(await homeService.GetAsync(customer, cancellationToken));
+        })
+        .WithName("GetClientHome")
+        .Produces<ClientHomeResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
         client.MapPut("/me", async (
             UpdateClientProfileRequest request,
             HttpRequest httpRequest,
