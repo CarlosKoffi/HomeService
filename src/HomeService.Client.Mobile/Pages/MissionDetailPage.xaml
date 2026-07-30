@@ -20,6 +20,33 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Suivi" Style="{StaticResource CardTitleLabel}" />
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Border x:Name="StepQuote" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="10" BackgroundColor="#EFF6FF">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="1" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                <Label Text="Prix" FontSize="12" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border x:Name="StepProvider" Grid.Column="1" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="10" BackgroundColor="#F8FAFC">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="2" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                <Label Text="Technicien" FontSize="12" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border x:Name="StepDone" Grid.Column="2" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="10" BackgroundColor="#F8FAFC">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="3" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                <Label Text="Terminee" FontSize="12" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+                    <Label x:Name="TrackingLabel" Style="{StaticResource MutedLabel}" />
+                </VerticalStackLayout>
+            </Border>
+
             <Border x:Name="ProviderCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18" IsVisible="False">
                 <VerticalStackLayout Spacing="8">
                     <Label Text="Technicien affecte" Style="{StaticResource CardTitleLabel}" />
@@ -34,6 +61,66 @@
                     <Button x:Name="ConfirmButton" Text="Accepter le devis et payer" IsVisible="False" Clicked="OnConfirmClicked" />
                     <Button x:Name="CompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" />
                     <Button x:Name="CancelButton" Text="Annuler la mission" IsVisible="False" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCancelClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border x:Name="AdditionalQuotesCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Devis complementaires" Style="{StaticResource CardTitleLabel}" />
+                    <CollectionView x:Name="AdditionalQuotesView" SelectionMode="Single" SelectionChanged="OnAdditionalQuoteSelected">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 16" Padding="12" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <VerticalStackLayout Spacing="3">
+                                            <Label Text="{Binding Title}" FontAttributes="Bold" />
+                                            <Label Text="{Binding Description}" Style="{StaticResource MutedLabel}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding ActionLabel}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border x:Name="PhotosCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Photos envoyees" Style="{StaticResource CardTitleLabel}" />
+                    <CollectionView x:Name="PhotosView" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 16" Padding="12" Margin="0,0,0,8">
+                                    <VerticalStackLayout Spacing="3">
+                                        <Label Text="{Binding FileName}" FontAttributes="Bold" />
+                                        <Label Text="{Binding Caption}" Style="{StaticResource MutedLabel}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border x:Name="OffersCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18" IsVisible="False">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Entreprises sollicitees" Style="{StaticResource CardTitleLabel}" />
+                    <CollectionView x:Name="OffersView" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 16" Padding="12" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <VerticalStackLayout Spacing="3">
+                                            <Label Text="{Binding CompanyName}" FontAttributes="Bold" />
+                                            <Label Text="{Binding RankLabel}" Style="{StaticResource MutedLabel}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="{Binding Status}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </VerticalStackLayout>
             </Border>
 

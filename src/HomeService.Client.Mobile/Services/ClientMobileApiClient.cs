@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using HomeService.Contracts.Clients;
+using HomeService.Contracts.Missions;
 using HomeService.Contracts.Services;
 
 namespace HomeService.Client.Mobile.Services;
@@ -132,6 +133,21 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             PayoutReference: null);
 
         return await SendAsync<ValidateClientMissionCompletionResponse>(HttpMethod.Post, $"api/client/missions/{missionId:D}/validate-completion", bearerToken: null, request, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<MissionAdditionalQuoteResponse>> PayAdditionalQuoteAsync(
+        Guid missionId,
+        Guid quoteId,
+        string? paymentReference,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new PayMissionAdditionalQuoteRequest(sessionStore.GetPhoneNumber() ?? string.Empty, paymentReference);
+        return await SendAsync<MissionAdditionalQuoteResponse>(
+            HttpMethod.Post,
+            $"api/client/missions/{missionId:D}/additional-quotes/{quoteId:D}/pay",
+            bearerToken: null,
+            request,
+            cancellationToken);
     }
 
     public async Task<ApiCallResult<ClientMissionChatResponse>> GetMissionMessagesAsync(Guid missionId, CancellationToken cancellationToken = default)
