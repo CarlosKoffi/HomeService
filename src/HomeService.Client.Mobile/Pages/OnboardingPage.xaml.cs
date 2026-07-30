@@ -11,21 +11,9 @@ public partial class OnboardingPage : ContentPage
         InitializeComponent();
         Slides = new ObservableCollection<OnboardingSlide>
         {
-            new(
-                "Bienvenue dans Wélé",
-                "Tous vos services, en quelques clics.",
-                "Plomberie, électricité, ménage, beauté et bien plus encore.",
-                "\uD83D\uDC4B"),
-            new(
-                "Des professionnels vérifiés et notés",
-                "Des experts de confiance, évalués par nos clients comme vous.",
-                "Choisissez avec plus de sérénité.",
-                "\uD83D\uDEE1"),
-            new(
-                "Suivi transparent en temps réel",
-                "Suivez chaque étape de votre demande jusqu'à la fin de l'intervention.",
-                "Mission, messages et facture restent au même endroit.",
-                "\uD83D\uDCCD")
+            new("client_onboarding_1.png"),
+            new("client_onboarding_2.png"),
+            new("client_onboarding_3.png")
         };
 
         BindingContext = this;
@@ -51,5 +39,5 @@ public partial class OnboardingPage : ContentPage
         NextButton.Text = e.CurrentPosition >= Slides.Count - 1 ? "Commencer" : "Suivant";
     }
 
-    public sealed record OnboardingSlide(string Title, string Description, string Badge, string Icon);
+    public sealed record OnboardingSlide(string ImageSource);
 }

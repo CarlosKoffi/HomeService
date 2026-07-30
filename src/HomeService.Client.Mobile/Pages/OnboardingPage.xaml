@@ -4,38 +4,32 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Shell.NavBarIsVisible="False"
-    Title="Presentation">
-    <Grid RowDefinitions="*,Auto" Padding="22,24,22,28">
-        <CarouselView x:Name="SlidesView" ItemsSource="{Binding Slides}" IndicatorView="{x:Reference SlidesIndicator}" PositionChanged="OnPositionChanged">
+    Title="Présentation">
+    <Grid RowDefinitions="*,Auto" Padding="18,14,18,24" BackgroundColor="White">
+        <CarouselView
+            x:Name="SlidesView"
+            ItemsSource="{Binding Slides}"
+            IndicatorView="{x:Reference SlidesIndicator}"
+            PositionChanged="OnPositionChanged">
             <CarouselView.ItemTemplate>
                 <DataTemplate>
-                    <Grid RowDefinitions="Auto,*,Auto" Padding="0,4">
-                        <Label Text="wélé" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
-
-                        <VerticalStackLayout Grid.Row="1" Spacing="22" VerticalOptions="Center">
-                            <Border StrokeThickness="0" BackgroundColor="#F3F7FF" StrokeShape="RoundRectangle 34" Padding="24" HeightRequest="280">
-                                <Grid>
-                                    <Border BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="18" HorizontalOptions="Center" VerticalOptions="Center" HeightRequest="190" WidthRequest="190">
-                                        <Label Text="{Binding Icon}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="74" />
-                                    </Border>
-                                    <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="12" HorizontalOptions="End" VerticalOptions="End">
-                                        <Label Text="{Binding Badge}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
-                                    </Border>
-                                </Grid>
-                            </Border>
-
-                            <VerticalStackLayout Spacing="8">
-                                <Label Text="{Binding Title}" FontSize="24" FontAttributes="Bold" LineHeight="1.08" />
-                                <Label Text="{Binding Description}" Style="{StaticResource BodyLabel}" />
-                            </VerticalStackLayout>
-                        </VerticalStackLayout>
+                    <Grid Padding="0">
+                        <Image
+                            Source="{Binding ImageSource}"
+                            Aspect="AspectFit"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Fill" />
                     </Grid>
                 </DataTemplate>
             </CarouselView.ItemTemplate>
         </CarouselView>
 
-        <VerticalStackLayout Grid.Row="1" Spacing="18">
-            <IndicatorView x:Name="SlidesIndicator" IndicatorColor="#DBEAFE" SelectedIndicatorColor="{StaticResource WeleBlue}" HorizontalOptions="Center" />
+        <VerticalStackLayout Grid.Row="1" Spacing="16">
+            <IndicatorView
+                x:Name="SlidesIndicator"
+                IndicatorColor="#DBEAFE"
+                SelectedIndicatorColor="{StaticResource WeleBlue}"
+                HorizontalOptions="Center" />
             <Button x:Name="NextButton" Text="Suivant" Clicked="OnNextClicked" />
         </VerticalStackLayout>
     </Grid>
