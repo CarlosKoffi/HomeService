@@ -69,3 +69,11 @@ SET "IllustrationUrl" = media."IllustrationUrl"
 FROM media
 WHERE prestation."NormalizedName" = media."NormalizedName"
   AND COALESCE(BTRIM(prestation."IllustrationUrl"), '') = '';
+
+UPDATE "ServicePrestations" AS prestation
+SET "IllustrationUrl" = '/catalog/prestations/coupe-enfant.jpg'
+FROM "Services" AS service
+WHERE prestation."ServiceId" = service."Id"
+  AND service."NormalizedName" = 'barbier'
+  AND LOWER(BTRIM(prestation."Name")) = 'coupe enfant'
+  AND COALESCE(BTRIM(prestation."IllustrationUrl"), '') = '';
