@@ -44,7 +44,7 @@
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
                                     <VerticalStackLayout WidthRequest="106" Spacing="8">
-                                        <Border HeightRequest="88" WidthRequest="106" Padding="24" BackgroundColor="#F4F7FF" Stroke="#E7ECF5" StrokeShape="RoundRectangle 13" HorizontalOptions="Fill">
+                                        <Border HeightRequest="88" WidthRequest="106" Padding="14" BackgroundColor="#F4F7FF" Stroke="#E7ECF5" StrokeShape="RoundRectangle 13" HorizontalOptions="Fill">
                                             <Grid>
                                                 <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
                                                 <Label Text="{Binding IconFallback}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
@@ -78,7 +78,7 @@
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
                                     <VerticalStackLayout WidthRequest="106" Spacing="8">
-                                        <Border HeightRequest="88" WidthRequest="106" Padding="24" BackgroundColor="#F4F7FF" Stroke="#E7ECF5" StrokeShape="RoundRectangle 13" HorizontalOptions="Fill">
+                                        <Border HeightRequest="88" WidthRequest="106" Padding="14" BackgroundColor="#F4F7FF" Stroke="#E7ECF5" StrokeShape="RoundRectangle 13" HorizontalOptions="Fill">
                                             <Grid>
                                                 <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
                                                 <Label Text="{Binding IconFallback}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
