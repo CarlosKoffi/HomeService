@@ -68,7 +68,7 @@ public partial class MissionDetailPage : ContentPage
 
         var mission = result.Response;
         TitleLabel.Text = mission.MissionNumber;
-        StatusLabel.Text = $"{mission.Status} - {mission.QuoteStatus}";
+        StatusLabel.Text = ResolveCustomerStatusLabel(mission);
         ServiceLabel.Text = mission.PrestationName is null ? mission.ServiceName : $"{mission.ServiceName} - {mission.PrestationName}";
         AddressLabel.Text = mission.ServiceAddress ?? "Adresse à confirmer";
         PriceLabel.Text = mission.CompanyQuotedAmount.HasValue
@@ -132,7 +132,8 @@ public partial class MissionDetailPage : ContentPage
         photos.Clear();
         foreach (var photo in mission.Photos)
         {
-            photos.Add(PhotoRow.From(photo));
+            var preview = await apiClient.DownloadMissionAttachmentImageSourceAsync(missionId, photo.AttachmentId);
+            photos.Add(PhotoRow.From(photo, preview));
         }
 
         AdditionalQuotesCard.IsVisible = additionalQuotes.Count > 0;
@@ -182,7 +183,7 @@ public partial class MissionDetailPage : ContentPage
 
         additionalQuotes.Clear();
         photos.Clear();
-        photos.Add(new PhotoRow("evier_cuisine.jpg", "Photo du problème envoyée par le client"));
+        photos.Add(new PhotoRow("Photo du problème", null, true));
         PhotosCard.IsVisible = true;
         AdditionalQuotesCard.IsVisible = false;
         ConfirmButton.IsVisible = false;
@@ -449,6 +450,21 @@ public partial class MissionDetailPage : ContentPage
         };
     }
 
+    private static string ResolveCustomerStatusLabel(ClientMissionStatusResponse mission)
+    {
+        return mission.Status switch
+        {
+            "Requested" or "SearchingProvider" => "Recherche d'une entreprise disponible",
+            "Quoted" => "Prix proposé par l'entreprise",
+            "Accepted" => "Technicien affecté",
+            "OnTheWay" => "Technicien en route",
+            "Started" => "Intervention en cours",
+            "Completed" => "Intervention terminée",
+            "Cancelled" => "Demande annulée",
+            _ => "Demande en cours de traitement"
+        };
+    }
+
     private sealed record AdditionalQuoteRow(
         Guid QuoteId,
         string Title,
@@ -470,11 +486,11 @@ public partial class MissionDetailPage : ContentPage
         }
     }
 
-    private sealed record PhotoRow(string FileName, string Caption)
+    private sealed record PhotoRow(string Caption, ImageSource? PreviewSource, bool IsPreviewMissing)
     {
-        public static PhotoRow From(ClientMissionAttachmentResponse photo)
+        public static PhotoRow From(ClientMissionAttachmentResponse photo, ImageSource? previewSource)
         {
-            return new PhotoRow(photo.OriginalFileName, photo.Caption ?? "Photo de la demande");
+            return new PhotoRow(photo.Caption ?? "Photo de la demande", previewSource, previewSource is null);
         }
     }
 

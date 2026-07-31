@@ -34,20 +34,20 @@
             </VerticalStackLayout>
 
             <VerticalStackLayout x:Name="DetailPanel" IsVisible="False" Spacing="18">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-                    <VerticalStackLayout Spacing="8">
-                        <Label Text="Récapitulatif" Style="{StaticResource CardTitleLabel}" />
-                        <Label Text="Service" Style="{StaticResource MutedLabel}" />
-                        <Label x:Name="ServiceLabel" FontSize="17" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
-                        <Label Text="Adresse" Style="{StaticResource MutedLabel}" Margin="0,8,0,0" />
-                        <Label x:Name="AddressLabel" FontSize="15" TextColor="{StaticResource Ink}" />
-                    </VerticalStackLayout>
-                    <Border Grid.Column="1" BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="10,6" VerticalOptions="Start">
-                        <Label x:Name="StatusLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" FontSize="12" />
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Récapitulatif" Style="{StaticResource CardTitleLabel}" LineBreakMode="NoWrap" />
+                    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="12,9">
+                        <Label x:Name="StatusLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" FontSize="13" LineBreakMode="WordWrap" />
                     </Border>
-                </Grid>
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Service" Style="{StaticResource MutedLabel}" />
+                        <Label x:Name="ServiceLabel" FontSize="17" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                        <Label Text="Adresse" Style="{StaticResource MutedLabel}" Margin="0,8,0,0" />
+                        <Label x:Name="AddressLabel" FontSize="15" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
 
-                <Label x:Name="WaitingLabel" Text="En attente de validation par un prestataire." FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" LineHeight="1.25" />
+                <Label x:Name="WaitingLabel" Text="Recherche d'une entreprise disponible" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" LineHeight="1.25" />
                 <Label x:Name="TrackingLabel" FontSize="13" TextColor="{StaticResource MutedInk}" LineHeight="1.25" />
 
                 <Border x:Name="RoutePanel" IsVisible="False" StrokeThickness="0" BackgroundColor="#EFF6FF" StrokeShape="RoundRectangle 20" Padding="18" HeightRequest="150">
@@ -98,8 +98,8 @@
 
                 <VerticalStackLayout Spacing="10">
                     <Label Text="Prix et paiement" Style="{StaticResource CardTitleLabel}" />
-                    <Grid ColumnDefinitions="*,Auto"><Label Text="Montant" Style="{StaticResource MutedLabel}" /><Label Grid.Column="1" x:Name="PriceLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" /></Grid>
-                    <Grid ColumnDefinitions="*,Auto"><Label Text="Paiement" Style="{StaticResource MutedLabel}" /><Label Grid.Column="1" x:Name="PaymentLabel" FontAttributes="Bold" /></Grid>
+                    <VerticalStackLayout Spacing="3"><Label Text="Montant" Style="{StaticResource MutedLabel}" /><Label x:Name="PriceLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" FontSize="16" LineBreakMode="WordWrap" /></VerticalStackLayout>
+                    <VerticalStackLayout Spacing="3" Margin="0,6,0,0"><Label Text="Paiement" Style="{StaticResource MutedLabel}" /><Label x:Name="PaymentLabel" FontAttributes="Bold" FontSize="14" LineBreakMode="WordWrap" /></VerticalStackLayout>
                     <Button x:Name="ChoosePaymentButton" Text="Choisir un moyen de paiement" IsVisible="False" Clicked="OnChoosePaymentClicked" />
                     <Label x:Name="MessageLabel" Style="{StaticResource MutedLabel}" />
                 </VerticalStackLayout>
@@ -115,7 +115,24 @@
                 </Border>
 
                 <Border x:Name="PhotosCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="14" IsVisible="False">
-                    <VerticalStackLayout Spacing="10"><Label Text="Photos" Style="{StaticResource CardTitleLabel}" /><CollectionView x:Name="PhotosView" SelectionMode="None"><CollectionView.ItemTemplate><DataTemplate><VerticalStackLayout Padding="0,6"><Label Text="{Binding FileName}" FontAttributes="Bold" /><Label Text="{Binding Caption}" Style="{StaticResource MutedLabel}" /></VerticalStackLayout></DataTemplate></CollectionView.ItemTemplate></CollectionView></VerticalStackLayout>
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Photos de votre demande" Style="{StaticResource CardTitleLabel}" />
+                        <CollectionView x:Name="PhotosView" SelectionMode="None" HeightRequest="150" ItemsLayout="HorizontalList">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <VerticalStackLayout WidthRequest="132" Margin="0,0,10,0" Spacing="5">
+                                        <Border HeightRequest="112" Stroke="#E5E7EB" StrokeShape="RoundRectangle 12" Padding="0" BackgroundColor="#F4F6FA">
+                                            <Grid>
+                                                <Image Source="{Binding PreviewSource}" Aspect="AspectFill" />
+                                                <Label Text="Photo indisponible" FontSize="10" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding IsPreviewMissing}" />
+                                            </Grid>
+                                        </Border>
+                                        <Label Text="{Binding Caption}" FontSize="11" TextColor="{StaticResource MutedInk}" LineBreakMode="TailTruncation" />
+                                    </VerticalStackLayout>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
                 </Border>
             </VerticalStackLayout>
 

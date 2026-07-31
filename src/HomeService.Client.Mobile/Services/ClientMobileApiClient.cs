@@ -145,6 +145,39 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<ClientMissionStatusResponse>(HttpMethod.Get, $"api/client/missions/{missionId:D}", body: null, cancellationToken);
     }
 
+    public async Task<ImageSource?> DownloadMissionAttachmentImageSourceAsync(
+        Guid missionId,
+        Guid attachmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var token = await sessionStore.GetTokenAsync();
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"api/client/missions/{missionId:D}/attachments/{attachmentId:D}/preview");
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        try
+        {
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            return bytes.Length == 0
+                ? null
+                : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
     public Task<ApiCallResult<ClientMissionScreenResponse>> GetMissionScreenAsync(Guid missionId, CancellationToken cancellationToken = default)
         => SendWithSessionAsync<ClientMissionScreenResponse>(HttpMethod.Get, $"api/client/missions/{missionId:D}/screen", body: null, cancellationToken);
 

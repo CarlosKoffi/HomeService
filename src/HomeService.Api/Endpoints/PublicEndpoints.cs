@@ -724,6 +724,48 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapGet("/api/client/missions/{missionId:guid}/attachments/{attachmentId:guid}/preview", async (
+            Guid missionId,
+            Guid attachmentId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionStatusService missionStatusService,
+            ClientMissionPhotoUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var missionResult = await missionStatusService.GetAsync(missionId, customer.PhoneNumber, cancellationToken);
+            if (!missionResult.IsSuccess || missionResult.Response is null)
+            {
+                return missionResult.Status == ClientMissionStatusResultStatus.Forbidden
+                    ? Results.Forbid()
+                    : Results.NotFound(new { message = "Mission introuvable." });
+            }
+
+            var attachment = missionResult.Response.Photos.FirstOrDefault(photo => photo.AttachmentId == attachmentId);
+            if (attachment is null)
+            {
+                return Results.NotFound(new { message = "Photo introuvable pour cette mission." });
+            }
+
+            var absolutePath = uploadService.GetAbsolutePath(attachment.StoragePath);
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "La photo n'existe plus sur le serveur." });
+            }
+
+            return Results.File(absolutePath, attachment.ContentType, enableRangeProcessing: true);
+        })
+        .WithName("PreviewClientMissionAttachment")
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPut("/api/client/missions/{missionId:guid}/payment-method", async (
             Guid missionId,
             SelectClientMissionPaymentMethodRequest request,
