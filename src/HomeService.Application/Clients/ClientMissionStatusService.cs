@@ -81,24 +81,27 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                     && item.Status == MissionStatus.Completed
                     && item.CustomerCompletionValidatedAt != null, cancellationToken);
 
-        var offers = await db.MissionDispatchOffers
+        var offerRows = await db.MissionDispatchOffers
             .AsNoTracking()
             .Where(offer => offer.MissionId == mission.Id)
             .Join(
                 db.Companies.AsNoTracking(),
                 offer => offer.CompanyId,
                 company => company.Id,
-                (offer, company) => new ClientMissionOfferResponse(
-                    offer.Id,
-                    company.Id,
-                    company.Name,
-                    offer.Rank,
-                    offer.Score,
-                    offer.Status.ToString(),
-                    offer.ExpiresAt,
-                    offer.RespondedAt))
-            .OrderBy(offer => offer.Rank)
+                (offer, company) => new { Offer = offer, Company = company })
+            .OrderBy(row => row.Offer.Rank)
             .ToListAsync(cancellationToken);
+        var offers = offerRows
+            .Select(row => new ClientMissionOfferResponse(
+                row.Offer.Id,
+                row.Company.Id,
+                row.Company.Name,
+                row.Offer.Rank,
+                row.Offer.Score,
+                row.Offer.Status.ToString(),
+                row.Offer.ExpiresAt,
+                row.Offer.RespondedAt))
+            .ToList();
 
         var photos = await db.MissionAttachments
             .AsNoTracking()
@@ -115,10 +118,12 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                 attachment.Caption))
             .ToListAsync(cancellationToken);
 
-        var additionalQuotes = await db.MissionAdditionalQuotes
+        var additionalQuoteRows = await db.MissionAdditionalQuotes
             .AsNoTracking()
             .Where(quote => quote.MissionId == mission.Id)
             .OrderByDescending(quote => quote.RequestedAt)
+            .ToListAsync(cancellationToken);
+        var additionalQuotes = additionalQuoteRows
             .Select(quote => new ClientMissionAdditionalQuoteResponse(
                 quote.Id,
                 quote.Status.ToString(),
@@ -131,7 +136,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                 quote.SubmittedAt,
                 quote.PaidAt,
                 quote.Status == MissionAdditionalQuoteStatus.Submitted && quote.Amount > 0))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var priceRange = ResolvePriceRange(service, prestation);
         var response = new ClientMissionStatusResponse(

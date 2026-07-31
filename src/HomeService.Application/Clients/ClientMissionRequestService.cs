@@ -56,13 +56,20 @@ public sealed class ClientMissionRequestService(
             return ClientMissionCreationResult.ValidationFailed(["La date du rendez-vous est obligatoire pour une mission programmee."]);
         }
 
+        if (mode == MissionMode.Scheduled && request.ScheduledFor <= DateTimeOffset.UtcNow.AddMinutes(15))
+        {
+            return ClientMissionCreationResult.ValidationFailed(["Choisissez un rendez-vous au moins 15 minutes dans le futur."]);
+        }
+
+        var scheduledFor = request.ScheduledFor?.ToUniversalTime();
+
         var customer = await FindOrCreateCustomerAsync(request, cancellationToken);
         var mission = new Mission(
             customer.Id,
             request.ServiceId,
             mode,
             paymentMethod,
-            request.ScheduledFor,
+            scheduledFor,
             Math.Clamp(request.EstimatedDurationMinutes, 30, 720),
             request.ServicePrestationId,
             request.Description,

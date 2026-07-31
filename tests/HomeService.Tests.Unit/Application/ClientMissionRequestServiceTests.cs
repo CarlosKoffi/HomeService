@@ -136,6 +136,30 @@ public sealed class ClientMissionRequestServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_WhenScheduledMissionUsesLocalOffset_StoresUtcDate()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Plomberie", "Depannage eau", createdByCompanyId: null);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+        var localAppointment = DateTimeOffset.UtcNow.AddDays(2).ToOffset(TimeSpan.FromHours(2));
+
+        var result = await sut.CreateAsync(
+            ValidRequest(service.Id) with
+            {
+                Mode = MissionMode.Scheduled.ToString(),
+                ScheduledFor = localAppointment
+            },
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var mission = await db.Missions.SingleAsync();
+        Assert.Equal(TimeSpan.Zero, mission.ScheduledFor!.Value.Offset);
+        Assert.Equal(localAppointment.UtcDateTime, mission.ScheduledFor.Value.UtcDateTime);
+    }
+
+    [Fact]
     public async Task CreateAsync_WhenPrestationDoesNotBelongToService_IsRejected()
     {
         await using var db = CreateDbContext();
