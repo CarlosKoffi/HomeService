@@ -1,5 +1,7 @@
 using Android.App;
 using Android.Content.PM;
+using Android.OS;
+using AndroidX.AppCompat.App;
 
 namespace HomeService.Client.Mobile;
 
@@ -14,4 +16,9 @@ namespace HomeService.Client.Mobile;
         | ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
+    protected override void OnCreate(Bundle? savedInstanceState)
+    {
+        AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightNo;
+        base.OnCreate(savedInstanceState);
+    }
 }

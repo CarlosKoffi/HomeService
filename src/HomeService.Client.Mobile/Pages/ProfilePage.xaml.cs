@@ -14,7 +14,7 @@ public partial class ProfilePage : ContentPage
         if (sessionStore.IsPreviewMode()) { SetIdentity("Carlos", "Konan", "+225 07 00 00 00 00", "carlos@wele.ci"); return; }
         var result = await apiClient.GetMeAsync(); if (result.IsSuccess && result.Response is not null) SetIdentity(result.Response.FirstName, result.Response.LastName, result.Response.PhoneNumber, result.Response.Email);
     }
-    private void SetIdentity(string firstName, string lastName, string phone, string? email) { NameLabel.Text = $"{firstName} {lastName}"; InitialsLabel.Text = $"{firstName.FirstOrDefault()}{lastName.FirstOrDefault()}".ToUpperInvariant(); PhoneLabel.Text = phone; }
+    private void SetIdentity(string firstName, string lastName, string phone, string? email) { NameLabel.Text = $"{firstName} {lastName}"; PhoneLabel.Text = phone; }
     private async void OnLoginClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(LoginPage));
     private async void OnRegisterClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(RegisterPage));
     private async void OnInformationClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProfileInformationPage));

@@ -16,9 +16,9 @@
         ContentTemplate="{DataTemplate pages:WelcomePage}"
         Shell.TabBarIsVisible="False" />
     <TabBar>
-        <ShellContent Title="Accueil" Route="home" ContentTemplate="{DataTemplate pages:HomePage}" />
-        <ShellContent Title="Demandes" Route="requests" ContentTemplate="{DataTemplate pages:RequestsPage}" />
-        <ShellContent Title="Messages" Route="messages" ContentTemplate="{DataTemplate pages:MessagesPage}" />
-        <ShellContent Title="Profil" Route="profile" ContentTemplate="{DataTemplate pages:ProfilePage}" />
+        <ShellContent Title="Accueil" Icon="nav_home.svg" Route="home" ContentTemplate="{DataTemplate pages:HomePage}" />
+        <ShellContent Title="Demandes" Icon="nav_requests.svg" Route="requests" ContentTemplate="{DataTemplate pages:RequestsPage}" />
+        <ShellContent Title="Messages" Icon="nav_messages.svg" Route="messages" ContentTemplate="{DataTemplate pages:MessagesPage}" />
+        <ShellContent Title="Profil" Icon="nav_profile.svg" Route="profile" ContentTemplate="{DataTemplate pages:ProfilePage}" />
     </TabBar>
 </Shell>
