@@ -32,7 +32,10 @@
                             <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,0,10">
                                 <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
                                     <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="54" WidthRequest="54">
-                                        <Image Source="{Binding IconSource}" Aspect="AspectFill" HeightRequest="54" WidthRequest="54" />
+                                        <Grid>
+                                            <Image Source="nav_requests.svg" Aspect="AspectFit" HeightRequest="24" WidthRequest="24" Opacity="0.45" />
+                                            <Image Source="{Binding IconSource}" Aspect="AspectFill" HeightRequest="54" WidthRequest="54" IsVisible="{Binding HasImage}" />
+                                        </Grid>
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                         <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold" LineBreakMode="TailTruncation" />

@@ -46,7 +46,8 @@ public partial class RequestsPage : ContentPage
         {
             foreach (var item in result.Response)
             {
-                missions.Add(MissionRow.From(item, apiClient.ToAbsoluteMediaUrl));
+                var image = await apiClient.DownloadMediaImageSourceAsync(item.IconUrl);
+                missions.Add(MissionRow.From(item, image));
             }
         }
 
@@ -144,17 +145,18 @@ public partial class RequestsPage : ContentPage
         string Schedule,
         string StatusLabel,
         string Amount,
-        string IconSource,
+        ImageSource? IconSource,
+        bool HasImage,
         Color StatusColor,
         Color StatusBackground)
     {
         public static MissionRow Preview(Guid missionId, string title, string address, string schedule, string status, string amount, string icon)
         {
             var (label, color, background) = ResolveStatus(status);
-            return new MissionRow(missionId, title, address, schedule, label, amount, icon, color, background);
+            return new MissionRow(missionId, title, address, schedule, label, amount, ImageSource.FromFile(icon), true, color, background);
         }
 
-        public static MissionRow From(ClientMissionListItemResponse item, Func<string?, string?> resolveMediaUrl)
+        public static MissionRow From(ClientMissionListItemResponse item, ImageSource? image)
         {
             var title = $"{item.MissionNumber} - {item.PrestationName ?? item.ServiceName ?? "Service"}";
             var schedule = item.ScheduledFor.HasValue
@@ -162,9 +164,7 @@ public partial class RequestsPage : ContentPage
                 : item.CreatedAt.ToString("dd/MM HH:mm");
             var amount = item.Amount.HasValue ? $"{item.Amount:N0} {item.Currency}" : "Prix à venir";
             var (label, color, background) = ResolveStatus(item.Status);
-            var icon = resolveMediaUrl(item.IconUrl) ?? ResolveIcon(item.ServiceName, item.PrestationName);
-
-            return new MissionRow(item.MissionId, title, item.ServiceAddress ?? "Adresse à confirmer", schedule, label, amount, icon, color, background);
+            return new MissionRow(item.MissionId, title, item.ServiceAddress ?? "Adresse à confirmer", schedule, label, amount, image, image is not null, color, background);
         }
 
         private static (string Label, Color Color, Color Background) ResolveStatus(string status)
@@ -188,9 +188,5 @@ public partial class RequestsPage : ContentPage
             return ("En cours", Color.FromArgb("#2563EB"), Color.FromArgb("#EFF6FF"));
         }
 
-        private static string ResolveIcon(string? serviceName, string? prestationName)
-        {
-            return "nav_requests.svg";
-        }
     }
 }

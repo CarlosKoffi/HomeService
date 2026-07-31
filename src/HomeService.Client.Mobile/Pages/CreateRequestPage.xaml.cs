@@ -264,6 +264,13 @@ public partial class CreateRequestPage : ContentPage
             return;
         }
 
+        var scheduledFor = ResolveScheduledFor();
+        if (ModePicker.SelectedIndex == 1 && scheduledFor <= DateTimeOffset.Now.AddMinutes(15))
+        {
+            ShowError("Choisissez un rendez-vous au moins 15 minutes dans le futur.");
+            return;
+        }
+
         if (sessionStore.IsPreviewMode())
         {
             await Shell.Current.DisplayAlert("Demande envoyée", "Aperçu : la demande est simulée et visible dans Mes demandes.", "OK");
@@ -300,7 +307,7 @@ public partial class CreateRequestPage : ContentPage
             prestationId,
             ResolveMissionMode(),
             ResolvePaymentMethod(),
-            ResolveScheduledFor(),
+            scheduledFor,
             90,
             DescriptionEditor.Text?.Trim(),
             AddressEntry.Text.Trim(),

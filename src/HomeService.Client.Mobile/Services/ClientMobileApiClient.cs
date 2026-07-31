@@ -142,14 +142,15 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
 
     public async Task<ApiCallResult<ClientMissionStatusResponse>> GetMissionAsync(Guid missionId, CancellationToken cancellationToken = default)
     {
-        var phoneNumber = sessionStore.GetPhoneNumber();
-        var path = $"api/client/missions/{missionId:D}?phoneNumber={Uri.EscapeDataString(phoneNumber ?? string.Empty)}";
-        return await SendAsync<ClientMissionStatusResponse>(HttpMethod.Get, path, bearerToken: null, body: null, cancellationToken);
+        return await SendWithSessionAsync<ClientMissionStatusResponse>(HttpMethod.Get, $"api/client/missions/{missionId:D}", body: null, cancellationToken);
     }
+
+    public Task<ApiCallResult<ClientMissionScreenResponse>> GetMissionScreenAsync(Guid missionId, CancellationToken cancellationToken = default)
+        => SendWithSessionAsync<ClientMissionScreenResponse>(HttpMethod.Get, $"api/client/missions/{missionId:D}/screen", body: null, cancellationToken);
 
     public async Task<ApiCallResult<CreateClientMissionResponse>> CreateMissionAsync(CreateClientMissionRequest request, CancellationToken cancellationToken = default)
     {
-        return await SendAsync<CreateClientMissionResponse>(HttpMethod.Post, "api/client/missions", bearerToken: null, request, cancellationToken);
+        return await SendWithSessionAsync<CreateClientMissionResponse>(HttpMethod.Post, "api/client/missions", request, cancellationToken);
     }
 
     public async Task<ApiCallResult<ClientMissionPhotoUploadResponse>> UploadMissionPhotoAsync(
