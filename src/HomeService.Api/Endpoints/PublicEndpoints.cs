@@ -724,6 +724,36 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapPut("/api/client/missions/{missionId:guid}/payment-method", async (
+            Guid missionId,
+            SelectClientMissionPaymentMethodRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionPaymentMethodService paymentMethodService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await paymentMethodService.SelectAsync(customer.Id, missionId, request.PaymentMethodId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.IsNotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("SelectClientMissionPaymentMethod")
+        .Produces<ClientMissionPaymentSelectionResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapGet("/api/client/missions/{missionId:guid}/screen", async (
             Guid missionId,
             HttpRequest httpRequest,

@@ -6,8 +6,7 @@
     Title="Profil">
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="18">
-            <Label Text="PROFIL" Style="{StaticResource EyebrowLabel}" />
-            <Label Text="Votre compte" Style="{StaticResource ScreenTitleLabel}" />
+            <Label Text="Mon profil" Style="{StaticResource ScreenTitleLabel}" />
 
             <Border x:Name="LoggedOutCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
                 <VerticalStackLayout Spacing="10">
@@ -27,6 +26,53 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="0">
+                    <VerticalStackLayout Spacing="0">
+                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
+                            <Label Text="●" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Mes informations" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
+                            <Label Text="⌂" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Mes adresses" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
+                            <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnPaymentMethodsClicked" /></Grid.GestureRecognizers>
+                            <Label Text="▣" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Moyens de paiement" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
+                            <Label Text="☰" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Mes demandes" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
+                            <Label Text="★" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Mes avis" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
+                            <Label Text="!" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Notifications" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" />
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
+                            <Label Text="⚙" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Parametres" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="2" Text="›" FontSize="22" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
                 <Label Text="Adresses" Style="{StaticResource CardTitleLabel}" />
                 <CollectionView x:Name="AddressesView" SelectionMode="None">
                     <CollectionView.ItemTemplate>
@@ -41,7 +87,7 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Label Text="Paiements" Style="{StaticResource CardTitleLabel}" />
+                <Label Text="Moyens de paiement" Style="{StaticResource CardTitleLabel}" />
                 <CollectionView x:Name="PaymentsView" SelectionMode="None">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>

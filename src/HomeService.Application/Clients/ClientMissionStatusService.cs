@@ -19,6 +19,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
 
         var mission = await db.Missions
             .AsNoTracking()
+            .Include(item => item.CustomerPaymentMethod)
             .FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
         if (mission is null)
         {
@@ -141,6 +142,9 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             mission.PaymentStatus.ToString(),
             mission.Mode.ToString(),
             mission.PaymentMethod.ToString(),
+            mission.CustomerPaymentMethodId,
+            mission.CustomerPaymentMethod?.Label,
+            mission.CustomerPaymentMethod?.MaskedReference,
             service?.Name,
             prestation?.Name,
             mission.Description,
@@ -209,7 +213,8 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
 
     private static ClientMissionAvailableActionsResponse BuildActions(Domain.Entities.Mission mission)
     {
-        var canAcceptQuote = mission.QuoteStatus == MissionQuoteStatus.Submitted
+        var canAcceptQuote = mission.CustomerPaymentMethodId.HasValue
+            && mission.QuoteStatus == MissionQuoteStatus.Submitted
             && mission.CompanyQuotedAmount is > 0
             && mission.CustomerConfirmedAt is null
             && mission.Status is MissionStatus.Assigned or MissionStatus.Accepted;
@@ -230,6 +235,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             canValidateCompletion,
             canRateMission,
             canOpenDispute,
+            !mission.CustomerPaymentMethodId.HasValue,
             canAcceptQuote ? mission.CompanyQuotedAmount : null,
             BuildPrimaryAction(canAcceptQuote, canValidateCompletion, canCall, canCancel));
     }

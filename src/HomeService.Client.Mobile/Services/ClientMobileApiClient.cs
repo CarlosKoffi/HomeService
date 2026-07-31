@@ -269,6 +269,25 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<IReadOnlyList<ClientPaymentMethodResponse>>(HttpMethod.Get, "api/client/payment-methods", body: null, cancellationToken);
     }
 
+    public async Task<ApiCallResult<ClientPaymentMethodResponse>> CreatePaymentMethodAsync(
+        UpsertClientPaymentMethodRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<ClientPaymentMethodResponse>(HttpMethod.Post, "api/client/payment-methods", request, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<ClientMissionPaymentSelectionResponse>> SelectMissionPaymentMethodAsync(
+        Guid missionId,
+        Guid paymentMethodId,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<ClientMissionPaymentSelectionResponse>(
+            HttpMethod.Put,
+            $"api/client/missions/{missionId:D}/payment-method",
+            new SelectClientMissionPaymentMethodRequest(paymentMethodId),
+            cancellationToken);
+    }
+
     private async Task<ApiCallResult<TResponse>> SendWithSessionAsync<TResponse>(
         HttpMethod method,
         string path,

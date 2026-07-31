@@ -317,8 +317,7 @@ public partial class CreateRequestPage : ContentPage
             return;
         }
 
-        await Shell.Current.DisplayAlert("Demande envoyee", result.Response.Message, "OK");
-        await Shell.Current.GoToAsync("//requests");
+        await ContinueToPaymentAsync(result.Response.MissionId, result.Response.Message);
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
@@ -443,6 +442,38 @@ public partial class CreateRequestPage : ContentPage
         return ModePicker.SelectedIndex == 0
             && preparation?.UrgentOptionEnabled == true
             && UrgentCheckBox.IsChecked;
+    }
+
+    private async Task ContinueToPaymentAsync(Guid missionId, string message)
+    {
+        var methodsResult = await apiClient.GetPaymentMethodsAsync();
+        if (!methodsResult.IsSuccess || methodsResult.Response is null)
+        {
+            await Shell.Current.DisplayAlert("Demande envoyee", message, "OK");
+            await Shell.Current.GoToAsync($"{nameof(PaymentMethodsPage)}?missionId={missionId:D}");
+            return;
+        }
+
+        var methods = methodsResult.Response.Where(item => item.IsActive).ToList();
+        if (methods.Count == 1)
+        {
+            var selection = await apiClient.SelectMissionPaymentMethodAsync(missionId, methods[0].Id);
+            if (selection.IsSuccess)
+            {
+                await Shell.Current.DisplayAlert("Demande envoyee", $"{message}\n\nPaiement : {methods[0].Label}", "OK");
+                await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={missionId:D}");
+                return;
+            }
+        }
+
+        var route = methods.Count == 0 ? nameof(AddPaymentMethodPage) : nameof(PaymentMethodsPage);
+        await Shell.Current.DisplayAlert(
+            "Demande envoyee",
+            methods.Count == 0
+                ? $"{message}\n\nAjoutez maintenant un moyen de paiement pour pouvoir accepter le prix plus tard."
+                : $"{message}\n\nChoisissez le moyen de paiement a utiliser pour cette demande.",
+            "Continuer");
+        await Shell.Current.GoToAsync($"{route}?missionId={missionId:D}");
     }
 
     private string ResolvePaymentMethod()

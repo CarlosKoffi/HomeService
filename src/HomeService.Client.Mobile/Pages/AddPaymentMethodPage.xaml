@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.AddPaymentMethodPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Ajouter un moyen">
+    <Grid Padding="20,18,20,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked" />
+            <Label Grid.Column="1" Text="Ajouter un moyen" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center" />
+        </Grid>
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="16">
+                <Label Text="Type de paiement" FontAttributes="Bold" />
+                <Picker x:Name="MethodPicker" Title="Choisir" SelectedIndexChanged="OnMethodChanged">
+                    <x:String>Mobile Money</x:String>
+                    <x:String>Carte bancaire</x:String>
+                </Picker>
+                <Label Text="Nom" FontAttributes="Bold" />
+                <Entry x:Name="LabelEntry" Placeholder="Ex. Orange Money personnel" />
+                <Label x:Name="ReferenceLabel" Text="Numero Mobile Money" FontAttributes="Bold" />
+                <Entry x:Name="ReferenceEntry" Placeholder="07 00 00 00 00" Keyboard="Telephone" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <CheckBox x:Name="DefaultCheckBox" IsChecked="True" />
+                    <Label Grid.Column="1" Text="Utiliser par defaut" VerticalTextAlignment="Center" />
+                </Grid>
+                <Border BackgroundColor="#F5F7FA" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14">
+                    <Label Text="Aucun paiement n'est effectue maintenant. Ce moyen sera utilise uniquement lorsque vous accepterez le prix propose." FontSize="12" TextColor="#687386" />
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        <VerticalStackLayout Grid.Row="2" Spacing="8">
+            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+            <Button x:Name="SaveButton" Text="Enregistrer" HeightRequest="52" Clicked="OnSaveClicked" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

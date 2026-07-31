@@ -205,6 +205,11 @@
                             <Label Text="Votre demande" FontSize="11" TextColor="#687386" />
                             <Label x:Name="SummaryDescriptionLabel" FontSize="12" />
                         </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Moyen de paiement" FontSize="11" TextColor="#687386" />
+                            <Label Text="A choisir apres l'envoi" FontSize="13" FontAttributes="Bold" />
+                            <Label Text="Vous ne serez debite qu'apres validation du prix." FontSize="11" TextColor="#687386" />
+                        </VerticalStackLayout>
                         <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
                     </VerticalStackLayout>
                 </ScrollView>

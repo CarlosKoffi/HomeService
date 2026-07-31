@@ -88,6 +88,7 @@
                         <Label Text="Paiement" Style="{StaticResource MutedLabel}" />
                         <Label Grid.Column="1" x:Name="PaymentLabel" FontAttributes="Bold" />
                     </Grid>
+                    <Button x:Name="ChoosePaymentButton" Text="Choisir un moyen de paiement" IsVisible="False" Clicked="OnChoosePaymentClicked" />
                     <Label x:Name="MessageLabel" Style="{StaticResource MutedLabel}" />
                 </VerticalStackLayout>
             </Border>

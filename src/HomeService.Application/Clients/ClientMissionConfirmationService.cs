@@ -49,6 +49,11 @@ public sealed class ClientMissionConfirmationService(
             return ClientMissionConfirmationResult.Invalid("La mission doit avoir une entreprise et un prestataire affectes.");
         }
 
+        if (!mission.CustomerPaymentMethodId.HasValue)
+        {
+            return ClientMissionConfirmationResult.Invalid("Choisissez un moyen de paiement avant de confirmer le prix.");
+        }
+
         var company = await db.Companies
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == mission.CompanyId.Value, cancellationToken);

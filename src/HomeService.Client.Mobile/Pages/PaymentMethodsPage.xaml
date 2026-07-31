@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.PaymentMethodsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Moyens de paiement">
+    <Grid Padding="20,18,20,24" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="18">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked" />
+            <Label Grid.Column="1" Text="Moyens de paiement" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center" />
+        </Grid>
+
+        <Button Grid.Row="1" Text="＋  Ajouter un moyen de paiement" BackgroundColor="White" TextColor="{StaticResource WeleBlue}"
+                BorderColor="{StaticResource Line}" BorderWidth="1" HeightRequest="50" Clicked="OnAddClicked" />
+
+        <Grid Grid.Row="2">
+            <CollectionView x:Name="MethodsView" SelectionMode="Single" SelectionChanged="OnSelectionChanged">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="14" Margin="0,0,0,10">
+                            <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="12">
+                                <Border BackgroundColor="#F2F6FF" StrokeThickness="0" StrokeShape="RoundRectangle 10" HeightRequest="42" WidthRequest="42">
+                                    <Label Text="{Binding IconText}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                    <Label Text="{Binding Label}" FontAttributes="Bold" FontSize="14" />
+                                    <Label Text="{Binding Reference}" Style="{StaticResource MutedLabel}" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="2" Text="{Binding StatusText}" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <VerticalStackLayout x:Name="EmptyState" Spacing="10" VerticalOptions="Center" HorizontalOptions="Center" IsVisible="False">
+                <Label Text="Aucun moyen de paiement" FontSize="18" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                <Label Text="Ajoutez Mobile Money ou une carte pour pouvoir confirmer le prix de votre intervention." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <VerticalStackLayout Grid.Row="3" Spacing="8">
+            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+            <Button x:Name="ContinueButton" Text="Utiliser ce moyen" HeightRequest="52" IsEnabled="False" Clicked="OnContinueClicked" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

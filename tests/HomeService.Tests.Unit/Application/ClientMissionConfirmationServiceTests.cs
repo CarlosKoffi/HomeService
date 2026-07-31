@@ -117,6 +117,13 @@ public sealed class ClientMissionConfirmationServiceTests
             null,
             "Fuite sous evier",
             requiresCompanyQuote: true);
+        var paymentMethod = new CustomerPaymentMethod(
+            customer.Id,
+            PaymentMethod.MobileMoney,
+            "Orange Money",
+            "**** 0000",
+            isDefault: true);
+        mission.SelectCustomerPaymentMethod(paymentMethod);
         mission.SetServiceLocation("Cocody", 5.348850m, -4.003150m);
         mission.AssignWithCompanyQuote(provider.Id, company.Id, 20_000, 25_000, null);
         if (markProviderAccepted)
@@ -126,6 +133,7 @@ public sealed class ClientMissionConfirmationServiceTests
 
         db.Services.Add(service);
         db.Customers.Add(customer);
+        db.CustomerPaymentMethods.Add(paymentMethod);
         db.Companies.Add(company);
         db.Providers.Add(provider);
         db.Missions.Add(mission);

@@ -12,6 +12,8 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(MissionDetailPage), typeof(MissionDetailPage));
         Routing.RegisterRoute(nameof(CreateRequestPage), typeof(CreateRequestPage));
         Routing.RegisterRoute(nameof(CatalogSearchPage), typeof(CatalogSearchPage));
+        Routing.RegisterRoute(nameof(PaymentMethodsPage), typeof(PaymentMethodsPage));
+        Routing.RegisterRoute(nameof(AddPaymentMethodPage), typeof(AddPaymentMethodPage));
 
         Dispatcher.Dispatch(async () =>
         {

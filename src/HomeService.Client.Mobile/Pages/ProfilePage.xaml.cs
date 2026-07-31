@@ -87,6 +87,11 @@ public partial class ProfilePage : ContentPage
         await Shell.Current.GoToAsync(nameof(RegisterPage));
     }
 
+    private async void OnPaymentMethodsClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(PaymentMethodsPage));
+    }
+
     private async void OnLogoutClicked(object sender, EventArgs e)
     {
         await sessionStore.ClearAsync();

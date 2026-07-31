@@ -46,6 +46,8 @@ public sealed class Mission : AuditableEntity
     public bool RequiresCompanyQuote { get; private set; }
     public MissionQuoteStatus QuoteStatus { get; private set; } = MissionQuoteStatus.NotRequired;
     public PaymentMethod PaymentMethod { get; private set; }
+    public Guid? CustomerPaymentMethodId { get; private set; }
+    public CustomerPaymentMethod? CustomerPaymentMethod { get; private set; }
     public PaymentStatus PaymentStatus { get; private set; } = PaymentStatus.Pending;
     public DateTimeOffset? ScheduledFor { get; private set; }
     public int EstimatedDurationMinutes { get; private set; }
@@ -86,6 +88,18 @@ public sealed class Mission : AuditableEntity
     public bool CanRevealContactDetails => ContactDetailsReleasedAt is not null
         && Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started or MissionStatus.Completed
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
+
+    public void SelectCustomerPaymentMethod(CustomerPaymentMethod paymentMethod)
+    {
+        if (paymentMethod.CustomerId != CustomerId || !paymentMethod.IsActive)
+        {
+            throw new InvalidOperationException("Le moyen de paiement ne peut pas etre utilise pour cette mission.");
+        }
+
+        CustomerPaymentMethodId = paymentMethod.Id;
+        PaymentMethod = paymentMethod.Method;
+        Touch();
+    }
 
     public void SetServiceLocation(string? address, decimal? latitude, decimal? longitude, int arrivalToleranceMeters = 250)
     {

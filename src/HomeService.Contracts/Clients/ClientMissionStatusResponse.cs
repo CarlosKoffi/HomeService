@@ -8,6 +8,9 @@ public sealed record ClientMissionStatusResponse(
     string PaymentStatus,
     string Mode,
     string PaymentMethod,
+    Guid? CustomerPaymentMethodId,
+    string? CustomerPaymentMethodLabel,
+    string? CustomerPaymentMaskedReference,
     string? ServiceName,
     string? PrestationName,
     string? Description,
@@ -47,6 +50,7 @@ public sealed record ClientMissionAvailableActionsResponse(
     bool CanValidateCompletion,
     bool CanRateMission,
     bool CanOpenDispute,
+    bool RequiresPaymentMethod,
     int? AmountToPayNow,
     string? PrimaryAction);
 

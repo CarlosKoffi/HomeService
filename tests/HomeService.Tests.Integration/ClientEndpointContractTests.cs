@@ -27,6 +27,7 @@ public sealed class ClientEndpointContractTests
     [InlineData("GET", "/api/client/missions/{missionId:guid}/messages")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/messages")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/confirm")]
+    [InlineData("PUT", "/api/client/missions/{missionId:guid}/payment-method")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/cancel")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/validate-completion")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/additional-quotes/{quoteId:guid}/pay")]

@@ -71,7 +71,10 @@ public partial class MissionDetailPage : ContentPage
         PriceLabel.Text = mission.CompanyQuotedAmount.HasValue
             ? $"{mission.CompanyQuotedAmount:N0} {mission.Currency}"
             : $"À partir de {mission.StartingPriceAmount:N0} {mission.Currency}";
-        PaymentLabel.Text = $"{ResolvePaymentLabel(mission.PaymentMethod)} - {ResolvePaymentStatusLabel(mission.PaymentStatus)}";
+        PaymentLabel.Text = mission.CustomerPaymentMethodId.HasValue
+            ? $"{mission.CustomerPaymentMethodLabel} {mission.CustomerPaymentMaskedReference} - {ResolvePaymentStatusLabel(mission.PaymentStatus)}"
+            : "A choisir";
+        ChoosePaymentButton.IsVisible = mission.Actions.RequiresPaymentMethod;
         MessageLabel.Text = mission.Message;
         TrackingLabel.Text = BuildTrackingMessage(mission);
         ProviderCard.IsVisible = mission.AssignedProvider is not null;
@@ -201,6 +204,14 @@ public partial class MissionDetailPage : ContentPage
 
         await Shell.Current.DisplayAlert("Paiement confirme", "La mission est confirmee.", "OK");
         await LoadAsync();
+    }
+
+    private async void OnChoosePaymentClicked(object sender, EventArgs e)
+    {
+        if (currentMissionId != Guid.Empty)
+        {
+            await Shell.Current.GoToAsync($"{nameof(PaymentMethodsPage)}?missionId={currentMissionId:D}");
+        }
     }
 
     private async void OnCancelClicked(object sender, EventArgs e)
