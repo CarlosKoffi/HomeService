@@ -346,10 +346,66 @@ public partial class CreateRequestPage : ContentPage
             return;
         }
 
-        var files = await FilePicker.Default.PickMultipleAsync(PickOptions.Images);
-        foreach (var file in files.Take(maxPhotoCount - selectedPhotos.Count))
+        try
         {
-            selectedPhotos.Add(PhotoSelection.From(file));
+            var choice = await DisplayActionSheet(
+                "Ajouter une photo",
+                "Annuler",
+                null,
+                "Prendre une photo",
+                "Choisir dans la galerie");
+
+            if (choice == "Prendre une photo")
+            {
+                if (!MediaPicker.Default.IsCaptureSupported)
+                {
+                    ShowError("La prise de photo n'est pas disponible sur cet appareil.");
+                    return;
+                }
+
+                var capturedPhoto = await MediaPicker.Default.CapturePhotoAsync();
+                if (capturedPhoto is not null)
+                {
+                    selectedPhotos.Add(await PhotoSelection.FromAsync(capturedPhoto));
+                }
+
+                return;
+            }
+
+            if (choice != "Choisir dans la galerie")
+            {
+                return;
+            }
+
+            var files = await FilePicker.Default.PickMultipleAsync(PickOptions.Images);
+            foreach (var file in files.Take(maxPhotoCount - selectedPhotos.Count))
+            {
+                selectedPhotos.Add(await PhotoSelection.FromAsync(file));
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The user closed the camera or gallery without selecting a photo.
+        }
+        catch (PermissionException)
+        {
+            ShowError("Autorisez Wele a utiliser l'appareil photo et vos images dans les reglages du telephone.");
+        }
+        catch (FeatureNotSupportedException)
+        {
+            ShowError("Cette fonction photo n'est pas disponible sur cet appareil.");
+        }
+        catch
+        {
+            ShowError("La photo n'a pas pu etre ajoutee. Reessayez avec une image JPG ou PNG.");
+        }
+    }
+
+    private void OnRemovePhotoClicked(object sender, EventArgs e)
+    {
+        if (sender is Button { CommandParameter: PhotoSelection photo })
+        {
+            selectedPhotos.Remove(photo);
         }
     }
 
@@ -503,11 +559,12 @@ public partial class CreateRequestPage : ContentPage
 
     private sealed class PhotoSelection
     {
-        private PhotoSelection(FileResult file, string fileName, string sizeLabel)
+        private PhotoSelection(FileResult file, string fileName, string sizeLabel, byte[] previewBytes)
         {
             File = file;
             FileName = fileName;
             SizeLabel = sizeLabel;
+            PreviewBytes = previewBytes;
         }
 
         public FileResult File { get; }
@@ -516,13 +573,20 @@ public partial class CreateRequestPage : ContentPage
 
         public string SizeLabel { get; }
 
+        public byte[] PreviewBytes { get; }
+
+        public ImageSource PreviewSource => ImageSource.FromStream(() => new MemoryStream(PreviewBytes));
+
         public string Status { get; set; } = "Pret";
 
         public string? Caption { get; set; }
 
-        public static PhotoSelection From(FileResult file)
+        public static async Task<PhotoSelection> FromAsync(FileResult file)
         {
-            return new PhotoSelection(file, file.FileName, "Photo selectionnee");
+            await using var stream = await file.OpenReadAsync();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            return new PhotoSelection(file, file.FileName, "Photo selectionnee", buffer.ToArray());
         }
     }
 }

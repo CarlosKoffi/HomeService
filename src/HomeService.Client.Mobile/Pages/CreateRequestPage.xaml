@@ -65,20 +65,23 @@
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Photos (optionnel)" FontSize="13" FontAttributes="Bold" />
                             <Label x:Name="PhotoHintLabel" Text="Ajoutez des photos pour faciliter l'évaluation." FontSize="10" TextColor="#687386" />
-                            <CollectionView x:Name="PhotosView" HeightRequest="78" ItemsLayout="HorizontalList" SelectionMode="None">
+                            <CollectionView x:Name="PhotosView" HeightRequest="92" ItemsLayout="HorizontalList" SelectionMode="None">
                                 <CollectionView.ItemTemplate>
                                     <DataTemplate>
-                                        <Border HeightRequest="72" WidthRequest="72" Margin="0,0,8,0" Stroke="#DDE2EA"
-                                                StrokeShape="RoundRectangle 9" Padding="5">
-                                            <VerticalStackLayout VerticalOptions="Center" Spacing="2">
-                                                <Label Text="Photo" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                                                <Label Text="{Binding Status}" FontSize="8" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
-                                            </VerticalStackLayout>
+                                        <Border HeightRequest="86" WidthRequest="86" Margin="0,0,8,0" Stroke="#DDE2EA"
+                                                StrokeShape="RoundRectangle 10" Padding="0">
+                                            <Grid>
+                                                <Image Source="{Binding PreviewSource}" Aspect="AspectFill" />
+                                                <Button Text="×" FontSize="16" FontAttributes="Bold" TextColor="White"
+                                                        BackgroundColor="#C62828" CornerRadius="14" HeightRequest="28" WidthRequest="28"
+                                                        Padding="0" Margin="0,4,4,0" HorizontalOptions="End" VerticalOptions="Start"
+                                                        CommandParameter="{Binding .}" Clicked="OnRemovePhotoClicked" />
+                                            </Grid>
                                         </Border>
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
                             </CollectionView>
-                            <Button Text="+ Ajouter des photos" HeightRequest="46" BackgroundColor="#F4F7FF"
+                            <Button Text="+ Ajouter une photo" HeightRequest="46" BackgroundColor="#F4F7FF"
                                     TextColor="{StaticResource WeleBlue}" BorderColor="#DCE6FF" BorderWidth="1"
                                     CornerRadius="10" Clicked="OnAddPhotosClicked" />
                         </VerticalStackLayout>
