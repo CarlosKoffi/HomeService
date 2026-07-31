@@ -70,6 +70,32 @@ public sealed class AdminAccessControlServiceTests
     }
 
     [Fact]
+    public async Task UpdateRolePermissionsAsync_WhenPermissionIsUnchanged_DoesNotCreateDuplicate()
+    {
+        await using var db = CreateDbContext();
+        var role = new AdminRole("Super admin", "Acces complet");
+        var module = new AdminModule(AdminModuleKey.Clients, "Clients", "Dossiers clients", 1);
+        db.AdminRoles.Add(role);
+        db.AdminModules.Add(module);
+        db.AdminRolePermissions.Add(new AdminRolePermission(role.Id, module.Id, AdminPermissionAction.View));
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.UpdateRolePermissionsAsync(
+            role.Id,
+            new UpdateAdminRolePermissionsRequest(
+            [
+                new AdminPermissionAssignmentRequest(module.Id, nameof(AdminPermissionAction.View))
+            ]),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "unit-tests", "role-permissions-idempotent"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminAccessControlStatus.Ok, result.Status);
+        Assert.Equal(1, await db.AdminRolePermissions.CountAsync(permission => permission.RoleId == role.Id));
+    }
+
+    [Fact]
     public async Task CreateAdminUserAsync_WhenValid_PersistsRolesAndAudit()
     {
         await using var db = CreateDbContext();

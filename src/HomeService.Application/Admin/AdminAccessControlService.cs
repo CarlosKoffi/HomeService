@@ -233,7 +233,7 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
             .Select(module => module.Id)
             .ToListAsync(cancellationToken);
 
-        var parsedPermissions = new List<AdminRolePermission>();
+        var desiredPermissions = new HashSet<(Guid ModuleId, AdminPermissionAction Action)>();
         foreach (var permission in request.Permissions)
         {
             if (!validModuleIds.Contains(permission.ModuleId))
@@ -246,7 +246,7 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
                 return AdminAccessControlResult.ValidationFailed($"Action admin inconnue: {permission.Action}.");
             }
 
-            parsedPermissions.Add(new AdminRolePermission(roleId, permission.ModuleId, action));
+            desiredPermissions.Add((permission.ModuleId, action));
         }
 
         var existingPermissions = await db.AdminRolePermissions
@@ -256,10 +256,19 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
             .Select(permission => new { permission.ModuleId, permission.Action })
             .ToList();
 
-        db.AdminRolePermissions.RemoveRange(existingPermissions);
-        db.AdminRolePermissions.AddRange(parsedPermissions
-            .GroupBy(permission => new { permission.ModuleId, permission.Action })
-            .Select(group => group.First()));
+        var permissionsToRemove = existingPermissions
+            .Where(permission => !desiredPermissions.Contains((permission.ModuleId, permission.Action)))
+            .ToList();
+        var existingKeys = existingPermissions
+            .Select(permission => (permission.ModuleId, permission.Action))
+            .ToHashSet();
+        var permissionsToAdd = desiredPermissions
+            .Where(permission => !existingKeys.Contains(permission))
+            .Select(permission => new AdminRolePermission(roleId, permission.ModuleId, permission.Action))
+            .ToList();
+
+        db.AdminRolePermissions.RemoveRange(permissionsToRemove);
+        db.AdminRolePermissions.AddRange(permissionsToAdd);
         AddAuditLog(
             actor,
             auditContext,
