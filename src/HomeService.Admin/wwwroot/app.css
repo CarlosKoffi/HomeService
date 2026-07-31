@@ -6710,3 +6710,31 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+.mission-photo-panel {
+    grid-column: 1 / -1;
+}
+
+.mission-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.mission-photo-item {
+    display: grid;
+    gap: 8px;
+    color: #111827;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.mission-photo-item img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f5f7fa;
+}

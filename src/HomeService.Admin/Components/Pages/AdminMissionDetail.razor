@@ -103,6 +103,28 @@ else
                     <div><dt>Confirmation client</dt><dd>@FormatDate(Mission.CustomerConfirmedAt)</dd></div>
                 </dl>
             </article>
+            <article class="mission-photo-panel">
+                <h2>Photos de la demande</h2>
+                @if (Mission.Attachments.Count == 0)
+                {
+                    <p class="admin-empty">Aucune photo transmise pour cette mission.</p>
+                }
+                else
+                {
+                    <div class="mission-photo-grid">
+                        @foreach (var attachment in Mission.Attachments)
+                        {
+                            <a class="mission-photo-item" href="@ApiClient.GetAdminClientAttachmentPreviewUrl(attachment.Id)" target="_blank" title="Ouvrir @attachment.OriginalFileName">
+                                @if (attachment.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <img src="@ApiClient.GetAdminClientAttachmentPreviewUrl(attachment.Id)" alt="@(attachment.Caption ?? attachment.OriginalFileName)" loading="lazy" />
+                                }
+                                <span>@(attachment.Caption ?? attachment.OriginalFileName)</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </article>
             <article>
                 <h2>Prix et paiement</h2>
                 <dl class="detail-list">

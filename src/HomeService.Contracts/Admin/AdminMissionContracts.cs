@@ -89,10 +89,21 @@ public sealed record AdminMissionDetailResponse(
     IReadOnlyList<AdminMissionFinancialLineResponse> FinancialLines,
     IReadOnlyList<AdminMissionAssignmentResponse> Assignments,
     IReadOnlyList<AdminMissionDisputeResponse> Disputes,
-    IReadOnlyList<AdminMissionConversationMessageResponse> Messages)
+    IReadOnlyList<AdminMissionConversationMessageResponse> Messages,
+    IReadOnlyList<AdminMissionAttachmentResponse> Attachments)
 {
     public string? PrestationName { get; init; }
 }
+
+public sealed record AdminMissionAttachmentResponse(
+    Guid Id,
+    string AttachmentType,
+    string OriginalFileName,
+    string ContentType,
+    long FileSizeBytes,
+    string? Caption,
+    string PreviewUrl,
+    DateTimeOffset CreatedAt);
 
 public sealed record AdminMissionFinancialLineResponse(
     string LineType,

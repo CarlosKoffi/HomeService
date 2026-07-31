@@ -668,6 +668,34 @@ public sealed class AdminQueryService(IAppDbContext db)
                 dispute.ResolvedAt))
             .ToListAsync(cancellationToken);
 
+        var attachmentRows = await db.MissionAttachments
+            .AsNoTracking()
+            .Where(attachment => attachment.MissionId == missionId && !attachment.IsDeleted)
+            .OrderBy(attachment => attachment.CreatedAt)
+            .Select(attachment => new
+            {
+                attachment.Id,
+                attachment.AttachmentType,
+                attachment.OriginalFileName,
+                attachment.ContentType,
+                attachment.FileSizeBytes,
+                attachment.Caption,
+                attachment.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        var attachments = attachmentRows
+            .Select(attachment => new AdminMissionAttachmentResponse(
+                attachment.Id,
+                attachment.AttachmentType.ToString(),
+                attachment.OriginalFileName,
+                attachment.ContentType,
+                attachment.FileSizeBytes,
+                attachment.Caption,
+                $"/api/admin/client-attachments/{attachment.Id:D}/preview",
+                attachment.CreatedAt))
+            .ToList();
+
         var storedFinancialLines = await db.MissionFinancialBreakdowns
             .AsNoTracking()
             .Where(line => line.MissionId == missionId)
@@ -738,7 +766,8 @@ public sealed class AdminQueryService(IAppDbContext db)
             financialLines,
             assignments,
             disputes,
-            messages)
+            messages,
+            attachments)
         {
             PrestationName = mission.PrestationName
         };
