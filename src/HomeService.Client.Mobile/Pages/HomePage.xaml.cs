@@ -76,14 +76,17 @@ public partial class HomePage : ContentPage
         foreach (var item in mostRequestedPrestations)
         {
             var illustrationUrl = apiClient.ToAbsoluteMediaUrl(item.Prestation.IllustrationUrl);
+            var serviceIconUrl = apiClient.ToAbsoluteMediaUrl(item.Service.IconUrl);
             popularServices.Add(new PopularItem(
                 item.Service.Id,
                 item.Prestation.Id,
                 item.Prestation.Name,
                 illustrationUrl,
+                serviceIconUrl,
                 string.IsNullOrWhiteSpace(item.Prestation.Name) ? "WE" : item.Prestation.Name[..Math.Min(2, item.Prestation.Name.Length)].ToUpperInvariant(),
                 !string.IsNullOrWhiteSpace(illustrationUrl),
-                string.IsNullOrWhiteSpace(illustrationUrl)));
+                string.IsNullOrWhiteSpace(illustrationUrl) && !string.IsNullOrWhiteSpace(serviceIconUrl),
+                string.IsNullOrWhiteSpace(illustrationUrl) && string.IsNullOrWhiteSpace(serviceIconUrl)));
         }
 
         if (popularServices.Count == 0)
@@ -94,8 +97,10 @@ public partial class HomePage : ContentPage
                     service.ServiceId,
                     null,
                     service.Name,
+                    null,
                     service.IconUrl,
                     service.IconFallback,
+                    false,
                     service.HasIconUrl,
                     service.HasIconFallback));
             }
@@ -300,7 +305,9 @@ public partial class HomePage : ContentPage
         Guid? PrestationId,
         string Name,
         string? IllustrationUrl,
+        string? ServiceIconUrl,
         string Fallback,
         bool HasIllustration,
+        bool HasServiceIcon,
         bool HasFallback);
 }

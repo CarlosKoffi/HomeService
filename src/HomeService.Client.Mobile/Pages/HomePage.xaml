@@ -82,6 +82,7 @@
                                         <Border HeightRequest="100" Padding="0" BackgroundColor="#F2F4F7" Stroke="#E9EDF2" StrokeShape="RoundRectangle 11" HorizontalOptions="Fill">
                                             <Grid>
                                                 <Image Source="{Binding IllustrationUrl}" Aspect="AspectFill" IsVisible="{Binding HasIllustration}" />
+                                                <Image Source="{Binding ServiceIconUrl}" Aspect="AspectFit" Margin="28" IsVisible="{Binding HasServiceIcon}" />
                                                 <Label Text="{Binding Fallback}" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasFallback}" />
                                             </Grid>
                                         </Border>
