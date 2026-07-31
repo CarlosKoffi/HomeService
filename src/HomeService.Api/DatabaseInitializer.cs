@@ -584,7 +584,11 @@ public static class DatabaseInitializer
 
             service.UpdatePricing(seed.NormalPriceAmount, seed.PremiumPriceAmount, seed.Currency);
             service.UpdateIcon(seed.IconName);
-            service.UpdateMedia(GetSeedServiceIconUrl(normalizedName), imageUrl: null);
+            service.UpdateMedia(
+                string.IsNullOrWhiteSpace(service.IconUrl)
+                    ? GetSeedServiceIconUrl(normalizedName)
+                    : service.IconUrl,
+                service.ImageUrl);
         }
 
         if (db.ChangeTracker.HasChanges())
@@ -598,12 +602,12 @@ public static class DatabaseInitializer
         var services = await db.Services.ToListAsync(cancellationToken);
         foreach (var service in services)
         {
-            var iconUrl = GetSeedServiceIconUrl(service.NormalizedName);
-            if (iconUrl is null)
+            if (!string.IsNullOrWhiteSpace(service.IconUrl))
             {
                 continue;
             }
 
+            var iconUrl = GetSeedServiceIconUrl(service.NormalizedName);
             service.UpdateMedia(iconUrl, service.ImageUrl);
         }
 
@@ -629,7 +633,13 @@ public static class DatabaseInitializer
             "peinture" => "/assets/services/peinture.png",
             "anti nuisibles" or "anti-nuisibles" => "/assets/services/anti-nuisibles.png",
             "electromenager" => "/assets/services/electromenager.png",
-            _ => null
+            "manucure et pedicure" => "/assets/services/manucure-pedicure.png",
+            "estheticienne" => "/assets/services/estheticienne.png",
+            "coiffure" => "/assets/services/coiffure.png",
+            "barbier" => "/assets/services/barbier.png",
+            "massage et bien etre" => "/assets/services/massage-bien-etre.png",
+            "maquillage professionnel" => "/assets/services/maquillage-professionnel.png",
+            _ => "/assets/services/service-generique.png"
         };
     }
 
