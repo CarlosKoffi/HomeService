@@ -51,7 +51,13 @@ public sealed class CompanyMissionAssignmentService(
             .AsNoTracking()
             .Where(provider => provider.CompanyId == companyId
                 && provider.Status == ProviderStatus.Approved
-                && provider.Services.Any(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                && provider.Services.Any(service =>
+                    service.IsActive
+                    && service.ServiceId == mission.ServiceId
+                    && (mission.ServicePrestationId == null
+                        || service.Prestations.Any(prestation =>
+                            prestation.IsActive
+                            && prestation.ServicePrestationId == mission.ServicePrestationId)))
                 && !busyProviderIds.Contains(provider.Id)
                 && !unavailableForThisMissionProviderIds.Contains(provider.Id))
             .OrderByDescending(provider => provider.IsAvailable)
@@ -116,6 +122,8 @@ public sealed class CompanyMissionAssignmentService(
             .Include(provider => provider.Company)
             .Include(provider => provider.Services)
                 .ThenInclude(service => service.Service)
+            .Include(provider => provider.Services)
+                .ThenInclude(service => service.Prestations)
             .FirstOrDefaultAsync(provider => provider.Id == providerId && provider.CompanyId == companyId, cancellationToken);
 
         var hasBlockingAssignment = await db.ProviderMissionAssignments.AnyAsync(assignment =>
@@ -133,7 +141,13 @@ public sealed class CompanyMissionAssignmentService(
 
         var providerService = mission is null || provider is null
             ? null
-            : provider.Services.FirstOrDefault(service => service.IsActive && service.ServiceId == mission.ServiceId);
+            : provider.Services.FirstOrDefault(service =>
+                service.IsActive
+                && service.ServiceId == mission.ServiceId
+                && (mission.ServicePrestationId == null
+                    || service.Prestations.Any(prestation =>
+                        prestation.IsActive
+                        && prestation.ServicePrestationId == mission.ServicePrestationId)));
         var policy = CompanyMissionAssignmentPolicy.Validate(
             mission is not null,
             provider is not null,

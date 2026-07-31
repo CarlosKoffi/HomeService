@@ -11861,6 +11861,92 @@ h3 {
     stroke-width: 2;
 }
 
+.mission-offers-panel {
+    padding: 22px;
+    border: 1px solid #dbe5f5;
+    border-radius: 16px;
+    background: #f5f8ff;
+}
+
+.mission-offers-panel > header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.mission-offers-panel > header div {
+    display: grid;
+    gap: 4px;
+}
+
+.mission-offers-panel > header span,
+.mission-offers-panel > header small {
+    color: #5f6b7a;
+    font-size: 13px;
+}
+
+.mission-offers-panel > header strong {
+    color: #111827;
+    font-size: 19px;
+}
+
+.mission-offers-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.mission-offers-list article {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+    padding: 16px;
+    border: 1px solid #dfe5ee;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.mission-offers-list article > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.mission-offers-list article strong,
+.mission-offers-list article p,
+.mission-offers-list article small {
+    overflow-wrap: anywhere;
+}
+
+.mission-offers-list article p {
+    min-height: 42px;
+    margin: 0;
+    color: #111827;
+}
+
+.mission-offers-list article span,
+.mission-offers-list article small {
+    color: #657184;
+    font-size: 12px;
+}
+
+.mission-offers-list article button {
+    min-height: 42px;
+    border: 0;
+    border-radius: 9px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.mission-offers-list article button:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+}
+
 .missions-topbar {
     display: flex;
     align-items: center;
@@ -12608,6 +12694,16 @@ h3 {
 }
 
 @media (max-width: 720px) {
+    .mission-offers-panel > header {
+        align-items: start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mission-offers-list {
+        grid-template-columns: 1fr;
+    }
+
     .missions-logo strong {
         font-size: 15px;
     }

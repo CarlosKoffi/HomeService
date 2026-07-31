@@ -64,6 +64,37 @@ else
             }
             else
             {
+                @if (OpenMissionOffers.Count > 0)
+                {
+                    <section class="mission-offers-panel" aria-label="Nouvelles demandes disponibles">
+                        <header>
+                            <div>
+                                <span>Nouvelles demandes</span>
+                                <strong>@OpenMissionOffers.Count mission(s) correspondent a vos services</strong>
+                            </div>
+                            <small>La premiere entreprise qui accepte prend en charge la demande.</small>
+                        </header>
+                        <div class="mission-offers-list">
+                            @foreach (var offer in OpenMissionOffers)
+                            {
+                                <article>
+                                    <div>
+                                        <strong>@offer.ServiceName</strong>
+                                        <span>@offer.MissionNumber</span>
+                                    </div>
+                                    <p>@(string.IsNullOrWhiteSpace(offer.Description) ? "Demande client a analyser" : offer.Description)</p>
+                                    <small>@(offer.ServiceAddress ?? "Adresse a confirmer") · @GetOfferScheduleLabel(offer)</small>
+                                    <button type="button"
+                                            disabled="@(AcceptingOfferId is not null || !Session.IsCompanyApproved)"
+                                            @onclick="() => AcceptMissionOfferAsync(offer)">
+                                        @(AcceptingOfferId == offer.OfferId ? "Acceptation..." : "Accepter la demande")
+                                    </button>
+                                </article>
+                            }
+                        </div>
+                    </section>
+                }
+
                 <section class="missions-kpi-grid" aria-label="Indicateurs missions">
                     <article class="missions-kpi-card">
                         <div>
@@ -306,6 +337,7 @@ else
 
     private CompanyPortalSessionResponse? Session { get; set; }
     private IReadOnlyList<CompanyPortalMissionResponse> AllMissions { get; set; } = [];
+    private IReadOnlyList<CompanyMissionOfferResponse> OpenMissionOffers { get; set; } = [];
     private IReadOnlyList<CompanyPortalAssignableProviderResponse> AssignableProviders { get; set; } = [];
     private CompanyPortalMissionResponse? SelectedMission { get; set; }
     private bool IsLoading { get; set; }
@@ -315,6 +347,7 @@ else
     private DateOnly? SelectedDay { get; set; } = DateOnly.FromDateTime(DateTime.Today);
     private DateOnly CalendarMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private string? AssignmentMessage { get; set; }
+    private Guid? AcceptingOfferId { get; set; }
 
     private DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private string CurrentMonthLabel => CalendarMonth.ToString("MMMM yyyy", FrenchCulture);
@@ -429,11 +462,48 @@ else
         else
         {
             AllMissions = await ApiClient.GetCompanyMissionsAsync(Session.CompanyId, "all");
+            OpenMissionOffers = await ApiClient.GetCompanyMissionOffersAsync(Session.CompanyId);
         }
 
         SelectedMission = AllMissions.OrderBy(GetSortWeight).FirstOrDefault();
         await LoadAssignableProvidersAsync();
         IsLoading = false;
+    }
+
+    private async Task AcceptMissionOfferAsync(CompanyMissionOfferResponse offer)
+    {
+        if (Session?.IsCompanyApproved != true || AcceptingOfferId is not null)
+        {
+            return;
+        }
+
+        AcceptingOfferId = offer.OfferId;
+        AssignmentMessage = null;
+        try
+        {
+            var result = await ApiClient.AcceptCompanyMissionOfferAsync(Session.CompanyId, offer.OfferId);
+            if (!result.IsSuccess)
+            {
+                AssignmentMessage = result.ErrorMessage;
+                return;
+            }
+
+            await LoadMissionsAsync();
+            SelectedMission = AllMissions.FirstOrDefault(mission => mission.Id == offer.MissionId) ?? SelectedMission;
+            await LoadAssignableProvidersAsync();
+            AssignmentMessage = "Demande acceptee. Vous pouvez maintenant affecter un prestataire compatible.";
+        }
+        finally
+        {
+            AcceptingOfferId = null;
+        }
+    }
+
+    private static string GetOfferScheduleLabel(CompanyMissionOfferResponse offer)
+    {
+        return offer.ScheduledFor is null
+            ? "Intervention des que possible"
+            : offer.ScheduledFor.Value.ToLocalTime().ToString("dd/MM/yyyy a HH:mm", FrenchCulture);
     }
 
     private async Task SelectMissionAsync(CompanyPortalMissionResponse mission)

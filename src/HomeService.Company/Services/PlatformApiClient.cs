@@ -664,6 +664,32 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken) ?? [];
     }
 
+    public async Task<IReadOnlyList<CompanyMissionOfferResponse>> GetCompanyMissionOffersAsync(
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<IReadOnlyList<CompanyMissionOfferResponse>>(
+            $"/api/company-portal/{companyId:D}/mission-offers",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<EmployeeSaveResult> AcceptCompanyMissionOfferAsync(
+        Guid companyId,
+        Guid offerId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PostAsync(
+            $"/api/company-portal/{companyId:D}/mission-offers/{offerId:D}/accept",
+            null,
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Cette demande n'est plus disponible.");
+    }
+
     public async Task<IReadOnlyList<CompanyPortalAssignableProviderResponse>> GetAssignableProvidersAsync(
         Guid companyId,
         Guid missionId,

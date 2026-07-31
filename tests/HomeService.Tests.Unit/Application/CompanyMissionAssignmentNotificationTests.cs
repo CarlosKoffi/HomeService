@@ -131,6 +131,49 @@ public sealed class CompanyMissionAssignmentNotificationTests
         Assert.Contains("deja refuse", result.Message);
     }
 
+    [Fact]
+    public async Task ListAssignableProvidersAsync_WhenMissionHasPrestation_ReturnsOnlyProviderWithThatPrestation()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("CI Home Service", "+2250700000000", "contact@cihome.ci");
+        company.Approve();
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var service = new Service("Jardinage", "Entretien exterieur", null);
+        service.UpdatePriceRange(5_000, 12_000, "XOF");
+        var lawn = service.AddPrestation("Tondre le gazon", null, 1, 5_000, 8_000, "XOF");
+        var hedge = service.AddPrestation("Tailler une haie", null, 2, 6_000, 10_000, "XOF");
+        var matchingProvider = CreateProvider(company.Id, "Malou", "+2250700000002");
+        var otherProvider = CreateProvider(company.Id, "Awa", "+2250700000003");
+        matchingProvider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)]);
+        matchingProvider.Services.Single().SyncPrestations([lawn.Id]);
+        otherProvider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 4, ProviderServicePriceTier.Normal)]);
+        otherProvider.Services.Single().SyncPrestations([hedge.Id]);
+        matchingProvider.Approve();
+        otherProvider.Approve();
+        var mission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            90,
+            lawn.Id,
+            "Tondre la pelouse",
+            true);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+
+        db.AddRange(company, customer, service, matchingProvider, otherProvider, mission);
+        await db.SaveChangesAsync();
+
+        var result = await CreateAssignmentService(db).ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var provider = Assert.Single(result.Providers);
+        Assert.Equal(matchingProvider.Id, provider.Id);
+    }
+
     private static CompanyMissionAssignmentService CreateAssignmentService(HomeServiceDbContext db)
     {
         return new CompanyMissionAssignmentService(
@@ -193,6 +236,24 @@ public sealed class CompanyMissionAssignmentNotificationTests
             .Options;
 
         return new HomeServiceDbContext(options);
+    }
+
+    private static ProviderProfile CreateProvider(Guid companyId, string firstName, string phoneNumber)
+    {
+        return new ProviderProfile(
+            companyId,
+            firstName,
+            "Diallo",
+            phoneNumber,
+            $"{firstName.ToLowerInvariant()}@example.ci",
+            new DateOnly(1994, 5, 10),
+            "Cocody",
+            ProviderGender.Male,
+            ProviderEmploymentType.CompanyEmployee,
+            6,
+            5.35m,
+            -4.02m,
+            5);
     }
 
     private sealed record AssignableMissionScenario(
