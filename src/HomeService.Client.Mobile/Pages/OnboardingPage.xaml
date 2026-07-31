@@ -56,6 +56,66 @@
                     Aspect="AspectFit"
                     HorizontalOptions="Center"
                     VerticalOptions="Center" />
+
+                <Border
+                    x:Name="TechnicianStatusCard"
+                    Margin="0,0,0,2"
+                    Padding="10,8"
+                    WidthRequest="250"
+                    HeightRequest="58"
+                    HorizontalOptions="Center"
+                    VerticalOptions="End"
+                    BackgroundColor="White"
+                    Stroke="#E7EAF0"
+                    StrokeThickness="1"
+                    IsVisible="False">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="10" />
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="9">
+                        <Border
+                            WidthRequest="38"
+                            HeightRequest="38"
+                            BackgroundColor="#EAF1FF"
+                            StrokeThickness="0">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="19" />
+                            </Border.StrokeShape>
+                            <Label
+                                Text="MK"
+                                FontSize="12"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource WeleBlue}"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                            <Label
+                                Text="Mohamed Kouyaté"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#080B16"
+                                LineBreakMode="TailTruncation" />
+                            <Label
+                                Text="Technicien en route"
+                                FontSize="9"
+                                TextColor="#586174" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2" Spacing="1" VerticalOptions="Center">
+                            <Label
+                                Text="12 min"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource WeleBlue}"
+                                HorizontalTextAlignment="End" />
+                            <Label
+                                Text="avant arrivée"
+                                FontSize="8"
+                                TextColor="#586174"
+                                HorizontalTextAlignment="End" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
             </Grid>
 
             <HorizontalStackLayout

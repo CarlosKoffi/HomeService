@@ -86,6 +86,7 @@ public partial class OnboardingPage : ContentPage
         BodyLabel.Text = slide.Body;
         IllustrationImage.Source = slide.ImageSource;
         IllustrationViewport.HeightRequest = slide.ViewportHeight;
+        TechnicianStatusCard.IsVisible = currentIndex == slides.Length - 1;
         NextButton.Text = currentIndex == slides.Length - 1 ? "Commencer" : "Suivant";
 
         DotOne.Fill = currentIndex == 0 ? ActiveDotColor : InactiveDotColor;
