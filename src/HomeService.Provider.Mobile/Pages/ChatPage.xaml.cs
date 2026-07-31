@@ -54,18 +54,13 @@ public partial class ChatPage : ContentPage
         {
             MissionTitleLabel.Text = "Aucune mission active";
             MissionSubtitleLabel.Text = "Les messages seront disponibles quand une mission sera affectee.";
+            MissionNumberLabel.Text = string.Empty;
             MessagesStack.Children.Clear();
             SetComposerEnabled(false);
             return;
         }
 
         var detailResult = await apiClient.GetMissionDetailAsync(accessToken, assignmentId.Value);
-        if (detailResult.Response is not null)
-        {
-            MissionTitleLabel.Text = detailResult.Response.ServiceName;
-            MissionSubtitleLabel.Text = $"{detailResult.Response.CustomerDisplayName} - {detailResult.Response.LocationLabel}";
-        }
-
         var chatResult = await apiClient.GetMissionMessagesAsync(accessToken, assignmentId.Value);
         if (!chatResult.IsSuccess || chatResult.Response is null)
         {
@@ -73,6 +68,13 @@ public partial class ChatPage : ContentPage
             SetComposerEnabled(false);
             return;
         }
+
+
+        MissionTitleLabel.Text = chatResult.Response.MissionLabel;
+        MissionNumberLabel.Text = $"Mission {chatResult.Response.MissionNumber}";
+        MissionSubtitleLabel.Text = detailResult.Response is null
+            ? "Conversation avec le client de cette mission."
+            : $"{detailResult.Response.CustomerDisplayName} - {detailResult.Response.LocationLabel}";
 
         HideMessage();
         RenderMessages(chatResult.Response.Messages);

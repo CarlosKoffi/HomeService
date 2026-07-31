@@ -2,6 +2,8 @@ namespace HomeService.Contracts.Clients;
 
 public sealed record ClientMissionChatResponse(
     Guid MissionId,
+    string MissionNumber,
+    string MissionLabel,
     Guid ConversationId,
     IReadOnlyList<ClientMissionMessageResponse> Messages);
 

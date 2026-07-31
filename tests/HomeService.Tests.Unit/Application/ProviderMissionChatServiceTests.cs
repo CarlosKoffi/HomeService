@@ -60,9 +60,34 @@ public sealed class ProviderMissionChatServiceTests
         var result = await sut.ListAsync(scenario.Provider.Id, scenario.Assignment.Id, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
+        Assert.Equal(scenario.Mission.MissionNumber, result.ChatResponse!.MissionNumber);
+        Assert.Equal("Plomberie", result.ChatResponse.MissionLabel);
         Assert.Equal(2, result.ChatResponse!.Messages.Count);
         Assert.Equal("Bonjour", result.ChatResponse.Messages[0].Body);
         Assert.Equal("Je suis en route", result.ChatResponse.Messages[1].Body);
+    }
+
+    [Fact]
+    public async Task ListAsync_WhenConversationWasCreatedBeforeAssignment_SynchronizesMissionParticipants()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db);
+        var conversation = new MissionConversation(
+            scenario.Mission.Id,
+            providerId: null,
+            companyId: null,
+            scenario.Customer.Id);
+        db.MissionConversations.Add(conversation);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.ListAsync(scenario.Provider.Id, scenario.Assignment.Id, CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(scenario.Mission.Id, result.ChatResponse!.MissionId);
+        Assert.Equal(scenario.Provider.Id, conversation.ProviderId);
+        Assert.Equal(scenario.Company.Id, conversation.CompanyId);
     }
 
     [Fact]

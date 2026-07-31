@@ -7,8 +7,9 @@
     <Grid RowDefinitions="Auto,*,Auto" Padding="20" RowSpacing="14">
         <VerticalStackLayout Spacing="4">
             <Label Text="MESSAGES" Style="{StaticResource EyebrowLabel}" />
-            <Label Text="Conversation mission" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
+            <Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
             <Picker x:Name="MissionPicker" Title="Choisir une mission" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnMissionChanged" />
+            <Label x:Name="MissionContextLabel" Text="Selectionnez une mission pour ouvrir sa conversation." Style="{StaticResource MutedLabel}" />
             <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
         </VerticalStackLayout>
 
@@ -27,7 +28,7 @@
         </CollectionView>
 
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-            <Entry x:Name="MessageEntry" Placeholder="Votre message..." />
+            <Entry x:Name="MessageEntry" Placeholder="Message concernant cette mission..." />
             <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" Clicked="OnSendClicked" />
         </Grid>
     </Grid>

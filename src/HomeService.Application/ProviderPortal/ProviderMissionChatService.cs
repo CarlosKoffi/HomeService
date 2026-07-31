@@ -24,10 +24,13 @@ public sealed class ProviderMissionChatService(
         }
 
         var conversation = await GetOrCreateConversationAsync(assignment, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         var messages = await GetMessagesAsync(conversation.Id, cancellationToken);
         return ProviderMissionChatResult.Ok(new ProviderMissionChatResponse(
             assignment.Id,
             assignment.MissionId,
+            assignment.Mission.MissionNumber,
+            await GetMissionLabelAsync(assignment.Mission, cancellationToken),
             conversation.Id,
             messages));
     }
@@ -118,6 +121,10 @@ public sealed class ProviderMissionChatService(
             .FirstOrDefaultAsync(item => item.MissionId == assignment.MissionId, cancellationToken);
         if (conversation is not null)
         {
+            conversation.SynchronizeParticipants(
+                assignment.ProviderId,
+                assignment.CompanyId,
+                assignment.Mission!.CustomerId);
             return conversation;
         }
 
@@ -128,6 +135,24 @@ public sealed class ProviderMissionChatService(
             assignment.Mission!.CustomerId);
         db.MissionConversations.Add(conversation);
         return conversation;
+    }
+
+    private async Task<string> GetMissionLabelAsync(Mission mission, CancellationToken cancellationToken)
+    {
+        var serviceName = await db.Services
+            .AsNoTracking()
+            .Where(service => service.Id == mission.ServiceId)
+            .Select(service => service.Name)
+            .FirstOrDefaultAsync(cancellationToken) ?? "Service";
+        var prestationName = await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => prestation.Id == mission.ServicePrestationId)
+            .Select(prestation => prestation.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return string.IsNullOrWhiteSpace(prestationName)
+            ? serviceName
+            : $"{serviceName} - {prestationName}";
     }
 
     private async Task<IReadOnlyList<ProviderMobileMissionMessageResponse>> GetMessagesAsync(

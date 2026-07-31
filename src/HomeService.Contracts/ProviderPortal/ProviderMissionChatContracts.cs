@@ -3,6 +3,8 @@ namespace HomeService.Contracts.ProviderPortal;
 public sealed record ProviderMissionChatResponse(
     Guid AssignmentId,
     Guid MissionId,
+    string MissionNumber,
+    string MissionLabel,
     Guid ConversationId,
     IReadOnlyList<ProviderMobileMissionMessageResponse> Messages);
 

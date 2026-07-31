@@ -89,6 +89,7 @@ public partial class MessagesPage : ContentPage
         messages.Clear();
         if (sessionStore.IsPreviewMode())
         {
+            MissionContextLabel.Text = "Mission WL-000145 - Deboucher un evier";
             messages.Add(new MessageRow("Mohamed Kouyaté", "Bonjour, j'arrive dans 13 min.", "10:45"));
             messages.Add(new MessageRow("Vous", "Parfait, je suis là.", "10:50"));
             messages.Add(new MessageRow("Support Wélé", "La mission est suivie par notre équipe.", "10:52"));
@@ -102,6 +103,8 @@ public partial class MessagesPage : ContentPage
             messages.Add(new MessageRow("Systeme", "Impossible de charger cette conversation.", string.Empty));
             return;
         }
+
+        MissionContextLabel.Text = $"Mission {result.Response.MissionNumber} - {result.Response.MissionLabel}";
 
         if (result.Response.Messages.Count == 0)
         {

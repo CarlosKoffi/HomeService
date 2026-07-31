@@ -27,4 +27,17 @@ public sealed class MissionConversation : AuditableEntity
     public Guid CustomerId { get; private set; }
     public CustomerProfile? Customer { get; private set; }
     public IReadOnlyCollection<MissionMessage> Messages => _messages;
+
+    public void SynchronizeParticipants(Guid? providerId, Guid? companyId, Guid customerId)
+    {
+        if (ProviderId == providerId && CompanyId == companyId && CustomerId == customerId)
+        {
+            return;
+        }
+
+        ProviderId = providerId;
+        CompanyId = companyId;
+        CustomerId = customerId;
+        Touch();
+    }
 }

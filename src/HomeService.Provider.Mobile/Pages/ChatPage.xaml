@@ -8,7 +8,7 @@
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Padding="18" Spacing="14">
-            <Label Text="Messages clients" Style="{StaticResource ScreenTitleLabel}" />
+            <Label Text="Conversation de mission" Style="{StaticResource ScreenTitleLabel}" />
 
             <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#EEF4FF" Stroke="#CFE0FF" StrokeShape="RoundRectangle 18" Padding="14">
                 <Label x:Name="MessageLabel" Text="Chargement..." Style="{StaticResource BodyLabel}" />
@@ -18,6 +18,7 @@
                 <VerticalStackLayout Spacing="5">
                     <Label x:Name="MissionTitleLabel" Text="Aucune mission active" Style="{StaticResource CardTitleLabel}" />
                     <Label x:Name="MissionSubtitleLabel" Text="Les messages seront disponibles quand une mission sera affectee." Style="{StaticResource BodyLabel}" />
+                    <Label x:Name="MissionNumberLabel" Text="" Style="{StaticResource MutedLabel}" />
                 </VerticalStackLayout>
             </Border>
 
@@ -26,7 +27,7 @@
         </ScrollView>
 
         <Grid Grid.Row="1" Padding="18,10" ColumnDefinitions="*,Auto" ColumnSpacing="10" BackgroundColor="{StaticResource PageWash}">
-            <Entry x:Name="MessageEntry" Placeholder="Ecrire au client..." BackgroundColor="White" />
+            <Entry x:Name="MessageEntry" Placeholder="Ecrire au client pour cette mission..." BackgroundColor="White" />
             <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" Clicked="OnSendClicked" />
         </Grid>
     </Grid>

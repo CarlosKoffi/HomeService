@@ -21,8 +21,14 @@ public sealed class ClientMissionChatService(
         }
 
         var conversation = await GetOrCreateConversationAsync(mission, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
         var messages = await ListMessagesAsync(conversation.Id, cancellationToken);
-        return ClientMissionChatResult.Ok(new ClientMissionChatResponse(mission.Id, conversation.Id, messages));
+        return ClientMissionChatResult.Ok(new ClientMissionChatResponse(
+            mission.Id,
+            mission.MissionNumber,
+            await GetMissionLabelAsync(mission, cancellationToken),
+            conversation.Id,
+            messages));
     }
 
     public async Task<ClientMissionChatResult> SendAsync(Guid missionId, SendClientMissionMessageRequest request, CancellationToken cancellationToken)
@@ -109,12 +115,26 @@ public sealed class ClientMissionChatService(
             .FirstOrDefaultAsync(item => item.MissionId == mission.Id, cancellationToken);
         if (conversation is not null)
         {
+            conversation.SynchronizeParticipants(mission.ProviderId, mission.CompanyId, mission.CustomerId);
             return conversation;
         }
 
         conversation = new MissionConversation(mission.Id, mission.ProviderId, mission.CompanyId, mission.CustomerId);
         db.MissionConversations.Add(conversation);
         return conversation;
+    }
+
+    private async Task<string> GetMissionLabelAsync(Mission mission, CancellationToken cancellationToken)
+    {
+        var serviceName = await db.Services
+            .AsNoTracking()
+            .Where(service => service.Id == mission.ServiceId)
+            .Select(service => service.Name)
+            .FirstOrDefaultAsync(cancellationToken) ?? "Service";
+
+        return string.IsNullOrWhiteSpace(mission.ServicePrestation?.Name)
+            ? serviceName
+            : $"{serviceName} - {mission.ServicePrestation.Name}";
     }
 
     private async Task<IReadOnlyList<ClientMissionMessageResponse>> ListMessagesAsync(Guid conversationId, CancellationToken cancellationToken)
