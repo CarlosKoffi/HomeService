@@ -9,6 +9,7 @@ public partial class CatalogSearchPage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly List<SearchItem> results = [];
     private CancellationTokenSource? searchCancellation;
+    private int searchVersion;
     private SearchTab selectedTab = SearchTab.All;
     private bool showAll;
 
@@ -26,39 +27,79 @@ public partial class CatalogSearchPage : ContentPage
 
     private async void OnSearchTextChanged(object sender, TextChangedEventArgs e)
     {
-        searchCancellation?.Cancel();
-        searchCancellation?.Dispose();
-        searchCancellation = new CancellationTokenSource();
-        var cancellationToken = searchCancellation.Token;
+        var version = Interlocked.Increment(ref searchVersion);
+        var cancellation = new CancellationTokenSource();
+        var previousCancellation = Interlocked.Exchange(ref searchCancellation, cancellation);
+        previousCancellation?.Cancel();
+        var cancellationToken = cancellation.Token;
 
         try
         {
-            await Task.Delay(250, cancellationToken);
-            await SearchAsync(e.NewTextValue?.Trim() ?? string.Empty, cancellationToken);
+            await Task.Delay(350, cancellationToken);
+            await SearchAsync(e.NewTextValue?.Trim() ?? string.Empty, version, cancellationToken);
         }
         catch (OperationCanceledException)
         {
         }
+        catch (Exception)
+        {
+            if (version == searchVersion)
+            {
+                SetLoading(false);
+                EmptyLabel.Text = "Recherche indisponible. Reessayez.";
+                EmptyLabel.IsVisible = true;
+            }
+        }
+        finally
+        {
+            if (ReferenceEquals(
+                    Interlocked.CompareExchange(ref searchCancellation, null, cancellation),
+                    cancellation))
+            {
+                cancellation.Dispose();
+            }
+            previousCancellation?.Dispose();
+        }
     }
 
-    private async Task SearchAsync(string query, CancellationToken cancellationToken)
+    private async Task SearchAsync(string query, int version, CancellationToken cancellationToken)
     {
-        results.Clear();
-        showAll = false;
         if (string.IsNullOrWhiteSpace(query))
         {
+            if (version != searchVersion)
+            {
+                return;
+            }
+
+            results.Clear();
+            showAll = false;
             Render();
             return;
         }
 
         SetLoading(true);
         var response = await apiClient.SearchCatalogAsync(query, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var loadedResults = response.IsSuccess && response.Response is not null
+            ? await Task.WhenAll(response.Response.Select(item => SearchItem.FromAsync(item, apiClient, cancellationToken)))
+            : [];
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (version != searchVersion)
+        {
+            return;
+        }
+
+        results.Clear();
+        showAll = false;
         if (response.IsSuccess && response.Response is not null)
         {
-            results.AddRange(response.Response.Select(item => SearchItem.From(item, apiClient)));
+            results.AddRange(loadedResults);
         }
 
         SetLoading(false);
+        EmptyLabel.Text = "Aucun resultat.";
         Render();
     }
 
@@ -171,11 +212,11 @@ public partial class CatalogSearchPage : ContentPage
     {
         if (item.HasImage)
         {
-            return new Image { Source = item.ImageUrl, Aspect = Aspect.AspectFill };
+            return new Image { Source = item.ImageSource, Aspect = Aspect.AspectFill };
         }
         if (item.HasIcon)
         {
-            return new Image { Source = item.IconUrl, Aspect = Aspect.AspectFit, Margin = new Thickness(11) };
+            return new Image { Source = item.IconSource, Aspect = Aspect.AspectFit, Margin = new Thickness(11) };
         }
         return new Label
         {
@@ -233,16 +274,21 @@ public partial class CatalogSearchPage : ContentPage
 
     private sealed record SearchItem(
         Guid ServiceId, Guid? PrestationId, string Name, string ServiceName,
-        string? IconUrl, string? ImageUrl, string Fallback, bool HasIcon, bool HasImage)
+        ImageSource? IconSource, ImageSource? ImageSource, string Fallback, bool HasIcon, bool HasImage)
     {
-        public static SearchItem From(ClientCatalogSearchResultResponse response, ClientMobileApiClient apiClient)
+        public static async Task<SearchItem> FromAsync(
+            ClientCatalogSearchResultResponse response,
+            ClientMobileApiClient apiClient,
+            CancellationToken cancellationToken)
         {
             var name = response.PrestationName ?? response.Name;
-            var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
-            var imageUrl = apiClient.ToAbsoluteMediaUrl(response.ImageUrl);
+            var imageSource = await apiClient.DownloadMediaImageSourceAsync(response.ImageUrl, cancellationToken);
+            var iconSource = imageSource is null
+                ? await apiClient.DownloadMediaImageSourceAsync(response.IconUrl, cancellationToken)
+                : null;
             var fallback = string.IsNullOrWhiteSpace(name) ? "WE" : name[..Math.Min(2, name.Length)].ToUpperInvariant();
             return new SearchItem(response.ServiceId, response.PrestationId, name, response.ServiceName,
-                iconUrl, imageUrl, fallback, !string.IsNullOrWhiteSpace(iconUrl), !string.IsNullOrWhiteSpace(imageUrl));
+                iconSource, imageSource, fallback, iconSource is not null, imageSource is not null);
         }
     }
 }
