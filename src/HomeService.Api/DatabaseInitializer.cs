@@ -778,6 +778,7 @@ public static class DatabaseInitializer
             new AdminModuleSeed(AdminModuleKey.Dashboard, "Tableau de bord", "Vue de synthese du back-office.", 10),
             new AdminModuleSeed(AdminModuleKey.CompanyApplications, "Demandes entreprises", "Validation des inscriptions, documents et activation des entreprises.", 20),
             new AdminModuleSeed(AdminModuleKey.CompanyManagement, "Entreprises", "Suivi des entreprises, prestataires, documents, missions et notifications.", 30),
+            new AdminModuleSeed(AdminModuleKey.Clients, "Clients", "Consultation des profils clients, adresses, paiements, missions et documents.", 35),
             new AdminModuleSeed(AdminModuleKey.ProviderReview, "Prestataires", "Consultation, validation et suspension des prestataires.", 40),
             new AdminModuleSeed(AdminModuleKey.Services, "Services et prestations", "Gestion du catalogue, des propositions entreprises et des chiffres par service.", 50),
             new AdminModuleSeed(AdminModuleKey.Missions, "Missions", "Suivi des missions, affectations, litiges, annulations et journal.", 60),

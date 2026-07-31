@@ -15,5 +15,6 @@ public enum AdminModuleKey
     Cms = 10,
     Notifications = 11,
     MissionSettings = 12,
-    ContactRequests = 13
+    ContactRequests = 13,
+    Clients = 14
 }

@@ -56,6 +56,16 @@
             </div>
         }
 
+        @if (CanView(AdminModuleKey.Clients))
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="clients">
+                    <span class="nav-icon nav-icon-providers" aria-hidden="true"></span>
+                    <span class="nav-label">Clients</span>
+                </NavLink>
+            </div>
+        }
+
         @if (CanView(AdminModuleKey.Missions))
         {
             <div class="nav-item px-3">

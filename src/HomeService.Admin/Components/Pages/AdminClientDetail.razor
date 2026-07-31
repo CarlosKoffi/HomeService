@@ -1,0 +1,172 @@
+@page "/clients/{ClientId:guid}"
+@using HomeService.Contracts.Admin
+@using HomeService.Admin.Services
+@inject PlatformApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Dossier client - Admin Wele</PageTitle>
+
+<main class="admin-page">
+    <header class="admin-page-header">
+        <div>
+            <button class="btn btn-link px-0" @onclick="BackToClients">← Retour aux clients</button>
+            <p class="admin-eyebrow">DOSSIER CLIENT</p>
+            <h1>@(client?.FullName ?? "Client")</h1>
+            @if (client is not null)
+            {
+                <p>@client.PhoneNumber · @(client.Email ?? "Email non renseigné")</p>
+            }
+        </div>
+        <button class="btn btn-outline-dark" @onclick="LoadAsync">Actualiser</button>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+    else if (client is null)
+    {
+        <p class="admin-empty">Chargement du dossier client...</p>
+    }
+    else
+    {
+        <section class="admin-stat-grid">
+            <article><span>Missions</span><strong>@client.Activity.TotalMissions</strong></article>
+            <article><span>Terminées</span><strong>@client.Activity.CompletedMissions</strong></article>
+            <article><span>Note moyenne donnée</span><strong>@(client.Activity.AverageRating?.ToString("0.0") ?? "—")</strong></article>
+            <article><span>Total payé</span><strong>@client.Activity.TotalPaidAmount.ToString("N0") @client.Activity.Currency</strong></article>
+        </section>
+
+        <div class="client-detail-grid">
+            <section class="admin-panel">
+                <h2>Informations personnelles</h2>
+                <dl class="admin-detail-list">
+                    <div><dt>Prénom</dt><dd>@client.FirstName</dd></div>
+                    <div><dt>Nom</dt><dd>@client.LastName</dd></div>
+                    <div><dt>Téléphone</dt><dd>@client.PhoneNumber</dd></div>
+                    <div><dt>Email</dt><dd>@(client.Email ?? "Non renseigné")</dd></div>
+                    <div><dt>Inscrit le</dt><dd>@client.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd></div>
+                </dl>
+            </section>
+
+            <section class="admin-panel">
+                <h2>Adresses</h2>
+                @if (client.Addresses.Count == 0)
+                {
+                    <p class="admin-empty">Aucune adresse enregistrée.</p>
+                }
+                @foreach (var address in client.Addresses)
+                {
+                    <article class="admin-list-item">
+                        <div><strong>@address.Label</strong><p>@address.AddressLine</p></div>
+                        @if (address.IsDefault) { <span class="status-pill status-success">Principale</span> }
+                    </article>
+                }
+            </section>
+        </div>
+
+        <section class="admin-panel">
+            <h2>Moyens de paiement</h2>
+            <p class="admin-section-note">Seules les références masquées sont visibles. Wele ne conserve jamais les données complètes de carte.</p>
+            @if (client.PaymentMethods.Count == 0)
+            {
+                <p class="admin-empty">Aucun moyen de paiement enregistré.</p>
+            }
+            <div class="admin-card-grid">
+                @foreach (var method in client.PaymentMethods)
+                {
+                    <article class="admin-list-card">
+                        <span>@method.Method</span>
+                        <strong>@method.Label</strong>
+                        <p>@(method.MaskedReference ?? "Référence sécurisée")</p>
+                        <small>@(method.IsActive ? "Actif" : "Désactivé") @(method.IsDefault ? " · Par défaut" : "")</small>
+                    </article>
+                }
+            </div>
+        </section>
+
+        <section class="admin-panel">
+            <h2>Missions</h2>
+            <div class="table-responsive">
+                <table class="table admin-table align-middle">
+                    <thead><tr><th>Numéro</th><th>Service</th><th>Statut</th><th>Paiement</th><th>Montant</th><th>Date</th></tr></thead>
+                    <tbody>
+                        @foreach (var mission in client.Missions)
+                        {
+                            <tr>
+                                <td><a href="@($"/missions/{mission.Id:D}")">@mission.MissionNumber</a></td>
+                                <td><strong>@mission.ServiceName</strong><small>@mission.PrestationName</small></td>
+                                <td>@mission.Status</td>
+                                <td>@mission.PaymentStatus</td>
+                                <td>@mission.Amount.ToString("N0") @mission.Currency</td>
+                                <td>@mission.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="admin-panel">
+            <h2>Pièces et photos transmises</h2>
+            @if (client.Attachments.Count == 0)
+            {
+                <p class="admin-empty">Aucun document transmis par ce client.</p>
+            }
+            <div class="admin-card-grid">
+                @foreach (var document in client.Attachments)
+                {
+                    <article class="admin-list-card">
+                        <span>@document.AttachmentType · @document.MissionNumber</span>
+                        <strong>@document.OriginalFileName</strong>
+                        <p>@(document.Caption ?? document.ContentType)</p>
+                        <a class="btn btn-sm btn-outline-primary" href="@Api.GetAdminClientAttachmentPreviewUrl(document.Id)" target="_blank">Ouvrir</a>
+                    </article>
+                }
+            </div>
+        </section>
+
+        <section class="admin-panel">
+            <h2>Notifications récentes</h2>
+            @if (client.Notifications.Count == 0)
+            {
+                <p class="admin-empty">Aucune notification enregistrée.</p>
+            }
+            @foreach (var notification in client.Notifications)
+            {
+                <article class="admin-list-item">
+                    <div>
+                        <strong>@notification.Subject</strong>
+                        <p>@notification.Body</p>
+                        <small>@notification.Channel · @notification.ScheduledAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                    </div>
+                    <span>@notification.Status</span>
+                </article>
+            }
+        </section>
+    }
+</main>
+
+@code {
+    [Parameter] public Guid ClientId { get; set; }
+    private AdminClientDetailResponse? client;
+    private string? error;
+
+    protected override Task OnParametersSetAsync() => LoadAsync();
+
+    private void BackToClients() => Navigation.NavigateTo("/clients");
+
+    private async Task LoadAsync()
+    {
+        error = null;
+        try
+        {
+            client = await Api.GetAdminClientAsync(ClientId);
+            if (client is null) error = "Client introuvable.";
+        }
+        catch (Exception exception)
+        {
+            error = $"Impossible de charger le dossier client. {exception.Message}";
+        }
+    }
+}

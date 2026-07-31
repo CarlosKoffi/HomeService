@@ -98,6 +98,12 @@ public static class AdminEndpointPermissionResolver
             return AdminModuleKey.CompanyManagement;
         }
 
+        if (path.Contains("/clients", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/client-attachments", StringComparison.OrdinalIgnoreCase))
+        {
+            return AdminModuleKey.Clients;
+        }
+
         if (path.Contains("/providers", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/provider-documents", StringComparison.OrdinalIgnoreCase))
         {

@@ -372,6 +372,51 @@ public static class AdminEndpoints
         .WithName("GetAdminCompany")
         .Produces<AdminCompanyDetailResponse>();
 
+        admin.MapGet("/clients", async (
+            string? search,
+            AdminClientQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            return Results.Ok(await queryService.ListAsync(search, cancellationToken));
+        })
+        .WithName("ListAdminClients")
+        .Produces<AdminClientListResponse>();
+
+        admin.MapGet("/clients/{clientId:guid}", async (
+            Guid clientId,
+            AdminClientQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.GetAsync(clientId, cancellationToken);
+            return response is null
+                ? Results.NotFound(new { message = "Client introuvable." })
+                : Results.Ok(response);
+        })
+        .WithName("GetAdminClient")
+        .Produces<AdminClientDetailResponse>();
+
+        admin.MapGet("/client-attachments/{id:guid}/preview", async (
+            Guid id,
+            AdminClientQueryService queryService,
+            ClientMissionPhotoUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var file = await queryService.GetAttachmentFileAsync(id, cancellationToken);
+            if (file is null)
+            {
+                return Results.NotFound(new { message = "Piece client introuvable." });
+            }
+
+            var absolutePath = uploadService.GetAbsolutePath(file.Value.StoragePath);
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound(new { message = "Le fichier client n'existe plus sur le serveur." });
+            }
+
+            return Results.File(absolutePath, file.Value.ContentType, enableRangeProcessing: true);
+        })
+        .WithName("PreviewAdminClientAttachment");
+
         admin.MapGet("/provider-documents/{id:guid}/preview", async (
             Guid id,
             AdminQueryService queryService,

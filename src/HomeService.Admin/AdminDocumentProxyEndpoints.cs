@@ -32,6 +32,19 @@ public static class AdminDocumentProxyEndpoints
                 context);
         });
 
+        app.MapGet("/admin-client-attachments/{documentId:guid}/preview", async (
+            Guid documentId,
+            PlatformApiClient apiClient,
+            AdminApiSessionAccessor sessionAccessor,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            ApplyAdminSessionCookie(context, sessionAccessor);
+            return await RenderDocumentAsync(
+                () => apiClient.GetAdminClientAttachmentFileAsync(documentId, cancellationToken),
+                context);
+        });
+
         app.MapGet("/admin-cms-media/{mediaId:guid}/preview", async (
             Guid mediaId,
             PlatformApiClient apiClient,

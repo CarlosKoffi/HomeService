@@ -77,6 +77,30 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminCompanyDetailResponse>($"/api/admin/companies/{companyId}", cancellationToken);
     }
 
+    public async Task<AdminClientListResponse?> GetAdminClientsAsync(
+        string? search,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var suffix = string.IsNullOrWhiteSpace(search)
+            ? string.Empty
+            : $"?search={Uri.EscapeDataString(search.Trim())}";
+        return await GetJsonAsync<AdminClientListResponse>($"/api/admin/clients{suffix}", cancellationToken);
+    }
+
+    public async Task<AdminClientDetailResponse?> GetAdminClientAsync(
+        Guid clientId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminClientDetailResponse>($"/api/admin/clients/{clientId:D}", cancellationToken);
+    }
+
+    public string GetAdminClientAttachmentPreviewUrl(Guid attachmentId)
+    {
+        return $"/admin-client-attachments/{attachmentId:D}/preview";
+    }
+
     public async Task<ApiActionResult> SuspendAdminCompanyAsync(
         Guid companyId,
         string? note,
@@ -1091,6 +1115,27 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
             ?? response.Content.Headers.ContentDisposition?.FileName
             ?? "document-prestataire";
+
+        return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
+    }
+
+    public async Task<CompanyApplicationDocumentFile> GetAdminClientAttachmentFileAsync(Guid attachmentId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/admin/client-attachments/{attachmentId:D}/preview";
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw CreateApiException(response, path, body);
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName
+            ?? "piece-client";
 
         return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
     }

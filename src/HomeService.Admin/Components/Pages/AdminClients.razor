@@ -1,0 +1,115 @@
+@page "/clients"
+@using HomeService.Contracts.Admin
+@using HomeService.Admin.Services
+@inject PlatformApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Clients - Admin Wele</PageTitle>
+
+<main class="admin-page">
+    <header class="admin-page-header">
+        <div>
+            <p class="admin-eyebrow">UTILISATEURS</p>
+            <h1>Clients</h1>
+            <p>Consultez les comptes inscrits, leurs coordonnées et leur activité sur Wele.</p>
+        </div>
+        <button class="btn btn-outline-dark" @onclick="LoadAsync">Actualiser</button>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+
+    @if (data is not null)
+    {
+        <section class="admin-stat-grid">
+            <article><span>Clients inscrits</span><strong>@data.Stats.TotalClients</strong></article>
+            <article><span>Avec adresse</span><strong>@data.Stats.ClientsWithAddress</strong></article>
+            <article><span>Paiement renseigné</span><strong>@data.Stats.ClientsWithPaymentMethod</strong></article>
+            <article><span>Avec mission</span><strong>@data.Stats.ClientsWithMissions</strong></article>
+        </section>
+    }
+
+    <section class="admin-panel">
+        <div class="admin-toolbar">
+            <label>
+                <span>Recherche</span>
+                <input class="form-control" @bind="search" @bind:event="oninput" placeholder="Nom, téléphone ou email" />
+            </label>
+            <button class="btn btn-primary" @onclick="LoadAsync">Rechercher</button>
+        </div>
+
+        @if (loading)
+        {
+            <p class="admin-empty">Chargement des clients...</p>
+        }
+        else if (data?.Items.Count == 0)
+        {
+            <p class="admin-empty">Aucun client ne correspond à cette recherche.</p>
+        }
+        else if (data is not null)
+        {
+            <div class="table-responsive">
+                <table class="table admin-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Adresse principale</th>
+                            <th>Moyens de paiement</th>
+                            <th>Missions</th>
+                            <th>Inscription</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var client in data.Items)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@client.FullName</strong>
+                                    <small>@client.PhoneNumber</small>
+                                    <small>@(client.Email ?? "Email non renseigné")</small>
+                                </td>
+                                <td>@(client.DefaultAddress ?? "Non renseignée")</td>
+                                <td>@client.PaymentMethodCount</td>
+                                <td><strong>@client.MissionCount</strong> <small>@client.CompletedMissionCount terminée(s)</small></td>
+                                <td>@client.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                                <td><button class="btn btn-sm btn-outline-primary" @onclick="() => Open(client.Id)">Voir le dossier</button></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</main>
+
+@code {
+    private AdminClientListResponse? data;
+    private string search = string.Empty;
+    private string? error;
+    private bool loading;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            data = await Api.GetAdminClientsAsync(search);
+        }
+        catch (Exception exception)
+        {
+            error = $"Impossible de charger les clients. {exception.Message}";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void Open(Guid id) => Navigation.NavigateTo($"/clients/{id:D}");
+}
