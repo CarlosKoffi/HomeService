@@ -71,7 +71,7 @@ public partial class HomePage : ContentPage
                 .Select(prestation => new { Service = service, Prestation = prestation }))
             .OrderByDescending(item => item.Prestation.MissionCount)
             .ThenBy(item => item.Prestation.Name)
-            .Take(4);
+            .Take(3);
 
         foreach (var item in mostRequestedPrestations)
         {
@@ -88,7 +88,7 @@ public partial class HomePage : ContentPage
 
         if (popularServices.Count == 0)
         {
-            foreach (var service in services.Take(4))
+            foreach (var service in services.Take(3))
             {
                 popularServices.Add(new PopularItem(
                     service.ServiceId,

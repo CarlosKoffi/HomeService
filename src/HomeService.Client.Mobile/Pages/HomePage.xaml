@@ -75,7 +75,7 @@
                         <CollectionView x:Name="PopularServicesView" HeightRequest="146" ItemsLayout="HorizontalList" SelectionMode="Single" SelectionChanged="OnPopularSelected">
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
-                                    <VerticalStackLayout WidthRequest="105" Spacing="7" Margin="0,0,10,0">
+                                    <VerticalStackLayout WidthRequest="106" Spacing="7" Margin="0,0,8,0">
                                         <Border HeightRequest="100" Padding="0" BackgroundColor="#F2F4F7" Stroke="#E9EDF2" StrokeShape="RoundRectangle 11">
                                             <Grid>
                                                 <Image Source="{Binding IllustrationUrl}" Aspect="AspectFill" IsVisible="{Binding HasIllustration}" />
