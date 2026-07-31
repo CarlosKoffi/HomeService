@@ -16,7 +16,13 @@ public sealed class AdminServiceCatalogManagementServiceTests
         var sut = new AdminServiceCatalogManagementService(db);
 
         var result = await sut.CreateServiceAsync(
-            new UpsertServiceRequest("Blanchisserie", "Linge et pressing", "shirt", PriceMinAmount: 2500, PriceMaxAmount: 4500),
+            new UpsertServiceRequest(
+                "Blanchisserie",
+                "Linge et pressing",
+                "shirt",
+                PriceMinAmount: 2500,
+                PriceMaxAmount: 4500,
+                DisplayCategory: "Wellbeing"),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -26,6 +32,7 @@ public sealed class AdminServiceCatalogManagementServiceTests
         Assert.True(result.Response.IsActive);
         Assert.Equal(2500, result.Response.PriceMinAmount);
         Assert.Equal(4500, result.Response.PriceMaxAmount);
+        Assert.Equal("Wellbeing", result.Response.DisplayCategory);
     }
 
     [Fact]

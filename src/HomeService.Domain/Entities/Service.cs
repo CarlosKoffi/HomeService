@@ -26,6 +26,7 @@ public sealed class Service : AuditableEntity
     public string IconName { get; private set; } = "sparkles";
     public string? IconUrl { get; private set; }
     public string? ImageUrl { get; private set; }
+    public ServiceDisplayCategory DisplayCategory { get; private set; } = ServiceDisplayCategory.Home;
     public int NormalPriceAmount { get; private set; } = 1500;
     public int PremiumPriceAmount { get; private set; } = 2500;
     public int PriceMinAmount { get; private set; } = 1500;
@@ -55,6 +56,12 @@ public sealed class Service : AuditableEntity
     {
         IconUrl = NormalizeUrl(iconUrl);
         ImageUrl = NormalizeUrl(imageUrl);
+        Touch();
+    }
+
+    public void UpdateDisplayCategory(ServiceDisplayCategory category)
+    {
+        DisplayCategory = category;
         Touch();
     }
 

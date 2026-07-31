@@ -3,6 +3,7 @@ using HomeService.Application.Auditing;
 using HomeService.Contracts.Services;
 using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
@@ -39,6 +40,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         var service = new Service(request.Name, request.Description, createdByCompanyId: null);
         service.UpdateDetails(request.Name, request.Description, request.IconName);
         service.UpdateMedia(request.IconUrl, request.ImageUrl);
+        service.UpdateDisplayCategory(ParseDisplayCategory(request.DisplayCategory));
         service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
         service.Approve();
 
@@ -101,6 +103,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         var before = ToServiceResponse(service);
         service.UpdateDetails(request.Name, request.Description, request.IconName);
         service.UpdateMedia(request.IconUrl, request.ImageUrl);
+        service.UpdateDisplayCategory(ParseDisplayCategory(request.DisplayCategory));
         service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
 
         var after = ToServiceResponse(service);
@@ -420,6 +423,13 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         return request.PriceMaxAmount ?? request.PremiumPriceAmount;
     }
 
+    private static ServiceDisplayCategory ParseDisplayCategory(string? value)
+    {
+        return Enum.TryParse<ServiceDisplayCategory>(value, ignoreCase: true, out var category)
+            ? category
+            : ServiceDisplayCategory.Home;
+    }
+
     private static int GetPriceMin(UpsertServicePrestationRequest request)
     {
         return request.PriceMinAmount ?? request.NormalPriceAmount;
@@ -450,7 +460,8 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             service.PriceMinAmount,
             service.PriceMaxAmount,
             service.IconUrl,
-            service.ImageUrl);
+            service.ImageUrl,
+            service.DisplayCategory.ToString());
     }
 
     private static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)

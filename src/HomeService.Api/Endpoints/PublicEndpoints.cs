@@ -59,12 +59,14 @@ public static class PublicEndpoints
                             prestation.IsActive,
                             prestation.PriceMinAmount,
                             prestation.PriceMaxAmount,
-                            prestation.IllustrationUrl))
+                            prestation.IllustrationUrl,
+                            db.Missions.Count(mission => mission.ServicePrestationId == prestation.Id)))
                         .ToList(),
                     service.PriceMinAmount,
                     service.PriceMaxAmount,
                     service.IconUrl,
-                    service.ImageUrl))
+                    service.ImageUrl,
+                    service.DisplayCategory.ToString()))
                 .ToListAsync(cancellationToken);
 
             return Results.Ok(services);

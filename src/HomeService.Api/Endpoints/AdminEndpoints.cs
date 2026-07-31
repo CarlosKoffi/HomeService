@@ -2131,7 +2131,8 @@ public static class AdminEndpoints
             service.PriceMinAmount,
             service.PriceMaxAmount,
             service.IconUrl,
-            service.ImageUrl);
+            service.ImageUrl,
+            service.DisplayCategory.ToString());
     }
 
     static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)

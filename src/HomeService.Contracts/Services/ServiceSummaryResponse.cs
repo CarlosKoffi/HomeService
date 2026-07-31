@@ -14,7 +14,8 @@ public sealed record ServiceSummaryResponse(
     int? PriceMinAmount = null,
     int? PriceMaxAmount = null,
     string? IconUrl = null,
-    string? ImageUrl = null);
+    string? ImageUrl = null,
+    string DisplayCategory = "Home");
 
 public sealed record ServicePrestationSummaryResponse(
     Guid Id,
@@ -27,4 +28,5 @@ public sealed record ServicePrestationSummaryResponse(
     bool IsActive,
     int? PriceMinAmount = null,
     int? PriceMaxAmount = null,
-    string? IllustrationUrl = null);
+    string? IllustrationUrl = null,
+    int MissionCount = 0);

@@ -300,6 +300,13 @@
             <input type="text" placeholder="Ex: car, zap, shirt" @bind="NewServiceDraft.IconName" />
         </label>
         <label>
+            Categorie dans l'application
+            <select @bind="NewServiceDraft.DisplayCategory">
+                <option value="Home">Pour ma maison</option>
+                <option value="Wellbeing">Pour mon bien-etre</option>
+            </select>
+        </label>
+        <label>
             URL icone
             <input type="text" placeholder="/assets/services/jardinage.svg" @bind="NewServiceDraft.IconUrl" />
         </label>
@@ -399,6 +406,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                         </div>
                     </div>
                     <div class="catalog-meta">
+                        <span class="status-pill">@FormatDisplayCategory(service.DisplayCategory)</span>
                         <span class="@(service.IsActive ? "status-pill accepted" : "status-pill rejected")">
                             @(service.IsActive ? "Actif" : "Inactif")
                         </span>
@@ -420,6 +428,13 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                 <label>
                                     Icone
                                     <input type="text" @bind="serviceEditDraft.IconName" />
+                                </label>
+                                <label>
+                                    Categorie dans l'application
+                                    <select @bind="serviceEditDraft.DisplayCategory">
+                                        <option value="Home">Pour ma maison</option>
+                                        <option value="Wellbeing">Pour mon bien-etre</option>
+                                    </select>
                                 </label>
                                 <label>
                                     URL icone
@@ -1241,6 +1256,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             IconName = service.IconName,
             IconUrl = service.IconUrl ?? string.Empty,
             ImageUrl = service.ImageUrl ?? string.Empty,
+            DisplayCategory = service.DisplayCategory,
             NormalPriceAmount = service.PriceMinAmount ?? service.NormalPriceAmount,
             PremiumPriceAmount = service.PriceMaxAmount ?? service.PremiumPriceAmount,
             Currency = service.Currency
@@ -1389,8 +1405,14 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             draft.NormalPriceAmount,
             draft.PremiumPriceAmount,
             draft.IconUrl,
-            draft.ImageUrl);
+            draft.ImageUrl,
+            draft.DisplayCategory);
     }
+
+    private static string FormatDisplayCategory(string category)
+        => string.Equals(category, "Wellbeing", StringComparison.OrdinalIgnoreCase)
+            ? "Pour mon bien-etre"
+            : "Pour ma maison";
 
     private async Task UpdatePrestationAsync(Guid prestationId)
     {
@@ -1600,6 +1622,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         public string IconName { get; set; } = "sparkles";
         public string IconUrl { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
+        public string DisplayCategory { get; set; } = "Home";
         public int NormalPriceAmount { get; set; }
         public int PremiumPriceAmount { get; set; }
         public string Currency { get; set; } = "XOF";

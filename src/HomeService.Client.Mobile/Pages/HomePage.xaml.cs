@@ -49,53 +49,41 @@ public partial class HomePage : ContentPage
         wellbeingServices.Clear();
         popularServices.Clear();
 
-        foreach (var service in result.Response.Where(item => item.IsActive).Take(10))
+        foreach (var service in result.Response.Where(item => item.IsActive))
         {
             services.Add(ServiceItem.From(service, apiClient));
         }
 
-        foreach (var item in services.Take(5))
+        foreach (var item in services.Where(item => item.DisplayCategory == "Home"))
         {
             homeServices.Add(item);
         }
 
-        foreach (var item in services.Skip(5).Take(5))
+        foreach (var item in services.Where(item => item.DisplayCategory == "Wellbeing"))
         {
             wellbeingServices.Add(item);
         }
 
-        if (wellbeingServices.Count == 0)
+        var mostRequestedPrestations = result.Response
+            .Where(service => service.IsActive)
+            .SelectMany(service => service.Prestations
+                .Where(prestation => prestation.IsActive)
+                .Select(prestation => new { Service = service, Prestation = prestation }))
+            .OrderByDescending(item => item.Prestation.MissionCount)
+            .ThenBy(item => item.Prestation.Name)
+            .Take(4);
+
+        foreach (var item in mostRequestedPrestations)
         {
-            foreach (var item in services.Take(5))
-            {
-                wellbeingServices.Add(item);
-            }
-        }
-
-        foreach (var service in result.Response.Where(item => item.IsActive))
-        {
-            foreach (var prestation in service.Prestations.Where(item => item.IsActive))
-            {
-                var illustrationUrl = apiClient.ToAbsoluteMediaUrl(prestation.IllustrationUrl);
-                popularServices.Add(new PopularItem(
-                    service.Id,
-                    prestation.Id,
-                    prestation.Name,
-                    illustrationUrl,
-                    string.IsNullOrWhiteSpace(prestation.Name) ? "WE" : prestation.Name[..Math.Min(2, prestation.Name.Length)].ToUpperInvariant(),
-                    !string.IsNullOrWhiteSpace(illustrationUrl),
-                    string.IsNullOrWhiteSpace(illustrationUrl)));
-
-                if (popularServices.Count == 4)
-                {
-                    break;
-                }
-            }
-
-            if (popularServices.Count == 4)
-            {
-                break;
-            }
+            var illustrationUrl = apiClient.ToAbsoluteMediaUrl(item.Prestation.IllustrationUrl);
+            popularServices.Add(new PopularItem(
+                item.Service.Id,
+                item.Prestation.Id,
+                item.Prestation.Name,
+                illustrationUrl,
+                string.IsNullOrWhiteSpace(item.Prestation.Name) ? "WE" : item.Prestation.Name[..Math.Min(2, item.Prestation.Name.Length)].ToUpperInvariant(),
+                !string.IsNullOrWhiteSpace(illustrationUrl),
+                string.IsNullOrWhiteSpace(illustrationUrl)));
         }
 
         if (popularServices.Count == 0)
@@ -232,7 +220,8 @@ public partial class HomePage : ContentPage
         string IconFallback,
         bool HasIconUrl,
         bool HasIconFallback,
-        string Price)
+        string Price,
+        string DisplayCategory)
     {
         public static ServiceItem From(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
         {
@@ -249,7 +238,8 @@ public partial class HomePage : ContentPage
                 fallback,
                 !string.IsNullOrWhiteSpace(iconUrl),
                 string.IsNullOrWhiteSpace(iconUrl),
-                price);
+                price,
+                response.DisplayCategory);
         }
 
         private static string ResolveIcon(string iconName, string name)
