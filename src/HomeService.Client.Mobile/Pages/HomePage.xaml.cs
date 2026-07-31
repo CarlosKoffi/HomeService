@@ -52,9 +52,12 @@ public partial class HomePage : ContentPage
         wellbeingServices.Clear();
         popularServices.Clear();
 
-        foreach (var service in result.Response.Where(item => item.IsActive))
+        var serviceItems = await Task.WhenAll(result.Response
+            .Where(item => item.IsActive)
+            .Select(service => ServiceItem.FromAsync(service, apiClient)));
+        foreach (var service in serviceItems)
         {
-            services.Add(await ServiceItem.FromAsync(service, apiClient));
+            services.Add(service);
         }
 
         foreach (var item in services.Where(item => item.DisplayCategory == "Home"))
@@ -76,11 +79,11 @@ public partial class HomePage : ContentPage
             .ThenBy(item => item.Prestation.Name)
             .Take(3);
 
-        foreach (var item in mostRequestedPrestations)
+        var popularItems = await Task.WhenAll(mostRequestedPrestations.Select(async item =>
         {
             var illustrationUrl = await apiClient.DownloadMediaImageSourceAsync(item.Prestation.IllustrationUrl);
             var serviceIconUrl = await apiClient.DownloadMediaImageSourceAsync(item.Service.IconUrl);
-            popularServices.Add(new PopularItem(
+            return new PopularItem(
                 item.Service.Id,
                 item.Prestation.Id,
                 item.Prestation.Name,
@@ -89,7 +92,11 @@ public partial class HomePage : ContentPage
                 string.IsNullOrWhiteSpace(item.Prestation.Name) ? "WE" : item.Prestation.Name[..Math.Min(2, item.Prestation.Name.Length)].ToUpperInvariant(),
                 illustrationUrl is not null,
                 illustrationUrl is null && serviceIconUrl is not null,
-                illustrationUrl is null && serviceIconUrl is null));
+                illustrationUrl is null && serviceIconUrl is null);
+        }));
+        foreach (var item in popularItems)
+        {
+            popularServices.Add(item);
         }
 
         if (popularServices.Count == 0)

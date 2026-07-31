@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using HomeService.Contracts.Clients;
 using HomeService.Contracts.Missions;
@@ -10,6 +11,7 @@ namespace HomeService.Client.Mobile.Services;
 
 public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionStore sessionStore)
 {
+    private static readonly ConcurrentDictionary<string, Lazy<Task<byte[]?>>> MediaCache = new(StringComparer.OrdinalIgnoreCase);
     public Task<ApiCallResult<ClientAuthResponse>> RegisterAsync(RegisterClientRequest request, CancellationToken cancellationToken = default)
     {
         return SendAsync<ClientAuthResponse>(HttpMethod.Post, "api/client/auth/register", bearerToken: null, request, cancellationToken);
@@ -95,14 +97,32 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
 
         try
         {
-            var bytes = await httpClient.GetByteArrayAsync(absoluteUrl, cancellationToken);
-            return bytes.Length == 0
+            var lazyBytes = MediaCache.GetOrAdd(
+                absoluteUrl,
+                key => new Lazy<Task<byte[]?>>(
+                    () => DownloadMediaBytesAsync(key),
+                    LazyThreadSafetyMode.ExecutionAndPublication));
+            var bytes = await lazyBytes.Value.WaitAsync(cancellationToken);
+            return bytes is null || bytes.Length == 0
                 ? null
                 : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
         }
         catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
         {
             return null;
+        }
+
+        async Task<byte[]?> DownloadMediaBytesAsync(string mediaUrl)
+        {
+            try
+            {
+                return await httpClient.GetByteArrayAsync(mediaUrl);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
+            {
+                MediaCache.TryRemove(mediaUrl, out _);
+                return null;
+            }
         }
     }
 
