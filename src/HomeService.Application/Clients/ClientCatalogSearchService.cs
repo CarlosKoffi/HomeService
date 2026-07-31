@@ -72,7 +72,7 @@ public sealed class ClientCatalogSearchService(IAppDbContext db)
                     prestation.Currency,
                     service.IconName,
                     service.IconUrl,
-                    service.ImageUrl,
+                    prestation.IllustrationUrl,
                     RequiresPhoto(service)));
             }
         }

@@ -35,6 +35,23 @@ public sealed class ClientCatalogSearchServiceTests
         Assert.Contains(results, result => result.Name == "Ménage à domicile");
     }
 
+    [Fact]
+    public async Task SearchAsync_WhenPrestationHasIllustration_ReturnsItsOwnImage()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Coiffure", "Soins capillaires", createdByCompanyId: null);
+        var prestation = service.AddPrestation("Tresses collees", "Coiffure avec rajouts", 1, 5_000, 12_000);
+        prestation.UpdateIllustration("/assets/prestations/tresses-collees.jpg");
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+        var sut = new ClientCatalogSearchService(db);
+
+        var results = await sut.SearchAsync("tresses", CancellationToken.None);
+
+        var result = Assert.Single(results, item => item.Type == "Prestation");
+        Assert.Equal("/assets/prestations/tresses-collees.jpg", result.ImageUrl);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()

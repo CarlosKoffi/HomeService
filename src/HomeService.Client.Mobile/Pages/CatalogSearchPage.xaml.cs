@@ -76,7 +76,11 @@ public partial class CatalogSearchPage : ContentPage
         {
             foreach (var item in showAll ? services : services.Take(PreviewCount))
             {
-                ServicesList.Add(CreateServiceRow(item));
+                ServicesList.Add(CreateTextRow(item with
+                {
+                    Name = item.ServiceName,
+                    PrestationId = null
+                }));
             }
         }
 
@@ -84,7 +88,7 @@ public partial class CatalogSearchPage : ContentPage
         {
             foreach (var item in showAll ? prestations : prestations.Take(PreviewCount))
             {
-                PrestationsList.Add(CreatePrestationRow(item));
+                PrestationsList.Add(CreateIllustratedRow(item));
             }
         }
 
@@ -101,7 +105,7 @@ public partial class CatalogSearchPage : ContentPage
         EmptyLabel.IsVisible = !string.IsNullOrWhiteSpace(SearchEntry.Text) && count == 0 && !LoadingIndicator.IsRunning;
     }
 
-    private View CreateServiceRow(SearchItem item)
+    private View CreateIllustratedRow(SearchItem item)
     {
         var row = new Grid
         {
@@ -133,7 +137,7 @@ public partial class CatalogSearchPage : ContentPage
         return row;
     }
 
-    private View CreatePrestationRow(SearchItem item)
+    private View CreateTextRow(SearchItem item)
     {
         var row = new Grid
         {

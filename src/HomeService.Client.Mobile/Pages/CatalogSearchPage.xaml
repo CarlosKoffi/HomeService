@@ -27,29 +27,29 @@
                 <BoxView x:Name="AllTabIndicator" HeightRequest="2" Color="{StaticResource WeleBlue}" />
             </VerticalStackLayout>
             <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="End">
-                <Label x:Name="ServicesTabLabel" Text="Services" FontSize="12" FontAttributes="Bold" TextColor="#687386" HorizontalTextAlignment="Center">
-                    <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnServicesTabTapped" /></Label.GestureRecognizers>
-                </Label>
-                <BoxView x:Name="ServicesTabIndicator" HeightRequest="2" Color="Transparent" />
-            </VerticalStackLayout>
-            <VerticalStackLayout Grid.Column="2" Spacing="8" VerticalOptions="End">
                 <Label x:Name="PrestationsTabLabel" Text="Prestations" FontSize="12" FontAttributes="Bold" TextColor="#687386" HorizontalTextAlignment="Center">
                     <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnPrestationsTabTapped" /></Label.GestureRecognizers>
                 </Label>
                 <BoxView x:Name="PrestationsTabIndicator" HeightRequest="2" Color="Transparent" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="2" Spacing="8" VerticalOptions="End">
+                <Label x:Name="ServicesTabLabel" Text="Services" FontSize="12" FontAttributes="Bold" TextColor="#687386" HorizontalTextAlignment="Center">
+                    <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnServicesTabTapped" /></Label.GestureRecognizers>
+                </Label>
+                <BoxView x:Name="ServicesTabIndicator" HeightRequest="2" Color="Transparent" />
             </VerticalStackLayout>
         </Grid>
 
         <Grid Grid.Row="2">
             <ScrollView>
                 <VerticalStackLayout Padding="0,18,0,0" Spacing="22">
-                    <VerticalStackLayout x:Name="ServicesSection" Spacing="8">
-                        <Label Text="Services" FontSize="16" FontAttributes="Bold" TextColor="#111827" />
-                        <VerticalStackLayout x:Name="ServicesList" Spacing="6" />
-                    </VerticalStackLayout>
                     <VerticalStackLayout x:Name="PrestationsSection" Spacing="9">
                         <Label Text="Prestations" FontSize="16" FontAttributes="Bold" TextColor="#111827" />
-                        <VerticalStackLayout x:Name="PrestationsList" Spacing="8" />
+                        <VerticalStackLayout x:Name="PrestationsList" Spacing="6" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout x:Name="ServicesSection" Spacing="8">
+                        <Label Text="Services" FontSize="16" FontAttributes="Bold" TextColor="#111827" />
+                        <VerticalStackLayout x:Name="ServicesList" Spacing="8" />
                     </VerticalStackLayout>
                     <Button x:Name="ShowAllButton" HeightRequest="48" Text="Voir tous les résultats (0)"
                             FontSize="13" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" BackgroundColor="White"
