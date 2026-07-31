@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <None Include="..\HomeService.Admin\Sql\056_seed_demo_missions.sql" Link="Sql\056_seed_demo_missions.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\HomeService.Admin\Sql\063_seed_wellbeing_service_catalog.sql" Link="Sql\063_seed_wellbeing_service_catalog.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -30,6 +30,7 @@ public static class DatabaseInitializer
         await SeedLanguagesAsync(db, cancellationToken);
         await SeedServicesAsync(db, cancellationToken);
         await SeedServicePrestationsAsync(db, cancellationToken);
+        await SeedWellbeingServiceCatalogAsync(db, cancellationToken);
         await SeedServiceMediaAsync(db, cancellationToken);
         await SeedDemoMissionsAsync(db, cancellationToken);
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
@@ -43,7 +44,22 @@ public static class DatabaseInitializer
 
     private static async Task SeedDemoMissionsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
-        var scriptPath = Path.Combine(AppContext.BaseDirectory, "Sql", "056_seed_demo_missions.sql");
+        await ExecuteSqlScriptAsync(db, "056_seed_demo_missions.sql", cancellationToken);
+    }
+
+    private static async Task SeedWellbeingServiceCatalogAsync(
+        HomeServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        await ExecuteSqlScriptAsync(db, "063_seed_wellbeing_service_catalog.sql", cancellationToken);
+    }
+
+    private static async Task ExecuteSqlScriptAsync(
+        HomeServiceDbContext db,
+        string fileName,
+        CancellationToken cancellationToken)
+    {
+        var scriptPath = Path.Combine(AppContext.BaseDirectory, "Sql", fileName);
         if (!File.Exists(scriptPath))
         {
             return;

@@ -72,11 +72,14 @@
                             <Label Text="Les plus demandés" FontSize="15" FontAttributes="Bold" />
                             <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
                         </Grid>
-                        <CollectionView x:Name="PopularServicesView" HeightRequest="146" ItemsLayout="HorizontalList" SelectionMode="Single" SelectionChanged="OnPopularSelected">
+                        <CollectionView x:Name="PopularServicesView" HeightRequest="146" SelectionMode="Single" SelectionChanged="OnPopularSelected">
+                            <CollectionView.ItemsLayout>
+                                <GridItemsLayout Orientation="Vertical" Span="3" HorizontalItemSpacing="8" />
+                            </CollectionView.ItemsLayout>
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
-                                    <VerticalStackLayout WidthRequest="106" Spacing="7" Margin="0,0,8,0">
-                                        <Border HeightRequest="100" Padding="0" BackgroundColor="#F2F4F7" Stroke="#E9EDF2" StrokeShape="RoundRectangle 11">
+                                    <VerticalStackLayout Spacing="7">
+                                        <Border HeightRequest="100" Padding="0" BackgroundColor="#F2F4F7" Stroke="#E9EDF2" StrokeShape="RoundRectangle 11" HorizontalOptions="Fill">
                                             <Grid>
                                                 <Image Source="{Binding IllustrationUrl}" Aspect="AspectFill" IsVisible="{Binding HasIllustration}" />
                                                 <Label Text="{Binding Fallback}" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasFallback}" />
