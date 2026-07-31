@@ -565,6 +565,7 @@ public static class DatabaseInitializer
             new SeededService("Menage a domicile", "Entretien courant du domicile, nettoyage, rangement et aide ponctuelle.", "sparkles", 3500, 5000, "XOF"),
             new SeededService("Jardinage", "Entretien jardin, taille simple, arrosage et travaux exterieurs legers.", "sprout", 4500, 6500, "XOF"),
             new SeededService("Electricite", "Petites interventions electriques, diagnostic simple et remise en service.", "zap", 5000, 8000, "XOF"),
+            new SeededService("Plomberie", "Depannage de fuites, debouchage et petites installations sanitaires.", "faucet", 5000, 9000, "XOF"),
             new SeededService("Blanchisserie", "Lavage, repassage et entretien du linge pour particuliers et familles.", "shirt", 2500, 4500, "XOF"),
             new SeededService("Depannage auto", "Assistance auto de proximite pour les urgences simples et depannages courants.", "car", 7000, 12000, "XOF"),
             new SeededService("Nounou", "Garde d'enfant a domicile par un prestataire recommande et rattache a une entreprise validee.", "baby", 4000, 6500, "XOF")
@@ -650,6 +651,7 @@ public static class DatabaseInitializer
                 || service.NormalizedName == "menage a domicile"
                 || service.NormalizedName == "nounou"
                 || service.NormalizedName == "electricite"
+                || service.NormalizedName == "plomberie"
                 || service.NormalizedName == "blanchisserie"
                 || service.NormalizedName == "depannage auto")
             .Select(service => new { service.Id, service.NormalizedName })
@@ -691,6 +693,12 @@ public static class DatabaseInitializer
             new SeededServicePrestation("electricite", "Remise en service disjoncteur", "Controle et remise en service simple apres coupure.", 40, 5000, 8000, "XOF"),
             new SeededServicePrestation("electricite", "Depannage court-circuit simple", "Intervention sur panne courte et localisee.", 50, 8000, 12000, "XOF"),
             new SeededServicePrestation("electricite", "Installation ventilateur plafond", "Pose simple d'un ventilateur sur attente electrique existante.", 60, 10000, 15000, "XOF"),
+            new SeededServicePrestation("plomberie", "Deboucher un evier", "Debouchage simple d'un evier ou d'un lavabo.", 10, 6000, 10000, "XOF"),
+            new SeededServicePrestation("plomberie", "Reparer une fuite", "Recherche et reparation d'une fuite accessible.", 20, 6000, 12000, "XOF"),
+            new SeededServicePrestation("plomberie", "Deboucher un WC", "Debouchage simple de toilettes sans travaux lourds.", 30, 7000, 12000, "XOF"),
+            new SeededServicePrestation("plomberie", "Installer un equipement sanitaire", "Pose simple de robinet, douchette ou petit equipement sanitaire.", 40, 8000, 15000, "XOF"),
+            new SeededServicePrestation("plomberie", "Reparer un chauffe-eau", "Diagnostic et petite reparation d'un chauffe-eau.", 50, 10000, 18000, "XOF"),
+            new SeededServicePrestation("plomberie", "Remplacer un robinet", "Depose et remplacement d'un robinet standard.", 60, 7000, 12000, "XOF"),
             new SeededServicePrestation("blanchisserie", "Lavage et pliage", "Lavage, sechage et pliage du linge courant.", 10, 2500, 4000, "XOF"),
             new SeededServicePrestation("blanchisserie", "Repassage", "Repassage de vetements courants.", 20, 3000, 4500, "XOF"),
             new SeededServicePrestation("blanchisserie", "Linge de maison", "Entretien draps, serviettes et linge de maison.", 30, 3500, 5500, "XOF"),

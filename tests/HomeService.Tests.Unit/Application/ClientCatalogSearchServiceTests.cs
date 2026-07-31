@@ -52,6 +52,24 @@ public sealed class ClientCatalogSearchServiceTests
         Assert.Equal("/assets/prestations/tresses-collees.jpg", result.ImageUrl);
     }
 
+    [Theory]
+    [InlineData("plomberie")]
+    [InlineData("evier")]
+    public async Task SearchAsync_WhenQueryMatchesPlumbingCatalog_ReturnsResult(string query)
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Plomberie", "Fuites et installations sanitaires", createdByCompanyId: null);
+        service.AddPrestation("Deboucher un evier", "Debouchage simple", 10, 6_000, 10_000);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+        var sut = new ClientCatalogSearchService(db);
+
+        var results = await sut.SearchAsync(query, CancellationToken.None);
+
+        Assert.NotEmpty(results);
+        Assert.Contains(results, result => result.ServiceName == "Plomberie");
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()
