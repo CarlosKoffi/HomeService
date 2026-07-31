@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.CatalogSearchPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    BackgroundColor="White">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="18,18,18,16">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <Border HeightRequest="44" StrokeThickness="0" BackgroundColor="#F5F6FA" StrokeShape="RoundRectangle 16" Padding="12,0">
+                <Grid ColumnDefinitions="20,*" ColumnSpacing="8">
+                    <Image Source="app_search.png" HeightRequest="17" WidthRequest="17" />
+                    <Entry x:Name="SearchEntry" Grid.Column="1" Placeholder="Rechercher un service" FontSize="13"
+                           TextChanged="OnSearchTextChanged" ReturnType="Search" MinimumHeightRequest="0" HeightRequest="42" />
+                </Grid>
+            </Border>
+            <Button Grid.Column="1" Text="Annuler" FontSize="12" FontAttributes="Bold" TextColor="#111827"
+                    BackgroundColor="Transparent" Padding="5,0" Clicked="OnCancelClicked" />
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" HeightRequest="50" Margin="0,5,0,0">
+            <VerticalStackLayout Grid.Column="0" Spacing="8" VerticalOptions="End">
+                <Label x:Name="AllTabLabel" Text="Tous" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center">
+                    <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnAllTabTapped" /></Label.GestureRecognizers>
+                </Label>
+                <BoxView x:Name="AllTabIndicator" HeightRequest="2" Color="{StaticResource WeleBlue}" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="End">
+                <Label x:Name="ServicesTabLabel" Text="Services" FontSize="12" FontAttributes="Bold" TextColor="#687386" HorizontalTextAlignment="Center">
+                    <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnServicesTabTapped" /></Label.GestureRecognizers>
+                </Label>
+                <BoxView x:Name="ServicesTabIndicator" HeightRequest="2" Color="Transparent" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="2" Spacing="8" VerticalOptions="End">
+                <Label x:Name="PrestationsTabLabel" Text="Prestations" FontSize="12" FontAttributes="Bold" TextColor="#687386" HorizontalTextAlignment="Center">
+                    <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnPrestationsTabTapped" /></Label.GestureRecognizers>
+                </Label>
+                <BoxView x:Name="PrestationsTabIndicator" HeightRequest="2" Color="Transparent" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <Grid Grid.Row="2">
+            <ScrollView>
+                <VerticalStackLayout Padding="0,18,0,0" Spacing="22">
+                    <VerticalStackLayout x:Name="ServicesSection" Spacing="8">
+                        <Label Text="Services" FontSize="16" FontAttributes="Bold" TextColor="#111827" />
+                        <VerticalStackLayout x:Name="ServicesList" Spacing="6" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout x:Name="PrestationsSection" Spacing="9">
+                        <Label Text="Prestations" FontSize="16" FontAttributes="Bold" TextColor="#111827" />
+                        <VerticalStackLayout x:Name="PrestationsList" Spacing="8" />
+                    </VerticalStackLayout>
+                    <Button x:Name="ShowAllButton" HeightRequest="48" Text="Voir tous les résultats (0)"
+                            FontSize="13" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" BackgroundColor="White"
+                            BorderColor="#E3E7EF" BorderWidth="1" CornerRadius="11" Clicked="OnShowAllClicked" />
+                    <Label x:Name="EmptyLabel" Text="Aucun résultat. Essayez un autre mot." FontSize="13"
+                           TextColor="#687386" HorizontalTextAlignment="Center" Margin="0,30,0,0" IsVisible="False" />
+                </VerticalStackLayout>
+            </ScrollView>
+            <ActivityIndicator x:Name="LoadingIndicator" Color="{StaticResource WeleBlue}" IsVisible="False" IsRunning="False" />
+        </Grid>
+    </Grid>
+</ContentPage>

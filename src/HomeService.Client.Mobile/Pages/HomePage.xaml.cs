@@ -143,6 +143,11 @@ public partial class HomePage : ContentPage
         OnSearchClicked(sender, e);
     }
 
+    private async void OnSearchTapped(object sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(CatalogSearchPage));
+    }
+
     private async void OnNotificationsClicked(object sender, EventArgs e)
     {
         await DisplayAlert("Notifications", "Vos notifications apparaîtront ici.", "Fermer");

@@ -17,9 +17,12 @@
                     </Grid>
 
                     <Border HeightRequest="46" Stroke="#EDF0F4" BackgroundColor="#F7F8FA" StrokeShape="RoundRectangle 12" Padding="13,0">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSearchTapped" />
+                        </Border.GestureRecognizers>
                         <Grid ColumnDefinitions="22,*" ColumnSpacing="8">
                             <Image Source="app_search.png" HeightRequest="18" WidthRequest="18" />
-                            <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Que recherchez-vous aujourd'hui ?" FontSize="12" MinimumHeightRequest="0" HeightRequest="44" ReturnType="Search" Completed="OnSearchCompleted" />
+                            <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Que recherchez-vous aujourd'hui ?" FontSize="12" MinimumHeightRequest="0" HeightRequest="44" IsReadOnly="True" InputTransparent="True" />
                         </Grid>
                     </Border>
 
