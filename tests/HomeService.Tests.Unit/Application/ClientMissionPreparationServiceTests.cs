@@ -36,6 +36,15 @@ public sealed class ClientMissionPreparationServiceTests
             1,
             120,
             2));
+        db.MissionWorkflowSettings.Add(new MissionWorkflowSetting(
+            MissionWorkflowSettingsResolver.UrgentMissionsEnabled,
+            "Demandes urgentes",
+            "Autorise les demandes urgentes.",
+            "boolean",
+            1,
+            0,
+            1,
+            3));
         await db.SaveChangesAsync();
         var sut = new ClientMissionPreparationService(db);
 
@@ -52,8 +61,47 @@ public sealed class ClientMissionPreparationServiceTests
         Assert.Equal(5_000, result.Response.MaximumPriceAmount);
         Assert.Equal(4, result.Response.CompanyResponseMinutes);
         Assert.Equal(8, result.Response.CompanyAssignmentMinutes);
+        Assert.True(result.Response.IsUrgent);
+        Assert.True(result.Response.UrgentOptionEnabled);
         Assert.Equal("MobileMoney", result.Response.RecommendedPaymentMethod);
         Assert.All(result.Response.PaymentOptions, option => Assert.True(option.IsAvailable));
+    }
+
+    [Fact]
+    public async Task PrepareAsync_WhenUrgencyIsDisabled_KeepsInstantMissionNormal()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Plomberie", null, createdByCompanyId: null);
+        db.Services.Add(service);
+        db.MissionWorkflowSettings.Add(new MissionWorkflowSetting(
+            MissionWorkflowSettingsResolver.CompanyOfferResponseMinutes,
+            "Delai normal",
+            "Temps de reponse normal.",
+            "minutes",
+            12,
+            1,
+            120,
+            1));
+        db.MissionWorkflowSettings.Add(new MissionWorkflowSetting(
+            MissionWorkflowSettingsResolver.UrgentMissionsEnabled,
+            "Demandes urgentes",
+            "Autorise les demandes urgentes.",
+            "boolean",
+            0,
+            0,
+            1,
+            2));
+        await db.SaveChangesAsync();
+
+        var result = await new ClientMissionPreparationService(db).PrepareAsync(
+            new PrepareClientMissionRequest(service.Id, null, "Instant", IsUrgent: true),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Response);
+        Assert.False(result.Response.IsUrgent);
+        Assert.False(result.Response.UrgentOptionEnabled);
+        Assert.Equal(12, result.Response.CompanyResponseMinutes);
     }
 
     [Fact]

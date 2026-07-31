@@ -85,8 +85,8 @@ public partial class CreateRequestPage : ContentPage
         var result = await apiClient.PrepareMissionAsync(new PrepareClientMissionRequest(
             serviceId,
             prestationId,
-            ModePicker.SelectedIndex == 0 ? "Urgent" : "Scheduled",
-            IsUrgent: ModePicker.SelectedIndex == 0));
+            ResolveMissionMode(),
+            IsUrgent: IsUrgentRequested()));
 
         if (!result.IsSuccess || result.Response is null)
         {
@@ -109,6 +109,7 @@ public partial class CreateRequestPage : ContentPage
         }
 
         preparation = result.Response;
+        UrgentOptionPanel.IsVisible = preparation.UrgentOptionEnabled && ModePicker.SelectedIndex == 0;
         maxPhotoCount = Math.Max(0, preparation.MaxPhotoCount);
         TitleLabel.Text = preparation.DisplayName;
         PreparationTitleLabel.Text = preparation.DisplayName;
@@ -297,7 +298,7 @@ public partial class CreateRequestPage : ContentPage
             client.PhoneNumber,
             serviceId,
             prestationId,
-            ModePicker.SelectedIndex == 0 ? "Urgent" : "Scheduled",
+            ResolveMissionMode(),
             ResolvePaymentMethod(),
             ResolveScheduledFor(),
             90,
@@ -306,7 +307,7 @@ public partial class CreateRequestPage : ContentPage
             null,
             null,
             RequiresCompanyQuote: true,
-            IsUrgent: ModePicker.SelectedIndex == 0,
+            IsUrgent: IsUrgentRequested(),
             Photos: photoRequests);
 
         var result = await apiClient.CreateMissionAsync(request);
@@ -349,6 +350,11 @@ public partial class CreateRequestPage : ContentPage
     private void OnModeChanged(object sender, EventArgs e)
     {
         ScheduleGrid.IsVisible = ModePicker.SelectedIndex == 1;
+        UrgentOptionPanel.IsVisible = preparation?.UrgentOptionEnabled == true && ModePicker.SelectedIndex == 0;
+        if (ModePicker.SelectedIndex == 1)
+        {
+            UrgentCheckBox.IsChecked = false;
+        }
         ModeHintLabel.Text = ModePicker.SelectedIndex == 0
             ? "Intervention dès que possible"
             : "Choisissez la date et l'heure";
@@ -425,6 +431,18 @@ public partial class CreateRequestPage : ContentPage
         var date = ScheduleDatePicker.Date;
         var time = ScheduleTimePicker.Time;
         return new DateTimeOffset(date.Date.Add(time), TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.Now));
+    }
+
+    private string ResolveMissionMode()
+    {
+        return ModePicker.SelectedIndex == 1 ? "Scheduled" : "Instant";
+    }
+
+    private bool IsUrgentRequested()
+    {
+        return ModePicker.SelectedIndex == 0
+            && preparation?.UrgentOptionEnabled == true
+            && UrgentCheckBox.IsChecked;
     }
 
     private string ResolvePaymentMethod()

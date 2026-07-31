@@ -35,7 +35,13 @@ public sealed class ClientMissionPreparationService(IAppDbContext db)
             return ClientMissionPreparationResult.Invalid("La prestation choisie ne correspond pas au service.");
         }
 
-        var isUrgent = request.IsUrgent || string.Equals(request.Mode, "Instant", StringComparison.OrdinalIgnoreCase);
+        var urgentOptionEnabled = await MissionWorkflowSettingsResolver.ResolveFlagAsync(
+            db,
+            MissionWorkflowSettingsResolver.UrgentMissionsEnabled,
+            fallbackValue: false,
+            cancellationToken);
+        var isInstant = string.Equals(request.Mode, "Instant", StringComparison.OrdinalIgnoreCase);
+        var isUrgent = urgentOptionEnabled && isInstant && request.IsUrgent;
         var companyResponseWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
             db,
             isUrgent
@@ -75,6 +81,7 @@ public sealed class ClientMissionPreparationService(IAppDbContext db)
             EstimatedDurationMinutes: 90,
             Mode: string.IsNullOrWhiteSpace(request.Mode) ? "Instant" : request.Mode.Trim(),
             IsUrgent: isUrgent,
+            UrgentOptionEnabled: urgentOptionEnabled,
             CompanyResponseMinutes: (int)Math.Ceiling(companyResponseWindow.TotalMinutes),
             CompanyAssignmentMinutes: (int)Math.Ceiling(assignmentWindow.TotalMinutes),
             PaymentOptions:

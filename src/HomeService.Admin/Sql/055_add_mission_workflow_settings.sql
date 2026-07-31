@@ -42,7 +42,8 @@ VALUES
     ('4b41a1fd-6e27-4d0a-a824-8d5d91470004', 'scheduled_provider_acceptance_minutes', 'Acceptation rendez-vous', 'Temps donne au prestataire pour accepter une mission programmee ou un rendez-vous.', 'minutes', 30, 5, 240, 40, true, now(), now()),
     ('4b41a1fd-6e27-4d0a-a824-8d5d91470005', 'customer_quote_validity_minutes', 'Validite devis client', 'Temps pendant lequel le prix propose par l entreprise reste valable cote client.', 'minutes', 30, 5, 1440, 50, true, now(), now()),
     ('4b41a1fd-6e27-4d0a-a824-8d5d91470006', 'arrival_tolerance_meters', 'Tolerance arrivee GPS', 'Distance maximale acceptee entre le prestataire et le lieu client pour declarer l arrivee.', 'metres', 250, 25, 2000, 60, true, now(), now()),
-    ('4b41a1fd-6e27-4d0a-a824-8d5d91470007', 'mission_start_grace_minutes', 'Marge debut mission', 'Retard tolerable apres l heure prevue avant signalement dans le suivi operationnel.', 'minutes', 15, 0, 120, 70, true, now(), now())
+    ('4b41a1fd-6e27-4d0a-a824-8d5d91470007', 'mission_start_grace_minutes', 'Marge debut mission', 'Retard tolerable apres l heure prevue avant signalement dans le suivi operationnel.', 'minutes', 15, 0, 120, 70, true, now(), now()),
+    ('4b41a1fd-6e27-4d0a-a824-8d5d91470009', 'urgent_missions_enabled', 'Demandes urgentes', 'Autorise le client a demander une intervention urgente. Des frais supplementaires peuvent etre appliques.', 'boolean', 0, 0, 1, 80, true, now(), now())
 ON CONFLICT ("Key") DO UPDATE
 SET "Label" = EXCLUDED."Label",
     "Description" = EXCLUDED."Description",

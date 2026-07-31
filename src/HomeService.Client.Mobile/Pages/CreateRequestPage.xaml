@@ -106,7 +106,7 @@
                                 <Picker x:Name="ModePicker" Title="Choisir le délai" FontAttributes="Bold" SelectedIndexChanged="OnModeChanged">
                                     <Picker.Items>
                                         <x:String>Maintenant</x:String>
-                                        <x:String>Programmer</x:String>
+                                        <x:String>Sur rendez-vous</x:String>
                                     </Picker.Items>
                                 </Picker>
                                 <Label x:Name="ModeHintLabel" Text="Intervention dès que possible" FontSize="11" TextColor="#687386" />
@@ -116,6 +116,18 @@
                             <DatePicker x:Name="ScheduleDatePicker" />
                             <TimePicker Grid.Column="1" x:Name="ScheduleTimePicker" />
                         </Grid>
+
+                        <Border x:Name="UrgentOptionPanel" Stroke="#F2D5A7" BackgroundColor="#FFF9EF"
+                                StrokeShape="RoundRectangle 10" Padding="12" IsVisible="False">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <CheckBox x:Name="UrgentCheckBox" Color="{StaticResource WeleBlue}" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                    <Label Text="Intervention urgente" FontSize="12" FontAttributes="Bold" />
+                                    <Label Text="Des frais supplementaires peuvent etre appliques."
+                                           FontSize="10" TextColor="#687386" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
 
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Adresse de l'intervention" FontSize="13" FontAttributes="Bold" />

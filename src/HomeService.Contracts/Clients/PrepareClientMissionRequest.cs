@@ -26,6 +26,7 @@ public sealed record PrepareClientMissionResponse(
     int EstimatedDurationMinutes,
     string Mode,
     bool IsUrgent,
+    bool UrgentOptionEnabled,
     int CompanyResponseMinutes,
     int CompanyAssignmentMinutes,
     IReadOnlyList<ClientMissionPaymentOptionResponse> PaymentOptions,

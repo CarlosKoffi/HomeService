@@ -79,10 +79,21 @@
                     <p>@setting.Description</p>
                     <small>Valeur autorisee: @setting.MinimumValue a @setting.MaximumValue @setting.Unit</small>
                 </div>
-                <label>
-                    Valeur
-                    <input type="number" min="@setting.MinimumValue" max="@setting.MaximumValue" step="1" @bind="draft.Value" />
-                </label>
+                @if (string.Equals(setting.Unit, "boolean", StringComparison.OrdinalIgnoreCase))
+                {
+                    <label class="mission-settings-toggle">
+                        Autoriser
+                        <input type="checkbox" @bind="draft.Enabled" />
+                        <span>@(draft.Enabled ? "Active" : "Desactive")</span>
+                    </label>
+                }
+                else
+                {
+                    <label>
+                        Valeur
+                        <input type="number" min="@setting.MinimumValue" max="@setting.MaximumValue" step="1" @bind="draft.Value" />
+                    </label>
+                }
                 <div class="mission-settings-unit">
                     <span>Unite</span>
                     <strong>@setting.Unit</strong>
@@ -290,5 +301,11 @@
     private sealed class WorkflowSettingDraft
     {
         public int Value { get; set; }
+
+        public bool Enabled
+        {
+            get => Value == 1;
+            set => Value = value ? 1 : 0;
+        }
     }
 }

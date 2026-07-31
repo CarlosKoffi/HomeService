@@ -78,9 +78,18 @@ public sealed class ClientMissionRequestService(
         AddCustomerPhotos(mission, request);
         await db.SaveChangesAsync(cancellationToken);
 
+        var urgentOptionEnabled = await MissionWorkflowSettingsResolver.ResolveFlagAsync(
+            db,
+            MissionWorkflowSettingsResolver.UrgentMissionsEnabled,
+            fallbackValue: false,
+            cancellationToken);
+        var isUrgent = urgentOptionEnabled
+            && mode == MissionMode.Instant
+            && request.IsUrgent;
+
         var dispatchResult = await dispatchService.CreateInitialOffersAsync(
             mission.Id,
-            request.IsUrgent || mode == MissionMode.Instant,
+            isUrgent,
             cancellationToken);
 
         if (dispatchResult.IsSuccess && dispatchResult.Offers.Count > 0)
