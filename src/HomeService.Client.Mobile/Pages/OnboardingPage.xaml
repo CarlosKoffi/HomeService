@@ -12,9 +12,9 @@
             <SwipeGestureRecognizer Direction="Right" Swiped="OnSwiped" />
         </Grid.GestureRecognizers>
         <Grid
-            Padding="28,40,28,26"
+            Padding="28,34,28,24"
             RowDefinitions="Auto,Auto,*,Auto,Auto"
-            RowSpacing="18"
+            RowSpacing="14"
             HorizontalOptions="Center"
             MaximumWidthRequest="440">
             <Label
@@ -47,16 +47,13 @@
             <Grid
                 x:Name="IllustrationViewport"
                 Grid.Row="2"
-                HeightRequest="310"
-                IsClippedToBounds="True"
+                HeightRequest="320"
                 VerticalOptions="Center">
                 <Image
                     x:Name="IllustrationImage"
-                    WidthRequest="360"
-                    HeightRequest="800"
                     Aspect="AspectFit"
                     HorizontalOptions="Center"
-                    VerticalOptions="Start" />
+                    VerticalOptions="Center" />
             </Grid>
 
             <HorizontalStackLayout

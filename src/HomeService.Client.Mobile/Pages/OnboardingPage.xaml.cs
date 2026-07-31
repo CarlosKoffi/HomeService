@@ -12,25 +12,22 @@ public partial class OnboardingPage : ContentPage
             "Bienvenue\ndans Wélé 👋",
             "Tous vos services,\nen quelques clics",
             "Plomberie, électricité, ménage,\nbeauté, et bien plus encore.",
-            "client_onboarding_1.png",
-            -405,
-            280,
+            "client_onboarding_1_v2.png",
+            310,
             true),
         new(
             "Des professionnels\nvérifiés et notés",
             string.Empty,
             "Des experts de confiance,\névalués par nos clients\ncomme vous.",
-            "client_onboarding_2.png",
-            -292,
-            310,
+            "client_onboarding_2_v2.png",
+            330,
             false),
         new(
             "Suivi transparent\nen temps réel",
             string.Empty,
             "Suivez chaque étape de votre\ndemande jusqu’à la fin\nde l’intervention.",
-            "client_onboarding_3.png",
-            -282,
-            350,
+            "client_onboarding_3_v2.png",
+            340,
             false)
     ];
 
@@ -88,7 +85,6 @@ public partial class OnboardingPage : ContentPage
         LeadLabel.IsVisible = !string.IsNullOrWhiteSpace(slide.Lead);
         BodyLabel.Text = slide.Body;
         IllustrationImage.Source = slide.ImageSource;
-        IllustrationImage.TranslationY = slide.ImageOffsetY;
         IllustrationViewport.HeightRequest = slide.ViewportHeight;
         NextButton.Text = currentIndex == slides.Length - 1 ? "Commencer" : "Suivant";
 
@@ -102,7 +98,6 @@ public partial class OnboardingPage : ContentPage
         string Lead,
         string Body,
         string ImageSource,
-        double ImageOffsetY,
         double ViewportHeight,
         bool ShowBrand);
 }
