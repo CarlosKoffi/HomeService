@@ -36,6 +36,9 @@ public partial class MissionDetailPage : ContentPage
     private async Task LoadAsync()
     {
         ErrorLabel.IsVisible = false;
+        OverviewPanel.IsVisible = true;
+        DetailPanel.IsVisible = false;
+        ProviderDetailPanel.IsVisible = false;
         if (!Guid.TryParse(MissionId, out var missionId))
         {
             if (sessionStore.IsPreviewMode())
@@ -77,7 +80,12 @@ public partial class MissionDetailPage : ContentPage
         ChoosePaymentButton.IsVisible = mission.Actions.RequiresPaymentMethod;
         MessageLabel.Text = mission.Message;
         TrackingLabel.Text = BuildTrackingMessage(mission);
-        ProviderCard.IsVisible = mission.AssignedProvider is not null;
+        var providerHasAccepted = mission.AssignedProvider is not null
+            && (mission.ProviderAcceptedAt.HasValue
+                || mission.Status is "Accepted" or "OnTheWay" or "Started" or "Completed");
+        ProviderCard.IsVisible = providerHasAccepted;
+        WaitingLabel.IsVisible = !providerHasAccepted;
+        RoutePanel.IsVisible = providerHasAccepted && mission.Status == "OnTheWay";
         currentProviderPhoneNumber = null;
         if (mission.AssignedProvider is not null)
         {
@@ -91,12 +99,15 @@ public partial class MissionDetailPage : ContentPage
             ProviderEtaLabel.Text = mission.AssignedProvider.EstimatedArrivalMinutes.HasValue
                 ? $"{mission.AssignedProvider.EstimatedArrivalMinutes} min"
                 : "ETA à venir";
+            RouteEtaLabel.Text = mission.AssignedProvider.EstimatedArrivalMinutes.HasValue
+                ? $"Arrivee estimee dans {mission.AssignedProvider.EstimatedArrivalMinutes} min"
+                : "Arrivee estimee en cours de calcul";
             currentProviderPhoneNumber = mission.ContactDetailsReleased ? mission.AssignedProvider.PhoneNumber : null;
             CallButton.IsEnabled = !string.IsNullOrWhiteSpace(currentProviderPhoneNumber);
             CallButton.Opacity = CallButton.IsEnabled ? 1 : 0.55;
-            var providerPhotoUrl = apiClient.ToAbsoluteMediaUrl(mission.AssignedProvider.PhotoStoragePath);
-            ProviderPhoto.Source = providerPhotoUrl;
-            ProviderPhoto.IsVisible = !string.IsNullOrWhiteSpace(providerPhotoUrl);
+            ProviderPhoto.Source = await apiClient.DownloadMediaImageSourceAsync(mission.AssignedProvider.PhotoStoragePath);
+            ProviderPhoto.IsVisible = ProviderPhoto.Source is not null;
+            ProviderDetailLabel.Text = $"{mission.AssignedProvider.FullName}\n{ServiceLabel.Text}\n{AddressLabel.Text}\n{ProviderEtaLabel.Text}";
         }
 
         timeline.Clear();
@@ -142,10 +153,14 @@ public partial class MissionDetailPage : ContentPage
         TrackingLabel.Text = "Mohamed est affecté à votre demande. Vous pouvez le contacter si besoin.";
 
         ProviderCard.IsVisible = true;
+        WaitingLabel.IsVisible = false;
+        RoutePanel.IsVisible = true;
         ProviderLabel.Text = "Mohamed Kouyaté - 48 interventions";
         ProviderPhoneLabel.Text = "+225 07 12 34 56 78";
         ProviderRatingLabel.Text = "★ 4.9";
         ProviderEtaLabel.Text = "13 min";
+        RouteEtaLabel.Text = "Arrivee estimee dans 13 min";
+        ProviderDetailLabel.Text = "Mohamed Kouyate\nDeboucher un evier\nCocody, Riviera 3\nArrivee dans 13 min";
         currentProviderPhoneNumber = "+2250712345678";
         CallButton.IsEnabled = true;
         CallButton.Opacity = 1;
@@ -178,6 +193,17 @@ public partial class MissionDetailPage : ContentPage
     private async void OnBackClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("..");
+    }
+
+    private void OnShowDetailsClicked(object sender, EventArgs e)
+    {
+        OverviewPanel.IsVisible = false;
+        DetailPanel.IsVisible = true;
+    }
+
+    private void OnProviderTapped(object sender, TappedEventArgs e)
+    {
+        ProviderDetailPanel.IsVisible = !ProviderDetailPanel.IsVisible;
     }
 
     private async void OnConfirmClicked(object sender, EventArgs e)
@@ -452,17 +478,21 @@ public partial class MissionDetailPage : ContentPage
         }
     }
 
-    private sealed record TimelineRow(string Title, string? Subtitle, Color DotColor, Color TextColor, bool HasSubtitle)
+    private sealed record TimelineRow(string Title, string? Subtitle, string TimeLabel, Color DotColor, Color TextColor, bool HasSubtitle)
     {
         public static TimelineRow Done(string title, string? subtitle)
         {
-            return new TimelineRow(title, subtitle, Color.FromArgb("#2563EB"), Color.FromArgb("#111827"), !string.IsNullOrWhiteSpace(subtitle));
+            var time = ExtractTime(subtitle);
+            return new TimelineRow(title, subtitle, time, Color.FromArgb("#2563EB"), Color.FromArgb("#111827"), !string.IsNullOrWhiteSpace(subtitle));
         }
 
         public static TimelineRow Pending(string title, string? subtitle)
         {
-            return new TimelineRow(title, subtitle, Color.FromArgb("#CBD5E1"), Color.FromArgb("#6B7280"), !string.IsNullOrWhiteSpace(subtitle));
+            return new TimelineRow(title, subtitle, string.Empty, Color.FromArgb("#CBD5E1"), Color.FromArgb("#6B7280"), !string.IsNullOrWhiteSpace(subtitle));
         }
+
+        private static string ExtractTime(string? value)
+            => DateTimeOffset.TryParse(value, out var parsed) ? parsed.ToString("HH:mm") : string.Empty;
     }
 
 }

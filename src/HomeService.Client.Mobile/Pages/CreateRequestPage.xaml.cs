@@ -436,7 +436,7 @@ public partial class CreateRequestPage : ContentPage
 
         var date = ScheduleDatePicker.Date;
         var time = ScheduleTimePicker.Time;
-        return new DateTimeOffset(date.Date.Add(time), TimeZoneInfo.Local.GetUtcOffset(DateTimeOffset.Now));
+        return new DateTimeOffset(date.Date.Add(time), TimeZoneInfo.Local.GetUtcOffset(date.Date.Add(time))).ToUniversalTime();
     }
 
     private string ResolveMissionMode()
