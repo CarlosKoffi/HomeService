@@ -16,6 +16,7 @@ public partial class CreateRequestPage : ContentPage
     private ClientMeResponse? client;
     private PrepareClientMissionResponse? preparation;
     private int maxPhotoCount = 3;
+    private int currentStep = 1;
 
     public CreateRequestPage()
     {
@@ -238,6 +239,12 @@ public partial class CreateRequestPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
+        if (currentStep > 1)
+        {
+            ShowStep(currentStep - 1);
+            return;
+        }
+
         await Shell.Current.GoToAsync("..");
     }
 
@@ -259,6 +266,55 @@ public partial class CreateRequestPage : ContentPage
     private void OnModeChanged(object sender, EventArgs e)
     {
         ScheduleGrid.IsVisible = ModePicker.SelectedIndex == 1;
+        ModeHintLabel.Text = ModePicker.SelectedIndex == 0
+            ? "Intervention dès que possible"
+            : "Choisissez la date et l'heure";
+    }
+
+    private void OnDescriptionChanged(object sender, TextChangedEventArgs e)
+    {
+        DescriptionCountLabel.Text = $"{e.NewTextValue?.Length ?? 0}/250";
+    }
+
+    private void OnStepOneContinueClicked(object sender, EventArgs e)
+    {
+        ShowStep(2);
+    }
+
+    private void OnStepTwoContinueClicked(object sender, EventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(AddressEntry.Text))
+        {
+            StepTwoErrorLabel.Text = "Indiquez l'adresse de l'intervention.";
+            StepTwoErrorLabel.IsVisible = true;
+            return;
+        }
+
+        StepTwoErrorLabel.IsVisible = false;
+        SummaryServiceLabel.Text = TitleLabel.Text;
+        SummaryAddressLabel.Text = AddressEntry.Text.Trim();
+        SummaryScheduleLabel.Text = ModePicker.SelectedIndex == 0
+            ? "Maintenant"
+            : $"{ScheduleDatePicker.Date:dd/MM/yyyy} à {ScheduleTimePicker.Time:hh\\:mm}";
+        SummaryDescriptionLabel.Text = string.IsNullOrWhiteSpace(DescriptionEditor.Text)
+            ? "Aucune précision ajoutée."
+            : DescriptionEditor.Text.Trim();
+        ShowStep(3);
+    }
+
+    private void OnModifyServiceClicked(object sender, EventArgs e) => ShowStep(1);
+
+    private void OnModifyScheduleClicked(object sender, EventArgs e) => ShowStep(2);
+
+    private void ShowStep(int step)
+    {
+        currentStep = step;
+        StepOnePanel.IsVisible = step == 1;
+        StepTwoPanel.IsVisible = step == 2;
+        StepThreePanel.IsVisible = step == 3;
+        PageTitleLabel.Text = step == 3 ? string.Empty : "Nouvelle demande";
+        StepTwoErrorLabel.IsVisible = false;
+        ErrorLabel.IsVisible = false;
     }
 
     private DateTimeOffset? ResolveScheduledFor()

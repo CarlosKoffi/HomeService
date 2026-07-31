@@ -3,108 +3,209 @@
     x:Class="HomeService.Client.Mobile.Pages.CreateRequestPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    BackgroundColor="White"
     Title="Nouvelle demande">
-    <ScrollView>
-        <VerticalStackLayout Padding="22,22,22,28" Spacing="18">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                <Button Text="‹" WidthRequest="44" HeightRequest="44" Padding="0" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnBackClicked" />
-                <VerticalStackLayout Grid.Column="1" Spacing="3">
-                    <Label Text="Nouvelle demande" Style="{StaticResource ScreenTitleLabel}" />
-                    <Label x:Name="TitleLabel" Text="Service selectionne" Style="{StaticResource MutedLabel}" />
-                </VerticalStackLayout>
-            </Grid>
+    <Grid RowDefinitions="Auto,*" Padding="20,18,20,18">
+        <Grid ColumnDefinitions="40,*" HeightRequest="44">
+            <Button Text="‹" FontSize="28" WidthRequest="38" HeightRequest="38" Padding="0"
+                    BackgroundColor="Transparent" TextColor="#111827" Clicked="OnBackClicked" />
+            <Label x:Name="PageTitleLabel" Grid.Column="1" Text="Nouvelle demande" FontSize="17"
+                   FontAttributes="Bold" VerticalTextAlignment="Center" />
+        </Grid>
 
-            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                <Border BackgroundColor="{StaticResource WeleBlue}" StrokeShape="RoundRectangle 12" Padding="0" HeightRequest="5" />
-                <Border Grid.Column="1" BackgroundColor="#DBEAFE" StrokeShape="RoundRectangle 12" Padding="0" HeightRequest="5" />
-                <Border Grid.Column="2" BackgroundColor="#DBEAFE" StrokeShape="RoundRectangle 12" Padding="0" HeightRequest="5" />
-            </Grid>
-
-            <Border x:Name="PreparationCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="14" IsVisible="False">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Border BackgroundColor="#EFF6FF" Stroke="#DBEAFE" StrokeShape="RoundRectangle 16" HeightRequest="42" WidthRequest="42" Padding="8">
-                        <Image x:Name="PreparationIcon" Aspect="AspectFit" />
-                    </Border>
-                    <VerticalStackLayout Grid.Column="1" Spacing="4">
-                        <Label x:Name="PreparationTitleLabel" Style="{StaticResource CardTitleLabel}" />
-                        <Label x:Name="PreparationPriceLabel" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
-                        <Label x:Name="PreparationHintLabel" Style="{StaticResource MutedLabel}" />
-                    </VerticalStackLayout>
+        <Grid Grid.Row="1">
+            <VerticalStackLayout x:Name="StepOnePanel" Spacing="18">
+                <Grid ColumnDefinitions="*,*,*" Margin="34,2,34,4">
+                    <BoxView Grid.ColumnSpan="3" HeightRequest="2" Color="#E4E8F0" VerticalOptions="Center" />
+                    <Border Grid.Column="0" Style="{StaticResource StepActiveCircle}"><Label Text="1" Style="{StaticResource StepCircleText}" /></Border>
+                    <Border Grid.Column="1" Style="{StaticResource StepIdleCircle}"><Label Text="2" Style="{StaticResource StepIdleText}" /></Border>
+                    <Border Grid.Column="2" Style="{StaticResource StepIdleCircle}"><Label Text="3" Style="{StaticResource StepIdleText}" /></Border>
                 </Grid>
-            </Border>
 
-            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="16">
-                <VerticalStackLayout Spacing="14">
-                    <VerticalStackLayout Spacing="7">
-                        <Label Text="Decrivez votre besoin" FontSize="13" FontAttributes="Bold" />
-                        <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 14" Padding="12">
-                            <Editor x:Name="DescriptionEditor" Placeholder="Ex: l'eau coule sous l'evier depuis ce matin..." AutoSize="TextChanges" MinimumHeightRequest="96" />
+                <ScrollView>
+                    <VerticalStackLayout Spacing="18" Padding="0,6,0,76">
+                        <VerticalStackLayout Spacing="7">
+                            <Label Text="Prestation souhaitée" FontSize="13" FontAttributes="Bold" />
+                            <Border BackgroundColor="#F4F5F8" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="14">
+                                <VerticalStackLayout Spacing="3">
+                                    <Label x:Name="TitleLabel" Text="Service sélectionné" FontSize="13" FontAttributes="Bold" />
+                                    <Label Text="Non modifiable" FontSize="11" TextColor="#687386" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Border x:Name="PreparationCard" Stroke="#E7EAF0" BackgroundColor="White"
+                                StrokeShape="RoundRectangle 12" Padding="12" IsVisible="False">
+                            <Grid ColumnDefinitions="40,*" ColumnSpacing="10">
+                                <Image x:Name="PreparationIcon" HeightRequest="34" WidthRequest="34" Aspect="AspectFit" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label x:Name="PreparationTitleLabel" FontSize="12" FontAttributes="Bold" />
+                                    <Label x:Name="PreparationPriceLabel" FontSize="11" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                                    <Label x:Name="PreparationHintLabel" FontSize="10" TextColor="#687386" />
+                                </VerticalStackLayout>
+                            </Grid>
                         </Border>
+
+                        <VerticalStackLayout Spacing="7">
+                            <Label Text="Décrivez votre problème" FontSize="13" FontAttributes="Bold" />
+                            <Border Stroke="#DDE2EA" BackgroundColor="White" StrokeShape="RoundRectangle 10" Padding="12">
+                                <Editor x:Name="DescriptionEditor" Placeholder="Ex : l'eau ne s'écoule plus depuis ce matin..."
+                                        FontSize="12" AutoSize="TextChanges" MinimumHeightRequest="88"
+                                        MaxLength="250" TextChanged="OnDescriptionChanged" />
+                            </Border>
+                            <Label x:Name="DescriptionCountLabel" Text="0/250" FontSize="10" TextColor="#687386" HorizontalTextAlignment="End" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Photos (optionnel)" FontSize="13" FontAttributes="Bold" />
+                            <Label x:Name="PhotoHintLabel" Text="Ajoutez des photos pour faciliter l'évaluation." FontSize="10" TextColor="#687386" />
+                            <CollectionView x:Name="PhotosView" HeightRequest="78" ItemsLayout="HorizontalList" SelectionMode="None">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border HeightRequest="72" WidthRequest="72" Margin="0,0,8,0" Stroke="#DDE2EA"
+                                                StrokeShape="RoundRectangle 9" Padding="5">
+                                            <VerticalStackLayout VerticalOptions="Center" Spacing="2">
+                                                <Label Text="Photo" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                                <Label Text="{Binding Status}" FontSize="8" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                            <Button Text="+ Ajouter des photos" HeightRequest="46" BackgroundColor="#F4F7FF"
+                                    TextColor="{StaticResource WeleBlue}" BorderColor="#DCE6FF" BorderWidth="1"
+                                    CornerRadius="10" Clicked="OnAddPhotosClicked" />
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
+                </ScrollView>
+                <Button Text="Continuer" HeightRequest="50" VerticalOptions="End" Clicked="OnStepOneContinueClicked" />
+            </VerticalStackLayout>
 
-                    <VerticalStackLayout Spacing="7">
-                        <Label Text="Photos" FontSize="13" FontAttributes="Bold" />
-                        <Label x:Name="PhotoHintLabel" Text="Ajoutez jusqu'a 3 photos si cela aide a comprendre le besoin." Style="{StaticResource MutedLabel}" />
-                        <Button Text="+ Ajouter des photos" BackgroundColor="#EFF6FF" TextColor="{StaticResource WeleBlue}" BorderColor="#DBEAFE" BorderWidth="1" Clicked="OnAddPhotosClicked" />
-                    </VerticalStackLayout>
+            <VerticalStackLayout x:Name="StepTwoPanel" Spacing="18" IsVisible="False">
+                <Grid ColumnDefinitions="*,*,*" Margin="34,2,34,4">
+                    <BoxView Grid.ColumnSpan="3" HeightRequest="2" Color="#E4E8F0" VerticalOptions="Center" />
+                    <Border Grid.Column="0" Style="{StaticResource StepDoneCircle}"><Label Text="✓" Style="{StaticResource StepCircleText}" /></Border>
+                    <Border Grid.Column="1" Style="{StaticResource StepActiveCircle}"><Label Text="2" Style="{StaticResource StepCircleText}" /></Border>
+                    <Border Grid.Column="2" Style="{StaticResource StepIdleCircle}"><Label Text="3" Style="{StaticResource StepIdleText}" /></Border>
+                </Grid>
 
-                    <CollectionView x:Name="PhotosView" SelectionMode="None">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 14" Padding="10" Margin="0,0,0,6">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <VerticalStackLayout Spacing="2">
-                                            <Label Text="{Binding FileName}" FontAttributes="Bold" />
-                                            <Label Text="{Binding SizeLabel}" Style="{StaticResource MutedLabel}" />
-                                        </VerticalStackLayout>
-                                        <Label Grid.Column="1" Text="{Binding Status}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-            </Border>
-
-            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 20" Padding="16">
-                <VerticalStackLayout Spacing="14">
-                    <VerticalStackLayout Spacing="7">
-                        <Label Text="Adresse" FontSize="13" FontAttributes="Bold" />
-                        <Picker x:Name="AddressPicker" Title="Adresse sauvegardee" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
-                        <Border Stroke="{StaticResource Line}" BackgroundColor="#F8FAFC" StrokeShape="RoundRectangle 14" Padding="14,0">
-                            <Entry x:Name="AddressEntry" Placeholder="Cocody, Riviera 3" />
+                <ScrollView>
+                    <VerticalStackLayout Spacing="22" Padding="0,8,0,76">
+                        <Label Text="Date &amp; heure" FontSize="16" FontAttributes="Bold" />
+                        <Border BackgroundColor="#F4F5F8" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="14">
+                            <VerticalStackLayout Spacing="9">
+                                <Picker x:Name="ModePicker" Title="Choisir le délai" FontAttributes="Bold" SelectedIndexChanged="OnModeChanged">
+                                    <Picker.Items>
+                                        <x:String>Maintenant</x:String>
+                                        <x:String>Programmer</x:String>
+                                    </Picker.Items>
+                                </Picker>
+                                <Label x:Name="ModeHintLabel" Text="Intervention dès que possible" FontSize="11" TextColor="#687386" />
+                            </VerticalStackLayout>
                         </Border>
-                    </VerticalStackLayout>
+                        <Grid x:Name="ScheduleGrid" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
+                            <DatePicker x:Name="ScheduleDatePicker" />
+                            <TimePicker Grid.Column="1" x:Name="ScheduleTimePicker" />
+                        </Grid>
 
-                    <VerticalStackLayout Spacing="7">
-                        <Label Text="Date et heure" FontSize="13" FontAttributes="Bold" />
-                        <Picker x:Name="ModePicker" SelectedIndexChanged="OnModeChanged">
-                            <Picker.Items>
-                                <x:String>Maintenant</x:String>
-                                <x:String>Programmer</x:String>
-                            </Picker.Items>
-                        </Picker>
-                    </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Adresse de l'intervention" FontSize="13" FontAttributes="Bold" />
+                            <Picker x:Name="AddressPicker" Title="Adresse sauvegardée" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
+                            <Border Stroke="#DDE2EA" BackgroundColor="White" StrokeShape="RoundRectangle 10" Padding="13,0">
+                                <Entry x:Name="AddressEntry" Placeholder="Cocody, Riviera 3" FontSize="12" />
+                            </Border>
+                        </VerticalStackLayout>
 
-                    <Grid x:Name="ScheduleGrid" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
-                        <DatePicker x:Name="ScheduleDatePicker" />
-                        <TimePicker Grid.Column="1" x:Name="ScheduleTimePicker" />
-                    </Grid>
-
-                    <VerticalStackLayout Spacing="7">
-                        <Label Text="Paiement" FontSize="13" FontAttributes="Bold" />
-                        <Picker x:Name="PaymentPicker">
+                        <Picker x:Name="PaymentPicker" IsVisible="False">
                             <Picker.Items>
                                 <x:String>Mobile Money</x:String>
                                 <x:String>Carte bancaire</x:String>
                             </Picker.Items>
                         </Picker>
+                        <Label x:Name="StepTwoErrorLabel"
+                               TextColor="{StaticResource Danger}"
+                               FontSize="12"
+                               IsVisible="False" />
                     </VerticalStackLayout>
-                </VerticalStackLayout>
-            </Border>
+                </ScrollView>
+                <Button Text="Continuer" HeightRequest="50" VerticalOptions="End" Clicked="OnStepTwoContinueClicked" />
+            </VerticalStackLayout>
 
-            <Button Text="Envoyer la demande" Clicked="OnCreateClicked" />
-            <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
-        </VerticalStackLayout>
-    </ScrollView>
+            <VerticalStackLayout x:Name="StepThreePanel" Spacing="22" IsVisible="False">
+                <Label Text="Récapitulatif" FontSize="18" FontAttributes="Bold" />
+                <ScrollView>
+                    <VerticalStackLayout Spacing="22" Padding="0,4,0,82">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Service" FontSize="11" TextColor="#687386" />
+                                <Label x:Name="SummaryServiceLabel" FontSize="13" FontAttributes="Bold" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="Modifier" FontSize="11" TextColor="{StaticResource WeleBlue}"
+                                    BackgroundColor="Transparent" Clicked="OnModifyServiceClicked" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Adresse" FontSize="11" TextColor="#687386" />
+                                <Label x:Name="SummaryAddressLabel" FontSize="13" FontAttributes="Bold" MaxLines="3" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="Modifier" FontSize="11" TextColor="{StaticResource WeleBlue}"
+                                    BackgroundColor="Transparent" Clicked="OnModifyScheduleClicked" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Date &amp; heure" FontSize="11" TextColor="#687386" />
+                                <Label x:Name="SummaryScheduleLabel" FontSize="13" FontAttributes="Bold" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="1" Text="Modifier" FontSize="11" TextColor="{StaticResource WeleBlue}"
+                                    BackgroundColor="Transparent" Clicked="OnModifyScheduleClicked" />
+                        </Grid>
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Votre demande" FontSize="11" TextColor="#687386" />
+                            <Label x:Name="SummaryDescriptionLabel" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+                    </VerticalStackLayout>
+                </ScrollView>
+                <VerticalStackLayout Spacing="9" VerticalOptions="End">
+                    <Button Text="Envoyer la demande" HeightRequest="50" Clicked="OnCreateClicked" />
+                    <Label Text="Réponse en moyenne" FontSize="10" TextColor="#687386" HorizontalTextAlignment="Center" />
+                    <Label Text="14 à 30 min" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </Grid>
+    </Grid>
+
+    <ContentPage.Resources>
+        <Style x:Key="StepActiveCircle" TargetType="Border">
+            <Setter Property="HeightRequest" Value="22" />
+            <Setter Property="WidthRequest" Value="22" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BackgroundColor" Value="{StaticResource WeleBlue}" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 11" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+        </Style>
+        <Style x:Key="StepDoneCircle" TargetType="Border" BasedOn="{StaticResource StepActiveCircle}" />
+        <Style x:Key="StepIdleCircle" TargetType="Border">
+            <Setter Property="HeightRequest" Value="22" />
+            <Setter Property="WidthRequest" Value="22" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="BackgroundColor" Value="#F0F2F6" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 11" />
+            <Setter Property="HorizontalOptions" Value="Center" />
+        </Style>
+        <Style x:Key="StepCircleText" TargetType="Label">
+            <Setter Property="TextColor" Value="White" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="HorizontalTextAlignment" Value="Center" />
+            <Setter Property="VerticalTextAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="StepIdleText" TargetType="Label" BasedOn="{StaticResource StepCircleText}">
+            <Setter Property="TextColor" Value="#687386" />
+        </Style>
+    </ContentPage.Resources>
 </ContentPage>
