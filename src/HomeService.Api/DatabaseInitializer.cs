@@ -820,7 +820,48 @@ public static class DatabaseInitializer
             await db.SaveChangesAsync(cancellationToken);
         }
 
+        await EnsureSuperAdminRolePermissionsAsync(db, cancellationToken);
+
         await EnsureBootstrapSuperAdminAsync(db, configuration, cancellationToken);
+    }
+
+    private static async Task EnsureSuperAdminRolePermissionsAsync(
+        HomeServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var superAdminRole = await db.AdminRoles
+            .FirstOrDefaultAsync(role => role.Name == "Super admin", cancellationToken);
+        if (superAdminRole is null)
+        {
+            return;
+        }
+
+        var moduleIds = await db.AdminModules
+            .Select(module => module.Id)
+            .ToListAsync(cancellationToken);
+        var existingPermissions = await db.AdminRolePermissions
+            .Where(permission => permission.RoleId == superAdminRole.Id)
+            .Select(permission => new { permission.ModuleId, permission.Action })
+            .ToListAsync(cancellationToken);
+        var existingKeys = existingPermissions
+            .Select(permission => (permission.ModuleId, permission.Action))
+            .ToHashSet();
+
+        foreach (var moduleId in moduleIds)
+        {
+            foreach (var action in Enum.GetValues<AdminPermissionAction>())
+            {
+                if (existingKeys.Add((moduleId, action)))
+                {
+                    db.AdminRolePermissions.Add(new AdminRolePermission(superAdminRole.Id, moduleId, action));
+                }
+            }
+        }
+
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private static async Task EnsureBootstrapSuperAdminAsync(

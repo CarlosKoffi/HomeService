@@ -45,6 +45,7 @@
                     <div><dt>Nom</dt><dd>@client.LastName</dd></div>
                     <div><dt>Téléphone</dt><dd>@client.PhoneNumber</dd></div>
                     <div><dt>Email</dt><dd>@(client.Email ?? "Non renseigné")</dd></div>
+                    <div><dt>Pièce d'identité</dt><dd>@IdentityDocumentStatus</dd></div>
                     <div><dt>Inscrit le</dt><dd>@client.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</dd></div>
                 </dl>
             </section>
@@ -151,6 +152,11 @@
     [Parameter] public Guid ClientId { get; set; }
     private AdminClientDetailResponse? client;
     private string? error;
+    private string IdentityDocumentStatus => client?.Attachments.Any(document =>
+        document.AttachmentType.Contains("Identity", StringComparison.OrdinalIgnoreCase)
+        || document.AttachmentType.Contains("Identite", StringComparison.OrdinalIgnoreCase)) == true
+            ? "Document disponible ci-dessous"
+            : "Non fournie";
 
     protected override Task OnParametersSetAsync() => LoadAsync();
 
