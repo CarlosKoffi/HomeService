@@ -71,6 +71,8 @@ public partial class MissionDetailPage : ContentPage
         StatusLabel.Text = ResolveCustomerStatusLabel(mission);
         ServiceLabel.Text = mission.PrestationName is null ? mission.ServiceName : $"{mission.ServiceName} - {mission.PrestationName}";
         AddressLabel.Text = mission.ServiceAddress ?? "Adresse à confirmer";
+        DateCaptionLabel.Text = mission.ScheduledFor.HasValue ? "Date du rendez-vous" : "Demande envoyée le";
+        DateLabel.Text = (mission.ScheduledFor ?? mission.CreatedAt).ToLocalTime().ToString("dd/MM/yyyy 'à' HH:mm");
         PriceLabel.Text = mission.CompanyQuotedAmount.HasValue
             ? $"{mission.CompanyQuotedAmount:N0} {mission.Currency}"
             : $"À partir de {mission.StartingPriceAmount:N0} {mission.Currency}";
@@ -148,6 +150,8 @@ public partial class MissionDetailPage : ContentPage
         StatusLabel.Text = "En cours";
         ServiceLabel.Text = "Déboucher un évier";
         AddressLabel.Text = "Cocody, Riviera 3";
+        DateCaptionLabel.Text = "Date du rendez-vous";
+        DateLabel.Text = "Aujourd'hui à 14:30";
         PriceLabel.Text = "17 000 FCFA";
         PaymentLabel.Text = "Mobile Money - payé";
         MessageLabel.Text = "L'eau s'écoule sous l'évier depuis ce matin.";

@@ -18,11 +18,11 @@
                 </Grid>
 
                 <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="12">
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
-                        <Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
-                        <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnActiveClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
-                        <Button x:Name="PastButton" Grid.Column="2" Text="Passées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnPastClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
-                        <Button x:Name="CanceledButton" Grid.Column="3" Text="Annulées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCanceledClicked" MinimumHeightRequest="42" HeightRequest="42" FontSize="13" />
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="5">
+                        <Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
+                        <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnActiveClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
+                        <Button x:Name="PastButton" Grid.Column="2" Text="Passées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnPastClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
+                        <Button x:Name="CanceledButton" Grid.Column="3" Text="Annulées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCanceledClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
                     </Grid>
                 </Border>
 
@@ -30,23 +30,23 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,0,10">
-                                <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
-                                    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="54" WidthRequest="54">
+                                <Grid ColumnDefinitions="50,*,88" ColumnSpacing="10">
+                                    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="50" WidthRequest="50">
                                         <Grid>
                                             <Image Source="nav_requests.svg" Aspect="AspectFit" HeightRequest="24" WidthRequest="24" Opacity="0.45" />
-                                            <Image Source="{Binding IconSource}" Aspect="AspectFill" HeightRequest="54" WidthRequest="54" IsVisible="{Binding HasImage}" />
+                                            <Image Source="{Binding IconSource}" Aspect="AspectFill" HeightRequest="50" WidthRequest="50" IsVisible="{Binding HasImage}" />
                                         </Grid>
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
-                                        <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                        <Label Text="{Binding Schedule}" Style="{StaticResource MutedLabel}" />
-                                        <Label Text="{Binding Address}" FontSize="12" TextColor="{StaticResource MutedInk}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding Title}" FontSize="13" FontAttributes="Bold" LineBreakMode="WordWrap" MaxLines="2" />
+                                        <Label Text="{Binding Schedule}" FontSize="11" TextColor="{StaticResource MutedInk}" LineBreakMode="NoWrap" />
+                                        <Label Text="{Binding Address}" FontSize="11" TextColor="{StaticResource MutedInk}" LineBreakMode="WordWrap" MaxLines="2" />
                                     </VerticalStackLayout>
                                     <VerticalStackLayout Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center" Spacing="7">
-                                        <Border BackgroundColor="{Binding StatusBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="9,5">
-                                            <Label Text="{Binding StatusLabel}" FontSize="11" TextColor="{Binding StatusColor}" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                        <Border BackgroundColor="{Binding StatusBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="7,5">
+                                            <Label Text="{Binding StatusLabel}" FontSize="10" TextColor="{Binding StatusColor}" FontAttributes="Bold" HorizontalTextAlignment="Center" LineBreakMode="NoWrap" />
                                         </Border>
-                                        <Label Text="{Binding Amount}" FontSize="12" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="End" />
+                                        <Label Text="{Binding Amount}" FontSize="11" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="End" LineBreakMode="WordWrap" MaxLines="2" />
                                     </VerticalStackLayout>
                                 </Grid>
                             </Border>
