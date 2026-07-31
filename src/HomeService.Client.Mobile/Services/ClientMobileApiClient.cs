@@ -83,6 +83,29 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         };
     }
 
+    public async Task<ImageSource?> DownloadMediaImageSourceAsync(
+        string? url,
+        CancellationToken cancellationToken = default)
+    {
+        var absoluteUrl = ToAbsoluteMediaUrl(url);
+        if (absoluteUrl is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var bytes = await httpClient.GetByteArrayAsync(absoluteUrl, cancellationToken);
+            return bytes.Length == 0
+                ? null
+                : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
     public async Task<ApiCallResult<IReadOnlyList<ClientMissionListItemResponse>>> GetMissionsAsync(string? status = null, CancellationToken cancellationToken = default)
     {
         var path = string.IsNullOrWhiteSpace(status)

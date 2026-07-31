@@ -54,7 +54,7 @@ public partial class HomePage : ContentPage
 
         foreach (var service in result.Response.Where(item => item.IsActive))
         {
-            services.Add(ServiceItem.From(service, apiClient));
+            services.Add(await ServiceItem.FromAsync(service, apiClient));
         }
 
         foreach (var item in services.Where(item => item.DisplayCategory == "Home"))
@@ -78,8 +78,8 @@ public partial class HomePage : ContentPage
 
         foreach (var item in mostRequestedPrestations)
         {
-            var illustrationUrl = apiClient.ToRemoteImageSource(item.Prestation.IllustrationUrl);
-            var serviceIconUrl = apiClient.ToRemoteImageSource(item.Service.IconUrl);
+            var illustrationUrl = await apiClient.DownloadMediaImageSourceAsync(item.Prestation.IllustrationUrl);
+            var serviceIconUrl = await apiClient.DownloadMediaImageSourceAsync(item.Service.IconUrl);
             popularServices.Add(new PopularItem(
                 item.Service.Id,
                 item.Prestation.Id,
@@ -254,13 +254,13 @@ public partial class HomePage : ContentPage
         string Price,
         string DisplayCategory)
     {
-        public static ServiceItem From(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
+        public static async Task<ServiceItem> FromAsync(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
         {
             var price = response.PriceMinAmount.HasValue
                 ? $"À partir de {response.PriceMinAmount:N0} {response.Currency}"
                 : $"{response.NormalPriceAmount:N0} {response.Currency}";
 
-            var iconUrl = apiClient.ToRemoteImageSource(response.IconUrl);
+            var iconUrl = await apiClient.DownloadMediaImageSourceAsync(response.IconUrl);
             var fallback = ResolveIcon(response.IconName, response.Name);
             return new ServiceItem(
                 response.Id,

@@ -16,6 +16,7 @@ public sealed class ClientMissionPreparationServiceTests
         var service = new Service("Blanchisserie", "Linge", createdByCompanyId: null);
         service.UpdateMedia("/assets/services/blanchisserie.svg", null);
         var prestation = service.AddPrestation("Repassage", "Chemises et pantalons", 1, 3_000, 5_000, "XOF");
+        prestation.UpdateIllustration("/catalog/prestations/repassage.jpg");
         db.Services.Add(service);
         db.MissionWorkflowSettings.Add(new MissionWorkflowSetting(
             MissionWorkflowSettingsResolver.UrgentCompanyOfferResponseMinutes,
@@ -46,6 +47,7 @@ public sealed class ClientMissionPreparationServiceTests
         Assert.NotNull(result.Response);
         Assert.Equal("Blanchisserie - Repassage", result.Response.DisplayName);
         Assert.Equal("/assets/services/blanchisserie.svg", result.Response.IconUrl);
+        Assert.Equal("/catalog/prestations/repassage.jpg", result.Response.ImageUrl);
         Assert.Equal(3_000, result.Response.StartingPriceAmount);
         Assert.Equal(5_000, result.Response.MaximumPriceAmount);
         Assert.Equal(4, result.Response.CompanyResponseMinutes);

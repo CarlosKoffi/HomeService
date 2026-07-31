@@ -15,6 +15,7 @@ public partial class CreateRequestPage : ContentPage
     private readonly List<ClientAddressResponse> addresses = [];
     private ClientMeResponse? client;
     private PrepareClientMissionResponse? preparation;
+    private bool isPreparationLoading;
     private int maxPhotoCount = 3;
     private int currentStep = 1;
 
@@ -78,6 +79,9 @@ public partial class CreateRequestPage : ContentPage
             ? parsedPrestationId
             : (Guid?)null;
 
+        isPreparationLoading = true;
+        StepOneErrorLabel.IsVisible = false;
+        StepOneContinueButton.IsEnabled = false;
         var result = await apiClient.PrepareMissionAsync(new PrepareClientMissionRequest(
             serviceId,
             prestationId,
@@ -96,6 +100,11 @@ public partial class CreateRequestPage : ContentPage
                 PhotoHintLabel.Text = "Photos recommandées si elles aident à comprendre le besoin. Maximum 3.";
             }
 
+            StepOneErrorLabel.Text = result.ErrorMessage ?? "Impossible de charger cette prestation.";
+            StepOneErrorLabel.IsVisible = !sessionStore.IsPreviewMode();
+            isPreparationLoading = false;
+            StepOneContinueButton.IsEnabled = sessionStore.IsPreviewMode();
+
             return;
         }
 
@@ -103,9 +112,13 @@ public partial class CreateRequestPage : ContentPage
         maxPhotoCount = Math.Max(0, preparation.MaxPhotoCount);
         TitleLabel.Text = preparation.DisplayName;
         PreparationTitleLabel.Text = preparation.DisplayName;
+        PreparationDescriptionLabel.Text = string.IsNullOrWhiteSpace(preparation.Description)
+            ? "Décrivez votre besoin pour recevoir une proposition adaptée."
+            : preparation.Description;
         PreparationPriceLabel.Text = $"A partir de {preparation.StartingPriceAmount:N0} {preparation.Currency} - max {preparation.MaximumPriceAmount:N0} {preparation.Currency}";
         PreparationHintLabel.Text = preparation.Message;
-        PreparationIcon.Source = apiClient.ToAbsoluteMediaUrl(preparation.IconUrl);
+        PreparationIcon.Source = await apiClient.DownloadMediaImageSourceAsync(
+            preparation.ImageUrl ?? preparation.IconUrl);
         PreparationCard.IsVisible = true;
         PhotoHintLabel.Text = preparation.PhotosRequired
             ? $"Photos demandees pour faciliter le devis. Maximum {maxPhotoCount}."
@@ -127,6 +140,9 @@ public partial class CreateRequestPage : ContentPage
                 .FirstOrDefault(item => item.option.Method == preparation.RecommendedPaymentMethod)?.index ?? 0;
             PaymentPicker.SelectedIndex = recommendedIndex;
         }
+
+        isPreparationLoading = false;
+        StepOneContinueButton.IsEnabled = true;
     }
 
     private async Task LoadAddressesAsync()
@@ -278,6 +294,21 @@ public partial class CreateRequestPage : ContentPage
 
     private void OnStepOneContinueClicked(object sender, EventArgs e)
     {
+        if (isPreparationLoading)
+        {
+            StepOneErrorLabel.Text = "Chargement de la prestation en cours...";
+            StepOneErrorLabel.IsVisible = true;
+            return;
+        }
+
+        if (preparation is null && !sessionStore.IsPreviewMode())
+        {
+            StepOneErrorLabel.Text = "La prestation n'a pas pu être chargée. Revenez en arrière puis réessayez.";
+            StepOneErrorLabel.IsVisible = true;
+            return;
+        }
+
+        StepOneErrorLabel.IsVisible = false;
         ShowStep(2);
     }
 

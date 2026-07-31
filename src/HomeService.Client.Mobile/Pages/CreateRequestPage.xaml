@@ -16,7 +16,7 @@
         </Grid>
 
         <Grid Grid.Row="1">
-            <VerticalStackLayout x:Name="StepOnePanel" Spacing="18">
+            <Grid x:Name="StepOnePanel" RowDefinitions="Auto,*,Auto" RowSpacing="14">
                 <Grid ColumnDefinitions="*,*,*" Margin="34,2,34,4">
                     <BoxView Grid.ColumnSpan="3" HeightRequest="2" Color="#E4E8F0" VerticalOptions="Center" />
                     <Border Grid.Column="0" Style="{StaticResource StepActiveCircle}"><Label Text="1" Style="{StaticResource StepCircleText}" /></Border>
@@ -24,7 +24,7 @@
                     <Border Grid.Column="2" Style="{StaticResource StepIdleCircle}"><Label Text="3" Style="{StaticResource StepIdleText}" /></Border>
                 </Grid>
 
-                <ScrollView>
+                <ScrollView Grid.Row="1">
                     <VerticalStackLayout Spacing="18" Padding="0,6,0,76">
                         <VerticalStackLayout Spacing="7">
                             <Label Text="Prestation souhaitée" FontSize="13" FontAttributes="Bold" />
@@ -37,13 +37,17 @@
                         </VerticalStackLayout>
 
                         <Border x:Name="PreparationCard" Stroke="#E7EAF0" BackgroundColor="White"
-                                StrokeShape="RoundRectangle 12" Padding="12" IsVisible="False">
-                            <Grid ColumnDefinitions="40,*" ColumnSpacing="10">
-                                <Image x:Name="PreparationIcon" HeightRequest="34" WidthRequest="34" Aspect="AspectFit" />
-                                <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                    <Label x:Name="PreparationTitleLabel" FontSize="12" FontAttributes="Bold" />
+                                StrokeShape="RoundRectangle 12" Padding="10" IsVisible="False">
+                            <Grid ColumnDefinitions="96,*" ColumnSpacing="12">
+                                <Border HeightRequest="96" WidthRequest="96" Padding="0" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 10" BackgroundColor="#F4F6FA">
+                                    <Image x:Name="PreparationIcon" Aspect="AspectFill" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                    <Label x:Name="PreparationTitleLabel" FontSize="13" FontAttributes="Bold" />
+                                    <Label x:Name="PreparationDescriptionLabel" FontSize="10" TextColor="#687386" MaxLines="3" />
                                     <Label x:Name="PreparationPriceLabel" FontSize="11" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
-                                    <Label x:Name="PreparationHintLabel" FontSize="10" TextColor="#687386" />
+                                    <Label x:Name="PreparationHintLabel" FontSize="9" TextColor="#687386" MaxLines="2" />
                                 </VerticalStackLayout>
                             </Grid>
                         </Border>
@@ -80,10 +84,13 @@
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </ScrollView>
-                <Button Text="Continuer" HeightRequest="50" VerticalOptions="End" Clicked="OnStepOneContinueClicked" />
-            </VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="2" Spacing="6">
+                    <Label x:Name="StepOneErrorLabel" TextColor="{StaticResource Danger}" FontSize="11" IsVisible="False" />
+                    <Button x:Name="StepOneContinueButton" Text="Continuer" HeightRequest="50" Clicked="OnStepOneContinueClicked" />
+                </VerticalStackLayout>
+            </Grid>
 
-            <VerticalStackLayout x:Name="StepTwoPanel" Spacing="18" IsVisible="False">
+            <Grid x:Name="StepTwoPanel" RowDefinitions="Auto,*,Auto" RowSpacing="14" IsVisible="False">
                 <Grid ColumnDefinitions="*,*,*" Margin="34,2,34,4">
                     <BoxView Grid.ColumnSpan="3" HeightRequest="2" Color="#E4E8F0" VerticalOptions="Center" />
                     <Border Grid.Column="0" Style="{StaticResource StepDoneCircle}"><Label Text="✓" Style="{StaticResource StepCircleText}" /></Border>
@@ -91,7 +98,7 @@
                     <Border Grid.Column="2" Style="{StaticResource StepIdleCircle}"><Label Text="3" Style="{StaticResource StepIdleText}" /></Border>
                 </Grid>
 
-                <ScrollView>
+                <ScrollView Grid.Row="1">
                     <VerticalStackLayout Spacing="22" Padding="0,8,0,76">
                         <Label Text="Date &amp; heure" FontSize="16" FontAttributes="Bold" />
                         <Border BackgroundColor="#F4F5F8" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="14">
@@ -130,12 +137,12 @@
                                IsVisible="False" />
                     </VerticalStackLayout>
                 </ScrollView>
-                <Button Text="Continuer" HeightRequest="50" VerticalOptions="End" Clicked="OnStepTwoContinueClicked" />
-            </VerticalStackLayout>
+                <Button Grid.Row="2" Text="Continuer" HeightRequest="50" Clicked="OnStepTwoContinueClicked" />
+            </Grid>
 
-            <VerticalStackLayout x:Name="StepThreePanel" Spacing="22" IsVisible="False">
+            <Grid x:Name="StepThreePanel" RowDefinitions="Auto,*,Auto" RowSpacing="18" IsVisible="False">
                 <Label Text="Récapitulatif" FontSize="18" FontAttributes="Bold" />
-                <ScrollView>
+                <ScrollView Grid.Row="1">
                     <VerticalStackLayout Spacing="22" Padding="0,4,0,82">
                         <Grid ColumnDefinitions="*,Auto">
                             <VerticalStackLayout Spacing="4">
@@ -168,12 +175,12 @@
                         <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
                     </VerticalStackLayout>
                 </ScrollView>
-                <VerticalStackLayout Spacing="9" VerticalOptions="End">
+                <VerticalStackLayout Grid.Row="2" Spacing="9">
                     <Button Text="Envoyer la demande" HeightRequest="50" Clicked="OnCreateClicked" />
                     <Label Text="Réponse en moyenne" FontSize="10" TextColor="#687386" HorizontalTextAlignment="Center" />
                     <Label Text="14 à 30 min" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
-            </VerticalStackLayout>
+            </Grid>
         </Grid>
     </Grid>
 

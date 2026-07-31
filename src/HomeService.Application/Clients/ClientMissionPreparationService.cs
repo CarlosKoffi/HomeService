@@ -64,7 +64,7 @@ public sealed class ClientMissionPreparationService(IAppDbContext db)
             prestation?.Description ?? service.Description,
             service.IconName,
             service.IconUrl,
-            service.ImageUrl,
+            prestation?.IllustrationUrl ?? service.ImageUrl,
             priceMinAmount,
             priceMaxAmount,
             currency,
