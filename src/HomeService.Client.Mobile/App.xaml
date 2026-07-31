@@ -12,11 +12,18 @@
         <Color x:Key="Warning">#F97316</Color>
         <Color x:Key="Danger">#DC2626</Color>
         <Color x:Key="Line">#E5E7EB</Color>
-        <Color x:Key="PageWash">#F8FAFC</Color>
+        <Color x:Key="PageWash">#FFFFFF</Color>
         <Color x:Key="CardWash">#FFFFFF</Color>
 
         <Style TargetType="ContentPage">
             <Setter Property="BackgroundColor" Value="{StaticResource PageWash}" />
+        </Style>
+        <Style TargetType="Shell">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="ForegroundColor" Value="{StaticResource Ink}" />
+            <Setter Property="TabBarBackgroundColor" Value="White" />
+            <Setter Property="TabBarForegroundColor" Value="{StaticResource WeleBlue}" />
+            <Setter Property="TabBarUnselectedColor" Value="{StaticResource MutedInk}" />
         </Style>
         <Style TargetType="Label">
             <Setter Property="FontFamily" Value="PlusJakartaSans" />
