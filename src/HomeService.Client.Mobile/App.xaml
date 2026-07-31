@@ -57,6 +57,35 @@
             <Setter Property="MinimumHeightRequest" Value="52" />
             <Setter Property="FontSize" Value="15" />
         </Style>
+        <Style TargetType="Editor">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource MutedInk}" />
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+        <Style TargetType="Picker">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="TitleColor" Value="{StaticResource MutedInk}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="MinimumHeightRequest" Value="52" />
+        </Style>
+        <Style TargetType="DatePicker">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinimumHeightRequest" Value="52" />
+        </Style>
+        <Style TargetType="TimePicker">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinimumHeightRequest" Value="52" />
+        </Style>
         <Style TargetType="Button">
             <Setter Property="FontFamily" Value="PlusJakartaSans" />
             <Setter Property="CornerRadius" Value="14" />
