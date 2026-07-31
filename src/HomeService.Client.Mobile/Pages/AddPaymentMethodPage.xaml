@@ -13,8 +13,10 @@
             <VerticalStackLayout Spacing="16">
                 <Label Text="Type de paiement" FontAttributes="Bold" />
                 <Picker x:Name="MethodPicker" Title="Choisir" SelectedIndexChanged="OnMethodChanged">
-                    <x:String>Mobile Money</x:String>
-                    <x:String>Carte bancaire</x:String>
+                    <Picker.Items>
+                        <x:String>Mobile Money</x:String>
+                        <x:String>Carte bancaire</x:String>
+                    </Picker.Items>
                 </Picker>
                 <Label Text="Nom" FontAttributes="Bold" />
                 <Entry x:Name="LabelEntry" Placeholder="Ex. Orange Money personnel" />
