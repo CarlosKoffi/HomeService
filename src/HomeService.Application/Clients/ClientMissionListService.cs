@@ -59,7 +59,8 @@ public sealed class ClientMissionListService(IAppDbContext db)
                 mission.ScheduledFor,
                 mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount,
                 mission.Currency,
-                ResolvePrimaryAction(mission.Status, mission.PaymentStatus, mission.QuoteStatus));
+                ResolvePrimaryAction(mission.Status, mission.PaymentStatus, mission.QuoteStatus),
+                mission.ServicePrestation?.IllustrationUrl ?? service?.IconUrl ?? service?.ImageUrl);
         }).ToList();
 
         return ClientMissionListResult.Ok(rows);

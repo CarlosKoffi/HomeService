@@ -46,7 +46,7 @@ public partial class RequestsPage : ContentPage
         {
             foreach (var item in result.Response)
             {
-                missions.Add(MissionRow.From(item));
+                missions.Add(MissionRow.From(item, apiClient.ToAbsoluteMediaUrl));
             }
         }
 
@@ -144,7 +144,7 @@ public partial class RequestsPage : ContentPage
         string Schedule,
         string StatusLabel,
         string Amount,
-        string Icon,
+        string IconSource,
         Color StatusColor,
         Color StatusBackground)
     {
@@ -154,7 +154,7 @@ public partial class RequestsPage : ContentPage
             return new MissionRow(missionId, title, address, schedule, label, amount, icon, color, background);
         }
 
-        public static MissionRow From(ClientMissionListItemResponse item)
+        public static MissionRow From(ClientMissionListItemResponse item, Func<string?, string?> resolveMediaUrl)
         {
             var title = $"{item.MissionNumber} - {item.PrestationName ?? item.ServiceName ?? "Service"}";
             var schedule = item.ScheduledFor.HasValue
@@ -162,7 +162,7 @@ public partial class RequestsPage : ContentPage
                 : item.CreatedAt.ToString("dd/MM HH:mm");
             var amount = item.Amount.HasValue ? $"{item.Amount:N0} {item.Currency}" : "Prix à venir";
             var (label, color, background) = ResolveStatus(item.Status);
-            var icon = ResolveIcon(item.ServiceName, item.PrestationName);
+            var icon = resolveMediaUrl(item.IconUrl) ?? ResolveIcon(item.ServiceName, item.PrestationName);
 
             return new MissionRow(item.MissionId, title, item.ServiceAddress ?? "Adresse à confirmer", schedule, label, amount, icon, color, background);
         }
@@ -190,13 +190,7 @@ public partial class RequestsPage : ContentPage
 
         private static string ResolveIcon(string? serviceName, string? prestationName)
         {
-            var normalized = $"{serviceName} {prestationName}".ToLowerInvariant();
-            if (normalized.Contains("electric")) return "\u26A1";
-            if (normalized.Contains("menage") || normalized.Contains("clean")) return "\uD83E\uDDF9";
-            if (normalized.Contains("jardin")) return "\uD83C\uDF3F";
-            if (normalized.Contains("auto")) return "\uD83D\uDE97";
-            if (normalized.Contains("blanch") || normalized.Contains("repass")) return "\uD83E\uDDFA";
-            return "\uD83C\uDFE0";
+            return "nav_requests.svg";
         }
     }
 }

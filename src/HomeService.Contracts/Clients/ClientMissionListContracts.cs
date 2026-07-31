@@ -13,4 +13,5 @@ public sealed record ClientMissionListItemResponse(
     DateTimeOffset? ScheduledFor,
     int? Amount,
     string Currency,
-    string PrimaryAction);
+    string PrimaryAction,
+    string? IconUrl = null);

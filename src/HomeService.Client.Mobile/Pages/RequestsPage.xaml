@@ -32,7 +32,7 @@
                             <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,0,10">
                                 <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
                                     <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="54" WidthRequest="54">
-                                        <Label Text="{Binding Icon}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="20" />
+                                        <Image Source="{Binding IconSource}" Aspect="AspectFill" HeightRequest="54" WidthRequest="54" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                         <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold" LineBreakMode="TailTruncation" />

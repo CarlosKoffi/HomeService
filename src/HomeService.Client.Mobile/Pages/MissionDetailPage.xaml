@@ -14,20 +14,21 @@
                 </VerticalStackLayout>
             </Grid>
 
-            <Border BackgroundColor="{StaticResource WeleBlueDark}" StrokeThickness="0" StrokeShape="RoundRectangle 26" Padding="18">
+            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="16">
                 <VerticalStackLayout Spacing="14">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                         <VerticalStackLayout Spacing="6">
-                            <Label Text="MISSION" FontSize="11" FontAttributes="Bold" TextColor="#94A3B8" CharacterSpacing="1.2" />
-                            <Label x:Name="ServiceLabel" FontSize="21" FontAttributes="Bold" TextColor="White" LineBreakMode="WordWrap" />
-                            <Label x:Name="AddressLabel" FontSize="13" TextColor="#CBD5E1" />
+                            <Label Text="MISSION" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource MutedInk}" CharacterSpacing="1.1" />
+                            <Label x:Name="ServiceLabel" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                            <Label x:Name="AddressLabel" FontSize="12" TextColor="{StaticResource MutedInk}" />
                         </VerticalStackLayout>
                         <Border Grid.Column="1" BackgroundColor="#1D4ED8" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="10,6" VerticalOptions="Start">
                             <Label x:Name="StatusLabel" FontAttributes="Bold" TextColor="White" FontSize="12" />
                         </Border>
                     </Grid>
 
-                    <Label x:Name="TrackingLabel" FontSize="14" TextColor="White" LineHeight="1.25" />
+                    <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                    <Label x:Name="TrackingLabel" FontSize="13" TextColor="{StaticResource Ink}" LineHeight="1.25" />
                 </VerticalStackLayout>
             </Border>
 
