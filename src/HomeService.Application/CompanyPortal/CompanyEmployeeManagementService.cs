@@ -113,7 +113,22 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             var allowedPrestationIds = activePrestationsByService.TryGetValue(providerService.ServiceId, out var ids)
                 ? ids
                 : new HashSet<Guid>();
-            providerService.SyncPrestations(requestedService.ServicePrestationIds.Where(allowedPrestationIds.Contains));
+            var requestedPrestationIds = requestedService.ServicePrestationIds
+                .Where(allowedPrestationIds.Contains)
+                .Distinct()
+                .ToHashSet();
+            var existingPrestationIds = providerService.Prestations
+                .Select(prestation => prestation.ServicePrestationId)
+                .ToHashSet();
+
+            providerService.SyncPrestations(requestedPrestationIds);
+
+            // The entities use client-generated Guid keys. When a new child is added to an
+            // already tracked private collection, EF can infer Modified instead of Added.
+            // Marking only genuinely new links explicitly prevents a phantom UPDATE.
+            db.ProviderServicePrestations.AddRange(providerService.Prestations.Where(prestation =>
+                requestedPrestationIds.Contains(prestation.ServicePrestationId) &&
+                !existingPrestationIds.Contains(prestation.ServicePrestationId)));
         }
 
         return CompanyEmployeeOperationResult.Ok(

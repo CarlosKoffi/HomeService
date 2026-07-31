@@ -22,12 +22,22 @@ public sealed class ProviderServicePrestation : AuditableEntity
 
     public void Activate()
     {
+        if (IsActive)
+        {
+            return;
+        }
+
         IsActive = true;
         Touch();
     }
 
     public void Deactivate()
     {
+        if (!IsActive)
+        {
+            return;
+        }
+
         IsActive = false;
         Touch();
     }

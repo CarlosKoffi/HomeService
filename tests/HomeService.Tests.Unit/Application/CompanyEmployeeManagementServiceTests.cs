@@ -87,6 +87,39 @@ public sealed class CompanyEmployeeManagementServiceTests
     }
 
     [Fact]
+    public async Task UpdateServicesAsync_IsIdempotentWhenSameSelectionIsSavedTwice()
+    {
+        await using var db = CreateDbContext();
+        var companyId = Guid.NewGuid();
+        var provider = CreateProvider(companyId);
+        var service = new Service("Blanchisserie", null, null);
+        var prestation = service.AddPrestation("Repassage", null, 1, 2500, 4500, "XOF");
+        provider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 4, ProviderServicePriceTier.Normal)]);
+        db.Providers.Add(provider);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var request = new UpdateCompanyEmployeeServicesRequest([
+            new UpsertCompanyEmployeeServiceRequest(
+                service.Id,
+                nameof(ExperienceLevel.Confirmed),
+                4,
+                nameof(ProviderServicePriceTier.Normal),
+                [prestation.Id])
+        ]);
+        var management = new CompanyEmployeeManagementService(db);
+
+        var first = await management.UpdateServicesAsync(companyId, provider.Id, request, CancellationToken.None);
+        await db.SaveChangesAsync();
+        var second = await management.UpdateServicesAsync(companyId, provider.Id, request, CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        Assert.Equal(CompanyEmployeeOperationStatus.Ok, first.Status);
+        Assert.Equal(CompanyEmployeeOperationStatus.Ok, second.Status);
+        Assert.Single(await db.ProviderServicePrestations.Where(item => item.IsActive).ToListAsync());
+    }
+
+    [Fact]
     public async Task ReplaceDocumentAsync_AddsNewDocumentVersionWithoutRemovingPreviousFile()
     {
         await using var db = CreateDbContext();

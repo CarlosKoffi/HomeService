@@ -42,12 +42,25 @@ public sealed class ProviderService : AuditableEntity
 
     public void Deactivate()
     {
+        if (!IsActive)
+        {
+            return;
+        }
+
         IsActive = false;
         Touch();
     }
 
     public void UpdateCompanyExperience(ExperienceLevel experienceLevel, int yearsOfExperience, ProviderServicePriceTier priceTier)
     {
+        if (ExperienceLevel == experienceLevel &&
+            YearsOfExperience == yearsOfExperience &&
+            PriceTier == priceTier &&
+            IsActive)
+        {
+            return;
+        }
+
         ExperienceLevel = experienceLevel;
         YearsOfExperience = yearsOfExperience;
         PriceTier = priceTier;
@@ -81,6 +94,5 @@ public sealed class ProviderService : AuditableEntity
             }
         }
 
-        Touch();
     }
 }

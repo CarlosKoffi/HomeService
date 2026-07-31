@@ -854,6 +854,7 @@ else
     private DateTime? BirthDate { get; set; }
     private bool ShowForm { get; set; }
     private bool IsSaving { get; set; }
+    private readonly SemaphoreSlim ServiceSaveGate = new(1, 1);
     private string? Message { get; set; }
     private string? PhotoFileName { get; set; }
     private string? IdentityFileName { get; set; }
@@ -1951,46 +1952,53 @@ else
 
     private async Task<bool> PersistEditableServicesAsync(string successMessage)
     {
-        if (IsSaving)
+        if (!await ServiceSaveGate.WaitAsync(0))
         {
             return false;
         }
 
-        Message = null;
-        if (SelectedEmployee is null || Session is null || IsPreviewMode())
-        {
-            Message = IsPreviewMode() ? successMessage : Message;
-            return true;
-        }
-
-        IsSaving = true;
         try
         {
-            var servicesResult = await ApiClient.UpdateCompanyEmployeeServicesAsync(
-                Session.CompanyId,
-                SelectedEmployee.Id,
-                new UpdateCompanyEmployeeServicesRequest(EditableServices
-                    .Select(service => new UpsertCompanyEmployeeServiceRequest(
-                        service.ServiceId,
-                        service.ExperienceLevel,
-                        service.YearsOfExperience,
-                        service.PriceTier,
-                        service.ServicePrestationIds))
-                    .ToList()));
-
-            if (!servicesResult.IsSuccess)
+            Message = null;
+            if (SelectedEmployee is null || Session is null || IsPreviewMode())
             {
-                Message = servicesResult.ErrorMessage;
-                return false;
+                Message = IsPreviewMode() ? successMessage : Message;
+                return true;
             }
 
-            await RefreshSelectedEmployeeAsync();
-            Message = successMessage;
-            return true;
+            IsSaving = true;
+            try
+            {
+                var servicesResult = await ApiClient.UpdateCompanyEmployeeServicesAsync(
+                    Session.CompanyId,
+                    SelectedEmployee.Id,
+                    new UpdateCompanyEmployeeServicesRequest(EditableServices
+                        .Select(service => new UpsertCompanyEmployeeServiceRequest(
+                            service.ServiceId,
+                            service.ExperienceLevel,
+                            service.YearsOfExperience,
+                            service.PriceTier,
+                            service.ServicePrestationIds))
+                        .ToList()));
+
+                if (!servicesResult.IsSuccess)
+                {
+                    Message = servicesResult.ErrorMessage;
+                    return false;
+                }
+
+                await RefreshSelectedEmployeeAsync();
+                Message = successMessage;
+                return true;
+            }
+            finally
+            {
+                IsSaving = false;
+            }
         }
         finally
         {
-            IsSaving = false;
+            ServiceSaveGate.Release();
         }
     }
 
