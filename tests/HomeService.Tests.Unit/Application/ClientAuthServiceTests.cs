@@ -8,6 +8,23 @@ namespace HomeService.Tests.Unit.Application;
 public sealed class ClientAuthServiceTests
 {
     [Fact]
+    public async Task Register_returns_explicit_name_errors_when_last_name_is_missing()
+    {
+        await using var db = CreateDbContext();
+        var sut = new ClientAuthService(db);
+
+        var result = await sut.RegisterAsync(new RegisterClientRequest(
+            "Ajavon",
+            string.Empty,
+            "08544500564",
+            "bruce.carl@gmail.com",
+            "Carlos_198499"), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("Nom obligatoire.", result.Errors);
+    }
+
+    [Fact]
     public async Task RegisterAsync_CreatesCustomerAndSession()
     {
         await using var db = CreateDbContext();

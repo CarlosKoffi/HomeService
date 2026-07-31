@@ -67,6 +67,22 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return new Uri(httpClient.BaseAddress!, url.TrimStart('/')).ToString();
     }
 
+    public ImageSource? ToRemoteImageSource(string? url)
+    {
+        var absoluteUrl = ToAbsoluteMediaUrl(url);
+        if (absoluteUrl is null || !Uri.TryCreate(absoluteUrl, UriKind.Absolute, out var uri))
+        {
+            return null;
+        }
+
+        return new UriImageSource
+        {
+            Uri = uri,
+            CachingEnabled = true,
+            CacheValidity = TimeSpan.FromDays(1)
+        };
+    }
+
     public async Task<ApiCallResult<IReadOnlyList<ClientMissionListItemResponse>>> GetMissionsAsync(string? status = null, CancellationToken cancellationToken = default)
     {
         var path = string.IsNullOrWhiteSpace(status)
@@ -272,6 +288,21 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         try
         {
             using var document = JsonDocument.Parse(rawMessage);
+            if (document.RootElement.TryGetProperty("errors", out var errors)
+                && errors.ValueKind == JsonValueKind.Array)
+            {
+                var messages = errors
+                    .EnumerateArray()
+                    .Select(error => error.GetString())
+                    .Where(error => !string.IsNullOrWhiteSpace(error))
+                    .ToList();
+
+                if (messages.Count > 0)
+                {
+                    return Trim(string.Join(Environment.NewLine, messages));
+                }
+            }
+
             if (document.RootElement.TryGetProperty("message", out var message))
             {
                 return Trim(message.GetString());

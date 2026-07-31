@@ -19,6 +19,7 @@ public partial class RegisterPage : ContentPage
 
     private async void OnRegisterClicked(object sender, EventArgs e)
     {
+        ResetValidation();
         ErrorLabel.IsVisible = false;
         if (!TermsCheckBox.IsChecked)
         {
@@ -29,6 +30,13 @@ public partial class RegisterPage : ContentPage
         var nameParts = (FullNameEntry.Text ?? string.Empty)
             .Trim()
             .Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        if (nameParts.Length < 2)
+        {
+            FullNameBorder.Stroke = Colors.Red;
+            ShowError("Saisissez votre prenom et votre nom.");
+            return;
+        }
+
         var firstName = nameParts.ElementAtOrDefault(0) ?? string.Empty;
         var lastName = nameParts.ElementAtOrDefault(1) ?? string.Empty;
 
@@ -42,12 +50,20 @@ public partial class RegisterPage : ContentPage
         var result = await apiClient.RegisterAsync(request);
         if (!result.IsSuccess || result.Response is null)
         {
+            HighlightInvalidField(result.ErrorMessage);
             ShowError(result.ErrorMessage);
             return;
         }
 
         await sessionStore.SaveAsync(result.Response);
-        await deviceRegistrationService.RegisterCurrentDeviceAsync();
+        try
+        {
+            await deviceRegistrationService.RegisterCurrentDeviceAsync();
+        }
+        catch
+        {
+            // Push registration must never prevent a successful account creation.
+        }
         await Shell.Current.GoToAsync("//home");
     }
 
@@ -60,5 +76,43 @@ public partial class RegisterPage : ContentPage
     {
         ErrorLabel.Text = message ?? "Creation impossible.";
         ErrorLabel.IsVisible = true;
+    }
+
+    private void ResetValidation()
+    {
+        var defaultStroke = Color.FromArgb("#DCE1E8");
+        FullNameBorder.Stroke = defaultStroke;
+        PhoneBorder.Stroke = defaultStroke;
+        EmailBorder.Stroke = defaultStroke;
+        PasswordBorder.Stroke = defaultStroke;
+    }
+
+    private void HighlightInvalidField(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        var normalized = message.ToLowerInvariant();
+        if (normalized.Contains("prenom") || normalized.Contains("nom "))
+        {
+            FullNameBorder.Stroke = Colors.Red;
+        }
+
+        if (normalized.Contains("numero") || normalized.Contains("telephone"))
+        {
+            PhoneBorder.Stroke = Colors.Red;
+        }
+
+        if (normalized.Contains("email"))
+        {
+            EmailBorder.Stroke = Colors.Red;
+        }
+
+        if (normalized.Contains("mot de passe"))
+        {
+            PasswordBorder.Stroke = Colors.Red;
+        }
     }
 }

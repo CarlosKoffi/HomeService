@@ -7,6 +7,10 @@
     BackgroundColor="White"
     Title="Présentation">
     <Grid>
+        <Grid.GestureRecognizers>
+            <SwipeGestureRecognizer Direction="Left" Swiped="OnSwiped" />
+            <SwipeGestureRecognizer Direction="Right" Swiped="OnSwiped" />
+        </Grid.GestureRecognizers>
         <Grid
             Padding="28,40,28,26"
             RowDefinitions="Auto,Auto,*,Auto,Auto"
@@ -48,8 +52,8 @@
                 VerticalOptions="Center">
                 <Image
                     x:Name="IllustrationImage"
-                    WidthRequest="390"
-                    HeightRequest="850"
+                    WidthRequest="360"
+                    HeightRequest="800"
                     Aspect="AspectFit"
                     HorizontalOptions="Center"
                     VerticalOptions="Start" />

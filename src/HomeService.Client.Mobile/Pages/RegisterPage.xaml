@@ -21,28 +21,28 @@
             <VerticalStackLayout Spacing="13">
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Nom complet" FontSize="10" TextColor="#374151" />
-                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                    <Border x:Name="FullNameBorder" HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
                         <Entry x:Name="FullNameEntry" Placeholder="Carlos Konan" FontSize="12" MinimumHeightRequest="0" HeightRequest="38" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Téléphone" FontSize="10" TextColor="#374151" />
-                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                    <Border x:Name="PhoneBorder" HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
                         <Entry x:Name="PhoneEntry" Placeholder="07 12 34 56 78" Keyboard="Telephone" FontSize="12" MinimumHeightRequest="0" HeightRequest="38" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Email (optionnel)" FontSize="10" TextColor="#374151" />
-                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                    <Border x:Name="EmailBorder" HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
                         <Entry x:Name="EmailEntry" Placeholder="carlos@gmail.com" Keyboard="Email" FontSize="12" MinimumHeightRequest="0" HeightRequest="38" />
                     </Border>
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Mot de passe" FontSize="10" TextColor="#374151" />
-                    <Border HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
+                    <Border x:Name="PasswordBorder" HeightRequest="40" Stroke="#DCE1E8" BackgroundColor="White" StrokeShape="RoundRectangle 6" Padding="11,0">
                         <Grid ColumnDefinitions="*,28">
                             <Entry
                                 x:Name="PasswordEntry"

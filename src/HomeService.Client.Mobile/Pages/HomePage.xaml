@@ -11,6 +11,28 @@
         <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
             <ScrollView>
                 <VerticalStackLayout Padding="20,24,20,30" Spacing="20">
+                    <Border
+                        x:Name="LoadErrorPanel"
+                        IsVisible="False"
+                        Stroke="#FECACA"
+                        BackgroundColor="#FEF2F2"
+                        StrokeShape="RoundRectangle 10"
+                        Padding="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Label
+                                x:Name="LoadErrorLabel"
+                                FontSize="11"
+                                TextColor="#991B1B"
+                                VerticalTextAlignment="Center" />
+                            <Button
+                                Grid.Column="1"
+                                Text="Reessayer"
+                                FontSize="10"
+                                Padding="12,5"
+                                MinimumHeightRequest="0"
+                                Clicked="OnRetryClicked" />
+                        </Grid>
+                    </Border>
                     <Grid ColumnDefinitions="*,40">
                         <Label x:Name="GreetingLabel" Text="Bonjour" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center" />
                         <ImageButton Grid.Column="1" Source="app_bell.png" HeightRequest="28" WidthRequest="28" Padding="3" BackgroundColor="Transparent" HorizontalOptions="End" Clicked="OnNotificationsClicked" />

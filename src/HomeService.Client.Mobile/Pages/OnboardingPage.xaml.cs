@@ -46,13 +46,37 @@ public partial class OnboardingPage : ContentPage
     {
         if (currentIndex < slides.Length - 1)
         {
-            currentIndex++;
-            RenderCurrentSlide();
+            await MoveToSlideAsync(currentIndex + 1);
             return;
         }
 
         Preferences.Default.Set(OnboardingSeenKey, true);
         await Shell.Current.GoToAsync("//welcome");
+    }
+
+    private async void OnSwiped(object sender, SwipedEventArgs e)
+    {
+        var targetIndex = e.Direction switch
+        {
+            SwipeDirection.Left => Math.Min(currentIndex + 1, slides.Length - 1),
+            SwipeDirection.Right => Math.Max(currentIndex - 1, 0),
+            _ => currentIndex
+        };
+
+        await MoveToSlideAsync(targetIndex);
+    }
+
+    private async Task MoveToSlideAsync(int targetIndex)
+    {
+        if (targetIndex == currentIndex)
+        {
+            return;
+        }
+
+        await IllustrationImage.FadeTo(0, 90);
+        currentIndex = targetIndex;
+        RenderCurrentSlide();
+        await IllustrationImage.FadeTo(1, 140);
     }
 
     private void RenderCurrentSlide()

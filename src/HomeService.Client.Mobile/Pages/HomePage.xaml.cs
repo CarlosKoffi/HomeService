@@ -29,11 +29,12 @@ public partial class HomePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await LoadAsync();
+        await LoadSafelyAsync();
     }
 
     private async Task LoadAsync()
     {
+        LoadErrorPanel.IsVisible = false;
         GreetingLabel.Text = sessionStore.HasSession()
             ? $"Bonjour {sessionStore.GetDisplayName()} 👋"
             : "Bonjour 👋";
@@ -41,6 +42,8 @@ public partial class HomePage : ContentPage
         var result = await apiClient.GetServicesAsync();
         if (!result.IsSuccess || result.Response is null)
         {
+            LoadErrorLabel.Text = result.ErrorMessage ?? "Impossible de charger les services.";
+            LoadErrorPanel.IsVisible = true;
             return;
         }
 
@@ -75,8 +78,8 @@ public partial class HomePage : ContentPage
 
         foreach (var item in mostRequestedPrestations)
         {
-            var illustrationUrl = apiClient.ToAbsoluteMediaUrl(item.Prestation.IllustrationUrl);
-            var serviceIconUrl = apiClient.ToAbsoluteMediaUrl(item.Service.IconUrl);
+            var illustrationUrl = apiClient.ToRemoteImageSource(item.Prestation.IllustrationUrl);
+            var serviceIconUrl = apiClient.ToRemoteImageSource(item.Service.IconUrl);
             popularServices.Add(new PopularItem(
                 item.Service.Id,
                 item.Prestation.Id,
@@ -84,9 +87,9 @@ public partial class HomePage : ContentPage
                 illustrationUrl,
                 serviceIconUrl,
                 string.IsNullOrWhiteSpace(item.Prestation.Name) ? "WE" : item.Prestation.Name[..Math.Min(2, item.Prestation.Name.Length)].ToUpperInvariant(),
-                !string.IsNullOrWhiteSpace(illustrationUrl),
-                string.IsNullOrWhiteSpace(illustrationUrl) && !string.IsNullOrWhiteSpace(serviceIconUrl),
-                string.IsNullOrWhiteSpace(illustrationUrl) && string.IsNullOrWhiteSpace(serviceIconUrl)));
+                illustrationUrl is not null,
+                illustrationUrl is null && serviceIconUrl is not null,
+                illustrationUrl is null && serviceIconUrl is null));
         }
 
         if (popularServices.Count == 0)
@@ -104,6 +107,24 @@ public partial class HomePage : ContentPage
                     service.HasIconUrl,
                     service.HasIconFallback));
             }
+        }
+    }
+
+    private async void OnRetryClicked(object sender, EventArgs e)
+    {
+        await LoadSafelyAsync();
+    }
+
+    private async Task LoadSafelyAsync()
+    {
+        try
+        {
+            await LoadAsync();
+        }
+        catch
+        {
+            LoadErrorLabel.Text = "La page n'a pas pu etre chargee. Verifiez votre connexion puis reessayez.";
+            LoadErrorPanel.IsVisible = true;
         }
     }
 
@@ -226,7 +247,7 @@ public partial class HomePage : ContentPage
     private sealed record ServiceItem(
         Guid ServiceId,
         string Name,
-        string? IconUrl,
+        ImageSource? IconUrl,
         string IconFallback,
         bool HasIconUrl,
         bool HasIconFallback,
@@ -239,15 +260,15 @@ public partial class HomePage : ContentPage
                 ? $"À partir de {response.PriceMinAmount:N0} {response.Currency}"
                 : $"{response.NormalPriceAmount:N0} {response.Currency}";
 
-            var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
+            var iconUrl = apiClient.ToRemoteImageSource(response.IconUrl);
             var fallback = ResolveIcon(response.IconName, response.Name);
             return new ServiceItem(
                 response.Id,
                 response.Name,
                 iconUrl,
                 fallback,
-                !string.IsNullOrWhiteSpace(iconUrl),
-                string.IsNullOrWhiteSpace(iconUrl),
+                iconUrl is not null,
+                iconUrl is null,
                 price,
                 response.DisplayCategory);
         }
@@ -270,7 +291,7 @@ public partial class HomePage : ContentPage
         string Name,
         string Service,
         string Price,
-        string? IconUrl,
+        ImageSource? IconUrl,
         string IconFallback,
         bool HasIconUrl,
         bool HasIconFallback)
@@ -287,7 +308,7 @@ public partial class HomePage : ContentPage
                 ? $"dès {response.PriceMinAmount:N0} {response.Currency}"
                 : "Prix à confirmer";
 
-            var iconUrl = apiClient.ToAbsoluteMediaUrl(response.IconUrl);
+            var iconUrl = apiClient.ToRemoteImageSource(response.IconUrl);
             var fallback = string.IsNullOrWhiteSpace(response.ServiceName)
                 ? "WE"
                 : response.ServiceName[..Math.Min(2, response.ServiceName.Length)].ToUpperInvariant();
@@ -300,8 +321,8 @@ public partial class HomePage : ContentPage
                 price,
                 iconUrl,
                 fallback,
-                !string.IsNullOrWhiteSpace(iconUrl),
-                string.IsNullOrWhiteSpace(iconUrl));
+                iconUrl is not null,
+                iconUrl is null);
         }
     }
 
@@ -309,8 +330,8 @@ public partial class HomePage : ContentPage
         Guid ServiceId,
         Guid? PrestationId,
         string Name,
-        string? IllustrationUrl,
-        string? ServiceIconUrl,
+        ImageSource? IllustrationUrl,
+        ImageSource? ServiceIconUrl,
         string Fallback,
         bool HasIllustration,
         bool HasServiceIcon,
