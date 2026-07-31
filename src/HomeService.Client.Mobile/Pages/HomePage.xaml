@@ -13,12 +13,12 @@
                 <VerticalStackLayout Padding="20,24,20,30" Spacing="22">
                     <Grid ColumnDefinitions="*,40">
                         <Label x:Name="GreetingLabel" Text="Bonjour" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                        <ImageButton Grid.Column="1" Source="app_bell.svg" HeightRequest="28" WidthRequest="28" Padding="3" BackgroundColor="Transparent" HorizontalOptions="End" Clicked="OnNotificationsClicked" />
+                        <ImageButton Grid.Column="1" Source="app_bell.png" HeightRequest="28" WidthRequest="28" Padding="3" BackgroundColor="Transparent" HorizontalOptions="End" Clicked="OnNotificationsClicked" />
                     </Grid>
 
                     <Border HeightRequest="46" Stroke="#EDF0F4" BackgroundColor="#F7F8FA" StrokeShape="RoundRectangle 12" Padding="13,0">
                         <Grid ColumnDefinitions="22,*" ColumnSpacing="8">
-                            <Image Source="app_search.svg" HeightRequest="18" WidthRequest="18" />
+                            <Image Source="app_search.png" HeightRequest="18" WidthRequest="18" />
                             <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Que recherchez-vous aujourd'hui ?" FontSize="12" MinimumHeightRequest="0" HeightRequest="44" ReturnType="Search" Completed="OnSearchCompleted" />
                         </Grid>
                     </Border>
@@ -116,23 +116,23 @@
 
         <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" BackgroundColor="White" Padding="10,8,10,5">
             <VerticalStackLayout Grid.Column="0" Spacing="3">
-                <Image Source="nav_home.svg" HeightRequest="23" WidthRequest="23" HorizontalOptions="Center" />
+                <Image Source="nav_home.png" HeightRequest="23" WidthRequest="23" HorizontalOptions="Center" />
                 <Label Text="Accueil" FontSize="10" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
             <VerticalStackLayout Grid.Column="1" Spacing="3">
                 <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnRequestsTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Image Source="nav_requests.svg" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
+                <Image Source="nav_requests.png" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
                 <Label Text="Demandes" FontSize="10" TextColor="#6B7280" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
             <Button Grid.Column="2" Text="+" FontSize="27" MinimumHeightRequest="0" HeightRequest="52" WidthRequest="52" Padding="0" CornerRadius="26" VerticalOptions="Start" TranslationY="-13" Clicked="OnCreateRequestClicked" />
             <VerticalStackLayout Grid.Column="3" Spacing="3">
                 <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnMessagesTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Image Source="nav_messages.svg" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
+                <Image Source="nav_messages.png" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
                 <Label Text="Messages" FontSize="10" TextColor="#6B7280" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
             <VerticalStackLayout Grid.Column="4" Spacing="3">
                 <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnProfileTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Image Source="nav_profile.svg" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
+                <Image Source="nav_profile.png" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
                 <Label Text="Profil" FontSize="10" TextColor="#6B7280" HorizontalTextAlignment="Center" />
             </VerticalStackLayout>
         </Grid>
