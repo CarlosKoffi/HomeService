@@ -776,35 +776,50 @@ public static class CompanyPortalEndpoints
             ILogger<CompanyEmployeeManagementService> logger,
             CancellationToken cancellationToken) =>
         {
-            var result = await employeeManagementService.UpdateServicesAsync(companyId, employeeId, request, cancellationToken);
-            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            const int maxAttempts = 3;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
             {
-                return Results.NotFound(new { message = result.Message });
+                var result = await employeeManagementService.UpdateServicesAsync(companyId, employeeId, request, cancellationToken);
+                if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+                {
+                    return Results.NotFound(new { message = result.Message });
+                }
+
+                AddCompanyEmployeeAudit(
+                    db,
+                    httpRequest,
+                    companyId,
+                    "CompanyEmployeeServicesUpdated",
+                    result.Provider!.Id,
+                    "Services prestataire mis a jour.",
+                    result.Before,
+                    result.After);
+                try
+                {
+                    await db.SaveChangesAsync(cancellationToken);
+                    return Results.NoContent();
+                }
+                catch (DbUpdateConcurrencyException exception) when (attempt < maxAttempts - 1 && db is DbContext context)
+                {
+                    logger.LogWarning(
+                        exception,
+                        "Concurrent company employee service update detected for company {CompanyId} and provider {ProviderId}. Retrying attempt {Attempt}.",
+                        companyId,
+                        employeeId,
+                        attempt + 2);
+                    context.ChangeTracker.Clear();
+                }
+                catch (DbUpdateException exception)
+                {
+                    logger.LogError(exception, "Company employee service update failed for company {CompanyId} and provider {ProviderId}.", companyId, employeeId);
+                    return Results.Problem(
+                        title: "Mise a jour des services impossible.",
+                        detail: "La modification n'a pas pu etre enregistree. Rechargez la fiche puis reessayez.",
+                        statusCode: StatusCodes.Status500InternalServerError);
+                }
             }
 
-            AddCompanyEmployeeAudit(
-                db,
-                httpRequest,
-                companyId,
-                "CompanyEmployeeServicesUpdated",
-                result.Provider!.Id,
-                "Services prestataire mis a jour.",
-                result.Before,
-                result.After);
-            try
-            {
-                await db.SaveChangesAsync(cancellationToken);
-            }
-            catch (DbUpdateException exception)
-            {
-                logger.LogError(exception, "Company employee service update failed for company {CompanyId} and provider {ProviderId}.", companyId, employeeId);
-                return Results.Problem(
-                    title: "Mise a jour des services impossible.",
-                    detail: exception.GetBaseException().Message,
-                    statusCode: StatusCodes.Status500InternalServerError);
-            }
-
-            return Results.NoContent();
+            return Results.Conflict(new { message = "La fiche a ete modifiee simultanement. Rechargez-la puis reessayez." });
         })
         .WithName("UpdateCompanyPortalEmployeeServices");
 

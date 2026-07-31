@@ -704,9 +704,9 @@ else
                                                     {
                                                         <button type="button"
                                                                 class="add-prestation-action"
-                                                                disabled="@string.IsNullOrWhiteSpace(service.PrestationSearchTerm)"
+                                                                disabled="@(IsSaving || string.IsNullOrWhiteSpace(service.PrestationSearchTerm))"
                                                                 @onclick="() => AddEditablePrestationAsync(service)">
-                                                            Ajouter
+                                                            @(IsSaving ? "Enregistrement..." : "Ajouter")
                                                         </button>
                                                     }
 
@@ -1921,6 +1921,11 @@ else
 
     private async Task AddEditablePrestationAsync(CompanyEmployeeServiceEditModel service)
     {
+        if (IsSaving)
+        {
+            return;
+        }
+
         var prestation = FindPrestation(service.ServiceId, service.PrestationSearchTerm);
         if (prestation is null)
         {
@@ -1946,6 +1951,11 @@ else
 
     private async Task<bool> PersistEditableServicesAsync(string successMessage)
     {
+        if (IsSaving)
+        {
+            return false;
+        }
+
         Message = null;
         if (SelectedEmployee is null || Session is null || IsPreviewMode())
         {
@@ -1953,27 +1963,35 @@ else
             return true;
         }
 
-        var servicesResult = await ApiClient.UpdateCompanyEmployeeServicesAsync(
-            Session.CompanyId,
-            SelectedEmployee.Id,
-            new UpdateCompanyEmployeeServicesRequest(EditableServices
-                .Select(service => new UpsertCompanyEmployeeServiceRequest(
-                    service.ServiceId,
-                    service.ExperienceLevel,
-                    service.YearsOfExperience,
-                    service.PriceTier,
-                    service.ServicePrestationIds))
-                .ToList()));
-
-        if (!servicesResult.IsSuccess)
+        IsSaving = true;
+        try
         {
-            Message = servicesResult.ErrorMessage;
-            return false;
-        }
+            var servicesResult = await ApiClient.UpdateCompanyEmployeeServicesAsync(
+                Session.CompanyId,
+                SelectedEmployee.Id,
+                new UpdateCompanyEmployeeServicesRequest(EditableServices
+                    .Select(service => new UpsertCompanyEmployeeServiceRequest(
+                        service.ServiceId,
+                        service.ExperienceLevel,
+                        service.YearsOfExperience,
+                        service.PriceTier,
+                        service.ServicePrestationIds))
+                    .ToList()));
 
-        await RefreshSelectedEmployeeAsync();
-        Message = successMessage;
-        return true;
+            if (!servicesResult.IsSuccess)
+            {
+                Message = servicesResult.ErrorMessage;
+                return false;
+            }
+
+            await RefreshSelectedEmployeeAsync();
+            Message = successMessage;
+            return true;
+        }
+        finally
+        {
+            IsSaving = false;
+        }
     }
 
     private async Task RemoveEditablePrestationAsync(CompanyEmployeeServiceEditModel service, Guid prestationId)
