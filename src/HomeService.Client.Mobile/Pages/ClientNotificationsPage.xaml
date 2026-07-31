@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage x:Class="HomeService.Client.Mobile.Pages.ClientNotificationsPage"
+ xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" Title="Notifications">
+ <Grid Padding="20,18,20,24" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"><Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Notifications" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" x:Name="UnreadLabel" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center"/></Grid>
+  <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8"><Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked"/><Button x:Name="UnreadButton" Grid.Column="1" Text="Non lues" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnUnreadClicked"/></Grid>
+  <Grid Grid.Row="2"><CollectionView x:Name="NotificationsView" SelectionMode="Single" SelectionChanged="OnSelected"><CollectionView.ItemTemplate><DataTemplate>
+   <Border Stroke="{StaticResource Line}" BackgroundColor="{Binding Background}" StrokeShape="RoundRectangle 16" Padding="14" Margin="0,0,0,10"><VerticalStackLayout Spacing="5"><Grid ColumnDefinitions="*,Auto"><Label Text="{Binding Title}" FontAttributes="Bold"/><Label Grid.Column="1" Text="{Binding ReadStatus}" TextColor="{StaticResource WeleBlue}" FontSize="11"/></Grid><Label Text="{Binding Body}" Style="{StaticResource MutedLabel}"/><Label Text="{Binding DateText}" FontSize="11" TextColor="#8A94A6"/></VerticalStackLayout></Border>
+  </DataTemplate></CollectionView.ItemTemplate></CollectionView><Label x:Name="EmptyState" Text="Aucune notification." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="False"/></Grid>
+ </Grid>
+</ContentPage>

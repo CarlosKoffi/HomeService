@@ -27,6 +27,11 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<ClientMeResponse>(HttpMethod.Get, "api/client/me", body: null, cancellationToken);
     }
 
+    public async Task<ApiCallResult<ClientMeResponse>> UpdateMeAsync(UpdateClientProfileRequest request, CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<ClientMeResponse>(HttpMethod.Put, "api/client/me", request, cancellationToken);
+    }
+
     public async Task<ApiCallResult<MobileDeviceTokenResponse>> RegisterDeviceTokenAsync(
         RegisterMobileDeviceTokenRequest request,
         CancellationToken cancellationToken = default)
@@ -262,6 +267,26 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
     public async Task<ApiCallResult<ClientAddressResponse>> CreateAddressAsync(UpsertClientAddressRequest request, CancellationToken cancellationToken = default)
     {
         return await SendWithSessionAsync<ClientAddressResponse>(HttpMethod.Post, "api/client/addresses", request, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<ClientAddressResponse>> UpdateAddressAsync(Guid addressId, UpsertClientAddressRequest request, CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<ClientAddressResponse>(HttpMethod.Put, $"api/client/addresses/{addressId:D}", request, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<object>> DeleteAddressAsync(Guid addressId, CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<object>(HttpMethod.Delete, $"api/client/addresses/{addressId:D}", body: null, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<ClientNotificationListResponse>> GetNotificationsAsync(bool unreadOnly = false, CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<ClientNotificationListResponse>(HttpMethod.Get, $"api/client/notifications?unreadOnly={unreadOnly.ToString().ToLowerInvariant()}", body: null, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<object>> MarkNotificationReadAsync(Guid notificationId, CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<object>(HttpMethod.Post, $"api/client/notifications/{notificationId:D}/mark-read", body: null, cancellationToken);
     }
 
     public async Task<ApiCallResult<IReadOnlyList<ClientPaymentMethodResponse>>> GetPaymentMethodsAsync(CancellationToken cancellationToken = default)

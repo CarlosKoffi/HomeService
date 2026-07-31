@@ -1,111 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage
-    x:Class="HomeService.Client.Mobile.Pages.ProfilePage"
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    Title="Profil">
-    <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="18">
-            <Label Text="Mon profil" Style="{StaticResource ScreenTitleLabel}" />
-
-            <Border x:Name="LoggedOutCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Connectez-vous" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Votre profil permet de suivre vos demandes et vos paiements." Style="{StaticResource MutedLabel}" />
-                    <Button Text="Connexion" Clicked="OnLoginClicked" />
-                    <Button Text="Creer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked" />
-                </VerticalStackLayout>
-            </Border>
-
-            <VerticalStackLayout x:Name="LoggedInSection" Spacing="14" IsVisible="False">
-                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18">
-                    <VerticalStackLayout Spacing="8">
-                        <Label x:Name="NameLabel" Style="{StaticResource CardTitleLabel}" />
-                        <Label x:Name="PhoneLabel" Style="{StaticResource MutedLabel}" />
-                        <Label x:Name="EmailLabel" Style="{StaticResource MutedLabel}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="0">
-                    <VerticalStackLayout Spacing="0">
-                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
-                            <Label Text="●" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="1" Text="Mes informations" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="2" Text="›" FontSize="22" />
-                        </Grid>
-                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
-                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
-                            <Label Text="⌂" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="1" Text="Mes adresses" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="2" Text="›" FontSize="22" />
-                        </Grid>
-                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
-                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
-                            <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnPaymentMethodsClicked" /></Grid.GestureRecognizers>
-                            <Label Text="▣" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="1" Text="Moyens de paiement" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="2" Text="›" FontSize="22" />
-                        </Grid>
-                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
-                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
-                            <Label Text="☰" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="1" Text="Mes demandes" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="2" Text="›" FontSize="22" />
-                        </Grid>
-                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
-                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
-                            <Label Text="★" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="1" Text="Mes avis" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="2" Text="›" FontSize="22" />
-                        </Grid>
-                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
-                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
-                            <Label Text="!" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="1" Text="Notifications" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="2" Text="›" FontSize="22" />
-                        </Grid>
-                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
-                        <Grid Padding="16,14" ColumnDefinitions="32,*,Auto">
-                            <Label Text="⚙" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="1" Text="Parametres" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                            <Label Grid.Column="2" Text="›" FontSize="22" />
-                        </Grid>
-                    </VerticalStackLayout>
-                </Border>
-
-                <Label Text="Adresses" Style="{StaticResource CardTitleLabel}" />
-                <CollectionView x:Name="AddressesView" SelectionMode="None">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="12" Margin="0,0,0,8">
-                                <VerticalStackLayout Spacing="4">
-                                    <Label Text="{Binding Label}" FontAttributes="Bold" />
-                                    <Label Text="{Binding AddressLine}" Style="{StaticResource MutedLabel}" />
-                                </VerticalStackLayout>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-
-                <Label Text="Moyens de paiement" Style="{StaticResource CardTitleLabel}" />
-                <CollectionView x:Name="PaymentsView" SelectionMode="None">
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="12" Margin="0,0,0,8">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <VerticalStackLayout Spacing="4">
-                                        <Label Text="{Binding Label}" FontAttributes="Bold" />
-                                        <Label Text="{Binding MaskedReference}" Style="{StaticResource MutedLabel}" />
-                                    </VerticalStackLayout>
-                                    <Label Grid.Column="1" Text="{Binding Method}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-
-                <Button Text="Se deconnecter" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnLogoutClicked" />
-            </VerticalStackLayout>
-        </VerticalStackLayout>
-    </ScrollView>
+<ContentPage x:Class="HomeService.Client.Mobile.Pages.ProfilePage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" Title="Profil">
+ <ScrollView><VerticalStackLayout Padding="20" Spacing="18">
+  <Label Text="Mon profil" Style="{StaticResource ScreenTitleLabel}"/>
+  <Border x:Name="LoggedOutCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18"><VerticalStackLayout Spacing="10"><Label Text="Connectez-vous" Style="{StaticResource CardTitleLabel}"/><Label Text="Votre profil permet de suivre vos demandes et vos paiements." Style="{StaticResource MutedLabel}"/><Button Text="Connexion" Clicked="OnLoginClicked"/><Button Text="Créer un compte" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnRegisterClicked"/></VerticalStackLayout></Border>
+  <VerticalStackLayout x:Name="LoggedInSection" Spacing="14" IsVisible="False">
+   <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 24" Padding="18"><Grid ColumnDefinitions="52,*" ColumnSpacing="12"><Border BackgroundColor="#EAF1FF" StrokeThickness="0" StrokeShape="RoundRectangle 26" HeightRequest="52" WidthRequest="52"><Label x:Name="InitialsLabel" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Border><VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label x:Name="NameLabel" Style="{StaticResource CardTitleLabel}"/><Label x:Name="PhoneLabel" Style="{StaticResource MutedLabel}"/></VerticalStackLayout></Grid></Border>
+   <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="0"><VerticalStackLayout Spacing="0">
+    <Grid Padding="16,14" ColumnDefinitions="32,*,Auto"><Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnInformationClicked"/></Grid.GestureRecognizers><Label Text="ID" FontSize="11" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"/><Label Grid.Column="1" Text="Mes informations" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" Text="›" FontSize="22"/></Grid><BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}"/>
+    <Grid Padding="16,14" ColumnDefinitions="32,*,Auto"><Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnAddressesClicked"/></Grid.GestureRecognizers><Label Text="⌖" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"/><Label Grid.Column="1" Text="Mes adresses" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" Text="›" FontSize="22"/></Grid><BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}"/>
+    <Grid Padding="16,14" ColumnDefinitions="32,*,Auto"><Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnPaymentMethodsClicked"/></Grid.GestureRecognizers><Label Text="CB" FontSize="11" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"/><Label Grid.Column="1" Text="Moyens de paiement" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" Text="›" FontSize="22"/></Grid><BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}"/>
+    <Grid Padding="16,14" ColumnDefinitions="32,*,Auto"><Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnRequestsClicked"/></Grid.GestureRecognizers><Label Text="☰" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"/><Label Grid.Column="1" Text="Mes demandes" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" Text="›" FontSize="22"/></Grid><BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}"/>
+    <Grid Padding="16,14" ColumnDefinitions="32,*,Auto"><Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnReviewsClicked"/></Grid.GestureRecognizers><Label Text="★" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"/><Label Grid.Column="1" Text="Mes avis" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" Text="›" FontSize="22"/></Grid><BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}"/>
+    <Grid Padding="16,14" ColumnDefinitions="32,*,Auto"><Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnNotificationsClicked"/></Grid.GestureRecognizers><Label Text="!" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="1" Text="Notifications" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" Text="›" FontSize="22"/></Grid><BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}"/>
+    <Grid Padding="16,14" ColumnDefinitions="32,*,Auto"><Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnSettingsClicked"/></Grid.GestureRecognizers><Label Text="⚙" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"/><Label Grid.Column="1" Text="Paramètres" FontAttributes="Bold" VerticalTextAlignment="Center"/><Label Grid.Column="2" Text="›" FontSize="22"/></Grid>
+   </VerticalStackLayout></Border>
+  </VerticalStackLayout>
+ </VerticalStackLayout></ScrollView>
 </ContentPage>

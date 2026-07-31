@@ -14,6 +14,11 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(CatalogSearchPage), typeof(CatalogSearchPage));
         Routing.RegisterRoute(nameof(PaymentMethodsPage), typeof(PaymentMethodsPage));
         Routing.RegisterRoute(nameof(AddPaymentMethodPage), typeof(AddPaymentMethodPage));
+        Routing.RegisterRoute(nameof(ProfileInformationPage), typeof(ProfileInformationPage));
+        Routing.RegisterRoute(nameof(AddressesPage), typeof(AddressesPage));
+        Routing.RegisterRoute(nameof(ReviewsPage), typeof(ReviewsPage));
+        Routing.RegisterRoute(nameof(ClientNotificationsPage), typeof(ClientNotificationsPage));
+        Routing.RegisterRoute(nameof(ClientSettingsPage), typeof(ClientSettingsPage));
 
         Dispatcher.Dispatch(async () =>
         {
