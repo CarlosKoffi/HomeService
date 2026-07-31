@@ -13,21 +13,21 @@ public partial class OnboardingPage : ContentPage
             "Tous vos services,\nen quelques clics",
             "Plomberie, électricité, ménage,\nbeauté, et bien plus encore.",
             "client_onboarding_1_v2.png",
-            310,
+            235,
             true),
         new(
             "Des professionnels\nvérifiés et notés",
             string.Empty,
             "Des experts de confiance,\névalués par nos clients\ncomme vous.",
             "client_onboarding_2_v2.png",
-            330,
+            265,
             false),
         new(
             "Suivi transparent\nen temps réel",
             string.Empty,
             "Suivez chaque étape de votre\ndemande jusqu’à la fin\nde l’intervention.",
             "client_onboarding_3_v2.png",
-            340,
+            270,
             false)
     ];
 

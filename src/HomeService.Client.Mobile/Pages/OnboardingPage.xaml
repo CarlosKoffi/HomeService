@@ -47,7 +47,9 @@
             <Grid
                 x:Name="IllustrationViewport"
                 Grid.Row="2"
-                HeightRequest="320"
+                Margin="0,6,0,0"
+                HeightRequest="240"
+                IsClippedToBounds="True"
                 VerticalOptions="Center">
                 <Image
                     x:Name="IllustrationImage"
