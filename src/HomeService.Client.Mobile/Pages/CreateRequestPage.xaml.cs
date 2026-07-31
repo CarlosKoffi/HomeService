@@ -156,10 +156,23 @@ public partial class CreateRequestPage : ContentPage
             AddressPicker.ItemsSource = addresses;
             var defaultIndex = addresses.FindIndex(item => item.IsDefault);
             AddressPicker.SelectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
+            AddressPicker.IsVisible = true;
+            AddressEmptyLabel.IsVisible = false;
+            NewAddressPanel.IsVisible = false;
         }
         else if (sessionStore.IsPreviewMode())
         {
-            AddressEntry.Text = "Cocody, Riviera 3";
+            addresses.Add(new ClientAddressResponse(Guid.Empty, "Maison", "Cocody, Riviera 3", null, null, true));
+            AddressPicker.ItemsSource = addresses;
+            AddressPicker.SelectedIndex = 0;
+        }
+        else
+        {
+            AddressPicker.IsVisible = false;
+            SelectedAddressBorder.IsVisible = false;
+            AddressEmptyLabel.IsVisible = true;
+            NewAddressPanel.IsVisible = true;
+            ShowNewAddressButton.IsVisible = false;
         }
     }
 
@@ -168,7 +181,61 @@ public partial class CreateRequestPage : ContentPage
         if (AddressPicker.SelectedItem is ClientAddressResponse address)
         {
             AddressEntry.Text = address.AddressLine;
+            SelectedAddressLabel.Text = address.Label;
+            SelectedAddressLineLabel.Text = address.AddressLine;
+            SelectedAddressBorder.IsVisible = true;
         }
+    }
+
+    private void OnShowNewAddressClicked(object sender, EventArgs e)
+    {
+        NewAddressPanel.IsVisible = !NewAddressPanel.IsVisible;
+        if (NewAddressPanel.IsVisible)
+        {
+            NewAddressLabelEntry.Focus();
+        }
+    }
+
+    private async void OnSaveAddressClicked(object sender, EventArgs e)
+    {
+        StepTwoErrorLabel.IsVisible = false;
+        var label = NewAddressLabelEntry.Text?.Trim();
+        var addressLine = AddressEntry.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(addressLine))
+        {
+            StepTwoErrorLabel.Text = "Renseignez un nom et l'adresse complète.";
+            StepTwoErrorLabel.IsVisible = true;
+            return;
+        }
+
+        if (sessionStore.IsPreviewMode())
+        {
+            addresses.Add(new ClientAddressResponse(Guid.NewGuid(), label, addressLine, null, null, addresses.Count == 0));
+        }
+        else
+        {
+            SaveAddressButton.IsEnabled = false;
+            var result = await apiClient.CreateAddressAsync(new UpsertClientAddressRequest(
+                label, addressLine, null, null, addresses.Count == 0));
+            SaveAddressButton.IsEnabled = true;
+            if (!result.IsSuccess || result.Response is null)
+            {
+                StepTwoErrorLabel.Text = result.ErrorMessage ?? "L'adresse n'a pas pu être enregistrée.";
+                StepTwoErrorLabel.IsVisible = true;
+                return;
+            }
+
+            addresses.Add(result.Response);
+        }
+
+        AddressPicker.ItemsSource = null;
+        AddressPicker.ItemsSource = addresses;
+        AddressPicker.IsVisible = true;
+        AddressPicker.SelectedIndex = addresses.Count - 1;
+        AddressEmptyLabel.IsVisible = false;
+        NewAddressPanel.IsVisible = false;
+        ShowNewAddressButton.IsVisible = true;
+        NewAddressLabelEntry.Text = string.Empty;
     }
 
     private async void OnCreateClicked(object sender, EventArgs e)

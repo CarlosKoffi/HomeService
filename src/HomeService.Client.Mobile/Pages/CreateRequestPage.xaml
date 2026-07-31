@@ -119,9 +119,30 @@
 
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Adresse de l'intervention" FontSize="13" FontAttributes="Bold" />
-                            <Picker x:Name="AddressPicker" Title="Adresse sauvegardée" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
-                            <Border Stroke="#DDE2EA" BackgroundColor="White" StrokeShape="RoundRectangle 10" Padding="13,0">
-                                <Entry x:Name="AddressEntry" Placeholder="Cocody, Riviera 3" FontSize="12" />
+                            <Label x:Name="AddressEmptyLabel"
+                                   Text="Aucune adresse enregistrée. Ajoutez votre adresse pour continuer."
+                                   FontSize="12" TextColor="#687386" IsVisible="False" />
+                            <Picker x:Name="AddressPicker" Title="Choisir une adresse enregistrée"
+                                    ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
+                            <Border x:Name="SelectedAddressBorder" Stroke="#DDE2EA" BackgroundColor="#F7F8FA"
+                                    StrokeShape="RoundRectangle 10" Padding="14" IsVisible="False">
+                                <VerticalStackLayout Spacing="3">
+                                    <Label x:Name="SelectedAddressLabel" FontSize="13" FontAttributes="Bold" />
+                                    <Label x:Name="SelectedAddressLineLabel" FontSize="12" TextColor="#687386" />
+                                </VerticalStackLayout>
+                            </Border>
+                            <Button x:Name="ShowNewAddressButton" Text="+ Ajouter une nouvelle adresse"
+                                    BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}"
+                                    HorizontalOptions="Start" Padding="0,8" Clicked="OnShowNewAddressClicked" />
+                            <Border x:Name="NewAddressPanel" Stroke="#DDE2EA" BackgroundColor="White"
+                                    StrokeShape="RoundRectangle 12" Padding="14" IsVisible="False">
+                                <VerticalStackLayout Spacing="10">
+                                    <Label Text="Nouvelle adresse" FontSize="13" FontAttributes="Bold" />
+                                    <Entry x:Name="NewAddressLabelEntry" Placeholder="Ex. Maison, Bureau" />
+                                    <Entry x:Name="AddressEntry" Placeholder="Ex. Cocody, Riviera 3" />
+                                    <Button x:Name="SaveAddressButton" Text="Enregistrer cette adresse"
+                                            HeightRequest="46" Clicked="OnSaveAddressClicked" />
+                                </VerticalStackLayout>
                             </Border>
                         </VerticalStackLayout>
 
