@@ -803,9 +803,20 @@ public static class DatabaseInitializer
             .Distinct()
             .ToArray();
         var prestations = await db.ServicePrestations
+            .AsNoTracking()
             .Where(prestation => normalizedPrestationNames.Contains(prestation.NormalizedName))
-            .Include(prestation => prestation.Options)
+            .Select(prestation => new { prestation.Id, prestation.NormalizedName })
             .ToListAsync(cancellationToken);
+
+        var prestationIds = prestations.Select(prestation => prestation.Id).ToArray();
+        var existingOptionKeys = await db.ServiceOptions
+            .AsNoTracking()
+            .Where(option => prestationIds.Contains(option.ServicePrestationId))
+            .Select(option => new { option.ServicePrestationId, option.NormalizedName })
+            .ToListAsync(cancellationToken);
+        var existingOptionKeySet = existingOptionKeys
+            .Select(option => $"{option.ServicePrestationId:N}:{option.NormalizedName}")
+            .ToHashSet(StringComparer.Ordinal);
 
         foreach (var seed in seeds)
         {
@@ -813,19 +824,21 @@ public static class DatabaseInitializer
             foreach (var prestation in prestations.Where(item => item.NormalizedName == prestationName))
             {
                 var normalizedOptionName = NormalizeSeedValue(seed.Name);
-                if (prestation.Options.Any(option => option.NormalizedName == normalizedOptionName))
+                var optionKey = $"{prestation.Id:N}:{normalizedOptionName}";
+                if (!existingOptionKeySet.Add(optionKey))
                 {
                     continue;
                 }
 
-                prestation.AddOption(
+                db.ServiceOptions.Add(new ServiceOption(
+                    prestation.Id,
                     seed.Name,
                     seed.Description,
                     seed.SortOrder,
                     seed.PriceMinAmount,
                     seed.PriceMaxAmount,
                     seed.IsFixedPrice,
-                    "XOF");
+                    "XOF"));
             }
         }
 
