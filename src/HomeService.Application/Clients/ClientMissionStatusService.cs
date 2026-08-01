@@ -194,7 +194,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             additionalQuotes,
             photos,
             BuildActions(mission),
-            BuildMessage(mission.Status, mission.QuoteStatus, mission.PaymentStatus));
+            BuildMessage(mission));
 
         return ClientMissionStatusResult.Ok(response);
     }
@@ -269,8 +269,12 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
         return canCancel ? "CancelMission" : null;
     }
 
-    private static string BuildMessage(MissionStatus status, MissionQuoteStatus quoteStatus, PaymentStatus paymentStatus)
+    private static string BuildMessage(Domain.Entities.Mission mission)
     {
+        var status = mission.Status;
+        var quoteStatus = mission.QuoteStatus;
+        var paymentStatus = mission.PaymentStatus;
+
         if (status == MissionStatus.Cancelled)
         {
             return "Votre demande est annulee.";
@@ -304,6 +308,11 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
         if (status == MissionStatus.Assigned)
         {
             return "Une entreprise prepare votre intervention.";
+        }
+
+        if (mission.CompanyId is not null && status is MissionStatus.Offered or MissionStatus.SearchingProvider)
+        {
+            return "Une entreprise analyse votre demande et prepare l'affectation d'un technicien.";
         }
 
         if (status is MissionStatus.Offered or MissionStatus.SearchingProvider)

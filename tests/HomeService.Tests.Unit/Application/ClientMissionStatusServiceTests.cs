@@ -58,6 +58,43 @@ public sealed class ClientMissionStatusServiceTests
     }
 
     [Fact]
+    public async Task GetAsync_WhenCompanyAcceptedOffer_ExplainsThatCompanyIsReviewingRequest()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Barbier", "Soins homme", createdByCompanyId: null);
+        var customer = new CustomerProfile("Aya", "Kone", "+2250700000000");
+        var company = new Company("Wele Services", "+2250701111111", "ops@wele.ci");
+        company.Approve();
+        var mission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            60,
+            description: "Taille de barbe",
+            requiresCompanyQuote: true);
+        mission.MarkCompanyOffersSent();
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Companies.Add(company);
+        db.Missions.Add(mission);
+        await db.SaveChangesAsync();
+
+        var result = await new ClientMissionStatusService(db)
+            .GetAsync(mission.Id, customer.PhoneNumber, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(company.Id, result.Response!.AssignedCompany!.CompanyId);
+        Assert.Null(result.Response.AssignedProvider);
+        Assert.Equal(
+            "Une entreprise analyse votre demande et prepare l'affectation d'un technicien.",
+            result.Response.Message);
+    }
+
+    [Fact]
     public async Task GetAsync_WhenAdditionalQuoteSubmitted_ReturnsPayableAdditionalQuote()
     {
         await using var db = CreateDbContext();

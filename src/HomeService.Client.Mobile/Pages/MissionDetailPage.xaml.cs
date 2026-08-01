@@ -368,6 +368,7 @@ public partial class MissionDetailPage : ContentPage
     {
         var status = mission.Status.ToLowerInvariant();
         var quoteSubmitted = mission.CompanyQuotedAt.HasValue || mission.QuoteStatus.Equals("Submitted", StringComparison.OrdinalIgnoreCase);
+        var companyReviewStarted = mission.AssignedCompany is not null;
         var providerAssigned = mission.AssignedProvider is not null;
         var confirmed = mission.CustomerConfirmedAt.HasValue || mission.PaymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase);
         var started = status is "started" or "ontheway" or "completed";
@@ -378,7 +379,9 @@ public partial class MissionDetailPage : ContentPage
             TimelineRow.Done("Demande envoyée", mission.CreatedAt.ToString("dd/MM HH:mm")),
             quoteSubmitted
                 ? TimelineRow.Done("Prix proposé", mission.CompanyQuotedAt?.ToString("dd/MM HH:mm") ?? "Devis disponible")
-                : TimelineRow.Pending("Analyse par l'entreprise", "Vous serez notifié dès qu'un prix est proposé."),
+                : companyReviewStarted
+                    ? TimelineRow.Done("Entreprise en cours d'analyse", mission.AssignedCompany!.Name)
+                    : TimelineRow.Pending("Recherche d'une entreprise", "Votre demande est proposée aux entreprises disponibles."),
             providerAssigned
                 ? TimelineRow.Done("Technicien attribué", mission.AssignedProvider!.FullName)
                 : TimelineRow.Pending("Technicien à attribuer", "L'entreprise prépare l'intervention."),
@@ -430,6 +433,11 @@ public partial class MissionDetailPage : ContentPage
             return "Un prix est disponible. Le paiement confirme la mission.";
         }
 
+        if (mission.AssignedCompany is not null)
+        {
+            return $"{mission.AssignedCompany.Name} analyse votre demande et prépare l'affectation d'un technicien.";
+        }
+
         return "Nous cherchons une entreprise disponible pour vous répondre rapidement.";
     }
 
@@ -456,6 +464,13 @@ public partial class MissionDetailPage : ContentPage
 
     private static string ResolveCustomerStatusLabel(ClientMissionStatusResponse mission)
     {
+        if (mission.AssignedCompany is not null
+            && mission.AssignedProvider is null
+            && mission.Status is "Requested" or "SearchingProvider" or "Offered")
+        {
+            return "Analyse par l'entreprise";
+        }
+
         return mission.Status switch
         {
             "Requested" or "SearchingProvider" => "Recherche d'une entreprise disponible",
