@@ -15,7 +15,7 @@
                         HeightRequest="44"
                         Padding="0"
                         BackgroundColor="White"
-                        TextColor="{StaticResource TextPrimary}"
+                        TextColor="{StaticResource Ink}"
                         BorderColor="{StaticResource Line}"
                         BorderWidth="1"
                         Clicked="OnBackClicked" />
@@ -42,7 +42,7 @@
                                 <VerticalStackLayout Spacing="4">
                                     <Label Text="{Binding Sender}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
                                     <Label Text="{Binding Body}" Style="{StaticResource BodyLabel}" />
-                                    <Label Text="{Binding SentAt}" FontSize="11" TextColor="{StaticResource TextMuted}" />
+                                    <Label Text="{Binding SentAt}" FontSize="11" TextColor="{StaticResource MutedInk}" />
                                 </VerticalStackLayout>
                             </Border>
                         </DataTemplate>

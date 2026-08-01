@@ -35,12 +35,12 @@
                                 </Border.GestureRecognizers>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <VerticalStackLayout Spacing="5">
-                                        <Label Text="{Binding Title}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding Title}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="TailTruncation" />
                                         <Label Text="{Binding MissionNumber}" FontSize="12" TextColor="{StaticResource WeleBlue}" />
                                         <Label Text="{Binding Hint}" Style="{StaticResource MutedLabel}" LineBreakMode="TailTruncation" />
-                                        <Label Text="{Binding DateLabel}" FontSize="11" TextColor="{StaticResource TextMuted}" />
+                                        <Label Text="{Binding DateLabel}" FontSize="11" TextColor="{StaticResource MutedInk}" />
                                     </VerticalStackLayout>
-                                    <Label Grid.Column="1" Text="›" FontSize="28" TextColor="{StaticResource TextMuted}" VerticalOptions="Center" />
+                                    <Label Grid.Column="1" Text="›" FontSize="28" TextColor="{StaticResource MutedInk}" VerticalOptions="Center" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
