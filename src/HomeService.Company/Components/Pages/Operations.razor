@@ -75,26 +75,35 @@ else
                             <small>Les droits d'acceptation tiennent compte de vos competences et de votre priorite.</small>
                         </header>
                         <div class="mission-offers-list">
-                            @foreach (var offer in OpenMissionOffers)
+                            @foreach (var offer in DisplayedMissionOffers)
                             {
-                                <article>
-                                    <div>
+                                <article class="@(offer.CanAccept ? "actionable" : "readonly")">
+                                    <div class="mission-offer-identity">
                                         <strong>@offer.ServiceName</strong>
                                         <span>@offer.MissionNumber</span>
                                     </div>
-                                    <p>@(string.IsNullOrWhiteSpace(offer.Description) ? "Demande client a analyser" : offer.Description)</p>
-                                    <small>@(offer.ServiceAddress ?? "Adresse a confirmer") · @GetOfferScheduleLabel(offer)</small>
+                                    <div class="mission-offer-summary">
+                                        <p>@(string.IsNullOrWhiteSpace(offer.Description) ? "Demande client a analyser" : offer.Description)</p>
+                                        <small>@(offer.ServiceAddress ?? "Adresse a confirmer") · @GetOfferScheduleLabel(offer)</small>
+                                    </div>
                                     <small class="mission-offer-access @offer.AccessState.ToLowerInvariant()">@offer.AccessMessage</small>
-                                    <button type="button"
-                                            disabled="@(AcceptingOfferId is not null || !Session.IsCompanyApproved || !offer.CanAccept || offer.OfferId is null)"
-                                            @onclick="() => AcceptMissionOfferAsync(offer)">
-                                        @(AcceptingOfferId == offer.OfferId
-                                            ? "Acceptation..."
-                                            : offer.CanAccept ? "Accepter la demande" : "Consultation uniquement")
-                                    </button>
+                                    @if (offer.CanAccept)
+                                    {
+                                        <button type="button"
+                                                disabled="@(AcceptingOfferId is not null || !Session.IsCompanyApproved || offer.OfferId is null)"
+                                                @onclick="() => AcceptMissionOfferAsync(offer)">
+                                            @(AcceptingOfferId == offer.OfferId ? "Acceptation..." : "Accepter")
+                                        </button>
+                                    }
                                 </article>
                             }
                         </div>
+                        @if (OpenMissionOffers.Count > 3)
+                        {
+                            <button type="button" class="mission-offers-toggle" @onclick="ToggleMissionOffers">
+                                @(ShowAllMissionOffers ? "Afficher moins" : $"Voir les {OpenMissionOffers.Count - 3} autres demandes")
+                            </button>
+                        }
                     </section>
                 }
 
@@ -351,6 +360,7 @@ else
     private DateOnly CalendarMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private string? AssignmentMessage { get; set; }
     private Guid? AcceptingOfferId { get; set; }
+    private bool ShowAllMissionOffers { get; set; }
 
     private DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private string CurrentMonthLabel => CalendarMonth.ToString("MMMM yyyy", FrenchCulture);
@@ -358,6 +368,14 @@ else
     private IReadOnlyList<CompanyPortalMissionResponse> UpcomingMissions => AllMissions.Where(mission => IsUpcomingStatus(mission.Status)).ToList();
     private IReadOnlyList<CompanyPortalMissionResponse> CompletedMissions => AllMissions.Where(mission => IsCompletedStatus(mission.Status)).ToList();
     private IReadOnlyList<CompanyPortalMissionResponse> CancelledMissions => AllMissions.Where(mission => IsCancelledStatus(mission.Status)).ToList();
+    private IReadOnlyList<CompanyMissionOfferResponse> DisplayedMissionOffers => ShowAllMissionOffers
+        ? OpenMissionOffers
+        : OpenMissionOffers.Take(3).ToList();
+
+    private void ToggleMissionOffers()
+    {
+        ShowAllMissionOffers = !ShowAllMissionOffers;
+    }
     private IReadOnlyList<CompanyPortalMissionResponse> TodayMissions => AllMissions.Where(mission => GetMissionDate(mission) == Today && !IsCompletedStatus(mission.Status) && !IsCancelledStatus(mission.Status)).ToList();
     private int UpcomingNextSevenDaysCount => UpcomingMissions.Count(mission => GetMissionDate(mission) <= Today.AddDays(7));
     private int ClosedMissionCount => CompletedMissions.Count + CancelledMissions.Count;

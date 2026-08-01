@@ -79,17 +79,26 @@ public sealed class CompanyMissionOfferService(IAppDbContext db)
                     && companyOffer.ExpiresAt > now;
                 var accessState = canAccept
                     ? "Available"
-                    : !hasCompatibleProvider
-                        ? "MissingSkill"
-                        : companyOffer is null
-                            ? "WaitingPriority"
-                            : "Unavailable";
+                    : company.Status != CompanyStatus.Approved
+                        ? "CompanyInactive"
+                        : !hasCompatibleProvider
+                            ? "MissingSkill"
+                            : companyOffer is null
+                                ? "WaitingPriority"
+                                : companyOffer.Status.ToString();
                 var accessMessage = accessState switch
                 {
-                    "Available" => $"Disponible maintenant - rang {companyOffer!.Rank}.",
-                    "MissingSkill" => "Consultation uniquement : aucun prestataire actif ne maitrise cette prestation.",
-                    "WaitingPriority" => $"Consultation uniquement : priorité entreprise {company.MissionDispatchPriority}, une vague précédente est en cours.",
-                    _ => "Consultation uniquement : cette offre n'est plus disponible pour votre entreprise."
+                    "Available" => $"Disponible maintenant - votre entreprise est au rang {companyOffer!.Rank}.",
+                    "CompanyInactive" => "Votre entreprise doit etre validee avant de pouvoir accepter une demande.",
+                    "MissingSkill" => "Aucun prestataire actif de votre equipe ne maitrise ce service ou cette prestation.",
+                    "WaitingPriority" => $"Votre priorite est {company.MissionDispatchPriority}. Les entreprises mieux classees ont encore la priorite.",
+                    nameof(MissionDispatchOfferStatus.Sent) => "Le delai accorde a votre entreprise pour accepter cette demande est expire.",
+                    nameof(MissionDispatchOfferStatus.Accepted) => "Cette demande a deja ete acceptee par votre entreprise.",
+                    nameof(MissionDispatchOfferStatus.Expired) => "Le delai accorde a votre entreprise pour accepter cette demande est expire.",
+                    nameof(MissionDispatchOfferStatus.Lost) => "Une autre entreprise a accepte cette demande avant vous.",
+                    nameof(MissionDispatchOfferStatus.Cancelled) => "Cette demande a ete annulee par le client ou la plateforme.",
+                    nameof(MissionDispatchOfferStatus.AssignmentTimedOut) => "Le delai d'affectation d'un prestataire est depasse.",
+                    _ => "Cette demande n'est actuellement pas accessible a votre entreprise."
                 };
 
                 return new CompanyMissionOfferResponse(
