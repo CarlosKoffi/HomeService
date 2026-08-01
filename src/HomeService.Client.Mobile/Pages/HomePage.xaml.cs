@@ -13,6 +13,7 @@ public partial class HomePage : ContentPage
     private readonly ObservableCollection<ServiceItem> homeServices = [];
     private readonly ObservableCollection<ServiceItem> wellbeingServices = [];
     private readonly ObservableCollection<PopularItem> popularServices = [];
+    private readonly ObservableCollection<PopularItem> allPopularServices = [];
     private readonly ObservableCollection<SearchResultItem> searchResults = [];
 
     public HomePage()
@@ -23,6 +24,7 @@ public partial class HomePage : ContentPage
         HomeServicesView.ItemsSource = homeServices;
         WellbeingServicesView.ItemsSource = wellbeingServices;
         PopularServicesView.ItemsSource = popularServices;
+        MorePopularView.ItemsSource = allPopularServices;
         SearchResultsView.ItemsSource = searchResults;
     }
 
@@ -51,6 +53,7 @@ public partial class HomePage : ContentPage
         homeServices.Clear();
         wellbeingServices.Clear();
         popularServices.Clear();
+        allPopularServices.Clear();
 
         var serviceItems = await Task.WhenAll(result.Response
             .Where(item => item.IsActive)
@@ -76,8 +79,7 @@ public partial class HomePage : ContentPage
                 .Where(prestation => prestation.IsActive)
                 .Select(prestation => new { Service = service, Prestation = prestation }))
             .OrderByDescending(item => item.Prestation.MissionCount)
-            .ThenBy(item => item.Prestation.Name)
-            .Take(3);
+            .ThenBy(item => item.Prestation.Name);
 
         var popularItems = await Task.WhenAll(mostRequestedPrestations.Select(async item =>
         {
@@ -87,6 +89,10 @@ public partial class HomePage : ContentPage
                 item.Service.Id,
                 item.Prestation.Id,
                 item.Prestation.Name,
+                item.Service.Name,
+                item.Prestation.PriceMinAmount.HasValue
+                    ? $"À partir de {item.Prestation.PriceMinAmount:N0} {item.Prestation.Currency}"
+                    : "Prix à confirmer",
                 illustrationUrl,
                 serviceIconUrl,
                 string.IsNullOrWhiteSpace(item.Prestation.Name) ? "WE" : item.Prestation.Name[..Math.Min(2, item.Prestation.Name.Length)].ToUpperInvariant(),
@@ -95,6 +101,10 @@ public partial class HomePage : ContentPage
                 illustrationUrl is null && serviceIconUrl is null);
         }));
         foreach (var item in popularItems)
+        {
+            allPopularServices.Add(item);
+        }
+        foreach (var item in allPopularServices.Take(3))
         {
             popularServices.Add(item);
         }
@@ -107,6 +117,8 @@ public partial class HomePage : ContentPage
                     service.ServiceId,
                     null,
                     service.Name,
+                    service.Name,
+                    service.Price,
                     null,
                     service.IconUrl,
                     service.IconFallback,
@@ -199,6 +211,53 @@ public partial class HomePage : ContentPage
     private async void OnCreateRequestClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync(nameof(CreateRequestPage));
+    }
+
+    private void OnMoreHomeServicesTapped(object sender, TappedEventArgs e) => ShowServices(homeServices, "Pour ma maison");
+
+    private void OnMoreWellbeingServicesTapped(object sender, TappedEventArgs e) => ShowServices(wellbeingServices, "Pour mon bien-être");
+
+    private void OnMorePopularTapped(object sender, TappedEventArgs e)
+    {
+        CatalogTitle.Text = "Les plus demandés";
+        CatalogSubtitle.Text = "Prestations classées selon les demandes reçues";
+        MoreServicesView.IsVisible = false;
+        MorePopularView.IsVisible = true;
+        MorePopularView.SelectedItem = null;
+        CatalogOverlay.IsVisible = true;
+    }
+
+    private void ShowServices(IEnumerable<ServiceItem> source, string title)
+    {
+        CatalogTitle.Text = title;
+        CatalogSubtitle.Text = "Choisissez un service pour créer votre demande";
+        MoreServicesView.ItemsSource = source;
+        MoreServicesView.SelectedItem = null;
+        MoreServicesView.IsVisible = true;
+        MorePopularView.IsVisible = false;
+        CatalogOverlay.IsVisible = true;
+    }
+
+    private void OnCloseCatalogTapped(object sender, TappedEventArgs e) => CatalogOverlay.IsVisible = false;
+    private void OnCatalogPanelTapped(object sender, TappedEventArgs e) { }
+    private void OnCloseCatalogClicked(object sender, EventArgs e) => CatalogOverlay.IsVisible = false;
+    private void OnCatalogSwiped(object sender, SwipedEventArgs e) => CatalogOverlay.IsVisible = false;
+
+    private async void OnMoreServiceSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not ServiceItem item) return;
+        MoreServicesView.SelectedItem = null;
+        CatalogOverlay.IsVisible = false;
+        await OpenServiceAsync(item);
+    }
+
+    private async void OnMorePopularSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not PopularItem item) return;
+        MorePopularView.SelectedItem = null;
+        CatalogOverlay.IsVisible = false;
+        var path = $"{nameof(CreateRequestPage)}?serviceId={item.ServiceId:D}&prestationId={item.PrestationId?.ToString("D") ?? string.Empty}&name={Uri.EscapeDataString(item.Name)}";
+        await Shell.Current.GoToAsync(path);
     }
 
     private async void OnSearchResultSelected(object sender, SelectionChangedEventArgs e)
@@ -332,6 +391,8 @@ public partial class HomePage : ContentPage
         Guid ServiceId,
         Guid? PrestationId,
         string Name,
+        string ServiceName,
+        string Price,
         ImageSource? IllustrationUrl,
         ImageSource? ServiceIconUrl,
         string Fallback,

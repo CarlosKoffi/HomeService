@@ -3,18 +3,16 @@
     x:Class="HomeService.Client.Mobile.Pages.CreateRequestPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
     Shell.NavBarIsVisible="False"
     Shell.TabBarIsVisible="False"
     BackgroundColor="White"
     Title="Nouvelle demande">
     <Grid RowDefinitions="Auto,*" Padding="20,18,20,18">
-        <Grid ColumnDefinitions="40,*,74" HeightRequest="44">
+        <Grid ColumnDefinitions="40,*" HeightRequest="44">
             <Button Text="‹" FontSize="28" WidthRequest="38" HeightRequest="38" Padding="0"
                     BackgroundColor="Transparent" TextColor="#111827" Clicked="OnBackClicked" />
             <Label x:Name="PageTitleLabel" Grid.Column="1" Text="Nouvelle demande" FontSize="17"
                    FontAttributes="Bold" VerticalTextAlignment="Center" />
-            <controls:WeleBrandMark Grid.Column="2" MarkHeight="22" MarkAlignment="End" VerticalOptions="Center" />
         </Grid>
 
         <Grid Grid.Row="1">
@@ -256,8 +254,13 @@
                     StrokeShape="RoundRectangle 22,22,0,0"
                     Padding="20,18,20,24"
                     MaximumHeightRequest="650">
-                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
-                    <Grid ColumnDefinitions="*,40">
+                <Border.GestureRecognizers>
+                    <SwipeGestureRecognizer Direction="Down" Swiped="OnServicePickerSwiped" />
+                </Border.GestureRecognizers>
+                <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+                    <BoxView HeightRequest="4" WidthRequest="42" CornerRadius="2"
+                             Color="#D8DEE8" HorizontalOptions="Center" />
+                    <Grid Grid.Row="1" ColumnDefinitions="*,40">
                         <VerticalStackLayout Spacing="3">
                             <Label Text="Choisir un service" FontSize="18" FontAttributes="Bold" />
                             <Label Text="Sélectionnez le besoin principal." FontSize="11" TextColor="#687386" />
@@ -267,8 +270,8 @@
                                 BackgroundColor="Transparent" TextColor="#111827"
                                 Clicked="OnCloseServicePickerClicked" />
                     </Grid>
-                    <BoxView Grid.Row="1" HeightRequest="1" Color="#E7EAF0" />
-                    <CollectionView x:Name="ServicePickerList" Grid.Row="2"
+                    <BoxView Grid.Row="2" HeightRequest="1" Color="#E7EAF0" />
+                    <CollectionView x:Name="ServicePickerList" Grid.Row="3"
                                     SelectionMode="Single"
                                     SelectionChanged="OnServicePickerSelected">
                         <CollectionView.EmptyView>
@@ -322,8 +325,13 @@
                     StrokeShape="RoundRectangle 22,22,0,0"
                     Padding="20,18,20,24"
                     MaximumHeightRequest="620">
-                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
-                    <Grid ColumnDefinitions="*,40">
+                <Border.GestureRecognizers>
+                    <SwipeGestureRecognizer Direction="Down" Swiped="OnPrestationPickerSwiped" />
+                </Border.GestureRecognizers>
+                <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+                    <BoxView HeightRequest="4" WidthRequest="42" CornerRadius="2"
+                             Color="#D8DEE8" HorizontalOptions="Center" />
+                    <Grid Grid.Row="1" ColumnDefinitions="*,40">
                         <VerticalStackLayout Spacing="3">
                             <Label Text="Choisir une prestation" FontSize="18" FontAttributes="Bold" />
                             <Label x:Name="PrestationPickerServiceLabel" FontSize="11" TextColor="#687386" />
@@ -334,9 +342,9 @@
                                 Clicked="OnClosePrestationPickerClicked" />
                     </Grid>
 
-                    <BoxView Grid.Row="1" HeightRequest="1" Color="#E7EAF0" />
+                    <BoxView Grid.Row="2" HeightRequest="1" Color="#E7EAF0" />
 
-                    <CollectionView x:Name="PrestationPickerList" Grid.Row="2"
+                    <CollectionView x:Name="PrestationPickerList" Grid.Row="3"
                                     SelectionMode="Single"
                                     SelectionChanged="OnPrestationSelected">
                         <CollectionView.EmptyView>

@@ -12,7 +12,6 @@
         <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
             <ScrollView>
                 <VerticalStackLayout Padding="20,24,20,30" Spacing="20">
-                    <controls:WeleBrandMark MarkHeight="24" MarkAlignment="Start" />
                     <Border
                         x:Name="LoadErrorPanel"
                         IsVisible="False"
@@ -53,7 +52,9 @@
                     <VerticalStackLayout Spacing="10">
                         <Grid ColumnDefinitions="*,Auto">
                             <Label Text="Pour ma maison" FontSize="15" FontAttributes="Bold" />
-                            <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center">
+                                <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnMoreHomeServicesTapped" /></Label.GestureRecognizers>
+                            </Label>
                         </Grid>
                         <CollectionView
                             x:Name="HomeServicesView"
@@ -87,7 +88,9 @@
                     <VerticalStackLayout Spacing="10">
                         <Grid ColumnDefinitions="*,Auto">
                             <Label Text="Pour mon bien-être" FontSize="15" FontAttributes="Bold" />
-                            <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center">
+                                <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnMoreWellbeingServicesTapped" /></Label.GestureRecognizers>
+                            </Label>
                         </Grid>
                         <CollectionView
                             x:Name="WellbeingServicesView"
@@ -121,7 +124,9 @@
                     <VerticalStackLayout Spacing="10">
                         <Grid ColumnDefinitions="*,Auto">
                             <Label Text="Les plus demandés" FontSize="15" FontAttributes="Bold" />
-                            <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                            <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center">
+                                <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnMorePopularTapped" /></Label.GestureRecognizers>
+                            </Label>
                         </Grid>
                         <CollectionView x:Name="PopularServicesView" HeightRequest="146" SelectionMode="Single" SelectionChanged="OnPopularSelected">
                             <CollectionView.ItemsLayout>
@@ -169,45 +174,47 @@
             </ScrollView>
         </RefreshView>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" BackgroundColor="White" Padding="10,8,10,5">
-            <VerticalStackLayout Grid.Column="0" Spacing="3">
-                <Image Source="nav_home.png" HeightRequest="23" WidthRequest="23" HorizontalOptions="Center" />
-                <Label Text="Accueil" FontSize="10" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
-            </VerticalStackLayout>
-            <VerticalStackLayout Grid.Column="1" Spacing="3">
-                <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnRequestsTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Image Source="nav_requests.png" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
-                <Label Text="Demandes" FontSize="10" TextColor="#6B7280" HorizontalTextAlignment="Center" />
-            </VerticalStackLayout>
-            <Border
-                Grid.Column="2"
-                HeightRequest="52"
-                WidthRequest="52"
-                Padding="0"
-                BackgroundColor="{StaticResource WeleBlue}"
-                StrokeThickness="0"
-                StrokeShape="RoundRectangle 26"
-                HorizontalOptions="Center"
-                VerticalOptions="Start"
-                TranslationY="-13">
+        <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="home" ShowCreate="True" />
+
+        <Grid x:Name="CatalogOverlay" Grid.RowSpan="2" IsVisible="False" BackgroundColor="#66000000" ZIndex="30">
+            <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnCloseCatalogTapped" /></Grid.GestureRecognizers>
+            <Border BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 22,22,0,0"
+                    VerticalOptions="End" HeightRequest="560" Padding="20,18,20,20">
                 <Border.GestureRecognizers>
-                    <TapGestureRecognizer Tapped="OnCreateRequestClicked" />
+                    <TapGestureRecognizer Tapped="OnCatalogPanelTapped" />
+                    <SwipeGestureRecognizer Direction="Down" Swiped="OnCatalogSwiped" />
                 </Border.GestureRecognizers>
-                <Grid HeightRequest="52" WidthRequest="52">
-                    <BoxView HeightRequest="2" WidthRequest="18" Color="White" HorizontalOptions="Center" VerticalOptions="Center" />
-                    <BoxView HeightRequest="18" WidthRequest="2" Color="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="14">
+                    <BoxView HeightRequest="4" WidthRequest="42" CornerRadius="2" Color="#D8DEE8" HorizontalOptions="Center" />
+                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="3">
+                            <Label x:Name="CatalogTitle" Text="Services" FontSize="20" FontAttributes="Bold" />
+                            <Label x:Name="CatalogSubtitle" Text="Choisissez pour continuer" FontSize="11" TextColor="#687386" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="Fermer" FontSize="11" Padding="12,6" BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}" Clicked="OnCloseCatalogClicked" />
+                    </Grid>
+                    <CollectionView x:Name="MoreServicesView" Grid.Row="2" SelectionMode="Single" SelectionChanged="OnMoreServiceSelected">
+                        <CollectionView.ItemTemplate><DataTemplate>
+                            <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12" Padding="0,10">
+                                <Border HeightRequest="50" WidthRequest="50" Padding="8" BackgroundColor="#F4F7FF" Stroke="#E7ECF5" StrokeShape="RoundRectangle 10">
+                                    <Grid><Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" /><Label Text="{Binding IconFallback}" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" /></Grid>
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold" /><Label Text="{Binding Price}" FontSize="10" TextColor="#687386" /></VerticalStackLayout>
+                                <Label Grid.Column="2" Text="›" FontSize="24" VerticalTextAlignment="Center" />
+                            </Grid>
+                        </DataTemplate></CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <CollectionView x:Name="MorePopularView" Grid.Row="2" IsVisible="False" SelectionMode="Single" SelectionChanged="OnMorePopularSelected">
+                        <CollectionView.ItemTemplate><DataTemplate>
+                            <Grid ColumnDefinitions="76,*,Auto" ColumnSpacing="12" Padding="0,10">
+                                <Border HeightRequest="62" WidthRequest="72" Padding="0" BackgroundColor="#F4F5F8" StrokeThickness="0" StrokeShape="RoundRectangle 10"><Grid><Image Source="{Binding IllustrationUrl}" Aspect="AspectFill" IsVisible="{Binding HasIllustration}" /><Image Source="{Binding ServiceIconUrl}" Margin="15" Aspect="AspectFit" IsVisible="{Binding HasServiceIcon}" /></Grid></Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold" /><Label Text="{Binding ServiceName}" FontSize="10" TextColor="#687386" /><Label Text="{Binding Price}" FontSize="10" TextColor="{StaticResource WeleBlue}" /></VerticalStackLayout>
+                                <Label Grid.Column="2" Text="›" FontSize="24" VerticalTextAlignment="Center" />
+                            </Grid>
+                        </DataTemplate></CollectionView.ItemTemplate>
+                    </CollectionView>
                 </Grid>
             </Border>
-            <VerticalStackLayout Grid.Column="3" Spacing="3">
-                <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnMessagesTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Image Source="nav_messages.png" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
-                <Label Text="Messages" FontSize="10" TextColor="#6B7280" HorizontalTextAlignment="Center" />
-            </VerticalStackLayout>
-            <VerticalStackLayout Grid.Column="4" Spacing="3">
-                <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnProfileTapped" /></VerticalStackLayout.GestureRecognizers>
-                <Image Source="nav_profile.png" HeightRequest="22" WidthRequest="22" HorizontalOptions="Center" />
-                <Label Text="Profil" FontSize="10" TextColor="#6B7280" HorizontalTextAlignment="Center" />
-            </VerticalStackLayout>
         </Grid>
     </Grid>
 </ContentPage>

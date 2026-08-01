@@ -20,6 +20,7 @@ public partial class CreateRequestPage : ContentPage
     private PrepareClientMissionResponse? preparation;
     private ServiceSummaryResponse? selectedService;
     private bool isPreparationLoading;
+    private bool autoOpenPrestationPickerPending = true;
     private int maxPhotoCount = 3;
     private int currentStep = 1;
 
@@ -130,6 +131,7 @@ public partial class CreateRequestPage : ContentPage
             .ToList();
         if (activePrestations.Count == 0)
         {
+            autoOpenPrestationPickerPending = false;
             return;
         }
 
@@ -145,6 +147,12 @@ public partial class CreateRequestPage : ContentPage
 
         SelectPrestationButton.IsVisible = true;
         UpdatePrestationButtonText();
+
+        if (autoOpenPrestationPickerPending && !Guid.TryParse(PrestationId, out _))
+        {
+            autoOpenPrestationPickerPending = false;
+            OpenPrestationPicker();
+        }
     }
 
     private void ResetServiceSelectionState()
@@ -262,11 +270,17 @@ public partial class CreateRequestPage : ContentPage
         ServicePickerOverlay.IsVisible = false;
         ServicePickerList.SelectedItem = null;
         StepOneErrorLabel.IsVisible = false;
+        autoOpenPrestationPickerPending = true;
         await LoadServiceCatalogAsync();
         await LoadPreparationAsync();
     }
 
     private void OnSelectPrestationClicked(object sender, EventArgs e)
+    {
+        OpenPrestationPicker();
+    }
+
+    private void OpenPrestationPicker()
     {
         if (availablePrestations.Count == 0)
         {
@@ -281,6 +295,16 @@ public partial class CreateRequestPage : ContentPage
     {
         PrestationPickerOverlay.IsVisible = false;
         PrestationPickerList.SelectedItem = null;
+    }
+
+    private void OnServicePickerSwiped(object sender, SwipedEventArgs e)
+    {
+        OnCloseServicePickerClicked(sender, EventArgs.Empty);
+    }
+
+    private void OnPrestationPickerSwiped(object sender, SwipedEventArgs e)
+    {
+        OnClosePrestationPickerClicked(sender, EventArgs.Empty);
     }
 
     private async void OnPrestationSelected(object sender, SelectionChangedEventArgs e)
