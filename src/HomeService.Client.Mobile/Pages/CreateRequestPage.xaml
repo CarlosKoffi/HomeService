@@ -3,6 +3,7 @@
     x:Class="HomeService.Client.Mobile.Pages.CreateRequestPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:clients="clr-namespace:HomeService.Contracts.Clients;assembly=HomeService.Contracts"
     Shell.NavBarIsVisible="False"
     Shell.TabBarIsVisible="False"
     BackgroundColor="White"
@@ -197,6 +198,23 @@
                                                 BorderColor="#DCE6FF" BorderWidth="1" CornerRadius="10"
                                                 Clicked="OnLocateAddressClicked" />
                                     </Grid>
+                                    <Border x:Name="AddressSuggestionsPanel" Stroke="#DDE2EA" BackgroundColor="White"
+                                            StrokeShape="RoundRectangle 10" Padding="0" IsVisible="False">
+                                        <CollectionView x:Name="AddressSuggestionsView"
+                                                        SelectionMode="Single"
+                                                        SelectionChanged="OnAddressSuggestionSelected"
+                                                        MaximumHeightRequest="240">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate x:DataType="clients:ClientAddressSuggestionResponse">
+                                                    <Grid Padding="12,10" RowDefinitions="Auto,Auto" RowSpacing="2">
+                                                        <Label Text="{Binding MainText}" FontSize="12" FontAttributes="Bold" />
+                                                        <Label Grid.Row="1" Text="{Binding SecondaryText}" FontSize="10"
+                                                               TextColor="#687386" LineBreakMode="TailTruncation" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+                                    </Border>
                                     <Label Text="Touchez la cible pour utiliser votre position actuelle."
                                            FontSize="10" TextColor="#687386" />
                                     <Button x:Name="SaveAddressButton" Text="Enregistrer cette adresse"

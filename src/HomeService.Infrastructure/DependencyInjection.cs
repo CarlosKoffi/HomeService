@@ -1,7 +1,9 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Clients;
 using HomeService.Application.Notifications;
 using HomeService.Infrastructure.Data;
 using HomeService.Infrastructure.Notifications;
+using HomeService.Infrastructure.Location;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +31,15 @@ public static class DependencyInjection
                 configuration["FIREBASE_CREDENTIALS_JSON_BASE64"]);
         });
         services.AddSingleton<HttpClient>();
+        services.Configure<GooglePlacesOptions>(options =>
+        {
+            options.Enabled = string.Equals(
+                configuration["GOOGLE_PLACES_ENABLED"] ?? configuration["GooglePlaces:Enabled"],
+                "true",
+                StringComparison.OrdinalIgnoreCase);
+            options.ApiKey = configuration["GOOGLE_PLACES_API_KEY"] ?? configuration["GooglePlaces:ApiKey"];
+        });
+        services.AddScoped<IAddressAutocompleteService, GooglePlacesAddressAutocompleteService>();
         services.AddScoped<IMobilePushSender, FirebaseCloudMessagingSender>();
 
         return services;

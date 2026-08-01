@@ -298,6 +298,24 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<IReadOnlyList<ClientAddressResponse>>(HttpMethod.Get, "api/client/addresses", body: null, cancellationToken);
     }
 
+    public async Task<ApiCallResult<IReadOnlyList<ClientAddressSuggestionResponse>>> AutocompleteAddressAsync(
+        string query,
+        string sessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        var path = $"api/client/addresses/autocomplete?query={Uri.EscapeDataString(query)}&sessionToken={Uri.EscapeDataString(sessionToken)}";
+        return await SendWithSessionAsync<IReadOnlyList<ClientAddressSuggestionResponse>>(HttpMethod.Get, path, body: null, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<ClientPlaceDetailsResponse>> GetPlaceDetailsAsync(
+        string placeId,
+        string sessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        var path = $"api/client/addresses/places/{Uri.EscapeDataString(placeId)}?sessionToken={Uri.EscapeDataString(sessionToken)}";
+        return await SendWithSessionAsync<ClientPlaceDetailsResponse>(HttpMethod.Get, path, body: null, cancellationToken);
+    }
+
     public async Task<ApiCallResult<ClientAddressResponse>> CreateAddressAsync(UpsertClientAddressRequest request, CancellationToken cancellationToken = default)
     {
         return await SendWithSessionAsync<ClientAddressResponse>(HttpMethod.Post, "api/client/addresses", request, cancellationToken);

@@ -28,6 +28,8 @@ public partial class CreateRequestPage : ContentPage
     private decimal? currentAddressLatitude;
     private decimal? currentAddressLongitude;
     private bool isUpdatingAddressFromLocation;
+    private CancellationTokenSource? addressSearchCancellation;
+    private string addressSearchSessionToken = Guid.NewGuid().ToString("N");
 
     public CreateRequestPage()
     {
@@ -453,7 +455,7 @@ public partial class CreateRequestPage : ContentPage
         }
     }
 
-    private void OnAddressTextChanged(object sender, TextChangedEventArgs e)
+    private async void OnAddressTextChanged(object sender, TextChangedEventArgs e)
     {
         if (isUpdatingAddressFromLocation)
         {
@@ -462,6 +464,59 @@ public partial class CreateRequestPage : ContentPage
 
         currentAddressLatitude = null;
         currentAddressLongitude = null;
+        AddressSuggestionsPanel.IsVisible = false;
+
+        addressSearchCancellation?.Cancel();
+        addressSearchCancellation?.Dispose();
+        addressSearchCancellation = new CancellationTokenSource();
+        var cancellationToken = addressSearchCancellation.Token;
+        var query = e.NewTextValue?.Trim();
+        if (string.IsNullOrWhiteSpace(query) || query.Length < 3 || sessionStore.IsPreviewMode())
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(350, cancellationToken);
+            var result = await apiClient.AutocompleteAddressAsync(query, addressSearchSessionToken, cancellationToken);
+            if (cancellationToken.IsCancellationRequested || !result.IsSuccess || result.Response is null)
+            {
+                return;
+            }
+
+            AddressSuggestionsView.ItemsSource = result.Response;
+            AddressSuggestionsPanel.IsVisible = result.Response.Count > 0;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async void OnAddressSuggestionSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not ClientAddressSuggestionResponse suggestion)
+        {
+            return;
+        }
+
+        AddressSuggestionsView.SelectedItem = null;
+        AddressSuggestionsPanel.IsVisible = false;
+        var result = await apiClient.GetPlaceDetailsAsync(suggestion.PlaceId, addressSearchSessionToken);
+        if (!result.IsSuccess || result.Response is null)
+        {
+            isUpdatingAddressFromLocation = true;
+            AddressEntry.Text = suggestion.FullText;
+            isUpdatingAddressFromLocation = false;
+            return;
+        }
+
+        isUpdatingAddressFromLocation = true;
+        AddressEntry.Text = result.Response.AddressLine;
+        isUpdatingAddressFromLocation = false;
+        currentAddressLatitude = result.Response.Latitude;
+        currentAddressLongitude = result.Response.Longitude;
+        addressSearchSessionToken = Guid.NewGuid().ToString("N");
     }
 
     private async void OnLocateAddressClicked(object sender, EventArgs e)

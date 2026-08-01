@@ -442,6 +442,50 @@ public static class PublicEndpoints
         .Produces<IReadOnlyList<ClientAddressResponse>>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapGet("/addresses/autocomplete", async (
+            string query,
+            string? sessionToken,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            IAddressAutocompleteService autocompleteService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return query.Trim().Length < 3
+                ? Results.Ok(Array.Empty<ClientAddressSuggestionResponse>())
+                : Results.Ok(await autocompleteService.SearchAsync(query, sessionToken, cancellationToken));
+        })
+        .WithName("AutocompleteClientAddress")
+        .Produces<IReadOnlyList<ClientAddressSuggestionResponse>>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapGet("/addresses/places/{placeId}", async (
+            string placeId,
+            string? sessionToken,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            IAddressAutocompleteService autocompleteService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var details = await autocompleteService.GetDetailsAsync(placeId, sessionToken, cancellationToken);
+            return details is null ? Results.NotFound() : Results.Ok(details);
+        })
+        .WithName("GetClientPlaceDetails")
+        .Produces<ClientPlaceDetailsResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         client.MapPost("/addresses", async (
             UpsertClientAddressRequest request,
             HttpRequest httpRequest,
