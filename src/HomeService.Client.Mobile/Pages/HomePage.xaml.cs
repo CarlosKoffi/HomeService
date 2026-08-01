@@ -200,7 +200,7 @@ public partial class HomePage : ContentPage
 
     private async void OnMessagesTapped(object sender, TappedEventArgs e)
     {
-        await Shell.Current.GoToAsync("//messages");
+        await Shell.Current.GoToAsync("//messages?mode=list&missionId=");
     }
 
     private async void OnProfileTapped(object sender, TappedEventArgs e)

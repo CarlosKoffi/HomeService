@@ -32,21 +32,37 @@ public partial class MessagesPage : ContentPage
 
     public string? Mode
     {
-        set => requestedMode = string.Equals(value, "chat", StringComparison.OrdinalIgnoreCase) ? "chat" : "list";
+        set
+        {
+            requestedMode = string.Equals(value, "chat", StringComparison.OrdinalIgnoreCase) ? "chat" : "list";
+            if (requestedMode == "list")
+            {
+                requestedMissionId = null;
+                activeMissionId = null;
+            }
+        }
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await LoadConversationsAsync();
-
-        if (requestedMode == "chat" && requestedMissionId.HasValue)
+        try
         {
-            await OpenConversationAsync(requestedMissionId.Value);
+            await LoadConversationsAsync();
+
+            if (requestedMode == "chat" && requestedMissionId.HasValue)
+            {
+                await OpenConversationAsync(requestedMissionId.Value);
+            }
+            else
+            {
+                ShowConversationList();
+            }
         }
-        else
+        catch (Exception)
         {
             ShowConversationList();
+            ShowError("Impossible de charger vos messages pour le moment. Réessayez dans quelques instants.");
         }
     }
 
@@ -179,6 +195,9 @@ public partial class MessagesPage : ContentPage
 
     private void ShowConversationList()
     {
+        requestedMode = "list";
+        requestedMissionId = null;
+        activeMissionId = null;
         ConversationListPanel.IsVisible = true;
         ChatPanel.IsVisible = false;
         BackToConversationsButton.IsVisible = false;
