@@ -172,6 +172,47 @@ public sealed class MissionDispatchReissueServiceTests
     }
 
     [Fact]
+    public async Task ExpireAndReissueMissionOffersAsync_WhenEveryEligibleCompanyWasAlreadyTried_RestartsCycle()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Jardinage", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var company = ApprovedCompany("Jardinage CI", priority: 1);
+        var provider = Provider(company.Id, service.Id, "Mariam");
+        var mission = new Mission(customer.Id, service.Id, MissionMode.Instant, PaymentMethod.MobileMoney, null, 60);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        var now = DateTimeOffset.UtcNow;
+        var expiredOffer = new MissionDispatchOffer(
+            mission.Id,
+            company.Id,
+            rank: 1,
+            score: 10,
+            scoreDetails: "Premier tour",
+            now.AddMinutes(-1));
+
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Companies.Add(company);
+        db.Providers.Add(provider);
+        db.Missions.Add(mission);
+        db.MissionDispatchOffers.Add(expiredOffer);
+        await db.SaveChangesAsync();
+
+        var sut = new MissionDispatchService(db, new MissionDispatchScoringService());
+
+        var result = await sut.ExpireAndReissueMissionOffersAsync(mission.Id, now, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.ExpiredOfferCount);
+        Assert.Equal(1, result.CreatedOfferCount);
+        Assert.Contains("relancees", result.Message);
+        Assert.Equal(1, await db.MissionDispatchOffers.CountAsync());
+        Assert.Equal(MissionDispatchOfferStatus.Sent, expiredOffer.Status);
+        Assert.True(expiredOffer.ExpiresAt > now);
+    }
+
+    [Fact]
     public async Task ExpireAndReissueMissionOffersAsync_WhenAcceptedCompanyDoesNotAssignProvider_ReissuesToAnotherCompany()
     {
         await using var db = CreateDbContext();

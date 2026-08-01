@@ -129,8 +129,21 @@ public sealed class MissionDispatchService(
             .Take(Math.Clamp(batchSize, 1, 200))
             .ToListAsync(cancellationToken);
 
+        var strandedMissionIds = await db.Missions
+            .AsNoTracking()
+            .Where(mission => mission.CompanyId == null
+                && (mission.Status == MissionStatus.SearchingProvider || mission.Status == MissionStatus.Offered)
+                && db.MissionDispatchOffers.Any(offer => offer.MissionId == mission.Id)
+                && !db.MissionDispatchOffers.Any(offer => offer.MissionId == mission.Id
+                    && offer.Status == MissionDispatchOfferStatus.Sent))
+            .OrderBy(mission => mission.UpdatedAt)
+            .Select(mission => mission.Id)
+            .Take(Math.Clamp(batchSize, 1, 200))
+            .ToListAsync(cancellationToken);
+
         var missionIds = expiredOfferMissionIds
             .Concat(assignmentTimedOutMissionIds)
+            .Concat(strandedMissionIds)
             .Distinct()
             .Take(Math.Clamp(batchSize, 1, 200))
             .ToList();
@@ -199,6 +212,14 @@ public sealed class MissionDispatchService(
         var candidates = await GetCandidatesAsync(mission, excludedCompanyIds, cancellationToken);
         var scores = scoringService.SelectTopCompanies(request, candidates);
 
+        var restartedCycle = false;
+        if (scores.Count == 0 && excludedCompanyIds.Count > 0)
+        {
+            candidates = await GetCandidatesAsync(mission, EmptyCompanySet, cancellationToken);
+            scores = scoringService.SelectTopCompanies(request, candidates);
+            restartedCycle = scores.Count > 0;
+        }
+
         if (scores.Count == 0)
         {
             await db.SaveChangesAsync(cancellationToken);
@@ -208,25 +229,38 @@ public sealed class MissionDispatchService(
         var responseWindow = await ResolveCompanyResponseWindowAsync(request.IsUrgent, cancellationToken);
         var expiresAt = now.Add(responseWindow);
         var nextRankStart = offers.Count == 0 ? 1 : offers.Max(offer => offer.Rank) + 1;
-        var createdOffers = scores
-            .Select((score, index) => new MissionDispatchOffer(
+        var issuedOffers = new List<MissionDispatchOffer>(scores.Count);
+        for (var index = 0; index < scores.Count; index++)
+        {
+            var score = scores[index];
+            var rank = nextRankStart + index;
+            var existingOffer = offers.FirstOrDefault(offer => offer.CompanyId == score.CompanyId);
+            if (existingOffer is not null)
+            {
+                existingOffer.Reissue(rank, score.Score, score.Details, expiresAt);
+                issuedOffers.Add(existingOffer);
+                continue;
+            }
+
+            var newOffer = new MissionDispatchOffer(
                 mission.Id,
                 score.CompanyId,
-                nextRankStart + index,
+                rank,
                 score.Score,
                 score.Details,
-                expiresAt))
-            .ToList();
-
-        foreach (var offer in createdOffers)
-        {
-            db.MissionDispatchOffers.Add(offer);
+                expiresAt);
+            db.MissionDispatchOffers.Add(newOffer);
+            offers.Add(newOffer);
+            issuedOffers.Add(newOffer);
         }
 
         mission.MarkCompanyOffersSent();
         await db.SaveChangesAsync(cancellationToken);
 
-        return MissionDispatchReissueResult.Ok(missionId, expiredCount + assignmentTimedOutCount, createdOffers.Count, "Nouvelle vague envoyee.");
+        var message = restartedCycle
+            ? "Toutes les entreprises eligibles ont ete relancees avec un nouveau delai."
+            : "Nouvelle vague envoyee.";
+        return MissionDispatchReissueResult.Ok(missionId, expiredCount + assignmentTimedOutCount, issuedOffers.Count, message);
     }
 
     public async Task<IReadOnlyList<MissionDispatchCandidate>> GetCandidatesAsync(

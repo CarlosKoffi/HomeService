@@ -98,6 +98,22 @@ public sealed class MissionDispatchOffer : AuditableEntity
         Touch();
     }
 
+    public void Reissue(int rank, int score, string scoreDetails, DateTimeOffset expiresAt)
+    {
+        if (Status is MissionDispatchOfferStatus.Accepted or MissionDispatchOfferStatus.Cancelled)
+        {
+            throw new InvalidOperationException("Cette offre ne peut pas etre relancee.");
+        }
+
+        Rank = Math.Max(1, rank);
+        Score = Math.Max(0, score);
+        ScoreDetails = CleanRequired(scoreDetails);
+        ExpiresAt = expiresAt;
+        Status = MissionDispatchOfferStatus.Sent;
+        RespondedAt = null;
+        Touch();
+    }
+
     private static string CleanRequired(string value)
     {
         var cleaned = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
