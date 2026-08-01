@@ -88,5 +88,15 @@ window.weleCompanyNavigation = (() => {
         update();
     };
 
-    return { init };
+    const scrollTo = (elementId) => {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            return;
+        }
+
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        element.focus({ preventScroll: true });
+    };
+
+    return { init, scrollTo };
 })();

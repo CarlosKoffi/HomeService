@@ -266,7 +266,7 @@ else
 
                 @if (SelectedMission is not null)
                 {
-                    <section class="missions-detail-panel">
+                    <section id="mission-assignment" class="missions-detail-panel" tabindex="-1">
                         <div>
                             <span class="@GetMissionStatusBadgeClass(SelectedMission)">@GetMissionStatusLabel(SelectedMission)</span>
                             <h3>@SelectedMission.ServiceName</h3>
@@ -490,8 +490,13 @@ else
 
             await LoadMissionsAsync();
             SelectedMission = AllMissions.FirstOrDefault(mission => mission.Id == offer.MissionId) ?? SelectedMission;
+            ActiveFilter = "current";
+            SelectedDay = null;
+            SearchTerm = null;
             await LoadAssignableProvidersAsync();
             AssignmentMessage = "Demande acceptee. Vous pouvez maintenant affecter un prestataire compatible.";
+            await InvokeAsync(StateHasChanged);
+            await Js.InvokeVoidAsync("weleCompanyNavigation.scrollTo", "mission-assignment");
         }
         finally
         {
