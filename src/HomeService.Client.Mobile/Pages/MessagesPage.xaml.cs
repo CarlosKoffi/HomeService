@@ -43,21 +43,21 @@ public partial class MessagesPage : ContentPage
         ErrorLabel.IsVisible = false;
         try
         {
-            conversations.Clear();
             if (!sessionStore.HasSession())
             {
+                await ReplaceConversationsAsync([]);
                 ShowError("Connectez-vous pour consulter vos conversations.");
                 return;
             }
 
             if (sessionStore.IsPreviewMode())
             {
-                conversations.Add(new ClientConversationRow(
+                await ReplaceConversationsAsync([new ClientConversationRow(
                     Guid.Parse("11111111-1111-1111-1111-111111111111"),
                     "Déboucher un évier",
                     "WL-000145",
                     "Ouvrir les échanges de cette demande",
-                    "Aujourd'hui"));
+                    "Aujourd'hui")]);
                 return;
             }
 
@@ -68,10 +68,11 @@ public partial class MessagesPage : ContentPage
                 return;
             }
 
-            foreach (var mission in result.Response.OrderByDescending(item => item.CreatedAt))
-            {
-                conversations.Add(ClientConversationRow.From(mission));
-            }
+            var rows = result.Response
+                .OrderByDescending(item => item.CreatedAt)
+                .Select(ClientConversationRow.From)
+                .ToArray();
+            await ReplaceConversationsAsync(rows);
         }
         catch
         {
@@ -83,15 +84,14 @@ public partial class MessagesPage : ContentPage
         }
     }
 
-    private async void OnConversationSelected(object sender, SelectionChangedEventArgs e)
+    private async void OnConversationTapped(object sender, TappedEventArgs e)
     {
-        if (isNavigating || e.CurrentSelection.FirstOrDefault() is not ClientConversationRow conversation)
+        if (isNavigating || e.Parameter is not ClientConversationRow conversation)
         {
             return;
         }
 
         isNavigating = true;
-        ConversationsView.SelectedItem = null;
         try
         {
             await Shell.Current.GoToAsync($"{nameof(MissionChatPage)}?missionId={conversation.MissionId:D}");
@@ -107,6 +107,18 @@ public partial class MessagesPage : ContentPage
     {
         ErrorLabel.Text = message;
         ErrorLabel.IsVisible = true;
+    }
+
+    private Task ReplaceConversationsAsync(IEnumerable<ClientConversationRow> rows)
+    {
+        return MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            conversations.Clear();
+            foreach (var row in rows)
+            {
+                conversations.Add(row);
+            }
+        });
     }
 }
 

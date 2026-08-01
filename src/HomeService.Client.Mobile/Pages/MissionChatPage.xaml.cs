@@ -57,12 +57,13 @@ public partial class MissionChatPage : ContentPage
         ErrorLabel.IsVisible = false;
         try
         {
-            messages.Clear();
             if (sessionStore.IsPreviewMode())
             {
-                MissionContextLabel.Text = "WL-000145 · Déboucher un évier";
-                messages.Add(new ClientMessageRow("Mohamed Kouyaté", "Bonjour, j'arrive dans 13 min.", "10:45"));
-                messages.Add(new ClientMessageRow("Vous", "Parfait, je suis là.", "10:50"));
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                    MissionContextLabel.Text = "WL-000145 · Déboucher un évier");
+                await ReplaceMessagesAsync([
+                    new ClientMessageRow("Mohamed Kouyaté", "Bonjour, j'arrive dans 13 min.", "10:45"),
+                    new ClientMessageRow("Vous", "Parfait, je suis là.", "10:50")]);
                 return;
             }
 
@@ -73,11 +74,12 @@ public partial class MissionChatPage : ContentPage
                 return;
             }
 
-            MissionContextLabel.Text = $"{result.Response.MissionNumber} · {result.Response.MissionLabel}";
-            foreach (var message in result.Response.Messages)
-            {
-                messages.Add(ClientMessageRow.From(message));
-            }
+            var rows = (result.Response.Messages ?? [])
+                .Select(ClientMessageRow.From)
+                .ToArray();
+            await MainThread.InvokeOnMainThreadAsync(() =>
+                MissionContextLabel.Text = $"{result.Response.MissionNumber} · {result.Response.MissionLabel}");
+            await ReplaceMessagesAsync(rows);
         }
         catch
         {
@@ -156,6 +158,18 @@ public partial class MissionChatPage : ContentPage
     {
         ErrorLabel.Text = message;
         ErrorLabel.IsVisible = true;
+    }
+
+    private Task ReplaceMessagesAsync(IEnumerable<ClientMessageRow> rows)
+    {
+        return MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            messages.Clear();
+            foreach (var row in rows)
+            {
+                messages.Add(row);
+            }
+        });
     }
 }
 
