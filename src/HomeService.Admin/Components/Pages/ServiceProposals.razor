@@ -538,6 +538,10 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                                 Prix maximum
                                                 <input type="number" min="0" step="100" @bind="editDraft.PremiumPriceAmount" />
                                             </label>
+                                            <label class="catalog-checkbox">
+                                                <input type="checkbox" @bind="editDraft.IsFixedPrice" />
+                                                Prix fixe
+                                            </label>
                                             <label>
                                                 Devise
                                                 <input type="text" maxlength="8" @bind="editDraft.Currency" />
@@ -587,6 +591,9 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                         </div>
                                         <div class="easy-actions">
                                             <button type="button" @onclick="() => StartEdit(prestation)">Modifier</button>
+                                            <button type="button" class="light-action" @onclick="() => OpenOptionManager(prestation)">
+                                                Options (@(prestation.Options?.Count ?? 0))
+                                            </button>
                                             @if (prestation.IsActive)
                                             {
                                                 <button type="button" class="light-action" @onclick="() => DeactivatePrestationAsync(prestation.Id)" disabled="@IsSaving">Desactiver</button>
@@ -623,6 +630,10 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                         <label>
                             Prix maximum
                             <input type="number" min="0" step="100" @bind="draft.PremiumPriceAmount" />
+                        </label>
+                        <label class="catalog-checkbox">
+                            <input type="checkbox" @bind="draft.IsFixedPrice" />
+                            Prix fixe
                         </label>
                         <label>
                             Devise
@@ -755,6 +766,54 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     </section>
 }
 
+@if (ManagedPrestation is not null)
+{
+    <div class="admin-modal-backdrop" @onclick="CloseOptionManager">
+        <section class="admin-modal service-options-modal" @onclick:stopPropagation="true" role="dialog" aria-modal="true">
+            <header class="service-options-header">
+                <div>
+                    <span class="eyebrow">@ManagedPrestation.Name</span>
+                    <h2>Options de la prestation</h2>
+                    <p>Ajoutez les formats que le client choisira avant d'envoyer sa demande.</p>
+                </div>
+                <button type="button" class="icon-close" @onclick="CloseOptionManager" aria-label="Fermer">×</button>
+            </header>
+
+            <div class="service-options-list">
+                @foreach (var option in (ManagedPrestation.Options ?? []).OrderBy(item => item.SortOrder).ThenBy(item => item.Name))
+                {
+                    var optionDraft = GetOptionDraft(option);
+                    <article class="service-option-row" @key="option.Id">
+                        <input aria-label="Nom" @bind="optionDraft.Name" />
+                        <input aria-label="Description" class="option-description" @bind="optionDraft.Description" />
+                        <input aria-label="Ordre" type="number" min="0" @bind="optionDraft.SortOrder" />
+                        <label class="option-fixed"><input type="checkbox" @bind="optionDraft.IsFixedPrice" /> Fixe</label>
+                        <input aria-label="Prix minimum" type="number" min="0" step="100" @bind="optionDraft.PriceMinAmount" disabled="@optionDraft.IsFixedPrice" />
+                        <input aria-label="Prix maximum" type="number" min="0" step="100" @bind="optionDraft.PriceMaxAmount" />
+                        <button type="button" @onclick="() => SaveOptionAsync(option.Id)" disabled="@IsSaving">Enregistrer</button>
+                        <button type="button" class="light-action" @onclick="() => ToggleOptionAsync(option)" disabled="@IsSaving">
+                            @(option.IsActive ? "Desactiver" : "Reactiver")
+                        </button>
+                    </article>
+                }
+            </div>
+
+            <div class="service-option-create">
+                <h3>Ajouter une option</h3>
+                <div class="service-option-row">
+                    <input placeholder="Ex: Appartement 3 pieces" @bind="NewOptionDraft.Name" />
+                    <input class="option-description" placeholder="Description courte" @bind="NewOptionDraft.Description" />
+                    <input aria-label="Ordre" type="number" min="0" @bind="NewOptionDraft.SortOrder" />
+                    <label class="option-fixed"><input type="checkbox" @bind="NewOptionDraft.IsFixedPrice" /> Fixe</label>
+                    <input aria-label="Prix minimum" type="number" min="0" step="100" @bind="NewOptionDraft.PriceMinAmount" disabled="@NewOptionDraft.IsFixedPrice" />
+                    <input aria-label="Prix maximum" type="number" min="0" step="100" @bind="NewOptionDraft.PriceMaxAmount" />
+                    <button type="button" @onclick="CreateOptionAsync" disabled="@IsSaving">Ajouter</button>
+                </div>
+            </div>
+        </section>
+    </div>
+}
+
 @code {
     private readonly Dictionary<Guid, PrestationDraft> Drafts = [];
     private readonly Dictionary<Guid, PrestationDraft> EditDrafts = [];
@@ -770,6 +829,9 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private string SortFilter { get; set; } = "attention";
     private string? Message { get; set; }
     private Guid? EditingPrestationId { get; set; }
+    private ServicePrestationSummaryResponse? ManagedPrestation { get; set; }
+    private readonly Dictionary<Guid, OptionDraft> OptionDrafts = [];
+    private OptionDraft NewOptionDraft { get; set; } = new();
     private Guid? EditingServiceId { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSaving { get; set; }
@@ -1260,6 +1322,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             NormalPriceAmount = service.PriceMinAmount ?? service.NormalPriceAmount,
             PremiumPriceAmount = service.PriceMaxAmount ?? service.PremiumPriceAmount,
             Currency = service.Currency
+            ,IsFixedPrice = service.IsFixedPrice
         };
     }
 
@@ -1286,7 +1349,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                 NormalPriceAmount = prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
                 PremiumPriceAmount = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount,
                 Currency = prestation.Currency,
-                IllustrationUrl = prestation.IllustrationUrl ?? string.Empty
+                IllustrationUrl = prestation.IllustrationUrl ?? string.Empty,
+                IsFixedPrice = prestation.IsFixedPrice
             };
             EditDrafts[prestation.Id] = draft;
         }
@@ -1305,7 +1369,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             NormalPriceAmount = prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
             PremiumPriceAmount = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount,
             Currency = prestation.Currency,
-            IllustrationUrl = prestation.IllustrationUrl ?? string.Empty
+            IllustrationUrl = prestation.IllustrationUrl ?? string.Empty,
+            IsFixedPrice = prestation.IsFixedPrice
         };
     }
 
@@ -1336,7 +1401,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                     draft.Currency,
                     draft.NormalPriceAmount,
                     draft.PremiumPriceAmount,
-                    draft.IllustrationUrl));
+                    draft.IllustrationUrl,
+                    draft.IsFixedPrice));
             Drafts[serviceId] = new PrestationDraft();
             Message = "Prestation ajoutee au catalogue.";
         });
@@ -1406,7 +1472,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             draft.PremiumPriceAmount,
             draft.IconUrl,
             draft.ImageUrl,
-            draft.DisplayCategory);
+            draft.DisplayCategory,
+            draft.IsFixedPrice);
     }
 
     private static string FormatDisplayCategory(string category)
@@ -1436,7 +1503,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
                     draft.Currency,
                     draft.NormalPriceAmount,
                     draft.PremiumPriceAmount,
-                    draft.IllustrationUrl));
+                    draft.IllustrationUrl,
+                    draft.IsFixedPrice));
             EditingPrestationId = null;
             Message = "Prestation modifiee.";
         });
@@ -1458,6 +1526,113 @@ else if (ActiveTab == ServiceAdminTab.Insights)
             await ApiClient.DeactivateServicePrestationAsync(prestationId);
             Message = "Prestation desactivee.";
         });
+    }
+
+    private void OpenOptionManager(ServicePrestationSummaryResponse prestation)
+    {
+        ManagedPrestation = prestation;
+        OptionDrafts.Clear();
+        foreach (var option in prestation.Options ?? [])
+        {
+            OptionDrafts[option.Id] = OptionDraft.From(option);
+        }
+
+        NewOptionDraft = new OptionDraft
+        {
+            SortOrder = (prestation.Options?.Count ?? 0) + 1,
+            Currency = prestation.Currency,
+            PriceMinAmount = prestation.PriceMinAmount ?? prestation.NormalPriceAmount,
+            PriceMaxAmount = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount
+        };
+    }
+
+    private void CloseOptionManager()
+    {
+        ManagedPrestation = null;
+        OptionDrafts.Clear();
+    }
+
+    private OptionDraft GetOptionDraft(ServiceOptionSummaryResponse option)
+    {
+        if (!OptionDrafts.TryGetValue(option.Id, out var draft))
+        {
+            draft = OptionDraft.From(option);
+            OptionDrafts[option.Id] = draft;
+        }
+
+        return draft;
+    }
+
+    private async Task CreateOptionAsync()
+    {
+        if (ManagedPrestation is null || string.IsNullOrWhiteSpace(NewOptionDraft.Name))
+        {
+            Message = "Renseignez le nom de l'option.";
+            return;
+        }
+
+        var prestationId = ManagedPrestation.Id;
+        await RunMutationAsync(async () =>
+        {
+            await ApiClient.CreateServiceOptionAsync(prestationId, ToOptionRequest(NewOptionDraft));
+            Message = "Option ajoutee.";
+        });
+        ReopenOptionManager(prestationId);
+    }
+
+    private async Task SaveOptionAsync(Guid optionId)
+    {
+        var prestationId = ManagedPrestation?.Id;
+        if (prestationId is null || !OptionDrafts.TryGetValue(optionId, out var draft))
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            await ApiClient.UpdateServiceOptionAsync(optionId, ToOptionRequest(draft));
+            Message = "Option modifiee.";
+        });
+        ReopenOptionManager(prestationId.Value);
+    }
+
+    private async Task ToggleOptionAsync(ServiceOptionSummaryResponse option)
+    {
+        var prestationId = ManagedPrestation?.Id;
+        if (prestationId is null)
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            await ApiClient.SetServiceOptionActiveAsync(option.Id, !option.IsActive);
+            Message = option.IsActive ? "Option desactivee." : "Option reactivee.";
+        });
+        ReopenOptionManager(prestationId.Value);
+    }
+
+    private void ReopenOptionManager(Guid prestationId)
+    {
+        var updated = Services.SelectMany(service => service.Prestations).FirstOrDefault(item => item.Id == prestationId);
+        if (updated is not null)
+        {
+            OpenOptionManager(updated);
+        }
+    }
+
+    private static UpsertServiceOptionRequest ToOptionRequest(OptionDraft draft)
+    {
+        var maximum = Math.Max(0, draft.PriceMaxAmount);
+        var minimum = draft.IsFixedPrice ? maximum : Math.Max(0, draft.PriceMinAmount);
+        return new UpsertServiceOptionRequest(
+            draft.Name,
+            draft.Description,
+            draft.SortOrder,
+            minimum,
+            maximum,
+            draft.IsFixedPrice,
+            draft.Currency);
     }
 
     private async Task RunMutationAsync(Func<Task> action)
@@ -1613,6 +1788,29 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         public int PremiumPriceAmount { get; set; }
         public string Currency { get; set; } = "XOF";
         public string IllustrationUrl { get; set; } = string.Empty;
+        public bool IsFixedPrice { get; set; }
+    }
+
+    private sealed class OptionDraft
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int SortOrder { get; set; }
+        public int PriceMinAmount { get; set; }
+        public int PriceMaxAmount { get; set; }
+        public bool IsFixedPrice { get; set; }
+        public string Currency { get; set; } = "XOF";
+
+        public static OptionDraft From(ServiceOptionSummaryResponse option) => new()
+        {
+            Name = option.Name,
+            Description = option.Description ?? string.Empty,
+            SortOrder = option.SortOrder,
+            PriceMinAmount = option.PriceMinAmount,
+            PriceMaxAmount = option.PriceMaxAmount,
+            IsFixedPrice = option.IsFixedPrice,
+            Currency = option.Currency
+        };
     }
 
     private sealed class ServiceDraft
@@ -1626,6 +1824,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         public int NormalPriceAmount { get; set; }
         public int PremiumPriceAmount { get; set; }
         public string Currency { get; set; } = "XOF";
+        public bool IsFixedPrice { get; set; }
     }
 
     private sealed class ProposalDraft

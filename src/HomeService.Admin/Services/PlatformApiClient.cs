@@ -563,6 +563,40 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await PostJsonAsync<ServicePrestationSummaryResponse>($"/api/admin/service-prestations/{prestationId}/deactivate", null, cancellationToken);
     }
 
+    public async Task<ServiceOptionSummaryResponse?> CreateServiceOptionAsync(
+        Guid prestationId,
+        UpsertServiceOptionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await PostJsonAsync<ServiceOptionSummaryResponse>(
+            $"/api/admin/service-prestations/{prestationId}/options",
+            request,
+            cancellationToken);
+    }
+
+    public async Task<ServiceOptionSummaryResponse?> UpdateServiceOptionAsync(
+        Guid optionId,
+        UpsertServiceOptionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await PutJsonAsync<ServiceOptionSummaryResponse>(
+            $"/api/admin/service-options/{optionId}",
+            request,
+            cancellationToken);
+    }
+
+    public async Task<ServiceOptionSummaryResponse?> SetServiceOptionActiveAsync(
+        Guid optionId,
+        bool isActive,
+        CancellationToken cancellationToken = default)
+    {
+        var state = isActive ? "activate" : "deactivate";
+        return await PostJsonAsync<ServiceOptionSummaryResponse>(
+            $"/api/admin/service-options/{optionId}/{state}",
+            null,
+            cancellationToken);
+    }
+
     public async Task<IReadOnlyList<TranslationValueResponse>> GetTranslationsAsync(string scope, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

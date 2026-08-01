@@ -344,13 +344,20 @@ else
                                             <div class="mission-quote-editor">
                                                 <div class="mission-quote-heading">
                                                     <strong>Prix propose au client</strong>
-                                                    <small>Fourchette: @GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</small>
+                                                    <small>@(candidate.IsFixedPrice
+                                                        ? $"Prix fixe: {GetPriceMax(candidate):N0} {candidate.Currency}"
+                                                        : $"Fourchette: {GetPriceMin(candidate):N0} - {GetPriceMax(candidate):N0} {candidate.Currency}")</small>
                                                 </div>
                                                 <label>
                                                     <span>Montant</span>
-                                                    <input type="number" min="@GetPriceMin(candidate)" step="100" @bind="AssignmentQuotedAmount" />
+                                                    <input type="number"
+                                                           min="@GetPriceMin(candidate)"
+                                                           max="@(candidate.IsFixedPrice ? GetPriceMax(candidate) : null)"
+                                                           step="100"
+                                                           disabled="@candidate.IsFixedPrice"
+                                                           @bind="AssignmentQuotedAmount" />
                                                 </label>
-                                                @if (AssignmentQuotedAmount > GetPriceMax(candidate))
+                                                @if (!candidate.IsFixedPrice && AssignmentQuotedAmount > GetPriceMax(candidate))
                                                 {
                                                     <label class="mission-quote-justification">
                                                         <span>Justification obligatoire</span>
@@ -595,7 +602,7 @@ else
     private void PrepareAssignment(CompanyPortalAssignableProviderResponse candidate)
     {
         AssignmentCandidateId = candidate.Id;
-        AssignmentQuotedAmount = GetPriceMin(candidate);
+        AssignmentQuotedAmount = candidate.IsFixedPrice ? GetPriceMax(candidate) : GetPriceMin(candidate);
         AssignmentOverMaxJustification = null;
         AssignmentMessage = null;
     }
@@ -622,6 +629,7 @@ else
     {
         return candidate.CanAssign
             && AssignmentQuotedAmount >= GetPriceMin(candidate)
+            && (!candidate.IsFixedPrice || AssignmentQuotedAmount == GetPriceMax(candidate))
             && (AssignmentQuotedAmount <= GetPriceMax(candidate)
                 || !string.IsNullOrWhiteSpace(AssignmentOverMaxJustification));
     }
