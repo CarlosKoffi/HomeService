@@ -7,19 +7,35 @@ namespace HomeService.Client.Mobile.Pages;
 public partial class AddPaymentMethodPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
+    private IReadOnlyList<PaymentProviderResponse> providers = [];
 
     public AddPaymentMethodPage()
     {
         InitializeComponent();
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
-        MethodPicker.SelectedIndex = 0;
     }
 
     public string? MissionId { get; set; }
 
-    private void OnMethodChanged(object sender, EventArgs e)
+    protected override async void OnAppearing()
     {
-        var isCard = MethodPicker.SelectedIndex == 1;
+        base.OnAppearing();
+        if (providers.Count > 0) return;
+        var result = await apiClient.GetPaymentProvidersAsync();
+        if (!result.IsSuccess || result.Response is null)
+        {
+            CatalogErrorLabel.IsVisible = true;
+            SaveButton.IsEnabled = false;
+            return;
+        }
+        providers = result.Response;
+        ProviderPicker.ItemsSource = providers.ToList();
+        ProviderPicker.SelectedIndex = providers.Count > 0 ? 0 : -1;
+    }
+
+    private void OnProviderChanged(object sender, EventArgs e)
+    {
+        var isCard = ProviderPicker.SelectedItem is PaymentProviderResponse { Method: "Card" };
         ReferenceLabel.Text = isCard ? "Quatre derniers chiffres" : "Numero Mobile Money";
         ReferenceEntry.Placeholder = isCard ? "Ex. 4242" : "07 00 00 00 00";
         ReferenceEntry.Keyboard = isCard ? Keyboard.Numeric : Keyboard.Telephone;
@@ -28,21 +44,21 @@ public partial class AddPaymentMethodPage : ContentPage
     private async void OnSaveClicked(object sender, EventArgs e)
     {
         ErrorLabel.IsVisible = false;
-        var label = LabelEntry.Text?.Trim();
         var reference = ReferenceEntry.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(reference))
+        if (ProviderPicker.SelectedItem is not PaymentProviderResponse provider || string.IsNullOrWhiteSpace(reference))
         {
-            ErrorLabel.Text = "Renseignez un nom et la reference du compte.";
+            ErrorLabel.Text = "Choisissez un operateur et renseignez le numero du compte.";
             ErrorLabel.IsVisible = true;
             return;
         }
 
         SaveButton.IsEnabled = false;
         var result = await apiClient.CreatePaymentMethodAsync(new UpsertClientPaymentMethodRequest(
-            MethodPicker.SelectedIndex == 1 ? "Card" : "MobileMoney",
-            label,
+            provider.Method,
+            provider.Name,
             Mask(reference),
-            DefaultCheckBox.IsChecked));
+            DefaultCheckBox.IsChecked,
+            provider.Id));
         SaveButton.IsEnabled = true;
 
         if (!result.IsSuccess || result.Response is null)

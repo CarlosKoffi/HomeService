@@ -14,15 +14,8 @@
         </Grid>
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Spacing="16">
-                <Label Text="Type de paiement" FontAttributes="Bold" />
-                <Picker x:Name="MethodPicker" Title="Choisir" SelectedIndexChanged="OnMethodChanged">
-                    <Picker.Items>
-                        <x:String>Mobile Money</x:String>
-                        <x:String>Carte bancaire</x:String>
-                    </Picker.Items>
-                </Picker>
-                <Label Text="Nom" FontAttributes="Bold" />
-                <Entry x:Name="LabelEntry" Placeholder="Ex. Orange Money personnel" />
+                <Label Text="Operateur" FontAttributes="Bold" />
+                <Picker x:Name="ProviderPicker" Title="Choisir un operateur" ItemDisplayBinding="{Binding Name}" SelectedIndexChanged="OnProviderChanged" />
                 <Label x:Name="ReferenceLabel" Text="Numero Mobile Money" FontAttributes="Bold" />
                 <Entry x:Name="ReferenceEntry" Placeholder="07 00 00 00 00" Keyboard="Telephone" />
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
@@ -32,6 +25,7 @@
                 <Border BackgroundColor="#F5F7FA" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14">
                     <Label Text="Aucun paiement n'est effectue maintenant. Ce moyen sera utilise uniquement lorsque vous accepterez le prix propose." FontSize="12" TextColor="#687386" />
                 </Border>
+                <Label x:Name="CatalogErrorLabel" Text="Impossible de charger les operateurs de paiement." TextColor="{StaticResource Danger}" IsVisible="False" />
             </VerticalStackLayout>
         </ScrollView>
         <VerticalStackLayout Grid.Row="2" Spacing="8">

@@ -39,7 +39,8 @@ public partial class PaymentMethodsPage : ContentPage
 
         foreach (var method in result.Response)
         {
-            methods.Add(PaymentMethodRow.From(method));
+            var logo = await apiClient.DownloadMediaImageSourceAsync(method.PaymentProviderLogoUrl);
+            methods.Add(PaymentMethodRow.From(method, logo));
         }
 
         EmptyState.IsVisible = methods.Count == 0;
@@ -90,13 +91,15 @@ public partial class PaymentMethodsPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 
-    private sealed record PaymentMethodRow(Guid Id, string Label, string Reference, string IconText, string StatusText, bool IsDefault)
+    private sealed record PaymentMethodRow(Guid Id, string Label, string Reference, string IconText, ImageSource? LogoSource, bool ShowFallback, string StatusText, bool IsDefault)
     {
-        public static PaymentMethodRow From(ClientPaymentMethodResponse response) => new(
+        public static PaymentMethodRow From(ClientPaymentMethodResponse response, ImageSource? logo) => new(
             response.Id,
-            response.Label,
+            response.PaymentProviderName ?? response.Label,
             response.MaskedReference ?? "Compte securise",
             response.Method == "Card" ? "CB" : "MM",
+            logo,
+            logo is null,
             response.IsDefault ? "Par defaut" : "›",
             response.IsDefault);
     }

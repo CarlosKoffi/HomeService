@@ -328,6 +328,11 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<IReadOnlyList<ClientPaymentMethodResponse>>(HttpMethod.Get, "api/client/payment-methods", body: null, cancellationToken);
     }
 
+    public async Task<ApiCallResult<IReadOnlyList<PaymentProviderResponse>>> GetPaymentProvidersAsync(CancellationToken cancellationToken = default)
+    {
+        return await SendAsync<IReadOnlyList<PaymentProviderResponse>>(HttpMethod.Get, "api/client/payment-providers", bearerToken: null, body: null, cancellationToken);
+    }
+
     public async Task<ApiCallResult<ClientPaymentMethodResponse>> CreatePaymentMethodAsync(
         UpsertClientPaymentMethodRequest request,
         CancellationToken cancellationToken = default)
