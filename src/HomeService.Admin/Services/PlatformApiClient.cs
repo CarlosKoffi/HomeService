@@ -4,6 +4,8 @@ using System.Text;
 using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
 using HomeService.Contracts.Cms;
+using PaymentProviderResponse = HomeService.Contracts.Clients.PaymentProviderResponse;
+using UpsertPaymentProviderRequest = HomeService.Contracts.Clients.UpsertPaymentProviderRequest;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Contact;
 using HomeService.Contracts.Localization;
@@ -442,6 +444,24 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await GetJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<PaymentProviderResponse>> GetPaymentProvidersAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<PaymentProviderResponse>>("/api/admin/payment-providers", cancellationToken) ?? [];
+    }
+
+    public async Task<PaymentProviderResponse?> CreatePaymentProviderAsync(UpsertPaymentProviderRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<PaymentProviderResponse>("/api/admin/payment-providers", request, cancellationToken);
+    }
+
+    public async Task<PaymentProviderResponse?> UpdatePaymentProviderAsync(Guid id, UpsertPaymentProviderRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<PaymentProviderResponse>($"/api/admin/payment-providers/{id}", request, cancellationToken);
     }
 
     public async Task<CompanyServiceProposalListResponse?> GetCompanyServiceProposalsAsync(CancellationToken cancellationToken = default)

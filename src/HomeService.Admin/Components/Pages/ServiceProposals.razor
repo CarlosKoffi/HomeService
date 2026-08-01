@@ -1681,7 +1681,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
 
     private string ResolveServiceIconUrl(string? iconUrl)
     {
-        return ApiClient.ToApiUrl(iconUrl);
+        return ApiClient.ToCmsMediaPreviewUrl(iconUrl, null);
     }
 
     private async Task UploadServiceIconAsync(ServiceDraft draft, IBrowserFile file)
