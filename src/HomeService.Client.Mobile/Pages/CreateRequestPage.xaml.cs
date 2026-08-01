@@ -25,6 +25,9 @@ public partial class CreateRequestPage : ContentPage
     private bool autoOpenPrestationPickerPending = true;
     private int maxPhotoCount = 3;
     private int currentStep = 1;
+    private decimal? currentAddressLatitude;
+    private decimal? currentAddressLongitude;
+    private bool isUpdatingAddressFromLocation;
 
     public CreateRequestPage()
     {
@@ -225,7 +228,9 @@ public partial class CreateRequestPage : ContentPage
         PreparationDescriptionLabel.Text = string.IsNullOrWhiteSpace(preparation.Description)
             ? "Décrivez votre besoin pour recevoir une proposition adaptée."
             : preparation.Description;
-        PreparationPriceLabel.Text = $"A partir de {preparation.StartingPriceAmount:N0} {preparation.Currency} - max {preparation.MaximumPriceAmount:N0} {preparation.Currency}";
+        PreparationPriceLabel.Text = preparation.IsFixedPrice
+            ? $"Prix : {preparation.MaximumPriceAmount:N0} {preparation.Currency}"
+            : $"A partir de {preparation.StartingPriceAmount:N0} {preparation.Currency} - max {preparation.MaximumPriceAmount:N0} {preparation.Currency}";
         PreparationHintLabel.Text = preparation.Message;
         PreparationIcon.Source = await apiClient.DownloadMediaImageSourceAsync(
             preparation.ImageUrl ?? preparation.IconUrl);
@@ -428,7 +433,11 @@ public partial class CreateRequestPage : ContentPage
     {
         if (AddressPicker.SelectedItem is ClientAddressResponse address)
         {
+            currentAddressLatitude = address.Latitude;
+            currentAddressLongitude = address.Longitude;
+            isUpdatingAddressFromLocation = true;
             AddressEntry.Text = address.AddressLine;
+            isUpdatingAddressFromLocation = false;
             SelectedAddressLabel.Text = address.Label;
             SelectedAddressLineLabel.Text = address.AddressLine;
             SelectedAddressBorder.IsVisible = true;
@@ -442,6 +451,96 @@ public partial class CreateRequestPage : ContentPage
         {
             NewAddressLabelEntry.Focus();
         }
+    }
+
+    private void OnAddressTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (isUpdatingAddressFromLocation)
+        {
+            return;
+        }
+
+        currentAddressLatitude = null;
+        currentAddressLongitude = null;
+    }
+
+    private async void OnLocateAddressClicked(object sender, EventArgs e)
+    {
+        StepTwoErrorLabel.IsVisible = false;
+        LocateAddressButton.IsEnabled = false;
+
+        try
+        {
+            var permission = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+            if (permission != PermissionStatus.Granted)
+            {
+                ShowAddressError("Autorisez la localisation pour utiliser votre position actuelle.");
+                return;
+            }
+
+            var location = await Geolocation.Default.GetLocationAsync(new GeolocationRequest(
+                GeolocationAccuracy.Medium,
+                TimeSpan.FromSeconds(12)));
+            if (location is null)
+            {
+                ShowAddressError("Votre position n'a pas pu être détectée. Saisissez l'adresse manuellement.");
+                return;
+            }
+
+            currentAddressLatitude = (decimal)location.Latitude;
+            currentAddressLongitude = (decimal)location.Longitude;
+            var placemarks = await Geocoding.Default.GetPlacemarksAsync(location.Latitude, location.Longitude);
+            var placemark = placemarks.FirstOrDefault();
+            var address = FormatPlacemark(placemark);
+
+            isUpdatingAddressFromLocation = true;
+            AddressEntry.Text = string.IsNullOrWhiteSpace(address)
+                ? $"Position {location.Latitude:F5}, {location.Longitude:F5}"
+                : address;
+            isUpdatingAddressFromLocation = false;
+
+            if (string.IsNullOrWhiteSpace(NewAddressLabelEntry.Text))
+            {
+                NewAddressLabelEntry.Text = "Ma position";
+            }
+        }
+        catch (FeatureNotSupportedException)
+        {
+            ShowAddressError("La localisation n'est pas disponible sur cet appareil.");
+        }
+        catch (PermissionException)
+        {
+            ShowAddressError("La permission de localisation est nécessaire.");
+        }
+        catch
+        {
+            ShowAddressError("Impossible de récupérer votre position. Vérifiez le GPS puis réessayez.");
+        }
+        finally
+        {
+            isUpdatingAddressFromLocation = false;
+            LocateAddressButton.IsEnabled = true;
+        }
+    }
+
+    private void ShowAddressError(string message)
+    {
+        StepTwoErrorLabel.Text = message;
+        StepTwoErrorLabel.IsVisible = true;
+    }
+
+    private static string FormatPlacemark(Placemark? placemark)
+    {
+        if (placemark is null)
+        {
+            return string.Empty;
+        }
+
+        var street = string.Join(" ", new[] { placemark.SubThoroughfare, placemark.Thoroughfare }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+        return string.Join(", ", new[] { street, placemark.FeatureName, placemark.Locality, placemark.SubAdminArea }
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase));
     }
 
     private async void OnSaveAddressClicked(object sender, EventArgs e)
@@ -464,7 +563,7 @@ public partial class CreateRequestPage : ContentPage
         {
             SaveAddressButton.IsEnabled = false;
             var result = await apiClient.CreateAddressAsync(new UpsertClientAddressRequest(
-                label, addressLine, null, null, addresses.Count == 0));
+                label, addressLine, currentAddressLatitude, currentAddressLongitude, addresses.Count == 0));
             SaveAddressButton.IsEnabled = true;
             if (!result.IsSuccess || result.Response is null)
             {
@@ -484,6 +583,8 @@ public partial class CreateRequestPage : ContentPage
         NewAddressPanel.IsVisible = false;
         ShowNewAddressButton.IsVisible = true;
         NewAddressLabelEntry.Text = string.Empty;
+        currentAddressLatitude = null;
+        currentAddressLongitude = null;
     }
 
     private async void OnCreateClicked(object sender, EventArgs e)

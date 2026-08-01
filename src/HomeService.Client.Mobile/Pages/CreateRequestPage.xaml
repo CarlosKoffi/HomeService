@@ -134,12 +134,18 @@
                         <Label Text="Date &amp; heure" FontSize="16" FontAttributes="Bold" />
                         <Border BackgroundColor="#F4F5F8" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="14">
                             <VerticalStackLayout Spacing="9">
-                                <Picker x:Name="ModePicker" Title="Choisir le délai" FontAttributes="Bold" SelectedIndexChanged="OnModeChanged">
-                                    <Picker.Items>
-                                        <x:String>Maintenant</x:String>
-                                        <x:String>Sur rendez-vous</x:String>
-                                    </Picker.Items>
-                                </Picker>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <Picker x:Name="ModePicker" Title="Choisir le délai" FontAttributes="Bold"
+                                            HorizontalOptions="Fill" SelectedIndexChanged="OnModeChanged">
+                                        <Picker.Items>
+                                            <x:String>Maintenant</x:String>
+                                            <x:String>Sur rendez-vous</x:String>
+                                        </Picker.Items>
+                                    </Picker>
+                                    <Label Grid.Column="1" Text="⌄" FontSize="22" FontAttributes="Bold"
+                                           TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"
+                                           InputTransparent="True" />
+                                </Grid>
                                 <Label x:Name="ModeHintLabel" Text="Intervention dès que possible" FontSize="11" TextColor="#687386" />
                             </VerticalStackLayout>
                         </Border>
@@ -182,7 +188,17 @@
                                 <VerticalStackLayout Spacing="10">
                                     <Label Text="Nouvelle adresse" FontSize="13" FontAttributes="Bold" />
                                     <Entry x:Name="NewAddressLabelEntry" Placeholder="Ex. Maison, Bureau" />
-                                    <Entry x:Name="AddressEntry" Placeholder="Ex. Cocody, Riviera 3" />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <Entry x:Name="AddressEntry" Placeholder="Ex. Cocody, Riviera 3"
+                                               TextChanged="OnAddressTextChanged" />
+                                        <Button Grid.Column="1" x:Name="LocateAddressButton" Text="⌖"
+                                                FontSize="22" WidthRequest="46" HeightRequest="46" Padding="0"
+                                                BackgroundColor="#F4F7FF" TextColor="{StaticResource WeleBlue}"
+                                                BorderColor="#DCE6FF" BorderWidth="1" CornerRadius="10"
+                                                Clicked="OnLocateAddressClicked" />
+                                    </Grid>
+                                    <Label Text="Touchez la cible pour utiliser votre position actuelle."
+                                           FontSize="10" TextColor="#687386" />
                                     <Button x:Name="SaveAddressButton" Text="Enregistrer cette adresse"
                                             HeightRequest="46" Clicked="OnSaveAddressClicked" />
                                 </VerticalStackLayout>
