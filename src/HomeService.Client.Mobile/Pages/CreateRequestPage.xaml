@@ -50,6 +50,16 @@
                                             HorizontalOptions="Start"
                                             IsVisible="False"
                                             Clicked="OnSelectPrestationClicked" />
+                                    <Button x:Name="SelectOptionButton"
+                                            Text="Selectionner une option"
+                                            FontSize="11"
+                                            FontAttributes="Bold"
+                                            TextColor="{StaticResource WeleBlue}"
+                                            BackgroundColor="Transparent"
+                                            Padding="0,5,0,0"
+                                            HorizontalOptions="Start"
+                                            IsVisible="False"
+                                            Clicked="OnSelectOptionClicked" />
                                 </VerticalStackLayout>
                             </Border>
                         </VerticalStackLayout>
@@ -377,6 +387,50 @@
                                         </VerticalStackLayout>
                                         <Label Grid.Column="2" Text="&#8250;" FontSize="28"
                                                TextColor="#687386" VerticalTextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="OptionPickerOverlay"
+              Grid.RowSpan="2" Margin="-20,-18,-20,-18"
+              BackgroundColor="#730B1220" IsVisible="False" ZIndex="22">
+            <Border VerticalOptions="End" BackgroundColor="White" StrokeThickness="0"
+                    StrokeShape="RoundRectangle 22,22,0,0" Padding="20,18,20,24"
+                    MaximumHeightRequest="600">
+                <Border.GestureRecognizers>
+                    <SwipeGestureRecognizer Direction="Down" Swiped="OnOptionPickerSwiped" />
+                </Border.GestureRecognizers>
+                <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+                    <BoxView HeightRequest="4" WidthRequest="42" CornerRadius="2" Color="#D8DEE8" HorizontalOptions="Center" />
+                    <Grid Grid.Row="1" ColumnDefinitions="*,40">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="Choisir une option" FontSize="18" FontAttributes="Bold" />
+                            <Label x:Name="OptionPickerPrestationLabel" FontSize="11" TextColor="#687386" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="&#215;" FontSize="24" WidthRequest="40" HeightRequest="40"
+                                Padding="0" BackgroundColor="Transparent" TextColor="#111827"
+                                Clicked="OnCloseOptionPickerClicked" />
+                    </Grid>
+                    <BoxView Grid.Row="2" HeightRequest="1" Color="#E7EAF0" />
+                    <CollectionView x:Name="OptionPickerList" Grid.Row="3" SelectionMode="Single"
+                                    SelectionChanged="OnOptionSelected">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="#E1E6EF" StrokeShape="RoundRectangle 14" BackgroundColor="White"
+                                        Padding="14" Margin="0,5">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <VerticalStackLayout Spacing="4">
+                                            <Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold" />
+                                            <Label Text="{Binding Description}" FontSize="10" TextColor="#687386" MaxLines="2" />
+                                            <Label Text="{Binding PriceLabel}" FontSize="11" FontAttributes="Bold"
+                                                   TextColor="{StaticResource WeleBlue}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="1" Text="&#8250;" FontSize="28" TextColor="#687386" VerticalTextAlignment="Center" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

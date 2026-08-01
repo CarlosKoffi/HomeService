@@ -7,6 +7,7 @@ namespace HomeService.Client.Mobile.Pages;
 
 [QueryProperty(nameof(ServiceId), "serviceId")]
 [QueryProperty(nameof(PrestationId), "prestationId")]
+[QueryProperty(nameof(OptionId), "optionId")]
 [QueryProperty(nameof(Name), "name")]
 public partial class CreateRequestPage : ContentPage
 {
@@ -15,6 +16,7 @@ public partial class CreateRequestPage : ContentPage
     private readonly ObservableCollection<PhotoSelection> selectedPhotos = [];
     private readonly ObservableCollection<ServicePickerItem> availableServices = [];
     private readonly ObservableCollection<PrestationPickerItem> availablePrestations = [];
+    private readonly ObservableCollection<OptionPickerItem> availableOptions = [];
     private readonly List<ClientAddressResponse> addresses = [];
     private ClientMeResponse? client;
     private PrepareClientMissionResponse? preparation;
@@ -32,6 +34,7 @@ public partial class CreateRequestPage : ContentPage
         PhotosView.ItemsSource = selectedPhotos;
         ServicePickerList.ItemsSource = availableServices;
         PrestationPickerList.ItemsSource = availablePrestations;
+        OptionPickerList.ItemsSource = availableOptions;
         StepOneContinueButton.IsEnabled = false;
         ModePicker.SelectedIndex = 0;
         PaymentPicker.SelectedIndex = 0;
@@ -43,6 +46,8 @@ public partial class CreateRequestPage : ContentPage
     public string? ServiceId { get; set; }
 
     public string? PrestationId { get; set; }
+
+    public string? OptionId { get; set; }
 
     public string? Name { get; set; }
 
@@ -77,6 +82,10 @@ public partial class CreateRequestPage : ContentPage
         if (Guid.TryParse(ServiceId, out _))
         {
             await LoadPreparationAsync();
+            if (Guid.TryParse(PrestationId, out _) && !Guid.TryParse(OptionId, out _))
+            {
+                LoadOptionsFromPreparation(autoOpen: true);
+            }
         }
     }
 
@@ -84,7 +93,9 @@ public partial class CreateRequestPage : ContentPage
     {
         availableServices.Clear();
         availablePrestations.Clear();
+        availableOptions.Clear();
         SelectPrestationButton.IsVisible = false;
+        SelectOptionButton.IsVisible = false;
 
         var result = await apiClient.GetServicesAsync();
         if (!result.IsSuccess || result.Response is null)
@@ -185,7 +196,8 @@ public partial class CreateRequestPage : ContentPage
             serviceId,
             prestationId,
             ResolveMissionMode(),
-            IsUrgent: IsUrgentRequested()));
+            IsUrgent: IsUrgentRequested(),
+            ServiceOptionId: Guid.TryParse(OptionId, out var parsedOptionId) ? parsedOptionId : null));
 
         if (!result.IsSuccess || result.Response is null)
         {
@@ -208,6 +220,7 @@ public partial class CreateRequestPage : ContentPage
         }
 
         preparation = result.Response;
+        LoadOptionsFromPreparation(autoOpen: false);
         UrgentOptionPanel.IsVisible = preparation.UrgentOptionEnabled && ModePicker.SelectedIndex == 0;
         maxPhotoCount = Math.Max(0, preparation.MaxPhotoCount);
         TitleLabel.Text = selectedService?.Name ?? preparation.DisplayName;
@@ -266,6 +279,7 @@ public partial class CreateRequestPage : ContentPage
 
         ServiceId = selected.Id.ToString("D");
         PrestationId = null;
+        OptionId = null;
         Name = selected.Name;
         ServicePickerOverlay.IsVisible = false;
         ServicePickerList.SelectedItem = null;
@@ -273,6 +287,57 @@ public partial class CreateRequestPage : ContentPage
         autoOpenPrestationPickerPending = true;
         await LoadServiceCatalogAsync();
         await LoadPreparationAsync();
+        LoadOptionsFromPreparation(autoOpen: true);
+    }
+
+    private void LoadOptionsFromPreparation(bool autoOpen)
+    {
+        availableOptions.Clear();
+        foreach (var option in (preparation?.AvailableOptions ?? []).OrderBy(item => item.SortOrder).ThenBy(item => item.Name))
+        {
+            availableOptions.Add(OptionPickerItem.From(option));
+        }
+
+        SelectOptionButton.IsVisible = availableOptions.Count > 0;
+        OptionPickerPrestationLabel.Text = preparation?.ServicePrestationName ?? preparation?.DisplayName ?? string.Empty;
+        UpdateOptionButtonText();
+        if (autoOpen && availableOptions.Count > 0 && !Guid.TryParse(OptionId, out _))
+        {
+            OpenOptionPicker();
+        }
+    }
+
+    private void OnSelectOptionClicked(object sender, EventArgs e) => OpenOptionPicker();
+
+    private void OpenOptionPicker()
+    {
+        if (availableOptions.Count == 0) return;
+        OptionPickerList.SelectedItem = null;
+        OptionPickerOverlay.IsVisible = true;
+    }
+
+    private void OnCloseOptionPickerClicked(object sender, EventArgs e)
+    {
+        OptionPickerOverlay.IsVisible = false;
+        OptionPickerList.SelectedItem = null;
+    }
+
+    private void OnOptionPickerSwiped(object sender, SwipedEventArgs e) => OnCloseOptionPickerClicked(sender, EventArgs.Empty);
+
+    private async void OnOptionSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not OptionPickerItem selected) return;
+        OptionId = selected.Id.ToString("D");
+        OptionPickerOverlay.IsVisible = false;
+        OptionPickerList.SelectedItem = null;
+        UpdateOptionButtonText();
+        await LoadPreparationAsync();
+    }
+
+    private void UpdateOptionButtonText()
+    {
+        var selected = availableOptions.FirstOrDefault(item => Guid.TryParse(OptionId, out var id) && item.Id == id);
+        SelectOptionButton.Text = selected is null ? "Selectionner une option" : $"Option : {selected.Name}  Modifier";
     }
 
     private void OnSelectPrestationClicked(object sender, EventArgs e)
@@ -315,6 +380,7 @@ public partial class CreateRequestPage : ContentPage
         }
 
         PrestationId = selected.Id.ToString("D");
+        OptionId = null;
         Name = selected.Name;
         PrestationPickerOverlay.IsVisible = false;
         PrestationPickerList.SelectedItem = null;
@@ -442,6 +508,14 @@ public partial class CreateRequestPage : ContentPage
         Guid? prestationId = Guid.TryParse(PrestationId, out var parsedPrestationId)
             ? parsedPrestationId
             : null;
+        Guid? optionId = Guid.TryParse(OptionId, out var parsedOptionId) ? parsedOptionId : null;
+
+        if (availableOptions.Count > 0 && optionId is null)
+        {
+            ShowError("Choisissez une option avant de continuer.");
+            OpenOptionPicker();
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(AddressEntry.Text))
         {
@@ -500,7 +574,8 @@ public partial class CreateRequestPage : ContentPage
             null,
             RequiresCompanyQuote: true,
             IsUrgent: IsUrgentRequested(),
-            Photos: photoRequests);
+            Photos: photoRequests,
+            ServiceOptionId: optionId);
 
         var result = await apiClient.CreateMissionAsync(request);
         if (!result.IsSuccess || result.Response is null)
@@ -514,6 +589,12 @@ public partial class CreateRequestPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
+        if (OptionPickerOverlay.IsVisible)
+        {
+            OnCloseOptionPickerClicked(sender, e);
+            return;
+        }
+
         if (ServicePickerOverlay.IsVisible)
         {
             OnCloseServicePickerClicked(sender, e);
@@ -637,6 +718,14 @@ public partial class CreateRequestPage : ContentPage
         {
             StepOneErrorLabel.Text = "Chargement de la prestation en cours...";
             StepOneErrorLabel.IsVisible = true;
+            return;
+        }
+
+        if (availableOptions.Count > 0 && !Guid.TryParse(OptionId, out _))
+        {
+            StepOneErrorLabel.Text = "Choisissez une option pour cette prestation.";
+            StepOneErrorLabel.IsVisible = true;
+            OpenOptionPicker();
             return;
         }
 
@@ -828,6 +917,17 @@ public partial class CreateRequestPage : ContentPage
                 imageSource,
                 initials,
                 imageSource is null);
+        }
+    }
+
+    private sealed record OptionPickerItem(Guid Id, string Name, string Description, string PriceLabel)
+    {
+        public static OptionPickerItem From(HomeService.Contracts.Clients.ServiceOptionSummaryResponse option)
+        {
+            var price = option.IsFixedPrice || option.PriceMinAmount == option.PriceMaxAmount
+                ? $"Prix fixe : {option.PriceMaxAmount:N0} {option.Currency}"
+                : $"{option.PriceMinAmount:N0} - {option.PriceMaxAmount:N0} {option.Currency}";
+            return new OptionPickerItem(option.Id, option.Name, option.Description ?? "Option de la prestation", price);
         }
     }
 
