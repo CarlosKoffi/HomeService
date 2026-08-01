@@ -15,6 +15,7 @@ public partial class MessagesPage : ContentPage
     private Guid? requestedMissionId;
     private Guid? activeMissionId;
     private string requestedMode = "list";
+    private bool isLoading;
 
     public MessagesPage()
     {
@@ -46,6 +47,12 @@ public partial class MessagesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (isLoading)
+        {
+            return;
+        }
+
+        isLoading = true;
         try
         {
             await LoadConversationsAsync();
@@ -63,6 +70,10 @@ public partial class MessagesPage : ContentPage
         {
             ShowConversationList();
             ShowError("Impossible de charger vos messages pour le moment. Réessayez dans quelques instants.");
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
@@ -109,7 +120,15 @@ public partial class MessagesPage : ContentPage
         }
 
         ConversationsView.SelectedItem = null;
-        await OpenConversationAsync(conversation.MissionId);
+        try
+        {
+            await OpenConversationAsync(conversation.MissionId);
+        }
+        catch (Exception)
+        {
+            ShowConversationList();
+            ShowError("Cette conversation ne peut pas être ouverte pour le moment.");
+        }
     }
 
     private async Task OpenConversationAsync(Guid missionId)
@@ -172,17 +191,27 @@ public partial class MessagesPage : ContentPage
         }
 
         SendButton.IsEnabled = false;
-        var result = await apiClient.SendMissionMessageAsync(activeMissionId.Value, body);
-        SendButton.IsEnabled = true;
-
-        if (result.IsSuccess)
+        try
         {
-            await LoadMessagesAsync(activeMissionId.Value);
-            return;
-        }
+            var result = await apiClient.SendMissionMessageAsync(activeMissionId.Value, body);
+            if (result.IsSuccess)
+            {
+                await LoadMessagesAsync(activeMissionId.Value);
+                return;
+            }
 
-        MessageEntry.Text = body;
-        ShowError(result.ErrorMessage ?? "Le message n'a pas pu être envoyé.");
+            MessageEntry.Text = body;
+            ShowError(result.ErrorMessage ?? "Le message n'a pas pu être envoyé.");
+        }
+        catch (Exception)
+        {
+            MessageEntry.Text = body;
+            ShowError("Le message n'a pas pu être envoyé. Vérifiez votre connexion puis réessayez.");
+        }
+        finally
+        {
+            SendButton.IsEnabled = true;
+        }
     }
 
     private void OnBackToConversationsClicked(object sender, EventArgs e)
