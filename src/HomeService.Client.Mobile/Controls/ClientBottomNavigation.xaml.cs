@@ -36,7 +36,7 @@ public partial class ClientBottomNavigation : ContentView
     private static Task GoAsync(string route) => Shell.Current.GoToAsync(route);
     private async void OnHomeTapped(object sender, TappedEventArgs e) => await GoAsync("//home");
     private async void OnRequestsTapped(object sender, TappedEventArgs e) => await GoAsync("//requests");
-    private async void OnMessagesTapped(object sender, TappedEventArgs e) => await GoAsync("//messages");
+    private async void OnMessagesTapped(object sender, TappedEventArgs e) => await GoAsync("//messages?mode=list");
     private async void OnProfileTapped(object sender, TappedEventArgs e) => await GoAsync("//profile");
     private async void OnCreateTapped(object sender, TappedEventArgs e) => await GoAsync(nameof(Pages.CreateRequestPage));
 }

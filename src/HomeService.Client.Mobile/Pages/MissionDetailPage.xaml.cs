@@ -305,7 +305,7 @@ public partial class MissionDetailPage : ContentPage
             return;
         }
 
-        await Shell.Current.GoToAsync($"//messages?missionId={currentMissionId:D}");
+        await Shell.Current.GoToAsync($"//messages?mode=chat&missionId={currentMissionId:D}");
     }
 
     private async void OnCallClicked(object sender, EventArgs e)
