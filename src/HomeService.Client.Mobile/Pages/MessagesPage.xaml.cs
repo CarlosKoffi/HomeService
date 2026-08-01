@@ -9,7 +9,8 @@ public partial class MessagesPage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<ClientConversationRow> conversations = [];
-    private bool isLoading;
+    private readonly SemaphoreSlim loadGate = new(1, 1);
+    private bool isNavigating;
 
     public MessagesPage()
     {
@@ -22,23 +23,23 @@ public partial class MessagesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        isNavigating = false;
         await LoadConversationsSafelyAsync();
     }
 
     private async void OnRefreshing(object sender, EventArgs e)
     {
-        await LoadConversationsSafelyAsync(force: true);
+        await LoadConversationsSafelyAsync();
         MessagesRefreshView.IsRefreshing = false;
     }
 
-    private async Task LoadConversationsSafelyAsync(bool force = false)
+    private async Task LoadConversationsSafelyAsync()
     {
-        if (isLoading && !force)
+        if (!await loadGate.WaitAsync(0))
         {
             return;
         }
 
-        isLoading = true;
         ErrorLabel.IsVisible = false;
         try
         {
@@ -78,17 +79,18 @@ public partial class MessagesPage : ContentPage
         }
         finally
         {
-            isLoading = false;
+            loadGate.Release();
         }
     }
 
     private async void OnConversationSelected(object sender, SelectionChangedEventArgs e)
     {
-        if (e.CurrentSelection.FirstOrDefault() is not ClientConversationRow conversation)
+        if (isNavigating || e.CurrentSelection.FirstOrDefault() is not ClientConversationRow conversation)
         {
             return;
         }
 
+        isNavigating = true;
         ConversationsView.SelectedItem = null;
         try
         {
@@ -96,6 +98,7 @@ public partial class MessagesPage : ContentPage
         }
         catch
         {
+            isNavigating = false;
             ShowError("Cette conversation ne peut pas être ouverte pour le moment.");
         }
     }
@@ -111,7 +114,7 @@ public sealed record ClientConversationRow(Guid MissionId, string Title, string 
 {
     public static ClientConversationRow From(ClientMissionListItemResponse response)
     {
-        var title = response.PrestationName ?? response.ServiceName ?? "Demande de service";
+        var title = response.OptionName ?? response.PrestationName ?? response.ServiceName ?? "Demande de service";
         var date = (response.ScheduledFor ?? response.CreatedAt).ToLocalTime().ToString("dd MMM · HH:mm");
         return new ClientConversationRow(response.MissionId, title, response.MissionNumber, "Ouvrir la conversation", date);
     }

@@ -14,6 +14,7 @@ public partial class MissionDetailPage : ContentPage
     private readonly ObservableCollection<TimelineRow> timeline = [];
     private Guid currentMissionId;
     private string? currentProviderPhoneNumber;
+    private bool isOpeningChat;
 
     public MissionDetailPage()
     {
@@ -30,6 +31,7 @@ public partial class MissionDetailPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        isOpeningChat = false;
         await LoadAsync();
     }
 
@@ -353,12 +355,21 @@ public partial class MissionDetailPage : ContentPage
 
     private async void OnOpenChatClicked(object sender, EventArgs e)
     {
-        if (currentMissionId == Guid.Empty)
+        if (currentMissionId == Guid.Empty || isOpeningChat)
         {
             return;
         }
 
-        await Shell.Current.GoToAsync($"{nameof(MissionChatPage)}?missionId={currentMissionId:D}");
+        isOpeningChat = true;
+        try
+        {
+            await Shell.Current.GoToAsync($"{nameof(MissionChatPage)}?missionId={currentMissionId:D}");
+        }
+        catch
+        {
+            isOpeningChat = false;
+            ShowError("La conversation ne peut pas être ouverte pour le moment.");
+        }
     }
 
     private async void OnCallClicked(object sender, EventArgs e)

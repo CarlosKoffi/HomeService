@@ -2,6 +2,7 @@ namespace HomeService.Client.Mobile.Controls;
 
 public partial class ClientBottomNavigation : ContentView
 {
+    private bool isNavigating;
     public static readonly BindableProperty ActiveTabProperty = BindableProperty.Create(
         nameof(ActiveTab), typeof(string), typeof(ClientBottomNavigation), "",
         propertyChanged: static (bindable, _, _) => ((ClientBottomNavigation)bindable).UpdateState());
@@ -33,10 +34,27 @@ public partial class ClientBottomNavigation : ContentView
         ProfileIcon.Source = ActiveTab == "profile" ? "nav_profile_active.svg" : "nav_profile.svg";
     }
 
-    private static Task GoAsync(string route) => Shell.Current.GoToAsync(route);
-    private async void OnHomeTapped(object sender, TappedEventArgs e) => await GoAsync("//home");
-    private async void OnRequestsTapped(object sender, TappedEventArgs e) => await GoAsync("//requests");
-    private async void OnMessagesTapped(object sender, TappedEventArgs e) => await GoAsync("//messages");
-    private async void OnProfileTapped(object sender, TappedEventArgs e) => await GoAsync("//profile");
+    private async Task GoAsync(string route, string? targetTab = null)
+    {
+        if (isNavigating || (!string.IsNullOrWhiteSpace(targetTab) && ActiveTab == targetTab))
+        {
+            return;
+        }
+
+        isNavigating = true;
+        try
+        {
+            await Shell.Current.GoToAsync(route);
+        }
+        finally
+        {
+            isNavigating = false;
+        }
+    }
+
+    private async void OnHomeTapped(object sender, TappedEventArgs e) => await GoAsync("//home", "home");
+    private async void OnRequestsTapped(object sender, TappedEventArgs e) => await GoAsync("//requests", "requests");
+    private async void OnMessagesTapped(object sender, TappedEventArgs e) => await GoAsync("//messages", "messages");
+    private async void OnProfileTapped(object sender, TappedEventArgs e) => await GoAsync("//profile", "profile");
     private async void OnCreateTapped(object sender, TappedEventArgs e) => await GoAsync(nameof(Pages.CreateRequestPage));
 }

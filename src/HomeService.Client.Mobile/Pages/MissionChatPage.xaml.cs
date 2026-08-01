@@ -10,8 +10,10 @@ public partial class MissionChatPage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<ClientMessageRow> messages = [];
+    private readonly SemaphoreSlim loadGate = new(1, 1);
     private Guid? missionId;
-    private bool isLoading;
+    private bool isSending;
+    private bool isNavigating;
 
     public MissionChatPage()
     {
@@ -29,27 +31,29 @@ public partial class MissionChatPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        isNavigating = false;
         await LoadMessagesSafelyAsync();
     }
 
     private async void OnRefreshing(object sender, EventArgs e)
     {
-        await LoadMessagesSafelyAsync(force: true);
+        await LoadMessagesSafelyAsync();
         ChatRefreshView.IsRefreshing = false;
     }
 
-    private async Task LoadMessagesSafelyAsync(bool force = false)
+    private async Task LoadMessagesSafelyAsync()
     {
-        if ((isLoading && !force) || !missionId.HasValue)
+        if (!missionId.HasValue)
         {
-            if (!missionId.HasValue)
-            {
-                ShowError("Cette conversation n'est pas liée à une demande valide.");
-            }
+            ShowError("Cette conversation n'est pas liée à une demande valide.");
             return;
         }
 
-        isLoading = true;
+        if (!await loadGate.WaitAsync(0))
+        {
+            return;
+        }
+
         ErrorLabel.IsVisible = false;
         try
         {
@@ -81,7 +85,7 @@ public partial class MissionChatPage : ContentPage
         }
         finally
         {
-            isLoading = false;
+            loadGate.Release();
         }
     }
 
@@ -91,11 +95,12 @@ public partial class MissionChatPage : ContentPage
 
     private async Task SendAsync()
     {
-        if (!missionId.HasValue || string.IsNullOrWhiteSpace(MessageEntry.Text) || !SendButton.IsEnabled)
+        if (!missionId.HasValue || string.IsNullOrWhiteSpace(MessageEntry.Text) || isSending)
         {
             return;
         }
 
+        isSending = true;
         var body = MessageEntry.Text.Trim();
         ErrorLabel.IsVisible = false;
         SendButton.IsEnabled = false;
@@ -116,7 +121,7 @@ public partial class MissionChatPage : ContentPage
             }
 
             MessageEntry.Text = string.Empty;
-            await LoadMessagesSafelyAsync(force: true);
+            await LoadMessagesSafelyAsync();
         }
         catch
         {
@@ -124,12 +129,19 @@ public partial class MissionChatPage : ContentPage
         }
         finally
         {
+            isSending = false;
             SendButton.IsEnabled = true;
         }
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
+        if (isNavigating)
+        {
+            return;
+        }
+
+        isNavigating = true;
         try
         {
             await Shell.Current.GoToAsync("..");
