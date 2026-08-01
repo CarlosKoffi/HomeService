@@ -1,3 +1,4 @@
+using HomeService.Application.Admin;
 using HomeService.Application.Notifications;
 using HomeService.Application.Security;
 using HomeService.Domain.Common;
@@ -86,6 +87,10 @@ public static class DatabaseInitializer
         if (!string.IsNullOrWhiteSpace(script))
         {
             await db.Database.ExecuteSqlRawAsync(script, cancellationToken);
+
+            // Raw seed scripts can update rows already loaded by EF. Keeping those
+            // snapshots would make the next SaveChanges use stale concurrency tokens.
+            db.ChangeTracker.Clear();
         }
     }
 
@@ -965,6 +970,10 @@ public static class DatabaseInitializer
         var email = (configuration["AdminBootstrap:Email"] ?? configuration["ADMIN_BOOTSTRAP_EMAIL"])?.Trim().ToLowerInvariant();
         var password = configuration["AdminBootstrap:Password"] ?? configuration["ADMIN_BOOTSTRAP_PASSWORD"];
         var fullName = (configuration["AdminBootstrap:FullName"] ?? configuration["ADMIN_BOOTSTRAP_FULL_NAME"] ?? "Super admin").Trim();
+        var forcePasswordReset = bool.TryParse(
+            configuration["AdminBootstrap:ForcePasswordReset"] ?? configuration["ADMIN_BOOTSTRAP_FORCE_PASSWORD_RESET"],
+            out var configuredForcePasswordReset)
+            && configuredForcePasswordReset;
 
         if (string.IsNullOrWhiteSpace(email)
             || !email.Contains('@', StringComparison.Ordinal)
@@ -985,7 +994,11 @@ public static class DatabaseInitializer
             admin.PromoteToSuperAdmin();
         }
 
-        admin.AcceptInvitation(Sha256PasswordHasher.Hash(password), DateTimeOffset.UtcNow);
+        if (AdminBootstrapPasswordPolicy.ShouldSetPassword(admin.PasswordHash, forcePasswordReset))
+        {
+            admin.AcceptInvitation(Sha256PasswordHasher.Hash(password), DateTimeOffset.UtcNow);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 
