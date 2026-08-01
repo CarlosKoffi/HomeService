@@ -9,6 +9,79 @@ namespace HomeService.Tests.Unit.Application;
 public sealed class MissionDispatchReissueServiceTests
 {
     [Fact]
+    public async Task CreateInitialOffersAsync_WhenCatalogContainsDuplicateServiceIds_MatchesByNormalizedName()
+    {
+        await using var db = CreateDbContext();
+        var requestedService = new Service("Barbier", null, createdByCompanyId: null);
+        var providerService = new Service("barbier", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var company = ApprovedCompany("Barbier CI", priority: 1);
+        var provider = Provider(company.Id, providerService.Id, "Malou");
+        var mission = new Mission(
+            customer.Id,
+            requestedService.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            60,
+            description: "Taille de barbe");
+        mission.StartCompanySearch();
+
+        db.Services.AddRange(requestedService, providerService);
+        db.Customers.Add(customer);
+        db.Companies.Add(company);
+        db.Providers.Add(provider);
+        db.Missions.Add(mission);
+        await db.SaveChangesAsync();
+
+        var sut = new MissionDispatchService(db, new MissionDispatchScoringService());
+
+        var result = await sut.CreateInitialOffersAsync(mission.Id, isUrgent: false, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var offer = Assert.Single(result.Offers);
+        Assert.Equal(company.Id, offer.CompanyId);
+        Assert.Equal(MissionDispatchOfferStatus.Sent, offer.Status);
+    }
+
+    [Fact]
+    public async Task DispatchUnroutedMissionsAsync_WhenExistingMissionHasNoOffer_RecoversIt()
+    {
+        await using var db = CreateDbContext();
+        var requestedService = new Service("Barbier", null, createdByCompanyId: null);
+        var providerService = new Service("BARBIER", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var company = ApprovedCompany("Barbier CI", priority: 1);
+        var provider = Provider(company.Id, providerService.Id, "Malou");
+        var mission = new Mission(
+            customer.Id,
+            requestedService.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            60,
+            description: "Contours");
+        mission.StartCompanySearch();
+
+        db.Services.AddRange(requestedService, providerService);
+        db.Customers.Add(customer);
+        db.Companies.Add(company);
+        db.Providers.Add(provider);
+        db.Missions.Add(mission);
+        await db.SaveChangesAsync();
+
+        var sut = new MissionDispatchService(db, new MissionDispatchScoringService());
+
+        var recoveredCount = await sut.DispatchUnroutedMissionsAsync(50, CancellationToken.None);
+
+        Assert.Equal(1, recoveredCount);
+        Assert.Equal(MissionStatus.Offered, mission.Status);
+        var offer = Assert.Single(db.MissionDispatchOffers);
+        Assert.Equal(company.Id, offer.CompanyId);
+        Assert.Equal(MissionDispatchOfferStatus.Sent, offer.Status);
+    }
+
+    [Fact]
     public async Task ExpireAndReissueMissionOffersAsync_WhenOfferExpired_CreatesNextWaveExcludingPreviousCompanies()
     {
         await using var db = CreateDbContext();

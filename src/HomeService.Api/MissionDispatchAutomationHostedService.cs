@@ -35,6 +35,9 @@ public sealed class MissionDispatchAutomationHostedService(
             using var scope = scopeFactory.CreateScope();
             var dispatchService = scope.ServiceProvider.GetRequiredService<MissionDispatchService>();
             var assignmentExpirationService = scope.ServiceProvider.GetRequiredService<ProviderAssignmentExpirationService>();
+            var recoveredMissionCount = await dispatchService.DispatchUnroutedMissionsAsync(
+                GetBatchSize(),
+                stoppingToken);
             var result = await dispatchService.ExpireAndReissueDueOffersAsync(
                 DateTimeOffset.UtcNow,
                 GetBatchSize(),
@@ -44,10 +47,11 @@ public sealed class MissionDispatchAutomationHostedService(
                 GetBatchSize(),
                 stoppingToken);
 
-            if (result.MissionCount > 0 || assignmentResult.ExpiredAssignmentCount > 0)
+            if (recoveredMissionCount > 0 || result.MissionCount > 0 || assignmentResult.ExpiredAssignmentCount > 0)
             {
                 logger.LogInformation(
-                    "Mission dispatch automation processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers and expired {AssignmentCount} provider assignments.",
+                    "Mission dispatch automation recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers and expired {AssignmentCount} provider assignments.",
+                    recoveredMissionCount,
                     result.MissionCount,
                     result.ExpiredOfferCount,
                     result.CreatedOfferCount,

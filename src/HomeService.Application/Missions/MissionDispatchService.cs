@@ -71,6 +71,38 @@ public sealed class MissionDispatchService(
         return MissionDispatchCreationResult.Ok(offers);
     }
 
+    public async Task<int> DispatchUnroutedMissionsAsync(
+        int batchSize,
+        CancellationToken cancellationToken)
+    {
+        var missionIds = await db.Missions
+            .AsNoTracking()
+            .Where(mission => mission.CompanyId == null
+                && mission.Status == MissionStatus.SearchingProvider
+                && !db.MissionDispatchOffers.Any(offer => offer.MissionId == mission.Id))
+            .OrderBy(mission => mission.CreatedAt)
+            .Select(mission => mission.Id)
+            .Take(Math.Clamp(batchSize, 1, 200))
+            .ToListAsync(cancellationToken);
+
+        var dispatchedCount = 0;
+        foreach (var missionId in missionIds)
+        {
+            var result = await CreateInitialOffersAsync(missionId, isUrgent: false, cancellationToken);
+            if (!result.IsSuccess || result.Offers.Count == 0)
+            {
+                continue;
+            }
+
+            var mission = await db.Missions.FirstAsync(item => item.Id == missionId, cancellationToken);
+            mission.MarkCompanyOffersSent();
+            await db.SaveChangesAsync(cancellationToken);
+            dispatchedCount++;
+        }
+
+        return dispatchedCount;
+    }
+
     public async Task<MissionDispatchReissueBatchResult> ExpireAndReissueDueOffersAsync(
         DateTimeOffset now,
         int batchSize,
@@ -218,14 +250,20 @@ public sealed class MissionDispatchService(
             return [];
         }
 
+        var normalizedServiceName = service.NormalizedName;
+        var matchingServiceIds = await db.Services
+            .AsNoTracking()
+            .Where(item => item.Id == mission.ServiceId || item.NormalizedName == normalizedServiceName)
+            .Select(item => item.Id)
+            .ToListAsync(cancellationToken);
+
         var providerCompanyIds = await db.ProviderServices
             .AsNoTracking()
-            .Where(providerService => providerService.ServiceId == mission.ServiceId && providerService.IsActive)
+            .Where(providerService => matchingServiceIds.Contains(providerService.ServiceId)
+                && providerService.IsActive)
             .Select(providerService => providerService.CompanyId)
             .Distinct()
             .ToListAsync(cancellationToken);
-
-        var normalizedServiceName = service.NormalizedName;
         var companies = await db.Companies
             .AsNoTracking()
             .Where(company => company.Status == CompanyStatus.Approved && !excludedCompanyIds.Contains(company.Id))
