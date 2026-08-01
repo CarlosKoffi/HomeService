@@ -772,44 +772,61 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         <section class="admin-modal service-options-modal" @onclick:stopPropagation="true" role="dialog" aria-modal="true">
             <header class="service-options-header">
                 <div>
-                    <span class="eyebrow">@ManagedPrestation.Name</span>
-                    <h2>Options de la prestation</h2>
-                    <p>Ajoutez les formats que le client choisira avant d'envoyer sa demande.</p>
+                    <span class="eyebrow">Catalogue · @ManagedPrestation.Name</span>
+                    <h2>Gérer les options</h2>
+                    <p>Définissez les choix proposés au client ainsi que leur ordre et leur tarification.</p>
                 </div>
                 <button type="button" class="icon-close" @onclick="CloseOptionManager" aria-label="Fermer">×</button>
             </header>
+
+            <section class="service-option-create">
+                <div class="service-option-section-heading">
+                    <div>
+                        <span class="eyebrow">Nouvelle option</span>
+                        <h3>Ajouter un choix client</h3>
+                    </div>
+                    <span class="service-option-helper">Les champs marqués * sont obligatoires.</span>
+                </div>
+                <div class="service-option-form option-create-form">
+                    <label class="option-field option-name-field"><span>Nom de l'option *</span><input placeholder="Ex. Appartement 3 pièces" @bind="NewOptionDraft.Name" /></label>
+                    <label class="option-field option-description-field"><span>Description</span><input placeholder="Précisez clairement ce qui est inclus" @bind="NewOptionDraft.Description" /></label>
+                    <label class="option-field option-order-field"><span>Ordre</span><input type="number" min="0" @bind="NewOptionDraft.SortOrder" /></label>
+                    <label class="option-field option-price-field"><span>Prix minimum (XOF)</span><input type="number" min="0" step="100" @bind="NewOptionDraft.PriceMinAmount" disabled="@NewOptionDraft.IsFixedPrice" /></label>
+                    <label class="option-field option-price-field"><span>@(NewOptionDraft.IsFixedPrice ? "Prix fixe (XOF)" : "Prix maximum (XOF)")</span><input type="number" min="0" step="100" @bind="NewOptionDraft.PriceMaxAmount" /></label>
+                    <label class="option-fixed option-fixed-card"><input type="checkbox" @bind="NewOptionDraft.IsFixedPrice" /><span><strong>Prix fixe</strong><small>Le prix ne pourra pas être ajusté.</small></span></label>
+                    <button type="button" class="option-primary-action" @onclick="CreateOptionAsync" disabled="@IsSaving">Ajouter l'option</button>
+                </div>
+            </section>
+
+            <div class="service-option-section-heading existing-options-heading">
+                <div><span class="eyebrow">Options existantes</span><h3>@(ManagedPrestation.Options?.Count ?? 0) option(s)</h3></div>
+            </div>
 
             <div class="service-options-list">
                 @foreach (var option in (ManagedPrestation.Options ?? []).OrderBy(item => item.SortOrder).ThenBy(item => item.Name))
                 {
                     var optionDraft = GetOptionDraft(option);
-                    <article class="service-option-row" @key="option.Id">
-                        <input aria-label="Nom" @bind="optionDraft.Name" />
-                        <input aria-label="Description" class="option-description" @bind="optionDraft.Description" />
-                        <input aria-label="Ordre" type="number" min="0" @bind="optionDraft.SortOrder" />
-                        <label class="option-fixed"><input type="checkbox" @bind="optionDraft.IsFixedPrice" /> Fixe</label>
-                        <input aria-label="Prix minimum" type="number" min="0" step="100" @bind="optionDraft.PriceMinAmount" disabled="@optionDraft.IsFixedPrice" />
-                        <input aria-label="Prix maximum" type="number" min="0" step="100" @bind="optionDraft.PriceMaxAmount" />
-                        <button type="button" @onclick="() => SaveOptionAsync(option.Id)" disabled="@IsSaving">Enregistrer</button>
-                        <button type="button" class="light-action" @onclick="() => ToggleOptionAsync(option)" disabled="@IsSaving">
-                            @(option.IsActive ? "Desactiver" : "Reactiver")
-                        </button>
+                    <article class="service-option-card @(!option.IsActive ? "is-inactive" : string.Empty)" @key="option.Id">
+                        <header class="service-option-card-header">
+                            <div><strong>@option.Name</strong><span>Position @option.SortOrder</span></div>
+                            <span class="option-status @(option.IsActive ? "is-active" : "is-inactive")">@(option.IsActive ? "Active" : "Désactivée")</span>
+                        </header>
+                        <div class="service-option-form">
+                            <label class="option-field option-name-field"><span>Nom</span><input @bind="optionDraft.Name" /></label>
+                            <label class="option-field option-description-field"><span>Description</span><input @bind="optionDraft.Description" /></label>
+                            <label class="option-field option-order-field"><span>Ordre</span><input type="number" min="0" @bind="optionDraft.SortOrder" /></label>
+                            <label class="option-field option-price-field"><span>Prix minimum (XOF)</span><input type="number" min="0" step="100" @bind="optionDraft.PriceMinAmount" disabled="@optionDraft.IsFixedPrice" /></label>
+                            <label class="option-field option-price-field"><span>@(optionDraft.IsFixedPrice ? "Prix fixe (XOF)" : "Prix maximum (XOF)")</span><input type="number" min="0" step="100" @bind="optionDraft.PriceMaxAmount" /></label>
+                            <label class="option-fixed option-fixed-card"><input type="checkbox" @bind="optionDraft.IsFixedPrice" /><span><strong>Prix fixe</strong><small>Montant non modifiable</small></span></label>
+                        </div>
+                        <footer class="service-option-card-actions">
+                            <button type="button" class="light-action" @onclick="() => ToggleOptionAsync(option)" disabled="@IsSaving">@(option.IsActive ? "Désactiver" : "Réactiver")</button>
+                            <button type="button" class="option-primary-action" @onclick="() => SaveOptionAsync(option.Id)" disabled="@IsSaving">Enregistrer</button>
+                        </footer>
                     </article>
                 }
             </div>
 
-            <div class="service-option-create">
-                <h3>Ajouter une option</h3>
-                <div class="service-option-row">
-                    <input placeholder="Ex: Appartement 3 pieces" @bind="NewOptionDraft.Name" />
-                    <input class="option-description" placeholder="Description courte" @bind="NewOptionDraft.Description" />
-                    <input aria-label="Ordre" type="number" min="0" @bind="NewOptionDraft.SortOrder" />
-                    <label class="option-fixed"><input type="checkbox" @bind="NewOptionDraft.IsFixedPrice" /> Fixe</label>
-                    <input aria-label="Prix minimum" type="number" min="0" step="100" @bind="NewOptionDraft.PriceMinAmount" disabled="@NewOptionDraft.IsFixedPrice" />
-                    <input aria-label="Prix maximum" type="number" min="0" step="100" @bind="NewOptionDraft.PriceMaxAmount" />
-                    <button type="button" @onclick="CreateOptionAsync" disabled="@IsSaving">Ajouter</button>
-                </div>
-            </div>
         </section>
     </div>
 }
