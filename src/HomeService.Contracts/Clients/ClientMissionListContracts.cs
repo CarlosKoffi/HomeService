@@ -8,6 +8,7 @@ public sealed record ClientMissionListItemResponse(
     string PaymentStatus,
     string? ServiceName,
     string? PrestationName,
+    string? OptionName,
     string? ServiceAddress,
     DateTimeOffset CreatedAt,
     DateTimeOffset? ScheduledFor,

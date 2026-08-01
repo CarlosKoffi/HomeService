@@ -16,7 +16,8 @@ public sealed record CreateClientMissionRequest(
     decimal? ServiceLongitude,
     bool RequiresCompanyQuote,
     bool IsUrgent,
-    IReadOnlyList<ClientMissionPhotoRequest>? Photos = null);
+    IReadOnlyList<ClientMissionPhotoRequest>? Photos = null,
+    Guid? ServiceOptionId = null);
 
 public sealed record ClientMissionPhotoRequest(
     string OriginalFileName,

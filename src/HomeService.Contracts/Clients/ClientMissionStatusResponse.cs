@@ -13,6 +13,7 @@ public sealed record ClientMissionStatusResponse(
     string? CustomerPaymentMaskedReference,
     string? ServiceName,
     string? PrestationName,
+    string? OptionName,
     string? Description,
     string? ServiceAddress,
     DateTimeOffset CreatedAt,

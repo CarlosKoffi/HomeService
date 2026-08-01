@@ -9,4 +9,5 @@ public sealed record UpsertServicePrestationRequest(
     string Currency = "XOF",
     int? PriceMinAmount = null,
     int? PriceMaxAmount = null,
-    string? IllustrationUrl = null);
+    string? IllustrationUrl = null,
+    bool IsFixedPrice = false);

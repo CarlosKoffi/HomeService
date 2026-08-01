@@ -31,6 +31,7 @@ public static class DatabaseInitializer
         await SeedServicesAsync(db, cancellationToken);
         await SeedServicePrestationsAsync(db, cancellationToken);
         await SeedWellbeingServiceCatalogAsync(db, cancellationToken);
+        await SeedServiceOptionsAsync(db, cancellationToken);
         await SeedServicePrestationPhotosAsync(db, cancellationToken);
         await SeedServiceMediaAsync(db, cancellationToken);
         await SeedDemoMissionsAsync(db, cancellationToken);
@@ -762,6 +763,73 @@ public static class DatabaseInitializer
         }
     }
 
+    private static async Task SeedServiceOptionsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var seeds = new[]
+        {
+            new SeededServiceOption("Menage regulier", "Studio", "Entretien courant d'un studio.", 10, 3500, 3500, true),
+            new SeededServiceOption("Menage regulier", "Appartement 2 pieces", "Entretien courant d'un appartement de deux pieces.", 20, 4500, 4500, true),
+            new SeededServiceOption("Menage regulier", "Appartement 3 pieces", "Entretien courant d'un appartement de trois pieces.", 30, 5500, 5500, true),
+            new SeededServiceOption("Menage regulier", "Appartement 4 pieces", "Entretien courant d'un appartement de quatre pieces.", 40, 7000, 7000, true),
+            new SeededServiceOption("Menage regulier", "Maison 3 pieces", "Entretien courant d'une maison de trois pieces.", 50, 7000, 7000, true),
+            new SeededServiceOption("Menage regulier", "Maison 5 pieces et plus", "Entretien d'une grande maison, prix adapte a la surface.", 60, 9000, 13000, false),
+            new SeededServiceOption("Grand nettoyage", "Appartement jusqu'a 3 pieces", "Nettoyage complet d'un appartement jusqu'a trois pieces.", 10, 9000, 9000, true),
+            new SeededServiceOption("Grand nettoyage", "Appartement 4 pieces et plus", "Nettoyage complet d'un grand appartement.", 20, 12000, 16000, false),
+            new SeededServiceOption("Grand nettoyage", "Maison", "Nettoyage complet d'une maison selon sa surface.", 30, 15000, 25000, false),
+            new SeededServiceOption("Repassage", "Petit sac - jusqu'a 10 pieces", "Repassage de dix vetements courants maximum.", 10, 3000, 3000, true),
+            new SeededServiceOption("Repassage", "Sac moyen - jusqu'a 20 pieces", "Repassage de vingt vetements courants maximum.", 20, 5000, 5000, true),
+            new SeededServiceOption("Repassage", "Grand sac - jusqu'a 30 pieces", "Repassage de trente vetements courants maximum.", 30, 7000, 7000, true),
+            new SeededServiceOption("Lavage et pliage", "Petit lot - jusqu'a 5 kg", "Lavage, sechage et pliage d'un lot de cinq kilos maximum.", 10, 3000, 3000, true),
+            new SeededServiceOption("Lavage et pliage", "Lot moyen - jusqu'a 10 kg", "Lavage, sechage et pliage d'un lot de dix kilos maximum.", 20, 5000, 5000, true),
+            new SeededServiceOption("Lavage et pliage", "Grand lot - jusqu'a 15 kg", "Lavage, sechage et pliage d'un lot de quinze kilos maximum.", 30, 7000, 7000, true),
+            new SeededServiceOption("Tondre le gazon", "Petite surface - jusqu'a 50 m2", "Tonte et ramassage sur une petite surface.", 10, 5000, 5000, true),
+            new SeededServiceOption("Tondre le gazon", "Surface moyenne - 51 a 150 m2", "Tonte et ramassage sur une surface moyenne.", 20, 7500, 7500, true),
+            new SeededServiceOption("Tondre le gazon", "Grande surface - plus de 150 m2", "Tonte d'une grande surface, montant adapte apres evaluation.", 30, 10000, 18000, false),
+            new SeededServiceOption("Tailler une haie", "Jusqu'a 5 metres", "Taille et ramassage pour cinq metres de haie maximum.", 10, 6000, 6000, true),
+            new SeededServiceOption("Tailler une haie", "De 6 a 15 metres", "Taille et ramassage pour une haie de six a quinze metres.", 20, 9000, 9000, true),
+            new SeededServiceOption("Tailler une haie", "Plus de 15 metres", "Taille d'une grande longueur de haie apres evaluation.", 30, 12000, 20000, false),
+            new SeededServiceOption("Nettoyage vitres", "Jusqu'a 5 vitres", "Nettoyage de cinq vitres accessibles maximum.", 10, 3500, 3500, true),
+            new SeededServiceOption("Nettoyage vitres", "De 6 a 12 vitres", "Nettoyage de six a douze vitres accessibles.", 20, 6000, 6000, true),
+            new SeededServiceOption("Nettoyage vitres", "Plus de 12 vitres", "Nettoyage d'un ensemble important de vitres apres evaluation.", 30, 8000, 14000, false)
+        };
+
+        var normalizedPrestationNames = seeds
+            .Select(seed => NormalizeSeedValue(seed.PrestationName))
+            .Distinct()
+            .ToArray();
+        var prestations = await db.ServicePrestations
+            .Where(prestation => normalizedPrestationNames.Contains(prestation.NormalizedName))
+            .Include(prestation => prestation.Options)
+            .ToListAsync(cancellationToken);
+
+        foreach (var seed in seeds)
+        {
+            var prestationName = NormalizeSeedValue(seed.PrestationName);
+            foreach (var prestation in prestations.Where(item => item.NormalizedName == prestationName))
+            {
+                var normalizedOptionName = NormalizeSeedValue(seed.Name);
+                if (prestation.Options.Any(option => option.NormalizedName == normalizedOptionName))
+                {
+                    continue;
+                }
+
+                prestation.AddOption(
+                    seed.Name,
+                    seed.Description,
+                    seed.SortOrder,
+                    seed.PriceMinAmount,
+                    seed.PriceMaxAmount,
+                    seed.IsFixedPrice,
+                    "XOF");
+            }
+        }
+
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
     private static string NormalizeSeedValue(string value)
     {
         return CatalogNameNormalizer.Normalize(value);
@@ -783,6 +851,15 @@ public static class DatabaseInitializer
         int NormalPriceAmount,
         int PremiumPriceAmount,
         string Currency);
+
+    private sealed record SeededServiceOption(
+        string PrestationName,
+        string Name,
+        string Description,
+        int SortOrder,
+        int PriceMinAmount,
+        int PriceMaxAmount,
+        bool IsFixedPrice);
 
     private static async Task SeedAdminAccessAsync(
         HomeServiceDbContext db,

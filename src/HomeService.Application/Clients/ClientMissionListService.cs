@@ -22,6 +22,7 @@ public sealed class ClientMissionListService(IAppDbContext db)
         var query = db.Missions
             .AsNoTracking()
             .Include(mission => mission.ServicePrestation)
+            .Include(mission => mission.ServiceOption)
             .Where(mission => mission.CustomerId == customer.Id);
 
         var normalizedStatus = status?.Trim();
@@ -73,13 +74,16 @@ public sealed class ClientMissionListService(IAppDbContext db)
                 mission.PaymentStatus.ToString(),
                 service?.Name,
                 mission.ServicePrestation?.Name,
+                mission.ServiceOption?.Name,
                 mission.ServiceAddress,
                 mission.CreatedAt,
                 mission.ScheduledFor,
                 mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount,
                 mission.Currency,
                 ResolvePrimaryAction(mission.Status, mission.PaymentStatus, mission.QuoteStatus),
-                mission.ServicePrestation?.IllustrationUrl ?? service?.IconUrl ?? service?.ImageUrl);
+                mission.ServicePrestation?.IllustrationUrl
+                    ?? service?.IconUrl
+                    ?? service?.ImageUrl);
         }).ToList();
 
         return ClientMissionListResult.Ok(rows);

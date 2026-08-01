@@ -34,6 +34,7 @@ public static class PublicEndpoints
             var services = await db.Services
                 .AsNoTracking()
                 .Include(service => service.Prestations)
+                    .ThenInclude(prestation => prestation.Options)
                 .OrderBy(service => service.Name)
                 .Select(service => new ServiceSummaryResponse(
                     service.Id,
@@ -60,13 +61,30 @@ public static class PublicEndpoints
                             prestation.PriceMinAmount,
                             prestation.PriceMaxAmount,
                             prestation.IllustrationUrl,
-                            db.Missions.Count(mission => mission.ServicePrestationId == prestation.Id)))
+                            db.Missions.Count(mission => mission.ServicePrestationId == prestation.Id),
+                            prestation.IsFixedPrice,
+                            prestation.Options
+                                .OrderBy(option => option.SortOrder)
+                                .ThenBy(option => option.Name)
+                                .Select(option => new HomeService.Contracts.Services.ServiceOptionSummaryResponse(
+                                    option.Id,
+                                    option.ServicePrestationId,
+                                    option.Name,
+                                    option.Description,
+                                    option.SortOrder,
+                                    option.PriceMinAmount,
+                                    option.PriceMaxAmount,
+                                    option.IsFixedPrice,
+                                    option.Currency,
+                                    option.IsActive))
+                                .ToList()))
                         .ToList(),
                     service.PriceMinAmount,
                     service.PriceMaxAmount,
                     service.IconUrl,
                     service.ImageUrl,
-                    service.DisplayCategory.ToString()))
+                    service.DisplayCategory.ToString(),
+                    service.IsFixedPrice))
                 .ToListAsync(cancellationToken);
 
             return Results.Ok(services);

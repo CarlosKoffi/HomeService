@@ -4,7 +4,8 @@ public sealed record PrepareClientMissionRequest(
     Guid ServiceId,
     Guid? ServicePrestationId,
     string Mode = "Instant",
-    bool IsUrgent = false);
+    bool IsUrgent = false,
+    Guid? ServiceOptionId = null);
 
 public sealed record PrepareClientMissionResponse(
     Guid ServiceId,
@@ -31,7 +32,21 @@ public sealed record PrepareClientMissionResponse(
     int CompanyAssignmentMinutes,
     IReadOnlyList<ClientMissionPaymentOptionResponse> PaymentOptions,
     string RecommendedPaymentMethod,
-    string Message);
+    string Message,
+    Guid? ServiceOptionId = null,
+    string? ServiceOptionName = null,
+    bool IsFixedPrice = false,
+    IReadOnlyList<ServiceOptionSummaryResponse>? AvailableOptions = null);
+
+public sealed record ServiceOptionSummaryResponse(
+    Guid Id,
+    string Name,
+    string? Description,
+    int SortOrder,
+    int PriceMinAmount,
+    int PriceMaxAmount,
+    bool IsFixedPrice,
+    string Currency);
 
 public sealed record ClientMissionPaymentOptionResponse(
     string Method,

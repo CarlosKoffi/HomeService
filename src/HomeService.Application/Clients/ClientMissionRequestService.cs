@@ -24,6 +24,7 @@ public sealed class ClientMissionRequestService(
         var service = await db.Services
             .AsNoTracking()
             .Include(item => item.Prestations)
+                .ThenInclude(item => item.Options)
             .FirstOrDefaultAsync(item => item.Id == request.ServiceId && item.IsActive, cancellationToken);
         if (service is null)
         {
@@ -34,6 +35,21 @@ public sealed class ClientMissionRequestService(
             && !service.Prestations.Any(prestation => prestation.Id == request.ServicePrestationId.Value && prestation.IsActive))
         {
             return ClientMissionCreationResult.ValidationFailed(["La prestation choisie ne correspond pas au service."]);
+        }
+
+        var selectedPrestation = request.ServicePrestationId.HasValue
+            ? service.Prestations.First(item => item.Id == request.ServicePrestationId.Value)
+            : null;
+        var activeOptions = selectedPrestation?.Options.Where(option => option.IsActive).ToList() ?? [];
+        if (activeOptions.Count > 0 && !request.ServiceOptionId.HasValue)
+        {
+            return ClientMissionCreationResult.ValidationFailed(["Choisissez une option pour cette prestation."]);
+        }
+
+        if (request.ServiceOptionId.HasValue
+            && (selectedPrestation is null || !activeOptions.Any(option => option.Id == request.ServiceOptionId.Value)))
+        {
+            return ClientMissionCreationResult.ValidationFailed(["L'option choisie ne correspond pas a la prestation."]);
         }
 
         if (!Enum.TryParse<MissionMode>(request.Mode, true, out var mode))
@@ -78,6 +94,7 @@ public sealed class ClientMissionRequestService(
                     item.MissionNumber,
                     item.ServiceId,
                     item.ServicePrestationId,
+                    item.ServiceOptionId,
                     item.Mode,
                     item.Status,
                     item.ServiceAddress,
@@ -87,6 +104,7 @@ public sealed class ClientMissionRequestService(
         var duplicate = activeMissions.FirstOrDefault(item => ClientMissionDuplicatePolicy.IsDuplicate(
             request.ServiceId,
             request.ServicePrestationId,
+            request.ServiceOptionId,
             request.ServiceAddress,
             mode,
             scheduledFor,
@@ -109,7 +127,8 @@ public sealed class ClientMissionRequestService(
             Math.Clamp(request.EstimatedDurationMinutes, 30, 720),
             request.ServicePrestationId,
             request.Description,
-            request.RequiresCompanyQuote);
+            request.RequiresCompanyQuote,
+            request.ServiceOptionId);
 
         mission.SetServiceLocation(
             request.ServiceAddress,
@@ -145,7 +164,7 @@ public sealed class ClientMissionRequestService(
             ? "Votre demande a ete transmise aux entreprises disponibles."
             : "Votre demande est enregistree. Nous recherchons une entreprise disponible.";
 
-        var priceRange = ResolvePriceRange(service, request.ServicePrestationId);
+        var priceRange = ResolvePriceRange(service, request.ServicePrestationId, request.ServiceOptionId);
         return ClientMissionCreationResult.Ok(new CreateClientMissionResponse(
             mission.Id,
             mission.MissionNumber,
@@ -158,11 +177,16 @@ public sealed class ClientMissionRequestService(
             message));
     }
 
-    private static ClientMissionRequestPriceRange ResolvePriceRange(Service service, Guid? servicePrestationId)
+    private static ClientMissionRequestPriceRange ResolvePriceRange(Service service, Guid? servicePrestationId, Guid? serviceOptionId)
     {
         if (servicePrestationId.HasValue)
         {
             var prestation = service.Prestations.First(item => item.Id == servicePrestationId.Value);
+            if (serviceOptionId.HasValue)
+            {
+                var option = prestation.Options.First(item => item.Id == serviceOptionId.Value);
+                return new ClientMissionRequestPriceRange(option.PriceMinAmount, option.PriceMaxAmount, option.Currency);
+            }
             return new ClientMissionRequestPriceRange(
                 prestation.PriceMinAmount,
                 prestation.PriceMaxAmount,

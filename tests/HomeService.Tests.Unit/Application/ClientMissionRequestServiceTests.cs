@@ -85,6 +85,49 @@ public sealed class ClientMissionRequestServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_WhenPrestationHasOptions_RequiresAnOption()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Menage", null, createdByCompanyId: null);
+        var prestation = service.AddPrestation("Menage regulier", null, 1, 5_000, 15_000, "XOF");
+        prestation.AddOption("Appartement 3 pieces", null, 1, 8_000, 10_000, false, "XOF");
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).CreateAsync(
+            ValidRequest(service.Id) with { ServicePrestationId = prestation.Id },
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Errors, error => error.Contains("option", StringComparison.OrdinalIgnoreCase));
+        Assert.Empty(db.Missions);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenFixedOptionIsSelected_UsesItsDefinitivePrice()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Blanchisserie", null, createdByCompanyId: null);
+        var prestation = service.AddPrestation("Repassage", null, 1, 2_500, 9_000, "XOF");
+        var option = prestation.AddOption("Petit sac 10 pieces", null, 1, 3_000, 4_500, true, "XOF");
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).CreateAsync(
+            ValidRequest(service.Id) with
+            {
+                ServicePrestationId = prestation.Id,
+                ServiceOptionId = option.Id
+            },
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(4_500, result.Response!.StartingPriceAmount);
+        Assert.Equal(4_500, result.Response.MaximumPriceAmount);
+        Assert.Equal(option.Id, (await db.Missions.SingleAsync()).ServiceOptionId);
+    }
+
+    [Fact]
     public async Task CreateAsync_WhenCustomerPhotosAreProvided_AttachesThemToMission()
     {
         await using var db = CreateDbContext();

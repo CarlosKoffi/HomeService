@@ -19,6 +19,7 @@ public sealed class ClientMissionPreparationService(IAppDbContext db)
         var service = await db.Services
             .AsNoTracking()
             .Include(item => item.Prestations)
+                .ThenInclude(item => item.Options)
             .FirstOrDefaultAsync(item => item.Id == request.ServiceId && item.IsActive, cancellationToken);
 
         if (service is null)
@@ -33,6 +34,19 @@ public sealed class ClientMissionPreparationService(IAppDbContext db)
         if (request.ServicePrestationId.HasValue && prestation is null)
         {
             return ClientMissionPreparationResult.Invalid("La prestation choisie ne correspond pas au service.");
+        }
+
+        var activeOptions = prestation?.Options
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.Name)
+            .ToList() ?? [];
+        var option = request.ServiceOptionId.HasValue
+            ? activeOptions.FirstOrDefault(item => item.Id == request.ServiceOptionId.Value)
+            : null;
+        if (request.ServiceOptionId.HasValue && option is null)
+        {
+            return ClientMissionPreparationResult.Invalid("L'option choisie ne correspond pas a la prestation.");
         }
 
         var urgentOptionEnabled = await MissionWorkflowSettingsResolver.ResolveFlagAsync(
@@ -55,11 +69,13 @@ public sealed class ClientMissionPreparationService(IAppDbContext db)
             10,
             cancellationToken);
 
-        var priceMinAmount = prestation?.PriceMinAmount ?? service.PriceMinAmount;
-        var priceMaxAmount = prestation?.PriceMaxAmount ?? service.PriceMaxAmount;
-        var currency = prestation?.Currency ?? service.Currency;
+        var priceMinAmount = option?.PriceMinAmount ?? prestation?.PriceMinAmount ?? service.PriceMinAmount;
+        var priceMaxAmount = option?.PriceMaxAmount ?? prestation?.PriceMaxAmount ?? service.PriceMaxAmount;
+        var currency = option?.Currency ?? prestation?.Currency ?? service.Currency;
+        var isFixedPrice = option?.IsFixedPrice ?? prestation?.IsFixedPrice ?? service.IsFixedPrice;
         var photosRecommended = service.RequiresCompletionPhoto || service.RequiresBeforeAfterPhotos || service.RequiresAdminApprovalBeforeAssignment;
         var displayName = prestation is null ? service.Name : $"{service.Name} - {prestation.Name}";
+        if (option is not null) displayName += $" - {option.Name}";
 
         return ClientMissionPreparationResult.Ok(new PrepareClientMissionResponse(
             service.Id,
@@ -90,11 +106,21 @@ public sealed class ClientMissionPreparationService(IAppDbContext db)
                 new ClientMissionPaymentOptionResponse("Card", "Carte bancaire", IsAvailable: true, IsRecommended: false)
             ],
             RecommendedPaymentMethod: "MobileMoney",
-            Message: BuildMessage(displayName, priceMinAmount, priceMaxAmount, currency)));
+            Message: BuildMessage(displayName, priceMinAmount, priceMaxAmount, currency, isFixedPrice),
+            ServiceOptionId: option?.Id,
+            ServiceOptionName: option?.Name,
+            IsFixedPrice: isFixedPrice,
+            AvailableOptions: activeOptions.Select(item => new HomeService.Contracts.Clients.ServiceOptionSummaryResponse(
+                item.Id, item.Name, item.Description, item.SortOrder, item.PriceMinAmount,
+                item.PriceMaxAmount, item.IsFixedPrice, item.Currency)).ToList()));
     }
 
-    private static string BuildMessage(string displayName, int priceMinAmount, int priceMaxAmount, string currency)
+    private static string BuildMessage(string displayName, int priceMinAmount, int priceMaxAmount, string currency, bool isFixedPrice)
     {
+        if (isFixedPrice)
+        {
+            return $"Votre demande {displayName} sera proposee aux entreprises disponibles au prix fixe de {priceMaxAmount:N0} {currency}.";
+        }
         return $"Votre demande {displayName} sera proposee aux entreprises disponibles. Le client voit un prix a partir de {priceMinAmount:N0} {currency}; l'entreprise confirmera le prix final dans la fourchette jusqu'a {priceMaxAmount:N0} {currency}.";
     }
 }

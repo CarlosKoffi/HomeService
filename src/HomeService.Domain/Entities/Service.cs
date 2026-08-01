@@ -31,6 +31,7 @@ public sealed class Service : AuditableEntity
     public int PremiumPriceAmount { get; private set; } = 2500;
     public int PriceMinAmount { get; private set; } = 1500;
     public int PriceMaxAmount { get; private set; } = 2500;
+    public bool IsFixedPrice { get; private set; }
     public string Currency { get; private set; } = "XOF";
     public bool RequiresPortfolio { get; private set; }
     public int MinimumPortfolioItems { get; private set; }
@@ -98,10 +99,15 @@ public sealed class Service : AuditableEntity
         UpdatePriceRange(normalPriceAmount, premiumPriceAmount, currency);
     }
 
-    public void UpdatePriceRange(int priceMinAmount, int priceMaxAmount, string currency)
+    public void UpdatePriceRange(int priceMinAmount, int priceMaxAmount, string currency, bool isFixedPrice = false)
     {
         PriceMinAmount = Math.Max(0, priceMinAmount);
         PriceMaxAmount = Math.Max(PriceMinAmount, priceMaxAmount);
+        IsFixedPrice = isFixedPrice;
+        if (IsFixedPrice)
+        {
+            PriceMinAmount = PriceMaxAmount;
+        }
         NormalPriceAmount = PriceMinAmount;
         PremiumPriceAmount = PriceMaxAmount;
         Currency = string.IsNullOrWhiteSpace(currency) ? "XOF" : currency.Trim().ToUpperInvariant();

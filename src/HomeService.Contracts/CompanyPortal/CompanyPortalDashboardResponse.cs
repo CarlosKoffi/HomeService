@@ -78,7 +78,8 @@ public sealed record CompanyPortalAssignableProviderResponse(
     int? PriceMinAmount = null,
     int? PriceMaxAmount = null,
     bool CanAssign = true,
-    string? BlockingReason = null);
+    string? BlockingReason = null,
+    bool IsFixedPrice = false);
 
 public sealed record AssignCompanyMissionRequest(
     Guid ProviderId,

@@ -1897,6 +1897,43 @@ public static class AdminEndpoints
             return Results.Ok(result.Response);
         })
         .WithName("DeactivateAdminServicePrestation");
+
+        admin.MapPost("/service-prestations/{prestationId:guid}/options", async (
+            Guid prestationId,
+            UpsertServiceOptionRequest request,
+            HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await catalogService.CreateOptionAsync(prestationId, request,
+                GetAdminAuditActor(httpRequest), GetAuditRequestContext(httpRequest), cancellationToken);
+            return ToAdminServiceCatalogOperationError(result) ?? Results.Ok(result.Response);
+        }).WithName("CreateAdminServiceOption");
+
+        admin.MapPut("/service-options/{id:guid}", async (
+            Guid id,
+            UpsertServiceOptionRequest request,
+            HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await catalogService.UpdateOptionAsync(id, request,
+                GetAdminAuditActor(httpRequest), GetAuditRequestContext(httpRequest), cancellationToken);
+            return ToAdminServiceCatalogOperationError(result) ?? Results.Ok(result.Response);
+        }).WithName("UpdateAdminServiceOption");
+
+        admin.MapPost("/service-options/{id:guid}/{state}", async (
+            Guid id,
+            string state,
+            HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
+            CancellationToken cancellationToken) =>
+        {
+            if (state is not ("activate" or "deactivate")) return Results.BadRequest(new { message = "Etat invalide." });
+            var result = await catalogService.SetOptionActiveAsync(id, state == "activate",
+                GetAdminAuditActor(httpRequest), GetAuditRequestContext(httpRequest), cancellationToken);
+            return ToAdminServiceCatalogOperationError(result) ?? Results.Ok(result.Response);
+        }).WithName("SetAdminServiceOptionState");
         
         admin.MapPost("/company-application-documents/{id:guid}/approve", async (
             Guid id,

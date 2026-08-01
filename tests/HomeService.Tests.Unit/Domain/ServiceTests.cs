@@ -187,4 +187,36 @@ public sealed class ServiceTests
         Assert.Equal(8000, second.PriceMaxAmount);
         Assert.Equal(20, second.SortOrder);
     }
+
+    [Fact]
+    public void AddOption_WhenPriceIsFixed_UsesMaximumAsDefinitivePrice()
+    {
+        var service = new Service("Menage", null, null);
+        var prestation = service.AddPrestation("Menage regulier", null, 10, 5000, 15000, "XOF");
+
+        var option = prestation.AddOption("Appartement 3 pieces", "Forfait complet.", 20, 8000, 12000, true, "xof");
+
+        Assert.Single(prestation.Options);
+        Assert.Equal(12000, option.PriceMinAmount);
+        Assert.Equal(12000, option.PriceMaxAmount);
+        Assert.True(option.IsFixedPrice);
+        Assert.Equal("XOF", option.Currency);
+    }
+
+    [Fact]
+    public void AddOption_WhenNameAlreadyExists_UpdatesExistingOption()
+    {
+        var service = new Service("Blanchisserie", null, null);
+        var prestation = service.AddPrestation("Repassage", null, 10, 2500, 9000, "XOF");
+        var first = prestation.AddOption("Petit sac 10 pieces", null, 10, 3000, 4000, false, "XOF");
+
+        var second = prestation.AddOption(" Petit sac 10 pieces! ", "Dix pieces maximum.", 30, 4500, 4500, true, "XOF");
+
+        Assert.Same(first, second);
+        Assert.Single(prestation.Options);
+        Assert.Equal("Dix pieces maximum.", second.Description);
+        Assert.Equal(30, second.SortOrder);
+        Assert.True(second.IsFixedPrice);
+        Assert.Equal(4500, second.PriceMinAmount);
+    }
 }

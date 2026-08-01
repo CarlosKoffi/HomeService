@@ -7,6 +7,7 @@ public static class ClientMissionDuplicatePolicy
     public static bool IsDuplicate(
         Guid requestedServiceId,
         Guid? requestedPrestationId,
+        Guid? requestedOptionId,
         string? requestedAddress,
         MissionMode requestedMode,
         DateTimeOffset? requestedScheduledFor,
@@ -29,9 +30,17 @@ public static class ClientMissionDuplicatePolicy
             return false;
         }
 
-        return requestedPrestationId is null
+        var samePrestation = requestedPrestationId is null
             || candidate.ServicePrestationId is null
             || requestedPrestationId == candidate.ServicePrestationId;
+        if (!samePrestation)
+        {
+            return false;
+        }
+
+        return requestedOptionId is null
+            || candidate.ServiceOptionId is null
+            || requestedOptionId == candidate.ServiceOptionId;
     }
 
     private static bool IsActive(MissionStatus status)
@@ -69,6 +78,7 @@ public sealed record ExistingClientMission(
     string MissionNumber,
     Guid ServiceId,
     Guid? ServicePrestationId,
+    Guid? ServiceOptionId,
     MissionMode Mode,
     MissionStatus Status,
     string? ServiceAddress,

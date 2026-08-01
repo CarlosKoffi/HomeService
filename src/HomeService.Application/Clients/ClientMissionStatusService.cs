@@ -47,6 +47,11 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             : await db.ServicePrestations
                 .AsNoTracking()
                 .FirstOrDefaultAsync(item => item.Id == mission.ServicePrestationId.Value, cancellationToken);
+        var option = mission.ServiceOptionId is null
+            ? null
+            : await db.ServiceOptions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == mission.ServiceOptionId.Value, cancellationToken);
 
         var assignedCompany = mission.CompanyId is null
             ? null
@@ -138,7 +143,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                 quote.Status == MissionAdditionalQuoteStatus.Submitted && quote.Amount > 0))
             .ToList();
 
-        var priceRange = ResolvePriceRange(service, prestation);
+        var priceRange = ResolvePriceRange(service, prestation, option);
         var response = new ClientMissionStatusResponse(
             mission.Id,
             mission.MissionNumber,
@@ -152,6 +157,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             mission.CustomerPaymentMethod?.MaskedReference,
             service?.Name,
             prestation?.Name,
+            option?.Name,
             mission.Description,
             mission.ServiceAddress,
             mission.CreatedAt,
@@ -201,8 +207,14 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
 
     private static ClientMissionStatusPriceRange ResolvePriceRange(
         Domain.Entities.Service? service,
-        Domain.Entities.ServicePrestation? prestation)
+        Domain.Entities.ServicePrestation? prestation,
+        Domain.Entities.ServiceOption? option)
     {
+        if (option is not null)
+        {
+            return new ClientMissionStatusPriceRange(option.PriceMinAmount, option.PriceMaxAmount);
+        }
+
         if (prestation is not null)
         {
             return new ClientMissionStatusPriceRange(prestation.PriceMinAmount, prestation.PriceMaxAmount);

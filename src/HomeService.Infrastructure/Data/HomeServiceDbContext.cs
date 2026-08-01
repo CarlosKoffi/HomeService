@@ -19,6 +19,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<CompanyActivationToken> CompanyActivationTokens => Set<CompanyActivationToken>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ServicePrestation> ServicePrestations => Set<ServicePrestation>();
+    public DbSet<ServiceOption> ServiceOptions => Set<ServiceOption>();
     public DbSet<ProviderProfile> Providers => Set<ProviderProfile>();
     public DbSet<ProviderInvitation> ProviderInvitations => Set<ProviderInvitation>();
     public DbSet<ProviderAffiliationRequest> ProviderAffiliationRequests => Set<ProviderAffiliationRequest>();

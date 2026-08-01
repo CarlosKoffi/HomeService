@@ -32,6 +32,10 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
             .WithMany()
             .HasForeignKey(mission => mission.ServicePrestationId)
             .OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(mission => mission.ServiceOption)
+            .WithMany()
+            .HasForeignKey(mission => mission.ServiceOptionId)
+            .OnDelete(DeleteBehavior.SetNull);
         builder.HasOne(mission => mission.CustomerPaymentMethod)
             .WithMany()
             .HasForeignKey(mission => mission.CustomerPaymentMethodId)
@@ -39,6 +43,7 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
         builder.HasIndex(mission => new { mission.ServiceId, mission.Status });
         builder.HasIndex(mission => mission.MissionNumber).IsUnique();
         builder.HasIndex(mission => new { mission.ServicePrestationId, mission.Status });
+        builder.HasIndex(mission => new { mission.ServiceOptionId, mission.Status });
         builder.HasIndex(mission => new { mission.CompanyId, mission.Status });
         builder.HasIndex(mission => new { mission.QuoteStatus, mission.PaymentStatus });
         builder.HasIndex(mission => new { mission.CustomerCompletionValidatedAt, mission.CompanyPayoutReleasedAt });

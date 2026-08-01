@@ -15,7 +15,8 @@ public sealed record ServiceSummaryResponse(
     int? PriceMaxAmount = null,
     string? IconUrl = null,
     string? ImageUrl = null,
-    string DisplayCategory = "Home");
+    string DisplayCategory = "Home",
+    bool IsFixedPrice = false);
 
 public sealed record ServicePrestationSummaryResponse(
     Guid Id,
@@ -29,4 +30,18 @@ public sealed record ServicePrestationSummaryResponse(
     int? PriceMinAmount = null,
     int? PriceMaxAmount = null,
     string? IllustrationUrl = null,
-    int MissionCount = 0);
+    int MissionCount = 0,
+    bool IsFixedPrice = false,
+    IReadOnlyList<ServiceOptionSummaryResponse>? Options = null);
+
+public sealed record ServiceOptionSummaryResponse(
+    Guid Id,
+    Guid ServicePrestationId,
+    string Name,
+    string? Description,
+    int SortOrder,
+    int PriceMinAmount,
+    int PriceMaxAmount,
+    bool IsFixedPrice,
+    string Currency,
+    bool IsActive);

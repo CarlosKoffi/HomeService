@@ -35,13 +35,7 @@ public sealed class CompanyMissionAssignmentService(
             return CompanyAssignableProvidersResult.Ok([]);
         }
 
-        var prestationPricing = mission.ServicePrestationId is null
-            ? null
-            : await db.ServicePrestations
-                .AsNoTracking()
-                .Where(prestation => prestation.Id == mission.ServicePrestationId)
-                .Select(prestation => new { prestation.PriceMinAmount, prestation.PriceMaxAmount })
-                .FirstOrDefaultAsync(cancellationToken);
+        var pricing = await ResolveMissionPricingAsync(mission, cancellationToken);
 
         var busyProviderIds = await db.ProviderMissionAssignments
             .AsNoTracking()
@@ -144,10 +138,11 @@ public sealed class CompanyMissionAssignmentService(
                     candidate.Currency ?? "XOF",
                     candidate.HasDiploma,
                     candidate.PhotoUrl,
-                    prestationPricing?.PriceMinAmount ?? candidate.ServicePriceMinAmount,
-                    prestationPricing?.PriceMaxAmount ?? candidate.ServicePriceMaxAmount,
+                    pricing?.PriceMinAmount ?? candidate.ServicePriceMinAmount,
+                    pricing?.PriceMaxAmount ?? candidate.ServicePriceMaxAmount,
                     eligibility.IsValid,
-                    eligibility.IsValid ? null : eligibility.Message);
+                    eligibility.IsValid ? null : eligibility.Message,
+                    pricing?.IsFixedPrice ?? false);
             })
             .OrderByDescending(provider => provider.CanAssign)
             .ThenByDescending(provider => provider.IsAvailable)
@@ -219,15 +214,14 @@ public sealed class CompanyMissionAssignmentService(
         var validMission = mission!;
         var validProvider = provider!;
         var validProviderService = providerService!;
-        var prestationPricing = validMission.ServicePrestationId is null
-            ? null
-            : await db.ServicePrestations
-                .AsNoTracking()
-                .Where(prestation => prestation.Id == validMission.ServicePrestationId)
-                .Select(prestation => new { prestation.PriceMinAmount, prestation.PriceMaxAmount })
-                .FirstOrDefaultAsync(cancellationToken);
-        var minAllowedAmount = prestationPricing?.PriceMinAmount ?? validProviderService.Service!.PriceMinAmount;
-        var maxAllowedAmount = prestationPricing?.PriceMaxAmount ?? validProviderService.Service!.PriceMaxAmount;
+        var pricing = await ResolveMissionPricingAsync(validMission, cancellationToken);
+        var minAllowedAmount = pricing?.PriceMinAmount ?? validProviderService.Service!.PriceMinAmount;
+        var maxAllowedAmount = pricing?.PriceMaxAmount ?? validProviderService.Service!.PriceMaxAmount;
+        if (pricing?.IsFixedPrice == true && quotedAmount != maxAllowedAmount)
+        {
+            return CompanyMissionAssignmentResult.Invalid(
+                $"Cette prestation a un prix fixe de {maxAllowedAmount:N0} {pricing.Currency}. Le montant ne peut pas etre modifie.");
+        }
         if (quotedAmount < minAllowedAmount)
         {
             return CompanyMissionAssignmentResult.Invalid($"Le prix doit etre au minimum de {minAllowedAmount:N0} {validProviderService.Service!.Currency}.");
@@ -282,6 +276,45 @@ public sealed class CompanyMissionAssignmentService(
             assignment.ExpiresAt));
     }
 
+    private async Task<MissionPricing?> ResolveMissionPricingAsync(Mission mission, CancellationToken cancellationToken)
+    {
+        if (mission.ServiceOptionId is not null)
+        {
+            return await db.ServiceOptions
+                .AsNoTracking()
+                .Where(option => option.Id == mission.ServiceOptionId && option.IsActive)
+                .Select(option => new MissionPricing(
+                    option.PriceMinAmount,
+                    option.PriceMaxAmount,
+                    option.IsFixedPrice,
+                    option.Currency))
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if (mission.ServicePrestationId is not null)
+        {
+            return await db.ServicePrestations
+                .AsNoTracking()
+                .Where(prestation => prestation.Id == mission.ServicePrestationId && prestation.IsActive)
+                .Select(prestation => new MissionPricing(
+                    prestation.PriceMinAmount,
+                    prestation.PriceMaxAmount,
+                    prestation.IsFixedPrice,
+                    prestation.Currency))
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        return await db.Services
+            .AsNoTracking()
+            .Where(service => service.Id == mission.ServiceId && service.IsActive)
+            .Select(service => new MissionPricing(
+                service.PriceMinAmount,
+                service.PriceMaxAmount,
+                service.IsFixedPrice,
+                service.Currency))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     private async Task<int> ResolveBlockingRoundFloorAsync(int currentRound, CancellationToken cancellationToken)
     {
         var resetEveryRounds = await MissionWorkflowSettingsResolver.ResolveIntAsync(
@@ -292,6 +325,12 @@ public sealed class CompanyMissionAssignmentService(
 
         return ProviderMissionReeligibilityPolicy.GetBlockingRoundFloor(currentRound, resetEveryRounds);
     }
+
+    private sealed record MissionPricing(
+        int PriceMinAmount,
+        int PriceMaxAmount,
+        bool IsFixedPrice,
+        string Currency);
 
     private async Task QueueProviderMissionPushAsync(
         Mission mission,

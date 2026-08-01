@@ -41,7 +41,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         service.UpdateDetails(request.Name, request.Description, request.IconName);
         service.UpdateMedia(request.IconUrl, request.ImageUrl);
         service.UpdateDisplayCategory(ParseDisplayCategory(request.DisplayCategory));
-        service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
+        service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency, request.IsFixedPrice);
         service.Approve();
 
         db.Services.Add(service);
@@ -104,7 +104,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         service.UpdateDetails(request.Name, request.Description, request.IconName);
         service.UpdateMedia(request.IconUrl, request.ImageUrl);
         service.UpdateDisplayCategory(ParseDisplayCategory(request.DisplayCategory));
-        service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
+        service.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency, request.IsFixedPrice);
 
         var after = ToServiceResponse(service);
         AddAuditLog(
@@ -178,6 +178,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
 
         var service = await db.Services
             .Include(item => item.Prestations)
+                .ThenInclude(item => item.Options)
             .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
         if (service is null)
         {
@@ -203,6 +204,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             GetPriceMax(request),
             request.Currency,
             request.IllustrationUrl);
+        prestation.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency, request.IsFixedPrice);
 
         var after = ToServicePrestationResponse(prestation);
         AddAuditLog(
@@ -242,7 +244,9 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             return AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>.ValidationFailed(validationMessage);
         }
 
-        var prestation = await db.ServicePrestations.FirstOrDefaultAsync(item => item.Id == prestationId, cancellationToken);
+        var prestation = await db.ServicePrestations
+            .Include(item => item.Options)
+            .FirstOrDefaultAsync(item => item.Id == prestationId, cancellationToken);
         if (prestation is null)
         {
             return AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>.NotFound("Prestation introuvable.");
@@ -251,7 +255,7 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         var before = ToServicePrestationResponse(prestation);
         prestation.Rename(request.Name, request.Description);
         prestation.MoveTo(request.SortOrder);
-        prestation.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency);
+        prestation.UpdatePriceRange(GetPriceMin(request), GetPriceMax(request), request.Currency, request.IsFixedPrice);
         prestation.UpdateIllustration(request.IllustrationUrl);
 
         var after = ToServicePrestationResponse(prestation);
@@ -303,6 +307,88 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         CancellationToken cancellationToken)
     {
         return SetPrestationActiveStateAsync(prestationId, isActive: false, actor, auditContext, cancellationToken);
+    }
+
+    public async Task<AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>> CreateOptionAsync(
+        Guid prestationId,
+        UpsertServiceOptionRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var validation = ValidateOptionRequest(request);
+        if (validation is not null)
+        {
+            return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.ValidationFailed(validation);
+        }
+
+        var prestation = await db.ServicePrestations
+            .Include(item => item.Options)
+            .FirstOrDefaultAsync(item => item.Id == prestationId, cancellationToken);
+        if (prestation is null)
+        {
+            return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.NotFound("Prestation introuvable.");
+        }
+
+        var option = prestation.AddOption(request.Name, request.Description, request.SortOrder,
+            request.PriceMinAmount, request.PriceMaxAmount, request.IsFixedPrice, request.Currency);
+        var response = ToServiceOptionResponse(option);
+        AddAuditLog(actor, auditContext, "AdminServiceOptionCreated", nameof(ServiceOption), option.Id,
+            $"Option '{option.Name}' ajoutee a la prestation '{prestation.Name}'.", null, response);
+        await db.SaveChangesAsync(cancellationToken);
+        return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.Ok("Option ajoutee.", response, null, response);
+    }
+
+    public async Task<AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>> UpdateOptionAsync(
+        Guid optionId,
+        UpsertServiceOptionRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var validation = ValidateOptionRequest(request);
+        if (validation is not null)
+        {
+            return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.ValidationFailed(validation);
+        }
+
+        var option = await db.ServiceOptions.FirstOrDefaultAsync(item => item.Id == optionId, cancellationToken);
+        if (option is null)
+        {
+            return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.NotFound("Option introuvable.");
+        }
+
+        var before = ToServiceOptionResponse(option);
+        option.Update(request.Name, request.Description, request.SortOrder, request.PriceMinAmount,
+            request.PriceMaxAmount, request.IsFixedPrice, request.Currency);
+        var after = ToServiceOptionResponse(option);
+        AddAuditLog(actor, auditContext, "AdminServiceOptionUpdated", nameof(ServiceOption), option.Id,
+            "Option de prestation modifiee.", before, after);
+        await db.SaveChangesAsync(cancellationToken);
+        return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.Ok("Option modifiee.", after, before, after);
+    }
+
+    public async Task<AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>> SetOptionActiveAsync(
+        Guid optionId,
+        bool isActive,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var option = await db.ServiceOptions.FirstOrDefaultAsync(item => item.Id == optionId, cancellationToken);
+        if (option is null)
+        {
+            return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.NotFound("Option introuvable.");
+        }
+
+        var before = ToServiceOptionResponse(option);
+        if (isActive) option.Activate(); else option.Deactivate();
+        var after = ToServiceOptionResponse(option);
+        AddAuditLog(actor, auditContext, isActive ? "AdminServiceOptionActivated" : "AdminServiceOptionDeactivated",
+            nameof(ServiceOption), option.Id, isActive ? "Option activee." : "Option desactivee.", before, after);
+        await db.SaveChangesAsync(cancellationToken);
+        return AdminServiceCatalogOperationResult<ServiceOptionSummaryResponse>.Ok(
+            isActive ? "Option activee." : "Option desactivee.", after, before, after);
     }
 
     private async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> SetServiceActiveStateAsync(
@@ -413,6 +499,15 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         return null;
     }
 
+    private static string? ValidateOptionRequest(UpsertServiceOptionRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name)) return "Le nom de l'option est obligatoire.";
+        if (request.PriceMinAmount < 0 || request.PriceMaxAmount < 0) return "Les prix ne peuvent pas etre negatifs.";
+        if (request.PriceMaxAmount < request.PriceMinAmount) return "Le prix maximum doit etre superieur au prix minimum.";
+        if (request.IsFixedPrice && request.PriceMaxAmount <= 0) return "Renseignez le prix fixe.";
+        return null;
+    }
+
     private static int GetPriceMin(UpsertServiceRequest request)
     {
         return request.PriceMinAmount ?? request.NormalPriceAmount;
@@ -461,7 +556,8 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             service.PriceMaxAmount,
             service.IconUrl,
             service.ImageUrl,
-            service.DisplayCategory.ToString());
+            service.DisplayCategory.ToString(),
+            service.IsFixedPrice);
     }
 
     private static ServicePrestationSummaryResponse ToServicePrestationResponse(ServicePrestation prestation)
@@ -477,8 +573,15 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
             prestation.IsActive,
             prestation.PriceMinAmount,
             prestation.PriceMaxAmount,
-            prestation.IllustrationUrl);
+            prestation.IllustrationUrl,
+            0,
+            prestation.IsFixedPrice,
+            prestation.Options.OrderBy(item => item.SortOrder).ThenBy(item => item.Name).Select(ToServiceOptionResponse).ToList());
     }
+
+    private static ServiceOptionSummaryResponse ToServiceOptionResponse(ServiceOption option) => new(
+        option.Id, option.ServicePrestationId, option.Name, option.Description, option.SortOrder,
+        option.PriceMinAmount, option.PriceMaxAmount, option.IsFixedPrice, option.Currency, option.IsActive);
 
     private void AddAuditLog(
         AuditActor? actor,

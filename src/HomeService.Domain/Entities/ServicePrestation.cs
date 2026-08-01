@@ -4,6 +4,7 @@ namespace HomeService.Domain.Entities;
 
 public sealed class ServicePrestation : AuditableEntity
 {
+    private readonly List<ServiceOption> _options = [];
     private ServicePrestation()
     {
     }
@@ -37,9 +38,11 @@ public sealed class ServicePrestation : AuditableEntity
     public int PremiumPriceAmount { get; private set; }
     public int PriceMinAmount { get; private set; }
     public int PriceMaxAmount { get; private set; }
+    public bool IsFixedPrice { get; private set; }
     public string Currency { get; private set; } = "XOF";
     public string? IllustrationUrl { get; private set; }
     public bool IsActive { get; private set; } = true;
+    public IReadOnlyCollection<ServiceOption> Options => _options;
 
     public void Rename(string name, string? description)
     {
@@ -60,14 +63,44 @@ public sealed class ServicePrestation : AuditableEntity
         UpdatePriceRange(normalPriceAmount, premiumPriceAmount, currency);
     }
 
-    public void UpdatePriceRange(int priceMinAmount, int priceMaxAmount, string? currency)
+    public void UpdatePriceRange(int priceMinAmount, int priceMaxAmount, string? currency, bool isFixedPrice = false)
     {
         PriceMinAmount = Math.Max(0, priceMinAmount);
         PriceMaxAmount = Math.Max(PriceMinAmount, priceMaxAmount);
+        IsFixedPrice = isFixedPrice;
+        if (IsFixedPrice)
+        {
+            PriceMinAmount = PriceMaxAmount;
+        }
         NormalPriceAmount = PriceMinAmount;
         PremiumPriceAmount = PriceMaxAmount;
         Currency = string.IsNullOrWhiteSpace(currency) ? "XOF" : currency.Trim().ToUpperInvariant();
         Touch();
+    }
+
+    public ServiceOption AddOption(
+        string name,
+        string? description,
+        int sortOrder,
+        int priceMinAmount,
+        int priceMaxAmount,
+        bool isFixedPrice,
+        string? currency = null)
+    {
+        var normalizedName = Normalize(name);
+        var existing = _options.FirstOrDefault(option => option.NormalizedName == normalizedName);
+        if (existing is not null)
+        {
+            existing.Update(name, description, sortOrder, priceMinAmount, priceMaxAmount, isFixedPrice, currency);
+            existing.Activate();
+            Touch();
+            return existing;
+        }
+
+        var option = new ServiceOption(Id, name, description, sortOrder, priceMinAmount, priceMaxAmount, isFixedPrice, currency);
+        _options.Add(option);
+        Touch();
+        return option;
     }
 
     public void UpdateIllustration(string? illustrationUrl)

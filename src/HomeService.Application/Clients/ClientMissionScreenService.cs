@@ -21,9 +21,11 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
     private static ClientMissionScreenResponse Map(ClientMissionStatusResponse mission)
     {
         var currentAmount = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount;
-        var title = string.IsNullOrWhiteSpace(mission.PrestationName)
-            ? mission.ServiceName ?? "Mission"
-            : mission.PrestationName!;
+        var title = !string.IsNullOrWhiteSpace(mission.OptionName)
+            ? mission.OptionName!
+            : !string.IsNullOrWhiteSpace(mission.PrestationName)
+                ? mission.PrestationName!
+                : mission.ServiceName ?? "Mission";
         var subtitle = string.IsNullOrWhiteSpace(mission.ServiceAddress)
             ? mission.MissionNumber
             : $"{mission.MissionNumber} - {mission.ServiceAddress}";

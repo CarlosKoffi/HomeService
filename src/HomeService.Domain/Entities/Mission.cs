@@ -18,12 +18,14 @@ public sealed class Mission : AuditableEntity
         int estimatedDurationMinutes,
         Guid? servicePrestationId = null,
         string? description = null,
-        bool requiresCompanyQuote = false)
+        bool requiresCompanyQuote = false,
+        Guid? serviceOptionId = null)
     {
         CustomerId = customerId;
         ServiceId = serviceId;
         MissionNumber = GenerateMissionNumber();
         ServicePrestationId = servicePrestationId;
+        ServiceOptionId = serviceOptionId;
         Mode = mode;
         PaymentMethod = paymentMethod;
         ScheduledFor = scheduledFor;
@@ -38,6 +40,8 @@ public sealed class Mission : AuditableEntity
     public string MissionNumber { get; private set; } = string.Empty;
     public Guid? ServicePrestationId { get; private set; }
     public ServicePrestation? ServicePrestation { get; private set; }
+    public Guid? ServiceOptionId { get; private set; }
+    public ServiceOption? ServiceOption { get; private set; }
     public Guid? ProviderId { get; private set; }
     public Guid? CompanyId { get; private set; }
     public MissionMode Mode { get; private set; }

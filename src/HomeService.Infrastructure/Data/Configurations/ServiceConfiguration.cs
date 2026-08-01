@@ -21,6 +21,7 @@ public sealed class ServiceConfiguration : IEntityTypeConfiguration<Service>
             .HasDefaultValue(HomeService.Domain.Enums.ServiceDisplayCategory.Home);
         builder.Property(service => service.PriceMinAmount).HasDefaultValue(1500);
         builder.Property(service => service.PriceMaxAmount).HasDefaultValue(2500);
+        builder.Property(service => service.IsFixedPrice).HasDefaultValue(false);
         builder.Property(service => service.Currency).HasMaxLength(3).IsRequired();
         builder.Property(service => service.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(service => service.MinimumPortfolioItems).HasDefaultValue(0);

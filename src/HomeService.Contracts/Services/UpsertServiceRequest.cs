@@ -11,4 +11,5 @@ public sealed record UpsertServiceRequest(
     int? PriceMaxAmount = null,
     string? IconUrl = null,
     string? ImageUrl = null,
-    string DisplayCategory = "Home");
+    string DisplayCategory = "Home",
+    bool IsFixedPrice = false);
