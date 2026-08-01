@@ -81,11 +81,8 @@ public partial class CreateRequestPage : ContentPage
         await LoadServiceCatalogAsync();
         if (Guid.TryParse(ServiceId, out _))
         {
-            await LoadPreparationAsync();
-            if (Guid.TryParse(PrestationId, out _) && !Guid.TryParse(OptionId, out _))
-            {
-                LoadOptionsFromPreparation(autoOpen: true);
-            }
+            await LoadPreparationAsync(
+                autoOpenOptions: Guid.TryParse(PrestationId, out _) && !Guid.TryParse(OptionId, out _));
         }
     }
 
@@ -177,7 +174,7 @@ public partial class CreateRequestPage : ContentPage
         StepOneContinueButton.IsEnabled = false;
     }
 
-    private async Task LoadPreparationAsync()
+    private async Task LoadPreparationAsync(bool autoOpenOptions = false)
     {
         if (!Guid.TryParse(ServiceId, out var serviceId))
         {
@@ -220,7 +217,7 @@ public partial class CreateRequestPage : ContentPage
         }
 
         preparation = result.Response;
-        LoadOptionsFromPreparation(autoOpen: false);
+        LoadOptionsFromPreparation(autoOpen: autoOpenOptions);
         UrgentOptionPanel.IsVisible = preparation.UrgentOptionEnabled && ModePicker.SelectedIndex == 0;
         maxPhotoCount = Math.Max(0, preparation.MaxPhotoCount);
         TitleLabel.Text = selectedService?.Name ?? preparation.DisplayName;
@@ -287,7 +284,6 @@ public partial class CreateRequestPage : ContentPage
         autoOpenPrestationPickerPending = true;
         await LoadServiceCatalogAsync();
         await LoadPreparationAsync();
-        LoadOptionsFromPreparation(autoOpen: true);
     }
 
     private void LoadOptionsFromPreparation(bool autoOpen)
@@ -385,7 +381,7 @@ public partial class CreateRequestPage : ContentPage
         PrestationPickerOverlay.IsVisible = false;
         PrestationPickerList.SelectedItem = null;
         UpdatePrestationButtonText();
-        await LoadPreparationAsync();
+        await LoadPreparationAsync(autoOpenOptions: true);
     }
 
     private void UpdatePrestationButtonText()
