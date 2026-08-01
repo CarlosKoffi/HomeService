@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage x:Class="HomeService.Client.Mobile.Pages.ClientSettingsPage"
+ xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False"
  xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" Title="Paramètres">
+ <Grid RowDefinitions="*,72">
  <Grid Padding="20,18,20,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Paramètres" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center"/></Grid>
   <Border Grid.Row="1" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="0"><VerticalStackLayout Spacing="0">
@@ -12,5 +14,7 @@
    <Grid Padding="16" ColumnDefinitions="*,Auto"><Label Text="À propos de Wélé" FontAttributes="Bold"/><Label Grid.Column="1" Text="›" FontSize="20"/></Grid>
   </VerticalStackLayout></Border>
   <Button Grid.Row="2" Text="Se déconnecter" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Danger}" BorderWidth="1" Clicked="OnLogoutClicked"/>
+ </Grid>
+ <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile" />
  </Grid>
 </ContentPage>

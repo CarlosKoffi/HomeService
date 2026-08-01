@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage x:Class="HomeService.Client.Mobile.Pages.ProfileInformationPage"
- xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" Title="Mes informations">
+ xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Mes informations">
+ <Grid RowDefinitions="*,72">
  <Grid Padding="20,18,20,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Mes informations" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center"/></Grid>
   <ScrollView Grid.Row="1"><VerticalStackLayout Spacing="12">
@@ -11,5 +12,7 @@
    <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/>
   </VerticalStackLayout></ScrollView>
   <Button Grid.Row="2" x:Name="SaveButton" Text="Enregistrer les modifications" HeightRequest="52" Clicked="OnSaveClicked"/>
+ </Grid>
+ <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile" />
  </Grid>
 </ContentPage>

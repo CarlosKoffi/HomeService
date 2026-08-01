@@ -3,7 +3,10 @@
     x:Class="HomeService.Client.Mobile.Pages.PaymentMethodsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    Shell.TabBarIsVisible="False"
     Title="Moyens de paiement">
+    <Grid RowDefinitions="*,72">
     <Grid Padding="20,18,20,24" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="18">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
             <Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked" />
@@ -42,5 +45,7 @@
             <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
             <Button x:Name="ContinueButton" Text="Utiliser ce moyen" HeightRequest="52" IsEnabled="False" Clicked="OnContinueClicked" />
         </VerticalStackLayout>
+    </Grid>
+    <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile" />
     </Grid>
 </ContentPage>

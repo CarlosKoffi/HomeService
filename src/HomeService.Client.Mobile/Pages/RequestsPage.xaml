@@ -15,7 +15,7 @@
                         <Label Text="Mes demandes" Style="{StaticResource ScreenTitleLabel}" />
                         <Label Text="Suivez les interventions, devis et paiements." Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
-                    <controls:ClientNotificationButton Grid.Column="1" Margin="0,6,0,0" />
+                    <controls:ClientNotificationButton Grid.Column="1" />
                 </Grid>
 
                 <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="12">
