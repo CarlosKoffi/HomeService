@@ -33,6 +33,17 @@
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
+                <Border x:Name="OverviewActionCard" IsVisible="False" Stroke="#DCE7FF" BackgroundColor="#F5F8FF" StrokeShape="RoundRectangle 18" Padding="16">
+                    <VerticalStackLayout Spacing="8">
+                        <Label x:Name="OverviewActionCaption" Text="Action requise" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                        <Label x:Name="OverviewActionTitle" FontSize="17" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                        <Label x:Name="OverviewActionAmount" IsVisible="False" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" LineBreakMode="NoWrap" />
+                        <Label x:Name="OverviewActionHelp" FontSize="13" TextColor="{StaticResource MutedInk}" LineHeight="1.25" LineBreakMode="WordWrap" />
+                        <Button x:Name="OverviewConfirmButton" Text="Accepter et payer" IsVisible="False" Clicked="OnConfirmClicked" Margin="0,6,0,0" />
+                        <Button x:Name="OverviewChoosePaymentButton" Text="Choisir un moyen de paiement" IsVisible="False" Clicked="OnChoosePaymentClicked" Margin="0,6,0,0" />
+                        <Button x:Name="OverviewCompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" Margin="0,6,0,0" />
+                    </VerticalStackLayout>
+                </Border>
                 <Button Text="Voir les détails" Clicked="OnShowDetailsClicked" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" />
             </VerticalStackLayout>
 
@@ -110,7 +121,7 @@
                 </VerticalStackLayout>
 
                 <VerticalStackLayout Spacing="10">
-                    <Button x:Name="ConfirmButton" Text="Accepter le devis et payer" IsVisible="False" Clicked="OnConfirmClicked" />
+                    <Button x:Name="ConfirmButton" Text="Accepter et payer" IsVisible="False" Clicked="OnConfirmClicked" />
                     <Button x:Name="CompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" />
                     <Button x:Name="CancelButton" Text="Annuler la mission" IsVisible="False" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCancelClicked" />
                 </VerticalStackLayout>

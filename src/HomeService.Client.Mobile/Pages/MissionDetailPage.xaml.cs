@@ -121,9 +121,10 @@ public partial class MissionDetailPage : ContentPage
         ConfirmButton.IsVisible = mission.Actions.CanAcceptQuote;
         ConfirmButton.Text = mission.Actions.AmountToPayNow.HasValue
             ? $"Accepter et payer {mission.Actions.AmountToPayNow:N0} {mission.Currency}"
-            : "Accepter le devis et payer";
+            : "Accepter et payer";
         CompleteButton.IsVisible = mission.Actions.CanValidateCompletion;
         CancelButton.IsVisible = mission.Actions.CanCancel;
+        BindOverviewAction(mission);
 
         additionalQuotes.Clear();
         foreach (var quote in mission.AdditionalQuotes)
@@ -193,6 +194,58 @@ public partial class MissionDetailPage : ContentPage
         ConfirmButton.IsVisible = false;
         CompleteButton.IsVisible = true;
         CancelButton.IsVisible = true;
+        OverviewActionCard.IsVisible = true;
+        OverviewActionCaption.Text = "Intervention terminée";
+        OverviewActionTitle.Text = "Tout s'est bien passé ?";
+        OverviewActionAmount.IsVisible = false;
+        OverviewActionHelp.Text = "Confirmez la fin de la prestation et laissez votre avis.";
+        OverviewConfirmButton.IsVisible = false;
+        OverviewChoosePaymentButton.IsVisible = false;
+        OverviewCompleteButton.IsVisible = true;
+    }
+
+    private void BindOverviewAction(ClientMissionStatusResponse mission)
+    {
+        OverviewActionCard.IsVisible = false;
+        OverviewActionAmount.IsVisible = false;
+        OverviewConfirmButton.IsVisible = false;
+        OverviewChoosePaymentButton.IsVisible = false;
+        OverviewCompleteButton.IsVisible = false;
+
+        if (mission.Actions.RequiresPaymentMethod)
+        {
+            OverviewActionCard.IsVisible = true;
+            OverviewActionCaption.Text = "Paiement";
+            OverviewActionTitle.Text = "Choisissez votre moyen de paiement";
+            OverviewActionHelp.Text = "Il sera utilisé uniquement après votre validation du prix.";
+            OverviewChoosePaymentButton.IsVisible = true;
+            return;
+        }
+
+        if (mission.Actions.CanAcceptQuote)
+        {
+            var amount = mission.Actions.AmountToPayNow ?? mission.CompanyQuotedAmount;
+            OverviewActionCard.IsVisible = true;
+            OverviewActionCaption.Text = "Prix proposé";
+            OverviewActionTitle.Text = "L'entreprise a confirmé le prix de l'intervention";
+            OverviewActionAmount.IsVisible = amount.HasValue;
+            OverviewActionAmount.Text = amount.HasValue ? $"{amount:N0} {mission.Currency}" : string.Empty;
+            OverviewActionHelp.Text = "Vérifiez le montant, puis confirmez pour réserver le technicien et payer.";
+            OverviewConfirmButton.Text = amount.HasValue
+                ? $"Accepter et payer {amount:N0} {mission.Currency}"
+                : "Accepter et payer";
+            OverviewConfirmButton.IsVisible = true;
+            return;
+        }
+
+        if (mission.Actions.CanValidateCompletion)
+        {
+            OverviewActionCard.IsVisible = true;
+            OverviewActionCaption.Text = "Intervention terminée";
+            OverviewActionTitle.Text = "Tout s'est bien passé ?";
+            OverviewActionHelp.Text = "Confirmez la fin de la prestation et laissez votre avis.";
+            OverviewCompleteButton.IsVisible = true;
+        }
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
