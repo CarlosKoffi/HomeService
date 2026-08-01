@@ -208,6 +208,106 @@ public sealed class ClientMissionRequestServiceTests
         Assert.Empty(db.MissionAttachments);
     }
 
+    [Fact]
+    public async Task CreateAsync_WhenSameInstantRequestIsAlreadyActive_RejectsDuplicate()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Barbier", null, createdByCompanyId: null);
+        var prestation = service.AddPrestation("Contours", null, 1, 1_500, 2_500);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var existingMission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            60,
+            prestation.Id);
+        existingMission.SetServiceLocation(" Cocody   Angre ", null, null);
+        existingMission.StartCompanySearch();
+        db.AddRange(service, customer, existingMission);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.CreateAsync(
+            ValidRequest(service.Id) with
+            {
+                ServicePrestationId = prestation.Id,
+                ServiceAddress = "cocody angre"
+            },
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Errors, error => error.Contains(existingMission.MissionNumber));
+        Assert.Equal(1, await db.Missions.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenAppointmentIsScheduled_AllowsSameNeedAtSameAddress()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Barbier", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var existingMission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            60);
+        existingMission.SetServiceLocation("Cocody Angre", null, null);
+        existingMission.StartCompanySearch();
+        db.AddRange(service, customer, existingMission);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.CreateAsync(
+            ValidRequest(service.Id) with
+            {
+                Mode = MissionMode.Scheduled.ToString(),
+                ScheduledFor = DateTimeOffset.UtcNow.AddDays(2),
+                ServiceAddress = "Cocody Angre"
+            },
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, await db.Missions.CountAsync());
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenSameAppointmentAlreadyExists_RejectsDuplicate()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Coiffure", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var appointment = DateTimeOffset.UtcNow.AddDays(3);
+        var existingMission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Scheduled,
+            PaymentMethod.MobileMoney,
+            appointment,
+            60);
+        existingMission.SetServiceLocation("Cocody Riviera 3", null, null);
+        existingMission.StartCompanySearch();
+        db.AddRange(service, customer, existingMission);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.CreateAsync(
+            ValidRequest(service.Id) with
+            {
+                Mode = MissionMode.Scheduled.ToString(),
+                ScheduledFor = appointment,
+                ServiceAddress = "Cocody Riviera 3"
+            },
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains(result.Errors, error => error.Contains("meme horaire"));
+        Assert.Equal(1, await db.Missions.CountAsync());
+    }
+
     private static ClientMissionRequestService CreateService(HomeServiceDbContext db)
     {
         return new ClientMissionRequestService(

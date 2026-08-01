@@ -64,6 +64,42 @@ public sealed class ClientMissionRequestService(
         var scheduledFor = request.ScheduledFor?.ToUniversalTime();
 
         var customer = await FindOrCreateCustomerAsync(request, cancellationToken);
+        var activeMissions = await db.Missions
+                .AsNoTracking()
+                .Where(item => item.CustomerId == customer.Id && item.Mode == mode)
+                .Where(item => item.Status == MissionStatus.Created
+                    || item.Status == MissionStatus.SearchingProvider
+                    || item.Status == MissionStatus.Offered
+                    || item.Status == MissionStatus.Assigned
+                    || item.Status == MissionStatus.Accepted
+                    || item.Status == MissionStatus.OnTheWay
+                    || item.Status == MissionStatus.Started)
+                .Select(item => new ExistingClientMission(
+                    item.MissionNumber,
+                    item.ServiceId,
+                    item.ServicePrestationId,
+                    item.Mode,
+                    item.Status,
+                    item.ServiceAddress,
+                    item.ScheduledFor))
+                .ToListAsync(cancellationToken);
+
+        var duplicate = activeMissions.FirstOrDefault(item => ClientMissionDuplicatePolicy.IsDuplicate(
+            request.ServiceId,
+            request.ServicePrestationId,
+            request.ServiceAddress,
+            mode,
+            scheduledFor,
+            item));
+        if (duplicate is not null)
+        {
+            var requestType = mode == MissionMode.Instant ? "demande immediate" : "demande au meme horaire";
+            return ClientMissionCreationResult.ValidationFailed(
+            [
+                $"Une {requestType} est deja en cours pour ce besoin a cette adresse ({duplicate.MissionNumber}). Consultez-la dans Mes demandes."
+            ]);
+        }
+
         var mission = new Mission(
             customer.Id,
             request.ServiceId,
