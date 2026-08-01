@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.MissionChatPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    Shell.TabBarIsVisible="False"
+    Title="Conversation">
+    <Grid RowDefinitions="*,72" BackgroundColor="White">
+        <Grid Padding="20,18" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+            <Grid ColumnDefinitions="44,*,40" ColumnSpacing="10">
+                <Button Text="‹"
+                        FontSize="26"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Padding="0"
+                        BackgroundColor="White"
+                        TextColor="{StaticResource TextPrimary}"
+                        BorderColor="{StaticResource Line}"
+                        BorderWidth="1"
+                        Clicked="OnBackClicked" />
+                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label Text="Conversation" Style="{StaticResource ScreenTitleLabel}" FontSize="22" />
+                    <Label x:Name="MissionContextLabel" Text="Chargement de la demande..." Style="{StaticResource MutedLabel}" LineBreakMode="TailTruncation" />
+                </VerticalStackLayout>
+                <controls:ClientNotificationButton Grid.Column="2" />
+            </Grid>
+
+            <Label Grid.Row="1" x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+
+            <RefreshView Grid.Row="2" x:Name="ChatRefreshView" Refreshing="OnRefreshing">
+                <CollectionView x:Name="MessagesView" SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout Padding="12,40" Spacing="8" HorizontalOptions="Center">
+                            <Label Text="Aucun message" FontSize="18" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="Écrivez le premier message concernant cette demande." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="12" Margin="0,0,0,8">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="{Binding Sender}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                    <Label Text="{Binding Body}" Style="{StaticResource BodyLabel}" />
+                                    <Label Text="{Binding SentAt}" FontSize="11" TextColor="{StaticResource TextMuted}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
+
+            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <Entry x:Name="MessageEntry" Placeholder="Écrire un message..." ReturnType="Send" Completed="OnMessageCompleted" />
+                <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" Clicked="OnSendClicked" />
+            </Grid>
+        </Grid>
+        <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="messages" />
+    </Grid>
+</ContentPage>

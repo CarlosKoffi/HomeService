@@ -10,84 +10,41 @@
         <Grid Padding="20,18" RowDefinitions="Auto,*" RowSpacing="18">
             <Grid ColumnDefinitions="*,40" ColumnSpacing="10">
                 <VerticalStackLayout Spacing="5">
-                    <Label x:Name="EyebrowLabel" Text="MESSAGES" Style="{StaticResource EyebrowLabel}" />
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Button x:Name="BackToConversationsButton"
-                            Text="‹"
-                            FontSize="26"
-                            WidthRequest="44"
-                            HeightRequest="44"
-                            Padding="0"
-                            BackgroundColor="White"
-                            TextColor="{StaticResource TextPrimary}"
-                            BorderColor="{StaticResource Line}"
-                            BorderWidth="1"
-                            IsVisible="False"
-                            Clicked="OnBackToConversationsClicked" />
-                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                        <Label x:Name="PageTitleLabel" Text="Conversations" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
-                        <Label x:Name="PageSubtitleLabel" Text="Choisissez une demande pour ouvrir ses échanges." Style="{StaticResource MutedLabel}" />
-                    </VerticalStackLayout>
-                    </Grid>
+                    <Label Text="MESSAGES" Style="{StaticResource EyebrowLabel}" />
+                    <Label Text="Conversations" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
+                    <Label Text="Choisissez une demande pour ouvrir ses échanges." Style="{StaticResource MutedLabel}" />
                     <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" Margin="0,6,0,0" />
                 </VerticalStackLayout>
                 <controls:ClientNotificationButton Grid.Column="1" Margin="0,6,0,0" />
             </Grid>
 
-            <Grid Grid.Row="1">
-                <Grid x:Name="ConversationListPanel" RowDefinitions="*,Auto">
-                    <CollectionView x:Name="ConversationsView"
-                                    SelectionMode="Single"
-                                    SelectionChanged="OnConversationSelected">
-                        <CollectionView.EmptyView>
-                            <VerticalStackLayout Padding="12,40" Spacing="8" HorizontalOptions="Center">
-                                <Label Text="Aucune conversation" FontSize="18" FontAttributes="Bold" HorizontalTextAlignment="Center" />
-                                <Label Text="Vos échanges apparaîtront ici dès votre première demande." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
-                            </VerticalStackLayout>
-                        </CollectionView.EmptyView>
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="14" Margin="0,0,0,10">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                        <VerticalStackLayout Spacing="5">
-                                            <Label Text="{Binding Title}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding MissionNumber}" FontSize="12" TextColor="{StaticResource WeleBlue}" />
-                                            <Label Text="{Binding Hint}" Style="{StaticResource MutedLabel}" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding DateLabel}" FontSize="11" TextColor="{StaticResource TextMuted}" />
-                                        </VerticalStackLayout>
-                                        <Label Grid.Column="1" Text="›" FontSize="28" TextColor="{StaticResource TextMuted}" VerticalOptions="Center" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </Grid>
-
-                <Grid x:Name="ChatPanel" IsVisible="False" RowDefinitions="Auto,*,Auto" RowSpacing="12">
-                    <Border Stroke="{StaticResource Line}" BackgroundColor="{StaticResource SurfaceSoft}" StrokeShape="RoundRectangle 14" Padding="12">
-                        <Label x:Name="MissionContextLabel" Style="{StaticResource BodyLabel}" FontAttributes="Bold" />
-                    </Border>
-
-                    <CollectionView Grid.Row="1" x:Name="MessagesView" SelectionMode="None">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="12" Margin="0,0,0,8">
-                                    <VerticalStackLayout Spacing="4">
-                                        <Label Text="{Binding Sender}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
-                                        <Label Text="{Binding Body}" Style="{StaticResource BodyLabel}" />
-                                        <Label Text="{Binding SentAt}" FontSize="11" TextColor="{StaticResource TextMuted}" />
+            <RefreshView Grid.Row="1" x:Name="MessagesRefreshView" Refreshing="OnRefreshing">
+                <CollectionView x:Name="ConversationsView"
+                                SelectionMode="Single"
+                                SelectionChanged="OnConversationSelected">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout Padding="12,40" Spacing="8" HorizontalOptions="Center">
+                            <Label Text="Aucune conversation" FontSize="18" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="Vos échanges apparaîtront ici dès votre première demande." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="14" Margin="0,0,0,10">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <VerticalStackLayout Spacing="5">
+                                        <Label Text="{Binding Title}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding MissionNumber}" FontSize="12" TextColor="{StaticResource WeleBlue}" />
+                                        <Label Text="{Binding Hint}" Style="{StaticResource MutedLabel}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding DateLabel}" FontSize="11" TextColor="{StaticResource TextMuted}" />
                                     </VerticalStackLayout>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-
-                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <Entry x:Name="MessageEntry" Placeholder="Écrire un message..." />
-                        <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" Clicked="OnSendClicked" />
-                    </Grid>
-                </Grid>
-            </Grid>
+                                    <Label Grid.Column="1" Text="›" FontSize="28" TextColor="{StaticResource TextMuted}" VerticalOptions="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
         </Grid>
         <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="messages" />
     </Grid>
