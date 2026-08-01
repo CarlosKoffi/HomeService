@@ -198,12 +198,7 @@ public partial class HomePage : ContentPage
 
     private async void OnCreateRequestClicked(object sender, EventArgs e)
     {
-        if (services.FirstOrDefault() is not ServiceItem service)
-        {
-            return;
-        }
-
-        await OpenServiceAsync(service);
+        await Shell.Current.GoToAsync(nameof(CreateRequestPage));
     }
 
     private async void OnSearchResultSelected(object sender, SelectionChangedEventArgs e)

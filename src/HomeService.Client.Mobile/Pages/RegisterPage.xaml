@@ -3,6 +3,7 @@
     x:Class="HomeService.Client.Mobile.Pages.RegisterPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
     Shell.NavBarIsVisible="False"
     BackgroundColor="White"
     Title="Créer un compte">
@@ -12,6 +13,7 @@
             Spacing="22"
             HorizontalOptions="Fill"
             MaximumWidthRequest="390">
+            <controls:WeleBrandMark MarkHeight="38" MarkAlignment="Center" Margin="0,0,0,8" />
             <Label
                 Text="Créer un compte"
                 FontSize="20"

@@ -13,6 +13,7 @@ public partial class CreateRequestPage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<PhotoSelection> selectedPhotos = [];
+    private readonly ObservableCollection<ServicePickerItem> availableServices = [];
     private readonly ObservableCollection<PrestationPickerItem> availablePrestations = [];
     private readonly List<ClientAddressResponse> addresses = [];
     private ClientMeResponse? client;
@@ -28,7 +29,9 @@ public partial class CreateRequestPage : ContentPage
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
         PhotosView.ItemsSource = selectedPhotos;
+        ServicePickerList.ItemsSource = availableServices;
         PrestationPickerList.ItemsSource = availablePrestations;
+        StepOneContinueButton.IsEnabled = false;
         ModePicker.SelectedIndex = 0;
         PaymentPicker.SelectedIndex = 0;
         ScheduleDatePicker.MinimumDate = DateTime.Today;
@@ -45,7 +48,7 @@ public partial class CreateRequestPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        TitleLabel.Text = Uri.UnescapeDataString(Name ?? "Nouvelle demande");
+        ResetServiceSelectionState();
 
         if (!sessionStore.HasSession())
         {
@@ -69,22 +72,42 @@ public partial class CreateRequestPage : ContentPage
         }
 
         await LoadAddressesAsync();
-        await LoadServicePrestationsAsync();
-        await LoadPreparationAsync();
+        await LoadServiceCatalogAsync();
+        if (Guid.TryParse(ServiceId, out _))
+        {
+            await LoadPreparationAsync();
+        }
     }
 
-    private async Task LoadServicePrestationsAsync()
+    private async Task LoadServiceCatalogAsync()
     {
+        availableServices.Clear();
         availablePrestations.Clear();
         SelectPrestationButton.IsVisible = false;
 
-        if (!Guid.TryParse(ServiceId, out var serviceId))
+        var result = await apiClient.GetServicesAsync();
+        if (!result.IsSuccess || result.Response is null)
         {
+            StepOneErrorLabel.Text = result.ErrorMessage ?? "Impossible de charger les services.";
+            StepOneErrorLabel.IsVisible = true;
             return;
         }
 
-        var result = await apiClient.GetServicesAsync();
-        if (!result.IsSuccess || result.Response is null)
+        var activeServices = result.Response
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.Name)
+            .ToList();
+        var serviceItems = await Task.WhenAll(activeServices.Select(async service =>
+        {
+            var imageSource = await apiClient.DownloadMediaImageSourceAsync(service.IconUrl ?? service.ImageUrl);
+            return ServicePickerItem.From(service, imageSource);
+        }));
+        foreach (var item in serviceItems)
+        {
+            availableServices.Add(item);
+        }
+
+        if (!Guid.TryParse(ServiceId, out var serviceId))
         {
             return;
         }
@@ -92,10 +115,12 @@ public partial class CreateRequestPage : ContentPage
         selectedService = result.Response.FirstOrDefault(item => item.Id == serviceId && item.IsActive);
         if (selectedService is null)
         {
+            ResetServiceSelectionState();
             return;
         }
 
         TitleLabel.Text = selectedService.Name;
+        SelectServiceButton.Text = "Modifier le service";
         PrestationPickerServiceLabel.Text = selectedService.Name;
 
         var activePrestations = selectedService.Prestations
@@ -122,10 +147,22 @@ public partial class CreateRequestPage : ContentPage
         UpdatePrestationButtonText();
     }
 
+    private void ResetServiceSelectionState()
+    {
+        selectedService = null;
+        preparation = null;
+        TitleLabel.Text = "Aucun service sélectionné";
+        SelectServiceButton.Text = "Choisir un service";
+        SelectPrestationButton.IsVisible = false;
+        PreparationCard.IsVisible = false;
+        StepOneContinueButton.IsEnabled = false;
+    }
+
     private async Task LoadPreparationAsync()
     {
         if (!Guid.TryParse(ServiceId, out var serviceId))
         {
+            ResetServiceSelectionState();
             return;
         }
 
@@ -198,6 +235,35 @@ public partial class CreateRequestPage : ContentPage
 
         isPreparationLoading = false;
         StepOneContinueButton.IsEnabled = true;
+    }
+
+    private void OnSelectServiceClicked(object sender, EventArgs e)
+    {
+        ServicePickerList.SelectedItem = null;
+        ServicePickerOverlay.IsVisible = true;
+    }
+
+    private void OnCloseServicePickerClicked(object sender, EventArgs e)
+    {
+        ServicePickerOverlay.IsVisible = false;
+        ServicePickerList.SelectedItem = null;
+    }
+
+    private async void OnServicePickerSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not ServicePickerItem selected)
+        {
+            return;
+        }
+
+        ServiceId = selected.Id.ToString("D");
+        PrestationId = null;
+        Name = selected.Name;
+        ServicePickerOverlay.IsVisible = false;
+        ServicePickerList.SelectedItem = null;
+        StepOneErrorLabel.IsVisible = false;
+        await LoadServiceCatalogAsync();
+        await LoadPreparationAsync();
     }
 
     private void OnSelectPrestationClicked(object sender, EventArgs e)
@@ -424,6 +490,12 @@ public partial class CreateRequestPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
+        if (ServicePickerOverlay.IsVisible)
+        {
+            OnCloseServicePickerClicked(sender, e);
+            return;
+        }
+
         if (PrestationPickerOverlay.IsVisible)
         {
             OnClosePrestationPickerClicked(sender, e);
@@ -530,6 +602,13 @@ public partial class CreateRequestPage : ContentPage
 
     private void OnStepOneContinueClicked(object sender, EventArgs e)
     {
+        if (!Guid.TryParse(ServiceId, out _))
+        {
+            StepOneErrorLabel.Text = "Choisissez d'abord un service.";
+            StepOneErrorLabel.IsVisible = true;
+            return;
+        }
+
         if (isPreparationLoading)
         {
             StepOneErrorLabel.Text = "Chargement de la prestation en cours...";
@@ -722,6 +801,37 @@ public partial class CreateRequestPage : ContentPage
                 string.IsNullOrWhiteSpace(prestation.Description) ? serviceName : prestation.Description,
                 serviceName,
                 priceLabel,
+                imageSource,
+                initials,
+                imageSource is null);
+        }
+    }
+
+    private sealed record ServicePickerItem(
+        Guid Id,
+        string Name,
+        string Description,
+        string PriceLabel,
+        ImageSource? ImageSource,
+        string Initials,
+        bool ShowInitials)
+    {
+        public static ServicePickerItem From(ServiceSummaryResponse service, ImageSource? imageSource)
+        {
+            var minimum = service.PriceMinAmount ?? service.NormalPriceAmount;
+            var maximum = service.PriceMaxAmount ?? service.PremiumPriceAmount;
+            var price = maximum > minimum
+                ? $"De {minimum:N0} à {maximum:N0} {service.Currency}"
+                : $"À partir de {minimum:N0} {service.Currency}";
+            var initials = string.Concat(service.Name
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Take(2)
+                .Select(word => char.ToUpperInvariant(word[0])));
+            return new ServicePickerItem(
+                service.Id,
+                service.Name,
+                string.IsNullOrWhiteSpace(service.Description) ? "Service à domicile" : service.Description,
+                price,
                 imageSource,
                 initials,
                 imageSource is null);

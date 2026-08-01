@@ -3,6 +3,7 @@
     x:Class="HomeService.Client.Mobile.Pages.HomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
     Shell.NavBarIsVisible="False"
     Shell.TabBarIsVisible="False"
     BackgroundColor="White"
@@ -11,6 +12,7 @@
         <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
             <ScrollView>
                 <VerticalStackLayout Padding="20,24,20,30" Spacing="20">
+                    <controls:WeleBrandMark MarkHeight="24" MarkAlignment="Start" />
                     <Border
                         x:Name="LoadErrorPanel"
                         IsVisible="False"
