@@ -11947,6 +11947,23 @@ h3 {
     opacity: .55;
 }
 
+.mission-offers-list article .mission-offer-access {
+    display: block;
+    min-height: 2.5em;
+    color: #475569;
+    line-height: 1.35;
+}
+
+.mission-offers-list article .mission-offer-access.available {
+    color: #087f5b;
+    font-weight: 700;
+}
+
+.mission-offers-list article .mission-offer-access.missingskill,
+.mission-offers-list article .mission-offer-access.waitingpriority {
+    color: #9a5b00;
+}
+
 .missions-topbar {
     display: flex;
     align-items: center;

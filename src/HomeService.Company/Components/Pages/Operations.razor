@@ -70,9 +70,9 @@ else
                         <header>
                             <div>
                                 <span>Nouvelles demandes</span>
-                                <strong>@OpenMissionOffers.Count mission(s) correspondent a vos services</strong>
+                                <strong>@OpenMissionOffers.Count demande(s) visible(s)</strong>
                             </div>
-                            <small>La premiere entreprise qui accepte prend en charge la demande.</small>
+                            <small>Les droits d'acceptation tiennent compte de vos competences et de votre priorite.</small>
                         </header>
                         <div class="mission-offers-list">
                             @foreach (var offer in OpenMissionOffers)
@@ -84,10 +84,13 @@ else
                                     </div>
                                     <p>@(string.IsNullOrWhiteSpace(offer.Description) ? "Demande client a analyser" : offer.Description)</p>
                                     <small>@(offer.ServiceAddress ?? "Adresse a confirmer") · @GetOfferScheduleLabel(offer)</small>
+                                    <small class="mission-offer-access @offer.AccessState.ToLowerInvariant()">@offer.AccessMessage</small>
                                     <button type="button"
-                                            disabled="@(AcceptingOfferId is not null || !Session.IsCompanyApproved)"
+                                            disabled="@(AcceptingOfferId is not null || !Session.IsCompanyApproved || !offer.CanAccept || offer.OfferId is null)"
                                             @onclick="() => AcceptMissionOfferAsync(offer)">
-                                        @(AcceptingOfferId == offer.OfferId ? "Acceptation..." : "Accepter la demande")
+                                        @(AcceptingOfferId == offer.OfferId
+                                            ? "Acceptation..."
+                                            : offer.CanAccept ? "Accepter la demande" : "Consultation uniquement")
                                     </button>
                                 </article>
                             }
@@ -472,16 +475,19 @@ else
 
     private async Task AcceptMissionOfferAsync(CompanyMissionOfferResponse offer)
     {
-        if (Session?.IsCompanyApproved != true || AcceptingOfferId is not null)
+        if (Session?.IsCompanyApproved != true
+            || AcceptingOfferId is not null
+            || !offer.CanAccept
+            || offer.OfferId is null)
         {
             return;
         }
 
-        AcceptingOfferId = offer.OfferId;
+        AcceptingOfferId = offer.OfferId.Value;
         AssignmentMessage = null;
         try
         {
-            var result = await ApiClient.AcceptCompanyMissionOfferAsync(Session.CompanyId, offer.OfferId);
+            var result = await ApiClient.AcceptCompanyMissionOfferAsync(Session.CompanyId, offer.OfferId.Value);
             if (!result.IsSuccess)
             {
                 AssignmentMessage = result.ErrorMessage;

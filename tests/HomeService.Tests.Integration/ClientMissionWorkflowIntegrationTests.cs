@@ -50,9 +50,16 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.True(openOffers.IsSuccess);
         Assert.Single(openOffers.Offers);
 
-        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, openOffers.Offers[0].OfferId, CancellationToken.None);
+        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, openOffers.Offers[0].OfferId!.Value, CancellationToken.None);
         Assert.True(acceptedOffer.IsSuccess);
         Assert.NotNull(acceptedOffer.Response);
+
+        var portalMissions = await new CompanyPortalQueryService(db).ListMissionsAsync(
+            seed.Company.Id,
+            "live",
+            CancellationToken.None);
+        Assert.True(portalMissions.IsSuccess);
+        Assert.Contains(portalMissions.Missions, mission => mission.Id == acceptedOffer.Response.MissionId);
 
         var assignmentService = CreateAssignmentService(db);
         var assignableProviders = await assignmentService.ListAssignableProvidersAsync(
@@ -406,7 +413,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
 
         var offerService = new CompanyMissionOfferService(db);
         var offers = await offerService.ListOpenOffersAsync(seed.Company.Id, CancellationToken.None);
-        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId, CancellationToken.None);
+        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId!.Value, CancellationToken.None);
         Assert.True(acceptedOffer.IsSuccess);
 
         var assignmentService = CreateAssignmentService(db);
@@ -480,7 +487,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
 
         var offerService = new CompanyMissionOfferService(db);
         var offers = await offerService.ListOpenOffersAsync(seed.Company.Id, CancellationToken.None);
-        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId, CancellationToken.None);
+        var acceptedOffer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId!.Value, CancellationToken.None);
         Assert.True(acceptedOffer.IsSuccess);
 
         var assignmentService = CreateAssignmentService(db);
@@ -608,7 +615,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
 
         var offerService = new CompanyMissionOfferService(db);
         var offers = await offerService.ListOpenOffersAsync(seed.Company.Id, CancellationToken.None);
-        var offer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId, CancellationToken.None);
+        var offer = await offerService.AcceptAsync(seed.Company.Id, offers.Offers[0].OfferId!.Value, CancellationToken.None);
         Assert.True(offer.IsSuccess);
 
         var assignment = await CreateAssignmentService(db).AssignAsync(

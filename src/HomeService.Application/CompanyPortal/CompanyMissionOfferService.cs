@@ -15,40 +15,109 @@ public sealed class CompanyMissionOfferService(IAppDbContext db)
         Guid companyId,
         CancellationToken cancellationToken)
     {
-        var companyExists = await db.Companies
+        var company = await db.Companies
             .AsNoTracking()
-            .AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
-        if (!companyExists)
+            .FirstOrDefaultAsync(item => item.Id == companyId && item.Status != CompanyStatus.Suspended, cancellationToken);
+        if (company is null)
         {
             return CompanyMissionOfferListResult.NotFound();
         }
 
         var now = DateTimeOffset.UtcNow;
-        var offers = await (
-                from offer in db.MissionDispatchOffers.AsNoTracking()
-                join mission in db.Missions.AsNoTracking() on offer.MissionId equals mission.Id
+        var missions = await (
+                from mission in db.Missions.AsNoTracking()
                 join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
                 join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
-                where offer.CompanyId == companyId
-                    && offer.Status == MissionDispatchOfferStatus.Sent
-                    && offer.ExpiresAt > now
-                orderby offer.ExpiresAt, offer.Rank
-                select new CompanyMissionOfferResponse(
-                    offer.Id,
-                    mission.Id,
-                    mission.MissionNumber,
-                    service.Name,
-                    customer.FirstName + " " + customer.LastName,
-                    customer.PhoneNumber,
-                    offer.Status.ToString(),
-                    offer.ExpiresAt,
-                    mission.ServiceAddress,
-                    mission.Description,
-                    mission.EstimatedDurationMinutes,
-                    mission.ScheduledFor,
-                    offer.Rank,
-                    offer.Score))
+                where mission.CompanyId == null
+                    && (mission.Status == MissionStatus.SearchingProvider || mission.Status == MissionStatus.Offered)
+                orderby mission.CreatedAt descending
+                select new
+                {
+                    Mission = mission,
+                    ServiceName = service.Name,
+                    CustomerName = customer.FirstName + " " + customer.LastName,
+                    customer.PhoneNumber
+                })
+            .Take(40)
             .ToListAsync(cancellationToken);
+
+        var missionIds = missions.Select(item => item.Mission.Id).ToList();
+        var dispatchOffers = await db.MissionDispatchOffers
+            .AsNoTracking()
+            .Where(offer => missionIds.Contains(offer.MissionId))
+            .ToListAsync(cancellationToken);
+        var providerSkills = await (
+                from skill in db.ProviderServices.AsNoTracking()
+                join provider in db.Providers.AsNoTracking() on skill.ProviderId equals provider.Id
+                where skill.CompanyId == companyId
+                    && skill.IsActive
+                    && provider.Status == ProviderStatus.Approved
+                select new
+            {
+                skill.ServiceId,
+                Prestations = skill.Prestations
+                    .Where(prestation => prestation.IsActive)
+                    .Select(prestation => prestation.ServicePrestationId)
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        var offers = missions
+            .Select(item =>
+            {
+                var companyOffer = dispatchOffers
+                    .Where(offer => offer.MissionId == item.Mission.Id && offer.CompanyId == companyId)
+                    .OrderByDescending(offer => offer.CreatedAt)
+                    .FirstOrDefault();
+                var hasCompatibleProvider = providerSkills.Any(skill =>
+                    skill.ServiceId == item.Mission.ServiceId
+                    && (item.Mission.ServicePrestationId == null
+                        || skill.Prestations.Contains(item.Mission.ServicePrestationId.Value)));
+                var canAccept = company.Status == CompanyStatus.Approved
+                    && hasCompatibleProvider
+                    && companyOffer?.Status == MissionDispatchOfferStatus.Sent
+                    && companyOffer.ExpiresAt > now;
+                var accessState = canAccept
+                    ? "Available"
+                    : !hasCompatibleProvider
+                        ? "MissingSkill"
+                        : companyOffer is null
+                            ? "WaitingPriority"
+                            : "Unavailable";
+                var accessMessage = accessState switch
+                {
+                    "Available" => $"Disponible maintenant - rang {companyOffer!.Rank}.",
+                    "MissingSkill" => "Consultation uniquement : aucun prestataire actif ne maitrise cette prestation.",
+                    "WaitingPriority" => $"Consultation uniquement : priorité entreprise {company.MissionDispatchPriority}, une vague précédente est en cours.",
+                    _ => "Consultation uniquement : cette offre n'est plus disponible pour votre entreprise."
+                };
+
+                return new CompanyMissionOfferResponse(
+                    companyOffer?.Id,
+                    item.Mission.Id,
+                    item.Mission.MissionNumber,
+                    item.ServiceName,
+                    item.CustomerName,
+                    item.PhoneNumber,
+                    companyOffer?.Status.ToString() ?? "Visible",
+                    companyOffer?.ExpiresAt ?? now,
+                    item.Mission.ServiceAddress,
+                    item.Mission.Description,
+                    item.Mission.EstimatedDurationMinutes,
+                    item.Mission.ScheduledFor,
+                    companyOffer?.Rank,
+                    companyOffer?.Score,
+                    canAccept,
+                    hasCompatibleProvider,
+                    accessState,
+                    accessMessage,
+                    company.MissionDispatchPriority);
+            })
+            .OrderByDescending(offer => offer.CanAccept)
+            .ThenBy(offer => offer.Rank ?? int.MaxValue)
+            .ThenBy(offer => offer.ScheduledFor ?? DateTimeOffset.MaxValue)
+            .Take(10)
+            .ToList();
 
         return CompanyMissionOfferListResult.Ok(offers);
     }
