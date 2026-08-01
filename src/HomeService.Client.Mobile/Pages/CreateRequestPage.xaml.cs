@@ -1,5 +1,6 @@
 using HomeService.Client.Mobile.Services;
 using HomeService.Contracts.Clients;
+using HomeService.Contracts.Services;
 using System.Collections.ObjectModel;
 
 namespace HomeService.Client.Mobile.Pages;
@@ -12,9 +13,11 @@ public partial class CreateRequestPage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<PhotoSelection> selectedPhotos = [];
+    private readonly ObservableCollection<PrestationPickerItem> availablePrestations = [];
     private readonly List<ClientAddressResponse> addresses = [];
     private ClientMeResponse? client;
     private PrepareClientMissionResponse? preparation;
+    private ServiceSummaryResponse? selectedService;
     private bool isPreparationLoading;
     private int maxPhotoCount = 3;
     private int currentStep = 1;
@@ -25,6 +28,7 @@ public partial class CreateRequestPage : ContentPage
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
         PhotosView.ItemsSource = selectedPhotos;
+        PrestationPickerList.ItemsSource = availablePrestations;
         ModePicker.SelectedIndex = 0;
         PaymentPicker.SelectedIndex = 0;
         ScheduleDatePicker.MinimumDate = DateTime.Today;
@@ -65,7 +69,57 @@ public partial class CreateRequestPage : ContentPage
         }
 
         await LoadAddressesAsync();
+        await LoadServicePrestationsAsync();
         await LoadPreparationAsync();
+    }
+
+    private async Task LoadServicePrestationsAsync()
+    {
+        availablePrestations.Clear();
+        SelectPrestationButton.IsVisible = false;
+
+        if (!Guid.TryParse(ServiceId, out var serviceId))
+        {
+            return;
+        }
+
+        var result = await apiClient.GetServicesAsync();
+        if (!result.IsSuccess || result.Response is null)
+        {
+            return;
+        }
+
+        selectedService = result.Response.FirstOrDefault(item => item.Id == serviceId && item.IsActive);
+        if (selectedService is null)
+        {
+            return;
+        }
+
+        TitleLabel.Text = selectedService.Name;
+        PrestationPickerServiceLabel.Text = selectedService.Name;
+
+        var activePrestations = selectedService.Prestations
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.SortOrder)
+            .ThenBy(item => item.Name)
+            .ToList();
+        if (activePrestations.Count == 0)
+        {
+            return;
+        }
+
+        var items = await Task.WhenAll(activePrestations.Select(async prestation =>
+        {
+            var imageSource = await apiClient.DownloadMediaImageSourceAsync(prestation.IllustrationUrl);
+            return PrestationPickerItem.From(prestation, selectedService.Name, imageSource);
+        }));
+        foreach (var item in items)
+        {
+            availablePrestations.Add(item);
+        }
+
+        SelectPrestationButton.IsVisible = true;
+        UpdatePrestationButtonText();
     }
 
     private async Task LoadPreparationAsync()
@@ -111,7 +165,7 @@ public partial class CreateRequestPage : ContentPage
         preparation = result.Response;
         UrgentOptionPanel.IsVisible = preparation.UrgentOptionEnabled && ModePicker.SelectedIndex == 0;
         maxPhotoCount = Math.Max(0, preparation.MaxPhotoCount);
-        TitleLabel.Text = preparation.DisplayName;
+        TitleLabel.Text = selectedService?.Name ?? preparation.DisplayName;
         PreparationTitleLabel.Text = preparation.DisplayName;
         PreparationDescriptionLabel.Text = string.IsNullOrWhiteSpace(preparation.Description)
             ? "Décrivez votre besoin pour recevoir une proposition adaptée."
@@ -144,6 +198,47 @@ public partial class CreateRequestPage : ContentPage
 
         isPreparationLoading = false;
         StepOneContinueButton.IsEnabled = true;
+    }
+
+    private void OnSelectPrestationClicked(object sender, EventArgs e)
+    {
+        if (availablePrestations.Count == 0)
+        {
+            return;
+        }
+
+        PrestationPickerList.SelectedItem = null;
+        PrestationPickerOverlay.IsVisible = true;
+    }
+
+    private void OnClosePrestationPickerClicked(object sender, EventArgs e)
+    {
+        PrestationPickerOverlay.IsVisible = false;
+        PrestationPickerList.SelectedItem = null;
+    }
+
+    private async void OnPrestationSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not PrestationPickerItem selected)
+        {
+            return;
+        }
+
+        PrestationId = selected.Id.ToString("D");
+        Name = selected.Name;
+        PrestationPickerOverlay.IsVisible = false;
+        PrestationPickerList.SelectedItem = null;
+        UpdatePrestationButtonText();
+        await LoadPreparationAsync();
+    }
+
+    private void UpdatePrestationButtonText()
+    {
+        var selected = availablePrestations.FirstOrDefault(item =>
+            Guid.TryParse(PrestationId, out var prestationId) && item.Id == prestationId);
+        SelectPrestationButton.Text = selected is null
+            ? "Selectionner une prestation"
+            : $"Prestation : {selected.Name}  Modifier";
     }
 
     private async Task LoadAddressesAsync()
@@ -329,6 +424,12 @@ public partial class CreateRequestPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
+        if (PrestationPickerOverlay.IsVisible)
+        {
+            OnClosePrestationPickerClicked(sender, e);
+            return;
+        }
+
         if (currentStep > 1)
         {
             ShowStep(currentStep - 1);
@@ -587,6 +688,43 @@ public partial class CreateRequestPage : ContentPage
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer);
             return new PhotoSelection(file, file.FileName, "Photo selectionnee", buffer.ToArray());
+        }
+    }
+
+    private sealed record PrestationPickerItem(
+        Guid Id,
+        string Name,
+        string Description,
+        string ServiceName,
+        string PriceLabel,
+        ImageSource? ImageSource,
+        string Initials,
+        bool ShowInitials)
+    {
+        public static PrestationPickerItem From(
+            ServicePrestationSummaryResponse prestation,
+            string serviceName,
+            ImageSource? imageSource)
+        {
+            var minimum = prestation.PriceMinAmount ?? prestation.NormalPriceAmount;
+            var maximum = prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount;
+            var priceLabel = maximum > minimum
+                ? $"{minimum:N0} - {maximum:N0} {prestation.Currency}"
+                : $"A partir de {minimum:N0} {prestation.Currency}";
+            var initials = string.Concat(prestation.Name
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Take(2)
+                .Select(word => char.ToUpperInvariant(word[0])));
+
+            return new PrestationPickerItem(
+                prestation.Id,
+                prestation.Name,
+                string.IsNullOrWhiteSpace(prestation.Description) ? serviceName : prestation.Description,
+                serviceName,
+                priceLabel,
+                imageSource,
+                initials,
+                imageSource is null);
         }
     }
 }

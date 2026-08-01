@@ -31,7 +31,16 @@
                             <Border BackgroundColor="#F4F5F8" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="14">
                                 <VerticalStackLayout Spacing="3">
                                     <Label x:Name="TitleLabel" Text="Service sélectionné" FontSize="13" FontAttributes="Bold" />
-                                    <Label Text="Non modifiable" FontSize="11" TextColor="#687386" />
+                                    <Button x:Name="SelectPrestationButton"
+                                            Text="Selectionner une prestation"
+                                            FontSize="11"
+                                            FontAttributes="Bold"
+                                            TextColor="{StaticResource WeleBlue}"
+                                            BackgroundColor="Transparent"
+                                            Padding="0,5,0,0"
+                                            HorizontalOptions="Start"
+                                            IsVisible="False"
+                                            Clicked="OnSelectPrestationClicked" />
                                 </VerticalStackLayout>
                             </Border>
                         </VerticalStackLayout>
@@ -222,6 +231,74 @@
                     <Label Text="14 à 30 min" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </Grid>
+        </Grid>
+
+        <Grid x:Name="PrestationPickerOverlay"
+              Grid.RowSpan="2"
+              Margin="-20,-18,-20,-18"
+              BackgroundColor="#730B1220"
+              IsVisible="False"
+              ZIndex="20">
+            <Border VerticalOptions="End"
+                    BackgroundColor="White"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 22,22,0,0"
+                    Padding="20,18,20,24"
+                    MaximumHeightRequest="620">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,40">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="Choisir une prestation" FontSize="18" FontAttributes="Bold" />
+                            <Label x:Name="PrestationPickerServiceLabel" FontSize="11" TextColor="#687386" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="&#215;" FontSize="24"
+                                WidthRequest="40" HeightRequest="40" Padding="0"
+                                BackgroundColor="Transparent" TextColor="#111827"
+                                Clicked="OnClosePrestationPickerClicked" />
+                    </Grid>
+
+                    <BoxView Grid.Row="1" HeightRequest="1" Color="#E7EAF0" />
+
+                    <CollectionView x:Name="PrestationPickerList" Grid.Row="2"
+                                    SelectionMode="Single"
+                                    SelectionChanged="OnPrestationSelected">
+                        <CollectionView.EmptyView>
+                            <Label Text="Aucune prestation disponible pour ce service."
+                                   Padding="0,24" TextColor="#687386"
+                                   HorizontalTextAlignment="Center" />
+                        </CollectionView.EmptyView>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Stroke="#E1E6EF" StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 14" BackgroundColor="White"
+                                        Padding="10" Margin="0,5">
+                                    <Grid ColumnDefinitions="76,*,Auto" ColumnSpacing="12">
+                                        <Border HeightRequest="76" WidthRequest="76" Padding="0"
+                                                StrokeThickness="0" StrokeShape="RoundRectangle 11"
+                                                BackgroundColor="#F2F5FB">
+                                            <Grid>
+                                                <Image Source="{Binding ImageSource}" Aspect="AspectFill" />
+                                                <Label Text="{Binding Initials}" FontSize="15" FontAttributes="Bold"
+                                                       TextColor="{StaticResource WeleBlue}"
+                                                       HorizontalOptions="Center" VerticalOptions="Center"
+                                                       IsVisible="{Binding ShowInitials}" />
+                                            </Grid>
+                                        </Border>
+                                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                            <Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold" MaxLines="2" />
+                                            <Label Text="{Binding Description}" FontSize="10" TextColor="#687386" MaxLines="2" />
+                                            <Label Text="{Binding PriceLabel}" FontSize="11" FontAttributes="Bold"
+                                                   TextColor="{StaticResource WeleBlue}" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="2" Text="&#8250;" FontSize="28"
+                                               TextColor="#687386" VerticalTextAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 
