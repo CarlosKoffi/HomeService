@@ -34,6 +34,7 @@ public static class DatabaseInitializer
         await SeedServicePrestationPhotosAsync(db, cancellationToken);
         await SeedServiceMediaAsync(db, cancellationToken);
         await SeedDemoMissionsAsync(db, cancellationToken);
+        await EnableCompanyProvidersForTestingAsync(db, cancellationToken);
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         await SeedAdminAccessAsync(db, configuration, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
@@ -60,6 +61,13 @@ public static class DatabaseInitializer
         CancellationToken cancellationToken)
     {
         await ExecuteSqlScriptAsync(db, "064_seed_service_prestation_photos.sql", cancellationToken);
+    }
+
+    private static async Task EnableCompanyProvidersForTestingAsync(
+        HomeServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        await ExecuteSqlScriptAsync(db, "065_enable_company_providers_for_testing.sql", cancellationToken);
     }
 
     private static async Task ExecuteSqlScriptAsync(

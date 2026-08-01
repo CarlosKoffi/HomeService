@@ -24,6 +24,7 @@
     <None Include="..\HomeService.Admin\Sql\056_seed_demo_missions.sql" Link="Sql\056_seed_demo_missions.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\HomeService.Admin\Sql\063_seed_wellbeing_service_catalog.sql" Link="Sql\063_seed_wellbeing_service_catalog.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\HomeService.Admin\Sql\064_seed_service_prestation_photos.sql" Link="Sql\064_seed_service_prestation_photos.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\HomeService.Admin\Sql\065_enable_company_providers_for_testing.sql" Link="Sql\065_enable_company_providers_for_testing.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
