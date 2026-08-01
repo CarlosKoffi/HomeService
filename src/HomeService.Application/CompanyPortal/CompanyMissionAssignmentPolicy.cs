@@ -1,5 +1,7 @@
 namespace HomeService.Application.CompanyPortal;
 
+using HomeService.Domain.Enums;
+
 public static class CompanyMissionAssignmentPolicy
 {
     public static CompanyMissionAssignmentPolicyResult Validate(
@@ -8,11 +10,17 @@ public static class CompanyMissionAssignmentPolicy
         bool providerIsApproved,
         bool providerCoversMissionService,
         bool providerHasBlockingAssignment,
-        bool providerAlreadyUnavailableForMission = false)
+        bool providerAlreadyUnavailableForMission = false,
+        MissionStatus? missionStatus = null)
     {
         if (!missionExists)
         {
             return CompanyMissionAssignmentPolicyResult.NotFound("Mission introuvable.");
+        }
+
+        if (missionStatus is not null && missionStatus != MissionStatus.SearchingProvider)
+        {
+            return CompanyMissionAssignmentPolicyResult.Invalid("Cette mission n'est plus affectable dans son etat actuel.");
         }
 
         if (!providerExists || !providerIsApproved)

@@ -39,8 +39,9 @@ public sealed class ProviderAssignmentExpirationServiceTests
 
         Assert.Equal(1, result.ExpiredAssignmentCount);
         Assert.Equal(ProviderMissionAssignmentStatus.Expired, assignment.Status);
-        Assert.Equal(MissionStatus.SearchingProvider, mission.Status);
+        Assert.Equal(MissionStatus.Offered, mission.Status);
         Assert.Null(mission.ProviderId);
+        Assert.Null(mission.CompanyId);
         Assert.Null(mission.ProviderAcceptedAt);
     }
 
@@ -64,6 +65,33 @@ public sealed class ProviderAssignmentExpirationServiceTests
 
         Assert.Equal(0, result.ExpiredAssignmentCount);
         Assert.Equal(ProviderMissionAssignmentStatus.Offered, assignment.Status);
+    }
+
+    [Fact]
+    public async Task RecoverRecentStalledAssignmentsAsync_WhenExpiredAssignmentAlreadyLeftMissionStuck_ReopensDispatch()
+    {
+        await using var db = CreateDbContext();
+        var providerId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
+        var mission = new Mission(Guid.NewGuid(), Guid.NewGuid(), MissionMode.Instant, PaymentMethod.MobileMoney, null, 90);
+        mission.Assign(providerId, companyId, 5000);
+        mission.ReleaseProviderAfterRefusal(providerId);
+        var assignment = new ProviderMissionAssignment(mission.Id, providerId, companyId, DateTimeOffset.UtcNow.AddMinutes(-2));
+        assignment.MarkExpired();
+
+        db.Missions.Add(mission);
+        db.ProviderMissionAssignments.Add(assignment);
+        await db.SaveChangesAsync();
+
+        var result = await new ProviderAssignmentExpirationService(db).RecoverRecentStalledAssignmentsAsync(
+            DateTimeOffset.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow,
+            10,
+            CancellationToken.None);
+
+        Assert.Equal(1, result.ExpiredAssignmentCount);
+        Assert.Equal(MissionStatus.Offered, mission.Status);
+        Assert.Null(mission.CompanyId);
     }
 
     private static HomeServiceDbContext CreateDbContext()

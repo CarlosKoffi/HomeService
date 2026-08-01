@@ -1,4 +1,5 @@
 using HomeService.Application.CompanyPortal;
+using HomeService.Domain.Enums;
 
 namespace HomeService.Tests.Unit.Application;
 
@@ -60,5 +61,21 @@ public sealed class CompanyMissionAssignmentPolicyTests
         Assert.True(result.IsValid);
         Assert.False(result.IsNotFound);
         Assert.Null(result.Message);
+    }
+
+    [Fact]
+    public void Validate_rejects_completed_mission()
+    {
+        var result = CompanyMissionAssignmentPolicy.Validate(
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            MissionStatus.Completed);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("plus affectable", result.Message);
     }
 }

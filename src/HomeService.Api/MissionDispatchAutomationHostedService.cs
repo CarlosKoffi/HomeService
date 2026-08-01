@@ -9,6 +9,7 @@ public sealed class MissionDispatchAutomationHostedService(
 {
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(30);
     private const int DefaultBatchSize = 50;
+    private bool startupRecoveryPending = true;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -35,22 +36,36 @@ public sealed class MissionDispatchAutomationHostedService(
             using var scope = scopeFactory.CreateScope();
             var dispatchService = scope.ServiceProvider.GetRequiredService<MissionDispatchService>();
             var assignmentExpirationService = scope.ServiceProvider.GetRequiredService<ProviderAssignmentExpirationService>();
+            var now = DateTimeOffset.UtcNow;
+            var recoveredRecentCount = 0;
+            if (startupRecoveryPending)
+            {
+                var yesterday = new DateTimeOffset(now.UtcDateTime.Date.AddDays(-1), TimeSpan.Zero);
+                recoveredRecentCount = (await assignmentExpirationService.RecoverRecentStalledAssignmentsAsync(
+                    yesterday,
+                    now,
+                    GetBatchSize(),
+                    stoppingToken)).ExpiredAssignmentCount;
+                startupRecoveryPending = false;
+            }
+
+            var assignmentResult = await assignmentExpirationService.ExpireDueAssignmentsAsync(
+                now,
+                GetBatchSize(),
+                stoppingToken);
             var recoveredMissionCount = await dispatchService.DispatchUnroutedMissionsAsync(
                 GetBatchSize(),
                 stoppingToken);
             var result = await dispatchService.ExpireAndReissueDueOffersAsync(
-                DateTimeOffset.UtcNow,
-                GetBatchSize(),
-                stoppingToken);
-            var assignmentResult = await assignmentExpirationService.ExpireDueAssignmentsAsync(
-                DateTimeOffset.UtcNow,
+                now,
                 GetBatchSize(),
                 stoppingToken);
 
-            if (recoveredMissionCount > 0 || result.MissionCount > 0 || assignmentResult.ExpiredAssignmentCount > 0)
+            if (recoveredRecentCount > 0 || recoveredMissionCount > 0 || result.MissionCount > 0 || assignmentResult.ExpiredAssignmentCount > 0)
             {
                 logger.LogInformation(
-                    "Mission dispatch automation recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers and expired {AssignmentCount} provider assignments.",
+                    "Mission dispatch automation repaired {RecoveredRecentCount} recent stalled missions, recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers and expired {AssignmentCount} provider assignments.",
+                    recoveredRecentCount,
                     recoveredMissionCount,
                     result.MissionCount,
                     result.ExpiredOfferCount,

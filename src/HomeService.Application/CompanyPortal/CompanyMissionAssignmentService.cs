@@ -27,6 +27,11 @@ public sealed class CompanyMissionAssignmentService(
             return CompanyAssignableProvidersResult.NotFound();
         }
 
+        if (mission.Status != MissionStatus.SearchingProvider)
+        {
+            return CompanyAssignableProvidersResult.Ok([]);
+        }
+
         var busyProviderIds = await db.ProviderMissionAssignments
             .AsNoTracking()
             .Where(assignment => assignment.CompanyId == companyId
@@ -154,7 +159,8 @@ public sealed class CompanyMissionAssignmentService(
             provider?.Status == ProviderStatus.Approved,
             providerService is not null,
             hasBlockingAssignment,
-            alreadyUnavailableForThisMission);
+            alreadyUnavailableForThisMission,
+            mission?.Status);
         if (!policy.IsValid)
         {
             return policy.IsNotFound

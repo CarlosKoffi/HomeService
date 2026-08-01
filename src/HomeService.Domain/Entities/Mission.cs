@@ -288,6 +288,34 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
+    public void ResetDispatchAfterProviderAcceptanceTimeout(Guid providerId)
+    {
+        if (ProviderId != providerId || Status is not MissionStatus.Assigned)
+        {
+            return;
+        }
+
+        ProviderId = null;
+        CompanyId = null;
+        CompanyAssignmentExpiresAt = null;
+        ProviderAcceptedAt = null;
+        Status = MissionStatus.Offered;
+        Touch();
+    }
+
+    public void ResetStalledDispatch()
+    {
+        if (Status is not MissionStatus.SearchingProvider || ProviderId is not null || CompanyId is null)
+        {
+            return;
+        }
+
+        CompanyId = null;
+        CompanyAssignmentExpiresAt = null;
+        Status = MissionStatus.Offered;
+        Touch();
+    }
+
     public void ConfirmByCustomer(
         int platformCommissionAmount,
         int transportFeeAmount,
