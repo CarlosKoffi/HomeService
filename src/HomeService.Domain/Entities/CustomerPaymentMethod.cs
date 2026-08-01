@@ -9,14 +9,21 @@ public sealed class CustomerPaymentMethod : AuditableEntity
     {
     }
 
+    public CustomerPaymentMethod(Guid customerId, PaymentMethod method, string label, string? maskedReference, bool isDefault)
+        : this(customerId, null, method, label, maskedReference, isDefault)
+    {
+    }
+
     public CustomerPaymentMethod(
         Guid customerId,
+        Guid? paymentProviderId,
         PaymentMethod method,
         string label,
         string? maskedReference,
         bool isDefault)
     {
         CustomerId = customerId;
+        PaymentProviderId = paymentProviderId;
         Method = method;
         Label = CleanRequired(label, 120);
         MaskedReference = Clean(maskedReference, 120);
@@ -26,6 +33,8 @@ public sealed class CustomerPaymentMethod : AuditableEntity
 
     public Guid CustomerId { get; private set; }
     public CustomerProfile? Customer { get; private set; }
+    public Guid? PaymentProviderId { get; private set; }
+    public PaymentProvider? PaymentProvider { get; private set; }
     public PaymentMethod Method { get; private set; }
     public string Label { get; private set; } = string.Empty;
     public string? MaskedReference { get; private set; }

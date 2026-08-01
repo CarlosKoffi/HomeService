@@ -33,6 +33,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<CustomerSession> CustomerSessions => Set<CustomerSession>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<CustomerPaymentMethod> CustomerPaymentMethods => Set<CustomerPaymentMethod>();
+    public DbSet<PaymentProvider> PaymentProviders => Set<PaymentProvider>();
     public DbSet<Mission> Missions => Set<Mission>();
     public DbSet<MissionAttachment> MissionAttachments => Set<MissionAttachment>();
     public DbSet<MissionAdditionalQuote> MissionAdditionalQuotes => Set<MissionAdditionalQuote>();

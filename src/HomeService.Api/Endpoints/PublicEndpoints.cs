@@ -521,6 +521,13 @@ public static class PublicEndpoints
         .Produces<IReadOnlyList<ClientPaymentMethodResponse>>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapGet("/payment-providers", async (
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await profileService.ListPaymentProvidersAsync(cancellationToken)))
+        .WithName("ListClientPaymentProviders")
+        .Produces<IReadOnlyList<PaymentProviderResponse>>();
+
         client.MapPost("/payment-methods", async (
             UpsertClientPaymentMethodRequest request,
             HttpRequest httpRequest,

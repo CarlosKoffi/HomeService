@@ -14,5 +14,6 @@ public sealed class CustomerPaymentMethodConfiguration : IEntityTypeConfiguratio
         builder.Property(paymentMethod => paymentMethod.MaskedReference).HasMaxLength(120);
         builder.HasIndex(paymentMethod => new { paymentMethod.CustomerId, paymentMethod.IsDefault });
         builder.HasOne(paymentMethod => paymentMethod.Customer).WithMany().HasForeignKey(paymentMethod => paymentMethod.CustomerId);
+        builder.HasOne(paymentMethod => paymentMethod.PaymentProvider).WithMany().HasForeignKey(paymentMethod => paymentMethod.PaymentProviderId).OnDelete(DeleteBehavior.SetNull);
     }
 }

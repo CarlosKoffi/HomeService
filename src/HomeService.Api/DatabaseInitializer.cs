@@ -29,6 +29,7 @@ public static class DatabaseInitializer
         await SeedCountriesAsync(db, cancellationToken);
         await SeedCountryBrandingAsync(db, cancellationToken);
         await SeedLanguagesAsync(db, cancellationToken);
+        await SeedPaymentProvidersAsync(db, cancellationToken);
         await SeedServicesAsync(db, cancellationToken);
         await SeedServicePrestationsAsync(db, cancellationToken);
         await SeedWellbeingServiceCatalogAsync(db, cancellationToken);
@@ -44,6 +45,24 @@ public static class DatabaseInitializer
         await SeedCompanyEditorialContentAsync(db, cancellationToken);
         await SeedProviderEditorialContentAsync(db, cancellationToken);
         await ApplyVisibleRebrandAsync(db, cancellationToken);
+    }
+
+    private static async Task SeedPaymentProvidersAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var seeds = new[]
+        {
+            new PaymentProvider("orange-money", "Orange Money", PaymentMethod.MobileMoney, "https://logo.clearbit.com/orange.com", 10),
+            new PaymentProvider("mtn-momo", "MTN Mobile Money", PaymentMethod.MobileMoney, "https://logo.clearbit.com/mtn.com", 20),
+            new PaymentProvider("moov-money", "Moov Money", PaymentMethod.MobileMoney, "https://logo.clearbit.com/moov-africa.ci", 30),
+            new PaymentProvider("wave", "Wave", PaymentMethod.MobileMoney, "https://logo.clearbit.com/wave.com", 40),
+            new PaymentProvider("bank-card", "Carte bancaire", PaymentMethod.Card, "https://logo.clearbit.com/visa.com", 50)
+        };
+
+        var existingCodes = await db.PaymentProviders.Select(item => item.Code).ToListAsync(cancellationToken);
+        foreach (var seed in seeds.Where(seed => !existingCodes.Contains(seed.Code)))
+            db.PaymentProviders.Add(seed);
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private static async Task SeedDemoMissionsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)

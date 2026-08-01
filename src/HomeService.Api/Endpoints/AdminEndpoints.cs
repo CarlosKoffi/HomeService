@@ -16,6 +16,7 @@ using HomeService.Contracts.Monitoring;
 using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.Services;
+using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -80,6 +81,33 @@ public static class AdminEndpoints
         })
         .WithName("GetAdminDashboard")
         .Produces<AdminDashboardResponse>();
+
+        admin.MapGet("/payment-providers", async (AdminPaymentProviderService service, CancellationToken cancellationToken) =>
+            Results.Ok(await service.ListAsync(cancellationToken)))
+            .WithName("ListAdminPaymentProviders")
+            .Produces<IReadOnlyList<PaymentProviderResponse>>();
+
+        admin.MapPost("/payment-providers", async (UpsertPaymentProviderRequest request, AdminPaymentProviderService service, CancellationToken cancellationToken) =>
+        {
+            try { return Results.Ok(await service.CreateAsync(request, cancellationToken)); }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return Results.Conflict(new { message = ex.Message }); }
+        })
+            .WithName("CreateAdminPaymentProvider")
+            .Produces<PaymentProviderResponse>();
+
+        admin.MapPut("/payment-providers/{id:guid}", async (Guid id, UpsertPaymentProviderRequest request, AdminPaymentProviderService service, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var response = await service.UpdateAsync(id, request, cancellationToken);
+                return response is null ? Results.NotFound() : Results.Ok(response);
+            }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return Results.Conflict(new { message = ex.Message }); }
+        })
+            .WithName("UpdateAdminPaymentProvider")
+            .Produces<PaymentProviderResponse>();
         
         admin.MapGet("/audit-logs", async (
             string? actorType,

@@ -31,6 +31,7 @@ public interface IAppDbContext
     DbSet<CustomerSession> CustomerSessions { get; }
     DbSet<CustomerAddress> CustomerAddresses { get; }
     DbSet<CustomerPaymentMethod> CustomerPaymentMethods { get; }
+    DbSet<PaymentProvider> PaymentProviders { get; }
     DbSet<Mission> Missions { get; }
     DbSet<MissionAttachment> MissionAttachments { get; }
     DbSet<MissionAdditionalQuote> MissionAdditionalQuotes { get; }

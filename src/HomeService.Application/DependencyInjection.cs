@@ -93,6 +93,7 @@ public static class DependencyInjection
         services.AddScoped<AdminMissionDisputeService>();
         services.AddScoped<AdminProviderOperationsService>();
         services.AddScoped<AdminServiceCatalogInsightsService>();
+        services.AddScoped<AdminPaymentProviderService>();
 
         return services;
     }

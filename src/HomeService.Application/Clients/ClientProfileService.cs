@@ -94,9 +94,19 @@ public sealed class ClientProfileService(IAppDbContext db)
                 method.Label,
                 method.MaskedReference,
                 method.IsDefault,
-                method.IsActive))
+                method.IsActive,
+                method.PaymentProviderId,
+                method.PaymentProvider != null ? method.PaymentProvider.Name : null,
+                method.PaymentProvider != null ? method.PaymentProvider.LogoUrl : null))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<PaymentProviderResponse>> ListPaymentProvidersAsync(CancellationToken cancellationToken)
+        => await db.PaymentProviders.AsNoTracking()
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.SortOrder).ThenBy(item => item.Name)
+            .Select(item => new PaymentProviderResponse(item.Id, item.Code, item.Name, item.Method.ToString(), item.LogoUrl, item.IsActive, item.SortOrder))
+            .ToListAsync(cancellationToken);
 
     public async Task<ClientPaymentMethodResult> AddPaymentMethodAsync(Guid customerId, UpsertClientPaymentMethodRequest request, CancellationToken cancellationToken)
     {
@@ -105,15 +115,36 @@ public sealed class ClientProfileService(IAppDbContext db)
             return ClientPaymentMethodResult.Invalid("Mode de paiement invalide.");
         }
 
+        PaymentProvider? provider = null;
+        if (request.PaymentProviderId.HasValue)
+        {
+            provider = await db.PaymentProviders.FirstOrDefaultAsync(
+                item => item.Id == request.PaymentProviderId.Value && item.IsActive,
+                cancellationToken);
+            if (provider is null || provider.Method != method)
+            {
+                return ClientPaymentMethodResult.Invalid("Le fournisseur de paiement selectionne est invalide.");
+            }
+        }
+
         if (request.IsDefault)
         {
             await ClearDefaultPaymentMethodsAsync(customerId, cancellationToken);
         }
 
-        var paymentMethod = new CustomerPaymentMethod(customerId, method, request.Label, request.MaskedReference, request.IsDefault);
+        var paymentMethod = new CustomerPaymentMethod(customerId, provider?.Id, method, provider?.Name ?? request.Label, request.MaskedReference, request.IsDefault);
         db.CustomerPaymentMethods.Add(paymentMethod);
         await db.SaveChangesAsync(cancellationToken);
-        return ClientPaymentMethodResult.Ok(ToPaymentMethodResponse(paymentMethod));
+        return ClientPaymentMethodResult.Ok(new ClientPaymentMethodResponse(
+            paymentMethod.Id,
+            paymentMethod.Method.ToString(),
+            paymentMethod.Label,
+            paymentMethod.MaskedReference,
+            paymentMethod.IsDefault,
+            paymentMethod.IsActive,
+            provider?.Id,
+            provider?.Name,
+            provider?.LogoUrl));
     }
 
     public async Task<bool> DeletePaymentMethodAsync(Guid customerId, Guid paymentMethodId, CancellationToken cancellationToken)
@@ -170,7 +201,10 @@ public sealed class ClientProfileService(IAppDbContext db)
             paymentMethod.Label,
             paymentMethod.MaskedReference,
             paymentMethod.IsDefault,
-            paymentMethod.IsActive);
+            paymentMethod.IsActive,
+            paymentMethod.PaymentProviderId,
+            paymentMethod.PaymentProvider?.Name,
+            paymentMethod.PaymentProvider?.LogoUrl);
     }
 }
 

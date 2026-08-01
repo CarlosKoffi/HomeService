@@ -6,13 +6,34 @@ public sealed record ClientPaymentMethodResponse(
     string Label,
     string? MaskedReference,
     bool IsDefault,
-    bool IsActive);
+    bool IsActive,
+    Guid? PaymentProviderId = null,
+    string? PaymentProviderName = null,
+    string? PaymentProviderLogoUrl = null);
 
 public sealed record UpsertClientPaymentMethodRequest(
     string Method,
     string Label,
     string? MaskedReference,
-    bool IsDefault);
+    bool IsDefault,
+    Guid? PaymentProviderId = null);
+
+public sealed record PaymentProviderResponse(
+    Guid Id,
+    string Code,
+    string Name,
+    string Method,
+    string? LogoUrl,
+    bool IsActive,
+    int SortOrder);
+
+public sealed record UpsertPaymentProviderRequest(
+    string Code,
+    string Name,
+    string Method,
+    string? LogoUrl,
+    int SortOrder,
+    bool IsActive);
 
 public sealed record SelectClientMissionPaymentMethodRequest(Guid PaymentMethodId);
 
