@@ -8,9 +8,10 @@
     Title="Messages">
     <Grid RowDefinitions="*,72" BackgroundColor="White">
         <Grid Padding="20,18" RowDefinitions="Auto,*" RowSpacing="18">
-            <VerticalStackLayout Spacing="5">
-                <Label x:Name="EyebrowLabel" Text="MESSAGES" Style="{StaticResource EyebrowLabel}" />
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Grid ColumnDefinitions="*,40" ColumnSpacing="10">
+                <VerticalStackLayout Spacing="5">
+                    <Label x:Name="EyebrowLabel" Text="MESSAGES" Style="{StaticResource EyebrowLabel}" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                     <Button x:Name="BackToConversationsButton"
                             Text="‹"
                             FontSize="26"
@@ -27,9 +28,11 @@
                         <Label x:Name="PageTitleLabel" Text="Conversations" Style="{StaticResource ScreenTitleLabel}" FontSize="24" />
                         <Label x:Name="PageSubtitleLabel" Text="Choisissez une demande pour ouvrir ses échanges." Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
-                </Grid>
-                <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" Margin="0,6,0,0" />
-            </VerticalStackLayout>
+                    </Grid>
+                    <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" Margin="0,6,0,0" />
+                </VerticalStackLayout>
+                <controls:ClientNotificationButton Grid.Column="1" Margin="0,6,0,0" />
+            </Grid>
 
             <Grid Grid.Row="1">
                 <Grid x:Name="ConversationListPanel" RowDefinitions="*,Auto">

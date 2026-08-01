@@ -10,7 +10,10 @@
     <Grid RowDefinitions="*,72">
     <ScrollView BackgroundColor="White">
         <VerticalStackLayout Padding="24,24,24,28" Spacing="0">
-            <Label Text="Mon profil" FontSize="18" FontAttributes="Bold" Margin="0,0,0,22" />
+            <Grid ColumnDefinitions="*,40" Margin="0,0,0,22">
+                <Label Text="Mon profil" FontSize="18" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                <controls:ClientNotificationButton Grid.Column="1" Margin="0,0,-4,0" />
+            </Grid>
 
             <Border x:Name="LoggedOutCard" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="18">
                 <VerticalStackLayout Spacing="10">

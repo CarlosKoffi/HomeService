@@ -36,7 +36,7 @@
                     </Border>
                     <Grid ColumnDefinitions="*,40">
                         <Label x:Name="GreetingLabel" Text="Bonjour" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center" />
-                        <ImageButton Grid.Column="1" Source="app_bell.png" HeightRequest="28" WidthRequest="28" Padding="3" BackgroundColor="Transparent" HorizontalOptions="End" Clicked="OnNotificationsClicked" />
+                        <controls:ClientNotificationButton Grid.Column="1" />
                     </Grid>
 
                     <Border HeightRequest="46" Stroke="#EDF0F4" BackgroundColor="#F7F8FA" StrokeShape="RoundRectangle 12" Padding="13,0">
