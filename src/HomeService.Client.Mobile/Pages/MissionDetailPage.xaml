@@ -3,9 +3,12 @@
     x:Class="HomeService.Client.Mobile.Pages.MissionDetailPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    Shell.TabBarIsVisible="False"
     Title="Mission"
     BackgroundColor="White">
-    <ScrollView>
+    <Grid RowDefinitions="*,72">
+    <ScrollView Grid.Row="0">
         <VerticalStackLayout Padding="20,18,20,32" Spacing="18">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                 <Button Text="&#x2039;" WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnBackClicked" />
@@ -141,4 +144,6 @@
             <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
         </VerticalStackLayout>
     </ScrollView>
+    <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="requests" />
+    </Grid>
 </ContentPage>
