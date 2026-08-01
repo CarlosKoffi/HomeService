@@ -9,6 +9,7 @@ public partial class HomePage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
+    private readonly ClientDeviceRegistrationService deviceRegistrationService;
     private readonly ObservableCollection<ServiceItem> services = [];
     private readonly ObservableCollection<ServiceItem> homeServices = [];
     private readonly ObservableCollection<ServiceItem> wellbeingServices = [];
@@ -21,6 +22,7 @@ public partial class HomePage : ContentPage
         InitializeComponent();
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
+        deviceRegistrationService = MobileServiceLocator.GetRequiredService<ClientDeviceRegistrationService>();
         HomeServicesView.ItemsSource = homeServices;
         WellbeingServicesView.ItemsSource = wellbeingServices;
         PopularServicesView.ItemsSource = popularServices;
@@ -31,6 +33,18 @@ public partial class HomePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        if (sessionStore.HasSession())
+        {
+            try
+            {
+                await deviceRegistrationService.RegisterCurrentDeviceAsync();
+            }
+            catch
+            {
+                // The home screen remains available when push registration is temporarily unavailable.
+            }
+        }
+
         await LoadSafelyAsync();
     }
 

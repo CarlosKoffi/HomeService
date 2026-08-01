@@ -20,5 +20,11 @@ public class MainActivity : MauiAppCompatActivity
     {
         AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightNo;
         base.OnCreate(savedInstanceState);
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(33)
+            && CheckSelfPermission(Android.Manifest.Permission.PostNotifications) != Permission.Granted)
+        {
+            RequestPermissions([Android.Manifest.Permission.PostNotifications], 1001);
+        }
     }
 }

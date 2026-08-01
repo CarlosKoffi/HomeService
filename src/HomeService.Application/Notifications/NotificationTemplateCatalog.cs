@@ -72,6 +72,7 @@ public static class NotificationTemplateCatalog
         Customer("MissionStartPaymentReceived", "Paiement demarrage recu", "Paiement demarrage confirme", "Le paiement de demarrage pour {NumeroMission} est confirme."),
         Customer("MissionFinalPaymentReceived", "Paiement final recu", "Paiement final confirme", "Le paiement final pour {NumeroMission} est confirme."),
         Customer("MissionTechnicianAssigned", "Technicien affecte", "Technicien affecte", "{NomTechnicien} interviendra pour votre mission {NumeroMission}."),
+        Customer("MissionTechnicianProposed", "Technicien propose", "Un technicien a ete trouve", "Nous avons trouve un technicien pour votre mission {NumeroMission}. Nous attendons sa confirmation."),
         Customer("MissionTechnicianOnTheWay", "Technicien en route", "Technicien en route", "{NomTechnicien} est en route vers {Adresse}."),
         Customer("MissionTechnicianArrived", "Technicien arrive", "Technicien arrive", "{NomTechnicien} est arrive pour la mission {NumeroMission}."),
         Customer("MissionStarted", "Mission demarree", "Mission demarree", "La mission {NumeroMission} a demarre."),

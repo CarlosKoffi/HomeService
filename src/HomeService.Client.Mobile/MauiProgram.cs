@@ -26,7 +26,6 @@ public static class MauiProgram
             {
                 fonts.AddFont("PlusJakartaSans-Variable.ttf", "PlusJakartaSans");
             });
-
         var apiBaseUrl = Environment.GetEnvironmentVariable("WELE_API_BASE_URL")
             ?? Preferences.Default.Get("ApiBaseUrl", "http://x295g8jkokv8bax1mijpzhpf.167.233.194.252.sslip.io/");
 

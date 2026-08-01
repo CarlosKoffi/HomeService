@@ -49,8 +49,8 @@ public sealed class ProviderMissionNotificationService(
         await QueueCustomerPushAsync(
             mission,
             MissionTechnicianAssignedEventKey,
-            "Technicien affecte",
-            "{NomTechnicien} interviendra pour votre mission {NumeroMission}.",
+            "Votre technicien est confirme",
+            "{NomTechnicien} a accepte votre mission {NumeroMission}. Vous pouvez suivre son arrivee dans l'application.",
             variables,
             "mission_technician_assigned",
             assignment.Id,

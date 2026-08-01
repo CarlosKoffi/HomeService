@@ -1,4 +1,7 @@
 using HomeService.Contracts.Notifications;
+#if ANDROID
+using Android.Gms.Extensions;
+#endif
 
 namespace HomeService.Client.Mobile.Services;
 
@@ -9,7 +12,7 @@ public sealed class ClientDeviceRegistrationService(ClientMobileApiClient apiCli
 
     public async Task RegisterCurrentDeviceAsync(CancellationToken cancellationToken = default)
     {
-        var token = Preferences.Default.Get(FirebaseTokenKey, string.Empty);
+        var token = await ResolveFirebaseTokenAsync();
         if (string.IsNullOrWhiteSpace(token))
         {
             return;
@@ -39,6 +42,26 @@ public sealed class ClientDeviceRegistrationService(ClientMobileApiClient apiCli
         {
             Preferences.Default.Set(FirebaseTokenKey, token.Trim());
         }
+    }
+
+    private static async Task<string> ResolveFirebaseTokenAsync()
+    {
+#if ANDROID
+        try
+        {
+            var javaToken = await Firebase.Messaging.FirebaseMessaging.Instance
+                .GetToken()
+                .AsAsync<Java.Lang.String>();
+            var token = javaToken?.ToString() ?? string.Empty;
+            StoreFirebaseToken(token);
+            return token;
+        }
+        catch
+        {
+            // Registration is retried on the next authenticated app start.
+        }
+#endif
+        return Preferences.Default.Get(FirebaseTokenKey, string.Empty);
     }
 
     private static string BuildDeviceLabel()
