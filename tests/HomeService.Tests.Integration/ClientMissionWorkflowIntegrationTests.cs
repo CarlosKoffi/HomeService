@@ -32,6 +32,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal(1, creation.Response.CandidateCompanyCount);
         Assert.NotEmpty(creation.Response.MissionNumber);
         Assert.Single(await db.MissionAttachments.ToListAsync());
+        await SelectCustomerPaymentMethodAsync(db, creation.Response.MissionId);
 
         var createdMission = await db.Missions
             .AsNoTracking()
@@ -388,7 +389,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
     {
         await using var db = CreateDbContext();
         var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
-        var secondProvider = CreateProvider(seed.Company.Id, seed.Service.Id, "Mamadou", "Diallo", "+225 0555000011");
+        var secondProvider = CreateProvider(seed.Company.Id, seed.Service.Id, seed.Prestation.Id, "Mamadou", "Diallo", "+225 0555000011");
         db.Providers.Add(secondProvider);
         db.MobileDeviceTokens.Add(new MobileDeviceToken(
             MobileDeviceOwnerType.Provider,
@@ -468,7 +469,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
     {
         await using var db = CreateDbContext();
         var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
-        var secondProvider = CreateProvider(seed.Company.Id, seed.Service.Id, "Mariam", "Coulibaly", "+225 0555000022");
+        var secondProvider = CreateProvider(seed.Company.Id, seed.Service.Id, seed.Prestation.Id, "Mariam", "Coulibaly", "+225 0555000022");
         db.Providers.Add(secondProvider);
         await db.SaveChangesAsync();
 
@@ -545,6 +546,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         var priorityCompany = CreateCompanyWithProvider(
             db,
             seed.Service.Id,
+            seed.Prestation.Id,
             "Abidjan Clean Pro",
             "+225 0700000010",
             "dispatch-priority@test.ci",
@@ -554,6 +556,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         var secondCompany = CreateCompanyWithProvider(
             db,
             seed.Service.Id,
+            seed.Prestation.Id,
             "Lagune Services",
             "+225 0700000011",
             "dispatch-second@test.ci",
@@ -563,6 +566,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         var overflowCompany = CreateCompanyWithProvider(
             db,
             seed.Service.Id,
+            seed.Prestation.Id,
             "Plateau Services Plus",
             "+225 0700000012",
             "dispatch-overflow@test.ci",
@@ -600,6 +604,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
             CreateMissionRequest(seed.Service.Id, seed.Prestation.Id),
             CancellationToken.None);
         Assert.True(creation.IsSuccess);
+        await SelectCustomerPaymentMethodAsync(db, creation.Response!.MissionId);
 
         var offerService = new CompanyMissionOfferService(db);
         var offers = await offerService.ListOpenOffersAsync(seed.Company.Id, CancellationToken.None);
@@ -732,6 +737,26 @@ public sealed class ClientMissionWorkflowIntegrationTests
             .SingleAsync(assignment => assignment.Id == assignmentId);
     }
 
+    private static async Task SelectCustomerPaymentMethodAsync(HomeServiceDbContext db, Guid missionId)
+    {
+        var mission = await db.Missions.SingleAsync(item => item.Id == missionId);
+        var paymentMethod = new CustomerPaymentMethod(
+            mission.CustomerId,
+            PaymentMethod.MobileMoney,
+            "Mobile Money test",
+            "**** 0002",
+            true);
+        db.CustomerPaymentMethods.Add(paymentMethod);
+        await db.SaveChangesAsync();
+
+        var selection = await new ClientMissionPaymentMethodService(db).SelectAsync(
+            mission.CustomerId,
+            mission.Id,
+            paymentMethod.Id,
+            CancellationToken.None);
+        Assert.True(selection.IsSuccess, selection.Message);
+    }
+
     private static async Task<ProviderProfile> LoadProviderAsync(HomeServiceDbContext db, Guid providerId)
     {
         return await db.Providers
@@ -762,7 +787,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         company.UpdateMissionDispatchSettings(0, true);
         company.Approve();
 
-        var provider = CreateProvider(company.Id, service.Id, "Awa", "Konate", "+225 0543543543", "awa.konate@test.ci");
+        var provider = CreateProvider(company.Id, service.Id, prestation.Id, "Awa", "Konate", "+225 0543543543", "awa.konate@test.ci");
 
         db.Services.Add(service);
         db.Companies.Add(company);
@@ -787,6 +812,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
     private static Company CreateCompanyWithProvider(
         HomeServiceDbContext db,
         Guid serviceId,
+        Guid servicePrestationId,
         string name,
         string phone,
         string email,
@@ -803,6 +829,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
         var provider = CreateProvider(
             company.Id,
             serviceId,
+            servicePrestationId,
             providerFirstName,
             providerLastName,
             phone.Replace("0700", "0500", StringComparison.Ordinal));
@@ -815,6 +842,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
     private static ProviderProfile CreateProvider(
         Guid companyId,
         Guid serviceId,
+        Guid servicePrestationId,
         string firstName,
         string lastName,
         string phoneNumber,
@@ -837,6 +865,8 @@ public sealed class ClientMissionWorkflowIntegrationTests
         provider.Approve();
         provider.SetAvailability(true, 5.348850m, -4.003150m);
         provider.AddService(serviceId, ExperienceLevel.Confirmed);
+        var providerService = provider.Services.Single(service => service.ServiceId == serviceId);
+        providerService.SyncPrestations([servicePrestationId]);
         return provider;
     }
 
