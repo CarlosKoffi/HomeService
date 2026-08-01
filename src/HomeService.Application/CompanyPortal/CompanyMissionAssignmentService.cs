@@ -32,6 +32,14 @@ public sealed class CompanyMissionAssignmentService(
             return CompanyAssignableProvidersResult.Ok([]);
         }
 
+        var prestationPricing = mission.ServicePrestationId is null
+            ? null
+            : await db.ServicePrestations
+                .AsNoTracking()
+                .Where(prestation => prestation.Id == mission.ServicePrestationId)
+                .Select(prestation => new { prestation.PriceMinAmount, prestation.PriceMaxAmount })
+                .FirstOrDefaultAsync(cancellationToken);
+
         var busyProviderIds = await db.ProviderMissionAssignments
             .AsNoTracking()
             .Where(assignment => assignment.CompanyId == companyId
@@ -101,14 +109,14 @@ public sealed class CompanyMissionAssignmentService(
                     .OrderByDescending(document => document.CreatedAt)
                     .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
                     .FirstOrDefault(),
-                provider.Services
+                prestationPricing == null ? provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PriceMinAmount)
-                    .FirstOrDefault(),
-                provider.Services
+                    .FirstOrDefault() : prestationPricing.PriceMinAmount,
+                prestationPricing == null ? provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PriceMaxAmount)
-                    .FirstOrDefault()))
+                    .FirstOrDefault() : prestationPricing.PriceMaxAmount))
             .ToListAsync(cancellationToken);
 
         return CompanyAssignableProvidersResult.Ok(providers);
@@ -171,7 +179,19 @@ public sealed class CompanyMissionAssignmentService(
         var validMission = mission!;
         var validProvider = provider!;
         var validProviderService = providerService!;
-        var maxAllowedAmount = validProviderService.Service!.PriceMaxAmount;
+        var prestationPricing = validMission.ServicePrestationId is null
+            ? null
+            : await db.ServicePrestations
+                .AsNoTracking()
+                .Where(prestation => prestation.Id == validMission.ServicePrestationId)
+                .Select(prestation => new { prestation.PriceMinAmount, prestation.PriceMaxAmount })
+                .FirstOrDefaultAsync(cancellationToken);
+        var minAllowedAmount = prestationPricing?.PriceMinAmount ?? validProviderService.Service!.PriceMinAmount;
+        var maxAllowedAmount = prestationPricing?.PriceMaxAmount ?? validProviderService.Service!.PriceMaxAmount;
+        if (quotedAmount < minAllowedAmount)
+        {
+            return CompanyMissionAssignmentResult.Invalid($"Le prix doit etre au minimum de {minAllowedAmount:N0} {validProviderService.Service!.Currency}.");
+        }
         if (quotedAmount > maxAllowedAmount && string.IsNullOrWhiteSpace(overMaxJustification))
         {
             return CompanyMissionAssignmentResult.Invalid("Justifiez le depassement du prix maximum configure avant d'envoyer le devis au client.");

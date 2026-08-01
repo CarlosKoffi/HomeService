@@ -320,7 +320,28 @@ else
                                             <small>@GetEmploymentTypeLabel(candidate.EmploymentType) - @GetExperienceLabel(candidate.ExperienceLevel) - @(candidate.IsAvailable ? "Disponible" : "Occupe")</small>
                                             <em>@GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</em>
                                         </div>
-                                        <button type="button" disabled="@(!Session.IsCompanyApproved || !candidate.IsAvailable)" @onclick="() => AssignMissionAsync(candidate)">Affecter</button>
+                                        <button type="button" disabled="@(!Session.IsCompanyApproved || !candidate.IsAvailable)" @onclick="() => PrepareAssignment(candidate)">Choisir</button>
+                                        @if (AssignmentCandidateId == candidate.Id)
+                                        {
+                                            <div class="mission-quote-editor">
+                                                <div class="mission-quote-heading">
+                                                    <strong>Prix propose au client</strong>
+                                                    <small>Fourchette: @GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</small>
+                                                </div>
+                                                <label>
+                                                    <span>Montant</span>
+                                                    <input type="number" min="@GetPriceMin(candidate)" step="100" @bind="AssignmentQuotedAmount" />
+                                                </label>
+                                                @if (AssignmentQuotedAmount > GetPriceMax(candidate))
+                                                {
+                                                    <label class="mission-quote-justification">
+                                                        <span>Justification obligatoire</span>
+                                                        <textarea rows="2" maxlength="500" @bind="AssignmentOverMaxJustification" placeholder="Expliquez clairement pourquoi ce montant depasse le maximum."></textarea>
+                                                    </label>
+                                                }
+                                                <button type="button" class="mission-quote-submit" disabled="@(!CanSubmitAssignment(candidate))" @onclick="() => AssignMissionAsync(candidate)">Affecter et envoyer le prix</button>
+                                            </div>
+                                        }
                                     </article>
                                 }
                             }
@@ -358,6 +379,9 @@ else
     private string? SearchTerm { get; set; }
     private DateOnly? SelectedDay { get; set; }
     private DateOnly CalendarMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private Guid? AssignmentCandidateId { get; set; }
+    private int AssignmentQuotedAmount { get; set; }
+    private string? AssignmentOverMaxJustification { get; set; }
     private string? AssignmentMessage { get; set; }
     private Guid? AcceptingOfferId { get; set; }
     private bool ShowAllMissionOffers { get; set; }
@@ -539,7 +563,23 @@ else
     {
         SelectedMission = mission;
         AssignmentMessage = null;
+        AssignmentCandidateId = null;
         await LoadAssignableProvidersAsync();
+    }
+
+    private void PrepareAssignment(CompanyPortalAssignableProviderResponse candidate)
+    {
+        AssignmentCandidateId = candidate.Id;
+        AssignmentQuotedAmount = GetPriceMin(candidate);
+        AssignmentOverMaxJustification = null;
+        AssignmentMessage = null;
+    }
+
+    private bool CanSubmitAssignment(CompanyPortalAssignableProviderResponse candidate)
+    {
+        return AssignmentQuotedAmount >= GetPriceMin(candidate)
+            && (AssignmentQuotedAmount <= GetPriceMax(candidate)
+                || !string.IsNullOrWhiteSpace(AssignmentOverMaxJustification));
     }
 
     private async Task AssignMissionAsync(CompanyPortalAssignableProviderResponse candidate)
@@ -555,8 +595,8 @@ else
                 Session.CompanyId,
                 SelectedMission.Id,
                 candidate.Id,
-                GetPriceMin(candidate),
-                null);
+                AssignmentQuotedAmount,
+                AssignmentOverMaxJustification);
             if (!result.IsSuccess)
             {
                 AssignmentMessage = result.ErrorMessage ?? "Affectation impossible.";
@@ -574,6 +614,7 @@ else
         AllMissions = AllMissions.Select(mission => mission.Id == updatedMission.Id ? updatedMission : mission).ToList();
         SelectedMission = updatedMission;
         AssignmentMessage = "Mission affectee.";
+        AssignmentCandidateId = null;
         await LoadAssignableProvidersAsync();
     }
 

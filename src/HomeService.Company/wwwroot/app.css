@@ -12670,6 +12670,48 @@ h3 {
     background: #f5f6fa;
 }
 
+.mission-quote-editor {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(150px, 0.7fr) minmax(180px, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+    width: 100%;
+    padding-top: 12px;
+    border-top: 1px solid #e4e7ee;
+}
+
+.mission-quote-heading small,
+.mission-quote-editor label span {
+    display: block;
+    margin-bottom: 5px;
+    color: #5f6673;
+    font-size: 11px;
+    font-style: normal;
+}
+
+.mission-quote-editor input,
+.mission-quote-editor textarea {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 11px;
+    border: 1px solid #d9deea;
+    border-radius: 8px;
+    background: #fff;
+    color: #111;
+    font: inherit;
+    font-size: 13px;
+}
+
+.mission-quote-justification {
+    grid-column: 1 / 3;
+}
+
+.missions-assignment-panel .mission-quote-submit {
+    min-height: 40px;
+    border-radius: 8px;
+}
+
 .missions-assignment-panel > article strong {
     color: #111111;
     font-size: 13px;
@@ -12795,6 +12837,15 @@ h3 {
     .missions-card,
     .missions-assignment-panel > article {
         grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .mission-quote-editor {
+        grid-template-columns: 1fr;
+    }
+
+    .mission-quote-justification,
+    .missions-assignment-panel .mission-quote-submit {
+        grid-column: 1;
     }
 
     .missions-card aside,
