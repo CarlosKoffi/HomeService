@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="HomeService.Client.Mobile.Controls.ClientBottomNavigation"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    BackgroundColor="White">
+    <Grid ColumnDefinitions="*,*,*,*,*" Padding="10,8,10,5" HeightRequest="72">
+        <VerticalStackLayout Grid.Column="0" Spacing="3">
+            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnHomeTapped" /></VerticalStackLayout.GestureRecognizers>
+            <Image x:Name="HomeIcon" Source="nav_home.svg" HeightRequest="23" WidthRequest="23" HorizontalOptions="Center" />
+            <Label x:Name="HomeLabel" Text="Accueil" FontSize="10" HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Column="1" Spacing="3">
+            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnRequestsTapped" /></VerticalStackLayout.GestureRecognizers>
+            <Image x:Name="RequestsIcon" Source="nav_requests.svg" HeightRequest="23" WidthRequest="23" HorizontalOptions="Center" />
+            <Label x:Name="RequestsLabel" Text="Demandes" FontSize="10" HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+        <Grid Grid.Column="2">
+            <Border x:Name="CreateButton" HeightRequest="52" WidthRequest="52" Padding="0" BackgroundColor="{StaticResource WeleBlue}"
+                    StrokeThickness="0" StrokeShape="RoundRectangle 26" HorizontalOptions="Center" VerticalOptions="Center">
+                <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnCreateTapped" /></Border.GestureRecognizers>
+                <Grid>
+                    <BoxView HeightRequest="2" WidthRequest="18" Color="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                    <BoxView HeightRequest="18" WidthRequest="2" Color="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Grid>
+            </Border>
+        </Grid>
+        <VerticalStackLayout Grid.Column="3" Spacing="3">
+            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnMessagesTapped" /></VerticalStackLayout.GestureRecognizers>
+            <Image x:Name="MessagesIcon" Source="nav_messages.svg" HeightRequest="23" WidthRequest="23" HorizontalOptions="Center" />
+            <Label x:Name="MessagesLabel" Text="Messages" FontSize="10" HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Column="4" Spacing="3">
+            <VerticalStackLayout.GestureRecognizers><TapGestureRecognizer Tapped="OnProfileTapped" /></VerticalStackLayout.GestureRecognizers>
+            <Image x:Name="ProfileIcon" Source="nav_profile.svg" HeightRequest="23" WidthRequest="23" HorizontalOptions="Center" />
+            <Label x:Name="ProfileLabel" Text="Profil" FontSize="10" HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentView>

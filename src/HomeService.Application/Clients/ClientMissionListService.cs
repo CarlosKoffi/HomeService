@@ -24,7 +24,26 @@ public sealed class ClientMissionListService(IAppDbContext db)
             .Include(mission => mission.ServicePrestation)
             .Where(mission => mission.CustomerId == customer.Id);
 
-        if (!string.IsNullOrWhiteSpace(status) && Enum.TryParse<MissionStatus>(status, true, out var parsedStatus))
+        var normalizedStatus = status?.Trim();
+        if (string.Equals(normalizedStatus, "Active", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalizedStatus, "InProgress", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(mission => mission.Status != MissionStatus.Completed
+                && mission.Status != MissionStatus.Cancelled
+                && mission.Status != MissionStatus.Resolved);
+        }
+        else if (string.Equals(normalizedStatus, "Past", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(mission => mission.Status == MissionStatus.Completed
+                || mission.Status == MissionStatus.Resolved);
+        }
+        else if (string.Equals(normalizedStatus, "Canceled", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(normalizedStatus, "Cancelled", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(mission => mission.Status == MissionStatus.Cancelled);
+        }
+        else if (!string.IsNullOrWhiteSpace(normalizedStatus)
+            && Enum.TryParse<MissionStatus>(normalizedStatus, true, out var parsedStatus))
         {
             query = query.Where(mission => mission.Status == parsedStatus);
         }

@@ -95,21 +95,21 @@ public partial class RequestsPage : ContentPage
 
     private async void OnActiveClicked(object sender, EventArgs e)
     {
-        currentStatus = "InProgress";
+        currentStatus = "Active";
         SetFilter(ActiveButton);
         await LoadAsync();
     }
 
     private async void OnPastClicked(object sender, EventArgs e)
     {
-        currentStatus = "Completed";
+        currentStatus = "Past";
         SetFilter(PastButton);
         await LoadAsync();
     }
 
     private async void OnCanceledClicked(object sender, EventArgs e)
     {
-        currentStatus = "Canceled";
+        currentStatus = "Cancelled";
         SetFilter(CanceledButton);
         await LoadAsync();
     }
