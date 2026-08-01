@@ -21,6 +21,7 @@ public sealed class ProviderMissionAssignmentConfiguration : IEntityTypeConfigur
         builder.Property(assignment => assignment.ArrivalLatitude).HasPrecision(9, 6);
         builder.Property(assignment => assignment.ArrivalLongitude).HasPrecision(9, 6);
         builder.Property(assignment => assignment.ArrivalVerificationStatus).HasConversion<string>().HasMaxLength(32);
+        builder.Property(assignment => assignment.DispatchRound).HasDefaultValue(1);
         builder.HasOne(assignment => assignment.Mission)
             .WithMany()
             .HasForeignKey(assignment => assignment.MissionId);

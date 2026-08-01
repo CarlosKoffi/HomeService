@@ -12,11 +12,12 @@ public static class MissionWorkflowSettingsResolver
     public const string ScheduledProviderAcceptanceMinutes = "scheduled_provider_acceptance_minutes";
     public const string CustomerQuoteValidityMinutes = "customer_quote_validity_minutes";
     public const string UrgentMissionsEnabled = "urgent_missions_enabled";
+    public const string ProviderReeligibilityRounds = "provider_reeligibility_rounds";
 
-    public static async Task<TimeSpan> ResolveMinutesAsync(
+    public static async Task<int> ResolveIntAsync(
         IAppDbContext db,
         string key,
-        int fallbackMinutes,
+        int fallbackValue,
         CancellationToken cancellationToken)
     {
         var value = await db.MissionWorkflowSettings
@@ -25,7 +26,16 @@ public static class MissionWorkflowSettingsResolver
             .Select(setting => (int?)setting.Value)
             .FirstOrDefaultAsync(cancellationToken);
 
-        return TimeSpan.FromMinutes(Math.Max(1, value ?? fallbackMinutes));
+        return Math.Max(1, value ?? fallbackValue);
+    }
+
+    public static async Task<TimeSpan> ResolveMinutesAsync(
+        IAppDbContext db,
+        string key,
+        int fallbackMinutes,
+        CancellationToken cancellationToken)
+    {
+        return TimeSpan.FromMinutes(await ResolveIntAsync(db, key, fallbackMinutes, cancellationToken));
     }
 
     public static async Task<bool> ResolveFlagAsync(

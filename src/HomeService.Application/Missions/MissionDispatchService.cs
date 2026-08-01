@@ -10,6 +10,18 @@ public sealed class MissionDispatchService(
     IAppDbContext db,
     MissionDispatchScoringService scoringService)
 {
+    public async Task MarkOffersSentAsync(Guid missionId, CancellationToken cancellationToken)
+    {
+        var mission = await db.Missions.FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
+        if (mission is null)
+        {
+            return;
+        }
+
+        mission.MarkCompanyOffersSent();
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private static readonly TimeSpan DefaultCompanyResponseWindow = TimeSpan.FromMinutes(5);
 
     public async Task<MissionDispatchCreationResult> CreateInitialOffersAsync(

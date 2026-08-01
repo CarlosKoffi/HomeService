@@ -1,5 +1,6 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Notifications;
+using HomeService.Application.Missions;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -16,6 +17,7 @@ public sealed class CompanyMissionAssignmentService(
 {
     private static readonly TimeSpan AssignmentAcceptanceWindow = TimeSpan.FromMinutes(3);
     private const string MissionAssignedToProviderEventKey = "MissionAssignedToProvider";
+    private const int DefaultProviderReeligibilityRounds = 4;
 
     public async Task<CompanyAssignableProvidersResult> ListAssignableProvidersAsync(Guid companyId, Guid missionId, CancellationToken cancellationToken)
     {
@@ -50,10 +52,12 @@ public sealed class CompanyMissionAssignmentService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
+        var blockingRoundFloor = await ResolveBlockingRoundFloorAsync(mission.DispatchRound, cancellationToken);
         var unavailableForThisMissionProviderIds = await db.ProviderMissionAssignments
             .AsNoTracking()
             .Where(assignment => assignment.CompanyId == companyId
                 && assignment.MissionId == missionId
+                && assignment.DispatchRound >= blockingRoundFloor
                 && (assignment.Status == ProviderMissionAssignmentStatus.Refused
                     || assignment.Status == ProviderMissionAssignmentStatus.Expired))
             .Select(assignment => assignment.ProviderId)
@@ -145,9 +149,13 @@ public sealed class CompanyMissionAssignmentService(
                 || assignment.Status == ProviderMissionAssignmentStatus.Accepted
                 || assignment.Status == ProviderMissionAssignmentStatus.Started),
             cancellationToken);
+        var blockingRoundFloor = mission is null
+            ? 1
+            : await ResolveBlockingRoundFloorAsync(mission.DispatchRound, cancellationToken);
         var alreadyUnavailableForThisMission = await db.ProviderMissionAssignments.AnyAsync(assignment =>
             assignment.ProviderId == providerId
             && assignment.MissionId == missionId
+            && assignment.DispatchRound >= blockingRoundFloor
             && (assignment.Status == ProviderMissionAssignmentStatus.Refused
                 || assignment.Status == ProviderMissionAssignmentStatus.Expired),
             cancellationToken);
@@ -203,7 +211,8 @@ public sealed class CompanyMissionAssignmentService(
             validMission.Id,
             validProvider.Id,
             companyId,
-            DateTimeOffset.UtcNow.Add(AssignmentAcceptanceWindow));
+            DateTimeOffset.UtcNow.Add(AssignmentAcceptanceWindow),
+            Math.Max(1, validMission.DispatchRound));
         db.ProviderMissionAssignments.Add(assignment);
         db.CompanyPortalActivities.Add(new CompanyPortalActivity(
             companyId,
@@ -230,6 +239,17 @@ public sealed class CompanyMissionAssignmentService(
             assignment.Id,
             assignment.Status.ToString(),
             assignment.ExpiresAt));
+    }
+
+    private async Task<int> ResolveBlockingRoundFloorAsync(int currentRound, CancellationToken cancellationToken)
+    {
+        var resetEveryRounds = await MissionWorkflowSettingsResolver.ResolveIntAsync(
+            db,
+            MissionWorkflowSettingsResolver.ProviderReeligibilityRounds,
+            DefaultProviderReeligibilityRounds,
+            cancellationToken);
+
+        return ProviderMissionReeligibilityPolicy.GetBlockingRoundFloor(currentRound, resetEveryRounds);
     }
 
     private async Task QueueProviderMissionPushAsync(

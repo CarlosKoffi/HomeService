@@ -477,6 +477,13 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = result.Message });
             }
 
+            if (result.Offers.Count > 0)
+            {
+                // The dispatch round is normally advanced by the client workflow.
+                // Admin-triggered dispatches must keep the same eligibility semantics.
+                await dispatchService.MarkOffersSentAsync(missionId, cancellationToken);
+            }
+
             return Results.Ok(result.Offers
                 .Select(offer => new AdminMissionDispatchOfferResponse(
                     offer.Id,

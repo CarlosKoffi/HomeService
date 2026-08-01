@@ -9,12 +9,13 @@ public sealed class ProviderMissionAssignment : AuditableEntity
     {
     }
 
-    public ProviderMissionAssignment(Guid missionId, Guid providerId, Guid companyId, DateTimeOffset expiresAt)
+    public ProviderMissionAssignment(Guid missionId, Guid providerId, Guid companyId, DateTimeOffset expiresAt, int dispatchRound = 1)
     {
         MissionId = missionId;
         ProviderId = providerId;
         CompanyId = companyId;
         ExpiresAt = expiresAt;
+        DispatchRound = Math.Max(1, dispatchRound);
     }
 
     public Guid MissionId { get; private set; }
@@ -25,6 +26,7 @@ public sealed class ProviderMissionAssignment : AuditableEntity
     public Company? Company { get; private set; }
     public ProviderMissionAssignmentStatus Status { get; private set; } = ProviderMissionAssignmentStatus.Offered;
     public DateTimeOffset ExpiresAt { get; private set; }
+    public int DispatchRound { get; private set; } = 1;
     public DateTimeOffset? RespondedAt { get; private set; }
     public DateTimeOffset? StartedAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }

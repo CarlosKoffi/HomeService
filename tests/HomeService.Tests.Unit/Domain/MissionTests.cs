@@ -39,6 +39,18 @@ public sealed class MissionTests
     }
 
     [Fact]
+    public void MarkCompanyOffersSent_IncrementsDispatchRound()
+    {
+        var mission = CreateMission(60);
+        mission.StartCompanySearch();
+
+        mission.MarkCompanyOffersSent();
+        mission.MarkCompanyOffersSent();
+
+        Assert.Equal(2, mission.DispatchRound);
+    }
+
+    [Fact]
     public void Start_WhenWrongProvider_Throws()
     {
         var mission = CreateAssignedMission();

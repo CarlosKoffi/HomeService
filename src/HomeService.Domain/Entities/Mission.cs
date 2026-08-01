@@ -85,6 +85,7 @@ public sealed class Mission : AuditableEntity
     public DateTimeOffset? ContactDetailsReleasedAt { get; private set; }
     public DateTimeOffset? CompanyPayoutReleasedAt { get; private set; }
     public DateTimeOffset? CompanyAssignmentExpiresAt { get; private set; }
+    public int DispatchRound { get; private set; }
     public bool CanRevealContactDetails => ContactDetailsReleasedAt is not null
         && Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started or MissionStatus.Completed
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
@@ -137,6 +138,7 @@ public sealed class Mission : AuditableEntity
         }
 
         Status = MissionStatus.Offered;
+        DispatchRound++;
         Touch();
     }
 
