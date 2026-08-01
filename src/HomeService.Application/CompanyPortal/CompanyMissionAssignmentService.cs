@@ -64,64 +64,94 @@ public sealed class CompanyMissionAssignmentService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        var providers = await db.Providers
+        var providerCandidates = await db.Providers
             .AsNoTracking()
-            .Where(provider => provider.CompanyId == companyId
-                && provider.Status == ProviderStatus.Approved
-                && provider.Services.Any(service =>
+            .Where(provider => provider.CompanyId == companyId)
+            .Select(provider => new
+            {
+                Provider = provider,
+                CoversMission = provider.Services.Any(service =>
                     service.IsActive
                     && service.ServiceId == mission.ServiceId
                     && (mission.ServicePrestationId == null
                         || service.Prestations.Any(prestation =>
                             prestation.IsActive
-                            && prestation.ServicePrestationId == mission.ServicePrestationId)))
-                && !busyProviderIds.Contains(provider.Id)
-                && !unavailableForThisMissionProviderIds.Contains(provider.Id))
-            .OrderByDescending(provider => provider.IsAvailable)
-            .ThenBy(provider => provider.LastName)
-            .Select(provider => new CompanyPortalAssignableProviderResponse(
-                provider.Id,
-                provider.FirstName + " " + provider.LastName,
-                provider.PhoneNumber,
-                provider.Status.ToString(),
-                provider.IsAvailable,
-                provider.EmploymentType.ToString(),
-                provider.YearsOfExperience,
-                provider.Services
+                            && prestation.ServicePrestationId == mission.ServicePrestationId))),
+                ExperienceLevel = provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.ExperienceLevel.ToString())
-                    .FirstOrDefault() ?? "Confirmed",
-                provider.Services
+                    .FirstOrDefault(),
+                PriceTier = provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.PriceTier.ToString())
-                    .FirstOrDefault() ?? "Normal",
-                provider.Services
+                    .FirstOrDefault(),
+                NormalPriceAmount = provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.NormalPriceAmount)
                     .FirstOrDefault(),
-                provider.Services
+                PremiumPriceAmount = provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PremiumPriceAmount)
                     .FirstOrDefault(),
-                provider.Services
+                Currency = provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.Currency)
-                    .FirstOrDefault() ?? "XOF",
-                provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.Diploma),
-                provider.Documents
+                    .FirstOrDefault(),
+                HasDiploma = provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.Diploma),
+                PhotoUrl = provider.Documents
                     .Where(document => document.DocumentType == ProviderDocumentType.Photo)
                     .OrderByDescending(document => document.CreatedAt)
                     .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
                     .FirstOrDefault(),
-                prestationPricing == null ? provider.Services
+                ServicePriceMinAmount = provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PriceMinAmount)
-                    .FirstOrDefault() : prestationPricing.PriceMinAmount,
-                prestationPricing == null ? provider.Services
+                    .FirstOrDefault(),
+                ServicePriceMaxAmount = provider.Services
                     .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PriceMaxAmount)
-                    .FirstOrDefault() : prestationPricing.PriceMaxAmount))
+                    .FirstOrDefault()
+            })
             .ToListAsync(cancellationToken);
+
+        var providers = providerCandidates
+            .Select(candidate =>
+            {
+                var provider = candidate.Provider;
+                var eligibility = CompanyMissionAssignmentPolicy.Validate(
+                    true,
+                    true,
+                    provider.Status == ProviderStatus.Approved,
+                    candidate.CoversMission,
+                    busyProviderIds.Contains(provider.Id),
+                    unavailableForThisMissionProviderIds.Contains(provider.Id),
+                    mission.Status,
+                    provider.IsAvailable);
+
+                return new CompanyPortalAssignableProviderResponse(
+                    provider.Id,
+                    provider.FirstName + " " + provider.LastName,
+                    provider.PhoneNumber,
+                    provider.Status.ToString(),
+                    provider.IsAvailable,
+                    provider.EmploymentType.ToString(),
+                    provider.YearsOfExperience,
+                    candidate.ExperienceLevel ?? "Non defini",
+                    candidate.PriceTier ?? "Normal",
+                    candidate.NormalPriceAmount,
+                    candidate.PremiumPriceAmount,
+                    candidate.Currency ?? "XOF",
+                    candidate.HasDiploma,
+                    candidate.PhotoUrl,
+                    prestationPricing?.PriceMinAmount ?? candidate.ServicePriceMinAmount,
+                    prestationPricing?.PriceMaxAmount ?? candidate.ServicePriceMaxAmount,
+                    eligibility.IsValid,
+                    eligibility.IsValid ? null : eligibility.Message);
+            })
+            .OrderByDescending(provider => provider.CanAssign)
+            .ThenByDescending(provider => provider.IsAvailable)
+            .ThenBy(provider => provider.FullName)
+            .ToList();
 
         return CompanyAssignableProvidersResult.Ok(providers);
     }
@@ -176,7 +206,8 @@ public sealed class CompanyMissionAssignmentService(
             providerService is not null,
             hasBlockingAssignment,
             alreadyUnavailableForThisMission,
-            mission?.Status);
+            mission?.Status,
+            provider?.IsAvailable ?? false);
         if (!policy.IsValid)
         {
             return policy.IsNotFound

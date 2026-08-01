@@ -76,7 +76,9 @@ public sealed record CompanyPortalAssignableProviderResponse(
     bool HasDiploma,
     string? PhotoUrl,
     int? PriceMinAmount = null,
-    int? PriceMaxAmount = null);
+    int? PriceMaxAmount = null,
+    bool CanAssign = true,
+    string? BlockingReason = null);
 
 public sealed record AssignCompanyMissionRequest(
     Guid ProviderId,

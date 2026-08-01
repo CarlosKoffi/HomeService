@@ -34,6 +34,7 @@ public sealed class CompanyMissionAssignmentNotificationTests
             -4.02m,
             5);
         provider.Approve();
+        provider.SetAvailability(true, 5.35m, -4.02m);
         provider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)]);
         var mission = new Mission(
             customer.Id,
@@ -132,7 +133,7 @@ public sealed class CompanyMissionAssignmentNotificationTests
     }
 
     [Fact]
-    public async Task ListAssignableProvidersAsync_WhenMissionHasPrestation_ReturnsOnlyProviderWithThatPrestation()
+    public async Task ListAssignableProvidersAsync_WhenMissionHasPrestation_ExplainsWhyOtherProviderCannotBeAssigned()
     {
         await using var db = CreateDbContext();
         var company = new Company("CI Home Service", "+2250700000000", "contact@cihome.ci");
@@ -150,6 +151,8 @@ public sealed class CompanyMissionAssignmentNotificationTests
         otherProvider.Services.Single().SyncPrestations([hedge.Id]);
         matchingProvider.Approve();
         otherProvider.Approve();
+        matchingProvider.SetAvailability(true, 5.35m, -4.02m);
+        otherProvider.SetAvailability(true, 5.35m, -4.02m);
         var mission = new Mission(
             customer.Id,
             service.Id,
@@ -170,8 +173,13 @@ public sealed class CompanyMissionAssignmentNotificationTests
         var result = await CreateAssignmentService(db).ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        var provider = Assert.Single(result.Providers);
-        Assert.Equal(matchingProvider.Id, provider.Id);
+        Assert.Equal(2, result.Providers.Count);
+        var provider = Assert.Single(result.Providers, item => item.Id == matchingProvider.Id);
+        Assert.True(provider.CanAssign);
+        Assert.Null(provider.BlockingReason);
+        var blockedProvider = Assert.Single(result.Providers, item => item.Id == otherProvider.Id);
+        Assert.False(blockedProvider.CanAssign);
+        Assert.Contains("service", blockedProvider.BlockingReason);
     }
 
     private static CompanyMissionAssignmentService CreateAssignmentService(HomeServiceDbContext db)
@@ -205,6 +213,7 @@ public sealed class CompanyMissionAssignmentNotificationTests
             -4.02m,
             5);
         provider.Approve();
+        provider.SetAvailability(true, 5.35m, -4.02m);
         provider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)]);
         var mission = new Mission(
             customer.Id,

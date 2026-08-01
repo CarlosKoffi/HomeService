@@ -11,7 +11,8 @@ public static class CompanyMissionAssignmentPolicy
         bool providerCoversMissionService,
         bool providerHasBlockingAssignment,
         bool providerAlreadyUnavailableForMission = false,
-        MissionStatus? missionStatus = null)
+        MissionStatus? missionStatus = null,
+        bool providerIsAvailable = true)
     {
         if (!missionExists)
         {
@@ -41,6 +42,11 @@ public static class CompanyMissionAssignmentPolicy
         if (providerAlreadyUnavailableForMission)
         {
             return CompanyMissionAssignmentPolicyResult.Invalid("Ce prestataire a deja refuse cette mission ou depasse le delai de reponse.");
+        }
+
+        if (!providerIsAvailable)
+        {
+            return CompanyMissionAssignmentPolicyResult.Invalid("Ce prestataire est actuellement indisponible.");
         }
 
         return CompanyMissionAssignmentPolicyResult.Ok();

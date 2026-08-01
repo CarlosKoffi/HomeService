@@ -64,6 +64,23 @@ public sealed class CompanyMissionAssignmentPolicyTests
     }
 
     [Fact]
+    public void Validate_rejects_unavailable_provider_with_explicit_reason()
+    {
+        var result = CompanyMissionAssignmentPolicy.Validate(
+            true,
+            true,
+            true,
+            true,
+            false,
+            false,
+            MissionStatus.SearchingProvider,
+            providerIsAvailable: false);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("indisponible", result.Message);
+    }
+
+    [Fact]
     public void Validate_rejects_completed_mission()
     {
         var result = CompanyMissionAssignmentPolicy.Validate(

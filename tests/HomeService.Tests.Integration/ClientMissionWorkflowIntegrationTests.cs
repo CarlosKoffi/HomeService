@@ -441,8 +441,10 @@ public sealed class ClientMissionWorkflowIntegrationTests
             acceptedOffer.Response.MissionId,
             CancellationToken.None);
         Assert.True(assignableAfterRefusal.IsSuccess);
-        Assert.DoesNotContain(assignableAfterRefusal.Providers, provider => provider.Id == seed.Provider.Id);
-        Assert.Contains(assignableAfterRefusal.Providers, provider => provider.Id == secondProvider.Id);
+        var refusedProvider = Assert.Single(assignableAfterRefusal.Providers, provider => provider.Id == seed.Provider.Id);
+        Assert.False(refusedProvider.CanAssign);
+        Assert.Contains("deja refuse", refusedProvider.BlockingReason);
+        Assert.Contains(assignableAfterRefusal.Providers, provider => provider.Id == secondProvider.Id && provider.CanAssign);
 
         var retrySameProvider = await assignmentService.AssignAsync(
             seed.Company.Id,
@@ -472,7 +474,7 @@ public sealed class ClientMissionWorkflowIntegrationTests
     }
 
     [Fact]
-    public async Task ProviderAssignmentTimeout_BlocksLateAcceptanceAndAllowsAnotherProviderAssignment()
+    public async Task ProviderAssignmentTimeout_BlocksLateAcceptanceAndReleasesMissionForAnotherCompanyRound()
     {
         await using var db = CreateDbContext();
         var seed = await SeedApprovedCompanyProviderAndServiceAsync(db);
@@ -517,30 +519,11 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal(ProviderMissionAssignmentStatus.Expired, expiredAssignment.Status);
 
         var missionAfterTimeout = await db.Missions.SingleAsync(mission => mission.Id == acceptedOffer.Response.MissionId);
-        Assert.Equal(MissionStatus.SearchingProvider, missionAfterTimeout.Status);
+        Assert.Equal(MissionStatus.Offered, missionAfterTimeout.Status);
         Assert.Null(missionAfterTimeout.ProviderId);
-        Assert.Equal(seed.Company.Id, missionAfterTimeout.CompanyId);
-
-        var assignableAfterTimeout = await assignmentService.ListAssignableProvidersAsync(
-            seed.Company.Id,
-            acceptedOffer.Response.MissionId,
-            CancellationToken.None);
-        Assert.True(assignableAfterTimeout.IsSuccess);
-        Assert.Contains(assignableAfterTimeout.Providers, provider => provider.Id == secondProvider.Id);
-        Assert.DoesNotContain(assignableAfterTimeout.Providers, provider => provider.Id == seed.Provider.Id);
-
-        var secondAssignment = await assignmentService.AssignAsync(
-            seed.Company.Id,
-            acceptedOffer.Response.MissionId,
-            secondProvider.Id,
-            quotedAmount: 12500,
-            overMaxJustification: null,
-            CancellationToken.None);
-
-        Assert.True(secondAssignment.IsSuccess);
-        var mission = await db.Missions.SingleAsync(mission => mission.Id == acceptedOffer.Response.MissionId);
-        Assert.Equal(secondProvider.Id, mission.ProviderId);
-        Assert.Equal(MissionStatus.Assigned, mission.Status);
+        Assert.Null(missionAfterTimeout.CompanyId);
+        var timedOutOffer = await db.MissionDispatchOffers.SingleAsync(offer => offer.Id == offers.Offers[0].OfferId);
+        Assert.Equal(MissionDispatchOfferStatus.AssignmentTimedOut, timedOutOffer.Status);
     }
 
     [Fact]

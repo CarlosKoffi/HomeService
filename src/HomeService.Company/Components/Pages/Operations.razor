@@ -307,21 +307,39 @@ else
 
                             @if (AssignableProviders.Count == 0)
                             {
-                                <p class="missions-muted">Aucun prestataire compatible pour le moment.</p>
+                                <p class="missions-muted">Aucun prestataire n'est enregistre dans votre entreprise.</p>
                             }
                             else
                             {
-                                @foreach (var candidate in AssignableProviders)
+                                <label class="mission-provider-picker">
+                                    <span>Prestataire</span>
+                                    <select value="@(AssignmentCandidateId?.ToString() ?? string.Empty)" @onchange="OnAssignmentProviderChanged">
+                                        <option value="">Choisir un prestataire</option>
+                                        @foreach (var candidate in AssignableProviders)
+                                        {
+                                            <option value="@candidate.Id">@candidate.FullName - @(candidate.CanAssign ? "Affectable" : "Non affectable")</option>
+                                        }
+                                    </select>
+                                </label>
+
+                                @if (SelectedAssignmentCandidate is not null)
                                 {
-                                    <article>
+                                    var candidate = SelectedAssignmentCandidate;
+                                    <article class="mission-provider-selection">
                                         <span class="@GetAvatarClass(candidate.FullName)">@GetInitials(candidate.FullName)</span>
                                         <div>
                                             <strong>@candidate.FullName</strong>
                                             <small>@GetEmploymentTypeLabel(candidate.EmploymentType) - @GetExperienceLabel(candidate.ExperienceLevel) - @(candidate.IsAvailable ? "Disponible" : "Occupe")</small>
-                                            <em>@GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</em>
+                                            @if (candidate.CanAssign)
+                                            {
+                                                <em>@GetPriceMin(candidate).ToString("N0") - @GetPriceMax(candidate).ToString("N0") @candidate.Currency</em>
+                                            }
                                         </div>
-                                        <button type="button" disabled="@(!Session.IsCompanyApproved || !candidate.IsAvailable)" @onclick="() => PrepareAssignment(candidate)">Choisir</button>
-                                        @if (AssignmentCandidateId == candidate.Id)
+                                        @if (!candidate.CanAssign)
+                                        {
+                                            <p class="mission-provider-blocking-reason"><strong>Affectation impossible</strong>@candidate.BlockingReason</p>
+                                        }
+                                        else if (Session.IsCompanyApproved)
                                         {
                                             <div class="mission-quote-editor">
                                                 <div class="mission-quote-heading">
@@ -341,6 +359,10 @@ else
                                                 }
                                                 <button type="button" class="mission-quote-submit" disabled="@(!CanSubmitAssignment(candidate))" @onclick="() => AssignMissionAsync(candidate)">Affecter et envoyer le prix</button>
                                             </div>
+                                        }
+                                        else
+                                        {
+                                            <p class="mission-provider-blocking-reason"><strong>Affectation impossible</strong>Votre entreprise doit d'abord etre validee.</p>
                                         }
                                     </article>
                                 }
@@ -395,6 +417,9 @@ else
     private IReadOnlyList<CompanyMissionOfferResponse> DisplayedMissionOffers => ShowAllMissionOffers
         ? OpenMissionOffers
         : OpenMissionOffers.Take(3).ToList();
+    private CompanyPortalAssignableProviderResponse? SelectedAssignmentCandidate => AssignmentCandidateId is null
+        ? null
+        : AssignableProviders.FirstOrDefault(candidate => candidate.Id == AssignmentCandidateId.Value);
 
     private void ToggleMissionOffers()
     {
@@ -575,9 +600,28 @@ else
         AssignmentMessage = null;
     }
 
+    private void OnAssignmentProviderChanged(ChangeEventArgs args)
+    {
+        if (!Guid.TryParse(args.Value?.ToString(), out var providerId))
+        {
+            AssignmentCandidateId = null;
+            AssignmentQuotedAmount = 0;
+            AssignmentOverMaxJustification = null;
+            AssignmentMessage = null;
+            return;
+        }
+
+        var candidate = AssignableProviders.FirstOrDefault(provider => provider.Id == providerId);
+        if (candidate is not null)
+        {
+            PrepareAssignment(candidate);
+        }
+    }
+
     private bool CanSubmitAssignment(CompanyPortalAssignableProviderResponse candidate)
     {
-        return AssignmentQuotedAmount >= GetPriceMin(candidate)
+        return candidate.CanAssign
+            && AssignmentQuotedAmount >= GetPriceMin(candidate)
             && (AssignmentQuotedAmount <= GetPriceMax(candidate)
                 || !string.IsNullOrWhiteSpace(AssignmentOverMaxJustification));
     }
