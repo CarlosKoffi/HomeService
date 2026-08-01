@@ -344,7 +344,7 @@ else
     private bool IsSessionLoading { get; set; } = true;
     private string ActiveFilter { get; set; } = "all";
     private string? SearchTerm { get; set; }
-    private DateOnly? SelectedDay { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly? SelectedDay { get; set; }
     private DateOnly CalendarMonth { get; set; } = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private string? AssignmentMessage { get; set; }
     private Guid? AcceptingOfferId { get; set; }
