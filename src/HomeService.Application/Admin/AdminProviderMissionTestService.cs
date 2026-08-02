@@ -130,6 +130,7 @@ public sealed class AdminProviderMissionTestService(
         }
 
         var mission = assignment.Mission;
+        await RestoreMissionLocationFromCustomerAddressAsync(mission, cancellationToken);
         var previousStatus = assignment.Status;
         var latitude = mission.ServiceLatitude ?? assignment.Provider.MissionLatitude ?? 5.3488m;
         var longitude = mission.ServiceLongitude ?? assignment.Provider.MissionLongitude ?? -4.0031m;
@@ -194,6 +195,46 @@ public sealed class AdminProviderMissionTestService(
             .FirstOrDefaultAsync(item => item.Id == assignmentId, cancellationToken);
         return assignment;
     }
+
+    private async Task RestoreMissionLocationFromCustomerAddressAsync(
+        Mission mission,
+        CancellationToken cancellationToken)
+    {
+        if (mission.ServiceLatitude.HasValue && mission.ServiceLongitude.HasValue)
+        {
+            return;
+        }
+
+        var missionAddress = NormalizeAddress(mission.ServiceAddress);
+        if (missionAddress.Length == 0)
+        {
+            return;
+        }
+
+        var candidates = await db.CustomerAddresses
+            .AsNoTracking()
+            .Where(item => item.CustomerId == mission.CustomerId
+                && item.Latitude.HasValue
+                && item.Longitude.HasValue)
+            .ToListAsync(cancellationToken);
+
+        var matches = candidates
+            .Where(item => NormalizeAddress(item.AddressLine) == missionAddress)
+            .ToArray();
+
+        if (matches.Length == 1)
+        {
+            mission.SetServiceLocation(
+                mission.ServiceAddress,
+                matches[0].Latitude,
+                matches[0].Longitude);
+        }
+    }
+
+    private static string NormalizeAddress(string? value) =>
+        string.Concat((value ?? string.Empty)
+            .Where(character => char.IsLetterOrDigit(character)))
+            .ToUpperInvariant();
 
     private static AdminProviderMissionTestActionResponse NotFound() =>
         new(false, "Affectation ou prestataire introuvable.");
