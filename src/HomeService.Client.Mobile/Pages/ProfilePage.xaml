@@ -31,7 +31,7 @@
                         <Border BackgroundColor="#EAF1FF" StrokeThickness="0" StrokeShape="RoundRectangle 28">
                             <Image x:Name="ProfilePhotoImage" Source="nav_profile.svg" Aspect="AspectFill" />
                         </Border>
-                        <Border BackgroundColor="{StaticResource Primary}" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 11"
+                        <Border BackgroundColor="{StaticResource WeleBlue}" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 11"
                                 HeightRequest="22" WidthRequest="22" HorizontalOptions="End" VerticalOptions="End">
                             <Label Text="+" TextColor="White" FontSize="15" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                         </Border>
@@ -39,7 +39,7 @@
                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                         <Label x:Name="NameLabel" FontSize="15" FontAttributes="Bold" />
                         <Label x:Name="PhoneLabel" FontSize="11" TextColor="{StaticResource MutedInk}" />
-                        <Label Text="Touchez la photo pour la modifier" FontSize="10" TextColor="{StaticResource Primary}" />
+                        <Label Text="Touchez la photo pour la modifier" FontSize="10" TextColor="{StaticResource WeleBlue}" />
                     </VerticalStackLayout>
                 </Grid>
                 <Label x:Name="PhotoStatusLabel" IsVisible="False" FontSize="11" Margin="0,-8,0,14" />

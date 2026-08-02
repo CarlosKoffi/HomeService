@@ -26,7 +26,11 @@ public partial class AppShell : Shell
         Dispatcher.Dispatch(async () =>
         {
             await Task.Delay(100);
-            if (!Preferences.Default.Get("ClientOnboardingSeen", false))
+            if (Preferences.Default.Get("ClientPreviewMode", false))
+            {
+                await GoToAsync("//home");
+            }
+            else if (!Preferences.Default.Get("ClientOnboardingSeen", false))
             {
                 await GoToAsync("//onboarding");
             }

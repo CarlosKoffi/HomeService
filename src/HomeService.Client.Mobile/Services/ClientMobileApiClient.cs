@@ -71,22 +71,34 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         string? url,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(url))
+        var absoluteUrl = ToAbsoluteMediaUrl(url);
+        if (absoluteUrl is null || !Uri.TryCreate(absoluteUrl, UriKind.Absolute, out var uri))
         {
             return null;
         }
 
-        var token = await sessionStore.GetTokenAsync();
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        try
+        {
+            var token = await sessionStore.GetTokenAsync();
+            using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            return bytes.Length == 0 ? null : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException or UriFormatException)
         {
             return null;
         }
-
-        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-        return bytes.Length == 0 ? null : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
     }
 
     public async Task<ApiCallResult<MobileDeviceTokenResponse>> RegisterDeviceTokenAsync(
@@ -128,7 +140,13 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             return url;
         }
 
-        return new Uri(httpClient.BaseAddress!, url.TrimStart('/')).ToString();
+        if (httpClient.BaseAddress is null ||
+            !Uri.TryCreate(httpClient.BaseAddress, url.TrimStart('/'), out var resolvedUri))
+        {
+            return null;
+        }
+
+        return resolvedUri.ToString();
     }
 
     public ImageSource? ToRemoteImageSource(string? url)

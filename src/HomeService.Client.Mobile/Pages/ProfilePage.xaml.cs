@@ -7,13 +7,32 @@ public partial class ProfilePage : ContentPage
     private readonly ClientMobileApiClient apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
     private readonly ClientSessionStore sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
     private bool isUploadingPhoto;
+    private bool isLoading;
 
     public ProfilePage() => InitializeComponent();
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await LoadAsync();
+        if (isLoading)
+        {
+            return;
+        }
+
+        isLoading = true;
+        try
+        {
+            await LoadAsync();
+        }
+        catch (Exception)
+        {
+            // A profile refresh must never terminate the mobile application.
+            ShowPhotoStatus("Le profil n'a pas pu etre actualise. Reessayez dans un instant.", isError: true);
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private async Task LoadAsync()
@@ -50,10 +69,17 @@ public partial class ProfilePage : ContentPage
             return;
         }
 
-        var image = await apiClient.DownloadProfilePhotoAsync(photoUrl);
-        if (image is not null)
+        try
         {
-            ProfilePhotoImage.Source = image;
+            var image = await apiClient.DownloadProfilePhotoAsync(photoUrl);
+            if (image is not null)
+            {
+                ProfilePhotoImage.Source = image;
+            }
+        }
+        catch (Exception)
+        {
+            // Keep the local placeholder when the remote photo is unavailable.
         }
     }
 
