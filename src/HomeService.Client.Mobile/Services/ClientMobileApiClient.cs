@@ -427,6 +427,38 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             cancellationToken);
     }
 
+    public async Task<ApiCallResult<byte[]>> DownloadMissionInvoiceAsync(
+        Guid missionId,
+        CancellationToken cancellationToken = default)
+    {
+        var token = await sessionStore.GetTokenAsync();
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/client/missions/{missionId:D}/invoice");
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        try
+        {
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<byte[]>.Failed((int)response.StatusCode, NormalizeErrorMessage(message));
+            }
+
+            return ApiCallResult<byte[]>.Ok(await response.Content.ReadAsByteArrayAsync(cancellationToken));
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<byte[]>.Failed(0, "Connexion trop lente. Reessayez avec un meilleur reseau.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<byte[]>.Failed(0, "Connexion impossible. Verifiez votre reseau.");
+        }
+    }
+
     private async Task<ApiCallResult<TResponse>> SendWithSessionAsync<TResponse>(
         HttpMethod method,
         string path,

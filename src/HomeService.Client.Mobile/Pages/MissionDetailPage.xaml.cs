@@ -278,28 +278,10 @@ public partial class MissionDetailPage : ContentPage
 
     private async void OnConfirmClicked(object sender, EventArgs e)
     {
-        ErrorLabel.IsVisible = false;
-        var accepted = await Shell.Current.DisplayAlert("Confirmer", "Accepter ce prix et lancer le paiement ?", "Oui", "Non");
-        if (!accepted)
+        if (currentMissionId != Guid.Empty)
         {
-            return;
+            await Shell.Current.GoToAsync($"{nameof(PaymentCheckoutPage)}?missionId={currentMissionId:D}");
         }
-
-        if (sessionStore.IsPreviewMode())
-        {
-            await Shell.Current.DisplayAlert("Aperçu", "Paiement simulé.", "OK");
-            return;
-        }
-
-        var result = await apiClient.ConfirmMissionAsync(currentMissionId, $"MOBILE-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}");
-        if (!result.IsSuccess)
-        {
-            ShowError(result.ErrorMessage);
-            return;
-        }
-
-        await Shell.Current.DisplayAlert("Paiement confirme", "La mission est confirmee.", "OK");
-        await LoadAsync();
     }
 
     private async void OnChoosePaymentClicked(object sender, EventArgs e)

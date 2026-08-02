@@ -188,6 +188,27 @@ public static class PublicEndpoints
         .Produces<CompanyHomeCmsResponse>()
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapGet("/api/client/missions/{missionId:guid}/invoice", async (
+            Guid missionId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionInvoiceService invoiceService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null) return Results.Unauthorized();
+            var result = await invoiceService.GenerateAsync(customer.Id, missionId, cancellationToken);
+            if (result.IsSuccess) return Results.File(result.Content!, "application/pdf", result.FileName);
+            return result.IsNotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("DownloadClientMissionInvoice")
+        .Produces(StatusCodes.Status200OK, contentType: "application/pdf")
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapGet("/api/cms/provider/home", async (
             string? language,
             string? country,
