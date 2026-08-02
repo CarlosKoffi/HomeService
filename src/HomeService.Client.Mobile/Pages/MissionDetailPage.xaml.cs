@@ -71,7 +71,11 @@ public partial class MissionDetailPage : ContentPage
         var mission = result.Response;
         TitleLabel.Text = mission.MissionNumber;
         StatusLabel.Text = ResolveCustomerStatusLabel(mission);
-        ServiceLabel.Text = mission.PrestationName is null ? mission.ServiceName : $"{mission.ServiceName} - {mission.PrestationName}";
+        ServiceLabel.Text = mission.ServiceName ?? "Service";
+        PrestationLabel.Text = mission.PrestationName ?? string.Empty;
+        PrestationPanel.IsVisible = !string.IsNullOrWhiteSpace(mission.PrestationName);
+        OptionLabel.Text = mission.OptionName ?? string.Empty;
+        OptionPanel.IsVisible = !string.IsNullOrWhiteSpace(mission.OptionName);
         AddressLabel.Text = mission.ServiceAddress ?? "Adresse à confirmer";
         DateCaptionLabel.Text = mission.ScheduledFor.HasValue ? "Date du rendez-vous" : "Demande envoyée le";
         DateLabel.Text = (mission.ScheduledFor ?? mission.CreatedAt).ToLocalTime().ToString("dd/MM/yyyy 'à' HH:mm");
@@ -111,7 +115,9 @@ public partial class MissionDetailPage : ContentPage
             CallButton.Opacity = CallButton.IsEnabled ? 1 : 0.55;
             ProviderPhoto.Source = await apiClient.DownloadMediaImageSourceAsync(mission.AssignedProvider.PhotoStoragePath);
             ProviderPhoto.IsVisible = ProviderPhoto.Source is not null;
-            ProviderDetailLabel.Text = $"{mission.AssignedProvider.FullName}\n{ServiceLabel.Text}\n{AddressLabel.Text}\n{ProviderEtaLabel.Text}";
+            var missionSelection = string.Join(" - ", new[] { mission.ServiceName, mission.PrestationName, mission.OptionName }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+            ProviderDetailLabel.Text = $"{mission.AssignedProvider.FullName}\n{missionSelection}\n{AddressLabel.Text}\n{ProviderEtaLabel.Text}";
         }
 
         timeline.Clear();
@@ -151,7 +157,11 @@ public partial class MissionDetailPage : ContentPage
         ErrorLabel.IsVisible = false;
         TitleLabel.Text = "WL-000145";
         StatusLabel.Text = "En cours";
-        ServiceLabel.Text = "Déboucher un évier";
+        ServiceLabel.Text = "Plomberie";
+        PrestationLabel.Text = "Déboucher un évier";
+        PrestationPanel.IsVisible = true;
+        OptionLabel.Text = string.Empty;
+        OptionPanel.IsVisible = false;
         AddressLabel.Text = "Cocody, Riviera 3";
         DateCaptionLabel.Text = "Date du rendez-vous";
         DateLabel.Text = "Aujourd'hui à 14:30";

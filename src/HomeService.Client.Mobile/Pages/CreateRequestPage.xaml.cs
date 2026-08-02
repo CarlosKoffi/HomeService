@@ -920,7 +920,11 @@ public partial class CreateRequestPage : ContentPage
         }
 
         StepTwoErrorLabel.IsVisible = false;
-        SummaryServiceLabel.Text = TitleLabel.Text;
+        SummaryServiceLabel.Text = selectedService?.Name ?? preparation?.ServiceName ?? TitleLabel.Text;
+        SummaryPrestationLabel.Text = preparation?.ServicePrestationName ?? string.Empty;
+        SummaryPrestationPanel.IsVisible = !string.IsNullOrWhiteSpace(SummaryPrestationLabel.Text);
+        SummaryOptionLabel.Text = preparation?.ServiceOptionName ?? string.Empty;
+        SummaryOptionPanel.IsVisible = !string.IsNullOrWhiteSpace(SummaryOptionLabel.Text);
         SummaryAddressLabel.Text = AddressEntry.Text.Trim();
         SummaryScheduleLabel.Text = ModePicker.SelectedIndex == 0
             ? "Maintenant"

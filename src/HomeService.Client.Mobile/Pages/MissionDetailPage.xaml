@@ -56,6 +56,14 @@
                     <VerticalStackLayout Spacing="8">
                         <Label Text="Service" Style="{StaticResource MutedLabel}" />
                         <Label x:Name="ServiceLabel" FontSize="17" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                        <VerticalStackLayout x:Name="PrestationPanel" Spacing="3" IsVisible="False" Margin="0,6,0,0">
+                            <Label Text="Prestation" Style="{StaticResource MutedLabel}" />
+                            <Label x:Name="PrestationLabel" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout x:Name="OptionPanel" Spacing="3" IsVisible="False" Margin="0,6,0,0">
+                            <Label Text="Option" Style="{StaticResource MutedLabel}" />
+                            <Label x:Name="OptionLabel" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
                         <Label Text="Adresse" Style="{StaticResource MutedLabel}" Margin="0,8,0,0" />
                         <Label x:Name="AddressLabel" FontSize="15" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
                         <Label x:Name="DateCaptionLabel" Text="Date de la demande" Style="{StaticResource MutedLabel}" Margin="0,8,0,0" />

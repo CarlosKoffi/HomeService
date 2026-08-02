@@ -243,9 +243,19 @@
                 <ScrollView Grid.Row="1">
                     <VerticalStackLayout Spacing="22" Padding="0,4,0,82">
                         <Grid ColumnDefinitions="*,Auto">
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="Service" FontSize="11" TextColor="#687386" />
-                                <Label x:Name="SummaryServiceLabel" FontSize="13" FontAttributes="Bold" />
+                            <VerticalStackLayout Spacing="10">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="Service" FontSize="11" TextColor="#687386" />
+                                    <Label x:Name="SummaryServiceLabel" FontSize="13" FontAttributes="Bold" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout x:Name="SummaryPrestationPanel" Spacing="4" IsVisible="False">
+                                    <Label Text="Prestation" FontSize="11" TextColor="#687386" />
+                                    <Label x:Name="SummaryPrestationLabel" FontSize="13" FontAttributes="Bold" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout x:Name="SummaryOptionPanel" Spacing="4" IsVisible="False">
+                                    <Label Text="Option" FontSize="11" TextColor="#687386" />
+                                    <Label x:Name="SummaryOptionLabel" FontSize="13" FontAttributes="Bold" />
+                                </VerticalStackLayout>
                             </VerticalStackLayout>
                             <Button Grid.Column="1" Text="Modifier" FontSize="11" TextColor="{StaticResource WeleBlue}"
                                     BackgroundColor="Transparent" Clicked="OnModifyServiceClicked" />
