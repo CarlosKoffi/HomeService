@@ -9,6 +9,7 @@ public partial class PaymentMethodsPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
     private readonly ObservableCollection<PaymentMethodRow> methods = [];
+    private PaymentMethodRow? selectedMethod;
 
     public PaymentMethodsPage()
     {
@@ -37,11 +38,9 @@ public partial class PaymentMethodsPage : ContentPage
             return;
         }
 
-        foreach (var method in result.Response)
-        {
-            var logo = await apiClient.DownloadMediaImageSourceAsync(method.PaymentProviderLogoUrl);
-            methods.Add(PaymentMethodRow.From(method, logo));
-        }
+        var rows = await Task.WhenAll(result.Response.Select(async method =>
+            PaymentMethodRow.From(method, await apiClient.DownloadMediaImageSourceAsync(method.PaymentProviderLogoUrl))));
+        foreach (var row in rows) methods.Add(row);
 
         EmptyState.IsVisible = methods.Count == 0;
         if (methods.Count == 0 && Guid.TryParse(MissionId, out _))
@@ -50,21 +49,21 @@ public partial class PaymentMethodsPage : ContentPage
             return;
         }
 
-        var defaultMethod = methods.FirstOrDefault(item => item.IsDefault) ?? methods.FirstOrDefault();
-        MethodsView.SelectedItem = defaultMethod;
-        ContinueButton.IsEnabled = defaultMethod is not null;
+        Select(methods.FirstOrDefault(item => item.IsDefault) ?? methods.FirstOrDefault());
     }
 
-    private void OnSelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        ContinueButton.IsEnabled = e.CurrentSelection.FirstOrDefault() is PaymentMethodRow;
+    private void OnMethodTapped(object sender, TappedEventArgs e) => Select(e.Parameter as PaymentMethodRow);
+
+    private void Select(PaymentMethodRow? row)
+    {
+        foreach (var item in methods) item.IsSelected = ReferenceEquals(item, row);
+        selectedMethod = row;
+        ContinueButton.IsEnabled = row is not null;
+    }
 
     private async void OnContinueClicked(object sender, EventArgs e)
     {
-        if (MethodsView.SelectedItem is not PaymentMethodRow selected)
-        {
-            return;
-        }
-
+        if (selectedMethod is not { } selected) return;
         if (Guid.TryParse(MissionId, out var missionId))
         {
             ContinueButton.IsEnabled = false;
@@ -76,31 +75,31 @@ public partial class PaymentMethodsPage : ContentPage
                 ErrorLabel.IsVisible = true;
                 return;
             }
-
             await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={missionId:D}");
             return;
         }
-
         await Shell.Current.GoToAsync("..");
     }
 
     private async void OnAddClicked(object sender, EventArgs e) => await GoToAddAsync();
-
-    private async Task GoToAddAsync() =>
-        await Shell.Current.GoToAsync($"{nameof(AddPaymentMethodPage)}?missionId={Uri.EscapeDataString(MissionId ?? string.Empty)}");
-
+    private async Task GoToAddAsync() => await Shell.Current.GoToAsync($"{nameof(AddPaymentMethodPage)}?missionId={Uri.EscapeDataString(MissionId ?? string.Empty)}");
     private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 
-    private sealed record PaymentMethodRow(Guid Id, string Label, string Reference, string IconText, ImageSource? LogoSource, bool ShowFallback, string StatusText, bool IsDefault)
+    private sealed class PaymentMethodRow : BindableObject
     {
+        private bool isSelected;
+        private PaymentMethodRow(Guid id, string label, string reference, string iconText, ImageSource? logoSource, bool isDefault)
+        { Id = id; Label = label; Reference = reference; IconText = iconText; LogoSource = logoSource; IsDefault = isDefault; }
+        public Guid Id { get; }
+        public string Label { get; }
+        public string Reference { get; }
+        public string IconText { get; }
+        public ImageSource? LogoSource { get; }
+        public bool ShowFallback => LogoSource is null;
+        public bool IsDefault { get; }
+        public bool IsSelected { get => isSelected; set { if (isSelected == value) return; isSelected = value; OnPropertyChanged(); } }
         public static PaymentMethodRow From(ClientPaymentMethodResponse response, ImageSource? logo) => new(
-            response.Id,
-            response.PaymentProviderName ?? response.Label,
-            response.MaskedReference ?? "Compte securise",
-            response.Method == "Card" ? "CB" : "MM",
-            logo,
-            logo is null,
-            response.IsDefault ? "Par defaut" : "›",
-            response.IsDefault);
+            response.Id, response.PaymentProviderName ?? response.Label, response.MaskedReference ?? "Compte securise",
+            response.Method == "Card" ? "CB" : "MM", logo, response.IsDefault);
     }
 }
