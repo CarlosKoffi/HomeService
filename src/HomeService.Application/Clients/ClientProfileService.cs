@@ -10,7 +10,23 @@ public sealed class ClientProfileService(IAppDbContext db)
 {
     public ClientMeResponse ToMe(CustomerProfile customer)
     {
-        return new ClientMeResponse(customer.Id, customer.FirstName, customer.LastName, customer.PhoneNumber, customer.Email);
+        return new ClientMeResponse(
+            customer.Id,
+            customer.FirstName,
+            customer.LastName,
+            customer.PhoneNumber,
+            customer.Email,
+            customer.ProfilePhotoPath is null ? null : "/api/client/me/photo");
+    }
+
+    public async Task<ClientProfilePhotoResponse> UpdatePhotoAsync(
+        CustomerProfile customer,
+        string storagePath,
+        CancellationToken cancellationToken)
+    {
+        customer.SetProfilePhotoPath(storagePath);
+        await db.SaveChangesAsync(cancellationToken);
+        return new ClientProfilePhotoResponse("/api/client/me/photo");
     }
 
     public async Task<ClientMeResponse> UpdateAsync(CustomerProfile customer, UpdateClientProfileRequest request, CancellationToken cancellationToken)

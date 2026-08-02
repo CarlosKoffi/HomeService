@@ -32,6 +32,63 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<ClientMeResponse>(HttpMethod.Put, "api/client/me", request, cancellationToken);
     }
 
+    public async Task<ApiCallResult<ClientProfilePhotoResponse>> UploadProfilePhotoAsync(
+        FileResult file,
+        CancellationToken cancellationToken = default)
+    {
+        var token = await sessionStore.GetTokenAsync();
+        await using var stream = await file.OpenReadAsync();
+        using var content = new MultipartFormDataContent();
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetImageContentType(file.FileName));
+        content.Add(fileContent, "photo", file.FileName);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/client/me/photo") { Content = content };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<ClientProfilePhotoResponse>.Failed(
+                    (int)response.StatusCode,
+                    NormalizeErrorMessage(await response.Content.ReadAsStringAsync(cancellationToken)));
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<ClientProfilePhotoResponse>(cancellationToken);
+            return payload is null
+                ? ApiCallResult<ClientProfilePhotoResponse>.Failed((int)response.StatusCode, "Reponse vide du serveur.")
+                : ApiCallResult<ClientProfilePhotoResponse>.Ok(payload);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
+        {
+            return ApiCallResult<ClientProfilePhotoResponse>.Failed(0, "Envoi impossible. Verifiez votre connexion puis reessayez.");
+        }
+    }
+
+    public async Task<ImageSource?> DownloadProfilePhotoAsync(
+        string? url,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        var token = await sessionStore.GetTokenAsync();
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        return bytes.Length == 0 ? null : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
+    }
+
     public async Task<ApiCallResult<MobileDeviceTokenResponse>> RegisterDeviceTokenAsync(
         RegisterMobileDeviceTokenRequest request,
         CancellationToken cancellationToken = default)
@@ -473,6 +530,15 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
 
         return message.Length > 220 ? message[..220] : message;
     }
+
+    private static string GetImageContentType(string fileName) => Path.GetExtension(fileName).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".webp" => "image/webp",
+        ".heic" => "image/heic",
+        ".heif" => "image/heif",
+        _ => "image/jpeg"
+    };
 }
 
 public sealed record ApiCallResult<TResponse>(

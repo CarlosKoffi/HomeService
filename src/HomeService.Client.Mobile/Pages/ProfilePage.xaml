@@ -25,15 +25,24 @@
             </Border>
 
             <VerticalStackLayout x:Name="LoggedInSection" Spacing="0" IsVisible="False">
-                <Grid ColumnDefinitions="44,*" ColumnSpacing="12" Margin="0,0,0,18">
-                    <Border BackgroundColor="#EAF1FF" StrokeThickness="0" StrokeShape="RoundRectangle 22" HeightRequest="44" WidthRequest="44">
-                        <Image Source="nav_profile.svg" HeightRequest="21" WidthRequest="21" HorizontalOptions="Center" VerticalOptions="Center" />
-                    </Border>
+                <Grid ColumnDefinitions="56,*" ColumnSpacing="14" Margin="0,0,0,18">
+                    <Grid HeightRequest="56" WidthRequest="56">
+                        <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnProfilePhotoClicked" /></Grid.GestureRecognizers>
+                        <Border BackgroundColor="#EAF1FF" StrokeThickness="0" StrokeShape="RoundRectangle 28">
+                            <Image x:Name="ProfilePhotoImage" Source="nav_profile.svg" Aspect="AspectFill" />
+                        </Border>
+                        <Border BackgroundColor="{StaticResource Primary}" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 11"
+                                HeightRequest="22" WidthRequest="22" HorizontalOptions="End" VerticalOptions="End">
+                            <Label Text="+" TextColor="White" FontSize="15" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                    </Grid>
                     <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                         <Label x:Name="NameLabel" FontSize="15" FontAttributes="Bold" />
                         <Label x:Name="PhoneLabel" FontSize="11" TextColor="{StaticResource MutedInk}" />
+                        <Label Text="Touchez la photo pour la modifier" FontSize="10" TextColor="{StaticResource Primary}" />
                     </VerticalStackLayout>
                 </Grid>
+                <Label x:Name="PhotoStatusLabel" IsVisible="False" FontSize="11" Margin="0,-8,0,14" />
 
                 <Grid Padding="0,13" ColumnDefinitions="30,*,Auto">
                     <Grid.GestureRecognizers><TapGestureRecognizer Tapped="OnInformationClicked" /></Grid.GestureRecognizers>

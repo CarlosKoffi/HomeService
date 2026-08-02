@@ -20,6 +20,7 @@ public sealed class CustomerProfile : AuditableEntity
     public string PhoneNumber { get; private set; } = string.Empty;
     public string? Email { get; private set; }
     public string? PasswordHash { get; private set; }
+    public string? ProfilePhotoPath { get; private set; }
 
     public void UpdateProfile(string firstName, string lastName, string? email)
     {
@@ -32,6 +33,12 @@ public sealed class CustomerProfile : AuditableEntity
     public void SetPasswordHash(string passwordHash)
     {
         PasswordHash = CleanRequired(passwordHash, 512);
+        Touch();
+    }
+
+    public void SetProfilePhotoPath(string profilePhotoPath)
+    {
+        ProfilePhotoPath = CleanRequired(profilePhotoPath, 500);
         Touch();
     }
 

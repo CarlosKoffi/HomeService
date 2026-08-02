@@ -27,7 +27,10 @@ public sealed record ClientMeResponse(
     string FirstName,
     string LastName,
     string PhoneNumber,
-    string? Email);
+    string? Email,
+    string? ProfilePhotoUrl);
+
+public sealed record ClientProfilePhotoResponse(string ProfilePhotoUrl);
 
 public sealed record UpdateClientProfileRequest(
     string FirstName,

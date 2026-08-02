@@ -14,6 +14,7 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<CustomerPro
         builder.Property(customer => customer.PhoneNumber).HasMaxLength(32).IsRequired();
         builder.Property(customer => customer.Email).HasMaxLength(180);
         builder.Property(customer => customer.PasswordHash).HasMaxLength(512);
+        builder.Property(customer => customer.ProfilePhotoPath).HasMaxLength(500);
         builder.HasIndex(customer => customer.PhoneNumber);
         builder.HasIndex(customer => customer.Email);
     }

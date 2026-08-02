@@ -8,6 +8,7 @@ public static class ApiStorageServiceCollectionExtensions
         services.AddSingleton<CompanyProviderUploadService>();
         services.AddSingleton<CmsMediaUploadService>();
         services.AddSingleton<ClientMissionPhotoUploadService>();
+        services.AddSingleton<ClientProfilePhotoUploadService>();
 
         return services;
     }

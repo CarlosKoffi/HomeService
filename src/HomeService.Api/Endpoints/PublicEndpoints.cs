@@ -302,6 +302,72 @@ public static class PublicEndpoints
         .Produces<ClientMeResponse>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapPost("/me/photo", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            ClientProfilePhotoUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "Selectionnez une photo a envoyer." });
+            }
+
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            var photo = form.Files.GetFile("photo");
+            if (photo is null)
+            {
+                return Results.BadRequest(new { message = "La photo est manquante." });
+            }
+
+            try
+            {
+                var storagePath = await uploadService.SaveAsync(customer.Id, photo, cancellationToken);
+                return Results.Ok(await profileService.UpdatePhotoAsync(customer, storagePath, cancellationToken));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .DisableAntiforgery()
+        .WithName("UploadClientProfilePhoto")
+        .Produces<ClientProfilePhotoResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapGet("/me/photo", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfilePhotoUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer?.ProfilePhotoPath is null)
+            {
+                return Results.NotFound();
+            }
+
+            var absolutePath = uploadService.GetAbsolutePath(customer.ProfilePhotoPath);
+            if (!File.Exists(absolutePath))
+            {
+                return Results.NotFound();
+            }
+
+            return Results.File(absolutePath, GetImageContentType(absolutePath));
+        })
+        .WithName("GetClientProfilePhoto")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         client.MapGet("/home", async (
             HttpRequest httpRequest,
             ClientAuthService authService,
@@ -1201,5 +1267,14 @@ public static class PublicEndpoints
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
+
+    private static string GetImageContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".webp" => "image/webp",
+        ".heic" => "image/heic",
+        ".heif" => "image/heif",
+        _ => "image/jpeg"
+    };
 
 }
