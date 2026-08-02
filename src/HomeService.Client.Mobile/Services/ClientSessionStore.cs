@@ -57,6 +57,26 @@ public sealed class ClientSessionStore
         return IsPreviewMode() || !string.IsNullOrWhiteSpace(Preferences.Default.Get(PhoneNumberKey, string.Empty));
     }
 
+    public async Task<bool> HasValidSessionAsync()
+    {
+        if (IsPreviewMode())
+        {
+            return true;
+        }
+
+        var phoneNumber = Preferences.Default.Get(PhoneNumberKey, string.Empty);
+        var token = await GetTokenAsync();
+        var expiresAtValue = Preferences.Default.Get(ExpiresAtKey, string.Empty);
+
+        if (string.IsNullOrWhiteSpace(phoneNumber) || string.IsNullOrWhiteSpace(token))
+        {
+            return false;
+        }
+
+        return DateTimeOffset.TryParse(expiresAtValue, out var expiresAt)
+            && expiresAt > DateTimeOffset.UtcNow.AddMinutes(1);
+    }
+
     public bool IsPreviewMode()
     {
         return Preferences.Default.Get(PreviewModeKey, false);

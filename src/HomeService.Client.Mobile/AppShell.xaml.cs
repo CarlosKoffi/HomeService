@@ -1,4 +1,5 @@
 using HomeService.Client.Mobile.Pages;
+using HomeService.Client.Mobile.Services;
 
 namespace HomeService.Client.Mobile;
 
@@ -34,8 +35,9 @@ public partial class AppShell : Shell
             {
                 await GoToAsync("//onboarding");
             }
-            else if (string.IsNullOrWhiteSpace(Preferences.Default.Get("ClientPhoneNumber", string.Empty)))
+            else if (!await MobileServiceLocator.GetRequiredService<ClientSessionStore>().HasValidSessionAsync())
             {
+                await MobileServiceLocator.GetRequiredService<ClientSessionStore>().ClearAsync();
                 await GoToAsync("//welcome");
             }
             else

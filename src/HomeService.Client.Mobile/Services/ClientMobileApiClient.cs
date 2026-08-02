@@ -516,7 +516,20 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         CancellationToken cancellationToken)
     {
         var token = await sessionStore.GetTokenAsync();
-        return await SendAsync<TResponse>(method, path, token, body, cancellationToken);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            await sessionStore.ClearAsync();
+            return ApiCallResult<TResponse>.Failed(401, "Votre session a expire. Reconnectez-vous pour continuer.");
+        }
+
+        var result = await SendAsync<TResponse>(method, path, token, body, cancellationToken);
+        if (result.StatusCode == 401)
+        {
+            await sessionStore.ClearAsync();
+            return ApiCallResult<TResponse>.Failed(401, "Votre session a expire. Reconnectez-vous pour continuer.");
+        }
+
+        return result;
     }
 
     private async Task<ApiCallResult<TResponse>> SendAsync<TResponse>(
