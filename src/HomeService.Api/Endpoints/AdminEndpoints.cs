@@ -1797,6 +1797,13 @@ public static class AdminEndpoints
         .WithName("CreateServiceFromCompanyServiceProposal")
         .Produces<CompanyServiceProposalListResponse>();
 
+        admin.MapGet("/services", async (
+            AdminServiceCatalogManagementService catalogService,
+            CancellationToken cancellationToken) =>
+                Results.Ok(await catalogService.ListServicesAsync(cancellationToken)))
+        .WithName("ListAdminServices")
+        .Produces<IReadOnlyList<ServiceSummaryResponse>>();
+
         admin.MapPost("/services", async (
             UpsertServiceRequest request,
             HttpRequest httpRequest,
@@ -1882,6 +1889,22 @@ public static class AdminEndpoints
             return Results.Ok(result.Response);
         })
         .WithName("DeactivateAdminService");
+
+        admin.MapDelete("/services/{serviceId:guid}", async (
+            Guid serviceId,
+            HttpRequest httpRequest,
+            AdminServiceCatalogManagementService catalogService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await catalogService.DeleteServiceAsync(
+                serviceId,
+                GetAdminAuditActor(httpRequest),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            var error = ToAdminServiceCatalogOperationError(result);
+            return error ?? Results.Ok(result.Response);
+        })
+        .WithName("DeleteAdminService");
 
         admin.MapPost("/services/{serviceId:guid}/prestations", async (
             Guid serviceId,

@@ -482,6 +482,16 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                 {
                                     <button type="button" @onclick="() => ActivateServiceAsync(service.Id)" disabled="@IsSaving">Reactiver</button>
                                 }
+                                @if (ServicePendingDeletionId == service.Id)
+                                {
+                                    <span class="section-help">Suppression definitive ?</span>
+                                    <button type="button" class="danger-action" @onclick="() => DeleteServiceAsync(service.Id)" disabled="@IsSaving">Confirmer</button>
+                                    <button type="button" class="light-action" @onclick="CancelServiceDeletion" disabled="@IsSaving">Annuler</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="danger-action" @onclick="() => RequestServiceDeletion(service.Id)" disabled="@IsSaving">Supprimer</button>
+                                }
                             </div>
                         }
 
@@ -824,6 +834,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     private readonly Dictionary<Guid, OptionDraft> OptionDrafts = [];
     private OptionDraft NewOptionDraft { get; set; } = new();
     private Guid? EditingServiceId { get; set; }
+    private Guid? ServicePendingDeletionId { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSaving { get; set; }
     private ServiceAdminTab ActiveTab { get; set; } = ServiceAdminTab.Proposals;
@@ -966,7 +977,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
 
         try
         {
-            Services = await ApiClient.GetServicesAsync();
+            Services = await ApiClient.GetAdminServicesAsync();
             CompanyServiceProposals = (await ApiClient.GetCompanyServiceProposalsAsync())?.Items ?? [];
             InsightSnapshot = await ApiClient.GetServiceCatalogInsightsAsync();
         }
@@ -1447,6 +1458,27 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         {
             await ApiClient.DeactivateServiceAsync(serviceId);
             Message = "Service desactive.";
+        });
+    }
+
+    private void RequestServiceDeletion(Guid serviceId)
+    {
+        ServicePendingDeletionId = serviceId;
+        Message = null;
+    }
+
+    private void CancelServiceDeletion()
+    {
+        ServicePendingDeletionId = null;
+    }
+
+    private Task DeleteServiceAsync(Guid serviceId)
+    {
+        return RunMutationAsync(async () =>
+        {
+            await ApiClient.DeleteServiceAsync(serviceId);
+            ServicePendingDeletionId = null;
+            Message = "Service supprime definitivement.";
         });
     }
 

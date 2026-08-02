@@ -446,6 +446,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
     }
 
+    public async Task<IReadOnlyList<ServiceSummaryResponse>> GetAdminServicesAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/admin/services", cancellationToken) ?? [];
+    }
+
     public async Task<IReadOnlyList<PaymentProviderResponse>> GetPaymentProvidersAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -545,6 +551,20 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<ServiceSummaryResponse>($"/api/admin/services/{serviceId}/deactivate", null, cancellationToken);
+    }
+
+    public async Task DeleteServiceAsync(Guid serviceId, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/admin/services/{serviceId}";
+        using var response = await httpClient.DeleteAsync(path, cancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw CreateApiException(response, path, body);
     }
 
     public async Task<ServicePrestationSummaryResponse?> CreateServicePrestationAsync(

@@ -156,6 +156,55 @@ public sealed class AdminServiceCatalogManagementServiceTests
         Assert.Equal(AdminServiceCatalogOperationStatus.Conflict, result.Status);
     }
 
+    [Fact]
+    public async Task ListServicesAsync_IncludesInactiveServices()
+    {
+        await using var db = CreateDbContext();
+        var active = new Service("Menage", null, createdByCompanyId: null);
+        var inactive = new Service("Jardinage", null, createdByCompanyId: null);
+        inactive.Deactivate();
+        db.Services.AddRange(active, inactive);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminServiceCatalogManagementService(db)
+            .ListServicesAsync(CancellationToken.None);
+
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, service => service.Id == inactive.Id && !service.IsActive);
+    }
+
+    [Fact]
+    public async Task DeleteServiceAsync_WhenUnused_RemovesService()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Service temporaire", null, createdByCompanyId: null);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminServiceCatalogManagementService(db)
+            .DeleteServiceAsync(service.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(await db.Services.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DeleteServiceAsync_WhenServiceIsUsed_ReturnsConflict()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Jardinage", null, createdByCompanyId: null);
+        service.AddPrestation("Tondre le gazon", null, 1, 2500, 5000);
+        db.Services.Add(service);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminServiceCatalogManagementService(db)
+            .DeleteServiceAsync(service.Id, CancellationToken.None);
+
+        Assert.Equal(AdminServiceCatalogOperationStatus.Conflict, result.Status);
+        Assert.Contains("Desactivez-le", result.Message);
+        Assert.Single(await db.Services.ToListAsync());
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()

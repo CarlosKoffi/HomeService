@@ -10,6 +10,18 @@ namespace HomeService.Application.Admin;
 
 public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
 {
+    public async Task<IReadOnlyList<ServiceSummaryResponse>> ListServicesAsync(CancellationToken cancellationToken)
+    {
+        var services = await db.Services
+            .AsNoTracking()
+            .Include(service => service.Prestations)
+                .ThenInclude(prestation => prestation.Options)
+            .OrderBy(service => service.Name)
+            .ToListAsync(cancellationToken);
+
+        return services.Select(ToServiceResponse).ToList();
+    }
+
     public async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> CreateServiceAsync(
         UpsertServiceRequest request,
         CancellationToken cancellationToken)
@@ -155,6 +167,60 @@ public sealed class AdminServiceCatalogManagementService(IAppDbContext db)
         CancellationToken cancellationToken)
     {
         return SetServiceActiveStateAsync(serviceId, isActive: false, actor, auditContext, cancellationToken);
+    }
+
+    public Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> DeleteServiceAsync(
+        Guid serviceId,
+        CancellationToken cancellationToken)
+        => DeleteServiceAsync(serviceId, null, null, cancellationToken);
+
+    public async Task<AdminServiceCatalogOperationResult<ServiceSummaryResponse>> DeleteServiceAsync(
+        Guid serviceId,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var service = await db.Services
+            .Include(item => item.Prestations)
+                .ThenInclude(item => item.Options)
+            .FirstOrDefaultAsync(item => item.Id == serviceId, cancellationToken);
+        if (service is null)
+        {
+            return AdminServiceCatalogOperationResult<ServiceSummaryResponse>.NotFound("Service introuvable.");
+        }
+
+        var isUsed = service.Prestations.Count != 0
+            || await db.Missions.AnyAsync(item => item.ServiceId == serviceId, cancellationToken)
+            || await db.ProviderServices.AnyAsync(item => item.ServiceId == serviceId, cancellationToken)
+            || await db.ProviderCandidateServices.AnyAsync(item => item.ServiceId == serviceId, cancellationToken)
+            || await db.ProviderServicePortfolioItems.AnyAsync(item => item.ServiceId == serviceId, cancellationToken)
+            || await db.CompanyApplicationServices.AnyAsync(item => item.MatchedServiceId == serviceId, cancellationToken)
+            || await db.CommissionRules.AnyAsync(item => item.ServiceId == serviceId, cancellationToken);
+
+        if (isUsed)
+        {
+            return AdminServiceCatalogOperationResult<ServiceSummaryResponse>.Conflict(
+                "Ce service est deja utilise. Desactivez-le pour le retirer de l'application sans perdre son historique.");
+        }
+
+        var before = ToServiceResponse(service);
+        db.Services.Remove(service);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminServiceDeleted",
+            nameof(Service),
+            service.Id,
+            $"Service '{service.Name}' supprime du catalogue.",
+            before,
+            after: null);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return AdminServiceCatalogOperationResult<ServiceSummaryResponse>.Ok(
+            $"Service '{service.Name}' supprime du catalogue.",
+            before,
+            before,
+            after: null);
     }
 
     public async Task<AdminServiceCatalogOperationResult<ServicePrestationSummaryResponse>> CreatePrestationAsync(
