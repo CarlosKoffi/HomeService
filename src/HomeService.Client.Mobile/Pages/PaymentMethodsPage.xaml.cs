@@ -136,7 +136,7 @@ public partial class PaymentMethodsPage : ContentPage
         public string Reference { get; }
         public string IconText { get; }
         public ImageSource? LogoSource { get; }
-        public bool ShowFallback => false;
+        public bool ShowFallback => LogoSource is null;
         public bool IsDefault { get; }
         public bool IsSelected { get => isSelected; set { if (isSelected == value) return; isSelected = value; OnPropertyChanged(); } }
         public static PaymentMethodRow From(ClientPaymentMethodResponse response, ImageSource? logo) => new(

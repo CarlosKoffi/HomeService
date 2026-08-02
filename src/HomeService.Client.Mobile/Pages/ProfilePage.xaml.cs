@@ -63,9 +63,9 @@ public partial class ProfilePage : ContentPage
 
     private async Task LoadProfilePhotoAsync(string? photoUrl)
     {
-        ProfilePhotoImage.Source = "nav_profile.svg";
         if (string.IsNullOrWhiteSpace(photoUrl))
         {
+            ProfilePhotoImage.Source = "nav_profile.svg";
             return;
         }
 
@@ -131,6 +131,7 @@ public partial class ProfilePage : ContentPage
 
         try
         {
+            await ShowLocalProfilePhotoAsync(file);
             var result = await apiClient.UploadProfilePhotoAsync(file);
             if (!result.IsSuccess || result.Response is null)
             {
@@ -138,7 +139,11 @@ public partial class ProfilePage : ContentPage
                 return;
             }
 
-            await LoadProfilePhotoAsync(result.Response.ProfilePhotoUrl);
+            var remoteImage = await apiClient.DownloadProfilePhotoAsync(result.Response.ProfilePhotoUrl);
+            if (remoteImage is not null)
+            {
+                ProfilePhotoImage.Source = remoteImage;
+            }
             ShowPhotoStatus("Photo mise a jour.", isError: false);
         }
         catch (Exception)
@@ -148,6 +153,18 @@ public partial class ProfilePage : ContentPage
         finally
         {
             isUploadingPhoto = false;
+        }
+    }
+
+    private async Task ShowLocalProfilePhotoAsync(FileResult file)
+    {
+        await using var stream = await file.OpenReadAsync();
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer);
+        var bytes = buffer.ToArray();
+        if (bytes.Length > 0)
+        {
+            ProfilePhotoImage.Source = ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
         }
     }
 

@@ -8,12 +8,12 @@
     HorizontalOptions="End"
     VerticalOptions="Center">
     <ImageButton
-        Source="app_bell.png"
-        HeightRequest="28"
-        WidthRequest="28"
-        Padding="3"
+        Source="app_bell.svg"
+        HeightRequest="40"
+        WidthRequest="40"
+        Padding="8"
         BackgroundColor="Transparent"
-        HorizontalOptions="End"
+        HorizontalOptions="Center"
         VerticalOptions="Center"
         AutomationId="NotificationsButton"
         Clicked="OnClicked" />

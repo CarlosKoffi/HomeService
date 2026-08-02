@@ -8,14 +8,14 @@
    <Button Grid.Row="1" Text="+  Ajouter un moyen de paiement" Style="{StaticResource OutlineActionButton}" Clicked="OnAddClicked"/>
    <Grid Grid.Row="2">
     <CollectionView x:Name="MethodsView" SelectionMode="None"><CollectionView.ItemTemplate><DataTemplate>
-     <Border Style="{StaticResource CompactListBorder}">
+     <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="16" Margin="0,0,0,12">
       <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="BackgroundColor" Value="#F8FAFF"/><Setter Property="Stroke" Value="{StaticResource WeleBlue}"/></DataTrigger></Border.Triggers>
       <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnMethodTapped" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
-      <Grid ColumnDefinitions="48,*,Auto,Auto" ColumnSpacing="10">
-       <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 9" HeightRequest="46" WidthRequest="46" Padding="5"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit"/><Label Text="{Binding IconText}" IsVisible="{Binding ShowFallback}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Grid></Border>
-       <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label Text="{Binding Label}" FontAttributes="Bold" FontSize="15"/><Label Text="{Binding Reference}" FontSize="12" TextColor="{StaticResource MutedInk}"/></VerticalStackLayout>
-       <VerticalStackLayout Grid.Column="2" Spacing="2" VerticalOptions="Center"><Label Text="Par défaut" FontSize="12" TextColor="{StaticResource WeleBlue}" IsVisible="{Binding IsDefault}"/><Label Text="›" FontSize="21" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="End"/></VerticalStackLayout>
-       <Button Grid.Column="3" Text="Supprimer" FontSize="11" TextColor="{StaticResource Danger}" BackgroundColor="Transparent" Padding="6,4" MinimumWidthRequest="0" MinimumHeightRequest="0" VerticalOptions="Center" Clicked="OnDeleteClicked" CommandParameter="{Binding .}"/>
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="56,*,Auto" ColumnSpacing="14" RowSpacing="12">
+       <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12" HeightRequest="54" WidthRequest="54" Padding="7"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit"/><Label Text="{Binding IconText}" IsVisible="{Binding ShowFallback}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Grid></Border>
+       <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center"><Label Text="{Binding Label}" FontAttributes="Bold" FontSize="15"/><Label Text="{Binding Reference}" FontSize="12" TextColor="{StaticResource MutedInk}"/></VerticalStackLayout>
+       <Border Grid.Column="2" BackgroundColor="#EEF4FF" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,6" IsVisible="{Binding IsDefault}" VerticalOptions="Start"><Label Text="Par défaut" FontSize="11" TextColor="{StaticResource WeleBlue}"/></Border>
+       <Button Grid.Row="1" Grid.Column="2" Text="Supprimer" FontSize="11" TextColor="{StaticResource Danger}" BackgroundColor="Transparent" Padding="8,4" MinimumWidthRequest="0" MinimumHeightRequest="0" HorizontalOptions="End" Clicked="OnDeleteClicked" CommandParameter="{Binding .}"/>
       </Grid>
      </Border>
     </DataTemplate></CollectionView.ItemTemplate></CollectionView>

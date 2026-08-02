@@ -11,7 +11,7 @@
     <Grid RowDefinitions="*,72" HorizontalOptions="Fill">
         <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
             <ScrollView>
-                <VerticalStackLayout Padding="20,24,20,30" Spacing="20">
+                <VerticalStackLayout Padding="20,18,20,30" Spacing="20">
                     <Border
                         x:Name="LoadErrorPanel"
                         IsVisible="False"

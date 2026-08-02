@@ -18,7 +18,7 @@
       <Border Style="{StaticResource CompactListBorder}">
        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <VerticalStackLayout Spacing="3"><Label Text="{Binding Label}" FontSize="15" FontAttributes="Bold"/><Label Text="{Binding AddressLine}" Style="{StaticResource MutedLabel}"/></VerticalStackLayout>
-        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center"><Label Text="{Binding Status}" FontSize="12" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End"/><Label Text="›" FontSize="21" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="End"/></VerticalStackLayout>
+        <Label Grid.Column="1" Text="{Binding Status}" FontSize="12" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End" VerticalTextAlignment="Center"/>
        </Grid>
       </Border>
      </DataTemplate></CollectionView.ItemTemplate>
