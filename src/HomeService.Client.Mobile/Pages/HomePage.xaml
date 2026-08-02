@@ -60,14 +60,14 @@
                             x:Name="HomeServicesView"
                             HeightRequest="134"
                             HorizontalScrollBarVisibility="Never"
-                            SelectionMode="Single"
-                            SelectionChanged="OnServiceSelected">
+                            ItemsUpdatingScrollMode="KeepScrollOffset"
+                            SelectionMode="None">
                             <CollectionView.ItemsLayout>
                                 <LinearItemsLayout
                                     Orientation="Horizontal"
                                     ItemSpacing="8"
                                     SnapPointsAlignment="Start"
-                                    SnapPointsType="MandatorySingle" />
+                                    SnapPointsType="None" />
                             </CollectionView.ItemsLayout>
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
@@ -79,6 +79,11 @@
                                         Stroke="#111827"
                                         StrokeThickness="1"
                                         StrokeShape="RoundRectangle 14">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                CommandParameter="{Binding .}"
+                                                Tapped="OnServiceTapped" />
+                                        </Border.GestureRecognizers>
                                         <Grid RowDefinitions="92,*">
                                             <Grid Margin="4,4,4,0">
                                                 <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
@@ -90,7 +95,8 @@
                                                 Text="{Binding Name}"
                                                 FontSize="10"
                                                 FontAttributes="Bold"
-                                                HorizontalTextAlignment="Start"
+                                                HorizontalTextAlignment="Center"
+                                                HorizontalOptions="Fill"
                                                 VerticalTextAlignment="Center"
                                                 MaxLines="2"
                                                 LineBreakMode="TailTruncation" />
@@ -112,14 +118,14 @@
                             x:Name="WellbeingServicesView"
                             HeightRequest="134"
                             HorizontalScrollBarVisibility="Never"
-                            SelectionMode="Single"
-                            SelectionChanged="OnServiceSelected">
+                            ItemsUpdatingScrollMode="KeepScrollOffset"
+                            SelectionMode="None">
                             <CollectionView.ItemsLayout>
                                 <LinearItemsLayout
                                     Orientation="Horizontal"
                                     ItemSpacing="8"
                                     SnapPointsAlignment="Start"
-                                    SnapPointsType="MandatorySingle" />
+                                    SnapPointsType="None" />
                             </CollectionView.ItemsLayout>
                             <CollectionView.ItemTemplate>
                                 <DataTemplate>
@@ -131,6 +137,11 @@
                                         Stroke="#111827"
                                         StrokeThickness="1"
                                         StrokeShape="RoundRectangle 14">
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                CommandParameter="{Binding .}"
+                                                Tapped="OnServiceTapped" />
+                                        </Border.GestureRecognizers>
                                         <Grid RowDefinitions="92,*">
                                             <Grid Margin="4,4,4,0">
                                                 <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
@@ -142,7 +153,8 @@
                                                 Text="{Binding Name}"
                                                 FontSize="10"
                                                 FontAttributes="Bold"
-                                                HorizontalTextAlignment="Start"
+                                                HorizontalTextAlignment="Center"
+                                                HorizontalOptions="Fill"
                                                 VerticalTextAlignment="Center"
                                                 MaxLines="2"
                                                 LineBreakMode="TailTruncation" />

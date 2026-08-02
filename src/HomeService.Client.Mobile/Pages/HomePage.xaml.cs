@@ -286,16 +286,11 @@ public partial class HomePage : ContentPage
         await Shell.Current.GoToAsync(path);
     }
 
-    private async void OnServiceSelected(object sender, SelectionChangedEventArgs e)
+    private async void OnServiceTapped(object sender, TappedEventArgs e)
     {
-        if (e.CurrentSelection.FirstOrDefault() is not ServiceItem service)
+        if (e.Parameter is not ServiceItem service)
         {
             return;
-        }
-
-        if (sender is CollectionView collectionView)
-        {
-            collectionView.SelectedItem = null;
         }
 
         await OpenServiceAsync(service);
