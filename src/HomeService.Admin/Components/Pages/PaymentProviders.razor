@@ -26,14 +26,7 @@
         <article class="payment-provider-card">
             <div class="payment-provider-brand">
                 <span class="provider-logo-large">
-                    @if (!string.IsNullOrWhiteSpace(provider.LogoUrl))
-                    {
-                        <img src="@ApiClient.ToCmsMediaPreviewUrl(provider.LogoUrl, null)" alt="Logo @provider.Name" />
-                    }
-                    else
-                    {
-                        <span>@Initials(provider.Name)</span>
-                    }
+                    <AdminMediaPreview Source="@provider.LogoUrl" Alt="@($"Logo {provider.Name}")" FallbackText="@Initials(provider.Name)" />
                 </span>
                 <span class="status-pill @(provider.IsActive ? "is-active" : "")">@(provider.IsActive ? "Visible" : "Masqué")</span>
             </div>
@@ -62,14 +55,7 @@
             <div class="payment-provider-form">
                 <div class="payment-provider-logo-editor">
                     <div class="payment-provider-preview">
-                        @if (!string.IsNullOrWhiteSpace(Draft.LogoUrl))
-                        {
-                            <img src="@ApiClient.ToCmsMediaPreviewUrl(Draft.LogoUrl, null)" alt="Aperçu du logo" />
-                        }
-                        else
-                        {
-                            <span>Logo</span>
-                        }
+                        <AdminMediaPreview Source="@Draft.LogoUrl" Alt="Aperçu du logo" FallbackText="Logo" Loading="eager" />
                     </div>
                     <label class="btn btn-light upload-button">
                         Changer le logo

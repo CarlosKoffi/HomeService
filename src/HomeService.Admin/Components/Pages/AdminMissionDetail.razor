@@ -117,7 +117,10 @@ else
                             <a class="mission-photo-item" href="@ApiClient.GetAdminClientAttachmentPreviewUrl(attachment.Id)" target="_blank" title="Ouvrir @attachment.OriginalFileName">
                                 @if (attachment.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <img src="@ApiClient.GetAdminClientAttachmentPreviewUrl(attachment.Id)" alt="@(attachment.Caption ?? attachment.OriginalFileName)" loading="lazy" />
+                                    <AdminMediaPreview Source="@ApiClient.GetAdminClientAttachmentPreviewUrl(attachment.Id)"
+                                                       IsResolved="true"
+                                                       Alt="@(attachment.Caption ?? attachment.OriginalFileName)"
+                                                       FallbackText="Photo indisponible" />
                                 }
                                 <span>@(attachment.Caption ?? attachment.OriginalFileName)</span>
                             </a>

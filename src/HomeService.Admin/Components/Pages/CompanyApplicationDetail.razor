@@ -186,9 +186,10 @@ else if (Application is not null)
                                 <strong>Previsualisation</strong>
                                 @if (IsImageDocument(document.ContentType))
                                 {
-                                    <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                         loading="lazy"
-                                         alt="Previsualisation de @slot.Label" />
+                                    <AdminMediaPreview Source="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                                       IsResolved="true"
+                                                       Alt="@($"Prévisualisation de {slot.Label}")"
+                                                       FallbackText="Pièce indisponible" />
                                 }
                                 else
                                 {
@@ -261,9 +262,10 @@ else if (Application is not null)
                             <strong>Previsualisation</strong>
                             @if (IsImageDocument(document.ContentType))
                             {
-                                <img src="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
-                                     loading="lazy"
-                                     alt="Previsualisation de @GetDocumentLabel(document.DocumentType)" />
+                                <AdminMediaPreview Source="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)"
+                                                   IsResolved="true"
+                                                   Alt="@($"Prévisualisation de {GetDocumentLabel(document.DocumentType)}")"
+                                                   FallbackText="Pièce indisponible" />
                             }
                             else
                             {

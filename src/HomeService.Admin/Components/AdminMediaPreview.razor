@@ -1,0 +1,48 @@
+@inject HomeService.Admin.Services.PlatformApiClient ApiClient
+
+@if (!HasFailed && !string.IsNullOrWhiteSpace(ResolvedSource))
+{
+    <img src="@ResolvedSource" alt="@Alt" class="@ImageClass" loading="@Loading" @onerror="HandleError" />
+}
+else
+{
+    <span class="admin-media-fallback @FallbackClass" role="img" aria-label="@Alt">
+        @if (FallbackContent is not null)
+        {
+            @FallbackContent
+        }
+        else
+        {
+            <span aria-hidden="true">@FallbackText</span>
+        }
+    </span>
+}
+
+@code {
+    [Parameter] public string? Source { get; set; }
+    [Parameter] public bool IsResolved { get; set; }
+    [Parameter] public string? Surface { get; set; }
+    [Parameter] public string Alt { get; set; } = "Image";
+    [Parameter] public string ImageClass { get; set; } = "admin-media-image";
+    [Parameter] public string FallbackClass { get; set; } = string.Empty;
+    [Parameter] public string FallbackText { get; set; } = "Image";
+    [Parameter] public string Loading { get; set; } = "lazy";
+    [Parameter] public RenderFragment? FallbackContent { get; set; }
+
+    private string ResolvedSource = string.Empty;
+    private string? PreviousSource;
+    private bool HasFailed;
+
+    protected override void OnParametersSet()
+    {
+        if (!string.Equals(PreviousSource, Source, StringComparison.Ordinal))
+        {
+            PreviousSource = Source;
+            HasFailed = false;
+        }
+
+        ResolvedSource = IsResolved ? Source ?? string.Empty : ApiClient.ToCmsMediaPreviewUrl(Source, Surface);
+    }
+
+    private void HandleError() => HasFailed = true;
+}

@@ -58,6 +58,17 @@ public static class AdminDocumentProxyEndpoints
                 context);
         });
 
+        app.MapGet("/admin-api-media/{**mediaPath}", async (
+            string mediaPath,
+            PlatformApiClient apiClient,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            return await RenderDocumentAsync(
+                () => apiClient.GetPublicMediaFileAsync(mediaPath, cancellationToken),
+                context);
+        });
+
         return app;
     }
 

@@ -249,14 +249,7 @@ else
                                                                     @{
                                                                         var previewUrl = GetMediaPreviewUrl(value, draft);
                                                                     }
-                                                                    @if (!string.IsNullOrWhiteSpace(previewUrl))
-                                                                    {
-                                                                        <img src="@previewUrl" alt="Apercu CMS" />
-                                                                    }
-                                                                    else
-                                                                    {
-                                                                        <span>Image</span>
-                                                                    }
+                                                                    <AdminMediaPreview Source="@previewUrl" IsResolved="true" Alt="Aperçu CMS" FallbackText="Image" Loading="eager" />
                                                                 </div>
                                                                 <label>
                                                                     <small>URL ou chemin image</small>
@@ -305,14 +298,7 @@ else
                                                                                     @{
                                                                                         var itemPreviewUrl = GetJsonItemImagePreviewUrl(item);
                                                                                     }
-                                                                                    @if (!string.IsNullOrWhiteSpace(itemPreviewUrl))
-                                                                                    {
-                                                                                        <img src="@itemPreviewUrl" alt="Image de l'etape" />
-                                                                                    }
-                                                                                    else
-                                                                                    {
-                                                                                        <span>Image</span>
-                                                                                    }
+                                                                                    <AdminMediaPreview Source="@itemPreviewUrl" IsResolved="true" Alt="Image de l'étape" FallbackText="Image" Loading="eager" />
                                                                                 </div>
                                                                                 <div class="cms-json-media-fields">
                                                                                     <input type="text" @bind="item.Image" placeholder="images/..." />

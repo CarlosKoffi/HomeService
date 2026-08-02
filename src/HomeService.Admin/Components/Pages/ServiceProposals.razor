@@ -312,14 +312,7 @@
         </label>
         <div class="service-icon-admin wide">
             <div class="service-icon-preview">
-                @if (!string.IsNullOrWhiteSpace(NewServiceDraft.IconUrl))
-                {
-                    <img src="@ResolveServiceIconUrl(NewServiceDraft.IconUrl)" alt="" />
-                }
-                else
-                {
-                    <span>@NewServiceDraft.IconName</span>
-                }
+                <AdminMediaPreview Source="@NewServiceDraft.IconUrl" Alt="Icône du service" FallbackText="@NewServiceDraft.IconName" Loading="eager" />
             </div>
             <div>
                 <strong>Apercu icone service</strong>
@@ -391,14 +384,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                 <header>
                     <div>
                         <span class="catalog-icon">
-                            @if (!string.IsNullOrWhiteSpace(service.IconUrl))
-                            {
-                                <img src="@ResolveServiceIconUrl(service.IconUrl)" alt="" />
-                            }
-                            else
-                            {
-                                @service.IconName
-                            }
+                            <AdminMediaPreview Source="@service.IconUrl" Alt="@($"Icône de {service.Name}")" FallbackText="@service.IconName" />
                         </span>
                         <div>
                             <h2>@service.Name</h2>
@@ -442,14 +428,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                 </label>
                                 <div class="service-icon-admin wide">
                                     <div class="service-icon-preview">
-                                        @if (!string.IsNullOrWhiteSpace(serviceEditDraft.IconUrl))
-                                        {
-                                            <img src="@ResolveServiceIconUrl(serviceEditDraft.IconUrl)" alt="" />
-                                        }
-                                        else
-                                        {
-                                            <span>@serviceEditDraft.IconName</span>
-                                        }
+                                        <AdminMediaPreview Source="@serviceEditDraft.IconUrl" Alt="Icône du service" FallbackText="@serviceEditDraft.IconName" Loading="eager" />
                                     </div>
                                     <div>
                                         <strong>Apercu icone service</strong>
@@ -556,14 +535,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                             </label>
                                             <div class="catalog-media-editor wide">
                                                 <div class="catalog-media-preview">
-                                                    @if (!string.IsNullOrWhiteSpace(editDraft.IllustrationUrl))
-                                                    {
-                                                        <img src="@ResolveServiceIconUrl(editDraft.IllustrationUrl)" alt="Apercu de @editDraft.Name" />
-                                                    }
-                                                    else
-                                                    {
-                                                        <span>Photo facultative</span>
-                                                    }
+                                                    <AdminMediaPreview Source="@editDraft.IllustrationUrl" Alt="@($"Aperçu de {editDraft.Name}")" FallbackText="Photo facultative" Loading="eager" />
                                                 </div>
                                                 <label class="catalog-upload">
                                                     Importer une photo
@@ -645,14 +617,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                         </label>
                         <div class="catalog-media-editor">
                             <div class="catalog-media-preview">
-                                @if (!string.IsNullOrWhiteSpace(draft.IllustrationUrl))
-                                {
-                                    <img src="@ResolveServiceIconUrl(draft.IllustrationUrl)" alt="Apercu de la prestation" />
-                                }
-                                else
-                                {
-                                    <span>Photo facultative</span>
-                                }
+                                <AdminMediaPreview Source="@draft.IllustrationUrl" Alt="Aperçu de la prestation" FallbackText="Photo facultative" Loading="eager" />
                             </div>
                             <label class="catalog-upload">
                                 Importer une photo
