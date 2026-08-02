@@ -36,10 +36,41 @@
             <Setter Property="TextColor" Value="{StaticResource WeleBlue}" />
         </Style>
         <Style x:Key="ScreenTitleLabel" TargetType="Label">
-            <Setter Property="FontSize" Value="26" />
+            <Setter Property="FontSize" Value="22" />
             <Setter Property="FontAttributes" Value="Bold" />
             <Setter Property="LineHeight" Value="1.05" />
             <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        </Style>
+        <Style x:Key="SubpageTitleLabel" TargetType="Label">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="VerticalTextAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="BackIconButton" TargetType="Button">
+            <Setter Property="Text" Value="&#x2039;" />
+            <Setter Property="FontSize" Value="27" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="WidthRequest" Value="32" />
+            <Setter Property="HeightRequest" Value="40" />
+            <Setter Property="MinimumHeightRequest" Value="40" />
+        </Style>
+        <Style x:Key="OutlineActionButton" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="TextColor" Value="{StaticResource WeleBlue}" />
+            <Setter Property="BorderColor" Value="{StaticResource Line}" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="HeightRequest" Value="48" />
+            <Setter Property="MinimumHeightRequest" Value="48" />
+        </Style>
+        <Style x:Key="CompactListBorder" TargetType="Border">
+            <Setter Property="Stroke" Value="{StaticResource Line}" />
+            <Setter Property="StrokeThickness" Value="0,0,0,1" />
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="Padding" Value="4,14" />
         </Style>
         <Style x:Key="CardTitleLabel" TargetType="Label">
             <Setter Property="FontSize" Value="17" />

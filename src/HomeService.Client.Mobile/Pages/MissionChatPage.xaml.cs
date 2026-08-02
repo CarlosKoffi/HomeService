@@ -175,6 +175,8 @@ public partial class MissionChatPage : ContentPage
 
 public sealed record ClientMessageRow(string Sender, string Body, string SentAt)
 {
+    public bool IsMine => Sender.Equals("Vous", StringComparison.OrdinalIgnoreCase);
+
     public static ClientMessageRow From(ClientMissionMessageResponse response)
     {
         var sender = response.SenderType.Equals("Customer", StringComparison.OrdinalIgnoreCase)

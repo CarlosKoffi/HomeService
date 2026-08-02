@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="HomeService.Client.Mobile.Pages.ProfileInformationPage"
- xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Mes informations">
- <Grid RowDefinitions="*,72">
- <Grid Padding="20,18,20,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
-  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12"><Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Mes informations" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center"/></Grid>
-  <ScrollView Grid.Row="1"><VerticalStackLayout Spacing="12">
-   <Label Text="Prénom" FontAttributes="Bold"/><Entry x:Name="FirstNameEntry"/>
-   <Label Text="Nom" FontAttributes="Bold"/><Entry x:Name="LastNameEntry"/>
-   <Label Text="Téléphone" FontAttributes="Bold"/><Entry x:Name="PhoneEntry" IsReadOnly="True" BackgroundColor="#F5F7FA"/>
-   <Label Text="Email" FontAttributes="Bold"/><Entry x:Name="EmailEntry" Keyboard="Email"/>
-   <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/>
-  </VerticalStackLayout></ScrollView>
-  <Button Grid.Row="2" x:Name="SaveButton" Text="Enregistrer les modifications" HeightRequest="52" Clicked="OnSaveClicked"/>
- </Grid>
- <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile" />
+<ContentPage x:Class="HomeService.Client.Mobile.Pages.ProfileInformationPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Mes informations">
+ <Grid RowDefinitions="*,72" BackgroundColor="White">
+  <Grid Padding="20,16,20,20" RowDefinitions="Auto,*,Auto" RowSpacing="14">
+   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Mes informations" Style="{StaticResource SubpageTitleLabel}"/></Grid>
+   <ScrollView Grid.Row="1"><VerticalStackLayout Spacing="9">
+    <Label Text="Prénom" FontSize="12" FontAttributes="Bold"/><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="FirstNameEntry"/></Border>
+    <Label Text="Nom" FontSize="12" FontAttributes="Bold" Margin="0,4,0,0"/><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="LastNameEntry"/></Border>
+    <Label Text="Téléphone" FontSize="12" FontAttributes="Bold" Margin="0,4,0,0"/><Border Stroke="{StaticResource Line}" BackgroundColor="#F7F8FA" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="PhoneEntry" IsReadOnly="True"/></Border>
+    <Label Text="Email" FontSize="12" FontAttributes="Bold" Margin="0,4,0,0"/><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="EmailEntry" Keyboard="Email"/></Border>
+    <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/>
+   </VerticalStackLayout></ScrollView>
+   <Button Grid.Row="2" x:Name="SaveButton" Text="Enregistrer les modifications" Clicked="OnSaveClicked"/>
+  </Grid>
+  <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile"/>
  </Grid>
 </ContentPage>
