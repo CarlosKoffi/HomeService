@@ -351,18 +351,26 @@ public static class PublicEndpoints
             try
             {
                 var storagePath = await uploadService.SaveAsync(customer.Id, photo, cancellationToken);
-                return Results.Ok(await profileService.UpdatePhotoAsync(customer, storagePath, cancellationToken));
+                return Results.Ok(await profileService.UpdatePhotoAsync(customer.Id, storagePath, cancellationToken));
             }
             catch (InvalidOperationException exception)
             {
                 return Results.BadRequest(new { message = exception.Message });
+            }
+            catch (ClientProfilePhotoStorageException exception)
+            {
+                return Results.Problem(
+                    title: "Envoi de la photo impossible.",
+                    detail: exception.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
             }
         })
         .DisableAntiforgery()
         .WithName("UploadClientProfilePhoto")
         .Produces<ClientProfilePhotoResponse>()
         .Produces(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized);
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
 
         client.MapGet("/me/photo", async (
             HttpRequest httpRequest,

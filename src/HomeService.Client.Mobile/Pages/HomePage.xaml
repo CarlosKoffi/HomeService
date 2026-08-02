@@ -240,7 +240,7 @@
                     <CollectionView x:Name="MoreServicesView" Grid.Row="2" SelectionMode="Single" SelectionChanged="OnMoreServiceSelected">
                         <CollectionView.ItemTemplate><DataTemplate>
                             <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12" Padding="0,10">
-                                <Border HeightRequest="50" WidthRequest="50" Padding="8" BackgroundColor="#F4F7FF" Stroke="#E7ECF5" StrokeShape="RoundRectangle 10">
+                                <Border HeightRequest="50" WidthRequest="50" Padding="8" BackgroundColor="White" Stroke="#111827" StrokeThickness="1" StrokeShape="RoundRectangle 10">
                                     <Grid><Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" /><Label Text="{Binding IconFallback}" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" /></Grid>
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold" /><Label Text="{Binding Price}" FontSize="10" TextColor="#687386" /></VerticalStackLayout>

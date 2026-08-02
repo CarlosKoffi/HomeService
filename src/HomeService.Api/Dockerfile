@@ -11,5 +11,7 @@ RUN dotnet publish src/HomeService.Api/HomeService.Api.csproj -c Release -o /app
 
 FROM base AS final
 WORKDIR /app
+ENV STORAGE_ROOT_PATH=/app/storage
+RUN mkdir -p /app/storage
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "HomeService.Api.dll"]

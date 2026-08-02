@@ -1,8 +1,10 @@
 namespace HomeService.Api;
 
-public sealed class ClientProfilePhotoUploadService(IConfiguration configuration)
+public sealed class ClientProfilePhotoUploadService(
+    IConfiguration configuration,
+    ILogger<ClientProfilePhotoUploadService> logger)
 {
-    private const long MaxFileSize = 12 * 1024 * 1024;
+    private const long MaxFileSize = 25 * 1024 * 1024;
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"
@@ -16,7 +18,7 @@ public sealed class ClientProfilePhotoUploadService(IConfiguration configuration
     {
         if (file.Length == 0 || file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException("La photo doit faire entre 1 octet et 12 Mo.");
+            throw new InvalidOperationException("La photo doit faire entre 1 octet et 25 Mo.");
         }
 
         var extension = ResolveExtension(file.FileName, file.ContentType);
@@ -27,11 +29,27 @@ public sealed class ClientProfilePhotoUploadService(IConfiguration configuration
 
         var relativePath = Path.Combine("client-profiles", customerId.ToString("N"), $"{Guid.NewGuid():N}{extension}");
         var absolutePath = GetAbsolutePath(relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-
-        await using var stream = File.Create(absolutePath);
-        await file.CopyToAsync(stream, cancellationToken);
-        return relativePath.Replace('\\', '/');
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
+            await using var stream = new FileStream(
+                absolutePath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 81920,
+                FileOptions.Asynchronous);
+            await file.CopyToAsync(stream, cancellationToken);
+            await stream.FlushAsync(cancellationToken);
+            return relativePath.Replace('\\', '/');
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            logger.LogError(exception, "Unable to store client profile photo for customer {CustomerId} in {RootPath}", customerId, _rootPath);
+            throw new ClientProfilePhotoStorageException(
+                "Le stockage de la photo est momentanement indisponible. Reessayez dans quelques instants.",
+                exception);
+        }
     }
 
     private static string? ResolveExtension(string fileName, string contentType)
@@ -68,3 +86,6 @@ public sealed class ClientProfilePhotoUploadService(IConfiguration configuration
         return absolutePath;
     }
 }
+
+public sealed class ClientProfilePhotoStorageException(string message, Exception innerException)
+    : Exception(message, innerException);

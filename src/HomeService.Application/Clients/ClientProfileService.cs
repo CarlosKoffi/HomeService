@@ -20,12 +20,20 @@ public sealed class ClientProfileService(IAppDbContext db)
     }
 
     public async Task<ClientProfilePhotoResponse> UpdatePhotoAsync(
-        CustomerProfile customer,
+        Guid customerId,
         string storagePath,
         CancellationToken cancellationToken)
     {
-        customer.SetProfilePhotoPath(storagePath);
-        await db.SaveChangesAsync(cancellationToken);
+        var updated = await db.Customers
+            .Where(customer => customer.Id == customerId)
+            .ExecuteUpdateAsync(
+                setters => setters.SetProperty(customer => customer.ProfilePhotoPath, storagePath),
+                cancellationToken);
+        if (updated != 1)
+        {
+            throw new InvalidOperationException("Le profil client n'existe plus. Reconnectez-vous puis reessayez.");
+        }
+
         return new ClientProfilePhotoResponse("/api/client/me/photo");
     }
 

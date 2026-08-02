@@ -1,6 +1,7 @@
 using HomeService.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace HomeService.Tests.Integration;
 
@@ -12,7 +13,7 @@ public sealed class ClientProfilePhotoUploadServiceTests : IDisposable
     public async Task SaveAsync_AcceptsModernPhonePhotoAndStoresIt()
     {
         var service = CreateService();
-        var bytes = new byte[6 * 1024 * 1024];
+        var bytes = new byte[18 * 1024 * 1024];
         Random.Shared.NextBytes(bytes);
         var file = CreateFile(bytes, "portrait.jpg", "image/jpeg");
 
@@ -57,7 +58,7 @@ public sealed class ClientProfilePhotoUploadServiceTests : IDisposable
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.SaveAsync(Guid.NewGuid(), file, CancellationToken.None));
 
-        Assert.Contains("12 Mo", exception.Message);
+        Assert.Contains("25 Mo", exception.Message);
     }
 
     [Fact]
@@ -85,7 +86,9 @@ public sealed class ClientProfilePhotoUploadServiceTests : IDisposable
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?> { ["Storage:RootPath"] = storageRoot })
             .Build();
-        return new ClientProfilePhotoUploadService(configuration);
+        return new ClientProfilePhotoUploadService(
+            configuration,
+            NullLogger<ClientProfilePhotoUploadService>.Instance);
     }
 
     private static FormFile CreateFile(byte[] bytes, string fileName, string contentType)
