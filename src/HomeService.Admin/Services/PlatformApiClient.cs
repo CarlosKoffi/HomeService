@@ -1012,6 +1012,8 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             || value.StartsWith("api/", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/storage/", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("storage/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("/media/", StringComparison.OrdinalIgnoreCase)
+            || value.StartsWith("media/", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase)
             || value.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
         {

@@ -51,11 +51,11 @@ public static class DatabaseInitializer
     {
         var seeds = new[]
         {
-            new PaymentProvider("orange-money", "Orange Money", PaymentMethod.MobileMoney, "Paiement depuis votre compte Orange Money.", "/media/payment-providers/orange-money.svg", 10),
-            new PaymentProvider("mtn-momo", "MTN MoMo", PaymentMethod.MobileMoney, "Paiement depuis votre compte MTN MoMo.", "/media/payment-providers/mtn-momo.svg", 20),
-            new PaymentProvider("moov-money", "Moov Money", PaymentMethod.MobileMoney, "Paiement depuis votre compte Moov Money.", "/media/payment-providers/moov-money.svg", 30),
-            new PaymentProvider("wave", "Wave", PaymentMethod.MobileMoney, "Paiement depuis votre compte Wave.", "/media/payment-providers/wave.svg", 40),
-            new PaymentProvider("bank-card", "Carte bancaire", PaymentMethod.Card, "Paiement securise par carte bancaire.", "/media/payment-providers/bank-card.svg", 50)
+            new PaymentProvider("orange-money", "Orange Money", PaymentMethod.MobileMoney, "Paiement depuis votre compte Orange Money.", "/media/payment-providers/orange-money.png", 10),
+            new PaymentProvider("mtn-momo", "MTN MoMo", PaymentMethod.MobileMoney, "Paiement depuis votre compte MTN MoMo.", "/media/payment-providers/mtn-momo.png", 20),
+            new PaymentProvider("moov-money", "Moov Money", PaymentMethod.MobileMoney, "Paiement depuis votre compte Moov Money.", "/media/payment-providers/moov-money.png", 30),
+            new PaymentProvider("wave", "Wave", PaymentMethod.MobileMoney, "Paiement depuis votre compte Wave.", "/media/payment-providers/wave.png", 40),
+            new PaymentProvider("bank-card", "Carte bancaire", PaymentMethod.Card, "Paiement securise par carte bancaire.", "/media/payment-providers/bank-card.png", 50)
         };
 
         var existing = await db.PaymentProviders.ToDictionaryAsync(item => item.Code, cancellationToken);
