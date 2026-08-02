@@ -33,7 +33,14 @@ public partial class AddPaymentMethodPage : ContentPage
         }
 
         var rows = await Task.WhenAll(result.Response.Select(async provider =>
-            ProviderRow.From(provider, await apiClient.DownloadMediaImageSourceAsync(provider.LogoUrl))));
+            ProviderRow.From(
+                provider,
+                await PaymentProviderLogoResolver.ResolveAsync(
+                    apiClient,
+                    provider.Code,
+                    provider.Name,
+                    provider.Method,
+                    provider.LogoUrl))));
         foreach (var row in rows) providers.Add(row);
         Select(providers.FirstOrDefault());
     }
@@ -112,7 +119,7 @@ public partial class AddPaymentMethodPage : ContentPage
         public string Name => Provider.Name;
         public string Description => Provider.Description ?? (Provider.Method == "Card" ? "Carte bancaire" : "Compte Mobile Money");
         public ImageSource? LogoSource { get; }
-        public bool ShowFallback => LogoSource is null;
+        public bool ShowFallback => false;
         public string Fallback => Provider.Method == "Card" ? "CB" : "MM";
         public bool IsSelected { get => isSelected; set { if (isSelected == value) return; isSelected = value; OnPropertyChanged(); } }
         public static ProviderRow From(PaymentProviderResponse provider, ImageSource? logo) => new(provider, logo);

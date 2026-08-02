@@ -39,7 +39,14 @@ public partial class PaymentMethodsPage : ContentPage
         }
 
         var rows = await Task.WhenAll(result.Response.Select(async method =>
-            PaymentMethodRow.From(method, await apiClient.DownloadMediaImageSourceAsync(method.PaymentProviderLogoUrl))));
+            PaymentMethodRow.From(
+                method,
+                await PaymentProviderLogoResolver.ResolveAsync(
+                    apiClient,
+                    null,
+                    method.PaymentProviderName ?? method.Label,
+                    method.Method,
+                    method.PaymentProviderLogoUrl))));
         foreach (var row in rows) methods.Add(row);
 
         EmptyState.IsVisible = methods.Count == 0;
@@ -95,7 +102,7 @@ public partial class PaymentMethodsPage : ContentPage
         public string Reference { get; }
         public string IconText { get; }
         public ImageSource? LogoSource { get; }
-        public bool ShowFallback => LogoSource is null;
+        public bool ShowFallback => false;
         public bool IsDefault { get; }
         public bool IsSelected { get => isSelected; set { if (isSelected == value) return; isSelected = value; OnPropertyChanged(); } }
         public static PaymentMethodRow From(ClientPaymentMethodResponse response, ImageSource? logo) => new(
