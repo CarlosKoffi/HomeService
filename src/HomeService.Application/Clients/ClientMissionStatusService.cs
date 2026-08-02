@@ -188,14 +188,16 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
                     mission.CanRevealContactDetails ? assignedCompany.Email : null),
             assignedProvider is null
                 ? null
-                : new ClientMissionProviderResponse(
+                : BuildProviderResponse(
+                    mission,
                     assignedProvider.Id,
                     assignedProvider.FullName,
                     mission.CanRevealContactDetails ? assignedProvider.PhoneNumber : null,
                     providerPhoto,
                     providerRating,
                     providerCompletedMissionCount,
-                    GetEstimatedArrivalMinutes(mission.ScheduledFor)),
+                    assignedProvider.CurrentLatitude ?? assignedProvider.MissionLatitude,
+                    assignedProvider.CurrentLongitude ?? assignedProvider.MissionLongitude),
             offers,
             additionalQuotes,
             photos,
@@ -335,16 +337,60 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
         return "Votre demande est enregistree.";
     }
 
-    private static int? GetEstimatedArrivalMinutes(DateTimeOffset? scheduledFor)
+    private static ClientMissionProviderResponse BuildProviderResponse(
+        Domain.Entities.Mission mission,
+        Guid providerId,
+        string fullName,
+        string? phoneNumber,
+        string? photoStoragePath,
+        decimal? averageRating,
+        int completedMissionCount,
+        decimal? providerLatitude,
+        decimal? providerLongitude)
     {
-        if (scheduledFor is null)
-        {
-            return null;
-        }
+        var canTrack = mission.Status is MissionStatus.Accepted or MissionStatus.OnTheWay
+            && providerLatitude.HasValue
+            && providerLongitude.HasValue
+            && mission.ServiceLatitude.HasValue
+            && mission.ServiceLongitude.HasValue;
+        decimal? distanceKm = canTrack
+            ? CalculateDistanceKm(providerLatitude!.Value, providerLongitude!.Value, mission.ServiceLatitude!.Value, mission.ServiceLongitude!.Value)
+            : null;
+        int? etaMinutes = distanceKm.HasValue
+            ? Math.Clamp((int)Math.Ceiling(distanceKm.Value * 1.25m / 20m * 60m), 2, 180)
+            : null;
 
-        var minutes = (int)Math.Ceiling((scheduledFor.Value - DateTimeOffset.UtcNow).TotalMinutes);
-        return Math.Max(0, minutes);
+        return new ClientMissionProviderResponse(
+            providerId,
+            fullName,
+            phoneNumber,
+            photoStoragePath,
+            averageRating,
+            completedMissionCount,
+            etaMinutes,
+            canTrack ? providerLatitude : null,
+            canTrack ? providerLongitude : null,
+            canTrack ? mission.ServiceLatitude : null,
+            canTrack ? mission.ServiceLongitude : null,
+            distanceKm,
+            canTrack);
     }
+
+    private static decimal CalculateDistanceKm(decimal latitude1, decimal longitude1, decimal latitude2, decimal longitude2)
+    {
+        const double earthRadiusKm = 6371d;
+        var latitudeDelta = DegreesToRadians((double)(latitude2 - latitude1));
+        var longitudeDelta = DegreesToRadians((double)(longitude2 - longitude1));
+        var firstLatitude = DegreesToRadians((double)latitude1);
+        var secondLatitude = DegreesToRadians((double)latitude2);
+        var value = Math.Sin(latitudeDelta / 2) * Math.Sin(latitudeDelta / 2)
+            + Math.Cos(firstLatitude) * Math.Cos(secondLatitude)
+            * Math.Sin(longitudeDelta / 2) * Math.Sin(longitudeDelta / 2);
+        var distance = earthRadiusKm * 2 * Math.Atan2(Math.Sqrt(value), Math.Sqrt(1 - value));
+        return Math.Round((decimal)distance, 1, MidpointRounding.AwayFromZero);
+    }
+
+    private static double DegreesToRadians(double degrees) => degrees * Math.PI / 180d;
 
     private sealed record ClientMissionStatusPriceRange(int StartingPriceAmount, int MaximumPriceAmount);
 

@@ -1,6 +1,7 @@
 using HomeService.Client.Mobile.Services;
 using HomeService.Contracts.Clients;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace HomeService.Client.Mobile.Pages;
 
@@ -14,6 +15,7 @@ public partial class MissionDetailPage : ContentPage
     private readonly ObservableCollection<TimelineRow> timeline = [];
     private Guid currentMissionId;
     private string? currentProviderPhoneNumber;
+    private ClientMissionProviderResponse? currentTrackingProvider;
     private bool isOpeningChat;
 
     public MissionDetailPage()
@@ -95,8 +97,10 @@ public partial class MissionDetailPage : ContentPage
         WaitingLabel.IsVisible = !providerHasAccepted;
         RoutePanel.IsVisible = providerHasAccepted && mission.Status == "OnTheWay";
         currentProviderPhoneNumber = null;
+        currentTrackingProvider = null;
         if (mission.AssignedProvider is not null)
         {
+            currentTrackingProvider = mission.AssignedProvider;
             ProviderLabel.Text = $"{mission.AssignedProvider.FullName} - {mission.AssignedProvider.CompletedMissionCount} intervention(s)";
             ProviderPhoneLabel.Text = mission.ContactDetailsReleased
                 ? mission.AssignedProvider.PhoneNumber ?? "Téléphone indisponible"
@@ -110,6 +114,11 @@ public partial class MissionDetailPage : ContentPage
             RouteEtaLabel.Text = mission.AssignedProvider.EstimatedArrivalMinutes.HasValue
                 ? $"Arrivee estimee dans {mission.AssignedProvider.EstimatedArrivalMinutes} min"
                 : "Arrivee estimee en cours de calcul";
+            TrackProviderTitleLabel.Text = $"Voir où se trouve {mission.AssignedProvider.FullName}";
+            RouteEtaLabel.Text = mission.AssignedProvider.CanTrackLocation
+                ? $"{mission.AssignedProvider.DistanceKm:0.0} km · arrivée dans {mission.AssignedProvider.EstimatedArrivalMinutes} min environ"
+                : "Position en cours de mise à jour";
+            RoutePanel.Opacity = mission.AssignedProvider.CanTrackLocation ? 1 : 0.65;
             currentProviderPhoneNumber = mission.ContactDetailsReleased ? mission.AssignedProvider.PhoneNumber : null;
             CallButton.IsEnabled = !string.IsNullOrWhiteSpace(currentProviderPhoneNumber);
             CallButton.Opacity = CallButton.IsEnabled ? 1 : 0.55;
@@ -173,11 +182,13 @@ public partial class MissionDetailPage : ContentPage
         ProviderCard.IsVisible = true;
         WaitingLabel.IsVisible = false;
         RoutePanel.IsVisible = true;
+        RoutePanel.Opacity = 1;
         ProviderLabel.Text = "Mohamed Kouyaté - 48 interventions";
         ProviderPhoneLabel.Text = "+225 07 12 34 56 78";
         ProviderRatingLabel.Text = "★ 4.9";
         ProviderEtaLabel.Text = "13 min";
-        RouteEtaLabel.Text = "Arrivee estimee dans 13 min";
+        TrackProviderTitleLabel.Text = "Voir où se trouve Mohamed Kouyaté";
+        RouteEtaLabel.Text = "2,1 km · arrivée dans 13 min environ";
         ProviderDetailLabel.Text = "Mohamed Kouyate\nDeboucher un evier\nCocody, Riviera 3\nArrivee dans 13 min";
         currentProviderPhoneNumber = "+2250712345678";
         CallButton.IsEnabled = true;
@@ -275,6 +286,61 @@ public partial class MissionDetailPage : ContentPage
     {
         ProviderDetailPanel.IsVisible = !ProviderDetailPanel.IsVisible;
     }
+
+    private async void OnTrackProviderTapped(object sender, TappedEventArgs e)
+    {
+        if (sessionStore.IsPreviewMode())
+        {
+            await NavigateProviderTrackingAsync("Mohamed Kouyaté", 5.3478m, -4.0203m, 5.3599m, -4.0083m, 13, 2.1m);
+            return;
+        }
+
+        var provider = currentTrackingProvider;
+        if (provider is null
+            || !provider.CanTrackLocation
+            || !provider.CurrentLatitude.HasValue
+            || !provider.CurrentLongitude.HasValue
+            || !provider.DestinationLatitude.HasValue
+            || !provider.DestinationLongitude.HasValue)
+        {
+            await DisplayAlert(
+                "Position en cours de mise à jour",
+                "Le technicien doit partager sa position avant que vous puissiez suivre son trajet.",
+                "OK");
+            return;
+        }
+
+        await NavigateProviderTrackingAsync(
+            provider.FullName,
+            provider.CurrentLatitude.Value,
+            provider.CurrentLongitude.Value,
+            provider.DestinationLatitude.Value,
+            provider.DestinationLongitude.Value,
+            provider.EstimatedArrivalMinutes,
+            provider.DistanceKm);
+    }
+
+    private static async Task NavigateProviderTrackingAsync(
+        string providerName,
+        decimal providerLatitude,
+        decimal providerLongitude,
+        decimal destinationLatitude,
+        decimal destinationLongitude,
+        int? estimatedArrivalMinutes,
+        decimal? distanceKm)
+    {
+        var route = $"{nameof(ProviderTrackingPage)}" +
+            $"?providerName={Uri.EscapeDataString(providerName)}" +
+            $"&providerLat={FormatCoordinate(providerLatitude)}" +
+            $"&providerLon={FormatCoordinate(providerLongitude)}" +
+            $"&destinationLat={FormatCoordinate(destinationLatitude)}" +
+            $"&destinationLon={FormatCoordinate(destinationLongitude)}" +
+            $"&eta={estimatedArrivalMinutes?.ToString(CultureInfo.InvariantCulture) ?? string.Empty}" +
+            $"&distance={distanceKm?.ToString("0.0", CultureInfo.InvariantCulture) ?? string.Empty}";
+        await Shell.Current.GoToAsync(route);
+    }
+
+    private static string FormatCoordinate(decimal value) => value.ToString(CultureInfo.InvariantCulture);
 
     private async void OnConfirmClicked(object sender, EventArgs e)
     {

@@ -62,7 +62,13 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
                     mission.AssignedProvider.PhotoStoragePath,
                     mission.AssignedProvider.AverageRating,
                     mission.AssignedProvider.CompletedMissionCount,
-                    mission.AssignedProvider.EstimatedArrivalMinutes),
+                    mission.AssignedProvider.EstimatedArrivalMinutes,
+                    mission.AssignedProvider.CurrentLatitude,
+                    mission.AssignedProvider.CurrentLongitude,
+                    mission.AssignedProvider.DestinationLatitude,
+                    mission.AssignedProvider.DestinationLongitude,
+                    mission.AssignedProvider.DistanceKm,
+                    mission.AssignedProvider.CanTrackLocation),
             mission.AssignedCompany is null
                 ? null
                 : new ClientMissionScreenCompanyResponse(

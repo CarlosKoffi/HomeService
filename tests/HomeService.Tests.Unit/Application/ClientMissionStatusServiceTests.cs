@@ -29,7 +29,10 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
         Assert.Equal(4, result.Response.AssignedProvider.AverageRating);
         Assert.Equal(1, result.Response.AssignedProvider.CompletedMissionCount);
-        Assert.Null(result.Response.AssignedProvider.EstimatedArrivalMinutes);
+        Assert.True(result.Response.AssignedProvider.CanTrackLocation);
+        Assert.NotNull(result.Response.AssignedProvider.EstimatedArrivalMinutes);
+        Assert.Equal(scenario.Mission.ServiceLatitude, result.Response.AssignedProvider.DestinationLatitude);
+        Assert.Equal(scenario.Mission.ServiceLongitude, result.Response.AssignedProvider.DestinationLongitude);
         Assert.True(result.Response.Actions.CanAcceptQuote);
         Assert.False(result.Response.Actions.CanCallCompany);
         Assert.False(result.Response.Actions.CanCallProvider);

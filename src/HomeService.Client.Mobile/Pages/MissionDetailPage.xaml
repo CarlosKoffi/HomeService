@@ -74,15 +74,19 @@
                 <Label x:Name="WaitingLabel" Text="Recherche d'une entreprise disponible" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" LineHeight="1.25" />
                 <Label x:Name="TrackingLabel" FontSize="13" TextColor="{StaticResource MutedInk}" LineHeight="1.25" />
 
-                <Border x:Name="RoutePanel" IsVisible="False" StrokeThickness="0" BackgroundColor="#EFF6FF" StrokeShape="RoundRectangle 20" Padding="18" HeightRequest="150">
-                    <Grid RowDefinitions="Auto,*,Auto">
-                        <Label Text="Technicien en route" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
-                        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" Margin="8,12">
-                            <Border BackgroundColor="{StaticResource WeleBlue}" StrokeThickness="0" StrokeShape="RoundRectangle 10" WidthRequest="18" HeightRequest="18" />
-                            <BoxView Grid.Column="1" HeightRequest="3" BackgroundColor="{StaticResource WeleBlue}" VerticalOptions="Center" Margin="6,0" />
-                            <Border Grid.Column="2" BackgroundColor="White" Stroke="{StaticResource WeleBlue}" StrokeThickness="3" StrokeShape="RoundRectangle 10" WidthRequest="18" HeightRequest="18" />
-                        </Grid>
-                        <Label Grid.Row="2" x:Name="RouteEtaLabel" Text="Arrivee estimee en cours de calcul" FontSize="13" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                <Border x:Name="RoutePanel" IsVisible="False" Stroke="#C9D9FF" StrokeThickness="1" BackgroundColor="#F7FAFF" StrokeShape="RoundRectangle 18" Padding="16">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTrackProviderTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="White" Stroke="#DCE6FF" StrokeThickness="1" StrokeShape="RoundRectangle 14" HeightRequest="44" WidthRequest="44">
+                            <Label Text="&#x2316;" FontSize="22" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label x:Name="TrackProviderTitleLabel" Text="Voir où se trouve le prestataire" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
+                            <Label x:Name="RouteEtaLabel" Text="Position en cours de mise à jour" FontSize="12" TextColor="{StaticResource WeleBlue}" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="2" Text="&#x203A;" FontSize="28" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
                     </Grid>
                 </Border>
 

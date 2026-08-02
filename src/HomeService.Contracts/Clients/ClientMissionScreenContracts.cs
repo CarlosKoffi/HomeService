@@ -42,7 +42,13 @@ public sealed record ClientMissionScreenProviderResponse(
     string? PhotoStoragePath,
     decimal? AverageRating,
     int CompletedMissionCount,
-    int? EstimatedArrivalMinutes);
+    int? EstimatedArrivalMinutes,
+    decimal? CurrentLatitude,
+    decimal? CurrentLongitude,
+    decimal? DestinationLatitude,
+    decimal? DestinationLongitude,
+    decimal? DistanceKm,
+    bool CanTrackLocation);
 
 public sealed record ClientMissionScreenCompanyResponse(
     Guid CompanyId,
