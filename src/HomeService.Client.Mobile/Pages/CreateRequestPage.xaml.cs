@@ -28,13 +28,14 @@ public partial class CreateRequestPage : ContentPage
     private decimal? currentAddressLatitude;
     private decimal? currentAddressLongitude;
     private bool isUpdatingAddressFromLocation;
-    private CancellationTokenSource? addressSearchCancellation;
-    private string addressSearchSessionToken = Guid.NewGuid().ToString("N");
+    private readonly AddressAutocompleteSession addressAutocomplete;
+    private bool isPageActive;
 
     public CreateRequestPage()
     {
         InitializeComponent();
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
+        addressAutocomplete = new AddressAutocompleteSession(apiClient);
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
         PhotosView.ItemsSource = selectedPhotos;
         ServicePickerList.ItemsSource = availableServices;
@@ -59,6 +60,7 @@ public partial class CreateRequestPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        isPageActive = true;
         ResetServiceSelectionState();
 
         if (!sessionStore.HasSession())
@@ -89,6 +91,13 @@ public partial class CreateRequestPage : ContentPage
             await LoadPreparationAsync(
                 autoOpenOptions: Guid.TryParse(PrestationId, out _) && !Guid.TryParse(OptionId, out _));
         }
+    }
+
+    protected override void OnDisappearing()
+    {
+        isPageActive = false;
+        addressAutocomplete.CancelPendingSearch();
+        base.OnDisappearing();
     }
 
     private async Task LoadServiceCatalogAsync()
@@ -457,39 +466,44 @@ public partial class CreateRequestPage : ContentPage
 
     private async void OnAddressTextChanged(object sender, TextChangedEventArgs e)
     {
-        if (isUpdatingAddressFromLocation)
-        {
-            return;
-        }
-
-        currentAddressLatitude = null;
-        currentAddressLongitude = null;
-        AddressSuggestionsPanel.IsVisible = false;
-
-        addressSearchCancellation?.Cancel();
-        addressSearchCancellation?.Dispose();
-        addressSearchCancellation = new CancellationTokenSource();
-        var cancellationToken = addressSearchCancellation.Token;
-        var query = e.NewTextValue?.Trim();
-        if (string.IsNullOrWhiteSpace(query) || query.Length < 3 || sessionStore.IsPreviewMode())
-        {
-            return;
-        }
-
         try
         {
-            await Task.Delay(350, cancellationToken);
-            var result = await apiClient.AutocompleteAddressAsync(query, addressSearchSessionToken, cancellationToken);
-            if (cancellationToken.IsCancellationRequested || !result.IsSuccess || result.Response is null)
+            if (isUpdatingAddressFromLocation)
             {
                 return;
             }
 
-            AddressSuggestionsView.ItemsSource = result.Response;
-            AddressSuggestionsPanel.IsVisible = result.Response.Count > 0;
+            currentAddressLatitude = null;
+            currentAddressLongitude = null;
+            AddressSuggestionsPanel.IsVisible = false;
+
+            var query = e.NewTextValue?.Trim();
+            if (string.IsNullOrWhiteSpace(query) || query.Length < 3 || sessionStore.IsPreviewMode())
+            {
+                addressAutocomplete.CancelPendingSearch();
+                return;
+            }
+
+            var result = await addressAutocomplete.SearchAsync(query);
+            if (result.IsIgnored || !isPageActive || isUpdatingAddressFromLocation)
+            {
+                return;
+            }
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+            {
+                if (!isPageActive || isUpdatingAddressFromLocation) return;
+                AddressSuggestionsView.ItemsSource = result.Suggestions;
+                AddressSuggestionsPanel.IsVisible = result.Suggestions.Count > 0;
+                if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
+                {
+                    ShowAddressError(result.ErrorMessage);
+                }
+            });
         }
-        catch (OperationCanceledException)
+        catch (Exception)
         {
+            // Autocomplete is optional and must never interrupt a mission request.
         }
     }
 
@@ -502,8 +516,13 @@ public partial class CreateRequestPage : ContentPage
 
         AddressSuggestionsView.SelectedItem = null;
         AddressSuggestionsPanel.IsVisible = false;
-        var result = await apiClient.GetPlaceDetailsAsync(suggestion.PlaceId, addressSearchSessionToken);
-        if (!result.IsSuccess || result.Response is null)
+        var details = await addressAutocomplete.ResolveAsync(suggestion);
+        if (!isPageActive)
+        {
+            return;
+        }
+
+        if (details is null)
         {
             isUpdatingAddressFromLocation = true;
             AddressEntry.Text = suggestion.FullText;
@@ -512,11 +531,10 @@ public partial class CreateRequestPage : ContentPage
         }
 
         isUpdatingAddressFromLocation = true;
-        AddressEntry.Text = result.Response.AddressLine;
+        AddressEntry.Text = details.AddressLine;
         isUpdatingAddressFromLocation = false;
-        currentAddressLatitude = result.Response.Latitude;
-        currentAddressLongitude = result.Response.Longitude;
-        addressSearchSessionToken = Guid.NewGuid().ToString("N");
+        currentAddressLatitude = details.Latitude;
+        currentAddressLongitude = details.Longitude;
     }
 
     private async void OnLocateAddressClicked(object sender, EventArgs e)
