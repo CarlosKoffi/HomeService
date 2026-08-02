@@ -18,7 +18,8 @@
       <Border Style="{StaticResource CompactListBorder}">
        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
         <VerticalStackLayout Spacing="3"><Label Text="{Binding Label}" FontSize="15" FontAttributes="Bold"/><Label Text="{Binding AddressLine}" Style="{StaticResource MutedLabel}"/></VerticalStackLayout>
-        <Label Grid.Column="1" Text="{Binding Status}" FontSize="12" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End" VerticalTextAlignment="Center"/>
+        <Label Grid.Column="1" Text="Par défaut" IsVisible="{Binding IsDefault}" FontSize="12" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End" VerticalTextAlignment="Center"/>
+        <Button Grid.Column="1" Text="Définir par défaut" IsVisible="{Binding CanSetAsDefault}" Clicked="OnSetDefaultClicked" Padding="8,6" FontSize="11" FontAttributes="Bold" BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}" BorderWidth="0" VerticalOptions="Center"/>
        </Grid>
       </Border>
      </DataTemplate></CollectionView.ItemTemplate>

@@ -14,6 +14,7 @@ public partial class AddressesPage : ContentPage
     private decimal? longitude;
     private bool applyingAddress;
     private bool isPageActive;
+    private bool isSettingDefault;
 
     public AddressesPage()
     {
@@ -44,7 +45,7 @@ public partial class AddressesPage : ContentPage
         {
             foreach (var item in result.Response)
             {
-                rows.Add(new(item, item.IsDefault ? "Par défaut" : "›"));
+                rows.Add(new(item));
             }
         }
 
@@ -52,6 +53,43 @@ public partial class AddressesPage : ContentPage
     }
 
     private void OnAddClicked(object sender, EventArgs e) => OpenEditor(null);
+
+    private async void OnSetDefaultClicked(object sender, EventArgs e)
+    {
+        if (isSettingDefault || sender is not Button { BindingContext: AddressRow row } || row.Item.IsDefault)
+        {
+            return;
+        }
+
+        isSettingDefault = true;
+        ((Button)sender).IsEnabled = false;
+        try
+        {
+            var item = row.Item;
+            var request = new UpsertClientAddressRequest(
+                item.Label,
+                item.AddressLine,
+                item.Latitude,
+                item.Longitude,
+                true);
+            var result = await apiClient.UpdateAddressAsync(item.Id, request);
+            if (!result.IsSuccess)
+            {
+                await DisplayAlert("Adresse", result.ErrorMessage ?? "Cette adresse n'a pas pu être définie par défaut.", "Fermer");
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            isSettingDefault = false;
+            if (sender is Button button)
+            {
+                button.IsEnabled = true;
+            }
+        }
+    }
 
     private async void OnAddressSelected(object sender, SelectionChangedEventArgs e)
     {
@@ -219,9 +257,11 @@ public partial class AddressesPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 
-    private sealed record AddressRow(ClientAddressResponse Item, string Status)
+    private sealed record AddressRow(ClientAddressResponse Item)
     {
         public string Label => Item.Label;
         public string AddressLine => Item.AddressLine;
+        public bool IsDefault => Item.IsDefault;
+        public bool CanSetAsDefault => !Item.IsDefault;
     }
 }
