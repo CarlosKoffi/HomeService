@@ -40,7 +40,12 @@
 .assignment-row small, .assignment-row span { color: #687386; }
 .field-label { font-size: .72rem; text-transform: uppercase; }
 .mission-reference span { font-size: .82rem; }
-.assignment-action { justify-items: start; }
+.assignment-action {
+    display: flex !important;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: .5rem;
+}
 .blocked-label { color: #b45309 !important; font-weight: 700; }
 .empty-state { padding: 2rem 1.25rem; }
 

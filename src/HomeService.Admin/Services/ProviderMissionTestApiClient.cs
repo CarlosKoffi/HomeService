@@ -19,9 +19,21 @@ public sealed class ProviderMissionTestApiClient(
     }
 
     public async Task<AdminProviderMissionTestActionResponse?> AcceptAsync(Guid assignmentId, CancellationToken cancellationToken = default)
+        => await SendActionAsync(assignmentId, "validate", cancellationToken);
+
+    public async Task<AdminProviderMissionTestActionResponse?> StartAsync(Guid assignmentId, CancellationToken cancellationToken = default)
+        => await SendActionAsync(assignmentId, "start", cancellationToken);
+
+    public async Task<AdminProviderMissionTestActionResponse?> CompleteAsync(Guid assignmentId, CancellationToken cancellationToken = default)
+        => await SendActionAsync(assignmentId, "complete", cancellationToken);
+
+    private async Task<AdminProviderMissionTestActionResponse?> SendActionAsync(
+        Guid assignmentId,
+        string action,
+        CancellationToken cancellationToken)
     {
         AddAuthentication();
-        var path = $"/api/admin/missions/provider-test/assignments/{assignmentId}/validate";
+        var path = $"/api/admin/missions/provider-test/assignments/{assignmentId}/{action}";
         using var response = await httpClient.PostAsync(path, null, cancellationToken);
         if (response.IsSuccessStatusCode)
         {

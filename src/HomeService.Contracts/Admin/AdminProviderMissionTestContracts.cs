@@ -9,7 +9,10 @@ public sealed record AdminProviderMissionTestAssignmentResponse(
     string CompanyName,
     string Address,
     DateTimeOffset ExpiresAt,
+    string Status,
     bool CanAccept,
+    bool CanStart,
+    bool CanComplete,
     string? UnavailableReason);
 
 public sealed record AdminProviderMissionTestListResponse(

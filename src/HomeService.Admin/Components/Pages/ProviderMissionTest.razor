@@ -9,7 +9,7 @@
     <div>
         <p class="eyebrow">Outil de test</p>
         <h1>Validation prestataire</h1>
-        <p class="lead">Acceptez ici une mission comme le prestataire affecte, en attendant l'application prestataire.</p>
+        <p class="lead">Simulez ici les actions du prestataire, de l'acceptation jusqu'a la fin de mission.</p>
     </div>
     <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
 </div>
@@ -30,8 +30,8 @@
 <section class="assignment-panel">
     <header>
         <div>
-            <h2>Missions en attente</h2>
-            <p>@(Snapshot?.Assignments.Count ?? 0) affectation(s) proposee(s) aux prestataires.</p>
+            <h2>Missions prestataire actives</h2>
+            <p>@(Snapshot?.Assignments.Count ?? 0) mission(s) a accepter, demarrer ou terminer.</p>
         </div>
     </header>
 
@@ -61,7 +61,7 @@
                     <div>
                         <span class="field-label">Intervention</span>
                         <strong>@assignment.Address</strong>
-                        <small>Reponse avant @assignment.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                        <small>@assignment.Status</small>
                     </div>
                     <div class="assignment-action">
                         @if (assignment.CanAccept)
@@ -70,7 +70,19 @@
                                 Accepter comme prestataire
                             </button>
                         }
-                        else
+                        @if (assignment.CanStart)
+                        {
+                            <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="() => StartAsync(assignment)">
+                                Demarrer
+                            </button>
+                        }
+                        @if (assignment.CanComplete)
+                        {
+                            <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="() => CompleteAsync(assignment)">
+                                Fin de mission
+                            </button>
+                        }
+                        @if (!assignment.CanAccept && !assignment.CanStart && !assignment.CanComplete)
                         {
                             <span class="blocked-label">Indisponible</span>
                             <small>@assignment.UnavailableReason</small>
@@ -118,6 +130,35 @@
         {
             var result = await ApiClient.AcceptAsync(assignment.AssignmentId);
             Message = result?.Message ?? "Mission acceptee.";
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private async Task StartAsync(AdminProviderMissionTestAssignmentResponse assignment) =>
+        await RunActionAsync(() => ApiClient.StartAsync(assignment.AssignmentId), "Mission demarree.");
+
+    private async Task CompleteAsync(AdminProviderMissionTestAssignmentResponse assignment) =>
+        await RunActionAsync(() => ApiClient.CompleteAsync(assignment.AssignmentId), "Mission terminee.");
+
+    private async Task RunActionAsync(
+        Func<Task<AdminProviderMissionTestActionResponse?>> action,
+        string fallbackMessage)
+    {
+        IsSubmitting = true;
+        Message = null;
+        ErrorMessage = null;
+        try
+        {
+            var result = await action();
+            Message = result?.Message ?? fallbackMessage;
             await LoadAsync();
         }
         catch (Exception exception)

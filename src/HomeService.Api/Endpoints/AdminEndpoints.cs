@@ -514,6 +514,30 @@ public static class AdminEndpoints
         .Produces<AdminProviderMissionTestActionResponse>()
         .Produces<AdminProviderMissionTestActionResponse>(StatusCodes.Status400BadRequest);
 
+        admin.MapPost("/missions/provider-test/assignments/{assignmentId:guid}/start", async (
+            Guid assignmentId,
+            AdminProviderMissionTestService testService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await testService.StartAsync(assignmentId, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("StartProviderMissionForTest")
+        .Produces<AdminProviderMissionTestActionResponse>()
+        .Produces<AdminProviderMissionTestActionResponse>(StatusCodes.Status400BadRequest);
+
+        admin.MapPost("/missions/provider-test/assignments/{assignmentId:guid}/complete", async (
+            Guid assignmentId,
+            AdminProviderMissionTestService testService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await testService.CompleteAsync(assignmentId, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("CompleteProviderMissionForTest")
+        .Produces<AdminProviderMissionTestActionResponse>()
+        .Produces<AdminProviderMissionTestActionResponse>(StatusCodes.Status400BadRequest);
+
         admin.MapPost("/missions/{missionId:guid}/dispatch-offers", async (
             Guid missionId,
             bool? urgent,
