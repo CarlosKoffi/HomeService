@@ -2,7 +2,7 @@ namespace HomeService.Api;
 
 public sealed class ClientProfilePhotoUploadService(IConfiguration configuration)
 {
-    private const long MaxFileSize = 5 * 1024 * 1024;
+    private const long MaxFileSize = 12 * 1024 * 1024;
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"
@@ -16,11 +16,11 @@ public sealed class ClientProfilePhotoUploadService(IConfiguration configuration
     {
         if (file.Length == 0 || file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException("La photo doit faire entre 1 octet et 5 Mo.");
+            throw new InvalidOperationException("La photo doit faire entre 1 octet et 12 Mo.");
         }
 
-        var extension = Path.GetExtension(Path.GetFileName(file.FileName)).ToLowerInvariant();
-        if (!AllowedExtensions.Contains(extension) || !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        var extension = ResolveExtension(file.FileName, file.ContentType);
+        if (extension is null)
         {
             throw new InvalidOperationException("Formats acceptes: JPG, PNG, WEBP ou HEIC.");
         }
@@ -32,6 +32,28 @@ public sealed class ClientProfilePhotoUploadService(IConfiguration configuration
         await using var stream = File.Create(absolutePath);
         await file.CopyToAsync(stream, cancellationToken);
         return relativePath.Replace('\\', '/');
+    }
+
+    private static string? ResolveExtension(string fileName, string contentType)
+    {
+        var normalizedContentType = contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        var extension = Path.GetExtension(Path.GetFileName(fileName)).ToLowerInvariant();
+        if (AllowedExtensions.Contains(extension)
+            && (normalizedContentType.StartsWith("image/", StringComparison.Ordinal)
+                || normalizedContentType == "application/octet-stream"))
+        {
+            return extension;
+        }
+
+        return normalizedContentType switch
+        {
+            "image/jpeg" or "image/jpg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/heic" => ".heic",
+            "image/heif" => ".heif",
+            _ => null
+        };
     }
 
     public string GetAbsolutePath(string relativePath)

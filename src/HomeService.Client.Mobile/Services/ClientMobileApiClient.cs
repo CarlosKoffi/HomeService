@@ -36,12 +36,27 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         FileResult file,
         CancellationToken cancellationToken = default)
     {
-        var token = await sessionStore.GetTokenAsync();
         await using var stream = await file.OpenReadAsync();
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken);
+        return await UploadProfilePhotoAsync(buffer.ToArray(), file.FileName, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<ClientProfilePhotoResponse>> UploadProfilePhotoAsync(
+        byte[] photoBytes,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        if (photoBytes.Length == 0)
+        {
+            return ApiCallResult<ClientProfilePhotoResponse>.Failed(0, "La photo selectionnee est vide.");
+        }
+
+        var token = await sessionStore.GetTokenAsync();
         using var content = new MultipartFormDataContent();
-        using var fileContent = new StreamContent(stream);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetImageContentType(file.FileName));
-        content.Add(fileContent, "photo", file.FileName);
+        using var fileContent = new ByteArrayContent(photoBytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetImageContentType(fileName));
+        content.Add(fileContent, "photo", Path.GetFileName(fileName));
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "api/client/me/photo") { Content = content };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

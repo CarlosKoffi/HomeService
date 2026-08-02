@@ -131,8 +131,15 @@ public partial class ProfilePage : ContentPage
 
         try
         {
-            await ShowLocalProfilePhotoAsync(file);
-            var result = await apiClient.UploadProfilePhotoAsync(file);
+            var photoBytes = await ReadPhotoAsync(file);
+            if (photoBytes.Length == 0)
+            {
+                ShowPhotoStatus("La photo selectionnee est vide. Choisissez une autre photo.", isError: true);
+                return;
+            }
+
+            ShowLocalProfilePhoto(photoBytes);
+            var result = await apiClient.UploadProfilePhotoAsync(photoBytes, file.FileName);
             if (!result.IsSuccess || result.Response is null)
             {
                 ShowPhotoStatus(result.ErrorMessage ?? "La photo n'a pas pu etre envoyee.", isError: true);
@@ -146,6 +153,14 @@ public partial class ProfilePage : ContentPage
             }
             ShowPhotoStatus("Photo mise a jour.", isError: false);
         }
+        catch (UnauthorizedAccessException)
+        {
+            ShowPhotoStatus("L'application ne peut pas lire cette photo. Verifiez les autorisations.", isError: true);
+        }
+        catch (IOException)
+        {
+            ShowPhotoStatus("La photo ne peut pas etre lue. Choisissez-la de nouveau.", isError: true);
+        }
         catch (Exception)
         {
             ShowPhotoStatus("La photo n'a pas pu etre envoyee. Reessayez.", isError: true);
@@ -156,12 +171,16 @@ public partial class ProfilePage : ContentPage
         }
     }
 
-    private async Task ShowLocalProfilePhotoAsync(FileResult file)
+    private static async Task<byte[]> ReadPhotoAsync(FileResult file)
     {
         await using var stream = await file.OpenReadAsync();
         using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer);
-        var bytes = buffer.ToArray();
+        return buffer.ToArray();
+    }
+
+    private void ShowLocalProfilePhoto(byte[] bytes)
+    {
         if (bytes.Length > 0)
         {
             ProfilePhotoImage.Source = ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
