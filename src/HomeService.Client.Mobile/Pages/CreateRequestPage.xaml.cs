@@ -938,6 +938,7 @@ public partial class CreateRequestPage : ContentPage
         SummaryPrestationPanel.IsVisible = !string.IsNullOrWhiteSpace(SummaryPrestationLabel.Text);
         SummaryOptionLabel.Text = preparation?.ServiceOptionName ?? string.Empty;
         SummaryOptionPanel.IsVisible = !string.IsNullOrWhiteSpace(SummaryOptionLabel.Text);
+        UpdateSummaryPrice();
         SummaryAddressLabel.Text = AddressEntry.Text.Trim();
         SummaryScheduleLabel.Text = ModePicker.SelectedIndex == 0
             ? "Maintenant"
@@ -946,6 +947,23 @@ public partial class CreateRequestPage : ContentPage
             ? "Aucune précision ajoutée."
             : DescriptionEditor.Text.Trim();
         ShowStep(3);
+    }
+
+    private void UpdateSummaryPrice()
+    {
+        if (preparation is null)
+        {
+            SummaryPricePanel.IsVisible = false;
+            return;
+        }
+
+        SummaryPricePanel.IsVisible = true;
+        SummaryPriceLabel.Text = preparation.IsFixedPrice
+            ? $"{preparation.MaximumPriceAmount:N0} {preparation.Currency}"
+            : $"{preparation.StartingPriceAmount:N0} - {preparation.MaximumPriceAmount:N0} {preparation.Currency}";
+        SummaryPriceHintLabel.Text = preparation.IsFixedPrice
+            ? "Prix fixe"
+            : "L'entreprise confirmera le prix final avant paiement.";
     }
 
     private void OnModifyServiceClicked(object sender, EventArgs e) => ShowStep(1);

@@ -272,6 +272,16 @@
                             <Button Grid.Column="1" Text="Modifier" FontSize="11" TextColor="{StaticResource WeleBlue}"
                                     BackgroundColor="Transparent" Clicked="OnModifyServiceClicked" />
                         </Grid>
+                        <VerticalStackLayout x:Name="SummaryPricePanel" Spacing="4">
+                            <Label Text="Prix estimé" FontSize="11" TextColor="#687386" />
+                            <Label x:Name="SummaryPriceLabel"
+                                   FontSize="13"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource WeleBlue}" />
+                            <Label x:Name="SummaryPriceHintLabel"
+                                   FontSize="10"
+                                   TextColor="#687386" />
+                        </VerticalStackLayout>
                         <Grid ColumnDefinitions="*,Auto">
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="Adresse" FontSize="11" TextColor="#687386" />

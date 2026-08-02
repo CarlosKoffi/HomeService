@@ -9,8 +9,8 @@
     BackgroundColor="White">
     <Grid RowDefinitions="*,72">
     <ScrollView BackgroundColor="White">
-        <VerticalStackLayout Padding="20,18,20,28" Spacing="0">
-            <Grid ColumnDefinitions="*,40" Margin="0,0,0,22">
+        <VerticalStackLayout Padding="20,10,20,28" Spacing="0">
+            <Grid ColumnDefinitions="*,40" HeightRequest="40" Margin="0,0,0,22">
                 <Label Text="Mon profil" FontSize="18" FontAttributes="Bold" VerticalTextAlignment="Center" />
                 <controls:ClientNotificationButton Grid.Column="1" />
             </Grid>
