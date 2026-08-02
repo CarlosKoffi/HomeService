@@ -105,7 +105,7 @@ public sealed class ClientProfileService(IAppDbContext db)
         => await db.PaymentProviders.AsNoTracking()
             .Where(item => item.IsActive)
             .OrderBy(item => item.SortOrder).ThenBy(item => item.Name)
-            .Select(item => new PaymentProviderResponse(item.Id, item.Code, item.Name, item.Method.ToString(), item.LogoUrl, item.IsActive, item.SortOrder))
+            .Select(item => new PaymentProviderResponse(item.Id, item.Code, item.Name, item.Method.ToString(), item.Description, item.LogoUrl, item.IsActive, item.SortOrder))
             .ToListAsync(cancellationToken);
 
     public async Task<ClientPaymentMethodResult> AddPaymentMethodAsync(Guid customerId, UpsertClientPaymentMethodRequest request, CancellationToken cancellationToken)

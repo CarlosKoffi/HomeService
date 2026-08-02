@@ -23,6 +23,7 @@ public sealed record PaymentProviderResponse(
     string Code,
     string Name,
     string Method,
+    string? Description,
     string? LogoUrl,
     bool IsActive,
     int SortOrder);
@@ -31,6 +32,7 @@ public sealed record UpsertPaymentProviderRequest(
     string Code,
     string Name,
     string Method,
+    string? Description,
     string? LogoUrl,
     int SortOrder,
     bool IsActive);

@@ -21,7 +21,7 @@ public sealed class AdminPaymentProviderService(IAppDbContext db)
         if (await db.PaymentProviders.AnyAsync(item => item.Code == code, cancellationToken))
             throw new InvalidOperationException("Un operateur utilise deja ce code.");
 
-        var provider = new PaymentProvider(code, request.Name, method, request.LogoUrl, request.SortOrder);
+        var provider = new PaymentProvider(code, request.Name, method, request.Description, request.LogoUrl, request.SortOrder);
         provider.SetActive(request.IsActive);
         db.PaymentProviders.Add(provider);
         await db.SaveChangesAsync(cancellationToken);
@@ -37,7 +37,7 @@ public sealed class AdminPaymentProviderService(IAppDbContext db)
         if (await db.PaymentProviders.AnyAsync(item => item.Id != id && item.Code == code, cancellationToken))
             throw new InvalidOperationException("Un autre operateur utilise deja ce code.");
 
-        provider.Update(code, request.Name, ParseMethod(request.Method), request.LogoUrl, request.SortOrder);
+        provider.Update(code, request.Name, ParseMethod(request.Method), request.Description, request.LogoUrl, request.SortOrder);
         provider.SetActive(request.IsActive);
         await db.SaveChangesAsync(cancellationToken);
         return ToResponse(provider);
@@ -55,5 +55,5 @@ public sealed class AdminPaymentProviderService(IAppDbContext db)
     }
 
     private static PaymentProviderResponse ToResponse(PaymentProvider item) =>
-        new(item.Id, item.Code, item.Name, item.Method.ToString(), item.LogoUrl, item.IsActive, item.SortOrder);
+        new(item.Id, item.Code, item.Name, item.Method.ToString(), item.Description, item.LogoUrl, item.IsActive, item.SortOrder);
 }

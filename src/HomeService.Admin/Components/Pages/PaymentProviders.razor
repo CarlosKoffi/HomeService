@@ -6,12 +6,13 @@
 
 <PageTitle>Moyens de paiement</PageTitle>
 
-<section class="admin-page-heading">
+<section class="admin-page-heading payment-catalog-heading">
     <div>
-        <p class="eyebrow">Referentiel paiement</p>
-        <h1>Operateurs et cartes</h1>
-        <p class="lead">Gerez les moyens proposes aux clients et leur identite visuelle dans l'application.</p>
+        <p class="eyebrow">Catalogue paiement</p>
+        <h1>Moyens de paiement</h1>
+        <p class="lead">Les opérateurs visibles dans l'application client, leurs informations et leurs logos.</p>
     </div>
+    <button class="btn btn-primary" @onclick="NewProvider">Ajouter un moyen</button>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(Message))
@@ -19,51 +20,93 @@
     <div class="alert @(IsError ? "alert-danger" : "alert-success")">@Message</div>
 }
 
-<section class="admin-card payment-provider-editor">
-    <div class="payment-provider-preview">
-        @if (!string.IsNullOrWhiteSpace(Draft.LogoUrl))
-        {
-            <img src="@ApiClient.ToCmsMediaPreviewUrl(Draft.LogoUrl, null)" alt="Apercu du logo" />
-        }
-        else
-        {
-            <span>LOGO</span>
-        }
-    </div>
-    <div class="field"><label>Nom</label><input @bind="Draft.Name" placeholder="Ex. Orange Money" /></div>
-    <div class="field"><label>Code</label><input @bind="Draft.Code" placeholder="orange-money" /></div>
-    <div class="field"><label>Type</label><select @bind="Draft.Method"><option value="MobileMoney">Mobile Money</option><option value="Card">Carte bancaire</option></select></div>
-    <div class="field compact"><label>Ordre</label><input type="number" @bind="Draft.SortOrder" /></div>
-    <label class="check-field"><input type="checkbox" @bind="Draft.IsActive" /> Actif</label>
-    <div class="field media-field"><label>Logo</label><InputFile OnChange="UploadLogoAsync" accept="image/*" /><small>PNG, JPG ou WebP. L'apercu est mis a jour apres l'envoi.</small></div>
-    <button class="btn btn-primary" @onclick="SaveAsync">@(Draft.Id.HasValue ? "Enregistrer" : "Ajouter")</button>
-    @if (Draft.Id.HasValue) { <button class="btn btn-light" @onclick="ResetDraft">Annuler</button> }
-</section>
-
-<section class="admin-card payment-provider-list">
+<section class="payment-provider-grid">
     @foreach (var provider in Providers)
     {
-        <button class="payment-provider-row" @onclick="() => Edit(provider)">
-            <span class="provider-logo">
-                @if (!string.IsNullOrWhiteSpace(provider.LogoUrl)) { <img src="@ApiClient.ToCmsMediaPreviewUrl(provider.LogoUrl, null)" alt="" /> }
-                else { <span>@Initials(provider.Name)</span> }
-            </span>
-            <span class="provider-copy"><strong>@provider.Name</strong><small>@(provider.Method == "Card" ? "Carte bancaire" : "Mobile Money") · @provider.Code</small></span>
-            <span class="status-pill @(provider.IsActive ? "is-active" : "")">@(provider.IsActive ? "Actif" : "Masque")</span>
-            <span class="edit-label">Modifier</span>
-        </button>
+        <article class="payment-provider-card">
+            <div class="payment-provider-brand">
+                <span class="provider-logo-large">
+                    @if (!string.IsNullOrWhiteSpace(provider.LogoUrl))
+                    {
+                        <img src="@ApiClient.ToCmsMediaPreviewUrl(provider.LogoUrl, null)" alt="Logo @provider.Name" />
+                    }
+                    else
+                    {
+                        <span>@Initials(provider.Name)</span>
+                    }
+                </span>
+                <span class="status-pill @(provider.IsActive ? "is-active" : "")">@(provider.IsActive ? "Visible" : "Masqué")</span>
+            </div>
+            <div class="payment-provider-copy">
+                <h2>@provider.Name</h2>
+                <p>@(string.IsNullOrWhiteSpace(provider.Description) ? "Aucune description renseignée." : provider.Description)</p>
+                <small>@(provider.Method == "Card" ? "Carte bancaire" : "Mobile Money")</small>
+            </div>
+            <button class="btn btn-light" @onclick="() => Edit(provider)">Modifier</button>
+        </article>
     }
 </section>
+
+@if (IsEditorOpen)
+{
+    <div class="admin-modal-backdrop" @onclick="CloseEditor">
+        <section class="admin-modal payment-provider-modal" @onclick:stopPropagation="true">
+            <header>
+                <div>
+                    <p class="eyebrow">@(Draft.Id.HasValue ? "Modification" : "Nouveau moyen")</p>
+                    <h2>@(Draft.Id.HasValue ? Draft.Name : "Ajouter un moyen de paiement")</h2>
+                </div>
+                <button class="modal-close" aria-label="Fermer" @onclick="CloseEditor">×</button>
+            </header>
+
+            <div class="payment-provider-form">
+                <div class="payment-provider-logo-editor">
+                    <div class="payment-provider-preview">
+                        @if (!string.IsNullOrWhiteSpace(Draft.LogoUrl))
+                        {
+                            <img src="@ApiClient.ToCmsMediaPreviewUrl(Draft.LogoUrl, null)" alt="Aperçu du logo" />
+                        }
+                        else
+                        {
+                            <span>Logo</span>
+                        }
+                    </div>
+                    <label class="btn btn-light upload-button">
+                        Changer le logo
+                        <InputFile OnChange="UploadLogoAsync" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                    </label>
+                    <small>PNG, JPG, WebP ou SVG.</small>
+                </div>
+
+                <div class="payment-provider-fields">
+                    <div class="field"><label>Nom affiché</label><input @bind="Draft.Name" placeholder="Ex. Orange Money" /></div>
+                    <div class="field"><label>Code interne</label><input @bind="Draft.Code" placeholder="orange-money" /></div>
+                    <div class="field field-wide"><label>Description</label><textarea @bind="Draft.Description" rows="3" placeholder="Courte explication visible dans le catalogue."></textarea></div>
+                    <div class="field"><label>Type</label><select @bind="Draft.Method"><option value="MobileMoney">Mobile Money</option><option value="Card">Carte bancaire</option></select></div>
+                    <div class="field"><label>Ordre d'affichage</label><input type="number" min="0" @bind="Draft.SortOrder" /></div>
+                    <label class="switch-field field-wide"><input type="checkbox" @bind="Draft.IsActive" /><span>Visible dans l'application</span></label>
+                </div>
+            </div>
+
+            <footer>
+                <button class="btn btn-light" @onclick="CloseEditor">Annuler</button>
+                <button class="btn btn-primary" @onclick="SaveAsync">Enregistrer</button>
+            </footer>
+        </section>
+    </div>
+}
 
 @code {
     private IReadOnlyList<PaymentProviderResponse> Providers = [];
     private ProviderDraft Draft = new();
     private string? Message;
     private bool IsError;
+    private bool IsEditorOpen;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
-
     private async Task LoadAsync() => Providers = await ApiClient.GetPaymentProvidersAsync();
+    private void NewProvider() { Draft = new(); IsEditorOpen = true; }
+    private void CloseEditor() { IsEditorOpen = false; Draft = new(); }
 
     private async Task UploadLogoAsync(InputFileChangeEventArgs args)
     {
@@ -79,24 +122,34 @@
     {
         try
         {
-            var request = new UpsertPaymentProviderRequest(Draft.Code, Draft.Name, Draft.Method, Draft.LogoUrl, Draft.SortOrder, Draft.IsActive);
+            var request = new UpsertPaymentProviderRequest(Draft.Code, Draft.Name, Draft.Method, Draft.Description, Draft.LogoUrl, Draft.SortOrder, Draft.IsActive);
             if (Draft.Id is { } id) await ApiClient.UpdatePaymentProviderAsync(id, request);
             else await ApiClient.CreatePaymentProviderAsync(request);
-            Show("Moyen de paiement enregistre.", false);
-            ResetDraft();
+            Show("Moyen de paiement enregistré.", false);
+            CloseEditor();
             await LoadAsync();
         }
         catch (Exception ex) { Show(ex.Message, true); }
     }
 
-    private void Edit(PaymentProviderResponse item) => Draft = new(item.Id, item.Code, item.Name, item.Method, item.LogoUrl, item.SortOrder, item.IsActive);
-    private void ResetDraft() => Draft = new();
+    private void Edit(PaymentProviderResponse item)
+    {
+        Draft = new(item.Id, item.Code, item.Name, item.Method, item.Description, item.LogoUrl, item.SortOrder, item.IsActive);
+        IsEditorOpen = true;
+    }
+
     private void Show(string message, bool error) { Message = message; IsError = error; }
     private static string Initials(string name) => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(part => char.ToUpperInvariant(part[0])));
 
-    private sealed class ProviderDraft(Guid? id = null, string code = "", string name = "", string method = "MobileMoney", string? logoUrl = null, int sortOrder = 0, bool isActive = true)
+    private sealed class ProviderDraft(Guid? id = null, string code = "", string name = "", string method = "MobileMoney", string? description = null, string? logoUrl = null, int sortOrder = 0, bool isActive = true)
     {
-        public Guid? Id { get; set; } = id; public string Code { get; set; } = code; public string Name { get; set; } = name;
-        public string Method { get; set; } = method; public string? LogoUrl { get; set; } = logoUrl; public int SortOrder { get; set; } = sortOrder; public bool IsActive { get; set; } = isActive;
+        public Guid? Id { get; set; } = id;
+        public string Code { get; set; } = code;
+        public string Name { get; set; } = name;
+        public string Method { get; set; } = method;
+        public string? Description { get; set; } = description;
+        public string? LogoUrl { get; set; } = logoUrl;
+        public int SortOrder { get; set; } = sortOrder;
+        public bool IsActive { get; set; } = isActive;
     }
 }

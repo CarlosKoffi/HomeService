@@ -12,6 +12,7 @@ public sealed class PaymentProviderConfiguration : IEntityTypeConfiguration<Paym
         builder.Property(item => item.Code).HasMaxLength(64).IsRequired();
         builder.Property(item => item.Name).HasMaxLength(120).IsRequired();
         builder.Property(item => item.Method).HasConversion<string>().HasMaxLength(32).IsRequired();
+        builder.Property(item => item.Description).HasMaxLength(300);
         builder.Property(item => item.LogoUrl).HasMaxLength(500);
         builder.HasIndex(item => item.Code).IsUnique();
         builder.HasIndex(item => new { item.IsActive, item.SortOrder });
