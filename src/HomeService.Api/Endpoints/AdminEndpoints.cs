@@ -493,6 +493,27 @@ public static class AdminEndpoints
         .Produces<AdminMissionDetailResponse>()
         .Produces(StatusCodes.Status404NotFound);
 
+        admin.MapGet("/missions/provider-test/assignments", async (
+            AdminProviderMissionTestService testService,
+            CancellationToken cancellationToken) =>
+        {
+            return Results.Ok(await testService.GetPendingAsync(cancellationToken));
+        })
+        .WithName("GetProviderMissionTestAssignments")
+        .Produces<AdminProviderMissionTestListResponse>();
+
+        admin.MapPost("/missions/provider-test/assignments/{assignmentId:guid}/validate", async (
+            Guid assignmentId,
+            AdminProviderMissionTestService testService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await testService.AcceptAsync(assignmentId, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("ValidateProviderMissionForTest")
+        .Produces<AdminProviderMissionTestActionResponse>()
+        .Produces<AdminProviderMissionTestActionResponse>(StatusCodes.Status400BadRequest);
+
         admin.MapPost("/missions/{missionId:guid}/dispatch-offers", async (
             Guid missionId,
             bool? urgent,

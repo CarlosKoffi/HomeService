@@ -91,6 +91,7 @@ public static class DependencyInjection
         services.AddScoped<AdminTranslationService>();
         services.AddScoped<AdminMissionSettingsService>();
         services.AddScoped<AdminMissionOperationsService>();
+        services.AddScoped<AdminProviderMissionTestService>();
         services.AddScoped<AdminMissionDisputeService>();
         services.AddScoped<AdminProviderOperationsService>();
         services.AddScoped<AdminServiceCatalogInsightsService>();

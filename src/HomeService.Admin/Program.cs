@@ -14,6 +14,10 @@ builder.Services.AddHttpClient<PlatformApiClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["API_BASE_URL"] ?? builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");
 });
+builder.Services.AddHttpClient<ProviderMissionTestApiClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["API_BASE_URL"] ?? builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080");
+});
 
 var app = builder.Build();
 

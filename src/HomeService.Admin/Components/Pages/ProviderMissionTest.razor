@@ -1,0 +1,132 @@
+@page "/mission-test"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject ProviderMissionTestApiClient ApiClient
+
+<PageTitle>Validation prestataire - Test</PageTitle>
+
+<div class="admin-page-heading">
+    <div>
+        <p class="eyebrow">Outil de test</p>
+        <h1>Validation prestataire</h1>
+        <p class="lead">Acceptez ici une mission comme le prestataire affecte, en attendant l'application prestataire.</p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+</div>
+
+<div class="test-notice">
+    Cette page utilise le vrai workflow : delai, validation du prestataire, statut de mission et notification client.
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message">@Message</p>
+}
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+<section class="assignment-panel">
+    <header>
+        <div>
+            <h2>Missions en attente</h2>
+            <p>@(Snapshot?.Assignments.Count ?? 0) affectation(s) proposee(s) aux prestataires.</p>
+        </div>
+    </header>
+
+    @if (IsLoading)
+    {
+        <p class="empty-state">Chargement des affectations...</p>
+    }
+    else if (Snapshot is null || Snapshot.Assignments.Count == 0)
+    {
+        <p class="empty-state">Aucune mission n'attend actuellement la reponse d'un prestataire.</p>
+    }
+    else
+    {
+        <div class="assignment-list">
+            @foreach (var assignment in Snapshot.Assignments)
+            {
+                <article class="assignment-row">
+                    <div class="mission-reference">
+                        <strong>@assignment.ServiceLabel</strong>
+                        <span>@assignment.MissionNumber</span>
+                    </div>
+                    <div>
+                        <span class="field-label">Prestataire</span>
+                        <strong>@assignment.ProviderName</strong>
+                        <small>@assignment.CompanyName</small>
+                    </div>
+                    <div>
+                        <span class="field-label">Intervention</span>
+                        <strong>@assignment.Address</strong>
+                        <small>Reponse avant @assignment.ExpiresAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                    </div>
+                    <div class="assignment-action">
+                        @if (assignment.CanAccept)
+                        {
+                            <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="() => AcceptAsync(assignment)">
+                                Accepter comme prestataire
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="blocked-label">Indisponible</span>
+                            <small>@assignment.UnavailableReason</small>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private AdminProviderMissionTestListResponse? Snapshot { get; set; }
+    private bool IsLoading { get; set; }
+    private bool IsSubmitting { get; set; }
+    private string? Message { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        ErrorMessage = null;
+        try
+        {
+            Snapshot = await ApiClient.GetAssignmentsAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task AcceptAsync(AdminProviderMissionTestAssignmentResponse assignment)
+    {
+        IsSubmitting = true;
+        Message = null;
+        ErrorMessage = null;
+        try
+        {
+            var result = await ApiClient.AcceptAsync(assignment.AssignmentId);
+            Message = result?.Message ?? "Mission acceptee.";
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+}
