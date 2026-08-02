@@ -999,6 +999,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
                 return localPublicMediaProxy;
             }
 
+            var localPublicAssetProxy = TryBuildLocalPublicAssetProxyUrl(absoluteUri.AbsolutePath);
+            if (!string.IsNullOrWhiteSpace(localPublicAssetProxy))
+            {
+                return localPublicAssetProxy;
+            }
+
             return absoluteUri.ToString();
         }
 
@@ -1012,6 +1018,12 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         if (!string.IsNullOrWhiteSpace(publicMediaProxy))
         {
             return publicMediaProxy;
+        }
+
+        var publicAssetProxy = TryBuildLocalPublicAssetProxyUrl(value);
+        if (!string.IsNullOrWhiteSpace(publicAssetProxy))
+        {
+            return publicAssetProxy;
         }
 
         if (value.StartsWith("images/", StringComparison.OrdinalIgnoreCase)
@@ -1083,6 +1095,32 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return new CompanyApplicationDocumentFile(content, contentType, Path.GetFileName(normalizedPath));
     }
 
+    public async Task<CompanyApplicationDocumentFile> GetPublicAssetFileAsync(
+        string assetPath,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedPath = assetPath.Trim().TrimStart('/');
+        if (string.IsNullOrWhiteSpace(normalizedPath)
+            || normalizedPath.Contains("..", StringComparison.Ordinal)
+            || !normalizedPath.StartsWith("assets/", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new PlatformApiException("Chemin d'asset invalide.");
+        }
+
+        AddBasicAuthIfConfigured();
+        var path = "/" + normalizedPath;
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw CreateApiException(response, path, body);
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        return new CompanyApplicationDocumentFile(content, contentType, Path.GetFileName(normalizedPath));
+    }
+
     private static string? TryBuildLocalCmsMediaProxyUrl(string path)
     {
         var normalized = path.Trim();
@@ -1118,6 +1156,23 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 
         var mediaPath = normalized.TrimStart('/').Split('?', '#')[0];
         return string.IsNullOrWhiteSpace(mediaPath) ? null : "/admin-api-media/" + mediaPath;
+    }
+
+    private static string? TryBuildLocalPublicAssetProxyUrl(string path)
+    {
+        var normalized = path.Trim();
+        if (!normalized.StartsWith("/", StringComparison.Ordinal))
+        {
+            normalized = "/" + normalized;
+        }
+
+        if (!normalized.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var assetPath = normalized.TrimStart('/').Split('?', '#')[0];
+        return string.IsNullOrWhiteSpace(assetPath) ? null : "/admin-api-assets/" + assetPath;
     }
 
     private Uri? ResolvePublicBaseUrl(string? surface)

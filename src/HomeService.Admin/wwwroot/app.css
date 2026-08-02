@@ -2297,6 +2297,174 @@ h3 {
     }
 }
 
+/* Service editor: business-first form, without exposing implementation fields. */
+.service-catalog-refined .catalog-service-editor {
+    background: #fff;
+    border: 0;
+    border-radius: 0;
+    padding: 20px 0 24px;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-technical-field {
+    display: none;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-editor-heading {
+    align-items: end;
+    border-bottom: 1px solid #e7ebf1;
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 12px;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-editor-heading span {
+    color: #155eef;
+    display: block;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-editor-heading h3 {
+    color: #101828;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-editor-heading > small {
+    color: #667085;
+    font-size: .76rem;
+    font-weight: 500;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-service-name {
+    grid-column: span 7;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-service-category {
+    grid-column: span 5;
+}
+
+.service-catalog-refined .catalog-service-editor .service-icon-admin {
+    background: #f8fafc;
+    border: 1px solid #e2e7ef;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: 112px minmax(190px, 1fr) minmax(240px, 1.15fr);
+    padding: 16px;
+}
+
+.service-catalog-refined .catalog-service-editor .service-icon-preview {
+    height: 88px;
+    width: 112px;
+}
+
+.service-catalog-refined .catalog-service-editor .service-icon-preview img {
+    height: 100%;
+    object-fit: contain;
+    padding: 8px;
+    width: 100%;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-icon-copy {
+    align-self: center;
+    display: grid;
+    gap: 4px;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-icon-copy strong {
+    color: #101828;
+    font-size: .9rem;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-icon-copy small {
+    color: #667085;
+    font-size: .76rem;
+    line-height: 1.45;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-library-picker {
+    align-self: center;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-upload {
+    grid-column: 2 / -1;
+}
+
+.service-catalog-refined .catalog-service-editor input[type="file"] {
+    background: #fff;
+    border: 1px dashed #b8c4d6;
+    border-radius: 8px;
+    color: #667085;
+    font-size: .75rem;
+    padding: 6px;
+}
+
+.service-catalog-refined .catalog-service-editor input[type="file"]::file-selector-button {
+    background: #eef4ff;
+    border: 0;
+    border-radius: 6px;
+    color: #155eef;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 750;
+    margin-right: 10px;
+    padding: 8px 12px;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-pricing-heading {
+    margin-top: 4px;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-price-field {
+    grid-column: span 4;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-currency-field {
+    grid-column: span 4;
+}
+
+.service-catalog-refined .catalog-service-editor .catalog-editor-actions {
+    border-top: 1px solid #e7ebf1;
+    justify-content: flex-end;
+    padding-top: 16px;
+}
+
+@media (max-width: 900px) {
+    .service-catalog-refined .catalog-service-editor .catalog-service-name,
+    .service-catalog-refined .catalog-service-editor .catalog-service-category,
+    .service-catalog-refined .catalog-service-editor .catalog-price-field,
+    .service-catalog-refined .catalog-service-editor .catalog-currency-field {
+        grid-column: span 6;
+    }
+
+    .service-catalog-refined .catalog-service-editor .service-icon-admin {
+        grid-template-columns: 96px minmax(0, 1fr);
+    }
+
+    .service-catalog-refined .catalog-service-editor .catalog-library-picker,
+    .service-catalog-refined .catalog-service-editor .catalog-upload {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 620px) {
+    .service-catalog-refined .catalog-service-editor .catalog-editor-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .service-catalog-refined .catalog-service-editor .catalog-service-name,
+    .service-catalog-refined .catalog-service-editor .catalog-service-category,
+    .service-catalog-refined .catalog-service-editor .catalog-price-field,
+    .service-catalog-refined .catalog-service-editor .catalog-currency-field {
+        grid-column: 1 / -1;
+    }
+}
+
 .company-control-strip {
     background: #fff;
     border: 1px solid #e5e7eb;
@@ -3509,6 +3677,216 @@ h3 {
     height: 2rem;
     object-fit: contain;
     width: 2rem;
+}
+
+/* Catalogue services: compact operational layout aligned with the admin shell. */
+.service-catalog-refined {
+    gap: 1rem;
+}
+
+.service-catalog-refined .service-catalog-card {
+    border-color: #dce3ed;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .045);
+    overflow: hidden;
+    padding: 0;
+}
+
+.service-catalog-refined .service-catalog-card > header {
+    align-items: center;
+    background: #fff;
+    border-bottom: 1px solid #e7ebf1;
+    padding: 1rem 1.15rem;
+}
+
+.service-catalog-refined .catalog-icon {
+    background: #f3f7ff;
+    border-color: #d8e5ff;
+    border-radius: 9px;
+    flex: 0 0 48px;
+    height: 48px;
+    overflow: hidden;
+    padding: .45rem;
+    width: 48px;
+}
+
+.service-catalog-refined .catalog-icon img {
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+}
+
+.service-catalog-refined .service-catalog-card > header h2 {
+    color: #111827;
+    font-size: 1.05rem;
+    letter-spacing: 0;
+    margin: 0 0 .2rem;
+}
+
+.service-catalog-refined .service-catalog-card > header p {
+    color: #667085;
+    font-size: .84rem;
+    line-height: 1.4;
+    margin: 0;
+    max-width: 680px;
+}
+
+.service-catalog-refined .catalog-meta {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+.service-catalog-refined .catalog-meta strong,
+.service-catalog-refined .catalog-meta small {
+    color: #475467;
+    font-size: .76rem;
+    font-weight: 750;
+}
+
+.service-catalog-refined .prestation-admin-grid {
+    display: block;
+    padding: 0 1.15rem 1.15rem;
+}
+
+.service-catalog-refined .prestation-list {
+    display: grid;
+    gap: 0;
+}
+
+.service-catalog-refined .service-card-actions {
+    border-bottom: 1px solid #eef1f5;
+    justify-content: flex-end;
+    padding: .75rem 0;
+}
+
+.service-catalog-refined .service-card-actions button,
+.service-catalog-refined .prestation-row .easy-actions button {
+    border-radius: 7px;
+    font-size: .78rem;
+    min-height: 2.2rem;
+    padding: .45rem .7rem;
+}
+
+.service-catalog-refined .prestation-row {
+    align-items: center;
+    border: 0;
+    border-bottom: 1px solid #eef1f5;
+    border-radius: 0;
+    display: grid;
+    gap: .8rem;
+    grid-template-columns: minmax(260px, 1fr) auto auto;
+    padding: .8rem 0;
+}
+
+.service-catalog-refined .prestation-summary {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+    min-width: 0;
+}
+
+.service-catalog-refined .prestation-thumbnail {
+    align-items: center;
+    background: #f5f7fa;
+    border: 1px solid #e4e7ec;
+    border-radius: 8px;
+    display: flex;
+    flex: 0 0 44px;
+    height: 44px;
+    justify-content: center;
+    overflow: hidden;
+    width: 44px;
+}
+
+.service-catalog-refined .prestation-thumbnail img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.service-catalog-refined .prestation-summary strong {
+    color: #101828;
+    font-size: .9rem;
+}
+
+.service-catalog-refined .prestation-summary p {
+    color: #667085;
+    font-size: .78rem;
+    line-height: 1.35;
+    margin: .15rem 0 0;
+}
+
+.service-catalog-refined .prestation-state {
+    align-items: flex-end;
+    display: grid;
+    gap: .2rem;
+    justify-items: end;
+    min-width: 120px;
+}
+
+.service-admin-add-form {
+    background: #f8fafc;
+    border: 1px solid #e4e7ec;
+    border-radius: 9px;
+    display: block;
+    margin-top: .8rem;
+    padding: 0;
+}
+
+.service-admin-add-form > summary {
+    align-items: center;
+    color: #155eef;
+    cursor: pointer;
+    display: flex;
+    font-size: .86rem;
+    font-weight: 800;
+    justify-content: space-between;
+    list-style: none;
+    padding: .75rem .85rem;
+}
+
+.service-admin-add-form > summary::-webkit-details-marker {
+    display: none;
+}
+
+.service-admin-add-form > summary::after {
+    content: "+";
+    font-size: 1.15rem;
+}
+
+.service-admin-add-form[open] > summary {
+    border-bottom: 1px solid #e4e7ec;
+}
+
+.service-admin-add-form[open] > summary::after {
+    content: "−";
+}
+
+.service-admin-add-form > summary small {
+    color: #667085;
+    font-size: .74rem;
+    font-weight: 650;
+    margin-left: auto;
+    margin-right: .75rem;
+}
+
+.service-admin-add-form > label,
+.service-admin-add-form > .catalog-media-editor,
+.service-admin-add-form > button {
+    margin-left: .85rem;
+    margin-right: .85rem;
+}
+
+.service-admin-add-form > label:first-of-type {
+    margin-top: .85rem;
+}
+
+.service-admin-add-form > button:last-child {
+    margin-bottom: .85rem;
 }
 
 .catalog-media-editor {
@@ -7019,4 +7397,331 @@ h1:focus {
     font-size: 0.75rem;
     font-weight: 700;
     text-align: center;
+}
+
+/* Catalogue services: scoped layout prevents legacy admin grids from overlapping fields. */
+.service-admin-create,
+.service-catalog-refined {
+    --catalog-border: #e2e7ef;
+    --catalog-muted: #667085;
+    --catalog-surface: #f8fafc;
+}
+
+.service-admin-create *,
+.service-catalog-refined *,
+.service-options-modal * {
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.catalog-create-form,
+.catalog-service-edit-form,
+.catalog-prestation-edit-form {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+    width: 100%;
+}
+
+.catalog-create-form > label,
+.catalog-service-edit-form > label {
+    grid-column: span 6;
+}
+
+.catalog-create-form > .wide,
+.catalog-service-edit-form > .wide,
+.catalog-create-form > button {
+    grid-column: 1 / -1;
+}
+
+.catalog-prestation-edit-form > label {
+    grid-column: span 2;
+}
+
+.catalog-prestation-edit-form > label.wide,
+.catalog-prestation-edit-form > .wide {
+    grid-column: span 6;
+}
+
+.service-catalog-refined .prestation-row:has(.catalog-prestation-edit-form) {
+    display: block;
+}
+
+.service-catalog-refined .prestation-row:has(.catalog-prestation-edit-form) > .easy-actions {
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.catalog-create-form label,
+.catalog-service-edit-form label,
+.catalog-prestation-edit-form label,
+.catalog-add-prestation-grid label,
+.service-options-modal label {
+    overflow: visible;
+}
+
+.catalog-create-form input,
+.catalog-create-form select,
+.catalog-create-form textarea,
+.catalog-service-edit-form input,
+.catalog-service-edit-form select,
+.catalog-service-edit-form textarea,
+.catalog-prestation-edit-form input,
+.catalog-prestation-edit-form select,
+.catalog-prestation-edit-form textarea,
+.service-admin-add-form input,
+.service-admin-add-form select,
+.service-admin-add-form textarea,
+.service-options-modal input,
+.service-options-modal select,
+.service-options-modal textarea {
+    width: 100%;
+    max-width: 100%;
+}
+
+.service-catalog-refined .service-icon-admin,
+.service-admin-create .service-icon-admin {
+    grid-template-columns: 112px minmax(180px, .75fr) minmax(260px, 1.25fr);
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--catalog-border);
+    border-radius: 10px;
+    background: var(--catalog-surface);
+}
+
+.service-catalog-refined .service-icon-preview,
+.service-admin-create .service-icon-preview {
+    width: 112px;
+    height: 92px;
+    overflow: hidden;
+    border: 1px solid var(--catalog-border);
+    border-radius: 8px;
+    background: #fff;
+}
+
+.service-catalog-refined .service-icon-preview .admin-media-fallback,
+.service-admin-create .service-icon-preview .admin-media-fallback {
+    align-items: center;
+    color: #667085;
+    display: flex;
+    font-size: .72rem;
+    height: 100%;
+    justify-content: center;
+    padding: 8px;
+    text-align: center;
+    width: 100%;
+}
+
+.service-catalog-refined .catalog-file-picker {
+    background: #fff;
+    border: 1px dashed #b8c4d6;
+    border-radius: 9px;
+    display: grid;
+    gap: 7px;
+    padding: 12px;
+}
+
+.service-catalog-refined .catalog-file-picker > span {
+    color: #101828;
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.service-catalog-refined .catalog-file-picker > small {
+    color: #667085;
+    font-size: .7rem;
+    font-weight: 500;
+}
+
+.service-catalog-refined .prestation-row {
+    align-items: center;
+}
+
+.service-catalog-refined .prestation-thumbnail {
+    flex: 0 0 78px;
+    width: 78px;
+    height: 62px;
+}
+
+.service-catalog-refined .prestation-state {
+    align-items: flex-start;
+}
+
+.service-catalog-refined .prestation-row > .easy-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.service-admin-add-form {
+    display: block !important;
+    align-self: start;
+    overflow: hidden;
+}
+
+.service-admin-add-form > summary {
+    width: 100%;
+}
+
+.catalog-add-prestation-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 14px;
+    padding: 16px;
+    width: 100%;
+}
+
+.catalog-add-prestation-grid > label {
+    grid-column: span 2;
+}
+
+.catalog-add-prestation-grid .catalog-add-name {
+    grid-column: span 4;
+}
+
+.catalog-add-prestation-grid .catalog-add-description {
+    grid-column: span 8;
+}
+
+.catalog-add-prestation-grid .catalog-add-illustration-url {
+    grid-column: span 5;
+}
+
+.catalog-add-prestation-grid .catalog-add-media {
+    grid-column: span 5;
+}
+
+.catalog-add-prestation-grid .catalog-add-fixed-price {
+    align-self: end;
+    min-height: 44px;
+}
+
+.catalog-add-prestation-grid .catalog-add-submit {
+    align-self: end;
+    grid-column: span 2;
+    min-height: 44px;
+    width: 100%;
+}
+
+.service-admin-add-form .catalog-media-editor {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+}
+
+.service-admin-add-form .catalog-media-preview {
+    width: 110px;
+    height: 78px;
+}
+
+.service-options-modal {
+    width: min(1120px, calc(100vw - 32px));
+}
+
+.service-options-modal .service-option-form {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 14px;
+    align-items: end;
+}
+
+.service-options-modal .option-name-field { grid-column: span 3; }
+.service-options-modal .option-description-field { grid-column: span 4; }
+.service-options-modal .option-order-field { grid-column: span 1; }
+.service-options-modal .option-price-field { grid-column: span 2; }
+.service-options-modal .option-fixed-card { grid-column: span 3; }
+.service-options-modal .option-primary-action { grid-column: span 3; min-height: 44px; }
+
+@media (max-width: 1100px) {
+    .catalog-create-form > label,
+    .catalog-service-edit-form > label,
+    .catalog-prestation-edit-form > label {
+        grid-column: span 6;
+    }
+
+    .catalog-prestation-edit-form > label.wide,
+    .catalog-prestation-edit-form > .wide {
+        grid-column: 1 / -1;
+    }
+
+    .service-catalog-refined .service-icon-admin,
+    .service-admin-create .service-icon-admin {
+        grid-template-columns: 92px 1fr 1fr;
+    }
+
+    .service-catalog-refined .service-icon-admin > .catalog-upload,
+    .service-admin-create .service-icon-admin > .catalog-upload {
+        grid-column: 2 / -1;
+    }
+
+    .service-options-modal .option-name-field,
+    .service-options-modal .option-description-field { grid-column: span 6; }
+    .service-options-modal .option-order-field,
+    .service-options-modal .option-price-field { grid-column: span 4; }
+    .service-options-modal .option-fixed-card,
+    .service-options-modal .option-primary-action { grid-column: span 6; }
+
+    .catalog-add-prestation-grid > label,
+    .catalog-add-prestation-grid .catalog-add-name,
+    .catalog-add-prestation-grid .catalog-add-description,
+    .catalog-add-prestation-grid .catalog-add-illustration-url,
+    .catalog-add-prestation-grid .catalog-add-media {
+        grid-column: span 6;
+    }
+
+    .catalog-add-prestation-grid .catalog-add-submit {
+        grid-column: span 6;
+    }
+}
+
+@media (max-width: 720px) {
+    .catalog-create-form > label,
+    .catalog-service-edit-form > label,
+    .catalog-prestation-edit-form > label,
+    .catalog-prestation-edit-form > label.wide,
+    .catalog-prestation-edit-form > .wide {
+        grid-column: 1 / -1;
+    }
+
+    .service-catalog-refined .service-catalog-card > header,
+    .service-catalog-refined .service-catalog-card > header > div:first-child {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .service-catalog-refined .catalog-meta {
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .service-catalog-refined .service-icon-admin,
+    .service-admin-create .service-icon-admin {
+        grid-template-columns: 76px minmax(0, 1fr);
+    }
+
+    .service-catalog-refined .service-icon-admin > label,
+    .service-admin-create .service-icon-admin > label,
+    .service-catalog-refined .service-icon-admin > .catalog-upload,
+    .service-admin-create .service-icon-admin > .catalog-upload {
+        grid-column: 1 / -1;
+    }
+
+    .service-options-modal .option-name-field,
+    .service-options-modal .option-description-field,
+    .service-options-modal .option-order-field,
+    .service-options-modal .option-price-field,
+    .service-options-modal .option-fixed-card,
+    .service-options-modal .option-primary-action {
+        grid-column: 1 / -1;
+    }
+
+    .catalog-add-prestation-grid > label,
+    .catalog-add-prestation-grid .catalog-add-name,
+    .catalog-add-prestation-grid .catalog-add-description,
+    .catalog-add-prestation-grid .catalog-add-illustration-url,
+    .catalog-add-prestation-grid .catalog-add-media,
+    .catalog-add-prestation-grid .catalog-add-submit {
+        grid-column: 1 / -1;
+    }
 }

@@ -69,6 +69,17 @@ public static class AdminDocumentProxyEndpoints
                 context);
         });
 
+        app.MapGet("/admin-api-assets/{**assetPath}", async (
+            string assetPath,
+            PlatformApiClient apiClient,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            return await RenderDocumentAsync(
+                () => apiClient.GetPublicAssetFileAsync(assetPath, cancellationToken),
+                context);
+        });
+
         return app;
     }
 
@@ -80,6 +91,8 @@ public static class AdminDocumentProxyEndpoints
         {
             var document = await getDocument();
             context.Response.Headers.ContentDisposition = $"inline; filename=\"{SanitizeFileName(document.FileName)}\"";
+            context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            context.Response.Headers.Pragma = "no-cache";
 
             return Results.File(document.Content, document.ContentType, enableRangeProcessing: true);
         }

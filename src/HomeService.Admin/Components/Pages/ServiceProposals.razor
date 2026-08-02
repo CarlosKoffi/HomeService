@@ -290,14 +290,10 @@
         <h2>Ajouter un service au catalogue</h2>
         <p>Ajoutez le service principal. Les prestations detaillees pourront ensuite etre rattachees dans sa fiche.</p>
     </div>
-    <div class="service-admin-form compact">
+    <div class="service-admin-form compact catalog-create-form">
         <label>
             Nom
             <input type="text" placeholder="Ex: Depannage auto" @bind="NewServiceDraft.Name" />
-        </label>
-        <label>
-            Icone
-            <input type="text" placeholder="Ex: car, zap, shirt" @bind="NewServiceDraft.IconName" />
         </label>
         <label>
             Categorie dans l'application
@@ -306,31 +302,28 @@
                 <option value="Wellbeing">Pour mon bien-etre</option>
             </select>
         </label>
-        <label>
-            URL icone
-            <input type="text" placeholder="/assets/services/jardinage.svg" @bind="NewServiceDraft.IconUrl" />
-        </label>
         <div class="service-icon-admin wide">
             <div class="service-icon-preview">
-                <AdminMediaPreview Source="@NewServiceDraft.IconUrl" Alt="Icône du service" FallbackText="@NewServiceDraft.IconName" Loading="eager" />
+                <AdminMediaPreview Source="@NewServiceDraft.IconUrl" Alt="Visuel du service" FallbackText="Image indisponible" Loading="eager" />
             </div>
-            <div>
-                <strong>Apercu icone service</strong>
-                <small>L'icone sera renvoyee par l'API client et reutilisee par l'application mobile.</small>
+            <div class="catalog-icon-copy">
+                <strong>Visuel du service</strong>
+                <small>Ce visuel sera affiche dans l'application client.</small>
             </div>
-            <label>
-                Bibliotheque Wele
+            <label class="catalog-library-picker">
+                Choisir dans la bibliotheque
                 <select @bind="NewServiceDraft.IconUrl">
-                    <option value="">Choisir une icone</option>
+                    <option value="">Choisir un visuel</option>
                     @foreach (var icon in SuggestedServiceIcons)
                     {
                         <option value="@icon.Url">@icon.Label</option>
                     }
                 </select>
             </label>
-            <label class="catalog-upload">
-                Importer une icone
+            <label class="catalog-upload catalog-file-picker">
+                <span>Importer un fichier</span>
                 <InputFile OnChange="file => UploadServiceIconAsync(NewServiceDraft, file.File)" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                <small>PNG, JPG, WebP ou SVG.</small>
             </label>
         </div>
         <label>
@@ -374,7 +367,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog && FilteredServices.Count == 0)
 }
 else if (ActiveTab == ServiceAdminTab.Catalog)
 {
-    <section class="service-catalog">
+    <section class="service-catalog service-catalog-refined">
         @foreach (var service in FilteredServices)
         {
             var draft = GetDraft(service.Id);
@@ -384,7 +377,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                 <header>
                     <div>
                         <span class="catalog-icon">
-                            <AdminMediaPreview Source="@service.IconUrl" Alt="@($"Icône de {service.Name}")" FallbackText="@service.IconName" />
+                            <AdminMediaPreview Source="@service.IconUrl" Alt="@($"Visuel de {service.Name}")" FallbackText="Visuel" Loading="eager" />
                         </span>
                         <div>
                             <h2>@service.Name</h2>
@@ -406,58 +399,64 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                         @if (EditingServiceId == service.Id)
                         {
                             var serviceEditDraft = GetServiceEditDraft(service);
-                            <div class="service-edit-panel">
-                                <label>
+                            <div class="service-edit-panel catalog-service-edit-form catalog-service-editor">
+                                <div class="catalog-editor-heading wide">
+                                    <div>
+                                        <span>Modification</span>
+                                        <h3>Informations du service</h3>
+                                    </div>
+                                    <small>Les donnees techniques et les URL sont gerees automatiquement.</small>
+                                </div>
+                                <label class="catalog-service-name">
                                     Nom
                                     <input type="text" @bind="serviceEditDraft.Name" />
                                 </label>
-                                <label>
-                                    Icone
-                                    <input type="text" @bind="serviceEditDraft.IconName" />
-                                </label>
-                                <label>
+                                <label class="catalog-service-category">
                                     Categorie dans l'application
                                     <select @bind="serviceEditDraft.DisplayCategory">
                                         <option value="Home">Pour ma maison</option>
                                         <option value="Wellbeing">Pour mon bien-etre</option>
                                     </select>
                                 </label>
-                                <label>
-                                    URL icone
-                                    <input type="text" @bind="serviceEditDraft.IconUrl" />
-                                </label>
                                 <div class="service-icon-admin wide">
                                     <div class="service-icon-preview">
-                                        <AdminMediaPreview Source="@serviceEditDraft.IconUrl" Alt="Icône du service" FallbackText="@serviceEditDraft.IconName" Loading="eager" />
+                                        <AdminMediaPreview Source="@serviceEditDraft.IconUrl" Alt="Visuel du service" FallbackText="Image indisponible" Loading="eager" />
                                     </div>
-                                    <div>
-                                        <strong>Apercu icone service</strong>
-                                        <small>Modifiez l'icone du service principal. Les prestations l'heritent automatiquement.</small>
+                                    <div class="catalog-icon-copy">
+                                        <strong>Visuel du service</strong>
+                                        <small>Visible dans l'application client. Les prestations peuvent avoir leur propre photo.</small>
                                     </div>
-                                    <label>
-                                        Bibliotheque Wele
+                                    <label class="catalog-library-picker">
+                                        Choisir dans la bibliotheque
                                         <select @bind="serviceEditDraft.IconUrl">
-                                            <option value="">Choisir une icone</option>
+                                            <option value="">Choisir un visuel</option>
                                             @foreach (var icon in SuggestedServiceIcons)
                                             {
                                                 <option value="@icon.Url">@icon.Label</option>
                                             }
                                         </select>
                                     </label>
-                                    <label class="catalog-upload">
-                                        Remplacer l'icone
+                                    <label class="catalog-upload catalog-file-picker">
+                                        <span>Importer un fichier</span>
                                         <InputFile OnChange="file => UploadServiceIconAsync(serviceEditDraft, file.File)" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+                                        <small>PNG, JPG, WebP ou SVG. Le fichier remplace le visuel actuel apres enregistrement.</small>
                                     </label>
                                 </div>
-                                <label>
+                                <div class="catalog-editor-heading catalog-pricing-heading wide">
+                                    <div>
+                                        <span>Tarification</span>
+                                        <h3>Fourchette indicative</h3>
+                                    </div>
+                                </div>
+                                <label class="catalog-price-field">
                                     Prix minimum
                                     <input type="number" min="0" step="100" @bind="serviceEditDraft.NormalPriceAmount" />
                                 </label>
-                                <label>
+                                <label class="catalog-price-field">
                                     Prix maximum
                                     <input type="number" min="0" step="100" @bind="serviceEditDraft.PremiumPriceAmount" />
                                 </label>
-                                <label>
+                                <label class="catalog-currency-field">
                                     Devise
                                     <input type="text" maxlength="8" @bind="serviceEditDraft.Currency" />
                                 </label>
@@ -465,7 +464,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                     Description
                                     <textarea rows="2" @bind="serviceEditDraft.Description"></textarea>
                                 </label>
-                                <div class="easy-actions wide">
+                                <div class="easy-actions wide catalog-editor-actions">
                                     <button type="button" @onclick="() => UpdateServiceAsync(service.Id)" disabled="@IsSaving">Enregistrer service</button>
                                     <button type="button" class="light-action" @onclick="CancelServiceEdit">Annuler</button>
                                 </div>
@@ -500,7 +499,7 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                 <div class="prestation-row" @key="prestation.Id">
                                     @if (isEditing)
                                     {
-                                        <div class="prestation-edit">
+                                        <div class="prestation-edit catalog-prestation-edit-form">
                                             <label>
                                                 Nom
                                                 <input type="text" @bind="editDraft.Name" />
@@ -550,9 +549,14 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                                     }
                                     else
                                     {
-                                        <div>
-                                            <strong>@prestation.Name</strong>
-                                            <p>@(string.IsNullOrWhiteSpace(prestation.Description) ? "Aucune description." : prestation.Description)</p>
+                                        <div class="prestation-summary">
+                                            <span class="prestation-thumbnail">
+                                                <AdminMediaPreview Source="@prestation.IllustrationUrl" Alt="@($"Illustration de {prestation.Name}")" FallbackText="WE" />
+                                            </span>
+                                            <div>
+                                                <strong>@prestation.Name</strong>
+                                                <p>@(string.IsNullOrWhiteSpace(prestation.Description) ? "Aucune description." : prestation.Description)</p>
+                                            </div>
                                         </div>
                                         <div class="prestation-state">
                                             <span class="@(prestation.IsActive ? "status-pill accepted" : "status-pill rejected")">
@@ -581,53 +585,58 @@ else if (ActiveTab == ServiceAdminTab.Catalog)
                         }
                     </div>
 
-                    <div class="service-admin-form">
-                        <h3>Ajouter une prestation</h3>
-                        <label>
-                            Nom
-                            <input type="text" placeholder="Ex: Tondre le gazon" @bind="draft.Name" />
-                        </label>
-                        <label>
-                            Description courte
-                            <textarea rows="3" placeholder="Expliquez clairement ce que couvre la prestation." @bind="draft.Description"></textarea>
-                        </label>
-                        <label>
-                            Ordre d'affichage
-                            <input type="number" min="0" @bind="draft.SortOrder" />
-                        </label>
-                        <label>
-                            Prix minimum
-                            <input type="number" min="0" step="100" @bind="draft.NormalPriceAmount" />
-                        </label>
-                        <label>
-                            Prix maximum
-                            <input type="number" min="0" step="100" @bind="draft.PremiumPriceAmount" />
-                        </label>
-                        <label class="catalog-checkbox">
-                            <input type="checkbox" @bind="draft.IsFixedPrice" />
-                            Prix fixe
-                        </label>
-                        <label>
-                            Devise
-                            <input type="text" maxlength="8" @bind="draft.Currency" />
-                        </label>
-                        <label>
-                            URL illustration (facultatif)
-                            <input type="text" @bind="draft.IllustrationUrl" placeholder="/api/cms/media/..." />
-                        </label>
-                        <div class="catalog-media-editor">
-                            <div class="catalog-media-preview">
-                                <AdminMediaPreview Source="@draft.IllustrationUrl" Alt="Aperçu de la prestation" FallbackText="Photo facultative" Loading="eager" />
-                            </div>
-                            <label class="catalog-upload">
-                                Importer une photo
-                                <InputFile OnChange="file => UploadPrestationIllustrationAsync(draft, file.File)" accept="image/png,image/jpeg,image/webp" />
+                    <details class="service-admin-form service-admin-add-form">
+                        <summary>
+                            <span>Ajouter une prestation</span>
+                            <small>Ouvrir le formulaire</small>
+                        </summary>
+                        <div class="catalog-add-prestation-grid">
+                            <label class="catalog-add-name">
+                                Nom
+                                <input type="text" placeholder="Ex: Tondre le gazon" @bind="draft.Name" />
                             </label>
+                            <label class="catalog-add-description">
+                                Description courte
+                                <textarea rows="3" placeholder="Expliquez clairement ce que couvre la prestation." @bind="draft.Description"></textarea>
+                            </label>
+                            <label>
+                                Ordre d'affichage
+                                <input type="number" min="0" @bind="draft.SortOrder" />
+                            </label>
+                            <label>
+                                Prix minimum
+                                <input type="number" min="0" step="100" @bind="draft.NormalPriceAmount" />
+                            </label>
+                            <label>
+                                Prix maximum
+                                <input type="number" min="0" step="100" @bind="draft.PremiumPriceAmount" />
+                            </label>
+                            <label class="catalog-checkbox catalog-add-fixed-price">
+                                <input type="checkbox" @bind="draft.IsFixedPrice" />
+                                Prix fixe
+                            </label>
+                            <label>
+                                Devise
+                                <input type="text" maxlength="8" @bind="draft.Currency" />
+                            </label>
+                            <label class="catalog-add-illustration-url">
+                                URL illustration (facultatif)
+                                <input type="text" @bind="draft.IllustrationUrl" placeholder="/api/cms/media/..." />
+                            </label>
+                            <div class="catalog-media-editor catalog-add-media">
+                                <div class="catalog-media-preview">
+                                    <AdminMediaPreview Source="@draft.IllustrationUrl" Alt="Aperçu de la prestation" FallbackText="Photo facultative" Loading="eager" />
+                                </div>
+                                <label class="catalog-upload">
+                                    Importer une photo
+                                    <InputFile OnChange="file => UploadPrestationIllustrationAsync(draft, file.File)" accept="image/png,image/jpeg,image/webp" />
+                                </label>
+                            </div>
+                            <button type="button" class="catalog-add-submit" @onclick="() => SaveNewPrestationAsync(service.Id)" disabled="@IsSaving">
+                                Ajouter la prestation
+                            </button>
                         </div>
-                        <button type="button" @onclick="() => SaveNewPrestationAsync(service.Id)" disabled="@IsSaving">
-                            Ajouter
-                        </button>
-                    </div>
+                    </details>
                 </div>
             </article>
         }

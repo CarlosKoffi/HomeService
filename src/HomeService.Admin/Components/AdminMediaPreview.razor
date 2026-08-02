@@ -32,6 +32,7 @@ else
     private string ResolvedSource = string.Empty;
     private string? PreviousSource;
     private bool HasFailed;
+    private bool HasRetried;
 
     protected override void OnParametersSet()
     {
@@ -39,10 +40,27 @@ else
         {
             PreviousSource = Source;
             HasFailed = false;
+            HasRetried = false;
         }
 
         ResolvedSource = IsResolved ? Source ?? string.Empty : ApiClient.ToCmsMediaPreviewUrl(Source, Surface);
     }
 
-    private void HandleError() => HasFailed = true;
+    private void HandleError()
+    {
+        if (!HasRetried && !string.IsNullOrWhiteSpace(ResolvedSource))
+        {
+            HasRetried = true;
+            ResolvedSource = AddCacheBuster(ResolvedSource);
+            return;
+        }
+
+        HasFailed = true;
+    }
+
+    private static string AddCacheBuster(string source)
+    {
+        var separator = source.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+        return $"{source}{separator}mediaRetry={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+    }
 }
