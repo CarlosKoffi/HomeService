@@ -422,6 +422,7 @@ public partial class CreateRequestPage : ContentPage
             var defaultIndex = addresses.FindIndex(item => item.IsDefault);
             AddressPicker.SelectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
             AddressPicker.IsVisible = true;
+            SelectedAddressChevron.IsVisible = addresses.Count > 1;
             AddressEmptyLabel.IsVisible = false;
             NewAddressPanel.IsVisible = false;
         }
@@ -430,11 +431,13 @@ public partial class CreateRequestPage : ContentPage
             addresses.Add(new ClientAddressResponse(Guid.Empty, "Maison", "Cocody, Riviera 3", null, null, true));
             AddressPicker.ItemsSource = addresses;
             AddressPicker.SelectedIndex = 0;
+            SelectedAddressChevron.IsVisible = false;
         }
         else
         {
             AddressPicker.IsVisible = false;
             SelectedAddressBorder.IsVisible = false;
+            SelectedAddressChevron.IsVisible = false;
             AddressEmptyLabel.IsVisible = true;
             NewAddressPanel.IsVisible = true;
             ShowNewAddressButton.IsVisible = false;
@@ -453,6 +456,14 @@ public partial class CreateRequestPage : ContentPage
             SelectedAddressLabel.Text = address.Label;
             SelectedAddressLineLabel.Text = address.AddressLine;
             SelectedAddressBorder.IsVisible = true;
+        }
+    }
+
+    private void OnSelectedAddressTapped(object sender, TappedEventArgs e)
+    {
+        if (addresses.Count > 1)
+        {
+            AddressPicker.Focus();
         }
     }
 
@@ -653,6 +664,7 @@ public partial class CreateRequestPage : ContentPage
         AddressPicker.ItemsSource = addresses;
         AddressPicker.IsVisible = true;
         AddressPicker.SelectedIndex = addresses.Count - 1;
+        SelectedAddressChevron.IsVisible = addresses.Count > 1;
         AddressEmptyLabel.IsVisible = false;
         NewAddressPanel.IsVisible = false;
         ShowNewAddressButton.IsVisible = true;
