@@ -75,8 +75,8 @@
                                         HeightRequest="126"
                                         WidthRequest="106"
                                         Padding="0"
-                                        BackgroundColor="White"
-                                        Stroke="#E7E7E7"
+                                        BackgroundColor="#FFFFFF"
+                                        Stroke="#111827"
                                         StrokeThickness="1"
                                         StrokeShape="RoundRectangle 14">
                                         <Grid RowDefinitions="92,*">
@@ -127,8 +127,8 @@
                                         HeightRequest="126"
                                         WidthRequest="106"
                                         Padding="0"
-                                        BackgroundColor="White"
-                                        Stroke="#E7E7E7"
+                                        BackgroundColor="#FFFFFF"
+                                        Stroke="#111827"
                                         StrokeThickness="1"
                                         StrokeShape="RoundRectangle 14">
                                         <Grid RowDefinitions="92,*">
