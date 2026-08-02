@@ -415,6 +415,38 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<ClientPaymentMethodResponse>(HttpMethod.Post, "api/client/payment-methods", request, cancellationToken);
     }
 
+    public async Task<ApiCallResult<bool>> DeletePaymentMethodAsync(
+        Guid paymentMethodId,
+        CancellationToken cancellationToken = default)
+    {
+        var token = await sessionStore.GetTokenAsync();
+        using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/client/payment-methods/{paymentMethodId:D}");
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        try
+        {
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<bool>.Failed((int)response.StatusCode, NormalizeErrorMessage(message));
+            }
+
+            return ApiCallResult<bool>.Ok(true);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<bool>.Failed(0, "Connexion trop lente. Reessayez avec un meilleur reseau.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<bool>.Failed(0, "Connexion impossible. Verifiez votre reseau.");
+        }
+    }
+
     public async Task<ApiCallResult<ClientMissionPaymentSelectionResponse>> SelectMissionPaymentMethodAsync(
         Guid missionId,
         Guid paymentMethodId,

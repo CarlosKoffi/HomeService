@@ -165,13 +165,26 @@ public sealed class ClientProfileService(IAppDbContext db)
 
     public async Task<bool> DeletePaymentMethodAsync(Guid customerId, Guid paymentMethodId, CancellationToken cancellationToken)
     {
-        var paymentMethod = await db.CustomerPaymentMethods.FirstOrDefaultAsync(item => item.Id == paymentMethodId && item.CustomerId == customerId, cancellationToken);
+        var paymentMethod = await db.CustomerPaymentMethods.FirstOrDefaultAsync(
+            item => item.Id == paymentMethodId && item.CustomerId == customerId && item.IsActive,
+            cancellationToken);
         if (paymentMethod is null)
         {
             return false;
         }
 
+        var wasDefault = paymentMethod.IsDefault;
         paymentMethod.Disable();
+        paymentMethod.SetDefault(false);
+
+        if (wasDefault)
+        {
+            var replacement = await db.CustomerPaymentMethods
+                .Where(item => item.CustomerId == customerId && item.IsActive && item.Id != paymentMethodId)
+                .OrderBy(item => item.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+            replacement?.SetDefault(true);
+        }
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }

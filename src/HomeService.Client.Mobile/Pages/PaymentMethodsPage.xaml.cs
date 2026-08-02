@@ -61,6 +61,40 @@ public partial class PaymentMethodsPage : ContentPage
 
     private void OnMethodTapped(object sender, TappedEventArgs e) => Select(e.Parameter as PaymentMethodRow);
 
+    private async void OnDeleteClicked(object sender, EventArgs e)
+    {
+        if (sender is not Button { CommandParameter: PaymentMethodRow method })
+        {
+            return;
+        }
+
+        var confirmed = await DisplayAlert(
+            "Supprimer ce moyen ?",
+            $"{method.Label} {method.Reference} ne sera plus proposé pour vos paiements.",
+            "Supprimer",
+            "Annuler");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        ErrorLabel.IsVisible = false;
+        var result = await apiClient.DeletePaymentMethodAsync(method.Id);
+        if (!result.IsSuccess)
+        {
+            ErrorLabel.Text = result.ErrorMessage ?? "Ce moyen de paiement n'a pas pu être supprimé.";
+            ErrorLabel.IsVisible = true;
+            return;
+        }
+
+        if (ReferenceEquals(selectedMethod, method))
+        {
+            selectedMethod = null;
+        }
+
+        await LoadAsync();
+    }
+
     private void Select(PaymentMethodRow? row)
     {
         foreach (var item in methods) item.IsSelected = ReferenceEquals(item, row);

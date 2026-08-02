@@ -11,10 +11,11 @@
      <Border Style="{StaticResource CompactListBorder}">
       <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="BackgroundColor" Value="#F8FAFF"/><Setter Property="Stroke" Value="{StaticResource WeleBlue}"/></DataTrigger></Border.Triggers>
       <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnMethodTapped" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
-      <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="12">
+      <Grid ColumnDefinitions="48,*,Auto,Auto" ColumnSpacing="10">
        <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 9" HeightRequest="46" WidthRequest="46" Padding="5"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit"/><Label Text="{Binding IconText}" IsVisible="{Binding ShowFallback}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Grid></Border>
        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label Text="{Binding Label}" FontAttributes="Bold" FontSize="15"/><Label Text="{Binding Reference}" FontSize="12" TextColor="{StaticResource MutedInk}"/></VerticalStackLayout>
        <VerticalStackLayout Grid.Column="2" Spacing="2" VerticalOptions="Center"><Label Text="Par défaut" FontSize="12" TextColor="{StaticResource WeleBlue}" IsVisible="{Binding IsDefault}"/><Label Text="›" FontSize="21" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="End"/></VerticalStackLayout>
+       <Button Grid.Column="3" Text="Supprimer" FontSize="11" TextColor="{StaticResource Danger}" BackgroundColor="Transparent" Padding="6,4" MinimumWidthRequest="0" MinimumHeightRequest="0" VerticalOptions="Center" Clicked="OnDeleteClicked" CommandParameter="{Binding .}"/>
       </Grid>
      </Border>
     </DataTemplate></CollectionView.ItemTemplate></CollectionView>
