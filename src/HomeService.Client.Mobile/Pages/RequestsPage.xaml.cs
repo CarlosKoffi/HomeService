@@ -9,7 +9,7 @@ public partial class RequestsPage : ContentPage
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<MissionRow> missions = [];
-    private string? currentStatus;
+    private string? currentStatus = "Active";
 
     public RequestsPage()
     {
@@ -22,6 +22,8 @@ public partial class RequestsPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
+        currentStatus = "Active";
+        SetFilter(ActiveButton);
         await LoadAsync();
     }
 
@@ -73,9 +75,9 @@ public partial class RequestsPage : ContentPage
     {
         return currentStatus switch
         {
-            "InProgress" => mission.StatusLabel == "En cours",
-            "Completed" => mission.StatusLabel == "Terminée",
-            "Canceled" => mission.StatusLabel == "Annulée",
+            "Active" => mission.StatusLabel == "En cours",
+            "Past" => mission.StatusLabel == "Terminée",
+            "Cancelled" => mission.StatusLabel == "Annulée",
             _ => true
         };
     }

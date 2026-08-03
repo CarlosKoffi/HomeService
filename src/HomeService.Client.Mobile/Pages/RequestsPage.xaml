@@ -18,8 +18,8 @@
 
                 <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="12">
                     <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="5">
-                        <Button x:Name="AllButton" Text="Toutes" Clicked="OnAllClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
-                        <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnActiveClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
+                        <Button x:Name="AllButton" Text="Toutes" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnAllClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
+                        <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" Clicked="OnActiveClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
                         <Button x:Name="PastButton" Grid.Column="2" Text="Passées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnPastClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
                         <Button x:Name="CanceledButton" Grid.Column="3" Text="Annulées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCanceledClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
                     </Grid>
