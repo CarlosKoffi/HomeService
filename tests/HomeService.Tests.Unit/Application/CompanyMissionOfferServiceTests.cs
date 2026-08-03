@@ -9,6 +9,32 @@ namespace HomeService.Tests.Unit.Application;
 public sealed class CompanyMissionOfferServiceTests
 {
     [Fact]
+    public async Task ListOpenOffersAsync_WhenMissionAlreadyHasProvider_DoesNotExposeMission()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Barbier", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var company = ApprovedCompany("Barbier CI", 1);
+        var mission = new Mission(customer.Id, service.Id, MissionMode.Instant, PaymentMethod.MobileMoney, null, 60);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Companies.Add(company);
+        db.Missions.Add(mission);
+        await db.SaveChangesAsync();
+
+        db.Entry(mission).Property(item => item.ProviderId).CurrentValue = Guid.NewGuid();
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyMissionOfferService(db).ListOpenOffersAsync(company.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.Offers);
+    }
+
+    [Fact]
     public async Task AcceptAsync_WhenOfferIsOpen_AttachesMissionToCompanyAndClosesCompetingOffers()
     {
         await using var db = CreateDbContext();

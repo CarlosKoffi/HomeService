@@ -32,6 +32,7 @@ public sealed class CompanyMissionOfferService(
                 join service in db.Services.AsNoTracking() on mission.ServiceId equals service.Id
                 join customer in db.Customers.AsNoTracking() on mission.CustomerId equals customer.Id
                 where mission.CompanyId == null
+                    && mission.ProviderId == null
                     && (mission.Status == MissionStatus.SearchingProvider || mission.Status == MissionStatus.Offered)
                 orderby mission.CreatedAt descending
                 select new
