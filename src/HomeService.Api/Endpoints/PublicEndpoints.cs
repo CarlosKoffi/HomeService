@@ -341,17 +341,25 @@ public static class PublicEndpoints
                 return Results.BadRequest(new { message = "Selectionnez une photo a envoyer." });
             }
 
-            var form = await httpRequest.ReadFormAsync(cancellationToken);
-            var photo = form.Files.GetFile("photo");
-            if (photo is null)
-            {
-                return Results.BadRequest(new { message = "La photo est manquante." });
-            }
-
             try
             {
+                var form = await httpRequest.ReadFormAsync(cancellationToken);
+                var photo = form.Files.GetFile("photo");
+                if (photo is null)
+                {
+                    return Results.BadRequest(new { message = "La photo est manquante." });
+                }
+
                 var storagePath = await uploadService.SaveAsync(customer.Id, photo, cancellationToken);
                 return Results.Ok(await profileService.UpdatePhotoAsync(customer.Id, storagePath, cancellationToken));
+            }
+            catch (BadHttpRequestException exception)
+            {
+                return Results.BadRequest(new { message = $"La photo n'a pas pu etre lue: {exception.Message}" });
+            }
+            catch (InvalidDataException)
+            {
+                return Results.BadRequest(new { message = "La photo est trop lourde ou son format est invalide." });
             }
             catch (InvalidOperationException exception)
             {

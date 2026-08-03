@@ -11,6 +11,7 @@ namespace HomeService.Client.Mobile.Services;
 
 public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionStore sessionStore)
 {
+    private const int MaxProfilePhotoBytes = 25 * 1024 * 1024;
     private static readonly ConcurrentDictionary<string, Lazy<Task<byte[]?>>> MediaCache = new(StringComparer.OrdinalIgnoreCase);
     public Task<ApiCallResult<ClientAuthResponse>> RegisterAsync(RegisterClientRequest request, CancellationToken cancellationToken = default)
     {
@@ -39,12 +40,13 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         await using var stream = await file.OpenReadAsync();
         using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer, cancellationToken);
-        return await UploadProfilePhotoAsync(buffer.ToArray(), file.FileName, cancellationToken);
+        return await UploadProfilePhotoAsync(buffer.ToArray(), file.FileName, file.ContentType, cancellationToken);
     }
 
     public async Task<ApiCallResult<ClientProfilePhotoResponse>> UploadProfilePhotoAsync(
         byte[] photoBytes,
         string fileName,
+        string? contentType = null,
         CancellationToken cancellationToken = default)
     {
         if (photoBytes.Length == 0)
@@ -52,11 +54,18 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             return ApiCallResult<ClientProfilePhotoResponse>.Failed(0, "La photo selectionnee est vide.");
         }
 
+        if (photoBytes.Length > MaxProfilePhotoBytes)
+        {
+            return ApiCallResult<ClientProfilePhotoResponse>.Failed(0, "La photo depasse 25 Mo. Choisissez une photo plus legere.");
+        }
+
         var token = await sessionStore.GetTokenAsync();
         using var content = new MultipartFormDataContent();
         using var fileContent = new ByteArrayContent(photoBytes);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(GetImageContentType(fileName));
-        content.Add(fileContent, "photo", Path.GetFileName(fileName));
+        var safeContentType = NormalizeImageContentType(contentType, fileName);
+        var safeFileName = NormalizeImageFileName(fileName, safeContentType);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(safeContentType);
+        content.Add(fileContent, "photo", safeFileName);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "api/client/me/photo") { Content = content };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -66,6 +75,13 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
+                if ((int)response.StatusCode == 413)
+                {
+                    return ApiCallResult<ClientProfilePhotoResponse>.Failed(
+                        (int)response.StatusCode,
+                        "La photo est trop lourde pour etre envoyee. Choisissez une photo plus legere.");
+                }
+
                 return ApiCallResult<ClientProfilePhotoResponse>.Failed(
                     (int)response.StatusCode,
                     NormalizeErrorMessage(await response.Content.ReadAsStringAsync(cancellationToken)));
@@ -649,6 +665,34 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         ".heif" => "image/heif",
         _ => "image/jpeg"
     };
+
+    private static string NormalizeImageContentType(string? contentType, string fileName)
+    {
+        var normalized = contentType?.Split(';', 2)[0].Trim().ToLowerInvariant();
+        return normalized is "image/jpeg" or "image/png" or "image/webp" or "image/heic" or "image/heif"
+            ? normalized
+            : GetImageContentType(fileName);
+    }
+
+    private static string NormalizeImageFileName(string fileName, string contentType)
+    {
+        var safeName = Path.GetFileName(fileName);
+        var extension = Path.GetExtension(safeName);
+        if (!string.IsNullOrWhiteSpace(safeName) && !string.IsNullOrWhiteSpace(extension))
+        {
+            return safeName;
+        }
+
+        var inferredExtension = contentType switch
+        {
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/heic" => ".heic",
+            "image/heif" => ".heif",
+            _ => ".jpg"
+        };
+        return $"photo-profil-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}{inferredExtension}";
+    }
 }
 
 public sealed record ApiCallResult<TResponse>(

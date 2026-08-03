@@ -139,19 +139,29 @@ public partial class ProfilePage : ContentPage
             }
 
             ShowLocalProfilePhoto(photoBytes);
-            var result = await apiClient.UploadProfilePhotoAsync(photoBytes, file.FileName);
+            var result = await apiClient.UploadProfilePhotoAsync(photoBytes, file.FileName, file.ContentType);
             if (!result.IsSuccess || result.Response is null)
             {
                 ShowPhotoStatus(result.ErrorMessage ?? "La photo n'a pas pu etre envoyee.", isError: true);
                 return;
             }
 
-            var remoteImage = await apiClient.DownloadProfilePhotoAsync(result.Response.ProfilePhotoUrl);
-            if (remoteImage is not null)
-            {
-                ProfilePhotoImage.Source = remoteImage;
-            }
             ShowPhotoStatus("Photo mise a jour.", isError: false);
+
+            // L'aperçu local est déjà affiché. Le rafraîchissement distant ne doit pas
+            // transformer un upload réussi en erreur si le réseau coupe juste après.
+            try
+            {
+                var remoteImage = await apiClient.DownloadProfilePhotoAsync(result.Response.ProfilePhotoUrl);
+                if (remoteImage is not null)
+                {
+                    ProfilePhotoImage.Source = remoteImage;
+                }
+            }
+            catch
+            {
+                // L'aperçu local reste visible; le prochain chargement récupérera la photo distante.
+            }
         }
         catch (UnauthorizedAccessException)
         {
