@@ -1,3 +1,5 @@
+using HomeService.Client.Mobile.Services;
+
 namespace HomeService.Client.Mobile;
 
 public partial class App : Application
@@ -11,6 +13,7 @@ public partial class App : Application
     protected override Window CreateWindow(IActivationState? activationState)
     {
         var window = new Window(new AppShell());
+        window.Resumed += OnWindowResumed;
 
 #if WINDOWS
         window.Width = 430;
@@ -22,5 +25,26 @@ public partial class App : Application
 #endif
 
         return window;
+    }
+
+    private static async void OnWindowResumed(object? sender, EventArgs e)
+    {
+        try
+        {
+            var services = Current?.Handler?.MauiContext?.Services;
+            if (services is null)
+            {
+                return;
+            }
+
+            await services.GetRequiredService<ClientDeviceRegistrationService>()
+                .RegisterCurrentDeviceAsync();
+            await services.GetRequiredService<ClientNotificationState>()
+                .RefreshAsync();
+        }
+        catch (Exception)
+        {
+            // Returning to the foreground must remain possible when the network is unavailable.
+        }
     }
 }

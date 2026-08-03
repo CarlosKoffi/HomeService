@@ -870,6 +870,7 @@ public static class ProviderPortalEndpoints
             IAppDbContext db,
             ProviderMissionWorkflowService workflow,
             MissionPaymentMilestoneService milestoneService,
+            ProviderMissionNotificationService notifications,
             CancellationToken cancellationToken) =>
         {
             var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -890,6 +891,7 @@ public static class ProviderPortalEndpoints
                 return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
             }
 
+            var previousStatus = assignment.Status;
             var result = workflow.StartMission(session.Provider, assignment, request);
             if (result.Status != ProviderMissionOperationStatus.Ok)
             {
@@ -933,6 +935,14 @@ public static class ProviderPortalEndpoints
                     assignment.StartedAt
                 });
             await milestoneService.EnsureMissionStartedMilestoneAsync(assignment.Mission, cancellationToken);
+            if (previousStatus != ProviderMissionAssignmentStatus.Started)
+            {
+                await notifications.NotifyStartedAsync(
+                    assignment.Mission,
+                    session.Provider,
+                    assignment,
+                    cancellationToken);
+            }
             db.CompanyPortalActivities.Add(new CompanyPortalActivity(
                 assignment.CompanyId,
                 "mission",

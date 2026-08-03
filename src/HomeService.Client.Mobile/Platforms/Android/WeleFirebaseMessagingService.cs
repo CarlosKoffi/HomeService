@@ -17,6 +17,7 @@ public sealed class WeleFirebaseMessagingService : FirebaseMessagingService
     {
         base.OnNewToken(token);
         ClientDeviceRegistrationService.StoreFirebaseToken(token);
+        _ = RegisterTokenAsync();
     }
 
     public override void OnMessageReceived(RemoteMessage message)
@@ -84,5 +85,19 @@ public sealed class WeleFirebaseMessagingService : FirebaseMessagingService
     private static string? ReadData(RemoteMessage message, string key)
     {
         return message.Data.TryGetValue(key, out var value) ? value : null;
+    }
+
+    private static async Task RegisterTokenAsync()
+    {
+        try
+        {
+            await MobileServiceLocator
+                .GetRequiredService<ClientDeviceRegistrationService>()
+                .RegisterCurrentDeviceAsync();
+        }
+        catch (Exception)
+        {
+            // The persisted token is retried when the application resumes.
+        }
     }
 }
