@@ -10,7 +10,7 @@
     <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
         <ScrollView>
             <VerticalStackLayout Padding="20,10,20,28" Spacing="16">
-                <Grid ColumnDefinitions="*,40" HeightRequest="40">
+                <Grid ColumnDefinitions="*,48" HeightRequest="48">
                     <Label Text="Mes demandes" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
                     <controls:ClientNotificationButton Grid.Column="1" />
                 </Grid>

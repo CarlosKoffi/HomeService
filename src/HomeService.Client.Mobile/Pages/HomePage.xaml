@@ -34,7 +34,7 @@
                                 Clicked="OnRetryClicked" />
                         </Grid>
                     </Border>
-                    <Grid ColumnDefinitions="*,40" HeightRequest="40">
+                    <Grid ColumnDefinitions="*,48" HeightRequest="48">
                         <Label x:Name="GreetingLabel" Text="Bonjour" FontSize="17" FontAttributes="Bold" VerticalTextAlignment="Center" />
                         <controls:ClientNotificationButton Grid.Column="1" />
                     </Grid>

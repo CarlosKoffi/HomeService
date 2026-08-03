@@ -3,11 +3,11 @@
     x:Class="HomeService.Client.Mobile.Controls.ClientNotificationButton"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    HeightRequest="40"
-    WidthRequest="40"
+    HeightRequest="48"
+    WidthRequest="48"
     HorizontalOptions="End"
     VerticalOptions="Center">
-    <Grid>
+    <Grid HeightRequest="48" WidthRequest="48">
         <ImageButton
             Source="app_bell.svg"
             HeightRequest="40"
@@ -23,8 +23,8 @@
             IsVisible="False"
             BackgroundColor="#2166F3"
             StrokeThickness="0"
-            HeightRequest="19"
-            MinimumWidthRequest="19"
+            HeightRequest="20"
+            MinimumWidthRequest="20"
             Padding="4,0"
             HorizontalOptions="End"
             VerticalOptions="Start">

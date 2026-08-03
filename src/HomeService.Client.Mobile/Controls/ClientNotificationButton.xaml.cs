@@ -6,6 +6,8 @@ namespace HomeService.Client.Mobile.Controls;
 public partial class ClientNotificationButton : ContentView
 {
     private readonly ClientNotificationState state = MobileServiceLocator.GetRequiredService<ClientNotificationState>();
+    private readonly ClientSessionStore sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
+    private bool isSubscribed;
 
     public ClientNotificationButton()
     {
@@ -16,13 +18,41 @@ public partial class ClientNotificationButton : ContentView
 
     private async void OnLoaded(object? sender, EventArgs e)
     {
-        state.Changed += OnStateChanged;
+        if (!isSubscribed)
+        {
+            state.Changed += OnStateChanged;
+            isSubscribed = true;
+        }
+
         UpdateBadge();
-        await state.RefreshAsync();
+        await RefreshWhenSessionIsReadyAsync();
     }
 
     private void OnUnloaded(object? sender, EventArgs e)
-        => state.Changed -= OnStateChanged;
+    {
+        if (!isSubscribed)
+        {
+            return;
+        }
+
+        state.Changed -= OnStateChanged;
+        isSubscribed = false;
+    }
+
+    private async Task RefreshWhenSessionIsReadyAsync()
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (await sessionStore.HasValidSessionAsync())
+            {
+                await state.RefreshAsync();
+                UpdateBadge();
+                return;
+            }
+
+            await Task.Delay(350);
+        }
+    }
 
     private void OnStateChanged(object? sender, EventArgs e)
         => MainThread.BeginInvokeOnMainThread(UpdateBadge);

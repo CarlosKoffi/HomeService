@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage x:Class="HomeService.Client.Mobile.Pages.MessagesPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Messages" BackgroundColor="White">
  <Grid RowDefinitions="*,72"><Grid Padding="20,10,20,0" RowDefinitions="40,Auto,*" RowSpacing="12">
-  <Grid ColumnDefinitions="*,40" HeightRequest="40"><Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center"/><controls:ClientNotificationButton Grid.Column="1"/></Grid>
+  <Grid ColumnDefinitions="*,48" HeightRequest="48"><Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center"/><controls:ClientNotificationButton Grid.Column="1"/></Grid>
   <Label Grid.Row="1" x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/>
   <RefreshView Grid.Row="2" x:Name="MessagesRefreshView" Refreshing="OnRefreshing"><CollectionView x:Name="ConversationsView" SelectionMode="None">
    <CollectionView.EmptyView><VerticalStackLayout Padding="12,44" Spacing="6"><Label Text="Aucune conversation" FontSize="16" FontAttributes="Bold" HorizontalTextAlignment="Center"/><Label Text="Vos échanges apparaîtront ici dès votre première demande." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/></VerticalStackLayout></CollectionView.EmptyView>
