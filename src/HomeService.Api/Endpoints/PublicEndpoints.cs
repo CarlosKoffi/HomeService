@@ -35,6 +35,7 @@ public static class PublicEndpoints
                 .AsNoTracking()
                 .Include(service => service.Prestations)
                     .ThenInclude(prestation => prestation.Options)
+                .Where(service => service.IsActive)
                 .OrderBy(service => service.Name)
                 .Select(service => new ServiceSummaryResponse(
                     service.Id,
@@ -47,6 +48,7 @@ public static class PublicEndpoints
                     service.PremiumPriceAmount,
                     service.Currency,
                     service.Prestations
+                        .Where(prestation => prestation.IsActive)
                         .OrderBy(prestation => prestation.SortOrder)
                         .ThenBy(prestation => prestation.Name)
                         .Select(prestation => new ServicePrestationSummaryResponse(
@@ -64,6 +66,7 @@ public static class PublicEndpoints
                             db.Missions.Count(mission => mission.ServicePrestationId == prestation.Id),
                             prestation.IsFixedPrice,
                             prestation.Options
+                                .Where(option => option.IsActive)
                                 .OrderBy(option => option.SortOrder)
                                 .ThenBy(option => option.Name)
                                 .Select(option => new HomeService.Contracts.Services.ServiceOptionSummaryResponse(
