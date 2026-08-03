@@ -131,10 +131,15 @@ public sealed class AdminProviderMissionTestService(
             return NotFound();
         }
 
-        await RestoreMissionLocationFromCustomerAddressAsync(assignment.Mission, cancellationToken);
-        PlaceProviderForEta(assignment.Provider, assignment.Mission, estimatedArrivalMinutes);
+        await SetTestLocationsAsync(
+            assignment.Mission,
+            assignment.Provider,
+            estimatedArrivalMinutes,
+            cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
-        return new(true, $"Position de test placee a environ {Math.Clamp(estimatedArrivalMinutes, 1, 120)} min du client.");
+        return new(
+            true,
+            $"Positions client et prestataire mises a jour avec environ {Math.Clamp(estimatedArrivalMinutes, 1, 120)} min de trajet.");
     }
 
     public async Task<AdminProviderMissionTestActionResponse> StartAsync(
@@ -248,6 +253,52 @@ public sealed class AdminProviderMissionTestService(
                 matches[0].Latitude,
                 matches[0].Longitude);
         }
+    }
+
+    private async Task SetTestLocationsAsync(
+        Mission mission,
+        ProviderProfile provider,
+        int estimatedArrivalMinutes,
+        CancellationToken cancellationToken)
+    {
+        // Fixed Abidjan coordinates keep this test scenario predictable and inside Cote d'Ivoire.
+        const decimal clientLatitude = 5.3488m;
+        const decimal clientLongitude = -4.0031m;
+
+        var addressLine = string.IsNullOrWhiteSpace(mission.ServiceAddress)
+            ? "Cocody, Abidjan"
+            : mission.ServiceAddress;
+        mission.SetServiceLocation(addressLine, clientLatitude, clientLongitude);
+
+        var addresses = await db.CustomerAddresses
+            .Where(item => item.CustomerId == mission.CustomerId)
+            .ToListAsync(cancellationToken);
+        var normalizedMissionAddress = NormalizeAddress(addressLine);
+        var customerAddress = addresses.FirstOrDefault(item =>
+                NormalizeAddress(item.AddressLine) == normalizedMissionAddress)
+            ?? addresses.FirstOrDefault(item => item.IsDefault);
+
+        if (customerAddress is null)
+        {
+            db.CustomerAddresses.Add(new CustomerAddress(
+                mission.CustomerId,
+                "Adresse de test",
+                addressLine,
+                clientLatitude,
+                clientLongitude,
+                true));
+        }
+        else
+        {
+            customerAddress.Update(
+                customerAddress.Label,
+                customerAddress.AddressLine,
+                clientLatitude,
+                clientLongitude,
+                customerAddress.IsDefault);
+        }
+
+        PlaceProviderForEta(provider, mission, estimatedArrivalMinutes);
     }
 
     private static string NormalizeAddress(string? value) =>
