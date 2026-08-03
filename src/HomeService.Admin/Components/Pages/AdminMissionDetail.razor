@@ -764,7 +764,7 @@ else
     private static string GetDisputeStatusClass(string status) => status switch { "Resolved" => "status-pill ok", "Cancelled" => "status-pill danger", _ => "status-pill pending" };
     private static string GetFinancialLineClass(int amount) => amount < 0 ? "mission-finance-line negative" : "mission-finance-line";
     private static bool CanOpenDispute(string status) => status is not ("Disputed" or "Cancelled" or "Resolved");
-    private static bool CanCancelMission(string status) => status is not ("Disputed" or "Completed" or "Cancelled" or "Resolved");
+    private static bool CanCancelMission(string status) => status is not ("Started" or "Disputed" or "Completed" or "Cancelled" or "Resolved");
     private static bool CanDispatchOffers(string status) => status is "Created" or "SearchingProvider" or "Offered";
     private static string GetTimelineItemClass(string tone) => tone switch
     {

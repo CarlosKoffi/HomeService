@@ -361,9 +361,9 @@ public sealed class Mission : AuditableEntity
         int cancellationFeeAmount,
         int refundAmount)
     {
-        if (Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
+        if (Status is MissionStatus.Started or MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Disputed or MissionStatus.Resolved)
         {
-            throw new InvalidOperationException("Mission cannot be cancelled in its current state.");
+            throw new InvalidOperationException("A mission cannot be cancelled once the intervention has started.");
         }
 
         CancellationFeeAmount = ContactDetailsReleasedAt is null ? 0 : Math.Max(0, cancellationFeeAmount);

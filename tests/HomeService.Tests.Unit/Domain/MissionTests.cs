@@ -268,6 +268,19 @@ public sealed class MissionTests
     }
 
     [Fact]
+    public void CancelByCustomer_AfterMissionStarted_ThrowsAndKeepsMissionStarted()
+    {
+        var mission = CreateAssignedMission();
+        mission.Start(ProviderId, CompanyId);
+
+        var exception = Assert.Throws<InvalidOperationException>(() => mission.CancelByCustomer(2500));
+
+        Assert.Equal("A mission cannot be cancelled once the intervention has started.", exception.Message);
+        Assert.Equal(MissionStatus.Started, mission.Status);
+        Assert.Null(mission.CancelledAt);
+    }
+
+    [Fact]
     public void MarkDisputed_WhenMissionIsOpen_MovesToDispute()
     {
         var mission = CreateAssignedMission();

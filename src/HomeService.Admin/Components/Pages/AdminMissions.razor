@@ -435,7 +435,7 @@
 
     private static bool CanCancelMission(string status)
     {
-        return status is not ("Disputed" or "Completed" or "Cancelled" or "Resolved");
+        return status is not ("Started" or "Disputed" or "Completed" or "Cancelled" or "Resolved");
     }
 
     private static bool CanDispatchOffers(string status)

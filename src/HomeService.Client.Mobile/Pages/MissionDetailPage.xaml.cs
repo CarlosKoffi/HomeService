@@ -219,7 +219,7 @@ public partial class MissionDetailPage : ContentPage
         AdditionalQuotesCard.IsVisible = false;
         ConfirmButton.IsVisible = false;
         CompleteButton.IsVisible = true;
-        CancelButton.IsVisible = true;
+        CancelButton.IsVisible = false;
         OverviewActionCard.IsVisible = true;
         OverviewActionCaption.Text = "Intervention terminée";
         OverviewActionTitle.Text = "Tout s'est bien passé ?";

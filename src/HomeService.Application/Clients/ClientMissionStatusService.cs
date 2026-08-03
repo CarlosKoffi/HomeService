@@ -237,7 +237,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             && mission.CompanyQuotedAmount is > 0
             && mission.CustomerConfirmedAt is null
             && mission.Status is MissionStatus.Assigned or MissionStatus.Accepted;
-        var canCancel = mission.Status is not (MissionStatus.Cancelled or MissionStatus.Completed or MissionStatus.Disputed or MissionStatus.Resolved);
+        var canCancel = mission.Status is not (MissionStatus.Started or MissionStatus.Cancelled or MissionStatus.Completed or MissionStatus.Disputed or MissionStatus.Resolved);
         var canCall = mission.CanRevealContactDetails;
         var canValidateCompletion = mission.Status == MissionStatus.Completed
             && mission.CustomerCompletionValidatedAt is null;
