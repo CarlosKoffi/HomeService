@@ -7,6 +7,7 @@ namespace HomeService.Client.Mobile.Pages;
 public partial class ClientNotificationsPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
+    private readonly ClientNotificationState notificationState = MobileServiceLocator.GetRequiredService<ClientNotificationState>();
     private readonly ObservableCollection<NotificationRow> rows = [];
     private bool unreadOnly;
     public ClientNotificationsPage() { InitializeComponent(); NotificationsView.ItemsSource = rows; }
@@ -15,7 +16,7 @@ public partial class ClientNotificationsPage : ContentPage
     {
         rows.Clear(); var result = await apiClient.GetNotificationsAsync(unreadOnly);
         if (result.IsSuccess && result.Response is not null)
-        { UnreadLabel.Text = result.Response.UnreadCount == 0 ? string.Empty : $"{result.Response.UnreadCount} non lue(s)"; foreach (var item in result.Response.Notifications) rows.Add(NotificationRow.From(item)); }
+        { notificationState.SetUnreadCount(result.Response.UnreadCount); UnreadLabel.Text = result.Response.UnreadCount == 0 ? string.Empty : $"{result.Response.UnreadCount} non lue(s)"; foreach (var item in result.Response.Notifications) rows.Add(NotificationRow.From(item)); }
         EmptyState.IsVisible = rows.Count == 0;
     }
     private async void OnSelected(object sender, SelectionChangedEventArgs e)

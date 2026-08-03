@@ -8,7 +8,6 @@ namespace HomeService.Client.Mobile.Services;
 public sealed class ClientDeviceRegistrationService(ClientMobileApiClient apiClient)
 {
     private const string FirebaseTokenKey = "FirebaseCloudMessagingToken";
-    private const string LastRegisteredTokenKey = "LastRegisteredFirebaseCloudMessagingToken";
 
     public async Task RegisterCurrentDeviceAsync(CancellationToken cancellationToken = default)
     {
@@ -18,22 +17,12 @@ public sealed class ClientDeviceRegistrationService(ClientMobileApiClient apiCli
             return;
         }
 
-        var lastRegisteredToken = Preferences.Default.Get(LastRegisteredTokenKey, string.Empty);
-        if (string.Equals(lastRegisteredToken, token, StringComparison.Ordinal))
-        {
-            return;
-        }
-
         var request = new RegisterMobileDeviceTokenRequest(
             token.Trim(),
             DeviceInfo.Current.Platform.ToString(),
             BuildDeviceLabel());
 
-        var result = await apiClient.RegisterDeviceTokenAsync(request, cancellationToken);
-        if (result.IsSuccess)
-        {
-            Preferences.Default.Set(LastRegisteredTokenKey, token);
-        }
+        await apiClient.RegisterDeviceTokenAsync(request, cancellationToken);
     }
 
     public static void StoreFirebaseToken(string token)

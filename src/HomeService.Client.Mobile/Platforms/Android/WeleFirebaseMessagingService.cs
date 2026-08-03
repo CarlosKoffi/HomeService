@@ -22,6 +22,17 @@ public sealed class WeleFirebaseMessagingService : FirebaseMessagingService
     public override void OnMessageReceived(RemoteMessage message)
     {
         base.OnMessageReceived(message);
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            try
+            {
+                MobileServiceLocator.GetRequiredService<ClientNotificationState>().Increment();
+            }
+            catch (InvalidOperationException)
+            {
+                // The native notification remains available while MAUI is still starting.
+            }
+        });
         EnsureNotificationChannel();
 
         var title = message.GetNotification()?.Title

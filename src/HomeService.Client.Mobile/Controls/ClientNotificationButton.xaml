@@ -7,14 +7,29 @@
     WidthRequest="40"
     HorizontalOptions="End"
     VerticalOptions="Center">
-    <ImageButton
-        Source="app_bell.svg"
-        HeightRequest="40"
-        WidthRequest="40"
-        Padding="8"
-        BackgroundColor="Transparent"
-        HorizontalOptions="Center"
-        VerticalOptions="Center"
-        AutomationId="NotificationsButton"
-        Clicked="OnClicked" />
+    <Grid>
+        <ImageButton
+            Source="app_bell.svg"
+            HeightRequest="40"
+            WidthRequest="40"
+            Padding="8"
+            BackgroundColor="Transparent"
+            HorizontalOptions="Center"
+            VerticalOptions="Center"
+            AutomationId="NotificationsButton"
+            Clicked="OnClicked" />
+        <Border
+            x:Name="UnreadBadge"
+            IsVisible="False"
+            BackgroundColor="#2166F3"
+            StrokeThickness="0"
+            HeightRequest="19"
+            MinimumWidthRequest="19"
+            Padding="4,0"
+            HorizontalOptions="End"
+            VerticalOptions="Start">
+            <Border.StrokeShape><RoundRectangle CornerRadius="10" /></Border.StrokeShape>
+            <Label x:Name="UnreadBadgeLabel" TextColor="White" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+        </Border>
+    </Grid>
 </ContentView>

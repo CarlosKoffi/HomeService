@@ -5,13 +5,15 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using HomeService.Application.Notifications;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace HomeService.Infrastructure.Notifications;
 
 public sealed class FirebaseCloudMessagingSender(
     HttpClient httpClient,
-    IOptions<FirebaseOptions> optionsAccessor) : IMobilePushSender
+    IOptions<FirebaseOptions> optionsAccessor,
+    ILogger<FirebaseCloudMessagingSender> logger) : IMobilePushSender
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly FirebaseOptions options = optionsAccessor.Value;
@@ -27,17 +29,23 @@ public sealed class FirebaseCloudMessagingSender(
     {
         if (!options.Enabled)
         {
+            logger.LogWarning("Firebase mobile push is disabled.");
             return MobilePushSendResult.Failed("Firebase notifications disabled.");
         }
 
         if (string.IsNullOrWhiteSpace(options.ProjectId) || string.IsNullOrWhiteSpace(options.CredentialsJson))
         {
+            logger.LogError(
+                "Firebase configuration is incomplete. ProjectId configured: {HasProjectId}; credentials configured: {HasCredentials}.",
+                !string.IsNullOrWhiteSpace(options.ProjectId),
+                !string.IsNullOrWhiteSpace(options.CredentialsJson));
             return MobilePushSendResult.Failed("Firebase configuration incomplete.");
         }
 
         var accessToken = await GetAccessTokenAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(accessToken))
         {
+            logger.LogError("Firebase access token could not be generated for project {ProjectId}.", options.ProjectId);
             return MobilePushSendResult.Failed("Firebase access token unavailable.");
         }
 
@@ -59,6 +67,10 @@ public sealed class FirebaseCloudMessagingSender(
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            logger.LogError(
+                "Firebase rejected a mobile push with status {StatusCode}: {ResponseBody}",
+                (int)response.StatusCode,
+                responseBody);
             return MobilePushSendResult.Failed($"Firebase {(int)response.StatusCode}: {responseBody}");
         }
 

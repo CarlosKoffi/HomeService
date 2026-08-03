@@ -41,6 +41,7 @@ public static class MauiProgram
             return new ClientMobileApiClient(httpClient, serviceProvider.GetRequiredService<ClientSessionStore>());
         });
         builder.Services.AddSingleton<ClientDeviceRegistrationService>();
+        builder.Services.AddSingleton<ClientNotificationState>();
 
         return builder.Build();
     }
