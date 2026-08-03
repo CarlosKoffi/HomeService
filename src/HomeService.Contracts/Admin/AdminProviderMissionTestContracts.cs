@@ -22,3 +22,5 @@ public sealed record AdminProviderMissionTestListResponse(
 public sealed record AdminProviderMissionTestActionResponse(
     bool IsSuccess,
     string Message);
+
+public sealed record AdminProviderMissionTestPositionRequest(int EstimatedArrivalMinutes);

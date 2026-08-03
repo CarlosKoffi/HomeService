@@ -504,13 +504,27 @@ public static class AdminEndpoints
 
         admin.MapPost("/missions/provider-test/assignments/{assignmentId:guid}/validate", async (
             Guid assignmentId,
+            AdminProviderMissionTestPositionRequest request,
             AdminProviderMissionTestService testService,
             CancellationToken cancellationToken) =>
         {
-            var result = await testService.AcceptAsync(assignmentId, cancellationToken);
+            var result = await testService.AcceptAsync(assignmentId, request.EstimatedArrivalMinutes, cancellationToken);
             return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
         })
         .WithName("ValidateProviderMissionForTest")
+        .Produces<AdminProviderMissionTestActionResponse>()
+        .Produces<AdminProviderMissionTestActionResponse>(StatusCodes.Status400BadRequest);
+
+        admin.MapPost("/missions/provider-test/assignments/{assignmentId:guid}/position", async (
+            Guid assignmentId,
+            AdminProviderMissionTestPositionRequest request,
+            AdminProviderMissionTestService testService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await testService.PositionAsync(assignmentId, request.EstimatedArrivalMinutes, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
+        })
+        .WithName("PositionProviderMissionForTest")
         .Produces<AdminProviderMissionTestActionResponse>()
         .Produces<AdminProviderMissionTestActionResponse>(StatusCodes.Status400BadRequest);
 

@@ -95,13 +95,16 @@ public partial class MissionDetailPage : ContentPage
                 || mission.Status is "Accepted" or "OnTheWay" or "Started" or "Completed");
         ProviderCard.IsVisible = providerHasAccepted;
         WaitingLabel.IsVisible = !providerHasAccepted;
-        RoutePanel.IsVisible = providerHasAccepted && mission.Status == "OnTheWay";
+        RoutePanel.IsVisible = providerHasAccepted;
         currentProviderPhoneNumber = null;
         currentTrackingProvider = null;
         if (mission.AssignedProvider is not null)
         {
             currentTrackingProvider = mission.AssignedProvider;
-            ProviderLabel.Text = $"{mission.AssignedProvider.FullName} - {mission.AssignedProvider.CompletedMissionCount} intervention(s)";
+            var experienceLabel = mission.AssignedProvider.CompletedMissionCount < 10
+                ? "D\u00e9bute"
+                : $"{mission.AssignedProvider.CompletedMissionCount} interventions";
+            ProviderLabel.Text = $"{mission.AssignedProvider.FullName} - {experienceLabel}";
             ProviderPhoneLabel.Text = mission.ContactDetailsReleased
                 ? mission.AssignedProvider.PhoneNumber ?? "Téléphone indisponible"
                 : "Téléphone visible après confirmation.";

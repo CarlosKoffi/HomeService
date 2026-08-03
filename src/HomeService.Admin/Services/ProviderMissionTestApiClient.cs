@@ -18,23 +18,29 @@ public sealed class ProviderMissionTestApiClient(
         return await response.Content.ReadFromJsonAsync<AdminProviderMissionTestListResponse>(cancellationToken);
     }
 
-    public async Task<AdminProviderMissionTestActionResponse?> AcceptAsync(Guid assignmentId, CancellationToken cancellationToken = default)
-        => await SendActionAsync(assignmentId, "validate", cancellationToken);
+    public async Task<AdminProviderMissionTestActionResponse?> AcceptAsync(Guid assignmentId, int estimatedArrivalMinutes, CancellationToken cancellationToken = default)
+        => await SendActionAsync(assignmentId, "validate", new AdminProviderMissionTestPositionRequest(estimatedArrivalMinutes), cancellationToken);
+
+    public async Task<AdminProviderMissionTestActionResponse?> PositionAsync(Guid assignmentId, int estimatedArrivalMinutes, CancellationToken cancellationToken = default)
+        => await SendActionAsync(assignmentId, "position", new AdminProviderMissionTestPositionRequest(estimatedArrivalMinutes), cancellationToken);
 
     public async Task<AdminProviderMissionTestActionResponse?> StartAsync(Guid assignmentId, CancellationToken cancellationToken = default)
-        => await SendActionAsync(assignmentId, "start", cancellationToken);
+        => await SendActionAsync(assignmentId, "start", null, cancellationToken);
 
     public async Task<AdminProviderMissionTestActionResponse?> CompleteAsync(Guid assignmentId, CancellationToken cancellationToken = default)
-        => await SendActionAsync(assignmentId, "complete", cancellationToken);
+        => await SendActionAsync(assignmentId, "complete", null, cancellationToken);
 
     private async Task<AdminProviderMissionTestActionResponse?> SendActionAsync(
         Guid assignmentId,
         string action,
+        object? request,
         CancellationToken cancellationToken)
     {
         AddAuthentication();
         var path = $"/api/admin/missions/provider-test/assignments/{assignmentId}/{action}";
-        using var response = await httpClient.PostAsync(path, null, cancellationToken);
+        using var response = request is null
+            ? await httpClient.PostAsync(path, null, cancellationToken)
+            : await httpClient.PostAsJsonAsync(path, request, cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             return await response.Content.ReadFromJsonAsync<AdminProviderMissionTestActionResponse>(cancellationToken);

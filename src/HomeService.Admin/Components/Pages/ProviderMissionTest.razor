@@ -64,6 +64,19 @@
                         <small>@assignment.Status</small>
                     </div>
                     <div class="assignment-action">
+                        @if (assignment.CanAccept || assignment.CanStart)
+                        {
+                            <label class="eta-field">
+                                <span>Temps avant arrivee</span>
+                                <select value="@GetEta(assignment.AssignmentId)" @onchange="eventArgs => SetEta(assignment.AssignmentId, eventArgs.Value?.ToString())">
+                                    <option value="5">5 min</option>
+                                    <option value="10">10 min</option>
+                                    <option value="15">15 min</option>
+                                    <option value="20">20 min</option>
+                                    <option value="30">30 min</option>
+                                </select>
+                            </label>
+                        }
                         @if (assignment.CanAccept)
                         {
                             <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="() => AcceptAsync(assignment)">
@@ -72,6 +85,9 @@
                         }
                         @if (assignment.CanStart)
                         {
+                            <button type="button" class="secondary-action" disabled="@IsSubmitting" @onclick="() => PositionAsync(assignment)">
+                                Mettre a jour la position
+                            </button>
                             <button type="button" class="primary-action" disabled="@IsSubmitting" @onclick="() => StartAsync(assignment)">
                                 Demarrer
                             </button>
@@ -100,6 +116,7 @@
     private bool IsSubmitting { get; set; }
     private string? Message { get; set; }
     private string? ErrorMessage { get; set; }
+    private Dictionary<Guid, int> EtaMinutes { get; } = [];
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -110,6 +127,10 @@
         try
         {
             Snapshot = await ApiClient.GetAssignmentsAsync();
+            foreach (var assignment in Snapshot?.Assignments ?? [])
+            {
+                EtaMinutes.TryAdd(assignment.AssignmentId, 10);
+            }
         }
         catch (Exception exception)
         {
@@ -128,7 +149,7 @@
         ErrorMessage = null;
         try
         {
-            var result = await ApiClient.AcceptAsync(assignment.AssignmentId);
+            var result = await ApiClient.AcceptAsync(assignment.AssignmentId, GetEta(assignment.AssignmentId));
             Message = result?.Message ?? "Mission acceptee.";
             await LoadAsync();
         }
@@ -140,6 +161,19 @@
         {
             IsSubmitting = false;
         }
+    }
+
+    private async Task PositionAsync(AdminProviderMissionTestAssignmentResponse assignment) =>
+        await RunActionAsync(
+            () => ApiClient.PositionAsync(assignment.AssignmentId, GetEta(assignment.AssignmentId)),
+            "Position de test mise a jour.");
+
+    private int GetEta(Guid assignmentId) =>
+        EtaMinutes.TryGetValue(assignmentId, out var minutes) ? minutes : 10;
+
+    private void SetEta(Guid assignmentId, string? value)
+    {
+        EtaMinutes[assignmentId] = int.TryParse(value, out var minutes) ? minutes : 10;
     }
 
     private async Task StartAsync(AdminProviderMissionTestAssignmentResponse assignment) =>

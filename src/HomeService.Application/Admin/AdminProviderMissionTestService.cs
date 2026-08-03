@@ -82,6 +82,7 @@ public sealed class AdminProviderMissionTestService(
 
     public async Task<AdminProviderMissionTestActionResponse> AcceptAsync(
         Guid assignmentId,
+        int estimatedArrivalMinutes,
         CancellationToken cancellationToken)
     {
         var assignment = await db.ProviderMissionAssignments
@@ -95,9 +96,9 @@ public sealed class AdminProviderMissionTestService(
             return new AdminProviderMissionTestActionResponse(false, "Affectation ou prestataire introuvable.");
         }
 
+        await RestoreMissionLocationFromCustomerAddressAsync(assignment.Mission, cancellationToken);
         var previousStatus = assignment.Status;
-        var latitude = assignment.Mission.ServiceLatitude ?? assignment.Provider.MissionLatitude ?? 5.3488m;
-        var longitude = assignment.Mission.ServiceLongitude ?? assignment.Provider.MissionLongitude ?? -4.0031m;
+        var (latitude, longitude) = PlaceProviderForEta(assignment.Provider, assignment.Mission, estimatedArrivalMinutes);
         var result = workflow.AcceptMission(
             assignment.Provider,
             assignment,
@@ -119,6 +120,23 @@ public sealed class AdminProviderMissionTestService(
             $"Mission {assignment.Mission.MissionNumber} acceptee comme {assignment.Provider.FullName}.");
     }
 
+    public async Task<AdminProviderMissionTestActionResponse> PositionAsync(
+        Guid assignmentId,
+        int estimatedArrivalMinutes,
+        CancellationToken cancellationToken)
+    {
+        var assignment = await LoadAssignmentAsync(assignmentId, cancellationToken);
+        if (assignment?.Mission is null || assignment.Provider is null)
+        {
+            return NotFound();
+        }
+
+        await RestoreMissionLocationFromCustomerAddressAsync(assignment.Mission, cancellationToken);
+        PlaceProviderForEta(assignment.Provider, assignment.Mission, estimatedArrivalMinutes);
+        await db.SaveChangesAsync(cancellationToken);
+        return new(true, $"Position de test placee a environ {Math.Clamp(estimatedArrivalMinutes, 1, 120)} min du client.");
+    }
+
     public async Task<AdminProviderMissionTestActionResponse> StartAsync(
         Guid assignmentId,
         CancellationToken cancellationToken)
@@ -132,8 +150,9 @@ public sealed class AdminProviderMissionTestService(
         var mission = assignment.Mission;
         await RestoreMissionLocationFromCustomerAddressAsync(mission, cancellationToken);
         var previousStatus = assignment.Status;
-        var latitude = mission.ServiceLatitude ?? assignment.Provider.MissionLatitude ?? 5.3488m;
-        var longitude = mission.ServiceLongitude ?? assignment.Provider.MissionLongitude ?? -4.0031m;
+        var latitude = mission.ServiceLatitude ?? 5.3488m;
+        var longitude = mission.ServiceLongitude ?? -4.0031m;
+        assignment.Provider.SetAvailability(true, latitude, longitude);
         var result = workflow.StartMission(
             assignment.Provider,
             assignment,
@@ -235,6 +254,21 @@ public sealed class AdminProviderMissionTestService(
         string.Concat((value ?? string.Empty)
             .Where(character => char.IsLetterOrDigit(character)))
             .ToUpperInvariant();
+
+    private static (decimal Latitude, decimal Longitude) PlaceProviderForEta(
+        ProviderProfile provider,
+        Mission mission,
+        int estimatedArrivalMinutes)
+    {
+        var minutes = Math.Clamp(estimatedArrivalMinutes, 1, 120);
+        var clientLatitude = mission.ServiceLatitude ?? 5.3488m;
+        var clientLongitude = mission.ServiceLongitude ?? -4.0031m;
+        // The client app estimates 20 km/h with a 25% road factor.
+        var directDistanceKm = 20m * minutes / 60m / 1.25m;
+        var latitude = clientLatitude + directDistanceKm / 111.32m;
+        provider.SetAvailability(true, latitude, clientLongitude);
+        return (latitude, clientLongitude);
+    }
 
     private static AdminProviderMissionTestActionResponse NotFound() =>
         new(false, "Affectation ou prestataire introuvable.");
