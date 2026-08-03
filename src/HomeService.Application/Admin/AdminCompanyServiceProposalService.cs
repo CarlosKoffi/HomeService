@@ -14,9 +14,10 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
 {
     private static readonly Expression<Func<CompanyApplicationService, bool>> PendingCatalogReviewFilter =
         proposal =>
-            proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
-            || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
-            || proposal.MatchedServiceId == null;
+            proposal.MatchStatus != CompanyApplicationServiceMatchStatus.Rejected
+            && (proposal.MatchStatus == CompanyApplicationServiceMatchStatus.PendingMatch
+                || proposal.MatchStatus == CompanyApplicationServiceMatchStatus.NeedsAdminReview
+                || proposal.MatchedServiceId == null);
 
     public async Task<CompanyServiceProposalListResponse> ListAsync(CancellationToken cancellationToken)
     {
@@ -341,6 +342,50 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
         return CompanyServiceProposalActionResult.Ok("Service cree et proposition rattachee.");
     }
 
+    public Task<CompanyServiceProposalActionResult> RejectAsync(
+        Guid proposalId,
+        RejectCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken)
+        => RejectAsync(proposalId, request, null, null, cancellationToken);
+
+    public async Task<CompanyServiceProposalActionResult> RejectAsync(
+        Guid proposalId,
+        RejectCompanyServiceProposalRequest request,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Note))
+        {
+            return CompanyServiceProposalActionResult.ValidationFailed("Indiquez le motif du refus.");
+        }
+
+        var proposal = await db.CompanyApplicationServices
+            .FirstOrDefaultAsync(item => item.Id == proposalId, cancellationToken);
+        if (proposal is null)
+        {
+            return CompanyServiceProposalActionResult.NotFound("Service propose introuvable.");
+        }
+
+        var before = ToAuditSnapshot(proposal);
+        proposal.Reject(request.Note);
+        AddAuditLog(
+            actor,
+            auditContext,
+            "AdminCompanyServiceProposalRejected",
+            proposal.Id,
+            "Service propose refuse.",
+            before,
+            new
+            {
+                Request = request,
+                Proposal = ToAuditSnapshot(proposal)
+            });
+        await db.SaveChangesAsync(cancellationToken);
+
+        return CompanyServiceProposalActionResult.Ok("Proposition refusee.");
+    }
+
     private async Task<IReadOnlyList<CompanyApplicationServiceCatalogItem>> GetCatalogAsync(CancellationToken cancellationToken)
     {
         var services = await db.Services
@@ -425,7 +470,8 @@ public sealed class AdminCompanyServiceProposalService(IAppDbContext db)
             proposal.MatchStatus,
             proposal.MatchScore,
             proposal.MatchedServiceId,
-            proposal.MatchedServicePrestationId
+            proposal.MatchedServicePrestationId,
+            proposal.ReviewNote
         };
     }
 }

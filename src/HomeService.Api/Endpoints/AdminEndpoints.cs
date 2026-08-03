@@ -1811,6 +1811,29 @@ public static class AdminEndpoints
         .WithName("CreateServiceFromCompanyServiceProposal")
         .Produces<CompanyServiceProposalListResponse>();
 
+        admin.MapPost("/company-service-proposals/{id:guid}/reject", async (
+            Guid id,
+            RejectCompanyServiceProposalRequest request,
+            HttpRequest httpRequest,
+            AdminCompanyServiceProposalService serviceProposalService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await serviceProposalService.RejectAsync(
+                id,
+                request,
+                GetAdminAuditActor(httpRequest),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return ToCompanyServiceProposalActionError(result);
+            }
+
+            return Results.Ok(await serviceProposalService.ListAsync(cancellationToken));
+        })
+        .WithName("RejectCompanyServiceProposal")
+        .Produces<CompanyServiceProposalListResponse>();
+
         admin.MapGet("/services", async (
             AdminServiceCatalogManagementService catalogService,
             CancellationToken cancellationToken) =>

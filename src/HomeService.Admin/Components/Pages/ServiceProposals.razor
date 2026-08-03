@@ -218,11 +218,13 @@
                         <option value="@ProposalAction.Attach">Rattacher a l'existant</option>
                         <option value="@ProposalAction.CreatePrestation">Nouvelle prestation</option>
                         <option value="@ProposalAction.CreateService">Nouveau service</option>
+                        <option value="@ProposalAction.Reject">Refuser la proposition</option>
                     </select>
                 </label>
                 <label class="wide">
-                    Note interne
-                    <input type="text" @bind="draft.Description" placeholder="Optionnel, utile pour expliquer le classement" />
+                    @(draft.Action == ProposalAction.Reject ? "Motif du refus" : "Note interne")
+                    <input type="text" @bind="draft.Description"
+                           placeholder="@(draft.Action == ProposalAction.Reject ? "Expliquez pourquoi cette proposition est refusee" : "Optionnel, utile pour expliquer le classement")" />
                 </label>
 
                 @if (draft.Action == ProposalAction.Attach)
@@ -255,7 +257,7 @@
                         </select>
                     </label>
                 }
-                else
+                else if (draft.Action == ProposalAction.CreateService)
                 {
                     <label>
                         Icone
@@ -273,7 +275,7 @@
 
                 <div class="proposal-primary-action wide">
                     <p>@GetProposalActionSummary(draft.Action)</p>
-                    <button type="button" @onclick="() => ExecuteProposalActionAsync(selectedProposal)" disabled="@IsSaving">
+                    <button type="button" class="@(draft.Action == ProposalAction.Reject ? "danger-action" : null)" @onclick="() => ExecuteProposalActionAsync(selectedProposal)" disabled="@IsSaving">
                         @GetProposalActionLabel(draft.Action)
                     </button>
                 </div>
@@ -1082,8 +1084,29 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         {
             ProposalAction.CreateService => CreateServiceFromProposalAsync(proposal),
             ProposalAction.CreatePrestation => CreatePrestationFromProposalAsync(proposal),
+            ProposalAction.Reject => RejectProposalAsync(proposal),
             _ => AttachProposalAsync(proposal.Id)
         };
+    }
+
+    private async Task RejectProposalAsync(CompanyServiceProposalResponse proposal)
+    {
+        var draft = GetProposalDraft(proposal);
+        if (string.IsNullOrWhiteSpace(draft.Description))
+        {
+        Message = "Indiquez le motif du refus.";
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            var response = await ApiClient.RejectCompanyServiceProposalAsync(
+                proposal.Id,
+                new RejectCompanyServiceProposalRequest(draft.Description.Trim()));
+            CompanyServiceProposals = response?.Items ?? [];
+            Message = "Proposition refusee.";
+            SelectedProposalId = null;
+        });
     }
 
     private async Task AttachProposalAsync(Guid proposalId)
@@ -1167,6 +1190,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         {
             ProposalAction.CreateService => "Creer le service",
             ProposalAction.CreatePrestation => "Creer la prestation",
+            ProposalAction.Reject => "Refuser la proposition",
             _ => "Valider le rattachement"
         };
     }
@@ -1177,6 +1201,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         {
             ProposalAction.CreateService => "Cree un nouveau metier principal.",
             ProposalAction.CreatePrestation => "Ajoute un detail sous un service existant.",
+            ProposalAction.Reject => "Ecarte ce libelle du catalogue.",
             _ => "Lie le libelle a un element deja connu."
         };
     }
@@ -1187,6 +1212,7 @@ else if (ActiveTab == ServiceAdminTab.Insights)
         {
             ProposalAction.CreateService => "Le libelle deviendra un service visible dans le catalogue.",
             ProposalAction.CreatePrestation => "Le libelle sera ajoute sous le service parent choisi.",
+            ProposalAction.Reject => "La proposition sera refusee et retiree de la file a traiter.",
             _ => "La proposition disparaitra de la file a verifier."
         };
     }
@@ -1874,7 +1900,8 @@ else if (ActiveTab == ServiceAdminTab.Insights)
     {
         Attach,
         CreatePrestation,
-        CreateService
+        CreateService,
+        Reject
     }
 
     private sealed record ProposalSelection(Guid? ServiceId, Guid? ServicePrestationId);

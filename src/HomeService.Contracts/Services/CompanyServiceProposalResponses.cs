@@ -48,3 +48,5 @@ public sealed record CreateServiceFromCompanyServiceProposalRequest(
     int PriceMaxAmount = 0,
     string Currency = "XOF",
     string? Note = null);
+
+public sealed record RejectCompanyServiceProposalRequest(string Note);

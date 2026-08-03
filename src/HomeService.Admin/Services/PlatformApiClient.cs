@@ -524,6 +524,18 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
+    public async Task<CompanyServiceProposalListResponse?> RejectCompanyServiceProposalAsync(
+        Guid proposalId,
+        RejectCompanyServiceProposalRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<CompanyServiceProposalListResponse>(
+            $"/api/admin/company-service-proposals/{proposalId}/reject",
+            request,
+            cancellationToken);
+    }
+
     public async Task<ServiceSummaryResponse?> CreateServiceAsync(
         UpsertServiceRequest request,
         CancellationToken cancellationToken = default)

@@ -25,4 +25,19 @@ public sealed class CompanyApplicationServiceTests
 
         Assert.Equal("blanchisserie repassage", proposal.NormalizedName);
     }
+
+    [Fact]
+    public void Reject_ClearsMatchesAndKeepsReviewReason()
+    {
+        var proposal = new CompanyApplicationService(Guid.NewGuid(), "Location de materiel");
+        proposal.MarkCreatedAsNewService(Guid.NewGuid());
+
+        proposal.Reject("  Hors catalogue Wele  ");
+
+        Assert.Null(proposal.MatchedServiceId);
+        Assert.Null(proposal.MatchedServicePrestationId);
+        Assert.Null(proposal.MatchScore);
+        Assert.Equal(CompanyApplicationServiceMatchStatus.Rejected, proposal.MatchStatus);
+        Assert.Equal("Hors catalogue Wele", proposal.ReviewNote);
+    }
 }

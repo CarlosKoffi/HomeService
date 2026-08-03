@@ -182,6 +182,33 @@ public sealed class AdminCompanyServiceProposalServiceTests
         Assert.Empty(pending.Items);
     }
 
+    [Fact]
+    public async Task RejectAsync_KeepsReasonAuditsAndRemovesProposalFromReviewList()
+    {
+        await using var db = CreateDbContext();
+        var application = CreateApplication("Ivoire Catering Group", "Location de materiel");
+        var proposal = new CompanyApplicationService(application.Id, "Location de materiel");
+        db.CompanyApplications.Add(application);
+        db.CompanyApplicationServices.Add(proposal);
+        await db.SaveChangesAsync();
+
+        var sut = new AdminCompanyServiceProposalService(db);
+        var result = await sut.RejectAsync(
+            proposal.Id,
+            new RejectCompanyServiceProposalRequest("Hors catalogue Wele"),
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "proposal-reject"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(HomeService.Domain.Enums.CompanyApplicationServiceMatchStatus.Rejected, proposal.MatchStatus);
+        Assert.Equal("Hors catalogue Wele", proposal.ReviewNote);
+        Assert.Empty((await sut.ListAsync(CancellationToken.None)).Items);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminCompanyServiceProposalRejected", log.Action);
+        Assert.Equal("proposal-reject", log.CorrelationId);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()

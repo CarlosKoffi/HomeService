@@ -61,6 +61,16 @@ public sealed class CompanyApplicationService : AuditableEntity
         Touch();
     }
 
+    public void Reject(string note)
+    {
+        MatchedServiceId = null;
+        MatchedServicePrestationId = null;
+        MatchScore = null;
+        MatchStatus = CompanyApplicationServiceMatchStatus.Rejected;
+        ReviewNote = note.Trim();
+        Touch();
+    }
+
     private static string Normalize(string value)
     {
         return CatalogNameNormalizer.Normalize(value);
