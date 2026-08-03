@@ -84,7 +84,11 @@ public sealed class AdminCompanyApplicationReviewService(
             application.City,
             application.Address);
         company.UpdateOperations(application.InterventionZones, application.PlannedServices);
-        company.UpdatePayment(application.WavePaymentNumber, application.OrangeMoneyPaymentNumber);
+        company.UpdatePayment(
+            application.WavePaymentNumber,
+            application.OrangeMoneyPaymentNumber,
+            application.MtnMoneyPaymentNumber,
+            application.MoovMoneyPaymentNumber);
     }
 
     public async Task<AdminCompanyApplicationReviewResult> RejectAsync(Guid applicationId, string? note, CancellationToken cancellationToken)

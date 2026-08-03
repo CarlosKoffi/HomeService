@@ -57,6 +57,8 @@ public sealed class CompanyApplication : AuditableEntity
     public string? InterventionZones { get; private set; }
     public string? WavePaymentNumber { get; private set; }
     public string? OrangeMoneyPaymentNumber { get; private set; }
+    public string? MtnMoneyPaymentNumber { get; private set; }
+    public string? MoovMoneyPaymentNumber { get; private set; }
     public int? EstimatedProviderCount { get; private set; }
     public CompanyApplicationStatus Status { get; private set; } = CompanyApplicationStatus.Submitted;
     public DateTimeOffset? SubmittedAt { get; private set; } = DateTimeOffset.UtcNow;
@@ -211,10 +213,16 @@ public sealed class CompanyApplication : AuditableEntity
         Touch();
     }
 
-    public void UpdatePayment(string? wavePaymentNumber, string? orangeMoneyPaymentNumber)
+    public void UpdatePayment(
+        string? wavePaymentNumber,
+        string? orangeMoneyPaymentNumber,
+        string? mtnMoneyPaymentNumber,
+        string? moovMoneyPaymentNumber)
     {
         WavePaymentNumber = Clean(wavePaymentNumber);
         OrangeMoneyPaymentNumber = Clean(orangeMoneyPaymentNumber);
+        MtnMoneyPaymentNumber = Clean(mtnMoneyPaymentNumber);
+        MoovMoneyPaymentNumber = Clean(moovMoneyPaymentNumber);
         Touch();
     }
 

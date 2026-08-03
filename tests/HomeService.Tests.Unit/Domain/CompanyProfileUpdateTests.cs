@@ -43,10 +43,12 @@ public sealed class CompanyProfileUpdateTests
     {
         var company = new Company("CI Home Service", "+2250700000000", "direction@entreprise.ci");
 
-        company.UpdatePayment(" +2250701020304 ", " ");
+        company.UpdatePayment(" +2250701020304 ", " ", " +2250506070809 ", " +2250102030405 ");
 
         Assert.Equal("+2250701020304", company.WavePaymentNumber);
         Assert.Null(company.OrangeMoneyPaymentNumber);
+        Assert.Equal("+2250506070809", company.MtnMoneyPaymentNumber);
+        Assert.Equal("+2250102030405", company.MoovMoneyPaymentNumber);
     }
 
     [Fact]

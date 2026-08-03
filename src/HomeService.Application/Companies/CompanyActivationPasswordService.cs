@@ -74,7 +74,11 @@ public sealed class CompanyActivationPasswordService(IAppDbContext db)
             application.City,
             application.Address);
         company.UpdateOperations(application.InterventionZones, application.PlannedServices);
-        company.UpdatePayment(application.WavePaymentNumber, application.OrangeMoneyPaymentNumber);
+        company.UpdatePayment(
+            application.WavePaymentNumber,
+            application.OrangeMoneyPaymentNumber,
+            application.MtnMoneyPaymentNumber,
+            application.MoovMoneyPaymentNumber);
     }
 
     private void AddStatusHistory(Guid companyApplicationId, Domain.Enums.CompanyApplicationStatus previousStatus, Domain.Enums.CompanyApplicationStatus newStatus)

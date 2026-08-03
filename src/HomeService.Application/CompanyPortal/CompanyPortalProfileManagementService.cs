@@ -101,8 +101,16 @@ public sealed class CompanyPortalProfileManagementService(IAppDbContext db)
             return CompanyPortalProfileUpdateResult.NotFound();
         }
 
-        aggregate.Company.UpdatePayment(request.WavePaymentNumber, request.OrangeMoneyPaymentNumber);
-        aggregate.Application?.UpdatePayment(request.WavePaymentNumber, request.OrangeMoneyPaymentNumber);
+        aggregate.Company.UpdatePayment(
+            request.WavePaymentNumber,
+            request.OrangeMoneyPaymentNumber,
+            request.MtnMoneyPaymentNumber,
+            request.MoovMoneyPaymentNumber);
+        aggregate.Application?.UpdatePayment(
+            request.WavePaymentNumber,
+            request.OrangeMoneyPaymentNumber,
+            request.MtnMoneyPaymentNumber,
+            request.MoovMoneyPaymentNumber);
 
         await db.SaveChangesAsync(cancellationToken);
         return CompanyPortalProfileUpdateResult.Ok();

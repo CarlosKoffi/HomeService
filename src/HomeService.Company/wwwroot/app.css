@@ -8811,11 +8811,15 @@ h3 {
     height: 32px;
     justify-content: center;
     width: 32px;
+    overflow: hidden;
 }
 
-.info-wave {
-    background: #0091ff;
-    color: #ffffff;
+.info-payment-icon img {
+    display: block;
+    height: 100%;
+    object-fit: contain;
+    padding: 3px;
+    width: 100%;
 }
 
 .info-payment-row strong,

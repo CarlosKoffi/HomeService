@@ -16,6 +16,8 @@ public sealed record CompanyPortalProfileResponse(
     string? InterventionZones,
     string? WavePaymentNumber,
     string? OrangeMoneyPaymentNumber,
+    string? MtnMoneyPaymentNumber,
+    string? MoovMoneyPaymentNumber,
     int? EstimatedProviderCount,
     string CompanyStatus,
     string ApplicationStatus,

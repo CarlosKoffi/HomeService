@@ -251,6 +251,8 @@ else
                             <div class="info-edit-stack">
                                 <label><span>Numero Wave</span><input @bind="WavePaymentNumberDraft" placeholder="+225..." /></label>
                                 <label><span>Numero Orange Money</span><input @bind="OrangeMoneyPaymentNumberDraft" placeholder="+225..." /></label>
+                                <label><span>Numero MTN MoMo</span><input @bind="MtnMoneyPaymentNumberDraft" placeholder="+225..." /></label>
+                                <label><span>Numero Moov Money</span><input @bind="MoovMoneyPaymentNumberDraft" placeholder="+225..." /></label>
                             </div>
                             <div class="info-card-actions">
                                 <button type="button" class="info-save-button" disabled="@IsSaving" @onclick="SavePaymentAsync">Enregistrer</button>
@@ -261,7 +263,7 @@ else
                         {
                             <div class="info-payment-list">
                                 <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber) ? "info-payment-empty" : string.Empty)">
-                                    <span class="info-payment-icon info-wave">W</span>
+                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/wave.png")" alt="Logo Wave" /></span>
                                     <div>
                                         <strong>Wave</strong>
                                         <small>@Display(Profile?.WavePaymentNumber, "A completer")</small>
@@ -269,12 +271,28 @@ else
                                     <em>@(string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber) ? "Manquant" : "Actif")</em>
                                 </div>
                                 <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber) ? "info-payment-empty" : string.Empty)">
-                                    <span class="info-payment-icon">OM</span>
+                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/orange-money.png")" alt="Logo Orange Money" /></span>
                                     <div>
                                         <strong>Orange Money</strong>
                                         <small>@Display(Profile?.OrangeMoneyPaymentNumber, "A completer")</small>
                                     </div>
                                     <em>@(string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber) ? "Manquant" : "Actif")</em>
+                                </div>
+                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.MtnMoneyPaymentNumber) ? "info-payment-empty" : string.Empty)">
+                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/mtn-momo.png")" alt="Logo MTN MoMo" /></span>
+                                    <div>
+                                        <strong>MTN MoMo</strong>
+                                        <small>@Display(Profile?.MtnMoneyPaymentNumber, "A completer")</small>
+                                    </div>
+                                    <em>@(string.IsNullOrWhiteSpace(Profile?.MtnMoneyPaymentNumber) ? "Manquant" : "Actif")</em>
+                                </div>
+                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.MoovMoneyPaymentNumber) ? "info-payment-empty" : string.Empty)">
+                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/moov-money.png")" alt="Logo Moov Money" /></span>
+                                    <div>
+                                        <strong>Moov Money</strong>
+                                        <small>@Display(Profile?.MoovMoneyPaymentNumber, "A completer")</small>
+                                    </div>
+                                    <em>@(string.IsNullOrWhiteSpace(Profile?.MoovMoneyPaymentNumber) ? "Manquant" : "Actif")</em>
                                 </div>
                             </div>
                         }
@@ -369,6 +387,8 @@ else
     private string? PlannedServicesDraft { get; set; }
     private string? WavePaymentNumberDraft { get; set; }
     private string? OrangeMoneyPaymentNumberDraft { get; set; }
+    private string? MtnMoneyPaymentNumberDraft { get; set; }
+    private string? MoovMoneyPaymentNumberDraft { get; set; }
     private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -463,6 +483,8 @@ else
         PlannedServicesDraft = Profile?.PlannedServices ?? string.Join(", ", GetPlannedServices().Where(service => service != "A completer"));
         WavePaymentNumberDraft = Profile?.WavePaymentNumber;
         OrangeMoneyPaymentNumberDraft = Profile?.OrangeMoneyPaymentNumber;
+        MtnMoneyPaymentNumberDraft = Profile?.MtnMoneyPaymentNumber;
+        MoovMoneyPaymentNumberDraft = Profile?.MoovMoneyPaymentNumber;
     }
 
     private async Task SaveCompanyInfoAsync()
@@ -516,7 +538,11 @@ else
 
         await SaveProfileSectionAsync(ApiClient.UpdateCompanyPaymentAsync(
             Session.CompanyId,
-            new UpdateCompanyPortalPaymentRequest(WavePaymentNumberDraft, OrangeMoneyPaymentNumberDraft)));
+            new UpdateCompanyPortalPaymentRequest(
+                WavePaymentNumberDraft,
+                OrangeMoneyPaymentNumberDraft,
+                MtnMoneyPaymentNumberDraft,
+                MoovMoneyPaymentNumberDraft)));
     }
 
     private async Task SaveProfileSectionAsync(Task<EmployeeSaveResult> operation)
@@ -841,6 +867,8 @@ else
             "Menage a domicile, Jardinage, Nounou",
             "Cocody, Angre, Riviera, Marcory",
             "+2250700000000",
+            null,
+            null,
             null,
             12,
             session.CompanyStatus,

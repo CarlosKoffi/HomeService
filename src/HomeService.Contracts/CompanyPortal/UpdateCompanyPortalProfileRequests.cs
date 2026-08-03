@@ -19,4 +19,6 @@ public sealed record UpdateCompanyPortalOperationsRequest(
 
 public sealed record UpdateCompanyPortalPaymentRequest(
     string? WavePaymentNumber,
-    string? OrangeMoneyPaymentNumber);
+    string? OrangeMoneyPaymentNumber,
+    string? MtnMoneyPaymentNumber,
+    string? MoovMoneyPaymentNumber);

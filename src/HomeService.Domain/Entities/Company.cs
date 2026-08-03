@@ -31,6 +31,8 @@ public sealed class Company : AuditableEntity
     public string? PlannedServices { get; private set; }
     public string? WavePaymentNumber { get; private set; }
     public string? OrangeMoneyPaymentNumber { get; private set; }
+    public string? MtnMoneyPaymentNumber { get; private set; }
+    public string? MoovMoneyPaymentNumber { get; private set; }
     public CompanyStatus Status { get; private set; } = CompanyStatus.PendingReview;
     public CompanyAssignmentMode AssignmentMode { get; private set; } = CompanyAssignmentMode.SelfManaged;
     public bool AcceptsInterimApplications { get; private set; }
@@ -101,10 +103,16 @@ public sealed class Company : AuditableEntity
         Touch();
     }
 
-    public void UpdatePayment(string? wavePaymentNumber, string? orangeMoneyPaymentNumber)
+    public void UpdatePayment(
+        string? wavePaymentNumber,
+        string? orangeMoneyPaymentNumber,
+        string? mtnMoneyPaymentNumber,
+        string? moovMoneyPaymentNumber)
     {
         WavePaymentNumber = Clean(wavePaymentNumber);
         OrangeMoneyPaymentNumber = Clean(orangeMoneyPaymentNumber);
+        MtnMoneyPaymentNumber = Clean(mtnMoneyPaymentNumber);
+        MoovMoneyPaymentNumber = Clean(moovMoneyPaymentNumber);
         Touch();
     }
 
