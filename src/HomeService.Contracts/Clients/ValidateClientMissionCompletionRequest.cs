@@ -4,6 +4,7 @@ public sealed record ValidateClientMissionCompletionRequest(
     string PhoneNumber,
     int QualityRating,
     int PunctualityRating,
+    int PresentationRating,
     int PolitenessRating,
     int CleanlinessRating,
     string? Comment,

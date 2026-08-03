@@ -68,6 +68,7 @@ public sealed class ClientMissionCompletionValidationService(
             mission.ProviderId.Value,
             request.QualityRating,
             request.PunctualityRating,
+            request.PresentationRating,
             request.PolitenessRating,
             request.CleanlinessRating,
             request.Comment);
@@ -141,6 +142,7 @@ public sealed class ClientMissionCompletionValidationService(
 
         ValidateRating(request.QualityRating, "qualite", errors);
         ValidateRating(request.PunctualityRating, "ponctualite", errors);
+        ValidateRating(request.PresentationRating, "presentation", errors);
         ValidateRating(request.PolitenessRating, "politesse", errors);
         ValidateRating(request.CleanlinessRating, "proprete", errors);
         return errors;

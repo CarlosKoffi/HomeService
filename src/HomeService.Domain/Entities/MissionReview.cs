@@ -15,6 +15,7 @@ public sealed class MissionReview : AuditableEntity
         Guid providerId,
         int qualityRating,
         int punctualityRating,
+        int presentationRating,
         int politenessRating,
         int cleanlinessRating,
         string? comment)
@@ -25,9 +26,10 @@ public sealed class MissionReview : AuditableEntity
         ProviderId = providerId;
         QualityRating = NormalizeRating(qualityRating);
         PunctualityRating = NormalizeRating(punctualityRating);
+        PresentationRating = NormalizeRating(presentationRating);
         PolitenessRating = NormalizeRating(politenessRating);
         CleanlinessRating = NormalizeRating(cleanlinessRating);
-        OverallRating = (int)Math.Round((QualityRating + PunctualityRating + PolitenessRating + CleanlinessRating) / 4m, MidpointRounding.AwayFromZero);
+        OverallRating = (int)Math.Round((QualityRating + PunctualityRating + PresentationRating + PolitenessRating + CleanlinessRating) / 5m, MidpointRounding.AwayFromZero);
         Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
         SubmittedAt = DateTimeOffset.UtcNow;
     }
@@ -42,6 +44,7 @@ public sealed class MissionReview : AuditableEntity
     public ProviderProfile? Provider { get; private set; }
     public int QualityRating { get; private set; }
     public int PunctualityRating { get; private set; }
+    public int PresentationRating { get; private set; }
     public int PolitenessRating { get; private set; }
     public int CleanlinessRating { get; private set; }
     public int OverallRating { get; private set; }

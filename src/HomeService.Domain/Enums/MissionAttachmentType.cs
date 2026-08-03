@@ -7,5 +7,6 @@ public enum MissionAttachmentType
     ProviderStartPhoto = 2,
     ProviderCompletionPhoto = 3,
     DisputeEvidence = 4,
+    CustomerCompletionPhoto = 5,
     Other = 99
 }
