@@ -39,7 +39,7 @@ public sealed class ClientMissionChatService(
             return ClientMissionChatResult.NotFound("Mission introuvable pour ce client.");
         }
 
-        if (mission.Status is MissionStatus.Cancelled or MissionStatus.Resolved)
+        if (mission.Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
         {
             return ClientMissionChatResult.Invalid("Le chat n'est plus disponible pour cette mission.");
         }

@@ -47,7 +47,8 @@ public sealed class ProviderMissionChatService(
             return ProviderMissionChatResult.NotFound("Mission introuvable pour ce prestataire.");
         }
 
-        if (!CanSendMessage(assignment.Status))
+        if (!CanSendMessage(assignment.Status)
+            || assignment.Mission.Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
         {
             return ProviderMissionChatResult.Invalid("Le chat n'est plus disponible pour cette affectation.");
         }

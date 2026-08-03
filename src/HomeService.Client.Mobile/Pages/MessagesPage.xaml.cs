@@ -69,6 +69,7 @@ public partial class MessagesPage : ContentPage
             }
 
             var rows = result.Response
+                .Where(item => !IsConversationClosed(item.Status))
                 .OrderByDescending(item => item.CreatedAt)
                 .Select(ClientConversationRow.From)
                 .ToArray();
@@ -82,6 +83,12 @@ public partial class MessagesPage : ContentPage
         {
             loadGate.Release();
         }
+    }
+
+    private static bool IsConversationClosed(string status)
+    {
+        return string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(status, "Resolved", StringComparison.OrdinalIgnoreCase);
     }
 
     private async void OnConversationTapped(object sender, TappedEventArgs e)
