@@ -365,6 +365,7 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             rating,
             rating,
             rating,
+            rating,
             comment,
             PayoutReference: null);
 

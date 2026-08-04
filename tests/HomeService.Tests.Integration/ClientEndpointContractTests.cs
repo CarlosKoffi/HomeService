@@ -2,9 +2,12 @@ using HomeService.Api;
 using HomeService.Api.Endpoints;
 using HomeService.Application;
 using HomeService.Application.Abstractions;
+using HomeService.Application.Clients;
+using HomeService.Contracts.Clients;
 using HomeService.Infrastructure.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,6 +70,18 @@ public sealed class ClientEndpointContractTests
                 .Any(metadata => metadata.HttpMethods.Contains(httpMethod)));
     }
 
+    [Theory]
+    [InlineData("/api/client/auth/register")]
+    [InlineData("/api/client/auth/login")]
+    [InlineData("/api/company-applications")]
+    public void PublicAuthenticationRoutes_AreRateLimited(string routePattern)
+    {
+        var endpoint = Assert.Single(BuildPublicEndpoints(), endpoint => endpoint.RoutePattern.RawText == routePattern);
+
+        var rateLimit = Assert.Single(endpoint.Metadata.OfType<EnableRateLimitingAttribute>());
+        Assert.Equal(AuthenticationRateLimitingExtensions.PolicyName, rateLimit.PolicyName);
+    }
+
     private static IReadOnlyList<RouteEndpoint> BuildPublicEndpoints()
     {
         var builder = WebApplication.CreateBuilder();
@@ -75,6 +90,7 @@ public sealed class ClientEndpointContractTests
         builder.Services.AddDbContext<HomeServiceDbContext>(options =>
             options.UseInMemoryDatabase($"client-endpoint-contract-{Guid.NewGuid():N}"));
         builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<HomeServiceDbContext>());
+        builder.Services.AddScoped<IAddressAutocompleteService, StubAddressAutocompleteService>();
 
         var app = builder.Build();
         app.MapPublicEndpoints();
@@ -83,5 +99,20 @@ public sealed class ClientEndpointContractTests
             .SelectMany(source => source.Endpoints)
             .OfType<RouteEndpoint>()
             .ToList();
+    }
+
+    private sealed class StubAddressAutocompleteService : IAddressAutocompleteService
+    {
+        public Task<IReadOnlyList<ClientAddressSuggestionResponse>> SearchAsync(
+            string query,
+            string? sessionToken,
+            CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<ClientAddressSuggestionResponse>>([]);
+
+        public Task<ClientPlaceDetailsResponse?> GetDetailsAsync(
+            string placeId,
+            string? sessionToken,
+            CancellationToken cancellationToken)
+            => Task.FromResult<ClientPlaceDetailsResponse?>(null);
     }
 }

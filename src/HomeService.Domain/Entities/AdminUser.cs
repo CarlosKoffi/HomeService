@@ -53,6 +53,12 @@ public sealed class AdminUser : AuditableEntity
         Touch();
     }
 
+    public void SetPasswordHash(string passwordHash)
+    {
+        PasswordHash = passwordHash.Trim();
+        Touch();
+    }
+
     public void Deactivate()
     {
         IsActive = false;

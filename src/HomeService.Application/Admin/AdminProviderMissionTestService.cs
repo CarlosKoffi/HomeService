@@ -20,12 +20,12 @@ public sealed class AdminProviderMissionTestService(
         var now = DateTimeOffset.UtcNow;
         var assignments = await db.ProviderMissionAssignments
             .AsNoTracking()
-            .Include(item => item.Mission)!
-                .ThenInclude(mission => mission.ServicePrestation)
-            .Include(item => item.Mission)!
-                .ThenInclude(mission => mission.ServiceOption)
-            .Include(item => item.Provider)!
-                .ThenInclude(provider => provider.Company)
+            .Include(item => item.Mission)
+                .ThenInclude(mission => mission!.ServicePrestation)
+            .Include(item => item.Mission)
+                .ThenInclude(mission => mission!.ServiceOption)
+            .Include(item => item.Provider)
+                .ThenInclude(provider => provider!.Company)
             .Include(item => item.Company)
             .Where(item => item.Status == ProviderMissionAssignmentStatus.Offered
                 || item.Status == ProviderMissionAssignmentStatus.Accepted
@@ -87,8 +87,8 @@ public sealed class AdminProviderMissionTestService(
     {
         var assignment = await db.ProviderMissionAssignments
             .Include(item => item.Mission)
-            .Include(item => item.Provider)!
-                .ThenInclude(provider => provider.Company)
+            .Include(item => item.Provider)
+                .ThenInclude(provider => provider!.Company)
             .FirstOrDefaultAsync(item => item.Id == assignmentId, cancellationToken);
 
         if (assignment?.Mission is null || assignment.Provider is null)
@@ -214,8 +214,8 @@ public sealed class AdminProviderMissionTestService(
     {
         var assignment = await db.ProviderMissionAssignments
             .Include(item => item.Mission)
-            .Include(item => item.Provider)!
-                .ThenInclude(provider => provider.Company)
+            .Include(item => item.Provider)
+                .ThenInclude(provider => provider!.Company)
             .FirstOrDefaultAsync(item => item.Id == assignmentId, cancellationToken);
         return assignment;
     }

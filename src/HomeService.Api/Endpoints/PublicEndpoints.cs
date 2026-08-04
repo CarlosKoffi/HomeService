@@ -284,6 +284,7 @@ public static class PublicEndpoints
                 : Results.BadRequest(new { message = "Inscription client invalide.", errors = result.Errors });
         })
         .WithName("RegisterClient")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName)
         .Produces<ClientAuthResponse>()
         .Produces(StatusCodes.Status400BadRequest);
 
@@ -298,6 +299,7 @@ public static class PublicEndpoints
                 : Results.BadRequest(new { message = "Connexion client impossible.", errors = result.Errors });
         })
         .WithName("LoginClient")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName)
         .Produces<ClientAuthResponse>()
         .Produces(StatusCodes.Status400BadRequest);
 
@@ -1272,7 +1274,8 @@ public static class PublicEndpoints
                     statusCode: StatusCodes.Status500InternalServerError);
             }
         })
-        .WithName("RegisterCompanyApplication");
+        .WithName("RegisterCompanyApplication")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName);
 
         return app;
     }

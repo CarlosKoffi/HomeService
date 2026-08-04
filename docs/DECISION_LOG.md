@@ -68,3 +68,14 @@ Hors portee de ce lot:
 - endpoints publics CMS;
 - workflow complet de publication;
 - permissions CMS detaillees.
+
+## 2026-08-04 - Durcissement des mots de passe et de l'authentification
+
+Decision: remplacer les nouveaux hashes de mots de passe SHA-256 par PBKDF2-SHA256 a 210 000 iterations.
+
+Compatibilite:
+
+- les anciens hashes SHA-256 sales restent acceptes temporairement;
+- ils sont remplaces automatiquement par PBKDF2 apres une connexion reussie;
+- aucun mot de passe en clair et aucun jeton de session en clair ne sont stockes en base;
+- les routes publiques de connexion, inscription et activation sont limitees a 10 tentatives par minute et par adresse IP.

@@ -28,6 +28,11 @@ public sealed class CompanyPortalAuthService(IAppDbContext db)
             return CompanyPortalLoginResult.InvalidCredentials();
         }
 
+        if (Sha256PasswordHasher.NeedsRehash(user.PasswordHash))
+        {
+            user.SetPasswordHash(Sha256PasswordHasher.Hash(request.Password));
+        }
+
         if (user.Company.Status == CompanyStatus.Suspended)
         {
             return CompanyPortalLoginResult.Suspended();

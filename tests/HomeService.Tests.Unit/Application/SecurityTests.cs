@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using HomeService.Application.Companies;
 using HomeService.Application.Security;
 
@@ -33,8 +35,21 @@ public sealed class SecurityTests
     {
         var hash = Sha256PasswordHasher.Hash("Password123");
 
+        Assert.StartsWith("pbkdf2-sha256:210000:", hash);
         Assert.True(Sha256PasswordHasher.Verify("Password123", hash));
         Assert.False(Sha256PasswordHasher.Verify("Password124", hash));
+        Assert.False(Sha256PasswordHasher.NeedsRehash(hash));
+    }
+
+    [Fact]
+    public void PasswordVerify_WhenLegacySha256HashIsValid_AcceptsAndRequestsRehash()
+    {
+        const string salt = "00112233445566778899AABBCCDDEEFF";
+        var legacyHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{salt}:Password123")));
+        var storedHash = $"sha256:{salt}:{legacyHash}";
+
+        Assert.True(Sha256PasswordHasher.Verify("Password123", storedHash));
+        Assert.True(Sha256PasswordHasher.NeedsRehash(storedHash));
     }
 
     [Theory]

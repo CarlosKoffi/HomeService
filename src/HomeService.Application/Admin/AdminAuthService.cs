@@ -34,6 +34,11 @@ public sealed class AdminAuthService(IAppDbContext db)
             return AdminAuthResult.Unauthorized("Email ou mot de passe incorrect.");
         }
 
+        if (Sha256PasswordHasher.NeedsRehash(admin.PasswordHash))
+        {
+            admin.SetPasswordHash(Sha256PasswordHasher.Hash(request.Password));
+        }
+
         var now = DateTimeOffset.UtcNow;
         var token = GenerateSessionToken();
         var expiresAt = now.AddHours(SessionHours);

@@ -51,6 +51,11 @@ public sealed class ClientAuthService(IAppDbContext db)
             return ClientAuthResult.Invalid(["Identifiants client invalides."]);
         }
 
+        if (Sha256PasswordHasher.NeedsRehash(customer.PasswordHash))
+        {
+            customer.SetPasswordHash(Sha256PasswordHasher.Hash(request.Password));
+        }
+
         var session = CreateSession(customer.Id, request.RememberMe);
         db.CustomerSessions.Add(session.Session);
         await db.SaveChangesAsync(cancellationToken);

@@ -44,6 +44,7 @@ public static class AdminEndpoints
         })
         .WithName("LoginAdmin")
         .AllowAnonymous()
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName)
         .Produces<AdminLoginResponse>()
         .Produces(StatusCodes.Status401Unauthorized);
 
@@ -1035,7 +1036,8 @@ public static class AdminEndpoints
 
             return Results.Ok(result.Snapshot);
         })
-        .WithName("AcceptAdminInvitation");
+        .WithName("AcceptAdminInvitation")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName);
 
         admin.MapPut("/access-control/admins/{adminUserId:guid}/profile", async (
             Guid adminUserId,

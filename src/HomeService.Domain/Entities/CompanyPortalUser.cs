@@ -24,4 +24,10 @@ public sealed class CompanyPortalUser : AuditableEntity
     public string PasswordHash { get; private set; } = string.Empty;
     public bool IsOwner { get; private set; }
     public bool IsActive { get; private set; } = true;
+
+    public void SetPasswordHash(string passwordHash)
+    {
+        PasswordHash = passwordHash.Trim();
+        Touch();
+    }
 }

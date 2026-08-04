@@ -63,7 +63,8 @@ public static class CompanyActivationEndpoints
 
             return Results.Ok(result.Response);
         })
-        .WithName("CreateCompanyPasswordFromActivationToken");
+        .WithName("CreateCompanyPasswordFromActivationToken")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName);
 
         return app;
     }

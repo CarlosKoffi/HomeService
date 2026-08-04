@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using HomeService.Application.Admin;
 using HomeService.Application.Security;
 using HomeService.Contracts.Admin;
@@ -10,6 +12,26 @@ namespace HomeService.Tests.Unit.Application;
 
 public sealed class AdminAuthServiceTests
 {
+    [Fact]
+    public async Task LoginAsync_WhenPasswordUsesLegacyHash_UpgradesItToPbkdf2()
+    {
+        await using var db = CreateDbContext();
+        var admin = new AdminUser("Legacy Admin", "legacy@wele.ci", true);
+        const string salt = "00112233445566778899AABBCCDDEEFF";
+        var legacyHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{salt}:Password123")));
+        admin.AcceptInvitation($"sha256:{salt}:{legacyHash}", DateTimeOffset.UtcNow);
+        db.AdminUsers.Add(admin);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminAuthService(db).LoginAsync(
+            new AdminLoginRequest("legacy@wele.ci", "Password123"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.StartsWith("pbkdf2-sha256:210000:", admin.PasswordHash);
+        Assert.True(Sha256PasswordHasher.Verify("Password123", admin.PasswordHash!));
+    }
+
     [Fact]
     public async Task LoginAsync_WhenSuperAdminIsValid_CreatesSession()
     {

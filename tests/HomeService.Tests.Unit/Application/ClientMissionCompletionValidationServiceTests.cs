@@ -93,10 +93,11 @@ public sealed class ClientMissionCompletionValidationServiceTests
             phoneNumber,
             QualityRating: 5,
             PunctualityRating: 4,
+            PresentationRating: 4,
             PolitenessRating: 4,
             CleanlinessRating: 4,
-            "Service propre.",
-            "PAYOUT-001");
+            Comment: "Service propre.",
+            PayoutReference: "PAYOUT-001");
     }
 
     private static async Task<CompletionScenario> SeedCompletedMissionAsync(HomeServiceDbContext db)

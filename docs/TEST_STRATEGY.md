@@ -8,13 +8,16 @@ Le pipeline GitHub Actions compile la solution en Release, lance les tests unita
 
 Au dernier controle local:
 
-- `HomeService.Tests.Unit`: 469 tests passes.
-- `HomeService.Tests.Integration`: 10 tests passes.
-- total: 479 tests passes.
+- `HomeService.Tests.Unit`: 593 tests passes.
+- `HomeService.Tests.Integration`: 252 tests passes.
+- total: 845 tests passes.
 
 Commande:
 
-`dotnet build HomeService.sln --configuration Release`
+`dotnet build HomeService.Server.slnf --configuration Release`
+
+Les applications MAUI sont referencees dans `HomeService.sln`, puis compilees separement par la CI Windows
+sur la cible `net9.0-windows10.0.19041.0`.
 
 `dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build`
 

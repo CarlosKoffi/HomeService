@@ -24,10 +24,10 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Restore
-        run: dotnet restore HomeService.sln
+        run: dotnet restore HomeService.Server.slnf
 
       - name: Build
-        run: dotnet build HomeService.sln --configuration Release --no-restore
+        run: dotnet build HomeService.Server.slnf --configuration Release --no-restore
 
       - name: Unit tests
         env:
@@ -63,3 +63,26 @@ jobs:
           SMOKE_SITE_AUTH_PASSWORD: ${{ secrets.SMOKE_SITE_AUTH_PASSWORD }}
           SMOKE_STARTUP_DELAY_SECONDS: ${{ vars.SMOKE_STARTUP_DELAY_SECONDS || '120' }}
         run: pwsh ./deploy/smoke-test.ps1
+
+  mobile:
+    name: Compile MAUI mobile applications
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Install MAUI Windows workload
+        run: dotnet workload install maui-windows
+
+      - name: Build client mobile application
+        run: dotnet build src/HomeService.Client.Mobile/HomeService.Client.Mobile.csproj --configuration Release --framework net9.0-windows10.0.19041.0
+
+      - name: Build provider mobile application
+        run: dotnet build src/HomeService.Provider.Mobile/HomeService.Provider.Mobile.csproj --configuration Release --framework net9.0-windows10.0.19041.0

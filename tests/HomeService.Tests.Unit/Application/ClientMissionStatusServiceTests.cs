@@ -272,6 +272,7 @@ public sealed class ClientMissionStatusServiceTests
             provider.Id,
             qualityRating: 4,
             punctualityRating: 4,
+            presentationRating: 4,
             politenessRating: 4,
             cleanlinessRating: 4,
             comment: "Bonne intervention precedente.");

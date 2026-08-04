@@ -46,7 +46,8 @@ public static class CompanyPortalEndpoints
 
             return Results.Ok(response);
         })
-        .WithName("LoginCompanyPortal");
+        .WithName("LoginCompanyPortal")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName);
 
         group.MapGet("/{companyId:guid}/interim-candidates", async (
             Guid companyId,

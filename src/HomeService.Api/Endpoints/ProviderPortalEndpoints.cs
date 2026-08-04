@@ -59,7 +59,8 @@ public static class ProviderPortalEndpoints
 
             return Results.Ok(result.Response);
         })
-        .WithName("ActivateProviderInvitation");
+        .WithName("ActivateProviderInvitation")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName);
 
         group.MapPost("/login", async (
             ProviderPortalLoginRequest request,
@@ -88,7 +89,8 @@ public static class ProviderPortalEndpoints
 
             return Results.Ok(result.Response);
         })
-        .WithName("LoginProviderPortal");
+        .WithName("LoginProviderPortal")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName);
 
         group.MapGet("/me", async (
             HttpRequest httpRequest,

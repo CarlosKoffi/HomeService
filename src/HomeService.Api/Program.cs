@@ -20,6 +20,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddMissionDispatchAutomation();
 builder.Services.AddMobilePushNotifications();
 builder.Services.AddApiStorageServices();
+builder.Services.AddAuthenticationRateLimiting();
 
 var app = builder.Build();
 
@@ -27,6 +28,7 @@ await DatabaseInitializer.InitializeAsync(app.Services);
 
 app.UseSiteAccessGate();
 app.UseStaticFiles();
+app.UseRateLimiter();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>

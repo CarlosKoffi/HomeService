@@ -1,0 +1,18 @@
+{
+  "solution": {
+    "path": "HomeService.sln",
+    "projects": [
+      "src\\HomeService.Admin\\HomeService.Admin.csproj",
+      "src\\HomeService.Api\\HomeService.Api.csproj",
+      "src\\HomeService.Application\\HomeService.Application.csproj",
+      "src\\HomeService.Client\\HomeService.Client.csproj",
+      "src\\HomeService.Company\\HomeService.Company.csproj",
+      "src\\HomeService.Contracts\\HomeService.Contracts.csproj",
+      "src\\HomeService.Domain\\HomeService.Domain.csproj",
+      "src\\HomeService.Infrastructure\\HomeService.Infrastructure.csproj",
+      "src\\HomeService.Provider\\HomeService.Provider.csproj",
+      "tests\\HomeService.Tests.Integration\\HomeService.Tests.Integration.csproj",
+      "tests\\HomeService.Tests.Unit\\HomeService.Tests.Unit.csproj"
+    ]
+  }
+}

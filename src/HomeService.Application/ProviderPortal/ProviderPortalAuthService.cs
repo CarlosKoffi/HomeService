@@ -90,6 +90,11 @@ public sealed class ProviderPortalAuthService(IAppDbContext db)
             return ProviderPortalAuthResult.Failed("Identifiants prestataire invalides.");
         }
 
+        if (Sha256PasswordHasher.NeedsRehash(provider.PasswordHash))
+        {
+            provider.SetPortalPassword(Sha256PasswordHasher.Hash(request.Password));
+        }
+
         if (provider.Status is ProviderStatus.Inactive or ProviderStatus.SuspendedByCompany)
         {
             return ProviderPortalAuthResult.Failed("Votre acces prestataire est suspendu.");
