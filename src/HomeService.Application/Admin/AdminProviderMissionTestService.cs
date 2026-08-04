@@ -51,11 +51,14 @@ public sealed class AdminProviderMissionTestService(
             var provider = item.Provider;
             var expired = item.Status == ProviderMissionAssignmentStatus.Offered && item.ExpiresAt <= now;
             var providerAllowed = provider is not null && ProviderMissionWorkflowService.CanProviderUsePortal(provider);
+            var paymentConfirmed = mission.IsInitialPaymentConfirmed;
             var reason = expired
                 ? "Le delai de reponse est expire. Attendez le prochain tour d'affectation."
-                : providerAllowed
-                    ? null
-                    : "Le prestataire ou son entreprise n'est pas encore valide.";
+                : !providerAllowed
+                    ? "Le prestataire ou son entreprise n'est pas encore valide."
+                    : item.Status == ProviderMissionAssignmentStatus.Accepted && !paymentConfirmed
+                        ? "Paiement client en attente. La position et le demarrage sont bloques."
+                        : null;
             var label = mission.ServiceOption?.Name
                 ?? mission.ServicePrestation?.Name
                 ?? serviceNames.GetValueOrDefault(mission.ServiceId)
@@ -72,7 +75,7 @@ public sealed class AdminProviderMissionTestService(
                 item.ExpiresAt,
                 GetStatusLabel(item.Status),
                 item.Status == ProviderMissionAssignmentStatus.Offered && !expired && providerAllowed,
-                item.Status == ProviderMissionAssignmentStatus.Accepted && providerAllowed,
+                item.Status == ProviderMissionAssignmentStatus.Accepted && providerAllowed && paymentConfirmed,
                 item.Status == ProviderMissionAssignmentStatus.Started && providerAllowed,
                 reason);
         }).ToArray();
@@ -129,6 +132,13 @@ public sealed class AdminProviderMissionTestService(
         if (assignment?.Mission is null || assignment.Provider is null)
         {
             return NotFound();
+        }
+
+        if (!assignment.Mission.IsInitialPaymentConfirmed)
+        {
+            return Failure(
+                "Le paiement client doit etre confirme avant de mettre a jour la position.",
+                "Position bloquee tant que le paiement client est en attente.");
         }
 
         await SetTestLocationsAsync(

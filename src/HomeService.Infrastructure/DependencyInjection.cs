@@ -23,10 +23,13 @@ public static class DependencyInjection
         services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<HomeServiceDbContext>());
         services.Configure<FirebaseOptions>(options =>
         {
-            options.Enabled = string.Equals(configuration["FIREBASE_NOTIFICATIONS_ENABLED"], "true", StringComparison.OrdinalIgnoreCase);
-            options.ProjectId = configuration["FIREBASE_PROJECT_ID"];
+            options.Enabled = string.Equals(
+                configuration["FIREBASE_NOTIFICATIONS_ENABLED"] ?? configuration["Firebase:Enabled"],
+                "true",
+                StringComparison.OrdinalIgnoreCase);
+            options.ProjectId = configuration["FIREBASE_PROJECT_ID"] ?? configuration["Firebase:ProjectId"];
             options.CredentialsJson = FirebaseCredentialsJsonResolver.Resolve(
-                configuration["FIREBASE_CREDENTIALS_JSON"],
+                configuration["FIREBASE_CREDENTIALS_JSON"] ?? configuration["Firebase:CredentialsJson"],
                 configuration["FIREBASE_CREDENTIALS_BASE64"],
                 configuration["FIREBASE_CREDENTIALS_JSON_BASE64"]);
         });

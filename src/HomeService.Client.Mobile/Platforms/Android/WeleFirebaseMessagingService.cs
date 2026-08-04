@@ -1,6 +1,5 @@
 using Android.App;
 using Android.Content;
-using Android.OS;
 using AndroidX.Core.App;
 using Firebase.Messaging;
 using HomeService.Client.Mobile.Services;
@@ -11,7 +10,7 @@ namespace HomeService.Client.Mobile;
 [IntentFilter(["com.google.firebase.MESSAGING_EVENT"])]
 public sealed class WeleFirebaseMessagingService : FirebaseMessagingService
 {
-    public const string ChannelId = "wele_missions";
+    public const string ChannelId = WeleNotificationChannel.ChannelId;
 
     public override void OnNewToken(string token)
     {
@@ -34,7 +33,7 @@ public sealed class WeleFirebaseMessagingService : FirebaseMessagingService
                 // The native notification remains available while MAUI is still starting.
             }
         });
-        EnsureNotificationChannel();
+        WeleNotificationChannel.EnsureCreated(this);
 
         var title = message.GetNotification()?.Title
             ?? ReadData(message, "title")
@@ -63,23 +62,6 @@ public sealed class WeleFirebaseMessagingService : FirebaseMessagingService
 
         NotificationManagerCompat.From(this)
             .Notify(message.MessageId?.GetHashCode() ?? DateTime.UtcNow.Millisecond, notification);
-    }
-
-    private void EnsureNotificationChannel()
-    {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.O)
-        {
-            return;
-        }
-
-        var manager = (NotificationManager?)GetSystemService(NotificationService);
-        manager?.CreateNotificationChannel(new NotificationChannel(
-            ChannelId,
-            "Suivi des missions",
-            NotificationImportance.High)
-        {
-            Description = "Affectations, arrivées et mises à jour de vos demandes Wélé."
-        });
     }
 
     private static string? ReadData(RemoteMessage message, string key)

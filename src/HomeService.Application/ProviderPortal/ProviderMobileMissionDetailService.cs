@@ -153,8 +153,10 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
         return new ProviderMobileMissionActionsResponse(
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
-            assignment.Status == ProviderMissionAssignmentStatus.Accepted,
             assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                && mission.IsInitialPaymentConfirmed,
+            assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                && mission.IsInitialPaymentConfirmed
                 && assignment.HasVerifiedArrival
                 && mission.CanStartFor(assignment.ProviderId, assignment.CompanyId),
             assignment.Status == ProviderMissionAssignmentStatus.Started,

@@ -30,9 +30,7 @@ public sealed class MobileDeviceTokenService(IAppDbContext db)
         }
         else if (existing.OwnerType != ownerType || existing.OwnerId != ownerId)
         {
-            existing.Disable("Token reassigne a un autre compte mobile.");
-            existing = new MobileDeviceToken(ownerType, ownerId, platform, request.Token, request.DeviceLabel);
-            db.MobileDeviceTokens.Add(existing);
+            existing.Reassign(ownerType, ownerId, platform, request.DeviceLabel);
         }
         else
         {

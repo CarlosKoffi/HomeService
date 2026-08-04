@@ -1,10 +1,13 @@
 using HomeService.Application.Notifications;
+using HomeService.Infrastructure.Notifications;
+using Microsoft.Extensions.Options;
 
 namespace HomeService.Api;
 
 public sealed class MobilePushNotificationHostedService(
     IServiceScopeFactory scopeFactory,
     IConfiguration configuration,
+    IOptions<FirebaseOptions> firebaseOptions,
     ILogger<MobilePushNotificationHostedService> logger) : BackgroundService
 {
     private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(30);
@@ -12,7 +15,7 @@ public sealed class MobilePushNotificationHostedService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!string.Equals(configuration["FIREBASE_NOTIFICATIONS_ENABLED"], "true", StringComparison.OrdinalIgnoreCase))
+        if (!firebaseOptions.Value.Enabled)
         {
             logger.LogInformation("Firebase mobile push notifications are disabled.");
             return;

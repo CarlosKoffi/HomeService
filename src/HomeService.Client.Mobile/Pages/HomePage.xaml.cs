@@ -167,36 +167,6 @@ public partial class HomePage : ContentPage
         Refresh.IsRefreshing = false;
     }
 
-    private async void OnSearchClicked(object sender, EventArgs e)
-    {
-        var query = SearchEntry.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            SearchResultsSection.IsVisible = false;
-            return;
-        }
-
-        var result = await apiClient.SearchCatalogAsync(query);
-        searchResults.Clear();
-        if (result.IsSuccess && result.Response is not null)
-        {
-            foreach (var item in result.Response.Take(12))
-            {
-                searchResults.Add(SearchResultItem.From(item, apiClient));
-            }
-        }
-
-        SearchCountLabel.Text = searchResults.Count <= 1
-            ? $"{searchResults.Count} résultat"
-            : $"{searchResults.Count} résultats";
-        SearchResultsSection.IsVisible = searchResults.Count > 0;
-    }
-
-    private void OnSearchCompleted(object sender, EventArgs e)
-    {
-        OnSearchClicked(sender, e);
-    }
-
     private async void OnSearchTapped(object sender, TappedEventArgs e)
     {
         await Shell.Current.GoToAsync(nameof(CatalogSearchPage));

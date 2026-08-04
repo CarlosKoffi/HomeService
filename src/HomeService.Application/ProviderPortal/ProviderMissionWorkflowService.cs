@@ -116,6 +116,12 @@ public sealed class ProviderMissionWorkflowService
             return ProviderMissionOperationResult.BadRequest("La presence ne peut etre verifiee que sur une mission acceptee.");
         }
 
+        if (!assignment.Mission.IsInitialPaymentConfirmed)
+        {
+            return ProviderMissionOperationResult.BadRequest(
+                "Le paiement client doit etre confirme avant de verifier l'arrivee du prestataire.");
+        }
+
         assignment.VerifyArrival(
             request.Latitude,
             request.Longitude,
@@ -155,6 +161,12 @@ public sealed class ProviderMissionWorkflowService
         if (assignment.Status != ProviderMissionAssignmentStatus.Accepted)
         {
             return ProviderMissionOperationResult.BadRequest("La mission doit etre acceptee avant de demarrer la prestation.");
+        }
+
+        if (!assignment.Mission.IsInitialPaymentConfirmed)
+        {
+            return ProviderMissionOperationResult.BadRequest(
+                "Le paiement client doit etre confirme avant de demarrer la prestation.");
         }
 
         if (!assignment.Mission.CanStartFor(assignment.ProviderId, assignment.CompanyId))

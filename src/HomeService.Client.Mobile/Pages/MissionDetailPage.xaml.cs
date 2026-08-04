@@ -8,14 +8,18 @@ namespace HomeService.Client.Mobile.Pages;
 [QueryProperty(nameof(MissionId), "missionId")]
 public partial class MissionDetailPage : ContentPage
 {
+    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(5);
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<AdditionalQuoteRow> additionalQuotes = [];
     private readonly ObservableCollection<PhotoRow> photos = [];
     private readonly ObservableCollection<TimelineRow> timeline = [];
+    private readonly SemaphoreSlim loadGate = new(1, 1);
     private Guid currentMissionId;
     private string? currentProviderPhoneNumber;
     private ClientMissionProviderResponse? currentTrackingProvider;
+    private CancellationTokenSource? autoRefreshCancellation;
+    private string? loadedProviderPhotoPath;
     private bool isOpeningChat;
 
     public MissionDetailPage()
@@ -34,43 +38,114 @@ public partial class MissionDetailPage : ContentPage
     {
         base.OnAppearing();
         isOpeningChat = false;
-        await LoadAsync();
+        StopAutoRefresh();
+        autoRefreshCancellation = new CancellationTokenSource();
+        var cancellationToken = autoRefreshCancellation.Token;
+
+        try
+        {
+            await LoadAsync(cancellationToken);
+            _ = RunAutoRefreshAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Normal when the user leaves the mission screen during a refresh.
+        }
     }
 
-    private async Task LoadAsync()
+    protected override void OnDisappearing()
     {
-        ErrorLabel.IsVisible = false;
-        OverviewPanel.IsVisible = true;
-        DetailPanel.IsVisible = false;
-        ProviderDetailPanel.IsVisible = false;
-        if (!Guid.TryParse(MissionId, out var missionId))
+        StopAutoRefresh();
+        base.OnDisappearing();
+    }
+
+    private async Task RunAutoRefreshAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(AutoRefreshInterval);
+        try
         {
-            if (sessionStore.IsPreviewMode())
+            while (await timer.WaitForNextTickAsync(cancellationToken))
             {
-                BindPreviewMission(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+                try
+                {
+                    await LoadAsync(cancellationToken, preserveViewState: true, includeMedia: false);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch
+                {
+                    // A later timer tick retries after a transient network failure.
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Normal when the page is no longer visible.
+        }
+    }
+
+    private void StopAutoRefresh()
+    {
+        var cancellation = autoRefreshCancellation;
+        autoRefreshCancellation = null;
+        if (cancellation is null)
+        {
+            return;
+        }
+
+        cancellation.Cancel();
+        cancellation.Dispose();
+    }
+
+    private async Task LoadAsync(
+        CancellationToken cancellationToken = default,
+        bool preserveViewState = false,
+        bool includeMedia = true)
+    {
+        await loadGate.WaitAsync(cancellationToken);
+        try
+        {
+            ErrorLabel.IsVisible = false;
+            if (!preserveViewState)
+            {
+                OverviewPanel.IsVisible = true;
+                DetailPanel.IsVisible = false;
+                ProviderDetailPanel.IsVisible = false;
+            }
+
+            if (!Guid.TryParse(MissionId, out var missionId))
+            {
+                if (sessionStore.IsPreviewMode())
+                {
+                    BindPreviewMission(Guid.Parse("11111111-1111-1111-1111-111111111111"));
+                    return;
+                }
+
+                ShowError("Mission introuvable.");
                 return;
             }
 
-            ShowError("Mission introuvable.");
-            return;
-        }
+            currentMissionId = missionId;
+            if (sessionStore.IsPreviewMode())
+            {
+                BindPreviewMission(missionId);
+                return;
+            }
 
-        currentMissionId = missionId;
-        if (sessionStore.IsPreviewMode())
-        {
-            BindPreviewMission(missionId);
-            return;
-        }
+            var result = await apiClient.GetMissionAsync(missionId, cancellationToken);
+            if (!result.IsSuccess || result.Response is null)
+            {
+                if (!preserveViewState)
+                {
+                    ErrorLabel.Text = result.ErrorMessage ?? "Mission introuvable.";
+                    ErrorLabel.IsVisible = true;
+                }
+                return;
+            }
 
-        var result = await apiClient.GetMissionAsync(missionId);
-        if (!result.IsSuccess || result.Response is null)
-        {
-            ErrorLabel.Text = result.ErrorMessage ?? "Mission introuvable.";
-            ErrorLabel.IsVisible = true;
-            return;
-        }
-
-        var mission = result.Response;
+            var mission = result.Response;
         TitleLabel.Text = mission.MissionNumber;
         StatusLabel.Text = ResolveCustomerStatusLabel(mission);
         ServiceLabel.Text = mission.ServiceName ?? "Service";
@@ -125,8 +200,14 @@ public partial class MissionDetailPage : ContentPage
             currentProviderPhoneNumber = mission.ContactDetailsReleased ? mission.AssignedProvider.PhoneNumber : null;
             CallButton.IsEnabled = !string.IsNullOrWhiteSpace(currentProviderPhoneNumber);
             CallButton.Opacity = CallButton.IsEnabled ? 1 : 0.55;
-            ProviderPhoto.Source = await apiClient.DownloadMediaImageSourceAsync(mission.AssignedProvider.PhotoStoragePath);
-            ProviderPhoto.IsVisible = ProviderPhoto.Source is not null;
+            if (includeMedia || !string.Equals(loadedProviderPhotoPath, mission.AssignedProvider.PhotoStoragePath, StringComparison.Ordinal))
+            {
+                ProviderPhoto.Source = await apiClient.DownloadMediaImageSourceAsync(
+                    mission.AssignedProvider.PhotoStoragePath,
+                    cancellationToken);
+                ProviderPhoto.IsVisible = ProviderPhoto.Source is not null;
+                loadedProviderPhotoPath = mission.AssignedProvider.PhotoStoragePath;
+            }
             var missionSelection = string.Join(" - ", new[] { mission.ServiceName, mission.PrestationName, mission.OptionName }
                 .Where(value => !string.IsNullOrWhiteSpace(value)));
             ProviderDetailLabel.Text = $"{mission.AssignedProvider.FullName}\n{missionSelection}\n{AddressLabel.Text}\n{ProviderEtaLabel.Text}";
@@ -152,15 +233,26 @@ public partial class MissionDetailPage : ContentPage
             additionalQuotes.Add(AdditionalQuoteRow.From(quote, mission.Currency));
         }
 
-        photos.Clear();
-        foreach (var photo in mission.Photos)
-        {
-            var preview = await apiClient.DownloadMissionAttachmentImageSourceAsync(missionId, photo.AttachmentId);
-            photos.Add(PhotoRow.From(photo, preview));
-        }
+            if (includeMedia)
+            {
+                photos.Clear();
+                foreach (var photo in mission.Photos)
+                {
+                    var preview = await apiClient.DownloadMissionAttachmentImageSourceAsync(
+                        missionId,
+                        photo.AttachmentId,
+                        cancellationToken);
+                    photos.Add(PhotoRow.From(photo, preview));
+                }
+            }
 
-        AdditionalQuotesCard.IsVisible = additionalQuotes.Count > 0;
-        PhotosCard.IsVisible = photos.Count > 0;
+            AdditionalQuotesCard.IsVisible = additionalQuotes.Count > 0;
+            PhotosCard.IsVisible = photos.Count > 0;
+        }
+        finally
+        {
+            loadGate.Release();
+        }
     }
 
     private void BindPreviewMission(Guid missionId)

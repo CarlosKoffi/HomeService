@@ -46,6 +46,23 @@ public sealed class MobileDeviceToken : AuditableEntity
         Touch();
     }
 
+    public void Reassign(
+        MobileDeviceOwnerType ownerType,
+        Guid ownerId,
+        MobileDevicePlatform platform,
+        string? deviceLabel)
+    {
+        OwnerType = ownerType;
+        OwnerId = ownerId;
+        Platform = platform;
+        DeviceLabel = Clean(deviceLabel, 120);
+        IsActive = true;
+        DisabledAt = null;
+        FailureReason = null;
+        LastSeenAt = DateTimeOffset.UtcNow;
+        Touch();
+    }
+
     public void Disable(string? reason = null)
     {
         IsActive = false;

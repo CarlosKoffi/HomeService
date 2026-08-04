@@ -4,10 +4,92 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls"
     Shell.NavBarIsVisible="False"
     Shell.TabBarIsVisible="False"
     BackgroundColor="White"
     Title="Accueil">
+    <ContentPage.Resources>
+        <Style x:Key="HomeSectionTitleStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{StaticResource WeleBlue}" />
+        </Style>
+        <Style x:Key="HomeMoreLinkStyle" TargetType="Label">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="VerticalTextAlignment" Value="Center" />
+        </Style>
+        <DataTemplate x:Key="PremiumServiceCardTemplate">
+            <Grid
+                HeightRequest="126"
+                WidthRequest="106">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer
+                        CommandParameter="{Binding .}"
+                        Tapped="OnServiceTapped" />
+                </Grid.GestureRecognizers>
+                <Border
+                    HeightRequest="126"
+                    WidthRequest="106"
+                    Padding="0"
+                    BackgroundColor="White"
+                    Stroke="White"
+                    StrokeThickness="0.75"
+                    StrokeShape="RoundRectangle 14">
+                    <Border.Shadow>
+                        <Shadow
+                            Brush="#142238"
+                            Offset="4,6"
+                            Opacity="0.24"
+                            Radius="8" />
+                    </Border.Shadow>
+                    <Grid RowDefinitions="92,*">
+                        <Grid Margin="7,7,7,0" BackgroundColor="White">
+                            <Image
+                                Source="{Binding IconUrl}"
+                                Aspect="AspectFit"
+                                IsVisible="{Binding HasIconUrl}"
+                                Scale="1" />
+                            <Label
+                                Text="{Binding IconFallback}"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                TextColor="{StaticResource WeleBlue}"
+                                HorizontalTextAlignment="Center"
+                                VerticalTextAlignment="Center"
+                                IsVisible="{Binding HasIconFallback}" />
+                        </Grid>
+                        <Label
+                            Grid.Row="1"
+                            Margin="8,0,8,6"
+                            Text="{Binding Name}"
+                            FontSize="10"
+                            FontAttributes="Bold"
+                            TextColor="{StaticResource Ink}"
+                            HorizontalTextAlignment="Center"
+                            HorizontalOptions="Fill"
+                            VerticalTextAlignment="Center"
+                            MaxLines="2"
+                            LineBreakMode="TailTruncation" />
+                    </Grid>
+                </Border>
+                <shapes:Path
+                    Data="M 0.75,23 L 0.75,14 A 13.25,13.25 0 0 1 14,0.75 L 32,0.75"
+                    Stroke="{StaticResource WeleBlue}"
+                    StrokeThickness="2.2"
+                    StrokeLineCap="Round"
+                    Fill="Transparent"
+                    HeightRequest="126"
+                    WidthRequest="106"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    InputTransparent="True"
+                    ZIndex="2" />
+            </Grid>
+        </DataTemplate>
+    </ContentPage.Resources>
     <Grid RowDefinitions="*,72" HorizontalOptions="Fill">
         <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
             <ScrollView>
@@ -39,20 +121,33 @@
                         <controls:ClientNotificationButton Grid.Column="1" />
                     </Grid>
 
-                    <Border HeightRequest="42" Stroke="#EDF0F4" BackgroundColor="#F7F8FA" StrokeShape="RoundRectangle 12" Padding="13,0">
-                        <Border.GestureRecognizers>
+                    <Grid HeightRequest="42" Padding="13,0" ColumnDefinitions="22,*" ColumnSpacing="8">
+                        <Grid.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnSearchTapped" />
-                        </Border.GestureRecognizers>
-                        <Grid ColumnDefinitions="22,*" ColumnSpacing="8">
-                            <Image Source="app_search.png" HeightRequest="18" WidthRequest="18" />
-                            <Entry Grid.Column="1" x:Name="SearchEntry" Placeholder="Que recherchez-vous aujourd'hui ?" FontSize="12" MinimumHeightRequest="0" HeightRequest="40" IsReadOnly="True" InputTransparent="True" />
+                        </Grid.GestureRecognizers>
+                        <Image Source="app_search_black.png" HeightRequest="18" WidthRequest="18" />
+                        <Grid
+                            Grid.Column="1"
+                            RowDefinitions="*,1,5"
+                            HeightRequest="40"
+                            InputTransparent="True">
+                            <Label
+                                Text="Que recherchez-vous aujourd'hui ?"
+                                TextColor="{StaticResource Ink}"
+                                FontSize="12"
+                                VerticalTextAlignment="Center" />
+                            <BoxView
+                                Grid.Row="1"
+                                HeightRequest="1"
+                                Color="{StaticResource Ink}"
+                                HorizontalOptions="Fill" />
                         </Grid>
-                    </Border>
+                    </Grid>
 
                     <VerticalStackLayout Spacing="6">
                         <Grid ColumnDefinitions="*,Auto">
-                            <Label Text="Pour ma maison" FontSize="15" FontAttributes="Bold" />
-                            <Label Grid.Column="1" Text="Voir plus  →" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center">
+                            <Label Text="Pour ma maison" Style="{StaticResource HomeSectionTitleStyle}" />
+                            <Label Grid.Column="1" Text="Voir plus  &#x2192;" Style="{StaticResource HomeMoreLinkStyle}">
                                 <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnMoreHomeServicesTapped" /></Label.GestureRecognizers>
                             </Label>
                         </Grid>
@@ -61,7 +156,8 @@
                             HeightRequest="134"
                             HorizontalScrollBarVisibility="Never"
                             ItemsUpdatingScrollMode="KeepScrollOffset"
-                            SelectionMode="None">
+                            SelectionMode="None"
+                            ItemTemplate="{StaticResource PremiumServiceCardTemplate}">
                             <CollectionView.ItemsLayout>
                                 <LinearItemsLayout
                                     Orientation="Horizontal"
@@ -69,48 +165,13 @@
                                     SnapPointsAlignment="Start"
                                     SnapPointsType="None" />
                             </CollectionView.ItemsLayout>
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Border
-                                        HeightRequest="126"
-                                        WidthRequest="106"
-                                        Padding="0"
-                                        BackgroundColor="#FFFFFF"
-                                        Stroke="#111827"
-                                        StrokeThickness="1"
-                                        StrokeShape="RoundRectangle 14">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                CommandParameter="{Binding .}"
-                                                Tapped="OnServiceTapped" />
-                                        </Border.GestureRecognizers>
-                                        <Grid RowDefinitions="92,*">
-                                            <Grid Margin="4,4,4,0">
-                                                <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
-                                                <Label Text="{Binding IconFallback}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
-                                            </Grid>
-                                            <Label
-                                                Grid.Row="1"
-                                                Margin="8,0,8,6"
-                                                Text="{Binding Name}"
-                                                FontSize="10"
-                                                FontAttributes="Bold"
-                                                HorizontalTextAlignment="Center"
-                                                HorizontalOptions="Fill"
-                                                VerticalTextAlignment="Center"
-                                                MaxLines="2"
-                                                LineBreakMode="TailTruncation" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
                         </CollectionView>
                     </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="6">
                         <Grid ColumnDefinitions="*,Auto">
-                            <Label Text="Pour mon bien-être" FontSize="15" FontAttributes="Bold" />
-                            <Label Grid.Column="1" Text="Voir plus  →" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center">
+                            <Label Text="Pour mon bien-être" Style="{StaticResource HomeSectionTitleStyle}" />
+                            <Label Grid.Column="1" Text="Voir plus  &#x2192;" Style="{StaticResource HomeMoreLinkStyle}">
                                 <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnMoreWellbeingServicesTapped" /></Label.GestureRecognizers>
                             </Label>
                         </Grid>
@@ -119,7 +180,8 @@
                             HeightRequest="134"
                             HorizontalScrollBarVisibility="Never"
                             ItemsUpdatingScrollMode="KeepScrollOffset"
-                            SelectionMode="None">
+                            SelectionMode="None"
+                            ItemTemplate="{StaticResource PremiumServiceCardTemplate}">
                             <CollectionView.ItemsLayout>
                                 <LinearItemsLayout
                                     Orientation="Horizontal"
@@ -127,48 +189,13 @@
                                     SnapPointsAlignment="Start"
                                     SnapPointsType="None" />
                             </CollectionView.ItemsLayout>
-                            <CollectionView.ItemTemplate>
-                                <DataTemplate>
-                                    <Border
-                                        HeightRequest="126"
-                                        WidthRequest="106"
-                                        Padding="0"
-                                        BackgroundColor="#FFFFFF"
-                                        Stroke="#111827"
-                                        StrokeThickness="1"
-                                        StrokeShape="RoundRectangle 14">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                CommandParameter="{Binding .}"
-                                                Tapped="OnServiceTapped" />
-                                        </Border.GestureRecognizers>
-                                        <Grid RowDefinitions="92,*">
-                                            <Grid Margin="4,4,4,0">
-                                                <Image Source="{Binding IconUrl}" Aspect="AspectFit" IsVisible="{Binding HasIconUrl}" />
-                                                <Label Text="{Binding IconFallback}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasIconFallback}" />
-                                            </Grid>
-                                            <Label
-                                                Grid.Row="1"
-                                                Margin="8,0,8,6"
-                                                Text="{Binding Name}"
-                                                FontSize="10"
-                                                FontAttributes="Bold"
-                                                HorizontalTextAlignment="Center"
-                                                HorizontalOptions="Fill"
-                                                VerticalTextAlignment="Center"
-                                                MaxLines="2"
-                                                LineBreakMode="TailTruncation" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </CollectionView.ItemTemplate>
                         </CollectionView>
                     </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="6">
                         <Grid ColumnDefinitions="*,Auto">
-                            <Label Text="Les plus demandés" FontSize="15" FontAttributes="Bold" />
-                            <Label Grid.Column="1" Text="Voir plus" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center">
+                            <Label Text="Les plus demandés" Style="{StaticResource HomeSectionTitleStyle}" />
+                            <Label Grid.Column="1" Text="Voir plus  &#x2192;" Style="{StaticResource HomeMoreLinkStyle}">
                                 <Label.GestureRecognizers><TapGestureRecognizer Tapped="OnMorePopularTapped" /></Label.GestureRecognizers>
                             </Label>
                         </Grid>
@@ -186,7 +213,7 @@
                                                 <Label Text="{Binding Fallback}" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="{Binding HasFallback}" />
                                             </Grid>
                                         </Border>
-                                        <Label Text="{Binding Name}" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Start" MaxLines="2" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding Name}" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource Ink}" HorizontalTextAlignment="Start" MaxLines="2" LineBreakMode="TailTruncation" />
                                     </VerticalStackLayout>
                                 </DataTemplate>
                             </CollectionView.ItemTemplate>

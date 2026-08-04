@@ -53,13 +53,27 @@ public sealed class FirebaseCloudMessagingSender(
             HttpMethod.Post,
             $"https://fcm.googleapis.com/v1/projects/{options.ProjectId}/messages:send");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var payloadData = data?.ToDictionary(item => item.Key, item => item.Value)
+            ?? new Dictionary<string, string>();
+        payloadData["title"] = title;
+        payloadData["body"] = body;
         request.Content = JsonContent.Create(new
         {
             message = new
             {
                 token = deviceToken,
                 notification = new { title, body },
-                data = data ?? new Dictionary<string, string>()
+                data = payloadData,
+                android = new
+                {
+                    priority = "HIGH",
+                    notification = new
+                    {
+                        channel_id = "wele_missions",
+                        sound = "default",
+                        default_vibrate_timings = true
+                    }
+                }
             }
         });
 

@@ -33,7 +33,14 @@ public partial class LoginPage : ContentPage
         }
 
         await sessionStore.SaveAsync(result.Response);
-        await deviceRegistrationService.RegisterCurrentDeviceAsync();
+        try
+        {
+            await deviceRegistrationService.RegisterCurrentDeviceAsync();
+        }
+        catch
+        {
+            // La connexion reste valide et l'enregistrement est retente a l'ouverture de l'accueil.
+        }
         await Shell.Current.GoToAsync("//home");
     }
 

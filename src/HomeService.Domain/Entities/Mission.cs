@@ -93,6 +93,8 @@ public sealed class Mission : AuditableEntity
     public bool CanRevealContactDetails => ContactDetailsReleasedAt is not null
         && Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started or MissionStatus.Completed
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
+    public bool IsInitialPaymentConfirmed => CustomerConfirmedAt is not null
+        && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
 
     public void SelectCustomerPaymentMethod(CustomerPaymentMethod paymentMethod)
     {
@@ -421,6 +423,11 @@ public sealed class Mission : AuditableEntity
 
     public bool CanStartFor(Guid providerId, Guid companyId)
     {
+        if (!IsInitialPaymentConfirmed)
+        {
+            return false;
+        }
+
         if (ProviderId is not null && ProviderId != providerId)
         {
             return false;

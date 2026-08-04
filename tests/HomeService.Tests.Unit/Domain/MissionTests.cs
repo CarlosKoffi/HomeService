@@ -53,19 +53,31 @@ public sealed class MissionTests
     [Fact]
     public void Start_WhenWrongProvider_Throws()
     {
-        var mission = CreateAssignedMission();
+        var mission = CreatePaidAcceptedMission();
 
         Assert.Throws<InvalidOperationException>(() => mission.Start(Guid.NewGuid(), CompanyId));
-        Assert.Equal(MissionStatus.Assigned, mission.Status);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
     }
 
     [Fact]
     public void Start_WhenWrongCompany_Throws()
     {
-        var mission = CreateAssignedMission();
+        var mission = CreatePaidAcceptedMission();
 
         Assert.Throws<InvalidOperationException>(() => mission.Start(ProviderId, Guid.NewGuid()));
-        Assert.Equal(MissionStatus.Assigned, mission.Status);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
+    }
+
+    [Fact]
+    public void Start_WhenPaymentIsPending_ThrowsAndKeepsMissionAccepted()
+    {
+        var mission = CreateAssignedMission();
+        mission.MarkProviderAccepted(ProviderId, CompanyId);
+
+        Assert.Throws<InvalidOperationException>(() => mission.Start(ProviderId, CompanyId));
+
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
+        Assert.Equal(PaymentStatus.Pending, mission.PaymentStatus);
     }
 
     [Fact]
@@ -83,7 +95,7 @@ public sealed class MissionTests
     [InlineData(90, 1500)]
     public void Complete_WhenMissionIsStarted_CalculatesFinalTotal(int actualDurationMinutes, int expectedAmount)
     {
-        var mission = CreateAssignedMission();
+        var mission = CreatePaidAcceptedMission();
         mission.Start(ProviderId, CompanyId);
 
         mission.Complete(actualDurationMinutes);
@@ -270,7 +282,7 @@ public sealed class MissionTests
     [Fact]
     public void CancelByCustomer_AfterMissionStarted_ThrowsAndKeepsMissionStarted()
     {
-        var mission = CreateAssignedMission();
+        var mission = CreatePaidAcceptedMission();
         mission.Start(ProviderId, CompanyId);
 
         var exception = Assert.Throws<InvalidOperationException>(() => mission.CancelByCustomer(2500));
@@ -294,7 +306,7 @@ public sealed class MissionTests
     [Fact]
     public void MarkDisputed_WhenMissionIsCompleted_MovesToDisputeForAftercare()
     {
-        var mission = CreateAssignedMission();
+        var mission = CreatePaidAcceptedMission();
         mission.Start(ProviderId, CompanyId);
         mission.Complete(60);
 
@@ -340,6 +352,14 @@ public sealed class MissionTests
     {
         var mission = CreateMission(90);
         mission.Assign(ProviderId, CompanyId, 1000);
+        return mission;
+    }
+
+    private static Mission CreatePaidAcceptedMission()
+    {
+        var mission = CreateAssignedMission();
+        mission.MarkProviderAccepted(ProviderId, CompanyId);
+        mission.ConfirmByCustomer(0, 0);
         return mission;
     }
 

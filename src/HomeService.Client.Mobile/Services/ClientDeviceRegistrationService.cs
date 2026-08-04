@@ -22,7 +22,12 @@ public sealed class ClientDeviceRegistrationService(ClientMobileApiClient apiCli
             DeviceInfo.Current.Platform.ToString(),
             BuildDeviceLabel());
 
-        await apiClient.RegisterDeviceTokenAsync(request, cancellationToken);
+        var result = await apiClient.RegisterDeviceTokenAsync(request, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            throw new InvalidOperationException(
+                result.ErrorMessage ?? "Le telephone n'a pas pu etre enregistre pour les notifications.");
+        }
     }
 
     public static void StoreFirebaseToken(string token)

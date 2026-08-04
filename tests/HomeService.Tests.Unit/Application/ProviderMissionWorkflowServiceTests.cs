@@ -31,6 +31,40 @@ public sealed class ProviderMissionWorkflowServiceTests
     }
 
     [Fact]
+    public void VerifyArrival_WhenPaymentIsPending_IsRejectedWithoutLocationMutation()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission, confirmPayment: false);
+
+        var result = _service.VerifyArrival(provider, assignment, ValidLocation());
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, result.Status);
+        Assert.Contains("paiement", result.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(LocationVerificationStatus.NotChecked, assignment.ArrivalVerificationStatus);
+        Assert.Null(assignment.ArrivalLatitude);
+        Assert.Equal(ProviderMissionAssignmentStatus.Accepted, assignment.Status);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
+    }
+
+    [Fact]
+    public void StartMission_WhenPaymentIsPending_IsRejectedWithoutLocationMutation()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission, confirmPayment: false);
+
+        var result = _service.StartMission(provider, assignment, ValidLocation());
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, result.Status);
+        Assert.Contains("paiement", result.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(LocationVerificationStatus.NotChecked, assignment.ArrivalVerificationStatus);
+        Assert.Null(assignment.ArrivalLatitude);
+        Assert.Equal(ProviderMissionAssignmentStatus.Accepted, assignment.Status);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
+    }
+
+    [Fact]
     public void CompleteMission_WhenMissionIsStarted_CompletesAssignmentAndMission()
     {
         var provider = CreateApprovedProvider();
@@ -301,11 +335,15 @@ public sealed class ProviderMissionWorkflowServiceTests
         return mission;
     }
 
-    private static ProviderMissionAssignment CreateAcceptedAssignment(Mission mission)
+    private static ProviderMissionAssignment CreateAcceptedAssignment(Mission mission, bool confirmPayment = true)
     {
         var assignment = CreateOfferedAssignment(mission);
         assignment.Accept(5.348800m, -4.003100m, 25);
         mission.MarkProviderAccepted(ProviderId, CompanyId);
+        if (confirmPayment)
+        {
+            mission.ConfirmByCustomer(0, 0);
+        }
         return assignment;
     }
 
