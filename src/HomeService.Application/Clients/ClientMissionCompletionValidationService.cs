@@ -73,6 +73,7 @@ public sealed class ClientMissionCompletionValidationService(
             request.CleanlinessRating,
             request.Comment);
         db.MissionReviews.Add(review);
+        AddCustomerCompletionPhotos(mission, request);
 
         mission.ValidateCompletionByCustomer();
 
@@ -145,7 +146,76 @@ public sealed class ClientMissionCompletionValidationService(
         ValidateRating(request.PresentationRating, "presentation", errors);
         ValidateRating(request.PolitenessRating, "politesse", errors);
         ValidateRating(request.CleanlinessRating, "proprete", errors);
+        ValidatePhotos(request.Photos, errors);
         return errors;
+    }
+
+    private void AddCustomerCompletionPhotos(Mission mission, ValidateClientMissionCompletionRequest request)
+    {
+        if (request.Photos is null)
+        {
+            return;
+        }
+
+        foreach (var photo in request.Photos.Take(MaxCompletionPhotos))
+        {
+            db.MissionAttachments.Add(new MissionAttachment(
+                mission.Id,
+                MissionAttachmentType.CustomerCompletionPhoto,
+                photo.OriginalFileName,
+                photo.StoragePath,
+                photo.ContentType,
+                photo.FileSizeBytes,
+                photo.Caption));
+        }
+    }
+
+    private static void ValidatePhotos(IReadOnlyList<ClientMissionPhotoRequest>? photos, List<string> errors)
+    {
+        if (photos is null || photos.Count == 0)
+        {
+            return;
+        }
+
+        if (photos.Count > MaxCompletionPhotos)
+        {
+            errors.Add($"Ajoutez {MaxCompletionPhotos} photos maximum pour votre avis.");
+        }
+
+        foreach (var photo in photos)
+        {
+            if (string.IsNullOrWhiteSpace(photo.OriginalFileName) || photo.OriginalFileName.Length > 260)
+            {
+                errors.Add("Chaque photo doit avoir un nom de fichier valide.");
+            }
+
+            var normalizedPath = photo.StoragePath?.Replace('\\', '/').Trim();
+            if (string.IsNullOrWhiteSpace(normalizedPath)
+                || normalizedPath.Length > 720
+                || !normalizedPath.StartsWith("client-missions/pending/", StringComparison.OrdinalIgnoreCase)
+                || normalizedPath.Contains("../", StringComparison.Ordinal)
+                || normalizedPath.Contains("/..", StringComparison.Ordinal))
+            {
+                errors.Add("Le chemin de stockage d'une photo est invalide.");
+            }
+
+            if (string.IsNullOrWhiteSpace(photo.ContentType)
+                || photo.ContentType.Length > 120
+                || !photo.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add("Les pieces jointes de l'avis doivent etre des images.");
+            }
+
+            if (photo.FileSizeBytes is <= 0 or > MaxCompletionPhotoBytes)
+            {
+                errors.Add("Chaque photo de l'avis doit faire moins de 5 Mo.");
+            }
+
+            if (photo.Caption?.Length > 500)
+            {
+                errors.Add("La legende d'une photo ne peut pas depasser 500 caracteres.");
+            }
+        }
     }
 
     private static void ValidateRating(int rating, string label, List<string> errors)
@@ -155,6 +225,9 @@ public sealed class ClientMissionCompletionValidationService(
             errors.Add($"La note {label} doit etre comprise entre 1 et 5.");
         }
     }
+
+    private const int MaxCompletionPhotos = 4;
+    private const long MaxCompletionPhotoBytes = 5 * 1024 * 1024;
 }
 
 public sealed record ClientMissionCompletionValidationResult(

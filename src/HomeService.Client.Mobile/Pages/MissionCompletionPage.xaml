@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.MissionCompletionPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    BackgroundColor="White">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="22,18,22,24" Spacing="18">
+                <Grid ColumnDefinitions="42,*" ColumnSpacing="10">
+                    <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Intervention terminée" Style="{StaticResource SubpageTitleLabel}" />
+                </Grid>
+
+                <Image
+                    Source="intervention_complete_team.png"
+                    HeightRequest="315"
+                    Aspect="AspectFit"
+                    SemanticProperties.Description="Une technicienne et un technicien Wélé sourient après une intervention réussie" />
+
+                <VerticalStackLayout Spacing="7" HorizontalOptions="Fill">
+                    <Label Text="Mission accomplie !" FontSize="25" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Label
+                        x:Name="CompletionMessageLabel"
+                        Text="Votre prestataire a terminé l’intervention. Dites-nous comment cela s’est passé."
+                        Style="{StaticResource MutedLabel}"
+                        FontSize="14"
+                        LineHeight="1.35"
+                        HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <Border x:Name="ProviderCard" Stroke="#DCE7FF" BackgroundColor="#F6F9FF" StrokeShape="RoundRectangle 18" Padding="14">
+                    <Grid ColumnDefinitions="46,*" ColumnSpacing="12">
+                        <Border HeightRequest="46" WidthRequest="46" StrokeThickness="0" BackgroundColor="#E6EEFF" StrokeShape="RoundRectangle 15">
+                            <Label Text="✓" FontSize="23" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label x:Name="ProviderNameLabel" Text="Votre prestataire" FontSize="15" FontAttributes="Bold" />
+                            <Label x:Name="ServiceLabel" Text="Intervention terminée avec succès" Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" HorizontalTextAlignment="Center" IsVisible="False" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="1" Padding="22,12,22,22" Spacing="10" BackgroundColor="White">
+            <Button Text="Noter le prestataire" Clicked="OnRateClicked" />
+            <Button Text="Voir la facture" Style="{StaticResource OutlineActionButton}" Clicked="OnInvoiceClicked" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

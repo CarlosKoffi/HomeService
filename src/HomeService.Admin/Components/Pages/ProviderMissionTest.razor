@@ -2,6 +2,8 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Admin
 @inject ProviderMissionTestApiClient ApiClient
+@inject PlatformApiClient AdminApiClient
+@inject NavigationManager Navigation
 
 <PageTitle>Validation prestataire - Test</PageTitle>
 
@@ -9,7 +11,7 @@
     <div>
         <p class="eyebrow">Outil de test</p>
         <h1>Validation prestataire</h1>
-        <p class="lead">Simulez ici les actions du prestataire, de l'acceptation jusqu'a la fin de mission.</p>
+        <p class="lead">Préparez un prestataire, forcez sa disponibilité, puis déroulez le workflow de mission existant.</p>
     </div>
     <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
 </div>
@@ -26,6 +28,81 @@
 {
     <p class="admin-message error-message">@ErrorMessage</p>
 }
+
+<section class="assignment-panel provider-control-panel">
+    <header>
+        <div>
+            <h2>Tous les prestataires</h2>
+            <p>
+                @(ProvidersSnapshot?.Stats.TotalProviders ?? 0) profil(s),
+                @(ProvidersSnapshot?.Stats.AvailableProviders ?? 0) disponible(s).
+            </p>
+        </div>
+        <label class="provider-test-search">
+            <span>Recherche</span>
+            <input type="search" @bind="ProviderSearchTerm" @bind:event="oninput" placeholder="Nom, téléphone, entreprise ou service" />
+        </label>
+    </header>
+
+    @if (IsLoading)
+    {
+        <p class="empty-state">Chargement des prestataires...</p>
+    }
+    else if (VisibleProviders.Count == 0)
+    {
+        <p class="empty-state">Aucun prestataire ne correspond à la recherche.</p>
+    }
+    else
+    {
+        <div class="provider-test-list">
+            @foreach (var provider in VisibleProviders)
+            {
+                <article class="provider-test-row">
+                    <div class="provider-test-identity">
+                        <span class="provider-test-avatar">@GetInitials(provider.FullName)</span>
+                        <div>
+                            <strong>@provider.FullName</strong>
+                            <small>@provider.PhoneNumber</small>
+                            <small>@(provider.CompanyName ?? "Sans entreprise")</small>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="field-label">Validation</span>
+                        <strong>@TranslateProviderStatus(provider.Status)</strong>
+                        <small>@TranslateEmploymentType(provider.EmploymentType)</small>
+                    </div>
+                    <div>
+                        <span class="field-label">Compétences</span>
+                        <strong>@GetServiceSummary(provider)</strong>
+                        <small>@provider.YearsOfExperience an(s) d’expérience</small>
+                    </div>
+                    <div class="provider-test-availability">
+                        <span class="status-pill @(provider.IsAvailable ? "ok" : provider.Status == "Approved" ? "danger" : "pending")">
+                            @GetAvailabilityLabel(provider)
+                        </span>
+                        @if (provider.Status == "Approved")
+                        {
+                            <button
+                                type="button"
+                                class="@(provider.IsAvailable ? "secondary-action" : "primary-action")"
+                                disabled="@(ChangingProviderId is not null || IsSubmitting)"
+                                @onclick="() => ToggleProviderAvailabilityAsync(provider)">
+                                @(ChangingProviderId == provider.Id
+                                    ? "Mise à jour..."
+                                    : provider.IsAvailable ? "Rendre indisponible" : "Forcer disponible")
+                            </button>
+                        }
+                        else
+                        {
+                            <small>Validez d’abord le profil.</small>
+                        }
+                        <button type="button" class="secondary-action" @onclick="() => OpenProvider(provider.Id)">Voir la fiche</button>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
 
 <section class="assignment-panel">
     <header>
@@ -112,11 +189,21 @@
 
 @code {
     private AdminProviderMissionTestListResponse? Snapshot { get; set; }
+    private AdminProviderListResponse? ProvidersSnapshot { get; set; }
     private bool IsLoading { get; set; }
     private bool IsSubmitting { get; set; }
+    private Guid? ChangingProviderId { get; set; }
     private string? Message { get; set; }
     private string? ErrorMessage { get; set; }
+    private string? ProviderSearchTerm { get; set; }
     private Dictionary<Guid, int> EtaMinutes { get; } = [];
+
+    private IReadOnlyList<AdminProviderSummaryResponse> VisibleProviders =>
+        (ProvidersSnapshot?.Items ?? [])
+            .Where(provider => MatchesProviderSearch(provider, ProviderSearchTerm))
+            .OrderByDescending(provider => provider.IsAvailable)
+            .ThenBy(provider => provider.FullName)
+            .ToList();
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -126,7 +213,11 @@
         ErrorMessage = null;
         try
         {
-            Snapshot = await ApiClient.GetAssignmentsAsync();
+            var assignmentsTask = ApiClient.GetAssignmentsAsync();
+            var providersTask = AdminApiClient.GetAdminProvidersAsync(null, null, null);
+            await Task.WhenAll(assignmentsTask, providersTask);
+            Snapshot = await assignmentsTask;
+            ProvidersSnapshot = await providersTask;
             foreach (var assignment in Snapshot?.Assignments ?? [])
             {
                 EtaMinutes.TryAdd(assignment.AssignmentId, 10);
@@ -141,6 +232,89 @@
             IsLoading = false;
         }
     }
+
+    private async Task ToggleProviderAvailabilityAsync(AdminProviderSummaryResponse provider)
+    {
+        ChangingProviderId = provider.Id;
+        Message = null;
+        ErrorMessage = null;
+        var nextAvailability = !provider.IsAvailable;
+        try
+        {
+            var result = await AdminApiClient.SetAdminProviderAvailabilityAsync(
+                provider.Id,
+                nextAvailability,
+                "Disponibilité forcée depuis l’outil de test prestataire.");
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "La disponibilité n’a pas pu être modifiée.";
+                return;
+            }
+
+            Message = nextAvailability
+                ? $"{provider.FullName} est disponible. Vous pouvez poursuivre le test de mission."
+                : $"{provider.FullName} est maintenant indisponible.";
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            ChangingProviderId = null;
+        }
+    }
+
+    private void OpenProvider(Guid providerId) => Navigation.NavigateTo($"/providers/{providerId}");
+
+    private static bool MatchesProviderSearch(AdminProviderSummaryResponse provider, string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return true;
+        }
+
+        var term = search.Trim();
+        return provider.FullName.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || provider.PhoneNumber.Contains(term, StringComparison.OrdinalIgnoreCase)
+            || (provider.CompanyName?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
+            || provider.Services.Any(service => service.Contains(term, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string GetInitials(string fullName) => string.Concat(fullName
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Take(2)
+        .Select(part => char.ToUpperInvariant(part[0])));
+
+    private static string GetServiceSummary(AdminProviderSummaryResponse provider) =>
+        provider.Services.Count == 0
+            ? "Aucun service actif"
+            : string.Join(", ", provider.Services.Take(2));
+
+    private static string GetAvailabilityLabel(AdminProviderSummaryResponse provider) => provider.Status != "Approved"
+        ? "Validation requise"
+        : provider.IsAvailable ? "Disponible" : "Indisponible";
+
+    private static string TranslateEmploymentType(string value) => value switch
+    {
+        "TemporaryWorker" => "Intérimaire",
+        "CompanyEmployee" => "Employé",
+        _ => value
+    };
+
+    private static string TranslateProviderStatus(string value) => value switch
+    {
+        "Approved" => "Validé plateforme",
+        "Invited" => "Invité",
+        "ProfileIncomplete" => "Profil incomplet",
+        "PendingPlatformReview" => "À valider",
+        "InterimCandidate" => "Candidat intérimaire",
+        "SuspendedByCompany" => "Suspendu entreprise",
+        "SuspendedByPlatform" => "Suspendu plateforme",
+        "Inactive" => "Inactif",
+        _ => value
+    };
 
     private async Task AcceptAsync(AdminProviderMissionTestAssignmentResponse assignment)
     {

@@ -389,29 +389,10 @@ public partial class MissionDetailPage : ContentPage
 
     private async void OnCompleteClicked(object sender, EventArgs e)
     {
-        ErrorLabel.IsVisible = false;
-        var comment = await Shell.Current.DisplayPromptAsync("Avis", "Notez rapidement la prestation de 1 a 5.", "Valider", "Retour", "5", keyboard: Keyboard.Numeric, maxLength: 1);
-        if (!int.TryParse(comment, out var rating))
+        if (currentMissionId != Guid.Empty)
         {
-            rating = 5;
+            await Shell.Current.GoToAsync($"{nameof(MissionCompletionPage)}?missionId={currentMissionId:D}");
         }
-
-        rating = Math.Clamp(rating, 1, 5);
-        if (sessionStore.IsPreviewMode())
-        {
-            await Shell.Current.DisplayAlert("Merci", "Avis simulé en mode aperçu.", "OK");
-            return;
-        }
-
-        var result = await apiClient.ValidateCompletionAsync(currentMissionId, rating, "Validation depuis l'application client.");
-        if (!result.IsSuccess)
-        {
-            ShowError(result.ErrorMessage);
-            return;
-        }
-
-        await Shell.Current.DisplayAlert("Merci", "Mission terminee et avis enregistre.", "OK");
-        await LoadAsync();
     }
 
     private async void OnOpenChatClicked(object sender, EventArgs e)

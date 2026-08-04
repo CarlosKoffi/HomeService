@@ -10,7 +10,7 @@
     <div>
         <p class="eyebrow">Terrain</p>
         <h1>Prestataires</h1>
-        <p class="lead">Consultez les profils, documents, services et rattachements entreprise.</p>
+        <p class="lead">Consultez tous les profils et pilotez leur disponibilité opérationnelle.</p>
     </div>
     <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
 </div>
@@ -68,6 +68,10 @@
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))
 {
     <p class="admin-message error-message">@ErrorMessage</p>
+}
+@if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <p class="admin-message">@SuccessMessage</p>
 }
 
 <section class="operator-list">
@@ -139,6 +143,18 @@
                 </div>
                 <div class="provider-doc-actions">
                     <button type="button" class="primary-small-action" @onclick="() => OpenProvider(provider.Id)">Voir fiche</button>
+                    @if (provider.Status == "Approved")
+                    {
+                        <button
+                            type="button"
+                            class="@(provider.IsAvailable ? "secondary-action" : "primary-small-action")"
+                            disabled="@(ChangingProviderId is not null)"
+                            @onclick="() => ToggleAvailabilityAsync(provider)">
+                            @(ChangingProviderId == provider.Id
+                                ? "Mise à jour..."
+                                : provider.IsAvailable ? "Rendre indisponible" : "Forcer disponible")
+                        </button>
+                    }
                     @foreach (var document in provider.Documents.Take(3))
                     {
                         <a href="@ApiClient.GetProviderDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">
@@ -173,7 +189,9 @@
     private string? SelectedEmploymentType { get; set; }
     private string? SearchTerm { get; set; }
     private bool IsLoading { get; set; } = true;
+    private Guid? ChangingProviderId { get; set; }
     private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -212,6 +230,39 @@
     private void ShowProviderLogs(AdminProviderSummaryResponse provider)
     {
         SelectedProviderForLogs = provider;
+    }
+
+    private async Task ToggleAvailabilityAsync(AdminProviderSummaryResponse provider)
+    {
+        ChangingProviderId = provider.Id;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        var nextAvailability = !provider.IsAvailable;
+        try
+        {
+            var result = await ApiClient.SetAdminProviderAvailabilityAsync(
+                provider.Id,
+                nextAvailability,
+                "Disponibilité modifiée depuis la liste administrateur.");
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage ?? "La disponibilité n’a pas pu être modifiée.";
+                return;
+            }
+
+            SuccessMessage = nextAvailability
+                ? $"{provider.FullName} est maintenant disponible pour les missions."
+                : $"{provider.FullName} est maintenant indisponible.";
+            await LoadAsync();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        finally
+        {
+            ChangingProviderId = null;
+        }
     }
 
     private static string GetInitials(string name)

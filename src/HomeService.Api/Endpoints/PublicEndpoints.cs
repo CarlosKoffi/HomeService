@@ -815,12 +815,19 @@ public static class PublicEndpoints
 
         app.MapPost("/api/client/mission-photos", async (
             HttpRequest httpRequest,
+            ClientAuthService authService,
             ClientMissionPhotoUploadService uploadService,
             ILogger<Program> logger,
             CancellationToken cancellationToken) =>
         {
             try
             {
+                var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+                if (customer is null)
+                {
+                    return Results.Unauthorized();
+                }
+
                 if (!httpRequest.HasFormContentType)
                 {
                     return Results.BadRequest(new { message = "La photo doit etre envoyee au format multipart/form-data." });
@@ -847,7 +854,8 @@ public static class PublicEndpoints
         .WithName("UploadClientMissionPhoto")
         .Accepts<IFormFile>("multipart/form-data")
         .Produces<ClientMissionPhotoUploadResponse>()
-        .Produces(StatusCodes.Status400BadRequest);
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
 
         app.MapPost("/api/client/missions", async (
             CreateClientMissionRequest request,

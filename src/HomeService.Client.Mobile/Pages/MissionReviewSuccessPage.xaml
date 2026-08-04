@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.MissionReviewSuccessPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    BackgroundColor="White">
+    <Grid Padding="26" RowDefinitions="*,Auto">
+        <VerticalStackLayout Grid.Row="0" VerticalOptions="Center" Spacing="18">
+            <Border HeightRequest="92" WidthRequest="92" BackgroundColor="{StaticResource WeleBlue}" StrokeThickness="0" StrokeShape="RoundRectangle 46" HorizontalOptions="Center">
+                <Label Text="✓" TextColor="White" FontSize="48" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+            </Border>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Votre avis a été envoyé" FontSize="25" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                <Label Text="Merci ! Votre retour aide Wélé à maintenir un service de qualité et les clients à choisir les meilleurs professionnels." Style="{StaticResource MutedLabel}" FontSize="14" LineHeight="1.4" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
+                <Label Text="★" FontSize="25" TextColor="{StaticResource WeleBlue}" />
+                <Label Text="★" FontSize="25" TextColor="{StaticResource WeleBlue}" />
+                <Label Text="★" FontSize="25" TextColor="{StaticResource WeleBlue}" />
+                <Label Text="★" FontSize="25" TextColor="{StaticResource WeleBlue}" />
+                <Label Text="★" FontSize="25" TextColor="{StaticResource WeleBlue}" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <Button Grid.Row="1" Text="Terminer" Clicked="OnFinishClicked" Margin="0,12,0,0" />
+    </Grid>
+</ContentPage>

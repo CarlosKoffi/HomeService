@@ -207,6 +207,84 @@ public sealed class AdminProviderOperationsServiceTests
         Assert.Empty(db.AuditLogEntries);
     }
 
+    [Fact]
+    public async Task SetAvailabilityAsync_WhenProviderIsApproved_ForcesAvailabilityAndAudits()
+    {
+        await using var db = CreateDbContext(Guid.NewGuid().ToString("N"), new InMemoryDatabaseRoot());
+        var scenario = CreateReadyProviderScenario();
+        scenario.Provider.Approve();
+        db.Companies.Add(scenario.Company);
+        db.Services.Add(scenario.Service);
+        db.Providers.Add(scenario.Provider);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminProviderOperationsService(db).SetAvailabilityAsync(
+            scenario.Provider.Id,
+            true,
+            "Disponible pour le test de mission",
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "provider-force-available"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminProviderOperationStatus.Ok, result.Status);
+        Assert.True(scenario.Provider.IsAvailable);
+        Assert.Equal(5.3488m, scenario.Provider.CurrentLatitude);
+        Assert.Equal(-4.0031m, scenario.Provider.CurrentLongitude);
+        var log = Assert.Single(db.AuditLogEntries);
+        Assert.Equal("AdminProviderAvailabilityForced", log.Action);
+        Assert.Equal("Disponible pour le test de mission", log.Summary);
+        Assert.Equal("provider-force-available", log.CorrelationId);
+    }
+
+    [Fact]
+    public async Task SetAvailabilityAsync_WhenProviderIsNotApproved_ReturnsValidationFailed()
+    {
+        await using var db = CreateDbContext(Guid.NewGuid().ToString("N"), new InMemoryDatabaseRoot());
+        var scenario = CreateReadyProviderScenario();
+        db.Companies.Add(scenario.Company);
+        db.Services.Add(scenario.Service);
+        db.Providers.Add(scenario.Provider);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminProviderOperationsService(db).SetAvailabilityAsync(
+            scenario.Provider.Id,
+            true,
+            null,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "provider-force-blocked"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminProviderOperationStatus.ValidationFailed, result.Status);
+        Assert.False(scenario.Provider.IsAvailable);
+        Assert.Empty(db.AuditLogEntries);
+    }
+
+    [Fact]
+    public async Task SetAvailabilityAsync_WhenProviderIsAvailable_CanForceUnavailable()
+    {
+        await using var db = CreateDbContext(Guid.NewGuid().ToString("N"), new InMemoryDatabaseRoot());
+        var scenario = CreateReadyProviderScenario();
+        scenario.Provider.Approve();
+        scenario.Provider.SetAvailability(true, 5.35m, -4.01m);
+        db.Companies.Add(scenario.Company);
+        db.Services.Add(scenario.Service);
+        db.Providers.Add(scenario.Provider);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminProviderOperationsService(db).SetAvailabilityAsync(
+            scenario.Provider.Id,
+            false,
+            null,
+            AuditActor.Admin(),
+            new AuditRequestContext("127.0.0.1", "tests", "provider-force-unavailable"),
+            CancellationToken.None);
+
+        Assert.Equal(AdminProviderOperationStatus.Ok, result.Status);
+        Assert.False(scenario.Provider.IsAvailable);
+        Assert.Equal(5.35m, scenario.Provider.CurrentLatitude);
+        Assert.Equal(-4.01m, scenario.Provider.CurrentLongitude);
+    }
+
     private static ProviderScenario CreateReadyProviderScenario()
     {
         var company = new Company("CI Home Service", "0700000000", "contact@ci.ci");

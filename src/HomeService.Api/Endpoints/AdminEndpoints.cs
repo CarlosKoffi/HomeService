@@ -814,6 +814,37 @@ public static class AdminEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
+        admin.MapPut("/providers/{providerId:guid}/availability", async (
+            Guid providerId,
+            AdminProviderAvailabilityRequest request,
+            HttpRequest httpRequest,
+            AdminProviderOperationsService providerOperationsService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await providerOperationsService.SetAvailabilityAsync(
+                providerId,
+                request.IsAvailable,
+                request.Note,
+                GetAdminAuditActor(httpRequest),
+                GetAuditRequestContext(httpRequest),
+                cancellationToken);
+            if (result.Status == AdminProviderOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == AdminProviderOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            return Results.NoContent();
+        })
+        .WithName("SetAdminProviderAvailability")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapGet("/payments", async (
             string? period,
             string? paymentStatus,

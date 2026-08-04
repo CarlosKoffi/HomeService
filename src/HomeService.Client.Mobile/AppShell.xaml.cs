@@ -24,6 +24,10 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ClientNotificationsPage), typeof(ClientNotificationsPage));
         Routing.RegisterRoute(nameof(ClientSettingsPage), typeof(ClientSettingsPage));
         Routing.RegisterRoute(nameof(ProviderTrackingPage), typeof(ProviderTrackingPage));
+        Routing.RegisterRoute(nameof(MissionCompletionPage), typeof(MissionCompletionPage));
+        Routing.RegisterRoute(nameof(MissionRatingPage), typeof(MissionRatingPage));
+        Routing.RegisterRoute(nameof(MissionReviewPhotosPage), typeof(MissionReviewPhotosPage));
+        Routing.RegisterRoute(nameof(MissionReviewSuccessPage), typeof(MissionReviewSuccessPage));
 
         Dispatcher.Dispatch(async () =>
         {

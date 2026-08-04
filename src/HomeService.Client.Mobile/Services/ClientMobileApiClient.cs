@@ -299,6 +299,13 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
     {
         try
         {
+            var token = await sessionStore.GetTokenAsync();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                await sessionStore.ClearAsync();
+                return ApiCallResult<ClientMissionPhotoUploadResponse>.Failed(401, "Votre session a expire. Reconnectez-vous pour continuer.");
+            }
+
             await using var stream = await file.OpenReadAsync();
             using var content = new MultipartFormDataContent();
             using var fileContent = new StreamContent(stream);
@@ -312,9 +319,16 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
                 content.Add(new StringContent(caption), "caption");
             }
 
-            using var response = await httpClient.PostAsync("api/client/mission-photos", content, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/client/mission-photos") { Content = content };
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
+                if ((int)response.StatusCode == 401)
+                {
+                    await sessionStore.ClearAsync();
+                }
+
                 var message = await response.Content.ReadAsStringAsync(cancellationToken);
                 return ApiCallResult<ClientMissionPhotoUploadResponse>.Failed((int)response.StatusCode, NormalizeErrorMessage(message));
             }
@@ -355,21 +369,31 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
 
     public async Task<ApiCallResult<ValidateClientMissionCompletionResponse>> ValidateCompletionAsync(
         Guid missionId,
-        int rating,
+        int qualityRating,
+        int punctualityRating,
+        int presentationRating,
+        int politenessRating,
+        int cleanlinessRating,
         string? comment,
+        IReadOnlyList<ClientMissionPhotoRequest>? photos = null,
         CancellationToken cancellationToken = default)
     {
         var request = new ValidateClientMissionCompletionRequest(
             sessionStore.GetPhoneNumber() ?? string.Empty,
-            rating,
-            rating,
-            rating,
-            rating,
-            rating,
+            qualityRating,
+            punctualityRating,
+            presentationRating,
+            politenessRating,
+            cleanlinessRating,
             comment,
-            PayoutReference: null);
+            PayoutReference: null,
+            photos);
 
-        return await SendAsync<ValidateClientMissionCompletionResponse>(HttpMethod.Post, $"api/client/missions/{missionId:D}/validate-completion", bearerToken: null, request, cancellationToken);
+        return await SendWithSessionAsync<ValidateClientMissionCompletionResponse>(
+            HttpMethod.Post,
+            $"api/client/missions/{missionId:D}/validate-completion",
+            request,
+            cancellationToken);
     }
 
     public async Task<ApiCallResult<MissionAdditionalQuoteResponse>> PayAdditionalQuoteAsync(

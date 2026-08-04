@@ -190,6 +190,7 @@ public sealed class AdminEndpointContractTests
     [InlineData("GET", "/api/admin/providers/{providerId:guid}")]
     [InlineData("POST", "/api/admin/providers/{providerId:guid}/approve")]
     [InlineData("POST", "/api/admin/providers/{providerId:guid}/suspend")]
+    [InlineData("PUT", "/api/admin/providers/{providerId:guid}/availability")]
     [InlineData("GET", "/api/admin/provider-documents/{id:guid}/preview")]
     public void AdminProviderRoutes_AreMapped(string httpMethod, string routePattern)
     {
@@ -293,6 +294,7 @@ public sealed class AdminEndpointContractTests
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/cancel", AdminModuleKey.Missions, AdminPermissionAction.Reject)]
     [InlineData("POST", "/api/admin/providers/11111111-1111-1111-1111-111111111111/approve", AdminModuleKey.ProviderReview, AdminPermissionAction.Approve)]
     [InlineData("POST", "/api/admin/providers/11111111-1111-1111-1111-111111111111/suspend", AdminModuleKey.ProviderReview, AdminPermissionAction.Suspend)]
+    [InlineData("PUT", "/api/admin/providers/11111111-1111-1111-1111-111111111111/availability", AdminModuleKey.ProviderReview, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/company-applications/11111111-1111-1111-1111-111111111111/request-more-information", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/company-applications/11111111-1111-1111-1111-111111111111/reopen", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/company-application-documents/11111111-1111-1111-1111-111111111111/request-replacement", AdminModuleKey.CompanyApplications, AdminPermissionAction.Edit)]

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.MissionReviewPhotosPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    BackgroundColor="White">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="22,18,22,30" Spacing="20">
+                <Grid ColumnDefinitions="42,*" ColumnSpacing="10">
+                    <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Ajouter des photos" Style="{StaticResource SubpageTitleLabel}" />
+                </Grid>
+
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Montrez le résultat" FontSize="19" FontAttributes="Bold" />
+                    <Label Text="Les photos sont facultatives. Elles permettent de mieux documenter la qualité de l’intervention." Style="{StaticResource MutedLabel}" FontSize="14" LineHeight="1.35" />
+                </VerticalStackLayout>
+
+                <Border Stroke="#DCE7FF" BackgroundColor="#F7FAFF" StrokeShape="RoundRectangle 20" Padding="16">
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Photos de fin d’intervention" FontSize="14" FontAttributes="Bold" />
+                            <Label x:Name="PhotoCountLabel" Grid.Column="1" Text="0/4" FontSize="12" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" />
+                        </Grid>
+
+                        <Border x:Name="EmptyPhotoPanel" HeightRequest="164" Stroke="#BFD0F7" StrokeDashArray="5,5" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="18">
+                            <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="8">
+                                <Border HeightRequest="54" WidthRequest="54" BackgroundColor="#EAF0FF" StrokeThickness="0" StrokeShape="RoundRectangle 18">
+                                    <Label Text="＋" FontSize="28" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                </Border>
+                                <Label Text="Ajoutez jusqu’à 4 photos" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                <Label Text="JPG, PNG, WEBP ou HEIC · 5 Mo maximum" FontSize="11" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <CollectionView x:Name="PhotosView" IsVisible="False" HeightRequest="165" SelectionMode="None" ItemsLayout="HorizontalList">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <VerticalStackLayout WidthRequest="132" Margin="0,0,10,0" Spacing="5">
+                                        <Border HeightRequest="130" Stroke="#DDE2EA" StrokeShape="RoundRectangle 14" Padding="0">
+                                            <Grid>
+                                                <Image Source="{Binding PreviewSource}" Aspect="AspectFill" />
+                                                <Border HorizontalOptions="Fill" VerticalOptions="End" BackgroundColor="#B3000000" StrokeThickness="0" Padding="7,4">
+                                                    <Label Text="{Binding Status}" FontSize="10" TextColor="White" LineBreakMode="TailTruncation" />
+                                                </Border>
+                                                <Button
+                                                    Text="×"
+                                                    FontSize="18"
+                                                    TextColor="White"
+                                                    BackgroundColor="#C62828"
+                                                    CornerRadius="14"
+                                                    HeightRequest="28"
+                                                    WidthRequest="28"
+                                                    MinimumHeightRequest="28"
+                                                    Padding="0"
+                                                    Margin="0,5,5,0"
+                                                    HorizontalOptions="End"
+                                                    VerticalOptions="Start"
+                                                    CommandParameter="{Binding .}"
+                                                    Clicked="OnRemovePhotoClicked" />
+                                            </Grid>
+                                        </Border>
+                                        <Label Text="{Binding FileName}" FontSize="10" TextColor="{StaticResource MutedInk}" LineBreakMode="TailTruncation" />
+                                    </VerticalStackLayout>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                        <Button Text="＋ Ajouter des photos" Style="{StaticResource OutlineActionButton}" Clicked="OnAddPhotosClicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="1" Padding="22,12,22,22" BackgroundColor="White" Spacing="8">
+            <ActivityIndicator x:Name="BusyIndicator" Color="{StaticResource WeleBlue}" IsVisible="False" IsRunning="False" />
+            <Button x:Name="SubmitButton" Text="Envoyer mon avis" Clicked="OnSubmitClicked" />
+            <Label Text="Vous pouvez continuer sans ajouter de photo." FontSize="11" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

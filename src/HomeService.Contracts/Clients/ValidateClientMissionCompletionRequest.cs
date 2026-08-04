@@ -8,7 +8,8 @@ public sealed record ValidateClientMissionCompletionRequest(
     int PolitenessRating,
     int CleanlinessRating,
     string? Comment,
-    string? PayoutReference);
+    string? PayoutReference,
+    IReadOnlyList<ClientMissionPhotoRequest>? Photos = null);
 
 public sealed record ValidateClientMissionCompletionResponse(
     Guid MissionId,

@@ -87,6 +87,60 @@ public sealed class ClientMissionCompletionValidationServiceTests
         Assert.Empty(db.MissionReviews);
     }
 
+    [Fact]
+    public async Task ValidateAsync_WhenCompletionPhotosAreProvided_AttachesThemToMission()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedCompletedMissionAsync(db);
+        var sut = CreateService(db);
+        var request = ValidRequest(scenario.Customer.PhoneNumber) with
+        {
+            Photos =
+            [
+                new ClientMissionPhotoRequest(
+                    "resultat.jpg",
+                    "client-missions/pending/2026/08/resultat.jpg",
+                    "image/jpeg",
+                    2048,
+                    "Travail termine")
+            ]
+        };
+
+        var result = await sut.ValidateAsync(scenario.Mission.Id, request, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var attachment = await db.MissionAttachments.SingleAsync();
+        Assert.Equal(MissionAttachmentType.CustomerCompletionPhoto, attachment.AttachmentType);
+        Assert.Equal("resultat.jpg", attachment.OriginalFileName);
+        Assert.Equal("Travail termine", attachment.Caption);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WhenCompletionPhotoPathIsNotPending_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedCompletedMissionAsync(db);
+        var sut = CreateService(db);
+        var request = ValidRequest(scenario.Customer.PhoneNumber) with
+        {
+            Photos =
+            [
+                new ClientMissionPhotoRequest(
+                    "resultat.jpg",
+                    "../../secrets/resultat.jpg",
+                    "image/jpeg",
+                    2048,
+                    null)
+            ]
+        };
+
+        var result = await sut.ValidateAsync(scenario.Mission.Id, request, CancellationToken.None);
+
+        Assert.Equal(ClientMissionCompletionValidationStatus.ValidationFailed, result.Status);
+        Assert.Empty(db.MissionAttachments);
+        Assert.Empty(db.MissionReviews);
+    }
+
     private static ValidateClientMissionCompletionRequest ValidRequest(string phoneNumber)
     {
         return new ValidateClientMissionCompletionRequest(

@@ -42,6 +42,7 @@ public static class MauiProgram
         });
         builder.Services.AddSingleton<ClientDeviceRegistrationService>();
         builder.Services.AddSingleton<ClientNotificationState>();
+        builder.Services.AddSingleton<MissionReviewDraftStore>();
 
         return builder.Build();
     }

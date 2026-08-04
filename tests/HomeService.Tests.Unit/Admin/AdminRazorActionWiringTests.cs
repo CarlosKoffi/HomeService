@@ -143,6 +143,20 @@ public sealed class AdminRazorActionWiringTests
                 "ApproveAdminProviderAsync",
                 "SuspendAdminProviderAsync"
             ],
+            ["AdminProviders.razor"] =
+            [
+                "SetAdminProviderAvailabilityAsync"
+            ],
+            ["ProviderMissionTest.razor"] =
+            [
+                "GetAssignmentsAsync",
+                "GetAdminProvidersAsync",
+                "SetAdminProviderAvailabilityAsync",
+                "AcceptAsync",
+                "PositionAsync",
+                "StartAsync",
+                "CompleteAsync"
+            ],
             ["CompanyApplicationDetail.razor"] =
             [
                 "ApproveCompanyApplicationAsync",

@@ -101,3 +101,7 @@ public sealed record AdminProviderMissionAssignmentDetailResponse(
     int? ArrivalDistanceMeters);
 
 public sealed record AdminProviderActionRequest(string? Note);
+
+public sealed record AdminProviderAvailabilityRequest(
+    bool IsAvailable,
+    string? Note);

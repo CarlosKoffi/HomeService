@@ -106,6 +106,68 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
         return AdminProviderOperationResult.Ok(provider, previousStatus);
     }
 
+    public async Task<AdminProviderOperationResult> SetAvailabilityAsync(
+        Guid providerId,
+        bool isAvailable,
+        string? note,
+        AuditActor? actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers
+            .FirstOrDefaultAsync(provider => provider.Id == providerId, cancellationToken);
+        if (provider is null)
+        {
+            return AdminProviderOperationResult.NotFound();
+        }
+
+        if (provider.Status != ProviderStatus.Approved)
+        {
+            return AdminProviderOperationResult.ValidationFailed(
+                provider,
+                "Seul un prestataire valide peut etre force disponible.");
+        }
+
+        var previousStatus = provider.Status;
+        var before = new
+        {
+            provider.Status,
+            provider.IsAvailable,
+            provider.CurrentLatitude,
+            provider.CurrentLongitude
+        };
+        var latitude = provider.CurrentLatitude ?? provider.MissionLatitude ?? DefaultTestLatitude;
+        var longitude = provider.CurrentLongitude ?? provider.MissionLongitude ?? DefaultTestLongitude;
+        provider.SetAvailability(isAvailable, latitude, longitude);
+
+        if (actor is not null)
+        {
+            var summary = string.IsNullOrWhiteSpace(note)
+                ? isAvailable
+                    ? "Prestataire force disponible depuis l'administration."
+                    : "Prestataire force indisponible depuis l'administration."
+                : note.Trim();
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                actor,
+                "AdminProviderAvailabilityForced",
+                nameof(ProviderProfile),
+                provider.Id,
+                summary,
+                auditContext,
+                before,
+                after: new
+                {
+                    provider.Status,
+                    provider.IsAvailable,
+                    provider.CurrentLatitude,
+                    provider.CurrentLongitude
+                }));
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return AdminProviderOperationResult.Ok(provider, previousStatus);
+    }
+
     private void AddAuditLog(
         AuditActor? actor,
         AuditRequestContext? auditContext,
@@ -129,6 +191,9 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
             before: new { Status = previousStatus.ToString() },
             after: new { provider.Status, provider.CompanyId }));
     }
+
+    private const decimal DefaultTestLatitude = 5.3488m;
+    private const decimal DefaultTestLongitude = -4.0031m;
 }
 
 public sealed record AdminProviderOperationResult(
