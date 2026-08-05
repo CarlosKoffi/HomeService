@@ -60,6 +60,12 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         }
 
         var token = await sessionStore.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            await sessionStore.ClearAsync();
+            return ApiCallResult<ClientProfilePhotoResponse>.Failed(401, "Votre session a expire. Reconnectez-vous pour continuer.");
+        }
+
         using var content = new MultipartFormDataContent();
         using var fileContent = new ByteArrayContent(photoBytes);
         var safeContentType = NormalizeImageContentType(contentType, fileName);
@@ -309,10 +315,10 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             await using var stream = await file.OpenReadAsync();
             using var content = new MultipartFormDataContent();
             using var fileContent = new StreamContent(stream);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue(string.IsNullOrWhiteSpace(file.ContentType)
-                ? "image/jpeg"
-                : file.ContentType);
-            content.Add(fileContent, "photo", file.FileName);
+            var safeContentType = NormalizeImageContentType(file.ContentType, file.FileName);
+            var safeFileName = NormalizeImageFileName(file.FileName, safeContentType, "photo-mission");
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(safeContentType);
+            content.Add(fileContent, "photo", safeFileName);
 
             if (!string.IsNullOrWhiteSpace(caption))
             {
@@ -722,7 +728,7 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             : GetImageContentType(fileName);
     }
 
-    private static string NormalizeImageFileName(string fileName, string contentType)
+    private static string NormalizeImageFileName(string fileName, string contentType, string prefix = "photo-profil")
     {
         var safeName = Path.GetFileName(fileName);
         var extension = Path.GetExtension(safeName);
@@ -739,7 +745,7 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             "image/heif" => ".heif",
             _ => ".jpg"
         };
-        return $"photo-profil-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}{inferredExtension}";
+        return $"{prefix}-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}{inferredExtension}";
     }
 }
 

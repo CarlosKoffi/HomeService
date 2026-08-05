@@ -13,13 +13,18 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>();
+#if ANDROID || IOS || MACCATALYST
+        builder.UseMauiMaps();
+#endif
 
         builder.Services.AddSingleton(new HttpClient
         {
             BaseAddress = new Uri(GetApiBaseUrl()),
-            Timeout = TimeSpan.FromSeconds(12)
+            Timeout = TimeSpan.FromSeconds(90)
         });
         builder.Services.AddSingleton<ProviderMobileApiClient>();
+        builder.Services.AddSingleton<ProviderSessionService>();
+        builder.Services.AddSingleton<ProviderDeviceRegistrationService>();
 
         return builder.Build();
     }

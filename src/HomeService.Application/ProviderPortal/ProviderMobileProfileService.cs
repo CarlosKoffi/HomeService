@@ -53,6 +53,29 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
                 $"/api/provider-portal/mobile/profile/documents/{item.Id}/preview"))
             .ToList();
 
+        var profilePhotoUrl = provider.Documents
+            .Where(item => item.DocumentType == ProviderDocumentType.Photo)
+            .OrderByDescending(item => item.CreatedAt)
+            .Select(item => $"/api/provider-portal/mobile/profile/documents/{item.Id}/preview")
+            .FirstOrDefault();
+
+        var canViewPrices = provider.EmploymentType == ProviderEmploymentType.TemporaryWorker;
+
+        var portfolioItems = await db.ProviderServicePortfolioItems
+            .AsNoTracking()
+            .Include(item => item.Service)
+            .Where(item => item.ProviderId == provider.Id)
+            .OrderBy(item => item.DisplayOrder)
+            .Select(item => new ProviderMobilePortfolioItemResponse(
+                item.Id,
+                item.ServiceId,
+                item.Service != null ? item.Service.Name : "Service",
+                item.OriginalFileName,
+                item.ContentType,
+                item.Status.ToString(),
+                $"/api/provider-portal/mobile/profile/portfolio/{item.Id}/preview"))
+            .ToListAsync(cancellationToken);
+
         var services = provider.Services
             .Where(item => item.IsActive && item.Service is not null)
             .OrderBy(item => item.Service!.Name)
@@ -70,7 +93,7 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
                     service.IconName,
                     item.ExperienceLevel.ToString(),
                     item.YearsOfExperience,
-                    item.PriceTier.ToString(),
+                    canViewPrices ? item.PriceTier.ToString() : null,
                     service.RequiresPortfolio,
                     service.MinimumPortfolioItems,
                     portfolioCount,
@@ -82,15 +105,17 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
                         .Select(prestation => new ProviderMobileProfilePrestationResponse(
                             prestation.ServicePrestationId,
                             prestation.ServicePrestation!.Name,
-                            prestation.ServicePrestation.PriceMinAmount,
-                            prestation.ServicePrestation.PriceMaxAmount,
-                            prestation.ServicePrestation.Currency))
+                            canViewPrices ? prestation.ServicePrestation.PriceMinAmount : null,
+                            canViewPrices ? prestation.ServicePrestation.PriceMaxAmount : null,
+                            canViewPrices ? prestation.ServicePrestation.Currency : null))
                         .ToList());
             })
             .ToList();
 
         var response = new ProviderMobileProfileResponse(
             provider.Id,
+            provider.FirstName,
+            provider.LastName,
             provider.FullName,
             provider.PhoneNumber,
             provider.Email,
@@ -101,9 +126,12 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
             provider.IsAvailable,
             provider.MissionRadiusKm,
             provider.Address,
+            profilePhotoUrl,
+            canViewPrices,
             BuildCompletion(provider),
             services,
-            documents);
+            documents,
+            portfolioItems);
 
         return ProviderMobileProfileResult.Ok(response);
     }

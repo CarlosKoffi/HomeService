@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.LoginPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    NavigationPage.HasNavigationBar="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="28,54,28,30" Spacing="20">
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                <Image Source="wele_logo.png" WidthRequest="178" HeightRequest="58" Aspect="AspectFit" />
+                <Label Text="pro" FontSize="20" VerticalTextAlignment="Center" Margin="-18,5,0,0" />
+            </HorizontalStackLayout>
+
+            <VerticalStackLayout Margin="0,28,0,6" Spacing="5">
+                <Label Text="Connexion à votre compte" Style="{StaticResource ScreenTitleLabel}" HorizontalTextAlignment="Center" />
+                <Label Text="Accédez à vos missions et à votre espace professionnel." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+
+            <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13">
+                <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
+            </Border>
+
+            <VerticalStackLayout Spacing="7">
+                <Label Text="Téléphone professionnel" FontAttributes="Bold" FontSize="13" />
+                <Border Style="{StaticResource FieldBorder}">
+                    <Entry x:Name="PhoneEntry" Placeholder="Ex. 0102030405" Keyboard="Telephone" ReturnType="Next" />
+                </Border>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="7">
+                <Label Text="Mot de passe" FontAttributes="Bold" FontSize="13" />
+                <Border Style="{StaticResource FieldBorder}">
+                    <Entry x:Name="PasswordEntry" Placeholder="Votre mot de passe" IsPassword="True" ReturnType="Done" Completed="OnLoginCompleted" />
+                </Border>
+            </VerticalStackLayout>
+
+            <Button x:Name="LoginButton" Text="Se connecter" Clicked="OnLoginClicked" Margin="0,8,0,0" />
+            <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="False" Color="{StaticResource WeleBlue}" />
+
+            <Label Text="Besoin d’aide ? Contactez votre entreprise ou le support Wélé." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" Margin="0,18,0,0" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

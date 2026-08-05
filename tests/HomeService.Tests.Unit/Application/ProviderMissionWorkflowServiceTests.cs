@@ -109,6 +109,7 @@ public sealed class ProviderMissionWorkflowServiceTests
         var mission = CreateAssignedMission();
         var assignment = CreateAcceptedAssignment(mission);
         _service.StartMission(provider, assignment, ValidLocation());
+        provider.SetAvailability(false, provider.CurrentLatitude, provider.CurrentLongitude);
 
         var result = _service.CompleteMission(
             provider,
@@ -121,6 +122,7 @@ public sealed class ProviderMissionWorkflowServiceTests
         Assert.Equal("Intervention terminee.", assignment.CompletionNote);
         Assert.Equal("/storage/photo.jpg", assignment.CompletionPhotoPath);
         Assert.Equal(75, mission.ActualDurationMinutes);
+        Assert.True(provider.IsAvailable);
     }
 
     [Fact]
@@ -155,6 +157,7 @@ public sealed class ProviderMissionWorkflowServiceTests
         Assert.Equal(MissionStatus.Accepted, mission.Status);
         Assert.NotNull(mission.ProviderAcceptedAt);
         Assert.False(mission.CanRevealContactDetails);
+        Assert.False(provider.IsAvailable);
     }
 
     [Fact]
@@ -361,6 +364,7 @@ public sealed class ProviderMissionWorkflowServiceTests
             5);
 
         provider.Approve();
+        provider.SetAvailability(true, 5.348850m, -4.003150m);
         SetProperty(provider, nameof(ProviderProfile.Company), company);
         return provider;
     }

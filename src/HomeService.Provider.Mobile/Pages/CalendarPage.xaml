@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.CalendarPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Calendrier">
+    <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="18,20,18,30" Spacing="16">
+                <Label Text="Calendrier" Style="{StaticResource ScreenTitleLabel}" />
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Text="‹" Style="{StaticResource SecondaryButton}" WidthRequest="48" Clicked="OnPreviousMonthClicked" />
+                    <Label x:Name="MonthLabel" Grid.Column="1" FontSize="17" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                    <Button Grid.Column="2" Text="›" Style="{StaticResource SecondaryButton}" WidthRequest="48" Clicked="OnNextMonthClicked" />
+                </Grid>
+
+                <Border Style="{StaticResource PremiumCard}" Padding="10">
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,*,*,*,*,*,*">
+                            <Label Text="L" HorizontalTextAlignment="Center" Style="{StaticResource MutedLabel}" /><Label Grid.Column="1" Text="M" HorizontalTextAlignment="Center" Style="{StaticResource MutedLabel}" /><Label Grid.Column="2" Text="M" HorizontalTextAlignment="Center" Style="{StaticResource MutedLabel}" /><Label Grid.Column="3" Text="J" HorizontalTextAlignment="Center" Style="{StaticResource MutedLabel}" /><Label Grid.Column="4" Text="V" HorizontalTextAlignment="Center" Style="{StaticResource MutedLabel}" /><Label Grid.Column="5" Text="S" HorizontalTextAlignment="Center" Style="{StaticResource MutedLabel}" /><Label Grid.Column="6" Text="D" HorizontalTextAlignment="Center" Style="{StaticResource MutedLabel}" />
+                        </Grid>
+                        <Grid x:Name="CalendarGrid" ColumnDefinitions="*,*,*,*,*,*,*" RowDefinitions="42,42,42,42,42,42" RowSpacing="5" ColumnSpacing="5" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label x:Name="SelectedDayLabel" Text="Missions du jour" Style="{StaticResource CardTitleLabel}" />
+                <VerticalStackLayout x:Name="DayMissionsStack" Spacing="10" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

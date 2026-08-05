@@ -2,6 +2,8 @@ namespace HomeService.Contracts.ProviderPortal;
 
 public sealed record ProviderMobileProfileResponse(
     Guid ProviderId,
+    string FirstName,
+    string LastName,
     string FullName,
     string PhoneNumber,
     string? Email,
@@ -12,9 +14,12 @@ public sealed record ProviderMobileProfileResponse(
     bool IsAvailable,
     int MissionRadiusKm,
     string Address,
+    string? ProfilePhotoUrl,
+    bool CanViewPrices,
     ProviderMobileProfileCompletionResponse? ProfileCompletion,
     IReadOnlyList<ProviderMobileProfileServiceResponse> Services,
-    IReadOnlyList<ProviderMobileProfileDocumentResponse> Documents);
+    IReadOnlyList<ProviderMobileProfileDocumentResponse> Documents,
+    IReadOnlyList<ProviderMobilePortfolioItemResponse> PortfolioItems);
 
 public sealed record ProviderMobileProfileServiceResponse(
     Guid ProviderServiceId,
@@ -23,7 +28,7 @@ public sealed record ProviderMobileProfileServiceResponse(
     string IconName,
     string ExperienceLevel,
     int YearsOfExperience,
-    string PriceTier,
+    string? PriceTier,
     bool RequiresPortfolio,
     int MinimumPortfolioItems,
     int PortfolioPhotoCount,
@@ -33,9 +38,9 @@ public sealed record ProviderMobileProfileServiceResponse(
 public sealed record ProviderMobileProfilePrestationResponse(
     Guid ServicePrestationId,
     string Name,
-    int PriceMinAmount,
-    int PriceMaxAmount,
-    string Currency);
+    int? PriceMinAmount,
+    int? PriceMaxAmount,
+    string? Currency);
 
 public sealed record ProviderMobileProfileDocumentResponse(
     Guid Id,
@@ -51,3 +56,19 @@ public sealed record ProviderMobilePortfolioUploadResponse(
     string ContentType,
     string Status,
     string PreviewUrl);
+
+public sealed record ProviderMobilePortfolioItemResponse(
+    Guid Id,
+    Guid ServiceId,
+    string ServiceName,
+    string OriginalFileName,
+    string ContentType,
+    string Status,
+    string PreviewUrl);
+
+public sealed record UpdateProviderMobileProfileRequest(
+    string FirstName,
+    string LastName,
+    string? Email,
+    string Address,
+    int MissionRadiusKm);

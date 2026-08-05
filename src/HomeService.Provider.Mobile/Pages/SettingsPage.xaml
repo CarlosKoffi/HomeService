@@ -3,38 +3,20 @@
     x:Class="HomeService.Provider.Mobile.Pages.SettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    BackgroundColor="{StaticResource PageWash}"
-    Title="Parametres">
+    Shell.NavBarIsVisible="False">
     <ScrollView>
-        <VerticalStackLayout Padding="18" Spacing="14">
-            <Label Text="Configuration" Style="{StaticResource ScreenTitleLabel}" />
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
-                <VerticalStackLayout Spacing="5">
-                    <Label Text="Awa Kone" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Employee - CI Home Service - profil 92%" Style="{StaticResource BodyLabel}" />
-                </VerticalStackLayout>
-            </Border>
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Disponibilite" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Live : ON" Style="{StaticResource BodyLabel}" />
-                    <Label Text="Rayon maximum : 5 km" Style="{StaticResource BodyLabel}" />
-                </VerticalStackLayout>
-            </Border>
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Localisation" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="Position demandee au depart et a l'arrivee." Style="{StaticResource BodyLabel}" />
-                    <Label Text="Tolerance d'arrivee geree par l'API." Style="{StaticResource BodyLabel}" />
-                </VerticalStackLayout>
-            </Border>
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Notifications" Style="{StaticResource CardTitleLabel}" />
-                    <Label Text="SMS : ON" Style="{StaticResource BodyLabel}" />
-                    <Label Text="WhatsApp : OFF" Style="{StaticResource BodyLabel}" />
-                </VerticalStackLayout>
-            </Border>
+        <VerticalStackLayout Padding="18,18,18,30" Spacing="14">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><Button Text="‹" FontSize="28" WidthRequest="42" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnBackClicked" /><Label Grid.Column="1" Text="Paramètres" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" /></Grid>
+
+            <Border Style="{StaticResource PremiumCard}"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"><Label Text="♢" FontSize="20" TextColor="{StaticResource WeleBlue}" /><VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Notifications" FontAttributes="Bold" /><Label Text="Alertes et rappels de mission" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Switch Grid.Column="2" IsToggled="True" OnColor="{StaticResource WeleBlue}" /></Grid></Border>
+            <Border Style="{StaticResource PremiumCard}"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"><Label Text="▢" FontSize="20" TextColor="{StaticResource WeleBlue}" /><VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Sécurité et mot de passe" FontAttributes="Bold" /><Label Text="Protéger votre compte" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Label Grid.Column="2" Text="›" FontSize="27" /></Grid></Border>
+            <Border Style="{StaticResource PremiumCard}"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"><Label Text="◐" FontSize="20" TextColor="{StaticResource WeleBlue}" /><VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Apparence" FontAttributes="Bold" /><Label Text="Thème clair" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Label Grid.Column="2" Text="›" FontSize="27" /></Grid></Border>
+            <Border Style="{StaticResource PremiumCard}"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"><Label Text="◎" FontSize="20" TextColor="{StaticResource WeleBlue}" /><VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Langue" FontAttributes="Bold" /><Label Text="Français" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Label Grid.Column="2" Text="›" FontSize="27" /></Grid></Border>
+            <Border Style="{StaticResource PremiumCard}"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"><Label Text="?" FontSize="20" TextColor="{StaticResource WeleBlue}" /><VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Aide &amp; support" FontAttributes="Bold" /><Label Text="Centre d’aide et contact" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Label Grid.Column="2" Text="›" FontSize="27" /></Grid></Border>
+            <Border Style="{StaticResource PremiumCard}"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12"><Label Text="§" FontSize="20" TextColor="{StaticResource WeleBlue}" /><VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="Conditions d’utilisation" FontAttributes="Bold" /><Label Text="Lire les conditions" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Label Grid.Column="2" Text="›" FontSize="27" /></Grid></Border>
+
+            <Button Text="Se déconnecter" Style="{StaticResource SecondaryButton}" TextColor="{StaticResource Danger}" BorderColor="#FECACA" Clicked="OnLogoutClicked" Margin="0,10,0,0" />
+            <Label Text="Wélé Pro 0.4.0" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

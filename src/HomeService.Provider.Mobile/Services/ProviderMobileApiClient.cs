@@ -3,11 +3,14 @@ using System.Net.Http.Json;
 using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.ProviderPortal;
+using Microsoft.Maui.Storage;
 
 namespace HomeService.Provider.Mobile.Services;
 
 public sealed class ProviderMobileApiClient(HttpClient httpClient)
 {
+    private const long MaxUploadBytes = 25L * 1024 * 1024;
+
     public Task<ApiCallResult<ProviderInvitationPreviewResponse>> GetInvitationAsync(
         string code,
         CancellationToken cancellationToken = default)
@@ -99,6 +102,90 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
+    public Task<ApiCallResult<ProviderMobileProfileResponse>> UpdateProfileAsync(
+        string bearerToken,
+        UpdateProviderMobileProfileRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsync<ProviderMobileProfileResponse>(
+            HttpMethod.Put,
+            "api/provider-portal/mobile/profile",
+            bearerToken,
+            request,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<ProviderMobileAvailabilityResponse>> UpdateAvailabilityAsync(
+        string bearerToken,
+        UpdateProviderMobileAvailabilityRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsync<ProviderMobileAvailabilityResponse>(
+            HttpMethod.Put,
+            "api/provider-portal/mobile/availability",
+            bearerToken,
+            request,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<ProviderMobileMissionListResponse>> GetMissionsAsync(
+        string bearerToken,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new List<string>();
+        if (from is not null)
+        {
+            query.Add($"from={Uri.EscapeDataString(from.Value.ToString("O"))}");
+        }
+
+        if (to is not null)
+        {
+            query.Add($"to={Uri.EscapeDataString(to.Value.ToString("O"))}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query.Add($"status={Uri.EscapeDataString(status)}");
+        }
+
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join("&", query)}";
+        return SendAsync<ProviderMobileMissionListResponse>(
+            HttpMethod.Get,
+            $"api/provider-portal/mobile/missions{suffix}",
+            bearerToken,
+            body: null,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<ProviderMobileNotificationListResponse>> GetNotificationsAsync(
+        string bearerToken,
+        bool unreadOnly = false,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsync<ProviderMobileNotificationListResponse>(
+            HttpMethod.Get,
+            $"api/provider-portal/mobile/notifications?unreadOnly={unreadOnly.ToString().ToLowerInvariant()}",
+            bearerToken,
+            body: null,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<bool>> MarkNotificationReadAsync(
+        string bearerToken,
+        Guid notificationId,
+        CancellationToken cancellationToken = default)
+    {
+        return SendWithoutResponseAsync(
+            HttpMethod.Post,
+            $"api/provider-portal/mobile/notifications/{notificationId:D}/read",
+            bearerToken,
+            body: null,
+            cancellationToken);
+    }
+
     public Task<ApiCallResult<ProviderMobileMissionDetailResponse>> GetMissionDetailAsync(
         string bearerToken,
         Guid assignmentId,
@@ -109,6 +196,34 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             $"api/provider-portal/mobile/mission-assignments/{assignmentId:D}",
             bearerToken,
             body: null,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<ProviderMobileProfileDocumentResponse>> UploadDocumentAsync(
+        string bearerToken,
+        string documentType,
+        FileResult file,
+        CancellationToken cancellationToken = default)
+    {
+        return SendMultipartAsync<ProviderMobileProfileDocumentResponse>(
+            "api/provider-portal/mobile/profile/documents",
+            bearerToken,
+            file,
+            new Dictionary<string, string> { ["documentType"] = documentType },
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<ProviderMobilePortfolioUploadResponse>> UploadPortfolioAsync(
+        string bearerToken,
+        Guid serviceId,
+        FileResult file,
+        CancellationToken cancellationToken = default)
+    {
+        return SendMultipartAsync<ProviderMobilePortfolioUploadResponse>(
+            "api/provider-portal/mobile/profile/portfolio",
+            bearerToken,
+            file,
+            new Dictionary<string, string> { ["serviceId"] = serviceId.ToString("D") },
             cancellationToken);
     }
 
@@ -277,6 +392,169 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
         {
             return ApiCallResult<TResponse>.Failed(0, "Connexion impossible. Verifiez votre reseau.");
         }
+    }
+
+    public async Task<ApiCallResult<byte[]>> DownloadAsync(
+        string bearerToken,
+        string path,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        try
+        {
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<byte[]>.Failed((int)response.StatusCode, "Image indisponible.");
+            }
+
+            return ApiCallResult<byte[]>.Ok(await response.Content.ReadAsByteArrayAsync(cancellationToken));
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<byte[]>.Failed(0, "Connexion impossible.");
+        }
+    }
+
+    private async Task<ApiCallResult<bool>> SendWithoutResponseAsync(
+        HttpMethod method,
+        string path,
+        string? bearerToken,
+        object? body,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(method, path);
+        if (!string.IsNullOrWhiteSpace(bearerToken))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+        }
+
+        if (body is not null)
+        {
+            request.Content = JsonContent.Create(body);
+        }
+
+        try
+        {
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<bool>.Failed((int)response.StatusCode, NormalizeErrorMessage(message));
+            }
+
+            return ApiCallResult<bool>.Ok(true);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<bool>.Failed(0, "Connexion trop lente. Reessayez dans quelques instants.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<bool>.Failed(0, "Connexion impossible. Verifiez votre reseau.");
+        }
+    }
+
+    private async Task<ApiCallResult<TResponse>> SendMultipartAsync<TResponse>(
+        string path,
+        string bearerToken,
+        FileResult file,
+        IReadOnlyDictionary<string, string> fields,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(bearerToken))
+        {
+            return ApiCallResult<TResponse>.Failed(401, "Votre session a expiré. Reconnectez-vous pour continuer.");
+        }
+
+        try
+        {
+            await using var stream = await file.OpenReadAsync();
+            if (stream.CanSeek && (stream.Length == 0 || stream.Length > MaxUploadBytes))
+            {
+                return ApiCallResult<TResponse>.Failed(0, "Le fichier doit faire entre 1 octet et 25 Mo.");
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+            using var content = new MultipartFormDataContent();
+            foreach (var field in fields)
+            {
+                content.Add(new StringContent(field.Value), field.Key);
+            }
+
+            var safeContentType = NormalizeUploadContentType(file.ContentType, file.FileName);
+            var safeFileName = NormalizeUploadFileName(file.FileName, safeContentType);
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(safeContentType);
+            content.Add(fileContent, "file", safeFileName);
+            request.Content = content;
+
+            using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<TResponse>.Failed((int)response.StatusCode, NormalizeErrorMessage(message));
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<TResponse>(cancellationToken);
+            return payload is null
+                ? ApiCallResult<TResponse>.Failed((int)response.StatusCode, "Réponse vide du serveur.")
+                : ApiCallResult<TResponse>.Ok(payload);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<TResponse>.Failed(0, "Connexion impossible. Vérifiez votre réseau.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<TResponse>.Failed(0, "L'envoi prend trop de temps. Vérifiez votre réseau puis réessayez.");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return ApiCallResult<TResponse>.Failed(0, "Le fichier ne peut pas être lu sur cet appareil.");
+        }
+    }
+
+    private static string NormalizeUploadContentType(string? contentType, string fileName)
+    {
+        var normalized = contentType?.Split(';', 2)[0].Trim().ToLowerInvariant();
+        if (normalized is "image/jpeg" or "image/png" or "image/webp" or "image/heic" or "image/heif" or "application/pdf")
+        {
+            return normalized;
+        }
+
+        return Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".heic" => "image/heic",
+            ".heif" => "image/heif",
+            ".pdf" => "application/pdf",
+            _ => "application/octet-stream"
+        };
+    }
+
+    private static string NormalizeUploadFileName(string fileName, string contentType)
+    {
+        var safeName = Path.GetFileName(fileName);
+        if (!string.IsNullOrWhiteSpace(safeName) && !string.IsNullOrWhiteSpace(Path.GetExtension(safeName)))
+        {
+            return safeName;
+        }
+
+        var extension = contentType switch
+        {
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/heic" => ".heic",
+            "image/heif" => ".heif",
+            "application/pdf" => ".pdf",
+            _ => ".jpg"
+        };
+        return $"fichier-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}{extension}";
     }
 
     private static string NormalizeErrorMessage(string rawMessage)

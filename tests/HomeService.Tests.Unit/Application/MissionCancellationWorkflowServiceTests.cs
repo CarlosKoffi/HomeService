@@ -41,6 +41,7 @@ public sealed class MissionCancellationWorkflowServiceTests
         Assert.Equal(MissionCancellationActor.Company, scenario.Mission.CancelledBy);
         Assert.Equal(MissionCancellationReason.CompanyUnavailable, scenario.Mission.CancellationReason);
         Assert.Equal(ProviderMissionAssignmentStatus.Cancelled, assignment.Status);
+        Assert.True(scenario.Provider.IsAvailable);
         Assert.Equal(2, await db.MissionPaymentMilestones.CountAsync());
         Assert.Equal(1, await db.CompanyPortalActivities.CountAsync());
         Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());

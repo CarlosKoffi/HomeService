@@ -4,7 +4,7 @@ namespace HomeService.Api;
 
 public sealed class ClientMissionPhotoUploadService(IConfiguration configuration)
 {
-    private const long MaxFileSize = 5 * 1024 * 1024;
+    private const long MaxFileSize = 25 * 1024 * 1024;
 
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -43,17 +43,16 @@ public sealed class ClientMissionPhotoUploadService(IConfiguration configuration
 
         if (file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException("Chaque photo client doit faire moins de 5 Mo.");
+            throw new InvalidOperationException("Chaque photo client doit faire moins de 25 Mo.");
         }
 
-        if (!IsAllowedImage(file))
+        var safeExtension = ResolveExtension(file.FileName, file.ContentType);
+        if (safeExtension is null)
         {
             throw new InvalidOperationException("Formats photos acceptes: JPG, PNG, WEBP ou photo mobile HEIC.");
         }
 
-        var originalFileName = SanitizeFileName(file.FileName);
-        var extension = Path.GetExtension(originalFileName);
-        var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".jpg" : extension.ToLowerInvariant();
+        var originalFileName = SanitizeFileName(file.FileName, safeExtension);
         var relativePath = Path.Combine(
             "client-missions",
             "pending",
@@ -70,7 +69,7 @@ public sealed class ClientMissionPhotoUploadService(IConfiguration configuration
         return new ClientMissionPhotoUploadResponse(
             originalFileName,
             relativePath.Replace('\\', '/'),
-            file.ContentType,
+            NormalizeStoredContentType(file.ContentType, safeExtension),
             file.Length,
             Clean(caption, 500));
     }
@@ -89,18 +88,49 @@ public sealed class ClientMissionPhotoUploadService(IConfiguration configuration
         return absolutePath;
     }
 
-    private static bool IsAllowedImage(IFormFile file)
+    private static string? ResolveExtension(string fileName, string contentType)
     {
-        var extension = Path.GetExtension(Path.GetFileName(file.FileName));
-        return AllowedExtensions.Contains(extension)
-            && (AllowedContentTypes.Contains(file.ContentType)
-                || file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
+        var normalizedContentType = contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        var extension = Path.GetExtension(Path.GetFileName(fileName)).ToLowerInvariant();
+        if (AllowedExtensions.Contains(extension)
+            && (AllowedContentTypes.Contains(normalizedContentType)
+                || normalizedContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)))
+        {
+            return extension;
+        }
+
+        return normalizedContentType switch
+        {
+            "image/jpeg" or "image/pjpeg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/heic" => ".heic",
+            "image/heif" => ".heif",
+            _ => null
+        };
     }
 
-    private static string SanitizeFileName(string fileName)
+    private static string SanitizeFileName(string fileName, string extension)
     {
         var safeName = Path.GetFileName(fileName);
-        return string.IsNullOrWhiteSpace(safeName) ? "photo-client.jpg" : safeName;
+        return string.IsNullOrWhiteSpace(safeName) || string.IsNullOrWhiteSpace(Path.GetExtension(safeName))
+            ? $"photo-client{extension}"
+            : safeName;
+    }
+
+    private static string NormalizeStoredContentType(string contentType, string extension)
+    {
+        var normalized = contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        return normalized == "application/octet-stream" || string.IsNullOrWhiteSpace(normalized)
+            ? extension switch
+            {
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                ".heic" => "image/heic",
+                ".heif" => "image/heif",
+                _ => "image/jpeg"
+            }
+            : normalized;
     }
 
     private static string? Clean(string? value, int maxLength)

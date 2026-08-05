@@ -134,7 +134,6 @@ public partial class ProfileInformationPage : ContentPage
                 return;
             }
 
-            ShowLocalProfilePhoto(photoBytes);
             var result = await apiClient.UploadProfilePhotoAsync(photoBytes, file.FileName, file.ContentType);
             if (!result.IsSuccess || result.Response is null)
             {
@@ -142,6 +141,7 @@ public partial class ProfileInformationPage : ContentPage
                 return;
             }
 
+            ShowLocalProfilePhoto(photoBytes);
             ShowPhotoStatus("Photo mise à jour.", isError: false);
         }
         catch (UnauthorizedAccessException)

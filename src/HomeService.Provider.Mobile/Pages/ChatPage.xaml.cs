@@ -1,14 +1,13 @@
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
 using Microsoft.Maui.Controls.Shapes;
-using Microsoft.Maui.Storage;
 
 namespace HomeService.Provider.Mobile.Pages;
 
 public partial class ChatPage : ContentPage
 {
-    private const string AccessTokenPreferenceKey = "ProviderAccessToken";
     private readonly ProviderMobileApiClient? apiClient;
+    private readonly ProviderSessionService? sessionService;
     private string? accessToken;
     private Guid? assignmentId;
 
@@ -16,6 +15,7 @@ public partial class ChatPage : ContentPage
     {
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
+        sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
     }
 
     protected override async void OnAppearing()
@@ -26,14 +26,14 @@ public partial class ChatPage : ContentPage
 
     private async Task LoadChatAsync()
     {
-        if (apiClient is null)
+        if (apiClient is null || sessionService is null)
         {
             ShowMessage("Configuration mobile incomplete. Client API introuvable.");
             SetComposerEnabled(false);
             return;
         }
 
-        accessToken = Preferences.Default.Get(AccessTokenPreferenceKey, string.Empty);
+        accessToken = await sessionService.GetAccessTokenAsync();
         if (string.IsNullOrWhiteSpace(accessToken))
         {
             ShowMessage("Connectez-vous pour consulter vos messages.");

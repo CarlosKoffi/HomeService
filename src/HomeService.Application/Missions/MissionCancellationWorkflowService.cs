@@ -59,7 +59,8 @@ public sealed class MissionCancellationWorkflowService(
             return MissionCancellationWorkflowResult.Invalid(exception.Message);
         }
 
-        await CancelOpenAssignmentsAsync(mission.Id, cancellationToken);
+        var busyProviderIds = await CancelOpenAssignmentsAsync(mission.Id, cancellationToken);
+        await RestoreProviderAvailabilityAsync(mission.Id, busyProviderIds, cancellationToken);
         TrackCancellationFinancials(mission, fee, refund);
         TrackCancellationMilestone(mission, fee);
         TrackCompanyActivity(mission, actor, reason);
@@ -72,15 +73,55 @@ public sealed class MissionCancellationWorkflowService(
             previousStatus);
     }
 
-    private async Task CancelOpenAssignmentsAsync(Guid missionId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<Guid>> CancelOpenAssignmentsAsync(Guid missionId, CancellationToken cancellationToken)
     {
         var assignments = await db.ProviderMissionAssignments
             .Where(assignment => assignment.MissionId == missionId)
             .ToListAsync(cancellationToken);
 
+        var busyProviderIds = assignments
+            .Where(assignment => assignment.Status is ProviderMissionAssignmentStatus.Accepted or ProviderMissionAssignmentStatus.Started)
+            .Select(assignment => assignment.ProviderId)
+            .Distinct()
+            .ToList();
+
         foreach (var assignment in assignments)
         {
             assignment.Cancel();
+        }
+
+        return busyProviderIds;
+    }
+
+    private async Task RestoreProviderAvailabilityAsync(
+        Guid cancelledMissionId,
+        IReadOnlyList<Guid> providerIds,
+        CancellationToken cancellationToken)
+    {
+        if (providerIds.Count == 0)
+        {
+            return;
+        }
+
+        var providers = await db.Providers
+            .Where(provider => providerIds.Contains(provider.Id))
+            .ToListAsync(cancellationToken);
+
+        foreach (var provider in providers.Where(provider => provider.Status == ProviderStatus.Approved))
+        {
+            var hasAnotherActiveMission = await db.ProviderMissionAssignments
+                .AsNoTracking()
+                .AnyAsync(assignment =>
+                    assignment.ProviderId == provider.Id
+                    && assignment.MissionId != cancelledMissionId
+                    && (assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                        || assignment.Status == ProviderMissionAssignmentStatus.Started),
+                    cancellationToken);
+
+            if (!hasAnotherActiveMission)
+            {
+                provider.SetAvailability(true, provider.CurrentLatitude, provider.CurrentLongitude);
+            }
         }
     }
 

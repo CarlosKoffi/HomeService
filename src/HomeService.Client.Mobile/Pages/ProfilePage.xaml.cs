@@ -138,7 +138,6 @@ public partial class ProfilePage : ContentPage
                 return;
             }
 
-            ShowLocalProfilePhoto(photoBytes);
             var result = await apiClient.UploadProfilePhotoAsync(photoBytes, file.FileName, file.ContentType);
             if (!result.IsSuccess || result.Response is null)
             {
@@ -146,6 +145,7 @@ public partial class ProfilePage : ContentPage
                 return;
             }
 
+            ShowLocalProfilePhoto(photoBytes);
             ShowPhotoStatus("Photo mise a jour.", isError: false);
 
             // L'aperçu local est déjà affiché. Le rafraîchissement distant ne doit pas

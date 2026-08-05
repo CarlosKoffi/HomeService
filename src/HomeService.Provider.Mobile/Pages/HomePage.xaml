@@ -3,69 +3,89 @@
     x:Class="HomeService.Provider.Mobile.Pages.HomePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    BackgroundColor="{StaticResource PageWash}"
     Title="Accueil">
-    <ScrollView>
-        <VerticalStackLayout Padding="18" Spacing="14">
-            <Image Source="wele_logo.png"
-                   HeightRequest="32"
-                   HorizontalOptions="Start"
-                   Margin="0,0,0,2"
-                   SemanticProperties.Description="Logo Wélé" />
-
-            <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#EEF4FF" Stroke="#CFE0FF" StrokeShape="RoundRectangle 18" Padding="14">
-                <Label x:Name="MessageLabel" Text="Chargement..." Style="{StaticResource BodyLabel}" />
-            </Border>
-
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
+    <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="18,18,18,28" Spacing="15">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <VerticalStackLayout Spacing="4">
-                        <Label Text="STATUT" Style="{StaticResource EyebrowLabel}" />
-                        <Label x:Name="AvailabilityLabel" Text="Disponible" Style="{StaticResource CardTitleLabel}" TextColor="{StaticResource WeleGreen}" />
-                        <Label x:Name="ProviderStatusLabel" Text="Votre entreprise peut vous affecter une mission." Style="{StaticResource BodyLabel}" />
+                    <HorizontalStackLayout Spacing="6">
+                        <Image Source="wele_logo.png" HeightRequest="34" WidthRequest="128" Aspect="AspectFit" HorizontalOptions="Start" />
+                        <Label Text="pro" FontSize="15" VerticalTextAlignment="Center" Margin="-12,1,0,0" />
+                    </HorizontalStackLayout>
+                    <Button Grid.Column="1" Text="♢" FontSize="25" WidthRequest="48" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnNotificationsClicked" />
+                </Grid>
+
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13">
+                    <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
+                </Border>
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <VerticalStackLayout Spacing="3">
+                        <Label x:Name="GreetingLabel" Text="Bonjour 👋" Style="{StaticResource ScreenTitleLabel}" />
+                        <Label x:Name="ProviderStatusLabel" Text="Prêt pour vos missions aujourd’hui." Style="{StaticResource MutedLabel}" />
                     </VerticalStackLayout>
-                    <Border Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" StrokeShape="RoundRectangle 18" Padding="14,8">
-                        <Label x:Name="AvailabilityBadgeLabel" Text="ON" TextColor="White" FontAttributes="Bold" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="2" HorizontalOptions="End">
+                        <Switch x:Name="AvailabilitySwitch" Toggled="OnAvailabilityToggled" HorizontalOptions="End" OnColor="{StaticResource Success}" />
+                        <Label x:Name="AvailabilityLabel" Text="Disponible" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource Success}" HorizontalTextAlignment="End" />
+                    </VerticalStackLayout>
+                </Grid>
+
+                <Border x:Name="AvailabilityInfoCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Label Text="🔒" FontSize="20" VerticalTextAlignment="Start" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="3">
+                            <Label Text="Indisponible pendant la mission" FontAttributes="Bold" TextColor="{StaticResource Danger}" />
+                            <Label x:Name="AvailabilityMessageLabel" Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="9">
+                    <Border Style="{StaticResource PremiumCard}" Padding="10,13">
+                        <VerticalStackLayout Spacing="3" HorizontalOptions="Center"><Label x:Name="TodayCountLabel" Text="0" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" /><Label Text="Aujourd’hui" FontSize="11" HorizontalTextAlignment="Center" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource PremiumCard}" Padding="10,13">
+                        <VerticalStackLayout Spacing="3" HorizontalOptions="Center"><Label x:Name="ActiveCountLabel" Text="0" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" /><Label Text="En cours" FontSize="11" HorizontalTextAlignment="Center" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource PremiumCard}" Padding="10,13">
+                        <VerticalStackLayout Spacing="3" HorizontalOptions="Center"><Label x:Name="UpcomingCountLabel" Text="0" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" /><Label Text="À venir" FontSize="11" HorizontalTextAlignment="Center" /></VerticalStackLayout>
                     </Border>
                 </Grid>
-            </Border>
 
-            <Border x:Name="ProfileCompletionBanner" BackgroundColor="#FFF8EF" Stroke="#FFD6AD" StrokeShape="RoundRectangle 20" Padding="14">
-                <VerticalStackLayout Spacing="5">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <Label Text="PROFIL A FINALISER" Style="{StaticResource EyebrowLabel}" />
-                        <Label x:Name="ProfilePercentLabel" Grid.Column="1" Text="92%" FontAttributes="Bold" TextColor="{StaticResource WeleOrange}" />
+                <Border x:Name="ProfileCompletionBanner" BackgroundColor="#FFF9E8" Stroke="#FDE7A5" StrokeShape="RoundRectangle 18" Padding="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <VerticalStackLayout Spacing="4"><Label Text="PROFIL À FINALISER" Style="{StaticResource EyebrowLabel}" /><Label x:Name="ProfileMessageLabel" Style="{StaticResource BodyLabel}" /></VerticalStackLayout>
+                        <Label x:Name="ProfilePercentLabel" Grid.Column="1" Text="92%" FontAttributes="Bold" TextColor="{StaticResource Warning}" VerticalTextAlignment="Center" />
                     </Grid>
-                    <Label x:Name="ProfileMessageLabel" Text="Completez votre profil pour recevoir toutes les missions." Style="{StaticResource BodyLabel}" />
-                </VerticalStackLayout>
-            </Border>
+                </Border>
 
-            <Border x:Name="UpcomingMissionCard" BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22" Padding="16">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="MISSION A VENIR" Style="{StaticResource EyebrowLabel}" />
-                    <Label x:Name="UpcomingMissionTitleLabel" Text="Aucune mission planifiee" Style="{StaticResource CardTitleLabel}" />
-                    <Label x:Name="UpcomingMissionDetailLabel" Text="Les prochains rendez-vous apparaitront ici." Style="{StaticResource BodyLabel}" />
-                </VerticalStackLayout>
-            </Border>
+                <Label Text="Prochaine mission" Style="{StaticResource CardTitleLabel}" />
+                <Border x:Name="UpcomingMissionCard" Style="{StaticResource PremiumCard}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource BlueWash}" StrokeShape="RoundRectangle 14" WidthRequest="52" HeightRequest="52"><Label Text="▣" FontSize="24" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" /></Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3"><Label x:Name="UpcomingMissionTitleLabel" Text="Aucune mission planifiée" Style="{StaticResource CardTitleLabel}" /><Label x:Name="UpcomingMissionDetailLabel" Text="Les prochains rendez-vous apparaîtront ici." Style="{StaticResource MutedLabel}" /></VerticalStackLayout>
+                        <Label Grid.Column="2" Text="›" FontSize="28" VerticalTextAlignment="Center" />
+                    </Grid>
+                    <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnMissionsClicked" /></Border.GestureRecognizers>
+                </Border>
 
-            <Border x:Name="LiveOfferCard" BackgroundColor="White" Stroke="{StaticResource WeleGreen}" StrokeShape="RoundRectangle 22" Padding="16">
-                <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <VerticalStackLayout Spacing="3">
-                            <Label x:Name="LiveOfferCompanyLabel" Text="MISSION PROPOSEE" Style="{StaticResource EyebrowLabel}" />
-                            <Label x:Name="LiveOfferTitleLabel" Text="Une mission vous attend" Style="{StaticResource ScreenTitleLabel}" />
-                        </VerticalStackLayout>
-                        <Border Grid.Column="1" BackgroundColor="{StaticResource WeleOrange}" StrokeShape="RoundRectangle 16" Padding="10">
-                            <Label x:Name="LiveOfferCountdownLabel" Text="--:--" TextColor="White" FontAttributes="Bold" />
-                        </Border>
-                    </Grid>
-                    <Label x:Name="LiveOfferDetailLabel" Text="Service - zone" Style="{StaticResource BodyLabel}" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                        <Button x:Name="RefuseButton" Text="Refuser" Grid.Column="0" BackgroundColor="#FFF0DF" TextColor="Black" Clicked="OnRefuseClicked" />
-                        <Button x:Name="AcceptButton" Text="Accepter" Grid.Column="1" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" Clicked="OnAcceptClicked" />
-                    </Grid>
-                </VerticalStackLayout>
-            </Border>
-        </VerticalStackLayout>
-    </ScrollView>
+                <Border x:Name="LiveOfferCard" IsVisible="False" Style="{StaticResource PremiumCard}" Stroke="{StaticResource WeleBlue}">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto"><Label x:Name="LiveOfferCompanyLabel" Text="NOUVELLE MISSION" Style="{StaticResource EyebrowLabel}" /><Border Grid.Column="1" BackgroundColor="#FFF9E8" Stroke="#FDE7A5" StrokeShape="RoundRectangle 12" Padding="9,5"><Label x:Name="LiveOfferCountdownLabel" Text="--:--" TextColor="#B54708" FontAttributes="Bold" /></Border></Grid>
+                        <Label x:Name="LiveOfferTitleLabel" Text="Une mission vous attend" Style="{StaticResource ScreenTitleLabel}" />
+                        <Label x:Name="LiveOfferDetailLabel" Style="{StaticResource BodyLabel}" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10"><Button x:Name="RefuseButton" Text="Refuser" Style="{StaticResource SecondaryButton}" Clicked="OnRefuseClicked" /><Button x:Name="AcceptButton" Grid.Column="1" Text="Accepter" Clicked="OnAcceptClicked" /></Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="Raccourcis" Style="{StaticResource CardTitleLabel}" />
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                    <Button Text="Mes missions" Style="{StaticResource SecondaryButton}" Clicked="OnMissionsClicked" />
+                    <Button Grid.Column="1" Text="Calendrier" Style="{StaticResource SecondaryButton}" Clicked="OnCalendarClicked" />
+                    <Button Grid.Row="1" Text="Messages" Style="{StaticResource SecondaryButton}" Clicked="OnMessagesClicked" />
+                    <Button Grid.Row="1" Grid.Column="1" Text="Notifications" Style="{StaticResource SecondaryButton}" Clicked="OnNotificationsClicked" />
+                </Grid>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
 </ContentPage>

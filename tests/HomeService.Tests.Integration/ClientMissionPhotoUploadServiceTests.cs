@@ -45,6 +45,26 @@ public sealed class ClientMissionPhotoUploadServiceTests
         Assert.Contains("Formats photos", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task SaveAsync_WhenAndroidImageHasNoExtension_InfersNameAndContentType()
+    {
+        var root = CreateStorageRoot();
+        var service = new ClientMissionPhotoUploadService(CreateConfiguration(root));
+        await using var stream = new MemoryStream([0xFF, 0xD8, 0xFF, 0xE0]);
+        var file = new FormFile(stream, 0, stream.Length, "photo", "image_picker_9981")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "image/jpeg; charset=binary"
+        };
+
+        var result = await service.SaveAsync(file, null, CancellationToken.None);
+
+        Assert.EndsWith(".jpg", result.OriginalFileName);
+        Assert.EndsWith(".jpg", result.StoragePath);
+        Assert.Equal("image/jpeg", result.ContentType);
+        Assert.True(File.Exists(service.GetAbsolutePath(result.StoragePath)));
+    }
+
     private static IConfiguration CreateConfiguration(string root)
     {
         return new ConfigurationBuilder()

@@ -82,6 +82,7 @@ Normal Coolify deployments do not run these files manually: the API applies EF C
 | 057 | `057_add_admin_sessions.sql` | Admin login sessions for protected back-office access |
 | 058 | `058_add_client_mobile_api_foundation.sql` | Client mobile sessions, addresses and payment methods |
 | 065 | `065_enable_company_providers_for_testing.sql` | Temporarily mark approved company providers available for workflow testing |
+| 066 | `066_reset_provider_test_passwords.sql` | Reset every provider password to the temporary test password and revoke active provider sessions |
 
 ## Notes
 

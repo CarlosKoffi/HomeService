@@ -176,7 +176,8 @@ public static class ProviderPortalEndpoints
                     assignment.ProviderId == provider.Id
                     && assignment.Status != ProviderMissionAssignmentStatus.Refused
                     && assignment.Status != ProviderMissionAssignmentStatus.Completed
-                    && assignment.Status != ProviderMissionAssignmentStatus.Expired)
+                    && assignment.Status != ProviderMissionAssignmentStatus.Expired
+                    && assignment.Status != ProviderMissionAssignmentStatus.Cancelled)
                 .OrderBy(assignment => assignment.Mission!.ScheduledFor ?? assignment.ExpiresAt)
                 .Take(6)
                 .ToListAsync(cancellationToken);
@@ -208,18 +209,252 @@ public static class ProviderPortalEndpoints
                 .Select(assignment => ToProviderMobileMissionSummary(assignment, servicesById, customersById))
                 .FirstOrDefault();
 
+            var hasActiveMission = assignments.Any(assignment =>
+                assignment.Status is ProviderMissionAssignmentStatus.Accepted or ProviderMissionAssignmentStatus.Started);
+            var effectiveAvailability = provider.IsAvailable && !hasActiveMission;
+
             return Results.Ok(new ProviderMobileHomeResponse(
                 new ProviderMobileStatusResponse(
                     provider.FullName,
                     provider.Company?.Name ?? "En attente d'entreprise",
-                    provider.IsAvailable,
-                    provider.IsAvailable ? "Disponible" : "Indisponible",
-                    provider.MissionRadiusKm),
+                    effectiveAvailability,
+                    effectiveAvailability ? "Disponible" : "Indisponible",
+                    provider.MissionRadiusKm,
+                    !hasActiveMission,
+                    hasActiveMission
+                        ? "Indisponible pendant la mission. Vous redeviendrez disponible lorsqu'elle sera terminee ou annulee."
+                        : effectiveAvailability
+                            ? "Vous pouvez recevoir de nouvelles missions."
+                            : "Activez votre disponibilite pour recevoir des missions."),
                 BuildProviderMobileProfileCompletion(provider),
                 upcomingMission,
                 liveOffer));
         })
         .WithName("GetProviderMobileHome");
+
+        group.MapPut("/mobile/availability", async (
+            UpdateProviderMobileAvailabilityRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var hasActiveMission = await db.ProviderMissionAssignments
+                .AsNoTracking()
+                .AnyAsync(assignment =>
+                    assignment.ProviderId == session.ProviderId
+                    && (assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                        || assignment.Status == ProviderMissionAssignmentStatus.Started),
+                    cancellationToken);
+
+            if (hasActiveMission)
+            {
+                return Results.BadRequest(new
+                {
+                    message = "La disponibilite reste verrouillee pendant une mission acceptee."
+                });
+            }
+
+            var before = new
+            {
+                session.Provider.IsAvailable,
+                session.Provider.CurrentLatitude,
+                session.Provider.CurrentLongitude
+            };
+
+            try
+            {
+                session.Provider.SetAvailability(
+                    request.IsAvailable,
+                    request.Latitude ?? session.Provider.CurrentLatitude,
+                    request.Longitude ?? session.Provider.CurrentLongitude);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+
+            AddProviderAudit(
+                db,
+                httpRequest,
+                session.ProviderId,
+                session.Provider.FullName,
+                "ProviderAvailabilityUpdated",
+                nameof(ProviderProfile),
+                session.ProviderId,
+                request.IsAvailable ? "Prestataire disponible." : "Prestataire indisponible.",
+                before,
+                new
+                {
+                    session.Provider.IsAvailable,
+                    session.Provider.CurrentLatitude,
+                    session.Provider.CurrentLongitude
+                });
+
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.Ok(new ProviderMobileAvailabilityResponse(
+                session.Provider.IsAvailable,
+                session.Provider.IsAvailable ? "Disponible" : "Indisponible",
+                true,
+                session.Provider.IsAvailable
+                    ? "Vous pouvez recevoir de nouvelles missions."
+                    : "Vous ne recevrez pas de nouvelle mission tant que vous restez indisponible."));
+        })
+        .WithName("UpdateProviderMobileAvailability")
+        .Produces<ProviderMobileAvailabilityResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/mobile/missions", async (
+            DateTimeOffset? from,
+            DateTimeOffset? to,
+            string? status,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var query = db.ProviderMissionAssignments
+                .AsNoTracking()
+                .Include(assignment => assignment.Company)
+                .Include(assignment => assignment.Mission)
+                .Where(assignment => assignment.ProviderId == session.ProviderId);
+
+            if (from is not null)
+            {
+                query = query.Where(assignment =>
+                    assignment.Mission != null
+                    && (assignment.Mission.ScheduledFor ?? assignment.ExpiresAt) >= from.Value);
+            }
+
+            if (to is not null)
+            {
+                query = query.Where(assignment =>
+                    assignment.Mission != null
+                    && (assignment.Mission.ScheduledFor ?? assignment.ExpiresAt) <= to.Value);
+            }
+
+            if (Enum.TryParse<ProviderMissionAssignmentStatus>(status, true, out var parsedStatus))
+            {
+                query = query.Where(assignment => assignment.Status == parsedStatus);
+            }
+
+            var assignments = await query
+                .OrderByDescending(assignment => assignment.Mission!.ScheduledFor ?? assignment.ExpiresAt)
+                .Take(100)
+                .ToListAsync(cancellationToken);
+            var missions = assignments.Where(item => item.Mission is not null).Select(item => item.Mission!).ToList();
+            var serviceIds = missions.Select(item => item.ServiceId).Distinct().ToList();
+            var customerIds = missions.Select(item => item.CustomerId).Distinct().ToList();
+            var servicesById = await db.Services.AsNoTracking()
+                .Where(item => serviceIds.Contains(item.Id))
+                .ToDictionaryAsync(item => item.Id, cancellationToken);
+            var customersById = await db.Customers.AsNoTracking()
+                .Where(item => customerIds.Contains(item.Id))
+                .ToDictionaryAsync(item => item.Id, cancellationToken);
+
+            var items = assignments
+                .Select(assignment => ToProviderMobileMissionSummary(assignment, servicesById, customersById))
+                .Where(item => item is not null)
+                .Cast<ProviderMobileMissionSummaryResponse>()
+                .ToList();
+            return Results.Ok(new ProviderMobileMissionListResponse(DateTimeOffset.UtcNow, items));
+        })
+        .WithName("GetProviderMobileMissions")
+        .Produces<ProviderMobileMissionListResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/mobile/notifications", async (
+            bool? unreadOnly,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var query = db.NotificationOutboxMessages
+                .AsNoTracking()
+                .Where(item => item.OwnerType == MobileDeviceOwnerType.Provider
+                    && item.OwnerId == session.ProviderId
+                    && item.Channel == NotificationChannel.MobilePush);
+            if (unreadOnly == true)
+            {
+                query = query.Where(item => item.ReadAt == null);
+            }
+
+            var rows = await query
+                .OrderByDescending(item => item.CreatedAt)
+                .Take(100)
+                .ToListAsync(cancellationToken);
+            var items = rows
+                .GroupBy(item => new { item.Subject, item.Body, item.RelatedEntityType, item.RelatedEntityId })
+                .Select(group => group.OrderByDescending(item => item.CreatedAt).First())
+                .OrderByDescending(item => item.CreatedAt)
+                .Take(50)
+                .Select(item => new ProviderMobileNotificationResponse(
+                    item.Id,
+                    item.Subject,
+                    item.Body,
+                    item.RelatedEntityType,
+                    item.RelatedEntityId,
+                    item.CreatedAt,
+                    item.ReadAt is not null))
+                .ToList();
+            var unreadCount = rows
+                .Where(item => item.ReadAt == null)
+                .Select(item => new { item.Subject, item.Body, item.RelatedEntityType, item.RelatedEntityId })
+                .Distinct()
+                .Count();
+            return Results.Ok(new ProviderMobileNotificationListResponse(unreadCount, items));
+        })
+        .WithName("GetProviderMobileNotifications")
+        .Produces<ProviderMobileNotificationListResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/mobile/notifications/{notificationId:guid}/read", async (
+            Guid notificationId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var notification = await db.NotificationOutboxMessages.FirstOrDefaultAsync(item =>
+                item.Id == notificationId
+                && item.OwnerType == MobileDeviceOwnerType.Provider
+                && item.OwnerId == session.ProviderId,
+                cancellationToken);
+            if (notification is null)
+            {
+                return Results.NotFound(new { message = "Notification introuvable." });
+            }
+
+            notification.MarkRead(DateTimeOffset.UtcNow);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("MarkProviderMobileNotificationRead")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
 
         group.MapGet("/mobile/profile", async (
             HttpRequest httpRequest,
@@ -243,6 +478,64 @@ public static class ProviderPortalEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
 
+        group.MapPut("/mobile/profile", async (
+            UpdateProviderMobileProfileRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMobileProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var before = new
+            {
+                session.Provider.FirstName,
+                session.Provider.LastName,
+                session.Provider.Email,
+                session.Provider.Address,
+                session.Provider.MissionRadiusKm
+            };
+            try
+            {
+                session.Provider.UpdateMobileProfile(
+                    request.FirstName,
+                    request.LastName,
+                    request.Email,
+                    request.Address,
+                    request.MissionRadiusKm);
+            }
+            catch (ArgumentException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+
+            AddProviderAudit(
+                db,
+                httpRequest,
+                session.ProviderId,
+                session.Provider.FullName,
+                "ProviderMobileProfileUpdated",
+                nameof(ProviderProfile),
+                session.ProviderId,
+                "Profil prestataire mis a jour depuis l'application mobile.",
+                before,
+                request);
+            await db.SaveChangesAsync(cancellationToken);
+
+            var result = await profileService.GetAsync(session.ProviderId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("UpdateProviderMobileProfile")
+        .Produces<ProviderMobileProfileResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         group.MapPost("/mobile/profile/documents", async (
             HttpRequest httpRequest,
             IAppDbContext db,
@@ -262,7 +555,15 @@ public static class ProviderPortalEndpoints
                 return Results.BadRequest(new { message = "La piece doit etre envoyee au format multipart/form-data." });
             }
 
-            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            IFormCollection form;
+            try
+            {
+                form = await httpRequest.ReadFormAsync(cancellationToken);
+            }
+            catch (Exception exception) when (exception is BadHttpRequestException or InvalidDataException)
+            {
+                return Results.BadRequest(new { message = "Le fichier est trop lourd, incomplet ou illisible." });
+            }
             if (!TryParseProviderDocumentType(GetOptionalFormValue(form, "documentType"), out var documentType))
             {
                 return Results.BadRequest(new { message = "Type de piece invalide." });
@@ -409,7 +710,15 @@ public static class ProviderPortalEndpoints
                 return Results.BadRequest(new { message = "La photo de book doit etre envoyee au format multipart/form-data." });
             }
 
-            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            IFormCollection form;
+            try
+            {
+                form = await httpRequest.ReadFormAsync(cancellationToken);
+            }
+            catch (Exception exception) when (exception is BadHttpRequestException or InvalidDataException)
+            {
+                return Results.BadRequest(new { message = "La photo est trop lourde, incomplete ou illisible." });
+            }
             if (!Guid.TryParse(GetOptionalFormValue(form, "serviceId"), out var serviceId))
             {
                 return Results.BadRequest(new { message = "Service obligatoire pour rattacher la photo de book." });

@@ -355,8 +355,19 @@ public static class PublicEndpoints
                     return Results.BadRequest(new { message = "La photo est manquante." });
                 }
 
+                var previousStoragePath = customer.ProfilePhotoPath;
                 var storagePath = await uploadService.SaveAsync(customer.Id, photo, cancellationToken);
-                return Results.Ok(await profileService.UpdatePhotoAsync(customer.Id, storagePath, cancellationToken));
+                try
+                {
+                    var response = await profileService.UpdatePhotoAsync(customer.Id, storagePath, cancellationToken);
+                    uploadService.DeleteIfExists(previousStoragePath);
+                    return Results.Ok(response);
+                }
+                catch
+                {
+                    uploadService.DeleteIfExists(storagePath);
+                    throw;
+                }
             }
             catch (BadHttpRequestException exception)
             {
@@ -899,6 +910,11 @@ public static class PublicEndpoints
             {
                 logger.LogWarning(exception, "Client mission photo upload rejected.");
                 return Results.BadRequest(new { message = exception.Message });
+            }
+            catch (Exception exception) when (exception is BadHttpRequestException or InvalidDataException)
+            {
+                logger.LogWarning(exception, "Client mission multipart photo could not be read.");
+                return Results.BadRequest(new { message = "La photo est trop lourde, incomplete ou illisible." });
             }
         })
         .DisableAntiforgery()

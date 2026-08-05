@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.DocumentsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False">
+    <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="18,18,18,30" Spacing="15">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><Button Text="‹" FontSize="28" WidthRequest="42" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnBackClicked" /><Label Grid.Column="1" Text="Documents &amp; diplômes" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" /></Grid>
+                <Label Text="Ajoutez les pièces nécessaires à la validation de votre profil professionnel." Style="{StaticResource MutedLabel}" />
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13"><Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" /></Border>
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                    <Button Text="Photo de profil" Style="{StaticResource SecondaryButton}" Clicked="OnPhotoClicked" />
+                    <Button Grid.Column="1" Text="Pièce d’identité" Style="{StaticResource SecondaryButton}" Clicked="OnIdentityClicked" />
+                    <Button Grid.Row="1" Text="Diplôme" Style="{StaticResource SecondaryButton}" Clicked="OnDiplomaClicked" />
+                </Grid>
+                <Label Text="Pièces transmises" Style="{StaticResource CardTitleLabel}" />
+                <VerticalStackLayout x:Name="DocumentsStack" Spacing="9" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

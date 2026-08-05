@@ -11,7 +11,9 @@ public sealed record ProviderMobileStatusResponse(
     string CompanyName,
     bool IsAvailable,
     string AvailabilityLabel,
-    int MissionRadiusKm);
+    int MissionRadiusKm,
+    bool CanChangeAvailability,
+    string AvailabilityMessage);
 
 public sealed record ProviderMobileProfileCompletionResponse(
     int Percent,

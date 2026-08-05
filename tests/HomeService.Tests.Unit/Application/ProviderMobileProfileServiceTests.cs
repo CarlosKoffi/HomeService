@@ -9,7 +9,7 @@ namespace HomeService.Tests.Unit.Application;
 public sealed class ProviderMobileProfileServiceTests
 {
     [Fact]
-    public async Task GetAsync_ReturnsProviderMobileProfileWithServicesPrestationsDocumentsAndPortfolioStatus()
+    public async Task GetAsync_ForCompanyEmployee_MasksPricesAndReturnsProfessionalProfile()
     {
         await using var db = CreateDbContext();
         var company = new Company("Wele Services", "+2250701111111", "ops@wele.ci");
@@ -76,6 +76,8 @@ public sealed class ProviderMobileProfileServiceTests
         Assert.NotNull(result.Response);
         Assert.Equal("Awa Konate", result.Response.FullName);
         Assert.Equal("Wele Services", result.Response.CompanyName);
+        Assert.False(result.Response.CanViewPrices);
+        Assert.NotNull(result.Response.ProfilePhotoUrl);
         Assert.True(result.Response.IsApprovedForMissions);
         Assert.Null(result.Response.ProfileCompletion);
         Assert.Equal(2, result.Response.Documents.Count);
@@ -84,11 +86,52 @@ public sealed class ProviderMobileProfileServiceTests
         Assert.True(profileService.RequiresPortfolio);
         Assert.Equal(1, profileService.PortfolioPhotoCount);
         Assert.True(profileService.CanReceiveMissions);
-        Assert.Equal("Premium", profileService.PriceTier);
+        Assert.Null(profileService.PriceTier);
         var profilePrestation = Assert.Single(profileService.Prestations);
         Assert.Equal("Repassage", profilePrestation.Name);
-        Assert.Equal(2_500, profilePrestation.PriceMinAmount);
-        Assert.Equal(4_500, profilePrestation.PriceMaxAmount);
+        Assert.Null(profilePrestation.PriceMinAmount);
+        Assert.Null(profilePrestation.PriceMaxAmount);
+        Assert.Single(result.Response.PortfolioItems);
+    }
+
+    [Fact]
+    public async Task GetAsync_ForTemporaryWorker_AllowsPriceData()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("Wele Services", "+2250701111111", "ops@wele.ci");
+        company.Approve();
+        var service = new Service("Plomberie", null, null);
+        var prestation = service.AddPrestation("Debouchage", null, 1, 5_000, 8_000);
+        var provider = new ProviderProfile(
+            company.Id,
+            "Malo",
+            "Kone",
+            "+2250702000000",
+            "malo@wele.ci",
+            new DateOnly(1994, 2, 3),
+            "Cocody",
+            ProviderGender.Male,
+            ProviderEmploymentType.TemporaryWorker,
+            5,
+            5.348850m,
+            -4.003150m,
+            5);
+        provider.SyncCompanyServices([(service.Id, ExperienceLevel.Expert, 5, ProviderServicePriceTier.Premium)]);
+        provider.Services.Single().SyncPrestations([prestation.Id]);
+        provider.Approve();
+        db.Companies.Add(company);
+        db.Services.Add(service);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new ProviderMobileProfileService(db).GetAsync(provider.Id, CancellationToken.None);
+
+        Assert.True(result.Response!.CanViewPrices);
+        var profileService = Assert.Single(result.Response.Services);
+        Assert.Equal("Premium", profileService.PriceTier);
+        var profilePrestation = Assert.Single(profileService.Prestations);
+        Assert.Equal(5_000, profilePrestation.PriceMinAmount);
+        Assert.Equal(8_000, profilePrestation.PriceMaxAmount);
     }
 
     [Fact]

@@ -9,12 +9,16 @@
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationTitle>wélé Prestataire</ApplicationTitle>
+    <ApplicationTitle>Wélé Pro</ApplicationTitle>
     <ApplicationId>ci.wele.provider</ApplicationId>
-    <ApplicationDisplayVersion>0.3</ApplicationDisplayVersion>
-    <ApplicationVersion>3</ApplicationVersion>
+    <ApplicationDisplayVersion>0.4.1</ApplicationDisplayVersion>
+    <ApplicationVersion>5</ApplicationVersion>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
     <WindowsPackageType>None</WindowsPackageType>
+    <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
+    <GoogleMapsApiKey Condition="'$(GoogleMapsApiKey)' == '' and '$(GOOGLE_MAPS_API_KEY)' != ''">$(GOOGLE_MAPS_API_KEY)</GoogleMapsApiKey>
+    <GoogleMapsApiKey Condition="'$(GoogleMapsApiKey)' == ''">MAPS_API_KEY_NOT_CONFIGURED</GoogleMapsApiKey>
+    <AndroidManifestPlaceholders Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">mapsApiKey=$(GoogleMapsApiKey)</AndroidManifestPlaceholders>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
@@ -24,9 +28,20 @@
 
   <ItemGroup>
     <MauiIcon Include="Resources\AppIcon\wele_appicon.png" />
-    <MauiImage Include="Resources\Images\wele_logo.png" />
+    <MauiImage Include="Resources\Images\*" />
+    <MauiFont Include="..\HomeService.Client.Mobile\Resources\Fonts\PlusJakartaSans-Variable.ttf" Link="Resources\Fonts\PlusJakartaSans-Variable.ttf" Alias="PlusJakartaSans" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.14" />
+    <PackageReference Include="Microsoft.Maui.Controls.Maps" Version="9.0.14" />
     <ProjectReference Include="..\HomeService.Contracts\HomeService.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <PackageReference Include="Xamarin.Firebase.Messaging" Version="123.4.1" />
+    <GoogleServicesJson Include="google-services.json" Condition="Exists('google-services.json')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' and Exists('GoogleService-Info.plist')">
+    <BundleResource Include="GoogleService-Info.plist" />
   </ItemGroup>
 
 </Project>

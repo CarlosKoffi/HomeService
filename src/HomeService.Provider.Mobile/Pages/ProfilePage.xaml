@@ -3,11 +3,44 @@
     x:Class="HomeService.Provider.Mobile.Pages.ProfilePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    BackgroundColor="{StaticResource PageWash}"
     Title="Profil">
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout x:Name="ContentHost" Padding="18" Spacing="14" />
+            <VerticalStackLayout Padding="18,20,18,30" Spacing="15">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Profil" Style="{StaticResource ScreenTitleLabel}" />
+                    <Button Grid.Column="1" Text="⚙" WidthRequest="46" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnSettingsClicked" />
+                </Grid>
+
+                <VerticalStackLayout HorizontalOptions="Center" Spacing="7">
+                    <Border WidthRequest="116" HeightRequest="116" Stroke="{StaticResource Line}" StrokeThickness="2" StrokeShape="RoundRectangle 58" BackgroundColor="{StaticResource BlueWash}" Padding="2">
+                        <Image x:Name="ProfileImage" Source="wele_profile_placeholder.svg" Aspect="AspectFill" />
+                    </Border>
+                    <Label x:Name="FullNameLabel" Text="Prestataire Wélé" FontSize="23" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                    <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12" Padding="10,5" HorizontalOptions="Center"><Label x:Name="EmploymentTypeLabel" Text="Salarié d’entreprise" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" /></Border>
+                    <Label x:Name="CompanyLabel" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+
+                <Border Style="{StaticResource PremiumCard}">
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto"><Label Text="Complétude du profil" FontAttributes="Bold" /><Label x:Name="CompletionLabel" Grid.Column="1" Text="0%" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" /></Grid>
+                        <ProgressBar x:Name="CompletionProgress" Progress="0" ProgressColor="{StaticResource WeleBlue}" BackgroundColor="{StaticResource BlueWash}" HeightRequest="7" />
+                        <Label x:Name="CompletionMessageLabel" Text="Votre profil professionnel." Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout Spacing="9">
+                    <Button Text="Mes informations                                      ›" Style="{StaticResource SecondaryButton}" Clicked="OnDetailsClicked" />
+                    <Button Text="Documents &amp; diplômes                            ›" Style="{StaticResource SecondaryButton}" Clicked="OnDocumentsClicked" />
+                    <Button Text="Services &amp; prestations                           ›" Style="{StaticResource SecondaryButton}" Clicked="OnServicesClicked" />
+                    <Button Text="Portfolio                                                   ›" Style="{StaticResource SecondaryButton}" Clicked="OnPortfolioClicked" />
+                    <Button Text="Paramètres                                                ›" Style="{StaticResource SecondaryButton}" Clicked="OnSettingsClicked" />
+                </VerticalStackLayout>
+
+                <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 17" Padding="14">
+                    <Label Text="Vos compétences et validations sont visibles ici. Les tarifs restent entièrement masqués pour un salarié d’entreprise." Style="{StaticResource MutedLabel}" />
+                </Border>
+            </VerticalStackLayout>
         </ScrollView>
     </RefreshView>
 </ContentPage>

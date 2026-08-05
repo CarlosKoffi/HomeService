@@ -39,7 +39,8 @@ public static class MauiProgram
             var httpClient = new HttpClient
             {
                 BaseAddress = new Uri(apiBaseUrl, UriKind.Absolute),
-                Timeout = TimeSpan.FromSeconds(20)
+                // Phone photos can take more than 20 seconds on a mobile network.
+                Timeout = TimeSpan.FromSeconds(90)
             };
 
             return new ClientMobileApiClient(httpClient, serviceProvider.GetRequiredService<ClientSessionStore>());

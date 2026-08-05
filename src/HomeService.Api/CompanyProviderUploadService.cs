@@ -4,7 +4,7 @@ namespace HomeService.Api;
 
 public sealed class CompanyProviderUploadService(IConfiguration configuration)
 {
-    private const long MaxFileSize = 10 * 1024 * 1024;
+    private const long MaxFileSize = 25 * 1024 * 1024;
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "image/jpeg",
@@ -50,17 +50,16 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
 
             if (file.Length > MaxFileSize)
             {
-                throw new InvalidOperationException("Chaque fichier employe doit faire moins de 10 Mo.");
+                throw new InvalidOperationException("Chaque fichier employe doit faire moins de 25 Mo.");
             }
 
-            if (!IsAllowedFile(file))
+            var safeExtension = ResolveSafeExtension(file, allowPdf: true);
+            if (safeExtension is null)
             {
                 throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
             }
 
-            var originalFileName = Path.GetFileName(file.FileName);
-            var extension = Path.GetExtension(originalFileName);
-            var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".bin" : extension.ToLowerInvariant();
+            var originalFileName = NormalizeOriginalFileName(file.FileName, safeExtension);
             var relativePath = Path.Combine(
                 "providers",
                 companyId.ToString("D"),
@@ -77,7 +76,7 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
                 documentType,
                 originalFileName,
                 relativePath.Replace('\\', '/'),
-                file.ContentType));
+                NormalizeStoredContentType(file.ContentType, safeExtension)));
         }
 
         return documents;
@@ -97,17 +96,18 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
 
         if (file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException("Chaque fichier employe doit faire moins de 10 Mo.");
+            throw new InvalidOperationException("Chaque fichier employe doit faire moins de 25 Mo.");
         }
 
-        if (!IsAllowedFile(file))
+        var safeExtension = ResolveSafeExtension(file, allowPdf: documentType != ProviderDocumentType.Photo);
+        if (safeExtension is null)
         {
-            throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
+            throw new InvalidOperationException(documentType == ProviderDocumentType.Photo
+                ? "La photo de profil doit etre au format JPG, PNG, WEBP ou HEIC."
+                : "Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
         }
 
-        var originalFileName = Path.GetFileName(file.FileName);
-        var extension = Path.GetExtension(originalFileName);
-        var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".bin" : extension.ToLowerInvariant();
+        var originalFileName = NormalizeOriginalFileName(file.FileName, safeExtension);
         var relativePath = Path.Combine(
             "providers",
             companyId.ToString("D"),
@@ -124,7 +124,7 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
             documentType,
             originalFileName,
             relativePath.Replace('\\', '/'),
-            file.ContentType);
+            NormalizeStoredContentType(file.ContentType, safeExtension));
     }
 
     public Task<StoredCompanyProviderDocument> SaveMobileDocumentAsync(
@@ -154,17 +154,16 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
 
         if (file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException("Chaque photo de book doit faire moins de 10 Mo.");
+            throw new InvalidOperationException("Chaque photo de book doit faire moins de 25 Mo.");
         }
 
-        if (!IsAllowedImageFile(file))
+        var safeExtension = ResolveSafeExtension(file, allowPdf: false);
+        if (safeExtension is null)
         {
             throw new InvalidOperationException("Formats acceptes pour le book: JPG, PNG, WEBP ou photo mobile HEIC.");
         }
 
-        var originalFileName = Path.GetFileName(file.FileName);
-        var extension = Path.GetExtension(originalFileName);
-        var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".jpg" : extension.ToLowerInvariant();
+        var originalFileName = NormalizeOriginalFileName(file.FileName, safeExtension);
         var relativePath = Path.Combine(
             "providers",
             "mobile",
@@ -182,7 +181,7 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
         return new StoredProviderPortfolioFile(
             originalFileName,
             relativePath.Replace('\\', '/'),
-            file.ContentType);
+            NormalizeStoredContentType(file.ContentType, safeExtension));
     }
 
     public string GetAbsolutePath(string relativePath)
@@ -206,14 +205,6 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
         yield return ("diplomaDocument", ProviderDocumentType.Diploma);
     }
 
-    private static bool IsAllowedFile(IFormFile file)
-    {
-        var extension = Path.GetExtension(Path.GetFileName(file.FileName));
-        return AllowedExtensions.Contains(extension)
-            && (AllowedContentTypes.Contains(file.ContentType)
-                || file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
-    }
-
     private async Task<StoredCompanyProviderDocument> SaveProviderFileAsync(
         string folder,
         string filePrefix,
@@ -228,17 +219,18 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
 
         if (file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException("Chaque fichier employe doit faire moins de 10 Mo.");
+            throw new InvalidOperationException("Chaque fichier employe doit faire moins de 25 Mo.");
         }
 
-        if (!IsAllowedFile(file))
+        var safeExtension = ResolveSafeExtension(file, allowPdf: documentType != ProviderDocumentType.Photo);
+        if (safeExtension is null)
         {
-            throw new InvalidOperationException("Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
+            throw new InvalidOperationException(documentType == ProviderDocumentType.Photo
+                ? "La photo de profil doit etre au format JPG, PNG, WEBP ou HEIC."
+                : "Formats acceptes pour les employes: PDF, JPG, PNG, WEBP ou photo mobile HEIC.");
         }
 
-        var originalFileName = Path.GetFileName(file.FileName);
-        var extension = Path.GetExtension(originalFileName);
-        var safeExtension = string.IsNullOrWhiteSpace(extension) ? ".bin" : extension.ToLowerInvariant();
+        var originalFileName = NormalizeOriginalFileName(file.FileName, safeExtension);
         var relativePath = Path.Combine(folder, $"{filePrefix}-{Guid.NewGuid():N}{safeExtension}");
 
         var absolutePath = GetAbsolutePath(relativePath);
@@ -251,16 +243,61 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
             documentType,
             originalFileName,
             relativePath.Replace('\\', '/'),
-            file.ContentType);
+            NormalizeStoredContentType(file.ContentType, safeExtension));
     }
 
-    private static bool IsAllowedImageFile(IFormFile file)
+    private static string? ResolveSafeExtension(IFormFile file, bool allowPdf)
     {
-        var extension = Path.GetExtension(Path.GetFileName(file.FileName));
-        return AllowedExtensions.Contains(extension)
-            && !string.Equals(extension, ".pdf", StringComparison.OrdinalIgnoreCase)
-            && (AllowedContentTypes.Contains(file.ContentType)
-                || file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase));
+        var contentType = file.ContentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        var extension = Path.GetExtension(Path.GetFileName(file.FileName)).ToLowerInvariant();
+        var contentTypeAllowed = AllowedContentTypes.Contains(contentType)
+            || contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+
+        if (AllowedExtensions.Contains(extension)
+            && contentTypeAllowed
+            && (allowPdf || extension != ".pdf"))
+        {
+            return extension;
+        }
+
+        return contentType switch
+        {
+            "image/jpeg" or "image/pjpeg" => ".jpg",
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            "image/heic" => ".heic",
+            "image/heif" => ".heif",
+            "application/pdf" when allowPdf => ".pdf",
+            _ => null
+        };
+    }
+
+    private static string NormalizeOriginalFileName(string fileName, string extension)
+    {
+        var safeName = Path.GetFileName(fileName);
+        return string.IsNullOrWhiteSpace(safeName) || string.IsNullOrWhiteSpace(Path.GetExtension(safeName))
+            ? $"fichier-mobile{extension}"
+            : safeName;
+    }
+
+    private static string NormalizeStoredContentType(string contentType, string extension)
+    {
+        var normalized = contentType.Split(';', 2)[0].Trim().ToLowerInvariant();
+        if (normalized != "application/octet-stream" && !string.IsNullOrWhiteSpace(normalized))
+        {
+            return normalized;
+        }
+
+        return extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".heic" => "image/heic",
+            ".heif" => "image/heif",
+            ".pdf" => "application/pdf",
+            _ => "application/octet-stream"
+        };
     }
 }
 

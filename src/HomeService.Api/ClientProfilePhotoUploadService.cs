@@ -29,11 +29,12 @@ public sealed class ClientProfilePhotoUploadService(
 
         var relativePath = Path.Combine("client-profiles", customerId.ToString("N"), $"{Guid.NewGuid():N}{extension}");
         var absolutePath = GetAbsolutePath(relativePath);
+        var temporaryPath = $"{absolutePath}.uploading";
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
             await using var stream = new FileStream(
-                absolutePath,
+                temporaryPath,
                 FileMode.CreateNew,
                 FileAccess.Write,
                 FileShare.None,
@@ -41,10 +42,18 @@ public sealed class ClientProfilePhotoUploadService(
                 FileOptions.Asynchronous);
             await file.CopyToAsync(stream, cancellationToken);
             await stream.FlushAsync(cancellationToken);
+            stream.Close();
+            File.Move(temporaryPath, absolutePath);
             return relativePath.Replace('\\', '/');
+        }
+        catch (OperationCanceledException)
+        {
+            TryDeleteAbsolutePath(temporaryPath);
+            throw;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
+            TryDeleteAbsolutePath(temporaryPath);
             logger.LogError(exception, "Unable to store client profile photo for customer {CustomerId} in {RootPath}", customerId, _rootPath);
             throw new ClientProfilePhotoStorageException(
                 "Le stockage de la photo est momentanement indisponible. Reessayez dans quelques instants.",
@@ -84,6 +93,31 @@ public sealed class ClientProfilePhotoUploadService(
         }
 
         return absolutePath;
+    }
+
+    public void DeleteIfExists(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath))
+        {
+            return;
+        }
+
+        try
+        {
+            TryDeleteAbsolutePath(GetAbsolutePath(relativePath));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            logger.LogWarning(exception, "Unable to delete obsolete client profile photo {RelativePath}.", relativePath);
+        }
+    }
+
+    private static void TryDeleteAbsolutePath(string path)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
     }
 }
 

@@ -3,32 +3,27 @@
     x:Class="HomeService.Provider.Mobile.Pages.ChatPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    BackgroundColor="{StaticResource PageWash}"
-    Title="Chat">
+    Title="Messages">
     <Grid RowDefinitions="*,Auto">
         <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="18" Spacing="14">
-            <Label Text="Conversation de mission" Style="{StaticResource ScreenTitleLabel}" />
+            <VerticalStackLayout Padding="18,20,18,18" Spacing="14">
+                <Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" />
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13"><Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" /></Border>
 
-            <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#EEF4FF" Stroke="#CFE0FF" StrokeShape="RoundRectangle 18" Padding="14">
-                <Label x:Name="MessageLabel" Text="Chargement..." Style="{StaticResource BodyLabel}" />
-            </Border>
+                <Border Style="{StaticResource PremiumCard}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                        <Border WidthRequest="46" HeightRequest="46" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 23"><Label Text="♙" FontSize="21" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" /></Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3"><Label x:Name="MissionTitleLabel" Text="Aucune mission active" Style="{StaticResource CardTitleLabel}" /><Label x:Name="MissionSubtitleLabel" Text="Les messages seront disponibles avec une mission affectée." Style="{StaticResource MutedLabel}" /><Label x:Name="MissionNumberLabel" Style="{StaticResource EyebrowLabel}" /></VerticalStackLayout>
+                    </Grid>
+                </Border>
 
-            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 20" Padding="14">
-                <VerticalStackLayout Spacing="5">
-                    <Label x:Name="MissionTitleLabel" Text="Aucune mission active" Style="{StaticResource CardTitleLabel}" />
-                    <Label x:Name="MissionSubtitleLabel" Text="Les messages seront disponibles quand une mission sera affectee." Style="{StaticResource BodyLabel}" />
-                    <Label x:Name="MissionNumberLabel" Text="" Style="{StaticResource MutedLabel}" />
-                </VerticalStackLayout>
-            </Border>
-
-            <VerticalStackLayout x:Name="MessagesStack" Spacing="10" />
+                <VerticalStackLayout x:Name="MessagesStack" Spacing="10" />
             </VerticalStackLayout>
         </ScrollView>
 
-        <Grid Grid.Row="1" Padding="18,10" ColumnDefinitions="*,Auto" ColumnSpacing="10" BackgroundColor="{StaticResource PageWash}">
-            <Entry x:Name="MessageEntry" Placeholder="Ecrire au client pour cette mission..." BackgroundColor="White" />
-            <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" BackgroundColor="{StaticResource WeleGreen}" TextColor="White" Clicked="OnSendClicked" />
+        <Grid Grid.Row="1" Padding="14,10,14,14" ColumnDefinitions="*,Auto" ColumnSpacing="10" BackgroundColor="White">
+            <Border Style="{StaticResource FieldBorder}"><Entry x:Name="MessageEntry" Placeholder="Écrire un message…" /></Border>
+            <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" Clicked="OnSendClicked" />
         </Grid>
     </Grid>
 </ContentPage>

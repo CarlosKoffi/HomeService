@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>Wélé Pro utilise votre position pour confirmer votre trajet et votre arrivée chez le client.</string>
+  <key>NSPhotoLibraryUsageDescription</key>
+  <string>Wélé Pro accède à vos photos pour vos documents, votre portfolio et les preuves de mission.</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Wélé Pro utilise l’appareil photo pour vos justificatifs et les preuves d’intervention.</string>
+</dict>
+</plist>

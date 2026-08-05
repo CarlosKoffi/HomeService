@@ -1,5 +1,6 @@
 using Android.App;
 using Android.Content.PM;
+using Android.OS;
 
 namespace HomeService.Provider.Mobile;
 
@@ -14,4 +15,15 @@ namespace HomeService.Provider.Mobile;
         | ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
+    protected override void OnCreate(Bundle? savedInstanceState)
+    {
+        base.OnCreate(savedInstanceState);
+        WeleProviderNotificationChannel.EnsureCreated(this);
+
+        if (OperatingSystem.IsAndroidVersionAtLeast(33)
+            && CheckSelfPermission(Android.Manifest.Permission.PostNotifications) != Permission.Granted)
+        {
+            RequestPermissions([Android.Manifest.Permission.PostNotifications], 2001);
+        }
+    }
 }

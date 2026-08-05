@@ -36,7 +36,7 @@ public sealed class ProviderMissionWorkflowService
         {
             assignment.Accept(request.Latitude, request.Longitude, request.AccuracyMeters);
             assignment.Mission.MarkProviderAccepted(assignment.ProviderId, assignment.CompanyId);
-            provider.SetAvailability(provider.IsAvailable, request.Latitude, request.Longitude);
+            provider.SetAvailability(false, request.Latitude, request.Longitude);
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
         }
         catch (InvalidOperationException exception)
@@ -271,6 +271,7 @@ public sealed class ProviderMissionWorkflowService
         {
             assignment.Complete(request.Note, request.CompletionPhotoPath);
             assignment.Mission.Complete(request.ActualDurationMinutes);
+            provider.SetAvailability(true, provider.CurrentLatitude, provider.CurrentLongitude);
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
         }
         catch (InvalidOperationException exception)

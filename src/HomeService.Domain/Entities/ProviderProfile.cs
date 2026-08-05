@@ -103,6 +103,31 @@ public sealed class ProviderProfile : AuditableEntity
         Touch();
     }
 
+    public void UpdateMobileProfile(
+        string firstName,
+        string lastName,
+        string? email,
+        string address,
+        int missionRadiusKm)
+    {
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+        {
+            throw new ArgumentException("Le prenom et le nom sont obligatoires.");
+        }
+
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            throw new ArgumentException("L'adresse est obligatoire.");
+        }
+
+        FirstName = firstName.Trim();
+        LastName = lastName.Trim();
+        Email = NormalizeEmail(email);
+        Address = address.Trim();
+        MissionRadiusKm = Math.Clamp(missionRadiusKm, 1, 100);
+        Touch();
+    }
+
     public void UpdateCompanyProfile(
         string firstName,
         string lastName,
