@@ -154,6 +154,20 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
+    public Task<ApiCallResult<ProviderLocationVerificationResponse>> UpdateMissionLocationAsync(
+        string bearerToken,
+        Guid assignmentId,
+        ProviderLocationVerificationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsync<ProviderLocationVerificationResponse>(
+            HttpMethod.Post,
+            $"api/provider-portal/mobile/mission-assignments/{assignmentId:D}/location",
+            bearerToken,
+            request,
+            cancellationToken);
+    }
+
     public Task<ApiCallResult<ProviderLocationVerificationResponse>> StartMissionAsync(
         string bearerToken,
         Guid assignmentId,

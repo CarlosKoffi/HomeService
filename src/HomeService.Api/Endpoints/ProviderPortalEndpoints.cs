@@ -744,6 +744,68 @@ public static class ProviderPortalEndpoints
         })
         .WithName("AcceptProviderMission");
 
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/location", async (
+            Guid assignmentId,
+            ProviderLocationVerificationRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            ProviderMissionWorkflowService workflow,
+            ProviderMissionNotificationService notifications,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var assignment = await db.ProviderMissionAssignments
+                .Include(item => item.Mission)
+                .FirstOrDefaultAsync(item =>
+                    item.Id == assignmentId
+                    && item.ProviderId == session.ProviderId,
+                    cancellationToken);
+
+            if (assignment?.Mission is null)
+            {
+                return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+            }
+
+            var wasOnTheWay = assignment.Mission.Status == MissionStatus.OnTheWay;
+            var result = workflow.UpdatePosition(session.Provider, assignment, request);
+            if (result.Status != ProviderMissionOperationStatus.Ok)
+            {
+                return ToProviderMissionHttpResult(result);
+            }
+
+            if (!wasOnTheWay && assignment.Mission.Status == MissionStatus.OnTheWay)
+            {
+                AddProviderAudit(
+                    db,
+                    httpRequest,
+                    session.ProviderId,
+                    session.Provider.FullName,
+                    "ProviderOnTheWay",
+                    nameof(ProviderMissionAssignment),
+                    assignment.Id,
+                    "Le prestataire a demarre son trajet vers le client.",
+                    after: new
+                    {
+                        assignment.MissionId,
+                        MissionStatus = assignment.Mission.Status
+                    });
+                await notifications.NotifyOnTheWayAsync(
+                    assignment.Mission,
+                    session.Provider,
+                    assignment,
+                    cancellationToken);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            return ToProviderMissionHttpResult(result);
+        })
+        .WithName("UpdateProviderMissionLocation");
+
         group.MapPost("/mission-assignments/{assignmentId:guid}/refuse", async (
             Guid assignmentId,
             ProviderRefuseMissionRequest request,

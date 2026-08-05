@@ -18,6 +18,7 @@ public sealed class ProviderMissionNotificationService(
     private const string MissionProviderAcceptedEventKey = "MissionProviderAccepted";
     private const string MissionProviderRefusedEventKey = "MissionProviderRefused";
     private const string MissionTechnicianAssignedEventKey = "MissionTechnicianAssigned";
+    private const string MissionTechnicianOnTheWayEventKey = "MissionTechnicianOnTheWay";
     private const string MissionTechnicianArrivedEventKey = "MissionTechnicianArrived";
     private const string MissionStartedEventKey = "MissionStarted";
     private const string MissionCompletedEventKey = "MissionCompleted";
@@ -99,6 +100,24 @@ public sealed class ProviderMissionNotificationService(
             "{NomTechnicien} est arrive pour la mission {NumeroMission}.",
             variables,
             "mission_technician_arrived",
+            assignment.Id,
+            cancellationToken);
+    }
+
+    public async Task NotifyOnTheWayAsync(
+        Mission mission,
+        ProviderProfile provider,
+        ProviderMissionAssignment assignment,
+        CancellationToken cancellationToken)
+    {
+        var variables = await BuildVariablesAsync(mission, provider, cancellationToken);
+        await QueueCustomerPushAsync(
+            mission,
+            MissionTechnicianOnTheWayEventKey,
+            "Technicien en route",
+            "{NomTechnicien} est en route vers {Adresse}.",
+            variables,
+            "mission_technician_on_the_way",
             assignment.Id,
             cancellationToken);
     }

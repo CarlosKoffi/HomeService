@@ -36,6 +36,7 @@ public sealed class ProviderMissionWorkflowService
         {
             assignment.Accept(request.Latitude, request.Longitude, request.AccuracyMeters);
             assignment.Mission.MarkProviderAccepted(assignment.ProviderId, assignment.CompanyId);
+            provider.SetAvailability(provider.IsAvailable, request.Latitude, request.Longitude);
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
         }
         catch (InvalidOperationException exception)
@@ -130,7 +131,51 @@ public sealed class ProviderMissionWorkflowService
             assignment.Mission.ServiceLongitude,
             assignment.Mission.ArrivalToleranceMeters);
 
+        provider.SetAvailability(provider.IsAvailable, request.Latitude, request.Longitude);
+
         return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+    }
+
+    public ProviderMissionOperationResult UpdatePosition(
+        ProviderProfile provider,
+        ProviderMissionAssignment assignment,
+        ProviderLocationVerificationRequest request)
+    {
+        if (!CanProviderUsePortal(provider))
+        {
+            return ProviderMissionOperationResult.Forbidden("Ce prestataire n'est pas autorise a utiliser le portail.");
+        }
+
+        if (ProviderLocationPayloadValidator.Validate(request) is { } validationError)
+        {
+            return ProviderMissionOperationResult.BadRequest(validationError);
+        }
+
+        if (assignment.Mission is null)
+        {
+            return ProviderMissionOperationResult.NotFound("Mission introuvable pour ce prestataire.");
+        }
+
+        if (assignment.Status != ProviderMissionAssignmentStatus.Accepted)
+        {
+            return ProviderMissionOperationResult.BadRequest("Le partage de position est reserve aux missions acceptees en attente d'arrivee.");
+        }
+
+        if (!assignment.Mission.IsInitialPaymentConfirmed)
+        {
+            return ProviderMissionOperationResult.BadRequest("Le paiement client doit etre confirme avant de partager la position du prestataire.");
+        }
+
+        try
+        {
+            provider.SetAvailability(provider.IsAvailable, request.Latitude, request.Longitude);
+            assignment.Mission.MarkProviderOnTheWay(assignment.ProviderId, assignment.CompanyId);
+            return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return ProviderMissionOperationResult.BadRequest(exception.Message);
+        }
     }
 
     public ProviderMissionOperationResult StartMission(
@@ -181,6 +226,8 @@ public sealed class ProviderMissionWorkflowService
             assignment.Mission.ServiceLatitude,
             assignment.Mission.ServiceLongitude,
             assignment.Mission.ArrivalToleranceMeters);
+
+        provider.SetAvailability(provider.IsAvailable, request.Latitude, request.Longitude);
 
         if (!assignment.HasVerifiedArrival)
         {

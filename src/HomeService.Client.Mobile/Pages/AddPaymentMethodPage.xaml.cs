@@ -9,7 +9,6 @@ public partial class AddPaymentMethodPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
     private readonly ObservableCollection<ProviderRow> providers = [];
-    private ProviderRow? selectedProvider;
 
     public AddPaymentMethodPage()
     {
@@ -23,7 +22,11 @@ public partial class AddPaymentMethodPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        if (providers.Count > 0) return;
+        if (providers.Count > 0)
+        {
+            return;
+        }
+
         var result = await apiClient.GetPaymentProvidersAsync();
         if (!result.IsSuccess || result.Response is null)
         {
@@ -41,18 +44,45 @@ public partial class AddPaymentMethodPage : ContentPage
                     provider.Name,
                     provider.Method,
                     provider.LogoUrl))));
-        foreach (var row in rows) providers.Add(row);
-        Select(providers.FirstOrDefault());
+        foreach (var row in rows)
+        {
+            providers.Add(row);
+        }
+
+        UpdateReferenceEditor();
     }
 
-    private void OnProviderTapped(object sender, TappedEventArgs e) => Select(e.Parameter as ProviderRow);
-
-    private void Select(ProviderRow? row)
+    private void OnProviderTapped(object sender, TappedEventArgs e)
     {
-        foreach (var item in providers) item.IsSelected = ReferenceEquals(item, row);
-        selectedProvider = row;
-        var isCard = row?.Provider.Method == "Card";
-        ReferenceLabel.Text = isCard ? "Quatre derniers chiffres" : "Numero Mobile Money";
+        if (e.Parameter is not ProviderRow selected)
+        {
+            return;
+        }
+
+        if (selected.IsCard)
+        {
+            foreach (var provider in providers)
+            {
+                provider.IsSelected = ReferenceEquals(provider, selected);
+            }
+        }
+        else
+        {
+            foreach (var provider in providers.Where(provider => provider.IsCard))
+            {
+                provider.IsSelected = false;
+            }
+
+            selected.IsSelected = !selected.IsSelected;
+        }
+
+        UpdateReferenceEditor();
+    }
+
+    private void UpdateReferenceEditor()
+    {
+        var isCard = providers.Any(provider => provider.IsSelected && provider.IsCard);
+        ReferenceLabel.Text = isCard ? "Quatre derniers chiffres" : "Numéro Mobile Money";
         ReferenceEntry.Placeholder = isCard ? "Ex. 4242" : "07 00 00 00 00";
         ReferenceEntry.Keyboard = isCard ? Keyboard.Numeric : Keyboard.Telephone;
     }
@@ -61,46 +91,79 @@ public partial class AddPaymentMethodPage : ContentPage
     {
         ErrorLabel.IsVisible = false;
         var reference = ReferenceEntry.Text?.Trim();
-        if (selectedProvider is not { } selected || string.IsNullOrWhiteSpace(reference))
+        var selected = providers.Where(provider => provider.IsSelected).ToList();
+        if (selected.Count == 0 || string.IsNullOrWhiteSpace(reference))
         {
-            ErrorLabel.Text = "Choisissez un operateur et renseignez le numero du compte.";
+            ErrorLabel.Text = "Choisissez au moins un réseau et renseignez le numéro du compte.";
             ErrorLabel.IsVisible = true;
             return;
         }
 
-        var provider = selected.Provider;
         SaveButton.IsEnabled = false;
-        var result = await apiClient.CreatePaymentMethodAsync(new UpsertClientPaymentMethodRequest(provider.Method, provider.Name, Mask(reference), DefaultCheckBox.IsChecked, provider.Id));
+        var success = selected[0].IsCard
+            ? await SaveCardAsync(selected[0], reference)
+            : await SaveMobileMoneyAsync(selected, reference);
         SaveButton.IsEnabled = true;
-        if (!result.IsSuccess || result.Response is null)
+        if (!success)
         {
-            ErrorLabel.Text = result.ErrorMessage ?? "Le moyen de paiement n'a pas pu etre enregistre.";
-            ErrorLabel.IsVisible = true;
             return;
         }
 
-        if (Guid.TryParse(MissionId, out var missionId))
-        {
-            var selection = await apiClient.SelectMissionPaymentMethodAsync(missionId, result.Response.Id);
-            if (!selection.IsSuccess)
-            {
-                ErrorLabel.Text = selection.ErrorMessage ?? "Le moyen est enregistre mais n'a pas pu etre rattache a la demande.";
-                ErrorLabel.IsVisible = true;
-                return;
-            }
-
-            await Shell.Current.GoToAsync($"../{nameof(MissionDetailPage)}?missionId={missionId:D}");
-            return;
-        }
-
+        ReferenceEntry.Text = string.Empty;
         await Shell.Current.GoToAsync("..");
     }
 
-    private static string Mask(string value)
+    private async Task<bool> SaveCardAsync(ProviderRow selected, string reference)
     {
-        var digits = new string(value.Where(char.IsDigit).ToArray());
-        var suffix = digits.Length <= 4 ? digits : digits[^4..];
-        return $"**** {suffix}";
+        var digits = new string(reference.Where(char.IsDigit).ToArray());
+        if (digits.Length != 4)
+        {
+            ShowError("Saisissez les quatre derniers chiffres de la carte.");
+            return false;
+        }
+
+        var provider = selected.Provider;
+        var result = await apiClient.CreatePaymentMethodAsync(new UpsertClientPaymentMethodRequest(
+            provider.Method,
+            provider.Name,
+            $"**** {digits}",
+            DefaultCheckBox.IsChecked,
+            provider.Id));
+        if (!result.IsSuccess || result.Response is null)
+        {
+            ShowError(result.ErrorMessage ?? "La carte n'a pas pu être enregistrée.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> SaveMobileMoneyAsync(IReadOnlyList<ProviderRow> selected, string phoneNumber)
+    {
+        var digits = new string(phoneNumber.Where(char.IsDigit).ToArray());
+        if (digits.Length is < 8 or > 15)
+        {
+            ShowError("Saisissez un numéro Mobile Money valide.");
+            return false;
+        }
+
+        var result = await apiClient.CreateMobileMoneyAccountAsync(new CreateClientMobileMoneyAccountRequest(
+            phoneNumber,
+            selected.Select(provider => provider.Provider.Id).ToList(),
+            DefaultCheckBox.IsChecked));
+        if (!result.IsSuccess || result.Response is null)
+        {
+            ShowError(result.ErrorMessage ?? "Le numéro Mobile Money n'a pas pu être enregistré.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ShowError(string message)
+    {
+        ErrorLabel.Text = message;
+        ErrorLabel.IsVisible = true;
     }
 
     private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
@@ -117,11 +180,28 @@ public partial class AddPaymentMethodPage : ContentPage
 
         public PaymentProviderResponse Provider { get; }
         public string Name => Provider.Name;
-        public string Description => Provider.Description ?? (Provider.Method == "Card" ? "Carte bancaire" : "Compte Mobile Money");
+        public string Description => Provider.Method == "Card"
+            ? "Carte bancaire"
+            : "Disponible avec ce numéro Mobile Money";
         public ImageSource? LogoSource { get; }
-        public bool ShowFallback => false;
-        public string Fallback => Provider.Method == "Card" ? "CB" : "MM";
-        public bool IsSelected { get => isSelected; set { if (isSelected == value) return; isSelected = value; OnPropertyChanged(); } }
+        public bool ShowFallback => LogoSource is null;
+        public string Fallback => IsCard ? "CB" : "MM";
+        public bool IsCard => Provider.Method == "Card";
+        public bool IsSelected
+        {
+            get => isSelected;
+            set
+            {
+                if (isSelected == value)
+                {
+                    return;
+                }
+
+                isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+
         public static ProviderRow From(PaymentProviderResponse provider, ImageSource? logo) => new(provider, logo);
     }
 }

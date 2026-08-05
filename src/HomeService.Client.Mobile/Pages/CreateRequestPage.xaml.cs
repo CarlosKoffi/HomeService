@@ -1,7 +1,10 @@
 using HomeService.Client.Mobile.Services;
 using HomeService.Contracts.Clients;
 using HomeService.Contracts.Services;
+using Microsoft.Maui.Controls.Maps;
+using Microsoft.Maui.Maps;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace HomeService.Client.Mobile.Pages;
 
@@ -30,6 +33,14 @@ public partial class CreateRequestPage : ContentPage
     private bool isUpdatingAddressFromLocation;
     private readonly AddressAutocompleteSession addressAutocomplete;
     private bool isPageActive;
+    private bool isScheduledMode;
+    private DateTime selectedAppointmentDate = DateTime.UtcNow.Date.AddDays(1);
+    private TimeSpan? selectedAppointmentSlotStart = TimeSpan.FromHours(8);
+    private static readonly TimeSpan[] AppointmentSlotStarts = Enumerable
+        .Range(0, 20)
+        .Select(index => TimeSpan.FromHours(8) + TimeSpan.FromMinutes(index * 30))
+        .ToArray();
+    private static readonly CultureInfo FrenchCulture = CultureInfo.GetCultureInfo("fr-FR");
 
     public CreateRequestPage()
     {
@@ -42,11 +53,11 @@ public partial class CreateRequestPage : ContentPage
         PrestationPickerList.ItemsSource = availablePrestations;
         OptionPickerList.ItemsSource = availableOptions;
         StepOneContinueButton.IsEnabled = false;
-        ModePicker.SelectedIndex = 0;
         PaymentPicker.SelectedIndex = 0;
-        ScheduleDatePicker.MinimumDate = DateTime.Today;
-        ScheduleDatePicker.Date = DateTime.Today.AddDays(1);
-        ScheduleTimePicker.Time = new TimeSpan(9, 0, 0);
+        BuildAppointmentDays();
+        BuildAppointmentSlots();
+        UpdateModeVisualState();
+        UpdateStepHeader(1);
     }
 
     public string? ServiceId { get; set; }
@@ -233,7 +244,7 @@ public partial class CreateRequestPage : ContentPage
 
         preparation = result.Response;
         LoadOptionsFromPreparation(autoOpen: autoOpenOptions);
-        UrgentOptionPanel.IsVisible = preparation.UrgentOptionEnabled && ModePicker.SelectedIndex == 0;
+        UrgentOptionPanel.IsVisible = preparation.UrgentOptionEnabled && !isScheduledMode;
         maxPhotoCount = Math.Max(0, preparation.MaxPhotoCount);
         TitleLabel.Text = selectedService?.Name ?? preparation.DisplayName;
         PreparationTitleLabel.Text = preparation.DisplayName;
@@ -421,16 +432,17 @@ public partial class CreateRequestPage : ContentPage
             AddressPicker.ItemsSource = addresses;
             var defaultIndex = addresses.FindIndex(item => item.IsDefault);
             AddressPicker.SelectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
-            AddressPicker.IsVisible = true;
+            AddressPicker.IsVisible = false;
             SelectedAddressChevron.IsVisible = addresses.Count > 1;
             AddressEmptyLabel.IsVisible = false;
             NewAddressPanel.IsVisible = false;
         }
         else if (sessionStore.IsPreviewMode())
         {
-            addresses.Add(new ClientAddressResponse(Guid.Empty, "Maison", "Cocody, Riviera 3", null, null, true));
+            addresses.Add(new ClientAddressResponse(Guid.Empty, "Maison", "Cocody, Riviera 3", 5.35995m, -4.00826m, true));
             AddressPicker.ItemsSource = addresses;
             AddressPicker.SelectedIndex = 0;
+            AddressPicker.IsVisible = false;
             SelectedAddressChevron.IsVisible = false;
         }
         else
@@ -444,7 +456,7 @@ public partial class CreateRequestPage : ContentPage
         }
     }
 
-    private void OnAddressChanged(object sender, EventArgs e)
+    private async void OnAddressChanged(object sender, EventArgs e)
     {
         if (AddressPicker.SelectedItem is ClientAddressResponse address)
         {
@@ -456,14 +468,44 @@ public partial class CreateRequestPage : ContentPage
             SelectedAddressLabel.Text = address.Label;
             SelectedAddressLineLabel.Text = address.AddressLine;
             SelectedAddressBorder.IsVisible = true;
+
+            if (currentAddressLatitude is null || currentAddressLongitude is null)
+            {
+                try
+                {
+                    var locations = await Geocoding.Default.GetLocationsAsync(address.AddressLine);
+                    var location = locations.FirstOrDefault();
+                    if (location is not null)
+                    {
+                        currentAddressLatitude = (decimal)location.Latitude;
+                        currentAddressLongitude = (decimal)location.Longitude;
+                    }
+                }
+                catch
+                {
+                    // The address remains usable even if the optional map lookup fails.
+                }
+            }
+
+            UpdateAddressMap(address.Label, address.AddressLine);
         }
     }
 
-    private void OnSelectedAddressTapped(object sender, TappedEventArgs e)
+    private async void OnSelectedAddressTapped(object sender, TappedEventArgs e)
     {
-        if (addresses.Count > 1)
+        if (addresses.Count <= 1)
         {
-            AddressPicker.Focus();
+            return;
+        }
+
+        var choices = addresses
+            .Select((address, index) => $"{index + 1}. {address.Label} — {address.AddressLine}")
+            .ToArray();
+        var selected = await DisplayActionSheet("Choisir une adresse", "Annuler", null, choices);
+        var selectedIndex = Array.IndexOf(choices, selected);
+        if (selectedIndex >= 0)
+        {
+            AddressPicker.SelectedIndex = selectedIndex;
         }
     }
 
@@ -547,6 +589,7 @@ public partial class CreateRequestPage : ContentPage
         isUpdatingAddressFromLocation = false;
         currentAddressLatitude = details.Latitude;
         currentAddressLongitude = details.Longitude;
+        UpdateAddressMap(NewAddressLabelEntry.Text?.Trim() ?? "Nouvelle adresse", details.AddressLine);
     }
 
     private async void OnLocateAddressClicked(object sender, EventArgs e)
@@ -588,6 +631,8 @@ public partial class CreateRequestPage : ContentPage
             {
                 NewAddressLabelEntry.Text = "Ma position";
             }
+
+            UpdateAddressMap(NewAddressLabelEntry.Text.Trim(), AddressEntry.Text);
         }
         catch (FeatureNotSupportedException)
         {
@@ -642,7 +687,8 @@ public partial class CreateRequestPage : ContentPage
 
         if (sessionStore.IsPreviewMode())
         {
-            addresses.Add(new ClientAddressResponse(Guid.NewGuid(), label, addressLine, null, null, addresses.Count == 0));
+            addresses.Add(new ClientAddressResponse(
+                Guid.NewGuid(), label, addressLine, currentAddressLatitude, currentAddressLongitude, addresses.Count == 0));
         }
         else
         {
@@ -662,15 +708,38 @@ public partial class CreateRequestPage : ContentPage
 
         AddressPicker.ItemsSource = null;
         AddressPicker.ItemsSource = addresses;
-        AddressPicker.IsVisible = true;
+        AddressPicker.IsVisible = false;
         AddressPicker.SelectedIndex = addresses.Count - 1;
         SelectedAddressChevron.IsVisible = addresses.Count > 1;
         AddressEmptyLabel.IsVisible = false;
         NewAddressPanel.IsVisible = false;
         ShowNewAddressButton.IsVisible = true;
         NewAddressLabelEntry.Text = string.Empty;
-        currentAddressLatitude = null;
-        currentAddressLongitude = null;
+    }
+
+    private void UpdateAddressMap(string? label, string? addressLine)
+    {
+        if (currentAddressLatitude is null || currentAddressLongitude is null)
+        {
+            AddressMapBorder.IsVisible = false;
+            return;
+        }
+
+        var location = new Microsoft.Maui.Devices.Sensors.Location(
+            (double)currentAddressLatitude.Value,
+            (double)currentAddressLongitude.Value);
+        AddressMap.Pins.Clear();
+        AddressMap.Pins.Add(new Pin
+        {
+            Label = string.IsNullOrWhiteSpace(label) ? "Adresse d'intervention" : label,
+            Address = addressLine ?? string.Empty,
+            Location = location,
+            Type = PinType.Place
+        });
+        AddressMap.MoveToRegion(MapSpan.FromCenterAndRadius(location, Distance.FromKilometers(0.65)));
+#if !WINDOWS
+        AddressMapBorder.IsVisible = true;
+#endif
     }
 
     private async void OnCreateClicked(object sender, EventArgs e)
@@ -707,7 +776,7 @@ public partial class CreateRequestPage : ContentPage
         }
 
         var scheduledFor = ResolveScheduledFor();
-        if (ModePicker.SelectedIndex == 1 && scheduledFor <= DateTimeOffset.Now.AddMinutes(15))
+        if (isScheduledMode && scheduledFor <= DateTimeOffset.Now.AddMinutes(15))
         {
             ShowError("Choisissez un rendez-vous au moins 15 minutes dans le futur.");
             return;
@@ -870,17 +939,161 @@ public partial class CreateRequestPage : ContentPage
         }
     }
 
-    private void OnModeChanged(object sender, EventArgs e)
+    private void OnInstantModeTapped(object sender, TappedEventArgs e)
     {
-        ScheduleGrid.IsVisible = ModePicker.SelectedIndex == 1;
-        UrgentOptionPanel.IsVisible = preparation?.UrgentOptionEnabled == true && ModePicker.SelectedIndex == 0;
-        if (ModePicker.SelectedIndex == 1)
+        isScheduledMode = false;
+        UpdateModeVisualState();
+    }
+
+    private void OnScheduledModeTapped(object sender, TappedEventArgs e)
+    {
+        isScheduledMode = true;
+        UrgentCheckBox.IsChecked = false;
+        BuildAppointmentDays();
+        BuildAppointmentSlots();
+        UpdateModeVisualState();
+    }
+
+    private void UpdateModeVisualState()
+    {
+        var blue = Color.FromArgb("#155EEF");
+        var selectedBackground = Color.FromArgb("#EEF4FF");
+        var selectedStroke = Color.FromArgb("#BFD1F0");
+        var idleStroke = Color.FromArgb("#DCE1E8");
+        var ink = Color.FromArgb("#111827");
+
+        InstantModeCard.BackgroundColor = isScheduledMode ? Colors.White : selectedBackground;
+        InstantModeCard.Stroke = isScheduledMode ? idleStroke : selectedStroke;
+        InstantModeTitle.TextColor = isScheduledMode ? ink : blue;
+        InstantModeCheck.BackgroundColor = isScheduledMode ? Colors.White : blue;
+        InstantModeCheck.Stroke = isScheduledMode ? Color.FromArgb("#C8D0DC") : blue;
+        InstantModeCheckLabel.IsVisible = !isScheduledMode;
+
+        ScheduledModeCard.BackgroundColor = isScheduledMode ? selectedBackground : Colors.White;
+        ScheduledModeCard.Stroke = isScheduledMode ? selectedStroke : idleStroke;
+        ScheduledModeTitle.TextColor = isScheduledMode ? blue : ink;
+        ScheduledModeCheck.BackgroundColor = isScheduledMode ? blue : Colors.White;
+        ScheduledModeCheck.Stroke = isScheduledMode ? blue : Color.FromArgb("#C8D0DC");
+        ScheduledModeCheckLabel.IsVisible = isScheduledMode;
+
+        ScheduleGrid.IsVisible = isScheduledMode;
+        UrgentOptionPanel.IsVisible = preparation?.UrgentOptionEnabled == true && !isScheduledMode;
+    }
+
+    private void BuildAppointmentDays()
+    {
+        AppointmentDaysLayout.Clear();
+        for (var dayOffset = 0; dayOffset < 7; dayOffset++)
         {
-            UrgentCheckBox.IsChecked = false;
+            var date = DateTime.UtcNow.Date.AddDays(dayOffset);
+            var isSelected = date.Date == selectedAppointmentDate.Date;
+            var dayLabel = date.ToString("ddd", FrenchCulture).TrimEnd('.').ToUpperInvariant();
+            var textColor = isSelected ? Color.FromArgb("#155EEF") : Color.FromArgb("#526076");
+
+            var content = new VerticalStackLayout
+            {
+                Spacing = 2,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+                Children =
+                {
+                    new Label
+                    {
+                        Text = dayOffset == 0 ? "AUJ." : dayLabel,
+                        FontSize = 9,
+                        TextColor = textColor,
+                        HorizontalTextAlignment = TextAlignment.Center
+                    },
+                    new Label
+                    {
+                        Text = date.Day.ToString(CultureInfo.InvariantCulture),
+                        FontSize = 15,
+                        FontAttributes = FontAttributes.Bold,
+                        TextColor = textColor,
+                        HorizontalTextAlignment = TextAlignment.Center
+                    }
+                }
+            };
+            var card = new Border
+            {
+                HeightRequest = 58,
+                WidthRequest = 56,
+                Padding = 4,
+                BackgroundColor = isSelected ? Color.FromArgb("#EEF4FF") : Colors.White,
+                Stroke = isSelected ? Color.FromArgb("#BFD1F0") : Color.FromArgb("#DCE1E8"),
+                StrokeThickness = 1,
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                Content = content
+            };
+            var tap = new TapGestureRecognizer();
+            tap.Tapped += (_, _) =>
+            {
+                selectedAppointmentDate = date;
+                BuildAppointmentDays();
+                BuildAppointmentSlots();
+            };
+            card.GestureRecognizers.Add(tap);
+            AppointmentDaysLayout.Add(card);
         }
-        ModeHintLabel.Text = ModePicker.SelectedIndex == 0
-            ? "Intervention dès que possible"
-            : "Choisissez la date et l'heure";
+    }
+
+    private void BuildAppointmentSlots()
+    {
+        AppointmentSlotsLayout.Clear();
+        var availableSlots = AppointmentSlotStarts
+            .Where(slot => ToScheduledDateTimeOffset(selectedAppointmentDate, slot) > DateTimeOffset.Now.AddMinutes(15))
+            .ToArray();
+
+        if (selectedAppointmentSlotStart is null || !availableSlots.Contains(selectedAppointmentSlotStart.Value))
+        {
+            selectedAppointmentSlotStart = availableSlots.FirstOrDefault();
+            if (availableSlots.Length == 0)
+            {
+                selectedAppointmentSlotStart = null;
+            }
+        }
+
+        if (availableSlots.Length == 0)
+        {
+            AppointmentSlotsLayout.Add(new Label
+            {
+                Text = "Aucun créneau restant ce jour. Choisissez le jour suivant.",
+                FontSize = 11,
+                TextColor = Color.FromArgb("#687386")
+            });
+            return;
+        }
+
+        foreach (var slot in availableSlots)
+        {
+            var isSelected = slot == selectedAppointmentSlotStart;
+            var button = new Button
+            {
+                Text = $"{FormatSlotTime(slot)} - {FormatSlotTime(slot + TimeSpan.FromMinutes(30))}",
+                CommandParameter = slot,
+                HeightRequest = 40,
+                MinimumHeightRequest = 40,
+                WidthRequest = 112,
+                Padding = new Thickness(8, 0),
+                FontSize = 10,
+                CornerRadius = 9,
+                BackgroundColor = isSelected ? Color.FromArgb("#155EEF") : Colors.White,
+                TextColor = isSelected ? Colors.White : Color.FromArgb("#111827"),
+                BorderColor = isSelected ? Color.FromArgb("#155EEF") : Color.FromArgb("#DCE1E8"),
+                BorderWidth = 1
+            };
+            button.Clicked += OnAppointmentSlotClicked;
+            AppointmentSlotsLayout.Add(button);
+        }
+    }
+
+    private void OnAppointmentSlotClicked(object? sender, EventArgs e)
+    {
+        if (sender is Button { CommandParameter: TimeSpan slot })
+        {
+            selectedAppointmentSlotStart = slot;
+            BuildAppointmentSlots();
+        }
     }
 
     private void OnDescriptionChanged(object sender, TextChangedEventArgs e)
@@ -925,6 +1138,13 @@ public partial class CreateRequestPage : ContentPage
 
     private void OnStepTwoContinueClicked(object sender, EventArgs e)
     {
+        if (isScheduledMode && selectedAppointmentSlotStart is null)
+        {
+            StepTwoErrorLabel.Text = "Choisissez un créneau d'arrivée.";
+            StepTwoErrorLabel.IsVisible = true;
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(AddressEntry.Text))
         {
             StepTwoErrorLabel.Text = "Indiquez l'adresse de l'intervention.";
@@ -940,9 +1160,9 @@ public partial class CreateRequestPage : ContentPage
         SummaryOptionPanel.IsVisible = !string.IsNullOrWhiteSpace(SummaryOptionLabel.Text);
         UpdateSummaryPrice();
         SummaryAddressLabel.Text = AddressEntry.Text.Trim();
-        SummaryScheduleLabel.Text = ModePicker.SelectedIndex == 0
-            ? "Maintenant"
-            : $"{ScheduleDatePicker.Date:dd/MM/yyyy} à {ScheduleTimePicker.Time:hh\\:mm}";
+        SummaryScheduleLabel.Text = isScheduledMode
+            ? BuildAppointmentSummary()
+            : "Dès que possible";
         SummaryDescriptionLabel.Text = string.IsNullOrWhiteSpace(DescriptionEditor.Text)
             ? "Aucune précision ajoutée."
             : DescriptionEditor.Text.Trim();
@@ -976,31 +1196,72 @@ public partial class CreateRequestPage : ContentPage
         StepOnePanel.IsVisible = step == 1;
         StepTwoPanel.IsVisible = step == 2;
         StepThreePanel.IsVisible = step == 3;
-        PageTitleLabel.Text = step == 3 ? string.Empty : "Nouvelle demande";
+        PageTitleLabel.Text = "Nouvelle demande";
+        UpdateStepHeader(step);
         StepTwoErrorLabel.IsVisible = false;
         ErrorLabel.IsVisible = false;
     }
 
+    private void UpdateStepHeader(int step)
+    {
+        SetStepIndicator(StepOneCircle, StepOneCircleLabel, 1, step);
+        SetStepIndicator(StepTwoCircle, StepTwoCircleLabel, 2, step);
+        SetStepIndicator(StepThreeCircle, StepThreeCircleLabel, 3, step);
+    }
+
+    private static void SetStepIndicator(Border circle, Label label, int indicatorStep, int activeStep)
+    {
+        var isCompleted = indicatorStep < activeStep;
+        var isActive = indicatorStep == activeStep;
+        circle.BackgroundColor = isActive || isCompleted
+            ? Color.FromArgb("#155EEF")
+            : Color.FromArgb("#F0F2F6");
+        label.Text = isCompleted ? "✓" : indicatorStep.ToString(CultureInfo.InvariantCulture);
+        label.TextColor = isActive || isCompleted ? Colors.White : Color.FromArgb("#687386");
+    }
+
     private DateTimeOffset? ResolveScheduledFor()
     {
-        if (ModePicker.SelectedIndex != 1)
+        if (!isScheduledMode || selectedAppointmentSlotStart is null)
         {
             return null;
         }
 
-        var date = ScheduleDatePicker.Date;
-        var time = ScheduleTimePicker.Time;
-        return new DateTimeOffset(date.Date.Add(time), TimeZoneInfo.Local.GetUtcOffset(date.Date.Add(time))).ToUniversalTime();
+        return ToScheduledDateTimeOffset(selectedAppointmentDate, selectedAppointmentSlotStart.Value).ToUniversalTime();
+    }
+
+    private static DateTimeOffset ToScheduledDateTimeOffset(DateTime date, TimeSpan time)
+    {
+        // Abidjan uses UTC all year, so the selected local slot can be stored directly in UTC.
+        var abidjanDateTime = DateTime.SpecifyKind(date.Date.Add(time), DateTimeKind.Unspecified);
+        return new DateTimeOffset(abidjanDateTime, TimeSpan.Zero);
+    }
+
+    private string BuildAppointmentSummary()
+    {
+        if (selectedAppointmentSlotStart is null)
+        {
+            return "Créneau à sélectionner";
+        }
+
+        var end = selectedAppointmentSlotStart.Value + TimeSpan.FromMinutes(30);
+        var day = selectedAppointmentDate.ToString("dddd d MMMM", FrenchCulture);
+        return $"{FrenchCulture.TextInfo.ToTitleCase(day)} · arrivée entre {FormatSlotTime(selectedAppointmentSlotStart.Value)} et {FormatSlotTime(end)}";
+    }
+
+    private static string FormatSlotTime(TimeSpan time)
+    {
+        return $"{time.Hours:00}h{time.Minutes:00}";
     }
 
     private string ResolveMissionMode()
     {
-        return ModePicker.SelectedIndex == 1 ? "Scheduled" : "Instant";
+        return isScheduledMode ? "Scheduled" : "Instant";
     }
 
     private bool IsUrgentRequested()
     {
-        return ModePicker.SelectedIndex == 0
+        return !isScheduledMode
             && preparation?.UrgentOptionEnabled == true
             && UrgentCheckBox.IsChecked;
     }

@@ -155,7 +155,9 @@ public partial class MissionDetailPage : ContentPage
         OptionPanel.IsVisible = !string.IsNullOrWhiteSpace(mission.OptionName);
         AddressLabel.Text = mission.ServiceAddress ?? "Adresse à confirmer";
         DateCaptionLabel.Text = mission.ScheduledFor.HasValue ? "Date du rendez-vous" : "Demande envoyée le";
-        DateLabel.Text = (mission.ScheduledFor ?? mission.CreatedAt).ToLocalTime().ToString("dd/MM/yyyy 'à' HH:mm");
+        DateLabel.Text = mission.ScheduledFor.HasValue
+            ? AppointmentDisplayFormatter.FormatWindow(mission.ScheduledFor.Value, "dd/MM/yyyy")
+            : mission.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy 'à' HH:mm");
         PriceLabel.Text = mission.CompanyQuotedAmount.HasValue
             ? $"{mission.CompanyQuotedAmount:N0} {mission.Currency}"
             : $"À partir de {mission.StartingPriceAmount:N0} {mission.Currency}";
@@ -386,7 +388,7 @@ public partial class MissionDetailPage : ContentPage
     {
         if (sessionStore.IsPreviewMode())
         {
-            await NavigateProviderTrackingAsync("Mohamed Kouyaté", 5.3478m, -4.0203m, 5.3599m, -4.0083m, 13, 2.1m);
+            await NavigateProviderTrackingAsync(currentMissionId, "Mohamed Kouyaté", 5.3478m, -4.0203m, 5.3599m, -4.0083m, 13, 2.1m);
             return;
         }
 
@@ -406,6 +408,7 @@ public partial class MissionDetailPage : ContentPage
         }
 
         await NavigateProviderTrackingAsync(
+            currentMissionId,
             provider.FullName,
             provider.CurrentLatitude.Value,
             provider.CurrentLongitude.Value,
@@ -416,6 +419,7 @@ public partial class MissionDetailPage : ContentPage
     }
 
     private static async Task NavigateProviderTrackingAsync(
+        Guid missionId,
         string providerName,
         decimal providerLatitude,
         decimal providerLongitude,
@@ -425,7 +429,8 @@ public partial class MissionDetailPage : ContentPage
         decimal? distanceKm)
     {
         var route = $"{nameof(ProviderTrackingPage)}" +
-            $"?providerName={Uri.EscapeDataString(providerName)}" +
+            $"?missionId={missionId:D}" +
+            $"&providerName={Uri.EscapeDataString(providerName)}" +
             $"&providerLat={FormatCoordinate(providerLatitude)}" +
             $"&providerLon={FormatCoordinate(providerLongitude)}" +
             $"&destinationLat={FormatCoordinate(destinationLatitude)}" +

@@ -29,10 +29,12 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
         Assert.Equal(4, result.Response.AssignedProvider.AverageRating);
         Assert.Equal(1, result.Response.AssignedProvider.CompletedMissionCount);
-        Assert.True(result.Response.AssignedProvider.CanTrackLocation);
-        Assert.NotNull(result.Response.AssignedProvider.EstimatedArrivalMinutes);
-        Assert.Equal(scenario.Mission.ServiceLatitude, result.Response.AssignedProvider.DestinationLatitude);
-        Assert.Equal(scenario.Mission.ServiceLongitude, result.Response.AssignedProvider.DestinationLongitude);
+        Assert.False(result.Response.AssignedProvider.CanTrackLocation);
+        Assert.Null(result.Response.AssignedProvider.CurrentLatitude);
+        Assert.Null(result.Response.AssignedProvider.CurrentLongitude);
+        Assert.Null(result.Response.AssignedProvider.EstimatedArrivalMinutes);
+        Assert.Null(result.Response.AssignedProvider.DestinationLatitude);
+        Assert.Null(result.Response.AssignedProvider.DestinationLongitude);
         Assert.True(result.Response.Actions.CanAcceptQuote);
         Assert.False(result.Response.Actions.CanCallCompany);
         Assert.False(result.Response.Actions.CanCallProvider);
@@ -159,6 +161,10 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
         Assert.Equal(4, result.Response.AssignedProvider.AverageRating);
         Assert.Equal(1, result.Response.AssignedProvider.CompletedMissionCount);
+        Assert.True(result.Response.AssignedProvider.CanTrackLocation);
+        Assert.NotNull(result.Response.AssignedProvider.EstimatedArrivalMinutes);
+        Assert.Equal(scenario.Mission.ServiceLatitude, result.Response.AssignedProvider.DestinationLatitude);
+        Assert.Equal(scenario.Mission.ServiceLongitude, result.Response.AssignedProvider.DestinationLongitude);
         Assert.True(result.Response.Actions.CanCallCompany);
         Assert.True(result.Response.Actions.CanCallProvider);
         Assert.Equal("CallProvider", result.Response.Actions.PrimaryAction);

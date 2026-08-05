@@ -48,6 +48,44 @@ public sealed class ProviderMissionWorkflowServiceTests
     }
 
     [Fact]
+    public void UpdatePosition_WhenPaymentIsConfirmed_UpdatesProviderAndMarksMissionOnTheWay()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission);
+        var request = new ProviderLocationVerificationRequest(5.360000m, -4.010000m, 18);
+
+        var result = _service.UpdatePosition(provider, assignment, request);
+
+        Assert.Equal(ProviderMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(MissionStatus.OnTheWay, mission.Status);
+        Assert.Equal(5.360000m, provider.CurrentLatitude);
+        Assert.Equal(-4.010000m, provider.CurrentLongitude);
+        Assert.Equal(ProviderMissionAssignmentStatus.Accepted, assignment.Status);
+    }
+
+    [Fact]
+    public void UpdatePosition_WhenPaymentIsPending_IsRejectedWithoutExposingNewPosition()
+    {
+        var provider = CreateApprovedProvider();
+        var initialLatitude = provider.CurrentLatitude;
+        var initialLongitude = provider.CurrentLongitude;
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission, confirmPayment: false);
+
+        var result = _service.UpdatePosition(
+            provider,
+            assignment,
+            new ProviderLocationVerificationRequest(5.360000m, -4.010000m, 18));
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, result.Status);
+        Assert.Contains("paiement", result.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
+        Assert.Equal(initialLatitude, provider.CurrentLatitude);
+        Assert.Equal(initialLongitude, provider.CurrentLongitude);
+    }
+
+    [Fact]
     public void StartMission_WhenPaymentIsPending_IsRejectedWithoutLocationMutation()
     {
         var provider = CreateApprovedProvider();

@@ -12,10 +12,10 @@
             <ScrollView Grid.Row="1">
                 <VerticalStackLayout Spacing="18">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Choisissez votre moyen" FontSize="17" FontAttributes="Bold" />
-                        <Label Text="Selectionnez l'operateur associe a votre compte." FontSize="13" TextColor="#667085" />
+                        <Label Text="Votre numéro, vos réseaux" FontSize="17" FontAttributes="Bold" />
+                        <Label Text="Sélectionnez tous les réseaux Mobile Money disponibles sur ce même numéro." FontSize="13" TextColor="#667085" />
                     </VerticalStackLayout>
-                    <CollectionView x:Name="ProvidersView" SelectionMode="None" HeightRequest="250">
+                    <CollectionView x:Name="ProvidersView" SelectionMode="None" HeightRequest="330">
                         <CollectionView.ItemsLayout><LinearItemsLayout Orientation="Vertical" ItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
@@ -25,15 +25,18 @@
                                     <Grid ColumnDefinitions="60,*,Auto" ColumnSpacing="13">
                                         <Border WidthRequest="56" HeightRequest="48" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" BackgroundColor="White" Padding="4"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit" /><Label Text="{Binding Fallback}" IsVisible="{Binding ShowFallback}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" /></Grid></Border>
                                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2"><Label Text="{Binding Name}" FontSize="15" FontAttributes="Bold" /><Label Text="{Binding Description}" FontSize="12" TextColor="#667085" LineBreakMode="TailTruncation" /></VerticalStackLayout>
-                                        <Label Grid.Column="2" Text="OK" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" IsVisible="{Binding IsSelected}" VerticalTextAlignment="Center" />
+                                        <Border Grid.Column="2" HeightRequest="26" WidthRequest="26" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 8" BackgroundColor="White" VerticalOptions="Center">
+                                            <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource WeleBlue}"/><Setter Property="Stroke" Value="{StaticResource WeleBlue}"/></DataTrigger></Border.Triggers>
+                                            <Label Text="✓" FontSize="15" FontAttributes="Bold" TextColor="White" IsVisible="{Binding IsSelected}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                        </Border>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
                     <VerticalStackLayout Spacing="7"><Label x:Name="ReferenceLabel" Text="Numero Mobile Money" FontAttributes="Bold" /><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12" Padding="12,3"><Entry x:Name="ReferenceEntry" Placeholder="07 00 00 00 00" Keyboard="Telephone" BackgroundColor="Transparent" /></Border></VerticalStackLayout>
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><CheckBox x:Name="DefaultCheckBox" IsChecked="True" /><Label Grid.Column="1" Text="Utiliser par defaut" VerticalTextAlignment="Center" /></Grid>
-                    <Border BackgroundColor="#F5F7FA" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14"><Label Text="Aucun paiement n'est effectue maintenant. Vous confirmerez toujours le prix avant d'etre debite." FontSize="12" TextColor="#687386" /></Border>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><CheckBox x:Name="DefaultCheckBox" IsChecked="True" /><Label Grid.Column="1" Text="Utiliser ce numéro par défaut" VerticalTextAlignment="Center" /></Grid>
+                    <Border BackgroundColor="#F5F8FF" Stroke="#DCE7F8" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="14"><Label Text="Exemple : si ce numéro fonctionne avec Orange Money et MTN MoMo, cochez les deux. Au paiement, vous choisirez le réseau exact à utiliser." FontSize="12" TextColor="#4B5F7A" /></Border>
                     <Label x:Name="CatalogErrorLabel" Text="Impossible de charger les operateurs de paiement." TextColor="{StaticResource Danger}" IsVisible="False" />
                 </VerticalStackLayout>
             </ScrollView>

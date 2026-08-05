@@ -17,7 +17,10 @@
                     <BoxView HeightRequest="1" Color="#E5E7EB" />
                     <Grid ColumnDefinitions="*,Auto"><Label Text="Total à payer" FontSize="17" FontAttributes="Bold" /><Label Grid.Column="1" x:Name="TotalLabel" FontSize="18" FontAttributes="Bold" TextColor="#2563EB" /></Grid>
                 </VerticalStackLayout>
-                <Label Text="Choisir un moyen de paiement" FontSize="18" FontAttributes="Bold" />
+                <VerticalStackLayout Spacing="3">
+                    <Label Text="Choisir le numéro et le réseau" FontSize="18" FontAttributes="Bold" />
+                    <Label Text="Un même numéro peut être proposé sur plusieurs réseaux Mobile Money." FontSize="12" TextColor="#6B7280" />
+                </VerticalStackLayout>
                 <CollectionView x:Name="MethodsView" SelectionMode="None">
                     <CollectionView.ItemTemplate><DataTemplate>
                         <Border Stroke="#E5E7EB" StrokeShape="RoundRectangle 12" Padding="12" Margin="0,0,0,8">

@@ -1,30 +1,77 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="HomeService.Client.Mobile.Pages.ProviderTrackingPage"
- xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
- xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
- Shell.TabBarIsVisible="False" Title="Suivi du prestataire" BackgroundColor="White">
- <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="20,16,20,24" RowSpacing="14">
-  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-   <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/>
-   <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-    <Label Text="Suivi du prestataire" Style="{StaticResource SubpageTitleLabel}"/>
-    <Label x:Name="ArrivalLabel" Text="Arrivée en cours de calcul" Style="{StaticResource MutedLabel}"/>
-   </VerticalStackLayout>
-  </Grid>
-  <Border Grid.Row="1" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="14">
-   <Grid ColumnDefinitions="48,*" ColumnSpacing="12">
-    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 16" HeightRequest="48" WidthRequest="48">
-     <Image Source="nav_profile.svg" HeightRequest="22" WidthRequest="22"/>
-    </Border>
-    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-     <Label x:Name="ProviderNameLabel" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource Ink}"/>
-     <Label x:Name="DistanceLabel" FontSize="12" TextColor="{StaticResource MutedInk}"/>
-    </VerticalStackLayout>
-   </Grid>
-  </Border>
-  <Border Grid.Row="2" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="0">
-   <WebView x:Name="MapWebView"/>
-  </Border>
-  <Button Grid.Row="3" Text="Ouvrir l’itinéraire" Clicked="OnOpenMapsClicked"/>
- </Grid>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.ProviderTrackingPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+    Shell.TabBarIsVisible="False"
+    Title="Suivi du prestataire"
+    BackgroundColor="White">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="20,16,20,24" RowSpacing="14">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+            <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
+            <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                <Label Text="Suivi du prestataire" Style="{StaticResource SubpageTitleLabel}" />
+                <Label x:Name="ArrivalLabel" Text="Arrivée en cours de calcul" Style="{StaticResource MutedLabel}" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <Border
+            Grid.Row="1"
+            Stroke="{StaticResource Line}"
+            BackgroundColor="White"
+            StrokeShape="RoundRectangle 16"
+            Padding="14">
+            <Grid ColumnDefinitions="48,*" ColumnSpacing="12">
+                <Border
+                    BackgroundColor="#EFF6FF"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 16"
+                    HeightRequest="48"
+                    WidthRequest="48">
+                    <Image Source="nav_profile.svg" HeightRequest="22" WidthRequest="22" />
+                </Border>
+                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label x:Name="ProviderNameLabel" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
+                    <Label x:Name="DistanceLabel" FontSize="12" TextColor="{StaticResource MutedInk}" />
+                </VerticalStackLayout>
+            </Grid>
+        </Border>
+
+        <Border
+            Grid.Row="2"
+            Stroke="{StaticResource Line}"
+            StrokeThickness="1"
+            StrokeShape="RoundRectangle 18"
+            Padding="0">
+            <Grid>
+                <maps:Map
+                    x:Name="TrackingMap"
+                    MapType="Street"
+                    IsShowingUser="False" />
+
+                <Border
+                    x:Name="MapStatusBanner"
+                    Margin="14"
+                    Padding="12,9"
+                    BackgroundColor="#F2FFFFFF"
+                    Stroke="#DCE7F8"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 12"
+                    HorizontalOptions="Fill"
+                    VerticalOptions="End">
+                    <Label
+                        x:Name="MapStatusLabel"
+                        Text="Position actualisée automatiquement"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        TextColor="#1D4ED8"
+                        HorizontalTextAlignment="Center" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <Button Grid.Row="3" Text="Ouvrir dans Google Maps" Clicked="OnOpenMapsClicked" />
+    </Grid>
 </ContentPage>

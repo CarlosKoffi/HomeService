@@ -134,7 +134,9 @@ public sealed record ClientConversationRow(Guid MissionId, string Title, string 
     public static ClientConversationRow From(ClientMissionListItemResponse response)
     {
         var title = response.OptionName ?? response.PrestationName ?? response.ServiceName ?? "Demande de service";
-        var date = (response.ScheduledFor ?? response.CreatedAt).ToLocalTime().ToString("dd MMM · HH:mm");
+        var date = response.ScheduledFor.HasValue
+            ? AppointmentDisplayFormatter.FormatWindow(response.ScheduledFor.Value, "dd MMM")
+            : response.CreatedAt.ToLocalTime().ToString("dd MMM · HH:mm");
         return new ClientConversationRow(response.MissionId, title, response.MissionNumber, "Ouvrir la conversation", date);
     }
 }

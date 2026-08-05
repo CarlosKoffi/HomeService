@@ -38,6 +38,7 @@ public sealed class ProviderPortalEndpointContractTests
     [InlineData("GET", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/messages")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/messages")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/accept")]
+    [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/location")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/refuse")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/verify-arrival")]
     [InlineData("POST", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/start")]

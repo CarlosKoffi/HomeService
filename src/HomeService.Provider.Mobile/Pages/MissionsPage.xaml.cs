@@ -1,5 +1,6 @@
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Devices.Sensors;
 using Microsoft.Maui.Storage;
 
@@ -8,11 +9,13 @@ namespace HomeService.Provider.Mobile.Pages;
 public partial class MissionsPage : ContentPage
 {
     private const string AccessTokenPreferenceKey = "ProviderAccessToken";
+    private static readonly TimeSpan LocationUpdateInterval = TimeSpan.FromSeconds(10);
     private readonly ProviderMobileApiClient? apiClient;
     private string? accessToken;
     private Guid? selectedAssignmentId;
     private ProviderMobileMissionOfferResponse? liveOffer;
     private ProviderMobileMissionDetailResponse? missionDetail;
+    private CancellationTokenSource? locationUpdateCancellation;
 
     public MissionsPage()
     {
@@ -24,6 +27,12 @@ public partial class MissionsPage : ContentPage
     {
         base.OnAppearing();
         await LoadMissionAsync();
+    }
+
+    protected override void OnDisappearing()
+    {
+        StopLiveLocationUpdates();
+        base.OnDisappearing();
     }
 
     private async Task LoadMissionAsync()
@@ -111,6 +120,8 @@ public partial class MissionsPage : ContentPage
         ArrivalDetailLabel.Text = detail.Arrival.DistanceMeters is null
             ? $"Tolerance : {detail.Arrival.ToleranceMeters} m."
             : $"Distance mesuree : {detail.Arrival.DistanceMeters} m. Tolerance : {detail.Arrival.ToleranceMeters} m.";
+
+        RestartLiveLocationUpdates(detail);
     }
 
     private void RenderLiveOffer(ProviderMobileMissionOfferResponse offer)
@@ -132,6 +143,7 @@ public partial class MissionsPage : ContentPage
 
     private void RenderEmptyState()
     {
+        StopLiveLocationUpdates();
         selectedAssignmentId = null;
         liveOffer = null;
         missionDetail = null;
@@ -268,17 +280,98 @@ public partial class MissionsPage : ContentPage
             location?.Accuracy is null ? null : (int)Math.Round(location.Accuracy.Value));
     }
 
-    private static async Task<Location?> TryGetLocationAsync()
+    private static async Task<Location?> TryGetLocationAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            return await Geolocation.Default.GetLastKnownLocationAsync()
-                ?? await Geolocation.Default.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(6)));
+            var permission = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
+            if (permission != PermissionStatus.Granted)
+            {
+                permission = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+            }
+
+            if (permission != PermissionStatus.Granted)
+            {
+                return null;
+            }
+
+            return await Geolocation.Default.GetLocationAsync(
+                    new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(8)),
+                    cancellationToken)
+                ?? await Geolocation.Default.GetLastKnownLocationAsync();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
             return null;
         }
+    }
+
+    private void RestartLiveLocationUpdates(ProviderMobileMissionDetailResponse detail)
+    {
+        StopLiveLocationUpdates();
+        if (apiClient is null
+            || string.IsNullOrWhiteSpace(accessToken)
+            || detail.AssignmentStatus != "Accepted")
+        {
+            return;
+        }
+
+        locationUpdateCancellation = new CancellationTokenSource();
+        _ = RunLiveLocationUpdatesAsync(detail.AssignmentId, locationUpdateCancellation.Token);
+    }
+
+    private async Task RunLiveLocationUpdatesAsync(Guid assignmentId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SendLiveLocationAsync(assignmentId, cancellationToken);
+            using var timer = new PeriodicTimer(LocationUpdateInterval);
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await SendLiveLocationAsync(assignmentId, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Normal when the prestataire leaves the active mission page.
+        }
+    }
+
+    private async Task SendLiveLocationAsync(Guid assignmentId, CancellationToken cancellationToken)
+    {
+        if (apiClient is null || string.IsNullOrWhiteSpace(accessToken))
+        {
+            return;
+        }
+
+        var location = await TryGetLocationAsync(cancellationToken);
+        if (location is null)
+        {
+            return;
+        }
+
+        await apiClient.UpdateMissionLocationAsync(
+            accessToken,
+            assignmentId,
+            ToLocationRequest(location),
+            cancellationToken);
+    }
+
+    private void StopLiveLocationUpdates()
+    {
+        var cancellation = locationUpdateCancellation;
+        locationUpdateCancellation = null;
+        if (cancellation is null)
+        {
+            return;
+        }
+
+        cancellation.Cancel();
+        cancellation.Dispose();
     }
 
     private void SetBusy(bool isBusy)

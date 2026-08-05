@@ -10,8 +10,8 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>Wélé</ApplicationTitle>
     <ApplicationId>ci.wele.client</ApplicationId>
-    <ApplicationDisplayVersion>1.0.31</ApplicationDisplayVersion>
-    <ApplicationVersion>32</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.34</ApplicationDisplayVersion>
+    <ApplicationVersion>35</ApplicationVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
@@ -19,10 +19,14 @@
     <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
     <WindowsPackageType>None</WindowsPackageType>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
+    <GoogleMapsApiKey Condition="'$(GoogleMapsApiKey)' == '' and '$(GOOGLE_MAPS_API_KEY)' != ''">$(GOOGLE_MAPS_API_KEY)</GoogleMapsApiKey>
+    <GoogleMapsApiKey Condition="'$(GoogleMapsApiKey)' == ''">MAPS_API_KEY_NOT_CONFIGURED</GoogleMapsApiKey>
+    <AndroidManifestPlaceholders Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">mapsApiKey=$(GoogleMapsApiKey)</AndroidManifestPlaceholders>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.14" />
+    <PackageReference Include="Microsoft.Maui.Controls.Maps" Version="9.0.14" />
   </ItemGroup>
 
   <ItemGroup>

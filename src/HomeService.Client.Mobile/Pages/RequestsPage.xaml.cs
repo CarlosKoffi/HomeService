@@ -162,7 +162,7 @@ public partial class RequestsPage : ContentPage
         {
             var title = $"{item.MissionNumber} - {item.PrestationName ?? item.ServiceName ?? "Service"}";
             var schedule = item.ScheduledFor.HasValue
-                ? item.ScheduledFor.Value.ToString("dd/MM HH:mm")
+                ? AppointmentDisplayFormatter.FormatWindow(item.ScheduledFor.Value, "dd/MM")
                 : item.CreatedAt.ToString("dd/MM HH:mm");
             var amount = item.Amount.HasValue ? $"{item.Amount:N0} {item.Currency}" : "Prix à venir";
             var (label, color, background) = ResolveStatus(item.Status);

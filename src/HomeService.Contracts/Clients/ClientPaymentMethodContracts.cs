@@ -18,6 +18,15 @@ public sealed record UpsertClientPaymentMethodRequest(
     bool IsDefault,
     Guid? PaymentProviderId = null);
 
+public sealed record CreateClientMobileMoneyAccountRequest(
+    string PhoneNumber,
+    IReadOnlyList<Guid> PaymentProviderIds,
+    bool IsDefault);
+
+public sealed record CreateClientMobileMoneyAccountResponse(
+    string MaskedReference,
+    IReadOnlyList<ClientPaymentMethodResponse> PaymentMethods);
+
 public sealed record PaymentProviderResponse(
     Guid Id,
     string Code,

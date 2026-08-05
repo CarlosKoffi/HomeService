@@ -3,12 +3,13 @@
     x:Class="HomeService.Client.Mobile.Pages.CreateRequestPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="http://schemas.microsoft.com/dotnet/2021/maui/maps"
     xmlns:clients="clr-namespace:HomeService.Contracts.Clients;assembly=HomeService.Contracts"
     Shell.NavBarIsVisible="False"
     Shell.TabBarIsVisible="False"
     BackgroundColor="White"
     Title="Nouvelle demande">
-    <Grid RowDefinitions="Auto,*" Padding="20,18,20,18">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="20,18,20,18">
         <Grid ColumnDefinitions="40,*" HeightRequest="44">
             <Button Text="‹" FontSize="28" WidthRequest="38" HeightRequest="38" Padding="0"
                     BackgroundColor="Transparent" TextColor="#111827" Clicked="OnBackClicked" />
@@ -16,16 +17,23 @@
                    FontAttributes="Bold" VerticalTextAlignment="Center" />
         </Grid>
 
-        <Grid Grid.Row="1">
-            <Grid x:Name="StepOnePanel" RowDefinitions="Auto,*,Auto" RowSpacing="14">
-                <Grid ColumnDefinitions="*,*,*" Margin="34,2,34,4">
-                    <BoxView Grid.ColumnSpan="3" HeightRequest="2" Color="#E4E8F0" VerticalOptions="Center" />
-                    <Border Grid.Column="0" Style="{StaticResource StepActiveCircle}"><Label Text="1" Style="{StaticResource StepCircleText}" /></Border>
-                    <Border Grid.Column="1" Style="{StaticResource StepIdleCircle}"><Label Text="2" Style="{StaticResource StepIdleText}" /></Border>
-                    <Border Grid.Column="2" Style="{StaticResource StepIdleCircle}"><Label Text="3" Style="{StaticResource StepIdleText}" /></Border>
-                </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Margin="34,2,34,8">
+            <BoxView Grid.ColumnSpan="3" HeightRequest="2" Color="#E4E8F0" VerticalOptions="Center" />
+            <Border x:Name="StepOneCircle" Grid.Column="0" Style="{StaticResource StepActiveCircle}">
+                <Label x:Name="StepOneCircleLabel" Text="1" Style="{StaticResource StepCircleText}" />
+            </Border>
+            <Border x:Name="StepTwoCircle" Grid.Column="1" Style="{StaticResource StepIdleCircle}">
+                <Label x:Name="StepTwoCircleLabel" Text="2" Style="{StaticResource StepIdleText}" />
+            </Border>
+            <Border x:Name="StepThreeCircle" Grid.Column="2" Style="{StaticResource StepIdleCircle}">
+                <Label x:Name="StepThreeCircleLabel" Text="3" Style="{StaticResource StepIdleText}" />
+            </Border>
+        </Grid>
 
-                <ScrollView Grid.Row="1">
+        <Grid Grid.Row="2">
+            <Grid x:Name="StepOnePanel" RowDefinitions="*,Auto" RowSpacing="14">
+
+                <ScrollView>
                     <VerticalStackLayout Spacing="18" Padding="0,6,0,76">
                         <VerticalStackLayout Spacing="7">
                             <Label Text="Service souhaité" FontSize="13" FontAttributes="Bold" />
@@ -116,44 +124,78 @@
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </ScrollView>
-                <VerticalStackLayout Grid.Row="2" Spacing="6">
+                <VerticalStackLayout Grid.Row="1" Spacing="6">
                     <Label x:Name="StepOneErrorLabel" TextColor="{StaticResource Danger}" FontSize="11" IsVisible="False" />
                     <Button x:Name="StepOneContinueButton" Text="Continuer" HeightRequest="50" Clicked="OnStepOneContinueClicked" />
                 </VerticalStackLayout>
             </Grid>
 
-            <Grid x:Name="StepTwoPanel" RowDefinitions="Auto,*,Auto" RowSpacing="14" IsVisible="False">
-                <Grid ColumnDefinitions="*,*,*" Margin="34,2,34,4">
-                    <BoxView Grid.ColumnSpan="3" HeightRequest="2" Color="#E4E8F0" VerticalOptions="Center" />
-                    <Border Grid.Column="0" Style="{StaticResource StepDoneCircle}"><Label Text="✓" Style="{StaticResource StepCircleText}" /></Border>
-                    <Border Grid.Column="1" Style="{StaticResource StepActiveCircle}"><Label Text="2" Style="{StaticResource StepCircleText}" /></Border>
-                    <Border Grid.Column="2" Style="{StaticResource StepIdleCircle}"><Label Text="3" Style="{StaticResource StepIdleText}" /></Border>
-                </Grid>
-
-                <ScrollView Grid.Row="1">
+            <Grid x:Name="StepTwoPanel" RowDefinitions="*,Auto" RowSpacing="14" IsVisible="False">
+                <ScrollView>
                     <VerticalStackLayout Spacing="22" Padding="0,8,0,76">
-                        <Label Text="Date &amp; heure" FontSize="16" FontAttributes="Bold" />
-                        <Border BackgroundColor="#F4F5F8" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="14">
-                            <VerticalStackLayout Spacing="9">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <Picker x:Name="ModePicker" Title="Choisir le délai" FontAttributes="Bold"
-                                            HorizontalOptions="Fill" SelectedIndexChanged="OnModeChanged">
-                                        <Picker.Items>
-                                            <x:String>Maintenant</x:String>
-                                            <x:String>Sur rendez-vous</x:String>
-                                        </Picker.Items>
-                                    </Picker>
-                                    <Label Grid.Column="1" Text="⌄" FontSize="22" FontAttributes="Bold"
-                                           TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center"
-                                           InputTransparent="True" />
+                        <Label Text="Quand souhaitez-vous l'intervention ?" FontSize="16" FontAttributes="Bold" />
+                        <Label Text="Choisissez l'option qui vous convient." FontSize="10" TextColor="#687386" Margin="0,-16,0,0" />
+
+                        <VerticalStackLayout Spacing="10">
+                            <Border x:Name="InstantModeCard" Stroke="#BFD1F0" BackgroundColor="#EEF4FF"
+                                    StrokeShape="RoundRectangle 12" Padding="14">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnInstantModeTapped" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="34,*,24" ColumnSpacing="10">
+                                    <Label Text="&#x26A1;" FontSize="20" TextColor="#64748B" VerticalTextAlignment="Center" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                        <Label x:Name="InstantModeTitle" Text="Dès que possible" FontSize="13"
+                                               FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                        <Label Text="Nous recherchons immédiatement un prestataire disponible."
+                                               FontSize="10" TextColor="#687386" MaxLines="2" />
+                                    </VerticalStackLayout>
+                                    <Border x:Name="InstantModeCheck" Grid.Column="2" HeightRequest="20" WidthRequest="20"
+                                            Stroke="{StaticResource WeleBlue}" BackgroundColor="{StaticResource WeleBlue}"
+                                            StrokeShape="RoundRectangle 10" Padding="0" VerticalOptions="Center">
+                                        <Label x:Name="InstantModeCheckLabel" Text="✓" FontSize="10" TextColor="White"
+                                               FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                    </Border>
                                 </Grid>
-                                <Label x:Name="ModeHintLabel" Text="Intervention dès que possible" FontSize="11" TextColor="#687386" />
-                            </VerticalStackLayout>
-                        </Border>
-                        <Grid x:Name="ScheduleGrid" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
-                            <DatePicker x:Name="ScheduleDatePicker" />
-                            <TimePicker Grid.Column="1" x:Name="ScheduleTimePicker" />
-                        </Grid>
+                            </Border>
+
+                            <Border x:Name="ScheduledModeCard" Stroke="#DCE1E8" BackgroundColor="White"
+                                    StrokeShape="RoundRectangle 12" Padding="14">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnScheduledModeTapped" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="34,*,24" ColumnSpacing="10">
+                                    <Label Text="&#x25A3;" FontSize="19" TextColor="#64748B" VerticalTextAlignment="Center" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                        <Label x:Name="ScheduledModeTitle" Text="Sur rendez-vous" FontSize="13" FontAttributes="Bold" />
+                                        <Label Text="Choisissez une date et un créneau qui vous conviennent."
+                                               FontSize="10" TextColor="#687386" MaxLines="2" />
+                                    </VerticalStackLayout>
+                                    <Border x:Name="ScheduledModeCheck" Grid.Column="2" HeightRequest="20" WidthRequest="20"
+                                            Stroke="#C8D0DC" BackgroundColor="White" StrokeShape="RoundRectangle 10"
+                                            Padding="0" VerticalOptions="Center">
+                                        <Label x:Name="ScheduledModeCheckLabel" Text="✓" FontSize="10" TextColor="White"
+                                               FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"
+                                               IsVisible="False" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout x:Name="ScheduleGrid" Spacing="13" IsVisible="False">
+                            <Border StrokeThickness="0" BackgroundColor="#F4F7FF" StrokeShape="RoundRectangle 9" Padding="11,9">
+                                <Label Text="Le créneau correspond à la fenêtre d'arrivée estimée du prestataire."
+                                       FontSize="10" TextColor="#516179" />
+                            </Border>
+                            <Label Text="Choisissez une date" FontSize="12" FontAttributes="Bold" />
+                            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                                <HorizontalStackLayout x:Name="AppointmentDaysLayout" Spacing="8" />
+                            </ScrollView>
+                            <Label Text="Créneau d'arrivée souhaité" FontSize="12" FontAttributes="Bold" />
+                            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                                <HorizontalStackLayout x:Name="AppointmentSlotsLayout" Spacing="8" />
+                            </ScrollView>
+                        </VerticalStackLayout>
 
                         <Border x:Name="UrgentOptionPanel" Stroke="#F2D5A7" BackgroundColor="#FFF9EF"
                                 StrokeShape="RoundRectangle 10" Padding="12" IsVisible="False">
@@ -173,25 +215,33 @@
                                    Text="Aucune adresse enregistrée. Ajoutez votre adresse pour continuer."
                                    FontSize="12" TextColor="#687386" IsVisible="False" />
                             <Picker x:Name="AddressPicker" Title="Choisir une adresse enregistrée"
-                                    ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged" />
-                            <Border x:Name="SelectedAddressBorder" Stroke="#DDE2EA" BackgroundColor="#F7F8FA"
+                                    ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnAddressChanged"
+                                    IsVisible="False" />
+                            <Border x:Name="SelectedAddressBorder" Stroke="#DDE2EA" BackgroundColor="White"
                                     StrokeShape="RoundRectangle 10" Padding="14" IsVisible="False">
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OnSelectedAddressTapped" />
                                 </Border.GestureRecognizers>
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                    <VerticalStackLayout Spacing="3">
-                                        <Label x:Name="SelectedAddressLabel" FontSize="13" FontAttributes="Bold" />
+                                <Grid ColumnDefinitions="26,*,Auto" ColumnSpacing="10">
+                                    <Image Source="nav_home.svg" HeightRequest="20" WidthRequest="20" VerticalOptions="Center" />
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                        <Label x:Name="SelectedAddressLabel" FontSize="13" FontAttributes="Bold"
+                                               TextColor="{StaticResource WeleBlue}" />
                                         <Label x:Name="SelectedAddressLineLabel" FontSize="12" TextColor="#687386" />
+                                        <Label Text="✓ Adresse sélectionnée" FontSize="9" TextColor="{StaticResource Success}" />
                                     </VerticalStackLayout>
                                     <Label x:Name="SelectedAddressChevron"
-                                           Grid.Column="1"
+                                           Grid.Column="2"
                                            Text="›"
                                            FontSize="28"
                                            TextColor="{StaticResource WeleBlue}"
                                            VerticalOptions="Center"
                                            IsVisible="False" />
                                 </Grid>
+                            </Border>
+                            <Border x:Name="AddressMapBorder" HeightRequest="145" Stroke="#E4E8EF" StrokeThickness="1"
+                                    StrokeShape="RoundRectangle 12" Padding="0" BackgroundColor="White" IsVisible="False">
+                                <maps:Map x:Name="AddressMap" MapType="Street" IsShowingUser="False" />
                             </Border>
                             <Button x:Name="ShowNewAddressButton" Text="+ Ajouter une nouvelle adresse"
                                     BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}"
@@ -247,7 +297,7 @@
                                IsVisible="False" />
                     </VerticalStackLayout>
                 </ScrollView>
-                <Button Grid.Row="2" Text="Continuer" HeightRequest="50" Clicked="OnStepTwoContinueClicked" />
+                <Button Grid.Row="1" Text="Continuer" HeightRequest="50" Clicked="OnStepTwoContinueClicked" />
             </Grid>
 
             <Grid x:Name="StepThreePanel" RowDefinitions="Auto,*,Auto" RowSpacing="18" IsVisible="False">
@@ -319,7 +369,7 @@
         </Grid>
 
         <Grid x:Name="ServicePickerOverlay"
-              Grid.RowSpan="2"
+              Grid.RowSpan="3"
               Margin="-20,-18,-20,-18"
               BackgroundColor="#730B1220"
               IsVisible="False"
@@ -390,7 +440,7 @@
         </Grid>
 
         <Grid x:Name="PrestationPickerOverlay"
-              Grid.RowSpan="2"
+              Grid.RowSpan="3"
               Margin="-20,-18,-20,-18"
               BackgroundColor="#730B1220"
               IsVisible="False"
@@ -463,7 +513,7 @@
         </Grid>
 
         <Grid x:Name="OptionPickerOverlay"
-              Grid.RowSpan="2" Margin="-20,-18,-20,-18"
+              Grid.RowSpan="3" Margin="-20,-18,-20,-18"
               BackgroundColor="#730B1220" IsVisible="False" ZIndex="22">
             <Border VerticalOptions="End" BackgroundColor="White" StrokeThickness="0"
                     StrokeShape="RoundRectangle 22,22,0,0" Padding="20,18,20,24"

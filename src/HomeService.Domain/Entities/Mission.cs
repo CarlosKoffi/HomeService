@@ -278,6 +278,32 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
+    public void MarkProviderOnTheWay(Guid providerId, Guid companyId)
+    {
+        if (Status == MissionStatus.OnTheWay)
+        {
+            return;
+        }
+
+        if (!IsInitialPaymentConfirmed)
+        {
+            throw new InvalidOperationException("Customer payment must be confirmed before provider tracking starts.");
+        }
+
+        if (Status != MissionStatus.Accepted)
+        {
+            throw new InvalidOperationException("Only accepted missions can be marked as on the way.");
+        }
+
+        if (ProviderId != providerId || CompanyId != companyId)
+        {
+            throw new InvalidOperationException("Mission does not belong to this provider assignment.");
+        }
+
+        Status = MissionStatus.OnTheWay;
+        Touch();
+    }
+
     public void ReleaseProviderAfterRefusal(Guid providerId)
     {
         if (ProviderId != providerId)

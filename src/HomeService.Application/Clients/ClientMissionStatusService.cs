@@ -348,7 +348,8 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
         decimal? providerLatitude,
         decimal? providerLongitude)
     {
-        var canTrack = mission.Status is MissionStatus.Accepted or MissionStatus.OnTheWay
+        var canTrack = mission.IsInitialPaymentConfirmed
+            && mission.Status is MissionStatus.Accepted or MissionStatus.OnTheWay
             && providerLatitude.HasValue
             && providerLongitude.HasValue
             && mission.ServiceLatitude.HasValue

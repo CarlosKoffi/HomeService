@@ -5,7 +5,7 @@
  <Grid RowDefinitions="*,72" BackgroundColor="White">
   <Grid Padding="20,16,20,20" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="14">
    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Moyens de paiement" Style="{StaticResource SubpageTitleLabel}"/></Grid>
-   <Button Grid.Row="1" Text="+  Ajouter un moyen de paiement" Style="{StaticResource OutlineActionButton}" Clicked="OnAddClicked"/>
+   <Button Grid.Row="1" Text="+  Ajouter un numéro ou une carte" Style="{StaticResource OutlineActionButton}" Clicked="OnAddClicked"/>
    <Grid Grid.Row="2">
     <CollectionView x:Name="MethodsView" SelectionMode="None"><CollectionView.ItemTemplate><DataTemplate>
      <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="16" Margin="0,0,0,12">
@@ -21,7 +21,7 @@
     </DataTemplate></CollectionView.ItemTemplate></CollectionView>
     <VerticalStackLayout x:Name="EmptyState" Spacing="8" VerticalOptions="Center" HorizontalOptions="Center" IsVisible="False"><Label Text="Aucun moyen de paiement" FontSize="17" FontAttributes="Bold"/><Label Text="Ajoutez Mobile Money ou une carte pour confirmer votre intervention." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/></VerticalStackLayout>
    </Grid>
-   <VerticalStackLayout Grid.Row="3" Spacing="7"><Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/><Button x:Name="ContinueButton" Text="Utiliser ce moyen" IsEnabled="False" Clicked="OnContinueClicked"/></VerticalStackLayout>
+   <VerticalStackLayout Grid.Row="3" Spacing="7"><Label Text="Choisissez le numéro et le réseau à utiliser pour cette intervention." FontSize="12" TextColor="{StaticResource MutedInk}"/><Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/><Button x:Name="ContinueButton" Text="Utiliser ce numéro et ce réseau" IsEnabled="False" Clicked="OnContinueClicked"/></VerticalStackLayout>
   </Grid>
   <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile"/>
  </Grid>

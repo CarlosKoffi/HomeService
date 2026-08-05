@@ -21,7 +21,11 @@ public static class MauiProgram
 
         var builder = MauiApp.CreateBuilder();
         builder
-            .UseMauiApp<App>()
+            .UseMauiApp<App>();
+#if ANDROID || IOS || MACCATALYST
+        builder.UseMauiMaps();
+#endif
+        builder
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("PlusJakartaSans-Variable.ttf", "PlusJakartaSans");
