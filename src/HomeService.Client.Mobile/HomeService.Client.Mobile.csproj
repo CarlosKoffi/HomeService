@@ -10,8 +10,8 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>Wélé</ApplicationTitle>
     <ApplicationId>ci.wele.client</ApplicationId>
-    <ApplicationDisplayVersion>1.0.39</ApplicationDisplayVersion>
-    <ApplicationVersion>40</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.40</ApplicationDisplayVersion>
+    <ApplicationVersion>41</ApplicationVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>
@@ -22,6 +22,7 @@
     <GoogleMapsApiKey Condition="'$(GoogleMapsApiKey)' == '' and '$(GOOGLE_MAPS_API_KEY)' != ''">$(GOOGLE_MAPS_API_KEY)</GoogleMapsApiKey>
     <GoogleMapsApiKey Condition="'$(GoogleMapsApiKey)' == ''">MAPS_API_KEY_NOT_CONFIGURED</GoogleMapsApiKey>
     <AndroidManifestPlaceholders Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">mapsApiKey=$(GoogleMapsApiKey)</AndroidManifestPlaceholders>
+    <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
   </PropertyGroup>
 
   <ItemGroup>
