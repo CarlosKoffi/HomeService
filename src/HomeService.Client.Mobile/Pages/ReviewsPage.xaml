@@ -1,7 +1,44 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="HomeService.Client.Mobile.Pages.ReviewsPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Mes avis">
- <Grid RowDefinitions="*,72" BackgroundColor="White"><Grid Padding="20,16,20,20" RowDefinitions="Auto,*" RowSpacing="14">
-  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Mes avis" Style="{StaticResource SubpageTitleLabel}"/></Grid>
-  <Grid Grid.Row="1"><CollectionView x:Name="ReviewsView" SelectionMode="Single" SelectionChanged="OnSelected"><CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource CompactListBorder}"><Grid ColumnDefinitions="*,Auto"><VerticalStackLayout Spacing="4"><Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold"/><Label Text="{Binding MissionNumber}" FontSize="12" TextColor="{StaticResource WeleBlue}"/><Label Text="Consulter la mission et votre évaluation" Style="{StaticResource MutedLabel}"/></VerticalStackLayout><Label Grid.Column="1" Text="›" FontSize="21" TextColor="{StaticResource MutedInk}" VerticalTextAlignment="Center"/></Grid></Border></DataTemplate></CollectionView.ItemTemplate></CollectionView><Label x:Name="EmptyState" Text="Vos avis apparaîtront ici après vos interventions." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="False"/></Grid>
- </Grid><controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile"/></Grid>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.ReviewsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    Shell.TabBarIsVisible="False"
+    Title="Mes avis"
+    BackgroundColor="White">
+    <Grid RowDefinitions="*,72">
+        <Grid Padding="20,16,20,20" RowDefinitions="Auto,*" RowSpacing="14">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
+                <Label Grid.Column="1" Text="Mes avis" Style="{StaticResource SubpageTitleLabel}" />
+            </Grid>
+            <Grid Grid.Row="1">
+                <CollectionView x:Name="ReviewsView" SelectionMode="Single" SelectionChanged="OnSelected">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource CompactListBorder}">
+                                <Grid ColumnDefinitions="42,*,Auto" ColumnSpacing="11">
+                                    <Border HeightRequest="42" WidthRequest="42" BackgroundColor="#FFF7DF"
+                                            StrokeThickness="0" StrokeShape="RoundRectangle 13" Padding="9">
+                                        <Image Source="profile_review.svg" Aspect="AspectFit" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                        <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" />
+                                        <Label Text="{Binding MissionNumber}" FontSize="10" TextColor="{StaticResource WeleBlue}" />
+                                        <Label Text="Consulter la mission et votre évaluation" FontSize="11" TextColor="{StaticResource ListSecondary}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="2" Text="›" FontSize="21" TextColor="{StaticResource WeleBlue}" VerticalTextAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Label x:Name="EmptyState" Text="Vos avis apparaîtront ici après vos interventions."
+                       Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center" IsVisible="False" />
+            </Grid>
+        </Grid>
+        <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile" />
+    </Grid>
 </ContentPage>

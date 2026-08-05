@@ -6,7 +6,7 @@
     xmlns:pages="clr-namespace:HomeService.Client.Mobile.Pages"
     Shell.FlyoutBehavior="Disabled"
     Shell.NavBarIsVisible="False"
-    Title="Wele">
+    Title="Wélé">
     <ShellContent
         Route="onboarding"
         ContentTemplate="{DataTemplate pages:OnboardingPage}"

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" role="img" aria-label="Symbole Wélé">
+  <path d="M34 38 70 142 100 101 130 142 166 38"
+        fill="none"
+        stroke="#0F172A"
+        stroke-width="18"
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+  <circle cx="100" cy="22" r="13" fill="#155EEF" />
+</svg>

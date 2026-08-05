@@ -726,6 +726,34 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapPut("/payment-methods/mobile-money/{paymentMethodId:guid}", async (
+            Guid paymentMethodId,
+            UpdateClientMobileMoneyAccountRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientProfileService profileService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await profileService.UpdateMobileMoneyAccountAsync(
+                customer.Id,
+                paymentMethodId,
+                request,
+                cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("UpdateClientMobileMoneyAccount")
+        .Produces<CreateClientMobileMoneyAccountResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         client.MapDelete("/payment-methods/{paymentMethodId:guid}", async (
             Guid paymentMethodId,
             HttpRequest httpRequest,

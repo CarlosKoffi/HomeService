@@ -11,8 +11,8 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>wélé Prestataire</ApplicationTitle>
     <ApplicationId>ci.wele.provider</ApplicationId>
-    <ApplicationDisplayVersion>0.2</ApplicationDisplayVersion>
-    <ApplicationVersion>2</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3</ApplicationDisplayVersion>
+    <ApplicationVersion>3</ApplicationVersion>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
     <WindowsPackageType>None</WindowsPackageType>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>

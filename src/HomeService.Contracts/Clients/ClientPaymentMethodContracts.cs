@@ -23,6 +23,9 @@ public sealed record CreateClientMobileMoneyAccountRequest(
     IReadOnlyList<Guid> PaymentProviderIds,
     bool IsDefault);
 
+public sealed record UpdateClientMobileMoneyAccountRequest(
+    IReadOnlyList<Guid> PaymentProviderIds);
+
 public sealed record CreateClientMobileMoneyAccountResponse(
     string MaskedReference,
     IReadOnlyList<ClientPaymentMethodResponse> PaymentMethods);

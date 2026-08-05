@@ -500,6 +500,18 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             cancellationToken);
     }
 
+    public async Task<ApiCallResult<CreateClientMobileMoneyAccountResponse>> UpdateMobileMoneyAccountAsync(
+        Guid paymentMethodId,
+        UpdateClientMobileMoneyAccountRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<CreateClientMobileMoneyAccountResponse>(
+            HttpMethod.Put,
+            $"api/client/payment-methods/mobile-money/{paymentMethodId:D}",
+            request,
+            cancellationToken);
+    }
+
     public async Task<ApiCallResult<bool>> DeletePaymentMethodAsync(
         Guid paymentMethodId,
         CancellationToken cancellationToken = default)

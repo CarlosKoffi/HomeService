@@ -7,25 +7,25 @@
         <Grid Padding="20,18,20,24" RowDefinitions="Auto,*,Auto" RowSpacing="18">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
                 <Button Text="&lt;" FontSize="28" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="0" WidthRequest="32" Clicked="OnBackClicked" />
-                <Label Grid.Column="1" Text="Ajouter un moyen" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                <Label x:Name="PageTitleLabel" Grid.Column="1" Text="Ajouter un moyen" FontSize="20" FontAttributes="Bold" VerticalTextAlignment="Center" />
             </Grid>
             <ScrollView Grid.Row="1">
                 <VerticalStackLayout Spacing="18">
                     <VerticalStackLayout Spacing="4">
-                        <Label Text="Votre numéro, vos réseaux" FontSize="17" FontAttributes="Bold" />
-                        <Label Text="Sélectionnez tous les réseaux Mobile Money disponibles sur ce même numéro." FontSize="13" TextColor="#667085" />
+                        <Label x:Name="IntroTitleLabel" Text="Votre numéro, vos réseaux" FontSize="17" FontAttributes="Bold" />
+                        <Label x:Name="IntroDescriptionLabel" Text="Sélectionnez tous les réseaux Mobile Money disponibles sur ce même numéro." FontSize="13" TextColor="{StaticResource ListSecondary}" />
                     </VerticalStackLayout>
                     <CollectionView x:Name="ProvidersView" SelectionMode="None" HeightRequest="330">
                         <CollectionView.ItemsLayout><LinearItemsLayout Orientation="Vertical" ItemSpacing="10" /></CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border Stroke="{StaticResource Line}" StrokeThickness="1" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="13">
+                                <Border Stroke="{StaticResource PremiumLine}" StrokeThickness="1" BackgroundColor="White" StrokeShape="RoundRectangle 14" Padding="11">
                                     <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="Stroke" Value="{StaticResource WeleBlue}" /><Setter Property="StrokeThickness" Value="2" /><Setter Property="BackgroundColor" Value="#F8FAFF" /></DataTrigger></Border.Triggers>
                                     <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnProviderTapped" CommandParameter="{Binding .}" /></Border.GestureRecognizers>
-                                    <Grid ColumnDefinitions="60,*,Auto" ColumnSpacing="13">
-                                        <Border WidthRequest="56" HeightRequest="48" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" BackgroundColor="White" Padding="4"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit" /><Label Text="{Binding Fallback}" IsVisible="{Binding ShowFallback}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" /></Grid></Border>
-                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2"><Label Text="{Binding Name}" FontSize="15" FontAttributes="Bold" /><Label Text="{Binding Description}" FontSize="12" TextColor="#667085" LineBreakMode="TailTruncation" /></VerticalStackLayout>
-                                        <Border Grid.Column="2" HeightRequest="26" WidthRequest="26" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 8" BackgroundColor="White" VerticalOptions="Center">
+                                    <Grid ColumnDefinitions="46,*,Auto" ColumnSpacing="11">
+                                        <Border WidthRequest="42" HeightRequest="38" Stroke="{StaticResource PremiumLine}" StrokeShape="RoundRectangle 9" BackgroundColor="White" Padding="5"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit" /><Label Text="{Binding Fallback}" IsVisible="{Binding ShowFallback}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource WeleBlue}" FontSize="11" FontAttributes="Bold" /></Grid></Border>
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1"><Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" /><Label Text="{Binding Description}" FontSize="11" TextColor="{StaticResource ListSecondary}" LineBreakMode="TailTruncation" /></VerticalStackLayout>
+                                        <Border Grid.Column="2" HeightRequest="26" WidthRequest="26" Stroke="{StaticResource PremiumLine}" StrokeShape="RoundRectangle 8" BackgroundColor="White" VerticalOptions="Center">
                                             <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="BackgroundColor" Value="{StaticResource WeleBlue}"/><Setter Property="Stroke" Value="{StaticResource WeleBlue}"/></DataTrigger></Border.Triggers>
                                             <Label Text="✓" FontSize="15" FontAttributes="Bold" TextColor="White" IsVisible="{Binding IsSelected}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
                                         </Border>
@@ -34,9 +34,9 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                    <VerticalStackLayout Spacing="7"><Label x:Name="ReferenceLabel" Text="Numero Mobile Money" FontAttributes="Bold" /><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12" Padding="12,3"><Entry x:Name="ReferenceEntry" Placeholder="07 00 00 00 00" Keyboard="Telephone" BackgroundColor="Transparent" /></Border></VerticalStackLayout>
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><CheckBox x:Name="DefaultCheckBox" IsChecked="True" /><Label Grid.Column="1" Text="Utiliser ce numéro par défaut" VerticalTextAlignment="Center" /></Grid>
-                    <Border BackgroundColor="#F5F8FF" Stroke="#DCE7F8" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="14"><Label Text="Exemple : si ce numéro fonctionne avec Orange Money et MTN MoMo, cochez les deux. Au paiement, vous choisirez le réseau exact à utiliser." FontSize="12" TextColor="#4B5F7A" /></Border>
+                    <VerticalStackLayout Spacing="7"><Label x:Name="ReferenceLabel" Text="Numero Mobile Money" FontAttributes="Bold" /><Border Stroke="{StaticResource PremiumLine}" StrokeShape="RoundRectangle 12" Padding="12,3"><Entry x:Name="ReferenceEntry" Placeholder="07 00 00 00 00" Keyboard="Telephone" BackgroundColor="Transparent" /></Border></VerticalStackLayout>
+                    <Grid x:Name="DefaultPanel" ColumnDefinitions="Auto,*" ColumnSpacing="10"><CheckBox x:Name="DefaultCheckBox" IsChecked="True" /><Label Grid.Column="1" Text="Utiliser ce numéro par défaut" VerticalTextAlignment="Center" /></Grid>
+                    <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource PremiumLine}" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="14"><Label x:Name="HelpLabel" Text="Exemple : si ce numéro fonctionne avec Orange Money et MTN MoMo, cochez les deux. Au paiement, vous choisirez le réseau exact à utiliser." FontSize="12" TextColor="{StaticResource ListSecondary}" /></Border>
                     <Label x:Name="CatalogErrorLabel" Text="Impossible de charger les operateurs de paiement." TextColor="{StaticResource Danger}" IsVisible="False" />
                 </VerticalStackLayout>
             </ScrollView>

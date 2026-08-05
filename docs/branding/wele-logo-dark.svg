@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 271" role="img" aria-label="wélé sur fond sombre">
+  <rect width="720" height="271" fill="#0F172A" />
+  <g transform="translate(20 37)">
+    <path d="M34 38 70 142 100 101 130 142 166 38"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-width="18"
+          stroke-linecap="round"
+          stroke-linejoin="round" />
+    <circle cx="100" cy="22" r="13" fill="#155EEF" />
+  </g>
+  <g fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M248 92 272 189 310 92 348 189 372 92" />
+    <path d="M486 163 C466 190 414 187 398 154 C382 120 402 84 438 84 C470 84 492 106 492 137 H396" />
+    <path d="M535 55 V185" />
+    <path d="M676 163 C656 190 604 187 588 154 C572 120 592 84 628 84 C660 84 682 106 682 137 H586" />
+  </g>
+  <g fill="none" stroke="#155EEF" stroke-width="9" stroke-linecap="round">
+    <path d="M432 62 450 49" />
+    <path d="M622 62 640 49" />
+  </g>
+</svg>

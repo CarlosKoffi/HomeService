@@ -56,6 +56,81 @@ public sealed class ClientMobileMoneyAccountServiceTests
         Assert.Empty(await db.CustomerPaymentMethods.ToListAsync());
     }
 
+    [Fact]
+    public async Task UpdateMobileMoneyAccountAsync_AddsAndRemovesNetworksWithoutChangingTheNumber()
+    {
+        await using var db = CreateDbContext();
+        var customer = new CustomerProfile("Aya", "Kone", "+2250700000000");
+        var orange = new PaymentProvider("orange-money", "Orange Money", PaymentMethod.MobileMoney, null, "/orange.png", 10);
+        var mtn = new PaymentProvider("mtn-momo", "MTN MoMo", PaymentMethod.MobileMoney, null, "/mtn.png", 20);
+        var moov = new PaymentProvider("moov-money", "Moov Money", PaymentMethod.MobileMoney, null, "/moov.png", 30);
+        var orangeMethod = new CustomerPaymentMethod(
+            customer.Id,
+            orange.Id,
+            PaymentMethod.MobileMoney,
+            orange.Name,
+            "**** 5678",
+            isDefault: true);
+        var mtnMethod = new CustomerPaymentMethod(
+            customer.Id,
+            mtn.Id,
+            PaymentMethod.MobileMoney,
+            mtn.Name,
+            "**** 5678",
+            isDefault: false);
+        db.Customers.Add(customer);
+        db.PaymentProviders.AddRange(orange, mtn, moov);
+        db.CustomerPaymentMethods.AddRange(orangeMethod, mtnMethod);
+        await db.SaveChangesAsync();
+
+        var result = await new ClientProfileService(db).UpdateMobileMoneyAccountAsync(
+            customer.Id,
+            orangeMethod.Id,
+            new UpdateClientMobileMoneyAccountRequest([mtn.Id, moov.Id]),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("**** 5678", result.Response!.MaskedReference);
+        Assert.Equal(new[] { "MTN MoMo", "Moov Money" }, result.Response.PaymentMethods.Select(method => method.PaymentProviderName));
+        Assert.DoesNotContain(result.Response.PaymentMethods, method => method.PaymentProviderId == orange.Id);
+        Assert.Single(result.Response.PaymentMethods, method => method.IsDefault);
+
+        var stored = await db.CustomerPaymentMethods.OrderBy(method => method.Label).ToListAsync();
+        Assert.False(stored.Single(method => method.PaymentProviderId == orange.Id).IsActive);
+        Assert.True(stored.Single(method => method.PaymentProviderId == mtn.Id).IsActive);
+        Assert.True(stored.Single(method => method.PaymentProviderId == moov.Id).IsActive);
+        Assert.All(stored, method => Assert.Equal("**** 5678", method.MaskedReference));
+    }
+
+    [Fact]
+    public async Task UpdateMobileMoneyAccountAsync_WithoutAnyNetwork_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var customer = new CustomerProfile("Aya", "Kone", "+2250700000000");
+        var orange = new PaymentProvider("orange-money", "Orange Money", PaymentMethod.MobileMoney, null, null, 10);
+        var method = new CustomerPaymentMethod(
+            customer.Id,
+            orange.Id,
+            PaymentMethod.MobileMoney,
+            orange.Name,
+            "**** 5678",
+            isDefault: true);
+        db.Customers.Add(customer);
+        db.PaymentProviders.Add(orange);
+        db.CustomerPaymentMethods.Add(method);
+        await db.SaveChangesAsync();
+
+        var result = await new ClientProfileService(db).UpdateMobileMoneyAccountAsync(
+            customer.Id,
+            method.Id,
+            new UpdateClientMobileMoneyAccountRequest([]),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.True(method.IsActive);
+        Assert.True(method.IsDefault);
+    }
+
     private static HomeServiceDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<HomeServiceDbContext>()

@@ -16,27 +16,27 @@
                 </Grid>
                 <Label Text="Suivez les interventions, devis et paiements." Style="{StaticResource MutedLabel}" Margin="0,-12,0,0" />
 
-                <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="12">
+                <Border StrokeThickness="0" BackgroundColor="{StaticResource BlueWash}" StrokeShape="RoundRectangle 14" Padding="4">
                     <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="5">
-                        <Button x:Name="AllButton" Text="Toutes" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnAllClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
-                        <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" Clicked="OnActiveClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
-                        <Button x:Name="PastButton" Grid.Column="2" Text="Passées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnPastClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
-                        <Button x:Name="CanceledButton" Grid.Column="3" Text="Annulées" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCanceledClicked" MinimumHeightRequest="40" HeightRequest="40" FontSize="11" Padding="3,0" />
+                        <Button x:Name="AllButton" Text="Toutes" BackgroundColor="Transparent" TextColor="{StaticResource ListSecondary}" BorderWidth="0" Clicked="OnAllClicked" MinimumHeightRequest="38" HeightRequest="38" CornerRadius="11" FontSize="10" Padding="2,0" />
+                        <Button x:Name="ActiveButton" Grid.Column="1" Text="En cours" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderWidth="0" Clicked="OnActiveClicked" MinimumHeightRequest="38" HeightRequest="38" CornerRadius="11" FontSize="10" Padding="2,0" />
+                        <Button x:Name="PastButton" Grid.Column="2" Text="Terminées" BackgroundColor="Transparent" TextColor="{StaticResource ListSecondary}" BorderWidth="0" Clicked="OnPastClicked" MinimumHeightRequest="38" HeightRequest="38" CornerRadius="11" FontSize="10" Padding="2,0" />
+                        <Button x:Name="CanceledButton" Grid.Column="3" Text="Annulées" BackgroundColor="Transparent" TextColor="{StaticResource ListSecondary}" BorderWidth="0" Clicked="OnCanceledClicked" MinimumHeightRequest="38" HeightRequest="38" CornerRadius="11" FontSize="10" Padding="2,0" />
                     </Grid>
                 </Border>
 
                 <CollectionView x:Name="MissionsView" SelectionMode="Single" SelectionChanged="OnMissionSelected">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="12" Margin="0,0,0,10">
+                            <Border Style="{StaticResource CompactListBorder}">
                                 <Grid ColumnDefinitions="50,*,88" ColumnSpacing="10">
-                                    <Border BackgroundColor="#EFF6FF" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="50" WidthRequest="50">
-                                        <Image Source="{Binding IconSource}" Aspect="AspectFit" HeightRequest="38" WidthRequest="38" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    <Border BackgroundColor="White" Stroke="{StaticResource PremiumLine}" StrokeThickness="1" StrokeShape="RoundRectangle 13" HeightRequest="50" WidthRequest="50" Padding="4">
+                                        <Image Source="{Binding IconSource}" Aspect="AspectFit" HeightRequest="40" WidthRequest="40" HorizontalOptions="Center" VerticalOptions="Center" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                         <Label Text="{Binding Title}" FontSize="13" FontAttributes="Bold" LineBreakMode="WordWrap" MaxLines="2" />
-                                        <Label Text="{Binding Schedule}" FontSize="11" TextColor="{StaticResource MutedInk}" LineBreakMode="NoWrap" />
-                                        <Label Text="{Binding Address}" FontSize="11" TextColor="{StaticResource MutedInk}" LineBreakMode="WordWrap" MaxLines="2" />
+                                        <Label Text="{Binding Schedule}" FontSize="11" TextColor="{StaticResource ListSecondary}" LineBreakMode="NoWrap" />
+                                        <Label Text="{Binding Address}" FontSize="11" TextColor="{StaticResource ListSecondary}" LineBreakMode="WordWrap" MaxLines="2" />
                                     </VerticalStackLayout>
                                     <VerticalStackLayout Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center" Spacing="7">
                                         <Border BackgroundColor="{Binding StatusBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="7,5">
@@ -50,7 +50,7 @@
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Border x:Name="EmptyState" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 22" Padding="18" IsVisible="False">
+                <Border x:Name="EmptyState" Stroke="{StaticResource PremiumLine}" BackgroundColor="White" StrokeShape="RoundRectangle 18" Padding="18" IsVisible="False">
                     <VerticalStackLayout Spacing="8">
                         <Label Text="Aucune demande" Style="{StaticResource CardTitleLabel}" />
                         <Label Text="Vos demandes apparaîtront ici après envoi." Style="{StaticResource MutedLabel}" />

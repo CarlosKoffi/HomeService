@@ -5,23 +5,41 @@
  <Grid RowDefinitions="*,72" BackgroundColor="White">
   <Grid Padding="20,16,20,20" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="14">
    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Moyens de paiement" Style="{StaticResource SubpageTitleLabel}"/></Grid>
-   <Button Grid.Row="1" Text="+  Ajouter un numéro ou une carte" Style="{StaticResource OutlineActionButton}" Clicked="OnAddClicked"/>
+   <Button Grid.Row="1" Text="+  Ajouter un numéro ou une carte" BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}"
+           HorizontalOptions="Start" Padding="2,2" HeightRequest="32" MinimumHeightRequest="32" FontSize="12" Clicked="OnAddClicked"/>
    <Grid Grid.Row="2">
     <CollectionView x:Name="MethodsView" SelectionMode="None"><CollectionView.ItemTemplate><DataTemplate>
-     <Border Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 16" Padding="16" Margin="0,0,0,12">
+     <Border Style="{StaticResource CompactListBorder}">
       <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="BackgroundColor" Value="#F8FAFF"/><Setter Property="Stroke" Value="{StaticResource WeleBlue}"/></DataTrigger></Border.Triggers>
-      <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnMethodTapped" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
-      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="56,*,Auto" ColumnSpacing="14" RowSpacing="12">
-       <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12" HeightRequest="54" WidthRequest="54" Padding="7"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit"/><Label Text="{Binding IconText}" IsVisible="{Binding ShowFallback}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Grid></Border>
-       <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center"><Label Text="{Binding Label}" FontAttributes="Bold" FontSize="15"/><Label Text="{Binding Reference}" FontSize="12" TextColor="{StaticResource MutedInk}"/></VerticalStackLayout>
-       <Border Grid.Column="2" BackgroundColor="#EEF4FF" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,6" IsVisible="{Binding IsDefault}" VerticalOptions="Start"><Label Text="Par défaut" FontSize="11" TextColor="{StaticResource WeleBlue}"/></Border>
-       <Button Grid.Row="1" Grid.Column="2" Text="Supprimer" FontSize="11" TextColor="{StaticResource Danger}" BackgroundColor="Transparent" Padding="8,4" MinimumWidthRequest="0" MinimumHeightRequest="0" HorizontalOptions="End" Clicked="OnDeleteClicked" CommandParameter="{Binding .}"/>
+      <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnAccountTapped" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
+      <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="46,*,Auto" ColumnSpacing="12" RowSpacing="12">
+       <Border BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 12" HeightRequest="44" WidthRequest="44" Padding="9">
+        <Image Source="{Binding AccountIconSource}" Aspect="AspectFit"/>
+       </Border>
+       <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center"><Label Text="{Binding Label}" FontAttributes="Bold" FontSize="15"/><Label Text="{Binding Reference}" FontSize="12" TextColor="{StaticResource ListSecondary}" FontAttributes="Bold"/></VerticalStackLayout>
+       <Border Grid.Column="2" BackgroundColor="#EEF4FF" StrokeThickness="0" StrokeShape="RoundRectangle 11" Padding="8,5" IsVisible="{Binding IsDefault}" VerticalOptions="Start"><Label Text="Par défaut" FontSize="10" TextColor="{StaticResource WeleBlue}"/></Border>
+       <Grid Grid.Row="1" Grid.ColumnSpan="3" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <Label Text="{Binding NetworkCaption}" FontSize="11" TextColor="{StaticResource ListSecondary}" VerticalTextAlignment="Center"/>
+        <HorizontalStackLayout Grid.Column="1" Spacing="8" BindableLayout.ItemsSource="{Binding Networks}">
+         <BindableLayout.ItemTemplate><DataTemplate>
+          <Border HeightRequest="40" WidthRequest="44" Padding="5" BackgroundColor="White" Stroke="{StaticResource PremiumLine}" StrokeShape="RoundRectangle 10" SemanticProperties.Description="{Binding Name}">
+           <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="Stroke" Value="{StaticResource WeleBlue}"/><Setter Property="StrokeThickness" Value="2"/><Setter Property="BackgroundColor" Value="#F4F8FF"/></DataTrigger></Border.Triggers>
+           <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnNetworkTapped" CommandParameter="{Binding .}"/></Border.GestureRecognizers>
+           <Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit"/><Label Text="{Binding Fallback}" IsVisible="{Binding ShowFallback}" FontSize="9" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center"/></Grid>
+          </Border>
+         </DataTemplate></BindableLayout.ItemTemplate>
+        </HorizontalStackLayout>
+       </Grid>
+       <HorizontalStackLayout Grid.Row="2" Grid.ColumnSpan="3" HorizontalOptions="End" Spacing="6">
+        <Button Text="Modifier" IsVisible="{Binding IsMobileMoney}" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" BackgroundColor="Transparent" Padding="8,4" MinimumWidthRequest="0" MinimumHeightRequest="0" Clicked="OnEditClicked" CommandParameter="{Binding .}"/>
+        <Button Text="Supprimer" FontSize="11" TextColor="{StaticResource Danger}" BackgroundColor="Transparent" Padding="8,4" MinimumWidthRequest="0" MinimumHeightRequest="0" Clicked="OnDeleteClicked" CommandParameter="{Binding .}"/>
+       </HorizontalStackLayout>
       </Grid>
      </Border>
     </DataTemplate></CollectionView.ItemTemplate></CollectionView>
     <VerticalStackLayout x:Name="EmptyState" Spacing="8" VerticalOptions="Center" HorizontalOptions="Center" IsVisible="False"><Label Text="Aucun moyen de paiement" FontSize="17" FontAttributes="Bold"/><Label Text="Ajoutez Mobile Money ou une carte pour confirmer votre intervention." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/></VerticalStackLayout>
    </Grid>
-   <VerticalStackLayout Grid.Row="3" Spacing="7"><Label Text="Choisissez le numéro et le réseau à utiliser pour cette intervention." FontSize="12" TextColor="{StaticResource MutedInk}"/><Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/><Button x:Name="ContinueButton" Text="Utiliser ce numéro et ce réseau" IsEnabled="False" Clicked="OnContinueClicked"/></VerticalStackLayout>
+   <VerticalStackLayout Grid.Row="3" Spacing="7"><Label Text="Touchez le petit logo du réseau que vous souhaitez utiliser." FontSize="12" TextColor="{StaticResource ListSecondary}"/><Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/><Button x:Name="ContinueButton" Text="Utiliser ce numéro et ce réseau" IsEnabled="False" Clicked="OnContinueClicked"/></VerticalStackLayout>
   </Grid>
   <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile"/>
  </Grid>

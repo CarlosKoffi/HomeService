@@ -3,6 +3,7 @@
     x:Class="HomeService.Client.Mobile.Pages.OnboardingPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
     Shell.NavBarIsVisible="False"
     BackgroundColor="White"
     Title="Présentation">
@@ -17,12 +18,10 @@
             RowSpacing="14"
             HorizontalOptions="Center"
             MaximumWidthRequest="440">
-            <Label
+            <controls:WeleBrandMark
                 x:Name="BrandLabel"
-                Text="wélé"
-                FontSize="31"
-                FontAttributes="Bold"
-                TextColor="{StaticResource WeleBlue}" />
+                MarkHeight="56"
+                MarkAlignment="Start" />
 
             <VerticalStackLayout Grid.Row="1" Spacing="12">
                 <Label

@@ -1,8 +1,62 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="HomeService.Client.Mobile.Pages.ClientNotificationsPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Notifications" BackgroundColor="White">
- <Grid RowDefinitions="*,72"><Grid Padding="20,16,20,0" RowDefinitions="Auto,Auto,*" RowSpacing="12">
-  <Grid ColumnDefinitions="32,*,Auto" ColumnSpacing="8"><Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Notifications" Style="{StaticResource SubpageTitleLabel}"/><Label Grid.Column="2" x:Name="UnreadLabel" FontSize="12" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center"/></Grid>
-  <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8"><Button x:Name="AllButton" Text="Toutes" HeightRequest="40" Clicked="OnAllClicked"/><Button x:Name="UnreadButton" Grid.Column="1" Text="Non lues" HeightRequest="40" BackgroundColor="White" TextColor="{StaticResource Ink}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnUnreadClicked"/></Grid>
-  <Grid Grid.Row="2"><CollectionView x:Name="NotificationsView" SelectionMode="Single" SelectionChanged="OnSelected"><CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource CompactListBorder}" BackgroundColor="{Binding Background}"><Grid ColumnDefinitions="20,*,Auto" ColumnSpacing="10"><Label Text="●" FontSize="12" TextColor="{StaticResource WeleBlue}"/><VerticalStackLayout Grid.Column="1" Spacing="3"><Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold"/><Label Text="{Binding Body}" FontSize="12" TextColor="{StaticResource MutedInk}"/><Label Text="{Binding DateText}" FontSize="10" TextColor="{StaticResource MutedInk}"/></VerticalStackLayout><Label Grid.Column="2" Text="{Binding ReadStatus}" FontSize="10" TextColor="{StaticResource WeleBlue}"/></Grid></Border></DataTemplate></CollectionView.ItemTemplate></CollectionView><Label x:Name="EmptyState" Text="Aucune notification." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="False"/></Grid>
- </Grid><controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile"/></Grid>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.ClientNotificationsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    Shell.TabBarIsVisible="False"
+    Title="Notifications"
+    BackgroundColor="White">
+    <Grid RowDefinitions="*,72">
+        <Grid Padding="20,16,20,0" RowDefinitions="Auto,Auto,*" RowSpacing="14">
+            <Grid ColumnDefinitions="32,*,Auto" ColumnSpacing="8">
+                <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
+                <Label Grid.Column="1" Text="Notifications" Style="{StaticResource SubpageTitleLabel}" />
+                <Label Grid.Column="2" x:Name="UnreadLabel" FontSize="11" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center" />
+            </Grid>
+
+            <Border Grid.Row="1" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="4">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="5">
+                    <Button x:Name="AllButton" Text="Toutes" HeightRequest="38" MinimumHeightRequest="38" CornerRadius="11"
+                            BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderWidth="0" Clicked="OnAllClicked" />
+                    <Button x:Name="UnreadButton" Grid.Column="1" Text="Non lues" HeightRequest="38" MinimumHeightRequest="38" CornerRadius="11"
+                            BackgroundColor="Transparent" TextColor="{StaticResource ListSecondary}" BorderWidth="0" Clicked="OnUnreadClicked" />
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="2">
+                <CollectionView x:Name="NotificationsView" IsGrouped="True" SelectionMode="Single" SelectionChanged="OnSelected">
+                    <CollectionView.GroupHeaderTemplate>
+                        <DataTemplate>
+                            <Label Text="{Binding Title}" Margin="2,12,0,8" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource ListSecondary}" />
+                        </DataTemplate>
+                    </CollectionView.GroupHeaderTemplate>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource CompactListBorder}">
+                                <Grid ColumnDefinitions="42,*,Auto" ColumnSpacing="11">
+                                    <Border HeightRequest="42" WidthRequest="42" BackgroundColor="{Binding IconBackground}"
+                                            StrokeThickness="0" StrokeShape="RoundRectangle 13" Padding="9">
+                                        <Image Source="{Binding IconSource}" Aspect="AspectFit" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                        <Label Text="{Binding Title}" FontSize="13" FontAttributes="Bold" />
+                                        <Label Text="{Binding Body}" FontSize="11" TextColor="{StaticResource ListSecondary}" MaxLines="3" />
+                                        <Label Text="{Binding DateText}" FontSize="10" TextColor="{StaticResource ListSecondary}" />
+                                    </VerticalStackLayout>
+                                    <Border Grid.Column="2" IsVisible="{Binding IsUnread}" BackgroundColor="{StaticResource WeleBlue}"
+                                            StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="7,4" VerticalOptions="Start">
+                                        <Label Text="Nouveau" FontSize="8" FontAttributes="Bold" TextColor="White" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+                <Label x:Name="EmptyState" Text="Aucune notification." Style="{StaticResource MutedLabel}"
+                       HorizontalTextAlignment="Center" VerticalTextAlignment="Center" IsVisible="False" />
+            </Grid>
+        </Grid>
+        <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile" />
+    </Grid>
 </ContentPage>

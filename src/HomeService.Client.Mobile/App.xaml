@@ -12,6 +12,9 @@
         <Color x:Key="Warning">#F97316</Color>
         <Color x:Key="Danger">#DC2626</Color>
         <Color x:Key="Line">#E5E7EB</Color>
+        <Color x:Key="PremiumLine">#DCE8FF</Color>
+        <Color x:Key="BlueWash">#EEF4FF</Color>
+        <Color x:Key="ListSecondary">#365F99</Color>
         <Color x:Key="PageWash">#FFFFFF</Color>
         <Color x:Key="CardWash">#FFFFFF</Color>
 
@@ -67,10 +70,17 @@
             <Setter Property="MinimumHeightRequest" Value="48" />
         </Style>
         <Style x:Key="CompactListBorder" TargetType="Border">
-            <Setter Property="Stroke" Value="{StaticResource Line}" />
-            <Setter Property="StrokeThickness" Value="0,0,0,1" />
+            <Setter Property="Stroke" Value="{StaticResource PremiumLine}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 17" />
             <Setter Property="BackgroundColor" Value="White" />
-            <Setter Property="Padding" Value="4,14" />
+            <Setter Property="Padding" Value="13" />
+            <Setter Property="Margin" Value="0,0,0,9" />
+            <Setter Property="Shadow">
+                <Setter.Value>
+                    <Shadow Brush="#182165E8" Offset="0,3" Radius="10" Opacity="0.12" />
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="CardTitleLabel" TargetType="Label">
             <Setter Property="FontSize" Value="17" />

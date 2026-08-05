@@ -8,14 +8,14 @@ namespace HomeService.Client.Mobile.Pages;
 public partial class PaymentMethodsPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
-    private readonly ObservableCollection<PaymentMethodRow> methods = [];
-    private PaymentMethodRow? selectedMethod;
+    private readonly ObservableCollection<PaymentAccountRow> accounts = [];
+    private PaymentNetworkRow? selectedMethod;
 
     public PaymentMethodsPage()
     {
         InitializeComponent();
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
-        MethodsView.ItemsSource = methods;
+        MethodsView.ItemsSource = accounts;
     }
 
     public string? MissionId { get; set; }
@@ -29,7 +29,10 @@ public partial class PaymentMethodsPage : ContentPage
     private async Task LoadAsync()
     {
         ErrorLabel.IsVisible = false;
-        methods.Clear();
+        accounts.Clear();
+        selectedMethod = null;
+        ContinueButton.IsEnabled = false;
+
         var result = await apiClient.GetPaymentMethodsAsync();
         if (!result.IsSuccess || result.Response is null)
         {
@@ -38,8 +41,8 @@ public partial class PaymentMethodsPage : ContentPage
             return;
         }
 
-        var rows = await Task.WhenAll(result.Response.Select(async method =>
-            PaymentMethodRow.From(
+        var decoratedMethods = await Task.WhenAll(result.Response.Select(async method =>
+            new DecoratedPaymentMethod(
                 method,
                 await PaymentProviderLogoResolver.ResolveAsync(
                     apiClient,
@@ -47,30 +50,75 @@ public partial class PaymentMethodsPage : ContentPage
                     method.PaymentProviderName ?? method.Label,
                     method.Method,
                     method.PaymentProviderLogoUrl))));
-        foreach (var row in rows) methods.Add(row);
 
-        EmptyState.IsVisible = methods.Count == 0;
-        if (methods.Count == 0 && Guid.TryParse(MissionId, out _))
+        foreach (var mobileAccount in decoratedMethods
+                     .Where(item => item.Method.Method == "MobileMoney")
+                     .GroupBy(item => item.Method.MaskedReference ?? item.Method.Id.ToString("D"))
+                     .OrderByDescending(group => group.Any(item => item.Method.IsDefault)))
+        {
+            accounts.Add(PaymentAccountRow.MobileMoney(mobileAccount));
+        }
+
+        foreach (var card in decoratedMethods
+                     .Where(item => item.Method.Method != "MobileMoney")
+                     .OrderByDescending(item => item.Method.IsDefault))
+        {
+            accounts.Add(PaymentAccountRow.Card(card));
+        }
+
+        EmptyState.IsVisible = accounts.Count == 0;
+        if (accounts.Count == 0 && Guid.TryParse(MissionId, out _))
         {
             await GoToAddAsync();
             return;
         }
 
-        Select(methods.FirstOrDefault(item => item.IsDefault) ?? methods.FirstOrDefault());
+        var defaultMethod = accounts
+            .SelectMany(account => account.Networks)
+            .FirstOrDefault(item => item.IsDefault)
+            ?? accounts.SelectMany(account => account.Networks).FirstOrDefault();
+        Select(defaultMethod);
     }
 
-    private void OnMethodTapped(object sender, TappedEventArgs e) => Select(e.Parameter as PaymentMethodRow);
+    private void OnAccountTapped(object sender, TappedEventArgs e)
+    {
+        if (e.Parameter is not PaymentAccountRow account)
+        {
+            return;
+        }
+
+        Select(account.Networks.FirstOrDefault(network => network.IsDefault) ?? account.Networks.FirstOrDefault());
+    }
+
+    private void OnNetworkTapped(object sender, TappedEventArgs e)
+    {
+        if (e.Parameter is PaymentNetworkRow network)
+        {
+            Select(network);
+        }
+    }
+
+    private async void OnEditClicked(object sender, EventArgs e)
+    {
+        if (sender is not Button { CommandParameter: PaymentAccountRow account } || !account.IsMobileMoney)
+        {
+            return;
+        }
+
+        await Shell.Current.GoToAsync(
+            $"{nameof(AddPaymentMethodPage)}?missionId={Uri.EscapeDataString(MissionId ?? string.Empty)}&accountId={account.PrimaryId:D}");
+    }
 
     private async void OnDeleteClicked(object sender, EventArgs e)
     {
-        if (sender is not Button { CommandParameter: PaymentMethodRow method })
+        if (sender is not Button { CommandParameter: PaymentAccountRow account })
         {
             return;
         }
 
         var confirmed = await DisplayAlert(
             "Supprimer ce moyen ?",
-            $"{method.Label} {method.Reference} ne sera plus proposé pour vos paiements.",
+            $"{account.Reference} et ses réseaux ne seront plus proposés pour vos paiements.",
             "Supprimer",
             "Annuler");
         if (!confirmed)
@@ -79,32 +127,43 @@ public partial class PaymentMethodsPage : ContentPage
         }
 
         ErrorLabel.IsVisible = false;
-        var result = await apiClient.DeletePaymentMethodAsync(method.Id);
-        if (!result.IsSuccess)
+        foreach (var methodId in account.MethodIds)
         {
-            ErrorLabel.Text = result.ErrorMessage ?? "Ce moyen de paiement n'a pas pu être supprimé.";
-            ErrorLabel.IsVisible = true;
-            return;
-        }
-
-        if (ReferenceEquals(selectedMethod, method))
-        {
-            selectedMethod = null;
+            var result = await apiClient.DeletePaymentMethodAsync(methodId);
+            if (!result.IsSuccess)
+            {
+                ErrorLabel.Text = result.ErrorMessage ?? "Ce moyen de paiement n'a pas pu être supprimé.";
+                ErrorLabel.IsVisible = true;
+                return;
+            }
         }
 
         await LoadAsync();
     }
 
-    private void Select(PaymentMethodRow? row)
+    private void Select(PaymentNetworkRow? row)
     {
-        foreach (var item in methods) item.IsSelected = ReferenceEquals(item, row);
+        foreach (var account in accounts)
+        {
+            foreach (var network in account.Networks)
+            {
+                network.IsSelected = ReferenceEquals(network, row);
+            }
+
+            account.IsSelected = account.Networks.Any(network => network.IsSelected);
+        }
+
         selectedMethod = row;
         ContinueButton.IsEnabled = row is not null;
     }
 
     private async void OnContinueClicked(object sender, EventArgs e)
     {
-        if (selectedMethod is not { } selected) return;
+        if (selectedMethod is not { } selected)
+        {
+            return;
+        }
+
         if (Guid.TryParse(MissionId, out var missionId))
         {
             ContinueButton.IsEnabled = false;
@@ -112,35 +171,146 @@ public partial class PaymentMethodsPage : ContentPage
             ContinueButton.IsEnabled = true;
             if (!result.IsSuccess)
             {
-                ErrorLabel.Text = result.ErrorMessage ?? "Ce moyen de paiement n'a pas pu etre selectionne.";
+                ErrorLabel.Text = result.ErrorMessage ?? "Ce moyen de paiement n'a pas pu être sélectionné.";
                 ErrorLabel.IsVisible = true;
                 return;
             }
+
             await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={missionId:D}");
             return;
         }
+
         await Shell.Current.GoToAsync("..");
     }
 
     private async void OnAddClicked(object sender, EventArgs e) => await GoToAddAsync();
-    private async Task GoToAddAsync() => await Shell.Current.GoToAsync($"{nameof(AddPaymentMethodPage)}?missionId={Uri.EscapeDataString(MissionId ?? string.Empty)}");
+
+    private async Task GoToAddAsync() =>
+        await Shell.Current.GoToAsync(
+            $"{nameof(AddPaymentMethodPage)}?missionId={Uri.EscapeDataString(MissionId ?? string.Empty)}");
+
     private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 
-    private sealed class PaymentMethodRow : BindableObject
+    private sealed record DecoratedPaymentMethod(ClientPaymentMethodResponse Method, ImageSource? Logo);
+
+    private sealed class PaymentAccountRow : BindableObject
     {
         private bool isSelected;
-        private PaymentMethodRow(Guid id, string label, string reference, string iconText, ImageSource? logoSource, bool isDefault)
-        { Id = id; Label = label; Reference = reference; IconText = iconText; LogoSource = logoSource; IsDefault = isDefault; }
-        public Guid Id { get; }
+
+        private PaymentAccountRow(
+            string label,
+            string reference,
+            bool isMobileMoney,
+            IEnumerable<PaymentNetworkRow> networks)
+        {
+            Label = label;
+            Reference = reference;
+            IsMobileMoney = isMobileMoney;
+            Networks = new ObservableCollection<PaymentNetworkRow>(networks);
+        }
+
         public string Label { get; }
         public string Reference { get; }
-        public string IconText { get; }
+        public bool IsMobileMoney { get; }
+        public string IconText => IsMobileMoney ? "MOMO" : "CARTE";
+        public string AccountIconSource => IsMobileMoney ? "profile_payment.svg" : "payment_bank_card.png";
+        public string NetworkCaption => IsMobileMoney ? "Réseaux" : "Type";
+        public ObservableCollection<PaymentNetworkRow> Networks { get; }
+        public bool IsDefault => Networks.Any(network => network.IsDefault);
+        public Guid PrimaryId => Networks.FirstOrDefault(network => network.IsDefault)?.Id ?? Networks[0].Id;
+        public IReadOnlyList<Guid> MethodIds => Networks.Select(network => network.Id).ToList();
+        public bool IsSelected
+        {
+            get => isSelected;
+            set
+            {
+                if (isSelected == value)
+                {
+                    return;
+                }
+
+                isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public static PaymentAccountRow MobileMoney(IEnumerable<DecoratedPaymentMethod> methods)
+        {
+            var rows = methods
+                .OrderBy(item => item.Method.PaymentProviderName ?? item.Method.Label)
+                .Select(PaymentNetworkRow.From)
+                .ToList();
+            return new PaymentAccountRow(
+                "Mobile Money",
+                rows[0].Reference,
+                isMobileMoney: true,
+                rows);
+        }
+
+        public static PaymentAccountRow Card(DecoratedPaymentMethod method) =>
+            new(
+                method.Method.PaymentProviderName ?? method.Method.Label,
+                method.Method.MaskedReference ?? "Carte sécurisée",
+                isMobileMoney: false,
+                [PaymentNetworkRow.From(method)]);
+    }
+
+    private sealed class PaymentNetworkRow : BindableObject
+    {
+        private bool isSelected;
+
+        private PaymentNetworkRow(
+            Guid id,
+            string name,
+            string reference,
+            ImageSource? logoSource,
+            bool isDefault,
+            bool isCard)
+        {
+            Id = id;
+            Name = name;
+            Reference = reference;
+            LogoSource = logoSource;
+            IsDefault = isDefault;
+            IsCard = isCard;
+        }
+
+        public Guid Id { get; }
+        public string Name { get; }
+        public string Reference { get; }
         public ImageSource? LogoSource { get; }
         public bool ShowFallback => LogoSource is null;
         public bool IsDefault { get; }
-        public bool IsSelected { get => isSelected; set { if (isSelected == value) return; isSelected = value; OnPropertyChanged(); } }
-        public static PaymentMethodRow From(ClientPaymentMethodResponse response, ImageSource? logo) => new(
-            response.Id, response.PaymentProviderName ?? response.Label, response.MaskedReference ?? "Compte securise",
-            response.Method == "Card" ? "CB" : "MM", logo, response.IsDefault);
+        public bool IsCard { get; }
+        public string Fallback => IsCard ? "CB" : Initials(Name);
+        public bool IsSelected
+        {
+            get => isSelected;
+            set
+            {
+                if (isSelected == value)
+                {
+                    return;
+                }
+
+                isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public static PaymentNetworkRow From(DecoratedPaymentMethod item) =>
+            new(
+                item.Method.Id,
+                item.Method.PaymentProviderName ?? item.Method.Label,
+                item.Method.MaskedReference ?? "Compte sécurisé",
+                item.Logo,
+                item.Method.IsDefault,
+                item.Method.Method == "Card");
+
+        private static string Initials(string value)
+        {
+            var words = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return string.Concat(words.Take(2).Select(word => char.ToUpperInvariant(word[0])));
+        }
     }
 }

@@ -41,6 +41,7 @@ public sealed class ClientEndpointContractTests
     [InlineData("GET", "/api/client/payment-methods")]
     [InlineData("POST", "/api/client/payment-methods")]
     [InlineData("POST", "/api/client/payment-methods/mobile-money")]
+    [InlineData("PUT", "/api/client/payment-methods/mobile-money/{paymentMethodId:guid}")]
     [InlineData("DELETE", "/api/client/payment-methods/{paymentMethodId:guid}")]
     [InlineData("POST", "/api/client/mobile/device-token")]
     public void ClientMissionRoutes_AreMapped(string httpMethod, string routePattern)

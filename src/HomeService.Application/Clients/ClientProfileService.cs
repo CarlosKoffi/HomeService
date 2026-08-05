@@ -241,6 +241,104 @@ public sealed class ClientProfileService(IAppDbContext db)
         return ClientMobileMoneyAccountResult.Ok(new CreateClientMobileMoneyAccountResponse(maskedReference, responses));
     }
 
+    public async Task<ClientMobileMoneyAccountResult> UpdateMobileMoneyAccountAsync(
+        Guid customerId,
+        Guid paymentMethodId,
+        UpdateClientMobileMoneyAccountRequest request,
+        CancellationToken cancellationToken)
+    {
+        var target = await db.CustomerPaymentMethods
+            .FirstOrDefaultAsync(method => method.Id == paymentMethodId
+                && method.CustomerId == customerId
+                && method.Method == PaymentMethod.MobileMoney
+                && method.IsActive,
+                cancellationToken);
+        if (target is null || string.IsNullOrWhiteSpace(target.MaskedReference))
+        {
+            return ClientMobileMoneyAccountResult.Invalid("Ce numero Mobile Money est introuvable.");
+        }
+
+        var providerIds = request.PaymentProviderIds?
+            .Where(id => id != Guid.Empty)
+            .Distinct()
+            .ToList() ?? [];
+        if (providerIds.Count == 0)
+        {
+            return ClientMobileMoneyAccountResult.Invalid("Conservez au moins un reseau Mobile Money.");
+        }
+
+        var providers = await db.PaymentProviders
+            .Where(provider => providerIds.Contains(provider.Id)
+                && provider.IsActive
+                && provider.Method == PaymentMethod.MobileMoney)
+            .OrderBy(provider => provider.SortOrder)
+            .ThenBy(provider => provider.Name)
+            .ToListAsync(cancellationToken);
+        if (providers.Count != providerIds.Count)
+        {
+            return ClientMobileMoneyAccountResult.Invalid("Un des reseaux Mobile Money selectionnes est invalide.");
+        }
+
+        var accountMethods = await db.CustomerPaymentMethods
+            .Where(method => method.CustomerId == customerId
+                && method.Method == PaymentMethod.MobileMoney
+                && method.MaskedReference == target.MaskedReference)
+            .ToListAsync(cancellationToken);
+        var accountWasDefault = accountMethods.Any(method => method.IsActive && method.IsDefault);
+        foreach (var method in accountMethods)
+        {
+            method.SetDefault(false);
+            if (method.IsActive && (!method.PaymentProviderId.HasValue || !providerIds.Contains(method.PaymentProviderId.Value)))
+            {
+                method.Disable();
+            }
+        }
+
+        var selectedMethods = new List<CustomerPaymentMethod>(providers.Count);
+        foreach (var provider in providers)
+        {
+            var method = accountMethods.FirstOrDefault(item => item.PaymentProviderId == provider.Id);
+            if (method is null)
+            {
+                method = new CustomerPaymentMethod(
+                    customerId,
+                    provider.Id,
+                    PaymentMethod.MobileMoney,
+                    provider.Name,
+                    target.MaskedReference,
+                    isDefault: false);
+                db.CustomerPaymentMethods.Add(method);
+            }
+            else
+            {
+                method.Update(PaymentMethod.MobileMoney, provider.Name, target.MaskedReference, isDefault: false);
+            }
+
+            selectedMethods.Add(method);
+        }
+
+        if (accountWasDefault)
+        {
+            selectedMethods[0].SetDefault(true);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        var responses = selectedMethods
+            .Select((method, index) => new ClientPaymentMethodResponse(
+                method.Id,
+                method.Method.ToString(),
+                method.Label,
+                method.MaskedReference,
+                method.IsDefault,
+                method.IsActive,
+                providers[index].Id,
+                providers[index].Name,
+                providers[index].LogoUrl))
+            .ToList();
+
+        return ClientMobileMoneyAccountResult.Ok(new CreateClientMobileMoneyAccountResponse(target.MaskedReference, responses));
+    }
+
     public async Task<bool> DeletePaymentMethodAsync(Guid customerId, Guid paymentMethodId, CancellationToken cancellationToken)
     {
         var paymentMethod = await db.CustomerPaymentMethods.FirstOrDefaultAsync(

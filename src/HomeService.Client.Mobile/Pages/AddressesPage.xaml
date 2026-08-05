@@ -11,15 +11,17 @@
     <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/>
     <Label Grid.Column="1" Text="Mes adresses" Style="{StaticResource SubpageTitleLabel}"/>
    </Grid>
-   <Button Grid.Row="1" Text="+  Ajouter une adresse" Style="{StaticResource OutlineActionButton}" Clicked="OnAddClicked"/>
+   <Button Grid.Row="1" Text="+  Ajouter une adresse" BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}"
+           HorizontalOptions="Start" Padding="2,2" HeightRequest="32" MinimumHeightRequest="32" FontSize="12" Clicked="OnAddClicked"/>
    <Grid Grid.Row="2">
     <CollectionView x:Name="AddressesView" SelectionMode="Single" SelectionChanged="OnAddressSelected">
      <CollectionView.ItemTemplate><DataTemplate>
       <Border Style="{StaticResource CompactListBorder}">
-       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-        <VerticalStackLayout Spacing="3"><Label Text="{Binding Label}" FontSize="15" FontAttributes="Bold"/><Label Text="{Binding AddressLine}" Style="{StaticResource MutedLabel}"/></VerticalStackLayout>
-        <Label Grid.Column="1" Text="Par défaut" IsVisible="{Binding IsDefault}" FontSize="12" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End" VerticalTextAlignment="Center"/>
-        <Button Grid.Column="1" Text="Définir par défaut" IsVisible="{Binding CanSetAsDefault}" Clicked="OnSetDefaultClicked" Padding="8,6" FontSize="11" FontAttributes="Bold" BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}" BorderWidth="0" VerticalOptions="Center"/>
+       <Grid ColumnDefinitions="42,*,Auto" ColumnSpacing="11">
+        <Border HeightRequest="42" WidthRequest="42" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 13" Padding="10"><Image Source="profile_address.svg" Aspect="AspectFit"/></Border>
+        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label Text="{Binding Label}" FontSize="14" FontAttributes="Bold"/><Label Text="{Binding AddressLine}" FontSize="11" TextColor="{StaticResource ListSecondary}" MaxLines="2"/></VerticalStackLayout>
+        <Border Grid.Column="2" IsVisible="{Binding IsDefault}" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="8,5" VerticalOptions="Start"><Label Text="Par défaut" FontSize="9" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold"/></Border>
+        <Button Grid.Column="2" Text="Définir par défaut" IsVisible="{Binding CanSetAsDefault}" Clicked="OnSetDefaultClicked" Padding="5,3" FontSize="9" FontAttributes="Bold" BackgroundColor="Transparent" TextColor="{StaticResource WeleBlue}" BorderWidth="0" MinimumHeightRequest="28" HeightRequest="28" VerticalOptions="Center"/>
        </Grid>
       </Border>
      </DataTemplate></CollectionView.ItemTemplate>
@@ -32,10 +34,10 @@
    <Border VerticalOptions="End" BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="18" Margin="0,80,0,0">
     <VerticalStackLayout Spacing="12">
      <Grid ColumnDefinitions="*,Auto"><Label x:Name="EditorTitle" Text="Nouvelle adresse" Style="{StaticResource SubpageTitleLabel}"/><Button Grid.Column="1" Text="×" FontSize="22" BackgroundColor="Transparent" TextColor="{StaticResource Ink}" Padding="8,0" Clicked="OnCloseEditorClicked"/></Grid>
-     <Label Text="Nom de l'adresse" FontSize="12" FontAttributes="Bold"/><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,2"><Entry x:Name="LabelEntry" Placeholder="Ex. Maison, Bureau" MaxLength="40"/></Border>
+     <Label Text="Nom de l'adresse" FontSize="12" FontAttributes="Bold"/><Border Stroke="{StaticResource PremiumLine}" StrokeShape="RoundRectangle 10" Padding="12,2"><Entry x:Name="LabelEntry" Placeholder="Ex. Maison, Bureau" MaxLength="40"/></Border>
      <Label Text="Adresse" FontSize="12" FontAttributes="Bold"/>
-     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,2"><Entry x:Name="AddressEntry" Placeholder="Commune, quartier, rue..." MaxLength="160" TextChanged="OnAddressTextChanged"/></Border><Button Grid.Column="1" x:Name="LocateButton" Text="⌖" FontSize="22" WidthRequest="48" HeightRequest="48" Padding="0" BackgroundColor="#F4F7FF" TextColor="{StaticResource WeleBlue}" BorderColor="#DCE6FF" BorderWidth="1" CornerRadius="10" Clicked="OnLocateClicked"/></Grid>
-     <Border x:Name="SuggestionsPanel" Stroke="{StaticResource Line}" BackgroundColor="White" StrokeShape="RoundRectangle 10" Padding="0" IsVisible="False"><CollectionView x:Name="SuggestionsView" SelectionMode="Single" SelectionChanged="OnSuggestionSelected" MaximumHeightRequest="180"><CollectionView.ItemTemplate><DataTemplate x:DataType="clients:ClientAddressSuggestionResponse"><Grid Padding="12,9" RowDefinitions="Auto,Auto" RowSpacing="2"><Label Text="{Binding MainText}" FontSize="12" FontAttributes="Bold"/><Label Grid.Row="1" Text="{Binding SecondaryText}" FontSize="10" TextColor="#687386" LineBreakMode="TailTruncation"/></Grid></DataTemplate></CollectionView.ItemTemplate></CollectionView></Border>
+     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><Border Stroke="{StaticResource PremiumLine}" StrokeShape="RoundRectangle 10" Padding="12,2"><Entry x:Name="AddressEntry" Placeholder="Commune, quartier, rue..." MaxLength="160" TextChanged="OnAddressTextChanged"/></Border><Button Grid.Column="1" x:Name="LocateButton" Text="⌖" FontSize="22" WidthRequest="48" HeightRequest="48" Padding="0" BackgroundColor="{StaticResource BlueWash}" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource PremiumLine}" BorderWidth="1" CornerRadius="10" Clicked="OnLocateClicked"/></Grid>
+     <Border x:Name="SuggestionsPanel" Stroke="{StaticResource PremiumLine}" BackgroundColor="White" StrokeShape="RoundRectangle 10" Padding="0" IsVisible="False"><CollectionView x:Name="SuggestionsView" SelectionMode="Single" SelectionChanged="OnSuggestionSelected" MaximumHeightRequest="180"><CollectionView.ItemTemplate><DataTemplate x:DataType="clients:ClientAddressSuggestionResponse"><Grid Padding="12,9" RowDefinitions="Auto,Auto" RowSpacing="2"><Label Text="{Binding MainText}" FontSize="12" FontAttributes="Bold"/><Label Grid.Row="1" Text="{Binding SecondaryText}" FontSize="10" TextColor="{StaticResource ListSecondary}" LineBreakMode="TailTruncation"/></Grid></DataTemplate></CollectionView.ItemTemplate></CollectionView></Border>
      <HorizontalStackLayout Spacing="8"><CheckBox x:Name="DefaultCheckBox" Color="{StaticResource WeleBlue}"/><Label Text="Utiliser par défaut" VerticalTextAlignment="Center"/></HorizontalStackLayout>
      <Label x:Name="EditorError" TextColor="{StaticResource Danger}" FontSize="12" IsVisible="False"/><Button x:Name="SaveButton" Text="Enregistrer l'adresse" Clicked="OnSaveClicked"/>
     </VerticalStackLayout>

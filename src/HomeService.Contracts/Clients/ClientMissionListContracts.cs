@@ -15,4 +15,6 @@ public sealed record ClientMissionListItemResponse(
     int? Amount,
     string Currency,
     string PrimaryAction,
-    string? IconUrl = null);
+    string? IconUrl = null,
+    string? AssignedProviderName = null,
+    string? AssignedProviderPhotoUrl = null);

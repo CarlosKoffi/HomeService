@@ -68,11 +68,15 @@ public partial class MessagesPage : ContentPage
                 return;
             }
 
-            var rows = result.Response
-                .Where(item => !IsConversationClosed(item.Status))
-                .OrderByDescending(item => item.CreatedAt)
-                .Select(ClientConversationRow.From)
-                .ToArray();
+            var rows = new List<ClientConversationRow>();
+            foreach (var item in result.Response
+                         .Where(item => !IsConversationClosed(item.Status))
+                         .OrderByDescending(item => item.CreatedAt))
+            {
+                var providerPhoto = await apiClient.DownloadMediaImageSourceAsync(item.AssignedProviderPhotoUrl);
+                rows.Add(ClientConversationRow.From(item, providerPhoto));
+            }
+
             await ReplaceConversationsAsync(rows);
         }
         catch
@@ -129,14 +133,27 @@ public partial class MessagesPage : ContentPage
     }
 }
 
-public sealed record ClientConversationRow(Guid MissionId, string Title, string MissionNumber, string Hint, string DateLabel)
+public sealed record ClientConversationRow(
+    Guid MissionId,
+    string Title,
+    string MissionNumber,
+    string Hint,
+    string DateLabel,
+    ImageSource? ProviderPhoto = null)
 {
-    public static ClientConversationRow From(ClientMissionListItemResponse response)
+    public bool HasProviderPhoto => ProviderPhoto is not null;
+    public bool ShowFallback => ProviderPhoto is null;
+
+    public static ClientConversationRow From(ClientMissionListItemResponse response, ImageSource? providerPhoto)
     {
-        var title = response.OptionName ?? response.PrestationName ?? response.ServiceName ?? "Demande de service";
+        var serviceTitle = response.OptionName ?? response.PrestationName ?? response.ServiceName ?? "Demande de service";
+        var title = response.AssignedProviderName ?? serviceTitle;
         var date = response.ScheduledFor.HasValue
             ? AppointmentDisplayFormatter.FormatWindow(response.ScheduledFor.Value, "dd MMM")
             : response.CreatedAt.ToLocalTime().ToString("dd MMM · HH:mm");
-        return new ClientConversationRow(response.MissionId, title, response.MissionNumber, "Ouvrir la conversation", date);
+        var hint = response.AssignedProviderName is null
+            ? "Ouvrir la conversation"
+            : serviceTitle;
+        return new ClientConversationRow(response.MissionId, title, response.MissionNumber, hint, date, providerPhoto);
     }
 }

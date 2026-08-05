@@ -13,7 +13,7 @@
             Spacing="24"
             HorizontalOptions="Fill"
             MaximumWidthRequest="390">
-            <controls:WeleBrandMark MarkHeight="38" MarkAlignment="Center" Margin="0,0,0,8" />
+            <controls:WeleBrandMark MarkHeight="56" MarkAlignment="Center" Margin="0,0,0,8" />
             <Label
                 Text="Se connecter"
                 FontSize="20"

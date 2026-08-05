@@ -1,42 +1,107 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="HomeService.Client.Mobile.Pages.PaymentCheckoutPage"
-             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False" BackgroundColor="White">
-    <Grid RowDefinitions="*,Auto" Padding="24,22,24,24">
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.PaymentCheckoutPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False"
+    Shell.TabBarIsVisible="False"
+    BackgroundColor="White">
+    <Grid RowDefinitions="*,Auto" Padding="22,20,22,22">
         <ScrollView>
-            <VerticalStackLayout Spacing="22">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                    <Button Text="‹" FontSize="28" BackgroundColor="Transparent" TextColor="#111827" WidthRequest="44" Clicked="OnBackClicked" />
-                    <Label Grid.Column="1" Text="Paiement" FontSize="28" FontAttributes="Bold" VerticalTextAlignment="Center" />
+            <VerticalStackLayout Spacing="20">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Paiement" Style="{StaticResource SubpageTitleLabel}" />
                 </Grid>
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Détail de la facture" FontSize="18" FontAttributes="Bold" />
-                    <Grid ColumnDefinitions="*,Auto"><Label x:Name="ServiceLabel" TextColor="#6B7280" /><Label Grid.Column="1" x:Name="ServiceAmountLabel" FontAttributes="Bold" /></Grid>
-                    <Grid x:Name="PartsRow" ColumnDefinitions="*,Auto" IsVisible="False"><Label Text="Pièces et déplacement" TextColor="#6B7280" /><Label Grid.Column="1" x:Name="PartsAmountLabel" FontAttributes="Bold" /></Grid>
-                    <BoxView HeightRequest="1" Color="#E5E7EB" />
-                    <Grid ColumnDefinitions="*,Auto"><Label Text="Total à payer" FontSize="17" FontAttributes="Bold" /><Label Grid.Column="1" x:Name="TotalLabel" FontSize="18" FontAttributes="Bold" TextColor="#2563EB" /></Grid>
-                </VerticalStackLayout>
+
+                <Border Stroke="{StaticResource PremiumLine}" BackgroundColor="White"
+                        StrokeShape="RoundRectangle 18" Padding="15">
+                    <VerticalStackLayout Spacing="11">
+                        <Label Text="Détail de la facture" FontSize="16" FontAttributes="Bold" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label x:Name="ServiceLabel" FontSize="12" TextColor="{StaticResource ListSecondary}" />
+                            <Label Grid.Column="1" x:Name="ServiceAmountLabel" FontSize="12" FontAttributes="Bold" />
+                        </Grid>
+                        <Grid x:Name="PartsRow" ColumnDefinitions="*,Auto" IsVisible="False">
+                            <Label Text="Pièces et déplacement" FontSize="12" TextColor="{StaticResource ListSecondary}" />
+                            <Label Grid.Column="1" x:Name="PartsAmountLabel" FontSize="12" FontAttributes="Bold" />
+                        </Grid>
+                        <BoxView HeightRequest="1" Color="{StaticResource PremiumLine}" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Total à payer" FontSize="15" FontAttributes="Bold" />
+                            <Label Grid.Column="1" x:Name="TotalLabel" FontSize="17" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
                 <VerticalStackLayout Spacing="3">
-                    <Label Text="Choisir le numéro et le réseau" FontSize="18" FontAttributes="Bold" />
-                    <Label Text="Un même numéro peut être proposé sur plusieurs réseaux Mobile Money." FontSize="12" TextColor="#6B7280" />
+                    <Label Text="Choisir le numéro et le réseau" FontSize="17" FontAttributes="Bold" />
+                    <Label Text="Touchez le petit logo du réseau à utiliser." FontSize="11" TextColor="{StaticResource ListSecondary}" />
                 </VerticalStackLayout>
+
                 <CollectionView x:Name="MethodsView" SelectionMode="None">
-                    <CollectionView.ItemTemplate><DataTemplate>
-                        <Border Stroke="#E5E7EB" StrokeShape="RoundRectangle 12" Padding="12" Margin="0,0,0,8">
-                            <Border.Triggers><DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True"><Setter Property="Stroke" Value="#2563EB" /><Setter Property="StrokeThickness" Value="2" /><Setter Property="BackgroundColor" Value="#F8FAFF" /></DataTrigger></Border.Triggers>
-                            <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnMethodTapped" CommandParameter="{Binding .}" /></Border.GestureRecognizers>
-                            <Grid ColumnDefinitions="48,*,Auto" ColumnSpacing="12">
-                                <Border BackgroundColor="White" Stroke="#E5E7EB" StrokeShape="RoundRectangle 9" HeightRequest="46" WidthRequest="46" Padding="5"><Grid><Image Source="{Binding LogoSource}" Aspect="AspectFit" /><Label Text="{Binding Fallback}" IsVisible="{Binding ShowFallback}" TextColor="#2563EB" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" /></Grid></Border>
-                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center"><Label Text="{Binding Label}" FontAttributes="Bold" /><Label Text="{Binding Reference}" FontSize="12" TextColor="#6B7280" /></VerticalStackLayout>
-                                <Label Grid.Column="2" Text="✓" FontSize="20" TextColor="#2563EB" IsVisible="{Binding IsSelected}" VerticalTextAlignment="Center" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate></CollectionView.ItemTemplate>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource CompactListBorder}">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="Stroke" Value="{StaticResource WeleBlue}" />
+                                        <Setter Property="StrokeThickness" Value="2" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnAccountTapped" CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="44,*,Auto" ColumnSpacing="11" RowSpacing="12">
+                                    <Border HeightRequest="42" WidthRequest="42" BackgroundColor="{StaticResource BlueWash}"
+                                            StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="9">
+                                        <Image Source="{Binding AccountIconSource}" Aspect="AspectFit" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                        <Label Text="{Binding Label}" FontSize="14" FontAttributes="Bold" />
+                                        <Label Text="{Binding Reference}" FontSize="11" TextColor="{StaticResource ListSecondary}" />
+                                    </VerticalStackLayout>
+                                    <Border Grid.Column="2" IsVisible="{Binding IsDefault}" BackgroundColor="{StaticResource BlueWash}"
+                                            StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="7,4" VerticalOptions="Start">
+                                        <Label Text="Par défaut" FontSize="8" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                    </Border>
+                                    <Grid Grid.Row="1" Grid.ColumnSpan="3" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                        <Label Text="{Binding NetworkCaption}" FontSize="10" TextColor="{StaticResource ListSecondary}" VerticalTextAlignment="Center" />
+                                        <HorizontalStackLayout Grid.Column="1" Spacing="8" BindableLayout.ItemsSource="{Binding Networks}">
+                                            <BindableLayout.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border HeightRequest="38" WidthRequest="43" Padding="5" BackgroundColor="White"
+                                                            Stroke="{StaticResource PremiumLine}" StrokeShape="RoundRectangle 10"
+                                                            SemanticProperties.Description="{Binding Name}">
+                                                        <Border.Triggers>
+                                                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                                <Setter Property="Stroke" Value="{StaticResource WeleBlue}" />
+                                                                <Setter Property="StrokeThickness" Value="2" />
+                                                                <Setter Property="BackgroundColor" Value="{StaticResource BlueWash}" />
+                                                            </DataTrigger>
+                                                        </Border.Triggers>
+                                                        <Border.GestureRecognizers>
+                                                            <TapGestureRecognizer Tapped="OnNetworkTapped" CommandParameter="{Binding .}" />
+                                                        </Border.GestureRecognizers>
+                                                        <Grid>
+                                                            <Image Source="{Binding LogoSource}" Aspect="AspectFit" />
+                                                            <Label Text="{Binding Fallback}" IsVisible="{Binding ShowFallback}" FontSize="9"
+                                                                   FontAttributes="Bold" TextColor="{StaticResource WeleBlue}"
+                                                                   HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </BindableLayout.ItemTemplate>
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
                 </CollectionView>
-                <Label x:Name="ErrorLabel" TextColor="#DC2626" IsVisible="False" />
+                <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
             </VerticalStackLayout>
         </ScrollView>
-        <Button Grid.Row="1" x:Name="PayButton" Text="Payer" HeightRequest="56" FontAttributes="Bold" Clicked="OnPayClicked" />
+        <Button Grid.Row="1" x:Name="PayButton" Text="Payer" HeightRequest="54" FontAttributes="Bold" Clicked="OnPayClicked" />
     </Grid>
 </ContentPage>

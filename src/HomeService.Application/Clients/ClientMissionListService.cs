@@ -63,9 +63,37 @@ public sealed class ClientMissionListService(IAppDbContext db)
             .Take(80)
             .ToListAsync(cancellationToken);
 
+        var providerIds = missions
+            .Where(mission => mission.ProviderId.HasValue)
+            .Select(mission => mission.ProviderId!.Value)
+            .Distinct()
+            .ToList();
+        var providers = await db.Providers
+            .AsNoTracking()
+            .Where(provider => providerIds.Contains(provider.Id))
+            .ToDictionaryAsync(provider => provider.Id, cancellationToken);
+        var providerPhotoRows = await db.ProviderDocuments
+            .AsNoTracking()
+            .Where(document => providerIds.Contains(document.ProviderId)
+                && document.DocumentType == ProviderDocumentType.Photo)
+            .OrderByDescending(document => document.UpdatedAt ?? document.CreatedAt)
+            .Select(document => new { document.ProviderId, document.StoragePath })
+            .ToListAsync(cancellationToken);
+        var providerPhotos = providerPhotoRows
+            .GroupBy(document => document.ProviderId)
+            .ToDictionary(group => group.Key, group => group.First().StoragePath);
+
         var rows = missions.Select(mission =>
         {
             services.TryGetValue(mission.ServiceId, out var service);
+            var provider = mission.ProviderId is { } providerId
+                && providers.TryGetValue(providerId, out var assignedProvider)
+                    ? assignedProvider
+                    : null;
+            var providerPhoto = mission.ProviderId is { } photoProviderId
+                && providerPhotos.TryGetValue(photoProviderId, out var photoPath)
+                    ? photoPath
+                    : null;
             return new ClientMissionListItemResponse(
                 mission.Id,
                 mission.MissionNumber,
@@ -83,7 +111,9 @@ public sealed class ClientMissionListService(IAppDbContext db)
                 ResolvePrimaryAction(mission.Status, mission.PaymentStatus, mission.QuoteStatus),
                 mission.ServicePrestation?.IllustrationUrl
                     ?? service?.IconUrl
-                    ?? service?.ImageUrl);
+                    ?? service?.ImageUrl,
+                provider?.FullName,
+                providerPhoto);
         }).ToList();
 
         return ClientMissionListResult.Ok(rows);

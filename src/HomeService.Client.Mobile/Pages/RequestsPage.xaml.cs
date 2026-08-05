@@ -129,14 +129,14 @@ public partial class RequestsPage : ContentPage
 
     private void SetFilter(Button selected)
     {
-        var ink = (Color)Application.Current!.Resources["Ink"];
-        var blue = (Color)Application.Current.Resources["WeleBlue"];
+        var blue = (Color)Application.Current!.Resources["WeleBlue"];
+        var secondary = (Color)Application.Current.Resources["ListSecondary"];
         var buttons = new[] { AllButton, ActiveButton, PastButton, CanceledButton };
         foreach (var button in buttons)
         {
-            button.BackgroundColor = button == selected ? blue : Colors.White;
-            button.TextColor = button == selected ? Colors.White : ink;
-            button.BorderColor = button == selected ? blue : (Color)Application.Current.Resources["Line"];
+            button.BackgroundColor = button == selected ? Colors.White : Colors.Transparent;
+            button.TextColor = button == selected ? blue : secondary;
+            button.BorderWidth = 0;
         }
     }
 
@@ -155,7 +155,7 @@ public partial class RequestsPage : ContentPage
         public static MissionRow Preview(Guid missionId, string title, string address, string schedule, string status, string amount, string icon)
         {
             var (label, color, background) = ResolveStatus(status);
-            return new MissionRow(missionId, title, address, schedule, label, amount, ImageSource.FromFile(icon), true, color, background);
+            return new MissionRow(missionId, title, address, schedule, label, amount, ImageSource.FromFile("nav_requests.svg"), true, color, background);
         }
 
         public static MissionRow From(ClientMissionListItemResponse item, ImageSource? image)

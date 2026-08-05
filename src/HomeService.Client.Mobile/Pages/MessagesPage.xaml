@@ -1,11 +1,61 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="HomeService.Client.Mobile.Pages.MessagesPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Messages" BackgroundColor="White">
- <Grid RowDefinitions="*,72"><Grid Padding="20,10,20,0" RowDefinitions="40,Auto,*" RowSpacing="12">
-  <Grid ColumnDefinitions="*,48" HeightRequest="48"><Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center"/><controls:ClientNotificationButton Grid.Column="1"/></Grid>
-  <Label Grid.Row="1" x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/>
-  <RefreshView Grid.Row="2" x:Name="MessagesRefreshView" Refreshing="OnRefreshing"><CollectionView x:Name="ConversationsView" SelectionMode="None">
-   <CollectionView.EmptyView><VerticalStackLayout Padding="12,44" Spacing="6"><Label Text="Aucune conversation" FontSize="16" FontAttributes="Bold" HorizontalTextAlignment="Center"/><Label Text="Vos échanges apparaîtront ici dès votre première demande." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center"/></VerticalStackLayout></CollectionView.EmptyView>
-   <CollectionView.ItemTemplate><DataTemplate><Border Style="{StaticResource CompactListBorder}"><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnConversationTapped" CommandParameter="{Binding .}"/></Border.GestureRecognizers><Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12"><Border HeightRequest="42" WidthRequest="42" BackgroundColor="#EAF1FF" StrokeThickness="0" StrokeShape="RoundRectangle 21"><Image Source="nav_messages.svg" HeightRequest="20" WidthRequest="20"/></Border><VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center"><Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" LineBreakMode="TailTruncation"/><Label Text="{Binding Hint}" FontSize="12" TextColor="{StaticResource MutedInk}" LineBreakMode="TailTruncation"/><Label Text="{Binding MissionNumber}" FontSize="11" TextColor="{StaticResource WeleBlue}"/></VerticalStackLayout><VerticalStackLayout Grid.Column="2" Spacing="5" VerticalOptions="Center"><Label Text="{Binding DateLabel}" FontSize="10" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="End"/><Label Text="›" FontSize="20" TextColor="{StaticResource MutedInk}" HorizontalTextAlignment="End"/></VerticalStackLayout></Grid></Border></DataTemplate></CollectionView.ItemTemplate>
-  </CollectionView></RefreshView>
- </Grid><controls:ClientBottomNavigation Grid.Row="1" ActiveTab="messages"/></Grid>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.MessagesPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    Shell.TabBarIsVisible="False"
+    Title="Messages"
+    BackgroundColor="White">
+    <Grid RowDefinitions="*,72">
+        <Grid Padding="20,10,20,0" RowDefinitions="40,Auto,*" RowSpacing="12">
+            <Grid ColumnDefinitions="*,48" HeightRequest="48">
+                <Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
+                <controls:ClientNotificationButton Grid.Column="1" />
+            </Grid>
+            <Label Grid.Row="1" x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False" />
+            <RefreshView Grid.Row="2" x:Name="MessagesRefreshView" Refreshing="OnRefreshing">
+                <CollectionView x:Name="ConversationsView" SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout Padding="12,44" Spacing="6">
+                            <Label Text="Aucune conversation" FontSize="16" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="Vos échanges apparaîtront ici dès votre première demande." Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource CompactListBorder}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnConversationTapped" CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                                <Grid ColumnDefinitions="44,*,Auto" ColumnSpacing="12">
+                                    <Grid>
+                                        <Border HeightRequest="42" WidthRequest="42" BackgroundColor="{StaticResource BlueWash}"
+                                                StrokeThickness="0" StrokeShape="RoundRectangle 21" IsVisible="{Binding ShowFallback}">
+                                            <Image Source="nav_messages_active.svg" HeightRequest="20" WidthRequest="20" />
+                                        </Border>
+                                        <Border HeightRequest="42" WidthRequest="42" BackgroundColor="White"
+                                                Stroke="{StaticResource PremiumLine}" StrokeThickness="1"
+                                                StrokeShape="RoundRectangle 21" Padding="0" IsVisible="{Binding HasProviderPhoto}">
+                                            <Image Source="{Binding ProviderPhoto}" Aspect="AspectFill" HeightRequest="42" WidthRequest="42" />
+                                        </Border>
+                                    </Grid>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                        <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding Hint}" FontSize="11" TextColor="{StaticResource ListSecondary}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding MissionNumber}" FontSize="10" TextColor="{StaticResource WeleBlue}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="2" Spacing="5" VerticalOptions="Center">
+                                        <Label Text="{Binding DateLabel}" FontSize="10" TextColor="{StaticResource ListSecondary}" HorizontalTextAlignment="End" />
+                                        <Label Text="›" FontSize="20" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
+        </Grid>
+        <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="messages" />
+    </Grid>
 </ContentPage>
