@@ -21,6 +21,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ProfileInformationPage), typeof(ProfileInformationPage));
         Routing.RegisterRoute(nameof(AddressesPage), typeof(AddressesPage));
         Routing.RegisterRoute(nameof(ReviewsPage), typeof(ReviewsPage));
+        Routing.RegisterRoute("profile-requests", typeof(RequestsPage));
         Routing.RegisterRoute(nameof(ClientNotificationsPage), typeof(ClientNotificationsPage));
         Routing.RegisterRoute(nameof(ClientSettingsPage), typeof(ClientSettingsPage));
         Routing.RegisterRoute(nameof(ProviderTrackingPage), typeof(ProviderTrackingPage));

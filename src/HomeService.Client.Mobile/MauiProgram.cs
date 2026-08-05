@@ -1,4 +1,7 @@
 using HomeService.Client.Mobile.Services;
+#if ANDROID
+using Microsoft.Maui.Handlers;
+#endif
 #if WINDOWS
 using Microsoft.Maui.Handlers;
 using Microsoft.UI.Xaml;
@@ -11,6 +14,13 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+#if ANDROID
+        EntryHandler.Mapper.AppendToMapping("BorderlessEntry", (handler, _) =>
+        {
+            handler.PlatformView.Background = null;
+            handler.PlatformView.SetPadding(0, 0, 0, 0);
+        });
+#endif
 #if WINDOWS
         EntryHandler.Mapper.AppendToMapping("BorderlessEntry", (handler, _) =>
         {

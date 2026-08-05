@@ -10,9 +10,14 @@
     <RefreshView x:Name="Refresh" Refreshing="OnRefreshing">
         <ScrollView>
             <VerticalStackLayout Padding="20,10,20,28" Spacing="16">
-                <Grid ColumnDefinitions="*,48" HeightRequest="48">
-                    <Label Text="Mes demandes" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
-                    <controls:ClientNotificationButton Grid.Column="1" />
+                <Grid ColumnDefinitions="Auto,*,48" ColumnSpacing="8" HeightRequest="48">
+                    <Button
+                        x:Name="BackButton"
+                        Style="{StaticResource BackIconButton}"
+                        IsVisible="False"
+                        Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Mes demandes" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
+                    <controls:ClientNotificationButton Grid.Column="2" />
                 </Grid>
                 <Label Text="Suivez les interventions, devis et paiements." Style="{StaticResource MutedLabel}" Margin="0,-12,0,0" />
 

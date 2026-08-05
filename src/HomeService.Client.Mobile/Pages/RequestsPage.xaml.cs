@@ -4,7 +4,7 @@ using HomeService.Contracts.Clients;
 
 namespace HomeService.Client.Mobile.Pages;
 
-public partial class RequestsPage : ContentPage
+public partial class RequestsPage : ContentPage, IQueryAttributable
 {
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
@@ -17,6 +17,12 @@ public partial class RequestsPage : ContentPage
         apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
         sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
         MissionsView.ItemsSource = missions;
+    }
+
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
+    {
+        BackButton.IsVisible = query.TryGetValue("fromProfile", out var value)
+            && string.Equals(value?.ToString(), "true", StringComparison.OrdinalIgnoreCase);
     }
 
     protected override async void OnAppearing()
@@ -139,6 +145,8 @@ public partial class RequestsPage : ContentPage
             button.BorderWidth = 0;
         }
     }
+
+    private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 
     private sealed record MissionRow(
         Guid MissionId,

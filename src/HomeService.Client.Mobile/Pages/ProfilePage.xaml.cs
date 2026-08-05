@@ -215,7 +215,8 @@ public partial class ProfilePage : ContentPage
     private async void OnInformationClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ProfileInformationPage));
     private async void OnAddressesClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(AddressesPage));
     private async void OnPaymentMethodsClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(PaymentMethodsPage));
-    private async void OnRequestsClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("//requests");
+    private async void OnRequestsClicked(object sender, EventArgs e) =>
+        await Shell.Current.GoToAsync("profile-requests?fromProfile=true");
     private async void OnReviewsClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ReviewsPage));
     private async void OnNotificationsClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ClientNotificationsPage));
     private async void OnSettingsClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ClientSettingsPage));

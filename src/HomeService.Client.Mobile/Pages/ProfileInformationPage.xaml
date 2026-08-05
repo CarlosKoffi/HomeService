@@ -1,17 +1,139 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentPage x:Class="HomeService.Client.Mobile.Pages.ProfileInformationPage" xmlns="http://schemas.microsoft.com/dotnet/2021/maui" xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml" xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls" Shell.TabBarIsVisible="False" Title="Mes informations">
- <Grid RowDefinitions="*,72" BackgroundColor="White">
-  <Grid Padding="20,16,20,20" RowDefinitions="Auto,*,Auto" RowSpacing="14">
-   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked"/><Label Grid.Column="1" Text="Mes informations" Style="{StaticResource SubpageTitleLabel}"/></Grid>
-   <ScrollView Grid.Row="1"><VerticalStackLayout Spacing="9">
-    <Label Text="Prénom" FontSize="12" FontAttributes="Bold"/><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="FirstNameEntry"/></Border>
-    <Label Text="Nom" FontSize="12" FontAttributes="Bold" Margin="0,4,0,0"/><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="LastNameEntry"/></Border>
-    <Label Text="Téléphone" FontSize="12" FontAttributes="Bold" Margin="0,4,0,0"/><Border Stroke="{StaticResource Line}" BackgroundColor="#F7F8FA" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="PhoneEntry" IsReadOnly="True"/></Border>
-    <Label Text="Email" FontSize="12" FontAttributes="Bold" Margin="0,4,0,0"/><Border Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 10" Padding="12,0"><Entry x:Name="EmailEntry" Keyboard="Email"/></Border>
-    <Label x:Name="ErrorLabel" TextColor="{StaticResource Danger}" IsVisible="False"/>
-   </VerticalStackLayout></ScrollView>
-   <Button Grid.Row="2" x:Name="SaveButton" Text="Enregistrer les modifications" Clicked="OnSaveClicked"/>
-  </Grid>
-  <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile"/>
- </Grid>
+<ContentPage
+    x:Class="HomeService.Client.Mobile.Pages.ProfileInformationPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:HomeService.Client.Mobile.Controls"
+    Shell.TabBarIsVisible="False"
+    Title="Mes informations"
+    BackgroundColor="White">
+    <Grid RowDefinitions="*,72" BackgroundColor="White">
+        <Grid Padding="20,12,20,14" RowDefinitions="Auto,*,Auto" RowSpacing="10">
+            <Grid ColumnDefinitions="40,*,40" HeightRequest="44">
+                <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
+                <Label
+                    Grid.Column="1"
+                    Text="Mes informations"
+                    Style="{StaticResource SubpageTitleLabel}"
+                    HorizontalTextAlignment="Center" />
+                <BoxView Grid.Column="2" BackgroundColor="Transparent" />
+            </Grid>
+
+            <ScrollView Grid.Row="1">
+                <VerticalStackLayout Padding="0,8,0,12" Spacing="15">
+                    <VerticalStackLayout Spacing="3" HorizontalOptions="Center">
+                        <Grid HeightRequest="110" WidthRequest="110" HorizontalOptions="Center">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnProfilePhotoTapped" />
+                            </Grid.GestureRecognizers>
+                            <Border
+                                Margin="4"
+                                BackgroundColor="#F2F6FF"
+                                Stroke="White"
+                                StrokeThickness="3"
+                                StrokeShape="RoundRectangle 51">
+                                <Border.Shadow>
+                                    <Shadow Brush="#26155EEF" Offset="0,5" Radius="13" Opacity="0.22" />
+                                </Border.Shadow>
+                                <Image
+                                    x:Name="ProfilePhotoImage"
+                                    Source="nav_profile.svg"
+                                    Aspect="AspectFill" />
+                            </Border>
+                            <Border
+                                HeightRequest="32"
+                                WidthRequest="32"
+                                HorizontalOptions="End"
+                                VerticalOptions="End"
+                                BackgroundColor="{StaticResource WeleBlue}"
+                                Stroke="White"
+                                StrokeThickness="2"
+                                StrokeShape="RoundRectangle 16">
+                                <Image
+                                    Source="profile_camera.svg"
+                                    HeightRequest="15"
+                                    WidthRequest="15"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+                        <Button
+                            x:Name="PhotoActionButton"
+                            Text="Modifier la photo"
+                            Clicked="OnChangePhotoClicked"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource WeleBlue}"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            Padding="8,0"
+                            HeightRequest="32"
+                            MinimumHeightRequest="32" />
+                        <Label
+                            x:Name="PhotoStatusLabel"
+                            IsVisible="False"
+                            FontSize="10"
+                            HorizontalTextAlignment="Center"
+                            HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Prénom" FontSize="12" FontAttributes="Bold" />
+                        <Border Style="{StaticResource ProfileFieldBorder}">
+                            <Entry x:Name="FirstNameEntry" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Nom" FontSize="12" FontAttributes="Bold" />
+                        <Border Style="{StaticResource ProfileFieldBorder}">
+                            <Entry x:Name="LastNameEntry" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Téléphone" FontSize="12" FontAttributes="Bold" />
+                        <Border Style="{StaticResource ProfileFieldBorder}">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <Entry x:Name="PhoneEntry" IsReadOnly="True" />
+                                <Image
+                                    Grid.Column="1"
+                                    Source="profile_lock.svg"
+                                    HeightRequest="15"
+                                    WidthRequest="15"
+                                    VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                        <Label
+                            Text="Non modifiable"
+                            FontSize="9"
+                            TextColor="{StaticResource MutedInk}"
+                            HorizontalOptions="End" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Email" FontSize="12" FontAttributes="Bold" />
+                        <Border Style="{StaticResource ProfileFieldBorder}">
+                            <Entry x:Name="EmailEntry" Keyboard="Email" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Label
+                        x:Name="ErrorLabel"
+                        TextColor="{StaticResource Danger}"
+                        FontSize="11"
+                        LineHeight="1.2"
+                        IsVisible="False" />
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <Button
+                Grid.Row="2"
+                x:Name="SaveButton"
+                Text="Enregistrer"
+                Clicked="OnSaveClicked"
+                HeightRequest="52"
+                MinimumHeightRequest="52" />
+        </Grid>
+        <controls:ClientBottomNavigation Grid.Row="1" ActiveTab="profile" />
+    </Grid>
 </ContentPage>
