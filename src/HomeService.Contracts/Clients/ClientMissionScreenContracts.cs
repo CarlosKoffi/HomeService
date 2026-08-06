@@ -21,7 +21,8 @@ public sealed record ClientMissionScreenPrimaryActionResponse(
     string? Code,
     string Label,
     bool IsEnabled,
-    int? AmountToPayNow);
+    int? AmountToPayNow,
+    DateTimeOffset? ExpiresAt);
 
 public sealed record ClientMissionScreenPriceResponse(
     int StartingPriceAmount,

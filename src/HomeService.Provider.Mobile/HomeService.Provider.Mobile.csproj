@@ -11,8 +11,8 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>Wélé Pro</ApplicationTitle>
     <ApplicationId>ci.wele.provider</ApplicationId>
-    <ApplicationDisplayVersion>0.4.1</ApplicationDisplayVersion>
-    <ApplicationVersion>5</ApplicationVersion>
+    <ApplicationDisplayVersion>0.4.7</ApplicationDisplayVersion>
+    <ApplicationVersion>11</ApplicationVersion>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
     <WindowsPackageType>None</WindowsPackageType>
     <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>
@@ -29,6 +29,8 @@
   <ItemGroup>
     <MauiIcon Include="Resources\AppIcon\wele_appicon.png" />
     <MauiImage Include="Resources\Images\*" />
+    <MauiImage Include="..\HomeService.Client.Mobile\Resources\Images\app_bell.svg" Link="Resources\Images\app_bell.svg" />
+    <MauiImage Include="..\HomeService.Client.Mobile\Resources\Images\chevron_right.svg" Link="Resources\Images\chevron_right.svg" />
     <MauiFont Include="..\HomeService.Client.Mobile\Resources\Fonts\PlusJakartaSans-Variable.ttf" Link="Resources\Fonts\PlusJakartaSans-Variable.ttf" Alias="PlusJakartaSans" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.14" />
     <PackageReference Include="Microsoft.Maui.Controls.Maps" Version="9.0.14" />
@@ -36,6 +38,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <PackageReference Include="Xamarin.Firebase.Analytics" Version="122.0.2.1" />
     <PackageReference Include="Xamarin.Firebase.Messaging" Version="123.4.1" />
     <GoogleServicesJson Include="google-services.json" Condition="Exists('google-services.json')" />
   </ItemGroup>

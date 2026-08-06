@@ -164,7 +164,9 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             mission.ScheduledFor,
             mission.CompanyQuotedAt,
             mission.ProviderAcceptedAt,
+            mission.CustomerPaymentExpiresAt,
             mission.CustomerConfirmedAt,
+            mission.CustomerCompletionValidationExpiresAt,
             mission.CustomerCompletionValidatedAt,
             priceRange.StartingPriceAmount,
             priceRange.MaximumPriceAmount,
@@ -232,11 +234,12 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
 
     private static ClientMissionAvailableActionsResponse BuildActions(Domain.Entities.Mission mission)
     {
-        var canAcceptQuote = mission.CustomerPaymentMethodId.HasValue
+        var paymentActionIsAvailable = mission.Status == MissionStatus.Accepted
             && mission.QuoteStatus == MissionQuoteStatus.Submitted
             && mission.CompanyQuotedAmount is > 0
-            && mission.CustomerConfirmedAt is null
-            && mission.Status is MissionStatus.Assigned or MissionStatus.Accepted;
+            && mission.CustomerConfirmedAt is null;
+        var canAcceptQuote = paymentActionIsAvailable
+            && mission.CustomerPaymentMethodId.HasValue;
         var canCancel = mission.Status is not (MissionStatus.Started or MissionStatus.Cancelled or MissionStatus.Completed or MissionStatus.Disputed or MissionStatus.Resolved);
         var canCall = mission.CanRevealContactDetails;
         var canValidateCompletion = mission.Status == MissionStatus.Completed
@@ -254,7 +257,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             canValidateCompletion,
             canRateMission,
             canOpenDispute,
-            !mission.CustomerPaymentMethodId.HasValue,
+            paymentActionIsAvailable && !mission.CustomerPaymentMethodId.HasValue,
             canAcceptQuote ? mission.CompanyQuotedAmount : null,
             BuildPrimaryAction(canAcceptQuote, canValidateCompletion, canCall, canCancel));
     }
@@ -309,7 +312,12 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             return "Mission terminee et paiement finalise.";
         }
 
-        if (status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started)
+        if (status == MissionStatus.Accepted && paymentStatus == PaymentStatus.Pending)
+        {
+            return "Le prestataire a confirme la mission. Validez le prix et payez pour lancer l'intervention.";
+        }
+
+        if (status is MissionStatus.OnTheWay or MissionStatus.Started)
         {
             return "Votre technicien est affecte. Les informations utiles sont disponibles.";
         }

@@ -3,62 +3,49 @@
     x:Class="HomeService.Provider.Mobile.Pages.MissionsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
     Title="Missions">
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="18,20,18,28" Spacing="15">
+            <VerticalStackLayout Padding="18,20,18,30" Spacing="15">
                 <Label Text="Mes missions" Style="{StaticResource ScreenTitleLabel}" />
-                <Label Text="Suivez vos interventions, de l’acceptation à la fin de mission." Style="{StaticResource MutedLabel}" />
+                <Label Text="Chaque mission est rangée selon son véritable état." Style="{StaticResource MutedLabel}" />
 
-                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13">
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13">
                     <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
                 </Border>
 
                 <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                     <HorizontalStackLayout Spacing="8">
-                        <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource WeleBlue}" StrokeShape="RoundRectangle 14" Padding="14,9"><Label Text="En cours" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" /></Border>
-                        <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="14,9"><Label Text="À venir" FontAttributes="Bold" /></Border>
-                        <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="14,9"><Label Text="Terminées" FontAttributes="Bold" /></Border>
-                        <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="14,9"><Label Text="Annulées" FontAttributes="Bold" /></Border>
+                        <Border x:Name="AvailableChip" Style="{StaticResource FilterChip}">
+                            <Label x:Name="AvailableChipLabel" Text="Disponibles" FontAttributes="Bold" FontSize="13" />
+                            <Border.GestureRecognizers><TapGestureRecognizer CommandParameter="Available" Tapped="OnFilterTapped" /></Border.GestureRecognizers>
+                        </Border>
+                        <Border x:Name="InProgressChip" Style="{StaticResource FilterChip}">
+                            <Label x:Name="InProgressChipLabel" Text="En cours" FontAttributes="Bold" FontSize="13" />
+                            <Border.GestureRecognizers><TapGestureRecognizer CommandParameter="InProgress" Tapped="OnFilterTapped" /></Border.GestureRecognizers>
+                        </Border>
+                        <Border x:Name="UpcomingChip" Style="{StaticResource FilterChip}">
+                            <Label x:Name="UpcomingChipLabel" Text="À venir" FontAttributes="Bold" FontSize="13" />
+                            <Border.GestureRecognizers><TapGestureRecognizer CommandParameter="Upcoming" Tapped="OnFilterTapped" /></Border.GestureRecognizers>
+                        </Border>
+                        <Border x:Name="CompletedChip" Style="{StaticResource FilterChip}">
+                            <Label x:Name="CompletedChipLabel" Text="Terminées" FontAttributes="Bold" FontSize="13" />
+                            <Border.GestureRecognizers><TapGestureRecognizer CommandParameter="Completed" Tapped="OnFilterTapped" /></Border.GestureRecognizers>
+                        </Border>
+                        <Border x:Name="CancelledChip" Style="{StaticResource FilterChip}">
+                            <Label x:Name="CancelledChipLabel" Text="Annulées" FontAttributes="Bold" FontSize="13" />
+                            <Border.GestureRecognizers><TapGestureRecognizer CommandParameter="Cancelled" Tapped="OnFilterTapped" /></Border.GestureRecognizers>
+                        </Border>
                     </HorizontalStackLayout>
                 </ScrollView>
 
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label x:Name="SectionTitleLabel" Text="En cours" Style="{StaticResource CardTitleLabel}" />
+                    <Label x:Name="SectionCountLabel" Grid.Column="1" Style="{StaticResource MutedLabel}" VerticalTextAlignment="Center" />
+                </Grid>
+
+                <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="False" Color="{StaticResource WeleBlue}" />
                 <VerticalStackLayout x:Name="MissionListStack" Spacing="10" />
-
-                <Border x:Name="CurrentMissionCard" Style="{StaticResource PremiumCard}" IsVisible="False">
-                    <VerticalStackLayout Spacing="9">
-                        <Grid ColumnDefinitions="*,Auto"><Label x:Name="MissionStateLabel" Text="MISSION" Style="{StaticResource EyebrowLabel}" /><Label x:Name="MissionCountdownLabel" Grid.Column="1" FontAttributes="Bold" TextColor="{StaticResource Warning}" /></Grid>
-                        <Label x:Name="MissionTitleLabel" Text="Aucune mission" Style="{StaticResource ScreenTitleLabel}" />
-                        <Label x:Name="MissionCompanyLabel" Style="{StaticResource MutedLabel}" />
-                        <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="12">
-                            <VerticalStackLayout Spacing="5"><Label x:Name="MissionLocationLabel" Style="{StaticResource BodyLabel}" /><Label x:Name="MissionCustomerLabel" Style="{StaticResource MutedLabel}" /></VerticalStackLayout>
-                        </Border>
-                        <Label x:Name="MissionDescriptionLabel" Style="{StaticResource BodyLabel}" />
-
-                        <Grid x:Name="OfferActionsGrid" ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,6,0,0">
-                            <Button x:Name="RefuseButton" Text="Refuser" Style="{StaticResource SecondaryButton}" Clicked="OnRefuseClicked" />
-                            <Button x:Name="AcceptButton" Text="Accepter" Grid.Column="1" Clicked="OnAcceptClicked" />
-                        </Grid>
-
-                        <VerticalStackLayout x:Name="FieldActionsStack" IsVisible="False" Spacing="10" Margin="0,6,0,0">
-                            <Button x:Name="VerifyArrivalButton" Text="Je suis arrivé" Clicked="OnVerifyArrivalClicked" />
-                            <Button x:Name="StartButton" Text="Démarrer la mission" Clicked="OnStartClicked" />
-                            <Button x:Name="CompleteButton" Text="Terminer la mission" Clicked="OnCompleteClicked" />
-                        </VerticalStackLayout>
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border x:Name="MissionMapCard" Style="{StaticResource PremiumCard}" IsVisible="False" Padding="0">
-                    <Grid RowDefinitions="190,Auto">
-                        <maps:Map x:Name="MissionMap" MapType="Street" IsShowingUser="True" />
-                        <Button Grid.Row="1" Margin="12" Text="Ouvrir l’itinéraire dans Google Maps" Clicked="OnOpenRouteClicked" />
-                    </Grid>
-                </Border>
-
-                <Border x:Name="ArrivalCard" Style="{StaticResource PremiumCard}" IsVisible="False">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Label Text="⌖" FontSize="22" TextColor="{StaticResource WeleBlue}" /><VerticalStackLayout Grid.Column="1" Spacing="4"><Label x:Name="ArrivalStatusLabel" Text="Arrivée non vérifiée" Style="{StaticResource CardTitleLabel}" /><Label x:Name="ArrivalDetailLabel" Style="{StaticResource MutedLabel}" /></VerticalStackLayout></Grid>
-                </Border>
             </VerticalStackLayout>
         </ScrollView>
     </RefreshView>

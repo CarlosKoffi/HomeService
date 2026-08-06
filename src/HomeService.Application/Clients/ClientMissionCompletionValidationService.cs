@@ -119,6 +119,77 @@ public sealed class ClientMissionCompletionValidationService(
         return ClientMissionCompletionValidationResult.Ok(ToResponse(mission, review.OverallRating));
     }
 
+    public async Task<int> AutoValidateExpiredAsync(
+        DateTimeOffset now,
+        int batchSize,
+        CancellationToken cancellationToken)
+    {
+        var dueMissions = await db.Missions
+            .Where(mission =>
+                mission.Status == MissionStatus.Completed
+                && mission.CustomerCompletionValidatedAt == null
+                && mission.CustomerCompletionValidationExpiresAt != null
+                && mission.CustomerCompletionValidationExpiresAt <= now
+                && mission.CompanyId != null
+                && mission.ProviderId != null)
+            .OrderBy(mission => mission.CustomerCompletionValidationExpiresAt)
+            .Take(Math.Clamp(batchSize, 1, 200))
+            .ToListAsync(cancellationToken);
+
+        var validatedCount = 0;
+        foreach (var mission in dueMissions)
+        {
+            mission.ValidateCompletionByCustomer(now);
+
+            var completionMilestone = await db.MissionPaymentMilestones
+                .FirstOrDefaultAsync(item =>
+                    item.MissionId == mission.Id
+                    && item.Trigger == MissionPaymentMilestoneTrigger.MissionCompleted,
+                    cancellationToken);
+            if (completionMilestone is not null && completionMilestone.Status != MissionPaymentMilestoneStatus.Paid)
+            {
+                completionMilestone.MarkPaid($"AUTO-COMPLETION-{mission.Id:N}");
+            }
+
+            db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+                mission.CompanyId!.Value,
+                "mission",
+                "Mission validee automatiquement",
+                $"Le delai de validation client de la mission {mission.MissionNumber} a expire. Le paiement entreprise a ete libere automatiquement.",
+                "green",
+                nameof(Mission),
+                mission.Id));
+
+            companyNotifications.AddForMission(
+                mission,
+                "MissionCompletionAutoValidated",
+                $"Mission {mission.MissionNumber} validee automatiquement",
+                $"Le delai client a expire. Le reversement de {mission.CompanyPayoutAmount:N0} {mission.Currency} a ete libere automatiquement.",
+                "success",
+                $"missions/{mission.Id}");
+
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Provider,
+                mission.ProviderId!.Value,
+                "Mission validee automatiquement",
+                $"Le delai client de la mission {mission.MissionNumber} a expire. La mission est maintenant validee.",
+                nameof(Mission),
+                mission.Id,
+                null,
+                cancellationToken,
+                saveChanges: false);
+
+            validatedCount++;
+        }
+
+        if (validatedCount > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return validatedCount;
+    }
+
     private static ValidateClientMissionCompletionResponse ToResponse(Mission mission, int overallRating)
     {
         return new ValidateClientMissionCompletionResponse(

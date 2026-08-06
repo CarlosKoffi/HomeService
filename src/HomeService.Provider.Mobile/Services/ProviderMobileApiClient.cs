@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using HomeService.Contracts.Clients;
 using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
 using HomeService.Contracts.ProviderPortal;
@@ -112,6 +113,36 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             "api/provider-portal/mobile/profile",
             bearerToken,
             request,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<IReadOnlyList<ClientAddressSuggestionResponse>>> AutocompleteAddressAsync(
+        string bearerToken,
+        string query,
+        string sessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        var path = $"api/provider-portal/mobile/addresses/autocomplete?query={Uri.EscapeDataString(query)}&sessionToken={Uri.EscapeDataString(sessionToken)}";
+        return SendAsync<IReadOnlyList<ClientAddressSuggestionResponse>>(
+            HttpMethod.Get,
+            path,
+            bearerToken,
+            body: null,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<ClientPlaceDetailsResponse>> GetPlaceDetailsAsync(
+        string bearerToken,
+        string placeId,
+        string sessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        var path = $"api/provider-portal/mobile/addresses/places/{Uri.EscapeDataString(placeId)}?sessionToken={Uri.EscapeDataString(sessionToken)}";
+        return SendAsync<ClientPlaceDetailsResponse>(
+            HttpMethod.Get,
+            path,
+            bearerToken,
+            body: null,
             cancellationToken);
     }
 

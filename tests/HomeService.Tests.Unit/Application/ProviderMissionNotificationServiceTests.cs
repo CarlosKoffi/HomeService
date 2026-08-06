@@ -22,12 +22,12 @@ public sealed class ProviderMissionNotificationServiceTests
             "customer-token",
             "Pixel test"));
         db.NotificationTemplates.Add(new NotificationTemplate(
-            "MissionTechnicianAssigned",
+            "MissionPaymentRequired",
             NotificationTemplateChannel.MobilePush,
-            "Technicien affecte",
+            "Paiement mission requis",
             "Customer",
-            "{NomTechnicien} arrive bientot",
-            "Votre technicien {NomTechnicien} vient de prendre la mission {NumeroMission}.",
+            "Paiement requis pour {NumeroMission}",
+            "{NomTechnicien} a accepte. Payez {Montant} pour lancer la mission.",
             NotificationTemplateCatalog.CommonVariables));
         await db.SaveChangesAsync();
 
@@ -44,12 +44,14 @@ public sealed class ProviderMissionNotificationServiceTests
         var push = await db.NotificationOutboxMessages.SingleAsync();
         Assert.Equal(NotificationChannel.MobilePush, push.Channel);
         Assert.Equal("customer-token", push.Recipient);
-        Assert.Equal($"{scenario.Provider.FullName} arrive bientot", push.Subject);
-        Assert.Contains(scenario.Mission.MissionNumber, push.Body);
+        Assert.Equal($"Paiement requis pour {scenario.Mission.MissionNumber}", push.Subject);
+        Assert.Contains(scenario.Provider.FullName, push.Body);
+        Assert.Contains("7", push.Body);
+        Assert.Contains("mission_payment_required", push.MetadataJson);
     }
 
     [Fact]
-    public async Task NotifyArrivedAsync_UsesCustomerMobileTemplate()
+    public async Task NotifyArrivedAsync_DoesNotNotifyCustomerWithoutRequiredAction()
     {
         await using var db = CreateDbContext();
         var scenario = await SeedScenarioAsync(db);
@@ -74,10 +76,7 @@ public sealed class ProviderMissionNotificationServiceTests
         await service.NotifyArrivedAsync(scenario.Mission, scenario.Provider, scenario.Assignment, CancellationToken.None);
         await db.SaveChangesAsync();
 
-        var push = await db.NotificationOutboxMessages.SingleAsync();
-        Assert.Equal("Arrivee " + scenario.Mission.MissionNumber, push.Subject);
-        Assert.Contains("Cocody Angre", push.Body);
-        Assert.Contains("mission_technician_arrived", push.MetadataJson);
+        Assert.Empty(await db.NotificationOutboxMessages.ToListAsync());
     }
 
     private static ProviderMissionNotificationService CreateService(HomeServiceDbContext db)

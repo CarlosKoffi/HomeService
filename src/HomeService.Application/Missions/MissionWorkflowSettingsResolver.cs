@@ -11,6 +11,7 @@ public static class MissionWorkflowSettingsResolver
     public const string ProviderAcceptanceMinutes = "provider_acceptance_minutes";
     public const string ScheduledProviderAcceptanceMinutes = "scheduled_provider_acceptance_minutes";
     public const string CustomerQuoteValidityMinutes = "customer_quote_validity_minutes";
+    public const string CustomerCompletionValidationMinutes = "customer_completion_validation_minutes";
     public const string UrgentMissionsEnabled = "urgent_missions_enabled";
     public const string ProviderReeligibilityRounds = "provider_reeligibility_rounds";
 

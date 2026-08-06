@@ -30,7 +30,7 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
             ? mission.MissionNumber
             : $"{mission.MissionNumber} - {mission.ServiceAddress}";
         var statusLabel = BuildStatusLabel(mission);
-        var primaryAction = BuildPrimaryAction(mission.Actions);
+        var primaryAction = BuildPrimaryAction(mission);
 
         return new ClientMissionScreenResponse(
             mission.MissionId,
@@ -81,16 +81,17 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
             mission.Photos);
     }
 
-    private static ClientMissionScreenPrimaryActionResponse BuildPrimaryAction(ClientMissionAvailableActionsResponse actions)
+    private static ClientMissionScreenPrimaryActionResponse BuildPrimaryAction(ClientMissionStatusResponse mission)
     {
+        var actions = mission.Actions;
         var code = actions.PrimaryAction;
         return code switch
         {
-            "AcceptQuote" => new ClientMissionScreenPrimaryActionResponse(code, "Accepter et payer", actions.CanAcceptQuote, actions.AmountToPayNow),
-            "ValidateCompletion" => new ClientMissionScreenPrimaryActionResponse(code, "Valider la fin", actions.CanValidateCompletion, null),
-            "CallProvider" => new ClientMissionScreenPrimaryActionResponse(code, "Appeler le prestataire", actions.CanCallProvider, null),
-            "CancelMission" => new ClientMissionScreenPrimaryActionResponse(code, "Annuler la demande", actions.CanCancel, null),
-            _ => new ClientMissionScreenPrimaryActionResponse(code, "Suivre la mission", code is not null, actions.AmountToPayNow)
+            "AcceptQuote" => new ClientMissionScreenPrimaryActionResponse(code, "Accepter et payer", actions.CanAcceptQuote, actions.AmountToPayNow, mission.CustomerPaymentExpiresAt),
+            "ValidateCompletion" => new ClientMissionScreenPrimaryActionResponse(code, "Valider la fin", actions.CanValidateCompletion, null, mission.CustomerCompletionValidationExpiresAt),
+            "CallProvider" => new ClientMissionScreenPrimaryActionResponse(code, "Appeler le prestataire", actions.CanCallProvider, null, null),
+            "CancelMission" => new ClientMissionScreenPrimaryActionResponse(code, "Annuler la demande", actions.CanCancel, null, null),
+            _ => new ClientMissionScreenPrimaryActionResponse(code, "Suivre la mission", code is not null, actions.AmountToPayNow, null)
         };
     }
 
@@ -124,6 +125,16 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
         if (mission.ContactDetailsReleased)
         {
             return ("Confirmee", "success");
+        }
+
+        if (mission.Status == "Accepted" && mission.PaymentStatus == "Pending")
+        {
+            return ("Paiement requis", "warning");
+        }
+
+        if (mission.AssignedProvider is not null && mission.ProviderAcceptedAt is null)
+        {
+            return ("Confirmation prestataire", "info");
         }
 
         if (mission.QuoteStatus == "Submitted")
@@ -168,17 +179,23 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
                 mission.QuoteStatus is "Submitted" or "Accepted" ? "done" : "current",
                 mission.CompanyQuotedAt),
             Step(
-                "payment",
-                "Paiement",
-                "Le montant est bloque avant l'intervention.",
-                mission.PaymentStatus is "Authorized" or "Paid" ? "done" : mission.QuoteStatus == "Submitted" ? "current" : "pending",
-                mission.CustomerConfirmedAt),
-            Step(
                 "provider",
                 "Technicien",
                 mission.AssignedProvider is null ? "Aucun technicien affecte pour le moment." : $"{mission.AssignedProvider.FullName} est affecte.",
                 mission.ProviderAcceptedAt is not null ? "done" : mission.AssignedProvider is not null ? "current" : "pending",
                 mission.ProviderAcceptedAt),
+            Step(
+                "payment",
+                "Paiement",
+                mission.ProviderAcceptedAt is null
+                    ? "Le paiement sera disponible apres la confirmation du technicien."
+                    : "Validez le prix et payez pour lancer l'intervention.",
+                mission.PaymentStatus is "Authorized" or "Paid"
+                    ? "done"
+                    : mission.ProviderAcceptedAt is not null && mission.Status == "Accepted"
+                        ? "current"
+                        : "pending",
+                mission.CustomerConfirmedAt),
             Step(
                 "completion",
                 "Fin de mission",

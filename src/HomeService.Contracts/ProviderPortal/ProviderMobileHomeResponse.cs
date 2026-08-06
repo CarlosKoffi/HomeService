@@ -26,6 +26,7 @@ public sealed record ProviderMobileMissionSummaryResponse(
     string MissionNumber,
     string ServiceName,
     string ServiceIconName,
+    string? PrestationName,
     string CompanyName,
     string LocationLabel,
     DateTimeOffset? ScheduledFor,

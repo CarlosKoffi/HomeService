@@ -141,6 +141,26 @@ public sealed class ClientMissionCompletionValidationServiceTests
         Assert.Empty(db.MissionReviews);
     }
 
+    [Fact]
+    public async Task AutoValidateExpiredAsync_WhenDeadlineElapsed_ReleasesPayoutWithoutCreatingReview()
+    {
+        await using var db = CreateDbContext();
+        var now = DateTimeOffset.UtcNow;
+        var scenario = await SeedCompletedMissionAsync(db, now.AddSeconds(-1));
+        var sut = CreateService(db);
+
+        var validatedCount = await sut.AutoValidateExpiredAsync(now, 20, CancellationToken.None);
+
+        Assert.Equal(1, validatedCount);
+        Assert.NotNull(scenario.Mission.CustomerCompletionValidatedAt);
+        Assert.Null(scenario.Mission.CustomerCompletionValidationExpiresAt);
+        Assert.Equal(PaymentStatus.Paid, scenario.Mission.PaymentStatus);
+        Assert.Empty(db.MissionReviews);
+        var milestone = await db.MissionPaymentMilestones.SingleAsync();
+        Assert.Equal(MissionPaymentMilestoneStatus.Paid, milestone.Status);
+        Assert.Equal($"AUTO-COMPLETION-{scenario.Mission.Id:N}", milestone.ExternalPaymentReference);
+    }
+
     private static ValidateClientMissionCompletionRequest ValidRequest(string phoneNumber)
     {
         return new ValidateClientMissionCompletionRequest(
@@ -154,7 +174,9 @@ public sealed class ClientMissionCompletionValidationServiceTests
             PayoutReference: "PAYOUT-001");
     }
 
-    private static async Task<CompletionScenario> SeedCompletedMissionAsync(HomeServiceDbContext db)
+    private static async Task<CompletionScenario> SeedCompletedMissionAsync(
+        HomeServiceDbContext db,
+        DateTimeOffset? completionValidationExpiresAt = null)
     {
         var customer = new CustomerProfile("Aya", "Kone", "+2250700000000");
         var company = new Company("wélé Services", "+2250701111111", "ops@wele.ci");
@@ -181,7 +203,7 @@ public sealed class ClientMissionCompletionValidationServiceTests
         mission.MarkProviderAccepted(provider.Id, company.Id);
         mission.ConfirmByCustomer(3_000, 0, 1500);
         mission.Start(provider.Id, company.Id);
-        mission.Complete(90);
+        mission.Complete(90, completionValidationExpiresAt);
 
         db.Customers.Add(customer);
         db.Companies.Add(company);

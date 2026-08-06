@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Company.Mobile.Pages.ProvidersPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False">
+    <Grid RowDefinitions="Auto,*" Padding="20,20,20,0" RowSpacing="16">
+        <VerticalStackLayout Spacing="3">
+            <Label Text="ÉQUIPE" Style="{StaticResource Eyebrow}" />
+            <Label Text="Mes prestataires" Style="{StaticResource ScreenTitle}" />
+            <Label Text="Disponibilité, mission en cours et contact rapide." Style="{StaticResource Muted}" />
+        </VerticalStackLayout>
+        <RefreshView x:Name="RefreshHost" Grid.Row="1" Refreshing="OnRefreshing">
+            <CollectionView x:Name="ProvidersView" SelectionMode="None" EmptyView="Aucun prestataire rattaché à cette entreprise.">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource PremiumCard}" Margin="0,0,0,11">
+                            <VerticalStackLayout Spacing="12">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <Border WidthRequest="50" HeightRequest="50" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 25">
+                                        <Image Source="icon_user.svg" WidthRequest="25" HeightRequest="25" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                        <Label Text="{Binding FullName}" Style="{StaticResource CardTitle}" />
+                                        <Label Text="{Binding ServiceLabel}" Style="{StaticResource Muted}" />
+                                        <Label Text="{Binding MissionLabel}" Style="{StaticResource Muted}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="2" Text="{Binding AvailabilityLabel}" FontSize="11" FontAttributes="Bold" TextColor="{Binding AvailabilityColor}" VerticalOptions="Start" />
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Text="Appeler" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding .}" Clicked="OnCallClicked" />
+                                    <Button Grid.Column="1" Text="Message" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding .}" Clicked="OnMessageClicked" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

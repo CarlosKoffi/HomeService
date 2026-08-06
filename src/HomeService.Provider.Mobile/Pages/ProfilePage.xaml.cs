@@ -21,9 +21,18 @@ public partial class ProfilePage : ContentPage
     private async Task LoadProfileAsync()
     {
         var token = sessionService is null ? null : await sessionService.GetAccessTokenAsync();
-        if (string.IsNullOrWhiteSpace(token) || apiClient is null) return;
+        MessageBanner.IsVisible = false;
+        if (string.IsNullOrWhiteSpace(token) || apiClient is null)
+        {
+            ShowMessage("Votre session a expiré. Reconnectez-vous pour consulter le profil.");
+            return;
+        }
         var result = await apiClient.GetProfileAsync(token);
-        if (result.Response is null) return;
+        if (!result.IsSuccess || result.Response is null)
+        {
+            ShowMessage(result.ErrorMessage ?? "Impossible de charger le profil depuis l’API.");
+            return;
+        }
 
         var profile = result.Response;
         FullNameLabel.Text = profile.FullName;
@@ -49,4 +58,11 @@ public partial class ProfilePage : ContentPage
     private async void OnServicesClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(ServicesPage));
     private async void OnPortfolioClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(PortfolioPage));
     private async void OnSettingsClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync(nameof(SettingsPage));
+    private async void OnPhotoTapped(object? sender, TappedEventArgs e) => await Shell.Current.GoToAsync(nameof(ProfileDetailsPage));
+    private async void OnDetailsTapped(object? sender, TappedEventArgs e) => await Shell.Current.GoToAsync(nameof(ProfileDetailsPage));
+    private async void OnDocumentsTapped(object? sender, TappedEventArgs e) => await Shell.Current.GoToAsync(nameof(DocumentsPage));
+    private async void OnServicesTapped(object? sender, TappedEventArgs e) => await Shell.Current.GoToAsync(nameof(ServicesPage));
+    private async void OnPortfolioTapped(object? sender, TappedEventArgs e) => await Shell.Current.GoToAsync(nameof(PortfolioPage));
+    private async void OnSettingsTapped(object? sender, TappedEventArgs e) => await Shell.Current.GoToAsync(nameof(SettingsPage));
+    private void ShowMessage(string message) { MessageLabel.Text = message; MessageBanner.IsVisible = true; }
 }

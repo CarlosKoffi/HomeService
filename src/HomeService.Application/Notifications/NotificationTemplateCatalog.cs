@@ -67,6 +67,7 @@ public static class NotificationTemplateCatalog
         Customer("MissionCompanyAnalyzing", "Entreprise analyse demande", "Analyse en cours", "{NomEntreprise} analyse votre demande {NumeroMission}."),
         Customer("MissionQuoteSentToCustomer", "Devis mission envoye au client", "Devis disponible", "Votre devis pour {Service} est disponible."),
         Customer("MissionQuoteExpired", "Devis expire client", "Devis expire", "Le devis de la mission {NumeroMission} a expire."),
+        Customer("MissionPaymentRequired", "Paiement mission requis", "Votre paiement est attendu", "{NomTechnicien} a accepte la mission {NumeroMission}. Validez le prix de {Montant} et payez pour lancer l'intervention."),
         Customer("MissionQuoteAccepted", "Paiement client recu", "Paiement recu", "Votre paiement pour la mission {NumeroMission} est confirme."),
         Customer("MissionCommissionPaid", "Commission payee client", "Paiement initial confirme", "Votre paiement initial pour {NumeroMission} est confirme."),
         Customer("MissionStartPaymentReceived", "Paiement demarrage recu", "Paiement demarrage confirme", "Le paiement de demarrage pour {NumeroMission} est confirme."),

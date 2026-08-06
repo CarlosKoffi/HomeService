@@ -28,6 +28,46 @@ public sealed class ProviderProfileTests
     }
 
     [Fact]
+    public void UpdateMobileProfile_WithGoogleAddress_StoresAddressAndMissionCoordinates()
+    {
+        var provider = CreateProvider();
+
+        provider.UpdateMobileProfile(
+            "Awa",
+            "Kone",
+            "awa.kone@kaza.ci",
+            "Rue des Jardins, Cocody, Abidjan",
+            12,
+            5.360240m,
+            -3.984520m);
+
+        Assert.Equal("Rue des Jardins, Cocody, Abidjan", provider.Address);
+        Assert.Equal(5.360240m, provider.MissionLatitude);
+        Assert.Equal(-3.984520m, provider.MissionLongitude);
+        Assert.Equal(12, provider.MissionRadiusKm);
+    }
+
+    [Fact]
+    public void UpdateMobileProfile_WithIncompleteCoordinates_ThrowsAndKeepsExistingAddress()
+    {
+        var provider = CreateProvider();
+
+        var exception = Assert.Throws<ArgumentException>(() => provider.UpdateMobileProfile(
+            "Awa",
+            "Kone",
+            "awa.kone@kaza.ci",
+            "Adresse non vérifiée",
+            5,
+            5.360240m,
+            null));
+
+        Assert.Contains("Google", exception.Message);
+        Assert.Equal("Cocody", provider.Address);
+        Assert.Equal(5.348850m, provider.MissionLatitude);
+        Assert.Equal(-4.003150m, provider.MissionLongitude);
+    }
+
+    [Fact]
     public void SuspendByCompany_ClearsAvailability()
     {
         var provider = CreateApprovedAvailableProvider();

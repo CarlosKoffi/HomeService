@@ -40,20 +40,32 @@ public partial class PaymentCheckoutPage : ContentPage
         selected = null;
 
         var missionResult = await api.GetMissionAsync(missionId);
-        var paymentResult = await api.GetPaymentMethodsAsync();
         if (!missionResult.IsSuccess || missionResult.Response is null)
         {
             ShowError(missionResult.ErrorMessage);
             return;
         }
 
+        var mission = missionResult.Response;
+        var paymentWindowIsOpen = mission.Status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            && mission.QuoteStatus.Equals("Submitted", StringComparison.OrdinalIgnoreCase)
+            && mission.PaymentStatus.Equals("Pending", StringComparison.OrdinalIgnoreCase)
+            && mission.CustomerConfirmedAt is null
+            && mission.CompanyQuotedAmount is > 0;
+        if (!paymentWindowIsOpen)
+        {
+            PayButton.IsEnabled = false;
+            ShowError("Le paiement sera disponible lorsque le prestataire aura accepté la mission.");
+            return;
+        }
+
+        var paymentResult = await api.GetPaymentMethodsAsync();
         if (!paymentResult.IsSuccess || paymentResult.Response is null)
         {
             ShowError(paymentResult.ErrorMessage);
             return;
         }
 
-        var mission = missionResult.Response;
         currentMethodId = mission.CustomerPaymentMethodId;
         var amount = mission.Actions.AmountToPayNow
             ?? mission.CompanyQuotedAmount

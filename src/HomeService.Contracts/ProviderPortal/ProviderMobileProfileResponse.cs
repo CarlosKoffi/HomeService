@@ -14,6 +14,8 @@ public sealed record ProviderMobileProfileResponse(
     bool IsAvailable,
     int MissionRadiusKm,
     string Address,
+    decimal? MissionLatitude,
+    decimal? MissionLongitude,
     string? ProfilePhotoUrl,
     bool CanViewPrices,
     ProviderMobileProfileCompletionResponse? ProfileCompletion,
@@ -71,4 +73,6 @@ public sealed record UpdateProviderMobileProfileRequest(
     string LastName,
     string? Email,
     string Address,
-    int MissionRadiusKm);
+    int MissionRadiusKm,
+    decimal? MissionLatitude = null,
+    decimal? MissionLongitude = null);

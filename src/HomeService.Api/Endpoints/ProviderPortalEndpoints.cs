@@ -1,12 +1,14 @@
 using HomeService.Api.Auditing;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
+using HomeService.Application.Clients;
 using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Application.ProviderPortal;
 using HomeService.Application.Security;
 using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
+using HomeService.Contracts.Clients;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -172,6 +174,7 @@ public static class ProviderPortalEndpoints
                 .AsNoTracking()
                 .Include(assignment => assignment.Company)
                 .Include(assignment => assignment.Mission)
+                    .ThenInclude(mission => mission!.ServicePrestation)
                 .Where(assignment =>
                     assignment.ProviderId == provider.Id
                     && assignment.Status != ProviderMissionAssignmentStatus.Refused
@@ -328,6 +331,7 @@ public static class ProviderPortalEndpoints
                 .AsNoTracking()
                 .Include(assignment => assignment.Company)
                 .Include(assignment => assignment.Mission)
+                    .ThenInclude(mission => mission!.ServicePrestation)
                 .Where(assignment => assignment.ProviderId == session.ProviderId);
 
             if (from is not null)
@@ -478,6 +482,50 @@ public static class ProviderPortalEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
 
+        group.MapGet("/mobile/addresses/autocomplete", async (
+            string query,
+            string? sessionToken,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            IAddressAutocompleteService autocompleteService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return query.Trim().Length < 3
+                ? Results.Ok(Array.Empty<ClientAddressSuggestionResponse>())
+                : Results.Ok(await autocompleteService.SearchAsync(query, sessionToken, cancellationToken));
+        })
+        .WithName("AutocompleteProviderMobileAddress")
+        .Produces<IReadOnlyList<ClientAddressSuggestionResponse>>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/mobile/addresses/places/{placeId}", async (
+            string placeId,
+            string? sessionToken,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            IAddressAutocompleteService autocompleteService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var details = await autocompleteService.GetDetailsAsync(placeId, sessionToken, cancellationToken);
+            return details is null ? Results.NotFound() : Results.Ok(details);
+        })
+        .WithName("GetProviderMobilePlaceDetails")
+        .Produces<ClientPlaceDetailsResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapPut("/mobile/profile", async (
             UpdateProviderMobileProfileRequest request,
             HttpRequest httpRequest,
@@ -497,7 +545,9 @@ public static class ProviderPortalEndpoints
                 session.Provider.LastName,
                 session.Provider.Email,
                 session.Provider.Address,
-                session.Provider.MissionRadiusKm
+                session.Provider.MissionRadiusKm,
+                session.Provider.MissionLatitude,
+                session.Provider.MissionLongitude
             };
             try
             {
@@ -506,7 +556,9 @@ public static class ProviderPortalEndpoints
                     request.LastName,
                     request.Email,
                     request.Address,
-                    request.MissionRadiusKm);
+                    request.MissionRadiusKm,
+                    request.MissionLatitude,
+                    request.MissionLongitude);
             }
             catch (ArgumentException exception)
             {
@@ -1002,6 +1054,7 @@ public static class ProviderPortalEndpoints
             HttpRequest httpRequest,
             IAppDbContext db,
             ProviderMissionWorkflowService workflow,
+            ProviderMissionNotificationService notifications,
             CancellationToken cancellationToken) =>
         {
             var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -1022,7 +1075,17 @@ public static class ProviderPortalEndpoints
                 return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
             }
 
-            var result = workflow.AcceptMission(session.Provider, assignment, request);
+            var previousStatus = assignment.Status;
+            var customerPaymentWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
+                db,
+                MissionWorkflowSettingsResolver.CustomerQuoteValidityMinutes,
+                30,
+                cancellationToken);
+            var result = workflow.AcceptMission(
+                session.Provider,
+                assignment,
+                request,
+                DateTimeOffset.UtcNow.Add(customerPaymentWindow));
             if (result.Status != ProviderMissionOperationStatus.Ok)
             {
                 return ToProviderMissionHttpResult(result);
@@ -1048,6 +1111,16 @@ public static class ProviderPortalEndpoints
                     assignment.Mission.ProviderAcceptedAt,
                     assignment.Mission.ContactDetailsReleasedAt
                 });
+
+            if (previousStatus != ProviderMissionAssignmentStatus.Accepted)
+            {
+                await notifications.NotifyAcceptedAsync(
+                    assignment.Mission,
+                    session.Provider,
+                    assignment,
+                    cancellationToken);
+            }
+
             await db.SaveChangesAsync(cancellationToken);
             return ToProviderMissionHttpResult(result);
         })
@@ -1356,7 +1429,16 @@ public static class ProviderPortalEndpoints
                 return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
             }
 
-            var result = workflow.CompleteMission(session.Provider, assignment, request);
+            var customerValidationWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
+                db,
+                MissionWorkflowSettingsResolver.CustomerCompletionValidationMinutes,
+                120,
+                cancellationToken);
+            var result = workflow.CompleteMission(
+                session.Provider,
+                assignment,
+                request,
+                DateTimeOffset.UtcNow.Add(customerValidationWindow));
             if (result.Status != ProviderMissionOperationStatus.Ok)
             {
                 return ToProviderMissionHttpResult(result);
@@ -1426,7 +1508,16 @@ public static class ProviderPortalEndpoints
         }
 
         var previousStatus = assignment.Status;
-        var result = workflow.AcceptMission(session.Provider, assignment, request);
+        var customerPaymentWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
+            db,
+            MissionWorkflowSettingsResolver.CustomerQuoteValidityMinutes,
+            30,
+            cancellationToken);
+        var result = workflow.AcceptMission(
+            session.Provider,
+            assignment,
+            request,
+            DateTimeOffset.UtcNow.Add(customerPaymentWindow));
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
             return ToProviderMissionHttpResult(result);
@@ -1778,7 +1869,16 @@ public static class ProviderPortalEndpoints
         }
 
         var previousStatus = assignment.Status;
-        var result = workflow.CompleteMission(session.Provider, assignment, request);
+        var customerValidationWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
+            db,
+            MissionWorkflowSettingsResolver.CustomerCompletionValidationMinutes,
+            120,
+            cancellationToken);
+        var result = workflow.CompleteMission(
+            session.Provider,
+            assignment,
+            request,
+            DateTimeOffset.UtcNow.Add(customerValidationWindow));
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
             return ToProviderMissionHttpResult(result);
@@ -1899,6 +1999,7 @@ public static class ProviderPortalEndpoints
             assignment.Mission.MissionNumber,
             service?.Name ?? "Service",
             service?.IconName ?? "sparkles",
+            assignment.Mission.ServicePrestation?.Name,
             assignment.Company?.Name ?? "Entreprise",
             BuildLocationLabel(assignment.Mission.ServiceAddress),
             assignment.Mission.ScheduledFor,

@@ -25,4 +25,7 @@ public sealed record CompanyPortalMissionResponse(
     int? ActualDurationMinutes = null,
     int? CustomerRating = null,
     string? CancellationReason = null,
-    int PlatformCommissionAmount = 0);
+    int PlatformCommissionAmount = 0,
+    DateTimeOffset? CompanyAssignmentExpiresAt = null,
+    decimal? ServiceLatitude = null,
+    decimal? ServiceLongitude = null);

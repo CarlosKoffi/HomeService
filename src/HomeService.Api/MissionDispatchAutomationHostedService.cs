@@ -1,4 +1,5 @@
 using HomeService.Application.Missions;
+using HomeService.Application.Clients;
 
 namespace HomeService.Api;
 
@@ -36,6 +37,8 @@ public sealed class MissionDispatchAutomationHostedService(
             using var scope = scopeFactory.CreateScope();
             var dispatchService = scope.ServiceProvider.GetRequiredService<MissionDispatchService>();
             var assignmentExpirationService = scope.ServiceProvider.GetRequiredService<ProviderAssignmentExpirationService>();
+            var clientConfirmationService = scope.ServiceProvider.GetRequiredService<ClientMissionConfirmationService>();
+            var clientCompletionService = scope.ServiceProvider.GetRequiredService<ClientMissionCompletionValidationService>();
             var now = DateTimeOffset.UtcNow;
             var recoveredRecentCount = 0;
             if (startupRecoveryPending)
@@ -60,17 +63,32 @@ public sealed class MissionDispatchAutomationHostedService(
                 now,
                 GetBatchSize(),
                 stoppingToken);
+            var autoConfirmedCount = await clientConfirmationService.AutoConfirmExpiredAsync(
+                now,
+                GetBatchSize(),
+                stoppingToken);
+            var autoValidatedCount = await clientCompletionService.AutoValidateExpiredAsync(
+                now,
+                GetBatchSize(),
+                stoppingToken);
 
-            if (recoveredRecentCount > 0 || recoveredMissionCount > 0 || result.MissionCount > 0 || assignmentResult.ExpiredAssignmentCount > 0)
+            if (recoveredRecentCount > 0
+                || recoveredMissionCount > 0
+                || result.MissionCount > 0
+                || assignmentResult.ExpiredAssignmentCount > 0
+                || autoConfirmedCount > 0
+                || autoValidatedCount > 0)
             {
                 logger.LogInformation(
-                    "Mission dispatch automation repaired {RecoveredRecentCount} recent stalled missions, recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers and expired {AssignmentCount} provider assignments.",
+                    "Mission dispatch automation repaired {RecoveredRecentCount} recent stalled missions, recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers, expired {AssignmentCount} provider assignments, auto-confirmed {AutoConfirmedCount} client payments and auto-validated {AutoValidatedCount} completed missions.",
                     recoveredRecentCount,
                     recoveredMissionCount,
                     result.MissionCount,
                     result.ExpiredOfferCount,
                     result.CreatedOfferCount,
-                    assignmentResult.ExpiredAssignmentCount);
+                    assignmentResult.ExpiredAssignmentCount,
+                    autoConfirmedCount,
+                    autoValidatedCount);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

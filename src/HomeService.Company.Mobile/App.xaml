@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Application
+    x:Class="HomeService.Company.Mobile.App"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Application.Resources>
+        <Color x:Key="Ink">#0F172A</Color>
+        <Color x:Key="MutedInk">#667085</Color>
+        <Color x:Key="WeleBlue">#155EEF</Color>
+        <Color x:Key="Success">#16B364</Color>
+        <Color x:Key="Warning">#F59E0B</Color>
+        <Color x:Key="Danger">#DC2626</Color>
+        <Color x:Key="BlueWash">#EEF4FF</Color>
+        <Color x:Key="Line">#DCE8FF</Color>
+
+        <Style TargetType="ContentPage">
+            <Setter Property="BackgroundColor" Value="White" />
+        </Style>
+        <Style TargetType="Shell">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="ForegroundColor" Value="{StaticResource Ink}" />
+            <Setter Property="TabBarBackgroundColor" Value="White" />
+            <Setter Property="TabBarForegroundColor" Value="{StaticResource WeleBlue}" />
+            <Setter Property="TabBarUnselectedColor" Value="{StaticResource MutedInk}" />
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+        </Style>
+        <Style x:Key="ScreenTitle" TargetType="Label">
+            <Setter Property="FontSize" Value="25" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+        <Style x:Key="CardTitle" TargetType="Label">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+        <Style x:Key="Muted" TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor" Value="{StaticResource MutedInk}" />
+            <Setter Property="LineHeight" Value="1.25" />
+        </Style>
+        <Style x:Key="Eyebrow" TargetType="Label">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="CharacterSpacing" Value="1" />
+            <Setter Property="TextColor" Value="{StaticResource WeleBlue}" />
+        </Style>
+        <Style x:Key="PremiumCard" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="Stroke" Value="{StaticResource Line}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 18" />
+            <Setter Property="Padding" Value="15" />
+            <Setter Property="Shadow">
+                <Setter.Value><Shadow Brush="#18155EEF" Offset="0,4" Radius="12" Opacity="0.14" /></Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="Entry">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource MutedInk}" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="MinimumHeightRequest" Value="52" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="PlusJakartaSans" />
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="MinimumHeightRequest" Value="50" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="BackgroundColor" Value="{StaticResource WeleBlue}" />
+            <Setter Property="TextColor" Value="White" />
+        </Style>
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="TextColor" Value="{StaticResource Ink}" />
+            <Setter Property="BorderColor" Value="{StaticResource Line}" />
+            <Setter Property="BorderWidth" Value="1" />
+        </Style>
+        <Style TargetType="ImageButton">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="HeightRequest" Value="42" />
+            <Setter Property="WidthRequest" Value="42" />
+        </Style>
+    </Application.Resources>
+</Application>

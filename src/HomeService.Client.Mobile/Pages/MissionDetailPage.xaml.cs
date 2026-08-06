@@ -2,13 +2,14 @@ using HomeService.Client.Mobile.Services;
 using HomeService.Contracts.Clients;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using Microsoft.Maui.ApplicationModel;
 
 namespace HomeService.Client.Mobile.Pages;
 
 [QueryProperty(nameof(MissionId), "missionId")]
 public partial class MissionDetailPage : ContentPage
 {
-    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(15);
     private readonly ClientMobileApiClient apiClient;
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<AdditionalQuoteRow> additionalQuotes = [];
@@ -19,6 +20,7 @@ public partial class MissionDetailPage : ContentPage
     private string? currentProviderPhoneNumber;
     private ClientMissionProviderResponse? currentTrackingProvider;
     private CancellationTokenSource? autoRefreshCancellation;
+    private CancellationTokenSource? actionCountdownCancellation;
     private string? loadedProviderPhotoPath;
     private bool isOpeningChat;
 
@@ -88,6 +90,7 @@ public partial class MissionDetailPage : ContentPage
 
     private void StopAutoRefresh()
     {
+        StopActionCountdown();
         var cancellation = autoRefreshCancellation;
         autoRefreshCancellation = null;
         if (cancellation is null)
@@ -319,6 +322,7 @@ public partial class MissionDetailPage : ContentPage
         OverviewActionTitle.Text = "Tout s'est bien passé ?";
         OverviewActionAmount.IsVisible = false;
         OverviewActionHelp.Text = "Confirmez la fin de la prestation et laissez votre avis.";
+        OverviewActionCountdownLabel.IsVisible = false;
         OverviewConfirmButton.IsVisible = false;
         OverviewChoosePaymentButton.IsVisible = false;
         OverviewCompleteButton.IsVisible = true;
@@ -326,8 +330,10 @@ public partial class MissionDetailPage : ContentPage
 
     private void BindOverviewAction(ClientMissionStatusResponse mission)
     {
+        StopActionCountdown();
         OverviewActionCard.IsVisible = false;
         OverviewActionAmount.IsVisible = false;
+        OverviewActionCountdownLabel.IsVisible = false;
         OverviewConfirmButton.IsVisible = false;
         OverviewChoosePaymentButton.IsVisible = false;
         OverviewCompleteButton.IsVisible = false;
@@ -339,6 +345,7 @@ public partial class MissionDetailPage : ContentPage
             OverviewActionTitle.Text = "Choisissez votre moyen de paiement";
             OverviewActionHelp.Text = "Il sera utilisé uniquement après votre validation du prix.";
             OverviewChoosePaymentButton.IsVisible = true;
+            StartActionCountdown(mission.CustomerPaymentExpiresAt, "Choisissez votre moyen de paiement avant");
             return;
         }
 
@@ -346,15 +353,16 @@ public partial class MissionDetailPage : ContentPage
         {
             var amount = mission.Actions.AmountToPayNow ?? mission.CompanyQuotedAmount;
             OverviewActionCard.IsVisible = true;
-            OverviewActionCaption.Text = "Prix proposé";
-            OverviewActionTitle.Text = "L'entreprise a confirmé le prix de l'intervention";
+            OverviewActionCaption.Text = "Action requise";
+            OverviewActionTitle.Text = "Le prestataire a accepté votre intervention";
             OverviewActionAmount.IsVisible = amount.HasValue;
             OverviewActionAmount.Text = amount.HasValue ? $"{amount:N0} {mission.Currency}" : string.Empty;
-            OverviewActionHelp.Text = "Vérifiez le montant, puis confirmez pour réserver le technicien et payer.";
+            OverviewActionHelp.Text = "Vérifiez le montant, puis payez pour confirmer la mission et autoriser le départ du prestataire.";
             OverviewConfirmButton.Text = amount.HasValue
                 ? $"Accepter et payer {amount:N0} {mission.Currency}"
                 : "Accepter et payer";
             OverviewConfirmButton.IsVisible = true;
+            StartActionCountdown(mission.CustomerPaymentExpiresAt, "Confirmation automatique dans");
             return;
         }
 
@@ -363,9 +371,77 @@ public partial class MissionDetailPage : ContentPage
             OverviewActionCard.IsVisible = true;
             OverviewActionCaption.Text = "Intervention terminée";
             OverviewActionTitle.Text = "Tout s'est bien passé ?";
-            OverviewActionHelp.Text = "Confirmez la fin de la prestation et laissez votre avis.";
+            OverviewActionHelp.Text = "Confirmez la fin de la prestation et laissez votre avis. Sans action, la mission sera validée automatiquement.";
             OverviewCompleteButton.IsVisible = true;
+            StartActionCountdown(mission.CustomerCompletionValidationExpiresAt, "Validation automatique dans");
         }
+    }
+
+    private void StartActionCountdown(DateTimeOffset? expiresAt, string prefix)
+    {
+        if (!expiresAt.HasValue)
+        {
+            return;
+        }
+
+        OverviewActionCountdownLabel.IsVisible = true;
+        UpdateActionCountdown(expiresAt.Value, prefix);
+        if (expiresAt.Value <= DateTimeOffset.UtcNow)
+        {
+            return;
+        }
+
+        actionCountdownCancellation = new CancellationTokenSource();
+        _ = RunActionCountdownAsync(expiresAt.Value, prefix, actionCountdownCancellation.Token);
+    }
+
+    private async Task RunActionCountdownAsync(
+        DateTimeOffset expiresAt,
+        string prefix,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                var expired = expiresAt <= DateTimeOffset.UtcNow;
+                await MainThread.InvokeOnMainThreadAsync(() => UpdateActionCountdown(expiresAt, prefix));
+                if (!expired)
+                {
+                    continue;
+                }
+
+                await LoadAsync(cancellationToken, preserveViewState: true, includeMedia: false);
+                return;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Normal when the action changes or the page is left.
+        }
+    }
+
+    private void UpdateActionCountdown(DateTimeOffset expiresAt, string prefix)
+    {
+        var remaining = expiresAt - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            OverviewActionCountdownLabel.Text = "Délai écoulé · mise à jour en cours";
+            return;
+        }
+
+        var totalHours = (int)remaining.TotalHours;
+        OverviewActionCountdownLabel.Text = totalHours > 0
+            ? $"{prefix} {totalHours:00}:{remaining.Minutes:00}:{remaining.Seconds:00}"
+            : $"{prefix} {remaining.Minutes:00}:{remaining.Seconds:00}";
+    }
+
+    private void StopActionCountdown()
+    {
+        actionCountdownCancellation?.Cancel();
+        actionCountdownCancellation?.Dispose();
+        actionCountdownCancellation = null;
     }
 
     private async void OnBackClicked(object sender, EventArgs e)

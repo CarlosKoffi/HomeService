@@ -116,7 +116,25 @@ public sealed class ProviderMobileMissionDetailServiceTests
         Assert.Null(result.Response);
     }
 
-    private static async Task<ProviderMissionDetailScenario> SeedScenarioAsync(HomeServiceDbContext db)
+    [Fact]
+    public async Task GetAsync_WhenOfferDeadlineHasPassed_DisablesResponseActionsAndReturnsZeroSeconds()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db, DateTimeOffset.UtcNow.AddSeconds(-1));
+        var sut = new ProviderMobileMissionDetailService(db);
+
+        var result = await sut.GetAsync(scenario.Provider.Id, scenario.Assignment.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Response);
+        Assert.Equal(0, result.Response.SecondsToRespond);
+        Assert.False(result.Response.Actions.CanAccept);
+        Assert.False(result.Response.Actions.CanRefuse);
+    }
+
+    private static async Task<ProviderMissionDetailScenario> SeedScenarioAsync(
+        HomeServiceDbContext db,
+        DateTimeOffset? assignmentExpiresAt = null)
     {
         var company = new Company("Wele Services", "+2250701111111", "ops@wele.ci");
         company.Approve();
@@ -156,7 +174,7 @@ public sealed class ProviderMobileMissionDetailServiceTests
             mission.Id,
             provider.Id,
             company.Id,
-            DateTimeOffset.UtcNow.AddMinutes(3));
+            assignmentExpiresAt ?? DateTimeOffset.UtcNow.AddMinutes(3));
         var photo = new MissionAttachment(
             mission.Id,
             MissionAttachmentType.CustomerPhoto,

@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -8,7 +9,8 @@ namespace HomeService.Application.Missions;
 
 public sealed class MissionDispatchService(
     IAppDbContext db,
-    MissionDispatchScoringService scoringService)
+    MissionDispatchScoringService scoringService,
+    MobilePushNotificationQueueService? mobilePushNotifications = null)
 {
     public async Task MarkOffersSentAsync(Guid missionId, CancellationToken cancellationToken)
     {
@@ -78,6 +80,8 @@ public sealed class MissionDispatchService(
         {
             db.MissionDispatchOffers.Add(offer);
         }
+
+        await QueueCompanyOfferPushesAsync(mission, offers, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
         return MissionDispatchCreationResult.Ok(offers);
@@ -267,6 +271,7 @@ public sealed class MissionDispatchService(
         }
 
         mission.MarkCompanyOffersSent();
+        await QueueCompanyOfferPushesAsync(mission, issuedOffers, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
 
         var message = restartedCycle
@@ -445,5 +450,30 @@ public sealed class MissionDispatchService(
                 : MissionWorkflowSettingsResolver.CompanyOfferResponseMinutes,
             (int)DefaultCompanyResponseWindow.TotalMinutes,
             cancellationToken);
+    }
+
+    private async Task QueueCompanyOfferPushesAsync(
+        Mission mission,
+        IEnumerable<MissionDispatchOffer> offers,
+        CancellationToken cancellationToken)
+    {
+        if (mobilePushNotifications is null)
+        {
+            return;
+        }
+
+        foreach (var companyId in offers.Select(offer => offer.CompanyId).Distinct())
+        {
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Company,
+                companyId,
+                "Nouvelle mission à accepter",
+                $"La mission {mission.MissionNumber} attend votre réponse avant expiration du délai.",
+                nameof(Mission),
+                mission.Id,
+                null,
+                cancellationToken,
+                saveChanges: false);
+        }
     }
 }

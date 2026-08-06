@@ -5,7 +5,10 @@ namespace HomeService.Provider.Mobile;
 
 public static class WeleProviderNotificationChannel
 {
-    public const string ChannelId = "wele_provider_missions";
+    // The API uses this channel id for background notifications. Both Android
+    // applications intentionally share it so Firebase can display messages
+    // even when MAUI is not running.
+    public const string ChannelId = "wele_missions";
 
     public static void EnsureCreated(Context context)
     {

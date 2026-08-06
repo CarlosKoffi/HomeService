@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using HomeService.Client.Mobile.Services;
 using HomeService.Contracts.Clients;
 
@@ -64,8 +65,55 @@ public partial class ClientNotificationsPage : ContentPage
             await apiClient.MarkNotificationReadAsync(row.Source.Id);
         }
 
+        if (TryResolveActionRoute(row.Source, out var route))
+        {
+            await Shell.Current.GoToAsync(route);
+            return;
+        }
+
         await DisplayAlert(row.Title, row.Body, "Fermer");
         await LoadAsync();
+    }
+
+    private static bool TryResolveActionRoute(ClientNotificationResponse notification, out string route)
+    {
+        route = string.Empty;
+        Guid? missionId = notification.RelatedEntityType == "Mission"
+            ? notification.RelatedEntityId
+            : null;
+        string? type = null;
+
+        if (!string.IsNullOrWhiteSpace(notification.MetadataJson))
+        {
+            try
+            {
+                using var metadata = JsonDocument.Parse(notification.MetadataJson);
+                if (metadata.RootElement.TryGetProperty("type", out var typeElement))
+                {
+                    type = typeElement.GetString();
+                }
+
+                if (metadata.RootElement.TryGetProperty("missionId", out var missionElement)
+                    && Guid.TryParse(missionElement.GetString(), out var parsedMissionId))
+                {
+                    missionId = parsedMissionId;
+                }
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
+
+        if (missionId is null)
+        {
+            return false;
+        }
+
+        route = string.Equals(type, "mission_payment_required", StringComparison.OrdinalIgnoreCase)
+            ? $"{nameof(PaymentCheckoutPage)}?missionId={missionId.Value:D}"
+            : $"{nameof(MissionDetailPage)}?missionId={missionId.Value:D}";
+        return true;
     }
 
     private async void OnAllClicked(object sender, EventArgs e)

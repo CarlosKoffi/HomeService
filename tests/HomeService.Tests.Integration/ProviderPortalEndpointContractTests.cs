@@ -2,6 +2,8 @@ using HomeService.Api;
 using HomeService.Api.Endpoints;
 using HomeService.Application;
 using HomeService.Application.Abstractions;
+using HomeService.Application.Clients;
+using HomeService.Contracts.Clients;
 using HomeService.Infrastructure.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http.Metadata;
@@ -33,6 +35,9 @@ public sealed class ProviderPortalEndpointContractTests
     [InlineData("POST", "/api/provider-portal/mobile/device-token")]
     [InlineData("GET", "/api/provider-portal/mobile/home")]
     [InlineData("GET", "/api/provider-portal/mobile/profile")]
+    [InlineData("PUT", "/api/provider-portal/mobile/profile")]
+    [InlineData("GET", "/api/provider-portal/mobile/addresses/autocomplete")]
+    [InlineData("GET", "/api/provider-portal/mobile/addresses/places/{placeId}")]
     [InlineData("GET", "/api/provider-portal/mobile/profile/documents/{documentId:guid}/preview")]
     [InlineData("GET", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}")]
     [InlineData("GET", "/api/provider-portal/mobile/mission-assignments/{assignmentId:guid}/messages")]
@@ -64,6 +69,7 @@ public sealed class ProviderPortalEndpointContractTests
         builder.Services.AddDbContext<HomeServiceDbContext>(options =>
             options.UseInMemoryDatabase($"provider-endpoint-contract-{Guid.NewGuid():N}"));
         builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<HomeServiceDbContext>());
+        builder.Services.AddScoped<IAddressAutocompleteService, StubAddressAutocompleteService>();
 
         var app = builder.Build();
         app.MapProviderPortalEndpoints();
@@ -72,5 +78,20 @@ public sealed class ProviderPortalEndpointContractTests
             .SelectMany(source => source.Endpoints)
             .OfType<RouteEndpoint>()
             .ToList();
+    }
+
+    private sealed class StubAddressAutocompleteService : IAddressAutocompleteService
+    {
+        public Task<IReadOnlyList<ClientAddressSuggestionResponse>> SearchAsync(
+            string query,
+            string? sessionToken,
+            CancellationToken cancellationToken)
+            => Task.FromResult<IReadOnlyList<ClientAddressSuggestionResponse>>([]);
+
+        public Task<ClientPlaceDetailsResponse?> GetDetailsAsync(
+            string placeId,
+            string? sessionToken,
+            CancellationToken cancellationToken)
+            => Task.FromResult<ClientPlaceDetailsResponse?>(null);
     }
 }

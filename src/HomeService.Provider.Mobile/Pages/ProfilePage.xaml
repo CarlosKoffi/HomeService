@@ -6,16 +6,26 @@
     Title="Profil">
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="18,20,18,30" Spacing="15">
+            <VerticalStackLayout Padding="18,18,18,30" Spacing="15">
                 <Grid ColumnDefinitions="*,Auto">
                     <Label Text="Profil" Style="{StaticResource ScreenTitleLabel}" />
-                    <Button Grid.Column="1" Text="⚙" WidthRequest="46" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnSettingsClicked" />
+                    <ImageButton Grid.Column="1" Source="icon_settings.svg" Clicked="OnSettingsClicked" />
                 </Grid>
 
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13">
+                    <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
+                </Border>
+
                 <VerticalStackLayout HorizontalOptions="Center" Spacing="7">
-                    <Border WidthRequest="116" HeightRequest="116" Stroke="{StaticResource Line}" StrokeThickness="2" StrokeShape="RoundRectangle 58" BackgroundColor="{StaticResource BlueWash}" Padding="2">
-                        <Image x:Name="ProfileImage" Source="wele_profile_placeholder.svg" Aspect="AspectFill" />
-                    </Border>
+                    <Grid WidthRequest="116" HeightRequest="116">
+                        <Border WidthRequest="112" HeightRequest="112" Stroke="{StaticResource Line}" StrokeThickness="2" StrokeShape="RoundRectangle 56" BackgroundColor="{StaticResource BlueWash}" Padding="2" HorizontalOptions="Center" VerticalOptions="Center">
+                            <Image x:Name="ProfileImage" Source="wele_profile_placeholder.svg" Aspect="AspectFill" />
+                        </Border>
+                        <Border WidthRequest="34" HeightRequest="34" BackgroundColor="{StaticResource WeleBlue}" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 17" HorizontalOptions="End" VerticalOptions="End">
+                            <Image Source="icon_camera_white.svg" WidthRequest="17" HeightRequest="17" />
+                            <Border.GestureRecognizers><TapGestureRecognizer Tapped="OnPhotoTapped" /></Border.GestureRecognizers>
+                        </Border>
+                    </Grid>
                     <Label x:Name="FullNameLabel" Text="Prestataire Wélé" FontSize="23" FontAttributes="Bold" HorizontalTextAlignment="Center" />
                     <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12" Padding="10,5" HorizontalOptions="Center"><Label x:Name="EmploymentTypeLabel" Text="Salarié d’entreprise" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" /></Border>
                     <Label x:Name="CompanyLabel" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
@@ -29,16 +39,17 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <Label Text="Mon profil professionnel" Style="{StaticResource CardTitleLabel}" />
                 <VerticalStackLayout Spacing="9">
-                    <Button Text="Mes informations                                      ›" Style="{StaticResource SecondaryButton}" Clicked="OnDetailsClicked" />
-                    <Button Text="Documents &amp; diplômes                            ›" Style="{StaticResource SecondaryButton}" Clicked="OnDocumentsClicked" />
-                    <Button Text="Services &amp; prestations                           ›" Style="{StaticResource SecondaryButton}" Clicked="OnServicesClicked" />
-                    <Button Text="Portfolio                                                   ›" Style="{StaticResource SecondaryButton}" Clicked="OnPortfolioClicked" />
-                    <Button Text="Paramètres                                                ›" Style="{StaticResource SecondaryButton}" Clicked="OnSettingsClicked" />
+                    <Border Style="{StaticResource PremiumCard}" Padding="13"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11"><Image Source="icon_user.svg" WidthRequest="23" HeightRequest="23" /><VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="Mes informations" FontAttributes="Bold" /><Label Text="Identité, contact et zone de mission" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Image Grid.Column="2" Source="chevron_right.svg" WidthRequest="18" HeightRequest="18" VerticalOptions="Center" /></Grid><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnDetailsTapped" /></Border.GestureRecognizers></Border>
+                    <Border Style="{StaticResource PremiumCard}" Padding="13"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11"><Image Source="icon_document.svg" WidthRequest="23" HeightRequest="23" /><VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="Documents &amp; diplômes" FontAttributes="Bold" /><Label Text="Pièces et qualifications transmises" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Image Grid.Column="2" Source="chevron_right.svg" WidthRequest="18" HeightRequest="18" VerticalOptions="Center" /></Grid><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnDocumentsTapped" /></Border.GestureRecognizers></Border>
+                    <Border Style="{StaticResource PremiumCard}" Padding="13"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11"><Image Source="service_default.svg" WidthRequest="25" HeightRequest="25" /><VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="Services &amp; prestations" FontAttributes="Bold" /><Label Text="Compétences validées par l’entreprise" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Image Grid.Column="2" Source="chevron_right.svg" WidthRequest="18" HeightRequest="18" VerticalOptions="Center" /></Grid><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnServicesTapped" /></Border.GestureRecognizers></Border>
+                    <Border Style="{StaticResource PremiumCard}" Padding="13"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11"><Image Source="icon_portfolio.svg" WidthRequest="23" HeightRequest="23" /><VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="Portfolio" FontAttributes="Bold" /><Label Text="Photos de vos réalisations" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Image Grid.Column="2" Source="chevron_right.svg" WidthRequest="18" HeightRequest="18" VerticalOptions="Center" /></Grid><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnPortfolioTapped" /></Border.GestureRecognizers></Border>
+                    <Border Style="{StaticResource PremiumCard}" Padding="13"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11"><Image Source="icon_settings.svg" WidthRequest="23" HeightRequest="23" /><VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="Paramètres" FontAttributes="Bold" /><Label Text="Notifications, sécurité et préférences" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Image Grid.Column="2" Source="chevron_right.svg" WidthRequest="18" HeightRequest="18" VerticalOptions="Center" /></Grid><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnSettingsTapped" /></Border.GestureRecognizers></Border>
                 </VerticalStackLayout>
 
-                <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 17" Padding="14">
-                    <Label Text="Vos compétences et validations sont visibles ici. Les tarifs restent entièrement masqués pour un salarié d’entreprise." Style="{StaticResource MutedLabel}" />
+                <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 17" Padding="14">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Image Source="icon_info.svg" WidthRequest="22" HeightRequest="22" VerticalOptions="Start" /><Label Grid.Column="1" Text="Les tarifs restent masqués pour un salarié d’entreprise. Seuls les intérimaires autorisés peuvent les consulter." Style="{StaticResource MutedLabel}" /></Grid>
                 </Border>
             </VerticalStackLayout>
         </ScrollView>

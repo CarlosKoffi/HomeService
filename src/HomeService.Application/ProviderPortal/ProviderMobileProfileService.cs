@@ -61,6 +61,19 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
 
         var canViewPrices = provider.EmploymentType == ProviderEmploymentType.TemporaryWorker;
 
+        var defaultPrestationsByServiceId = serviceIds.Count == 0
+            ? new Dictionary<Guid, IReadOnlyList<ServicePrestation>>()
+            : (await db.ServicePrestations
+                .AsNoTracking()
+                .Where(item => serviceIds.Contains(item.ServiceId) && item.IsActive)
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.Name)
+                .ToListAsync(cancellationToken))
+                .GroupBy(item => item.ServiceId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => (IReadOnlyList<ServicePrestation>)group.ToList());
+
         var portfolioItems = await db.ProviderServicePortfolioItems
             .AsNoTracking()
             .Include(item => item.Service)
@@ -85,6 +98,17 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
                 portfolioCountsByServiceId.TryGetValue(service.Id, out var portfolioCount);
                 var canReceiveMissions = provider.Status == ProviderStatus.Approved
                     && (!service.RequiresPortfolio || portfolioCount >= service.MinimumPortfolioItems);
+                var selectedPrestations = item.Prestations
+                    .Where(prestation => prestation.IsActive && prestation.ServicePrestation is not null)
+                    .Select(prestation => prestation.ServicePrestation!)
+                    .OrderBy(prestation => prestation.SortOrder)
+                    .ThenBy(prestation => prestation.Name)
+                    .ToList();
+                if (item.Prestations.Count == 0
+                    && defaultPrestationsByServiceId.TryGetValue(service.Id, out var defaultPrestations))
+                {
+                    selectedPrestations = defaultPrestations.ToList();
+                }
 
                 return new ProviderMobileProfileServiceResponse(
                     item.Id,
@@ -98,16 +122,13 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
                     service.MinimumPortfolioItems,
                     portfolioCount,
                     canReceiveMissions,
-                    item.Prestations
-                        .Where(prestation => prestation.IsActive && prestation.ServicePrestation is not null)
-                        .OrderBy(prestation => prestation.ServicePrestation!.SortOrder)
-                        .ThenBy(prestation => prestation.ServicePrestation!.Name)
+                    selectedPrestations
                         .Select(prestation => new ProviderMobileProfilePrestationResponse(
-                            prestation.ServicePrestationId,
-                            prestation.ServicePrestation!.Name,
-                            canViewPrices ? prestation.ServicePrestation.PriceMinAmount : null,
-                            canViewPrices ? prestation.ServicePrestation.PriceMaxAmount : null,
-                            canViewPrices ? prestation.ServicePrestation.Currency : null))
+                            prestation.Id,
+                            prestation.Name,
+                            canViewPrices ? prestation.PriceMinAmount : null,
+                            canViewPrices ? prestation.PriceMaxAmount : null,
+                            canViewPrices ? prestation.Currency : null))
                         .ToList());
             })
             .ToList();
@@ -126,6 +147,8 @@ public sealed class ProviderMobileProfileService(IAppDbContext db)
             provider.IsAvailable,
             provider.MissionRadiusKm,
             provider.Address,
+            provider.MissionLatitude,
+            provider.MissionLongitude,
             profilePhotoUrl,
             canViewPrices,
             BuildCompletion(provider),

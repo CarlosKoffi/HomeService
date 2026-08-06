@@ -2024,11 +2024,17 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.Property<DateTimeOffset?>("CustomerCompletionValidatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset?>("CustomerCompletionValidationExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset?>("CustomerConfirmedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("CustomerPaymentExpiresAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("CustomerPaymentMethodId")
                         .HasColumnType("uuid");
@@ -2164,6 +2170,10 @@ namespace HomeService.Infrastructure.Data.Migrations
                     b.HasIndex("CompanyId", "Status");
 
                     b.HasIndex("CustomerCompletionValidatedAt", "CompanyPayoutReleasedAt");
+
+                    b.HasIndex("CustomerCompletionValidationExpiresAt", "Status");
+
+                    b.HasIndex("CustomerPaymentExpiresAt", "Status");
 
                     b.HasIndex("QuoteStatus", "PaymentStatus");
 

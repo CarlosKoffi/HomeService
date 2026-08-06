@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Company.Mobile.Pages.MissionDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+    Shell.NavBarIsVisible="False">
+    <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="18,18,18,34" Spacing="14">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                    <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                        <Label Text="Détail mission" Style="{StaticResource ScreenTitle}" />
+                        <Label x:Name="MissionNumberLabel" Style="{StaticResource Muted}" />
+                    </VerticalStackLayout>
+                    <Label x:Name="StatusLabel" Grid.Column="2" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" VerticalOptions="Center" />
+                </Grid>
+
+                <Border x:Name="DeadlineCard" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 16" Padding="14">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Image Source="icon_clock.svg" WidthRequest="24" HeightRequest="24" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="Affectation à terminer" FontAttributes="Bold" />
+                            <Label x:Name="DeadlineLabel" TextColor="#B54708" FontAttributes="Bold" FontSize="14" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource PremiumCard}">
+                    <VerticalStackLayout Spacing="11">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Border WidthRequest="54" HeightRequest="54" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 16">
+                                <Image Source="icon_mission.svg" WidthRequest="29" HeightRequest="29" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                <Label x:Name="ServiceLabel" Style="{StaticResource CardTitle}" />
+                                <Label x:Name="CustomerLabel" Style="{StaticResource Muted}" />
+                                <Label x:Name="ScheduleLabel" Style="{StaticResource Muted}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <BoxView HeightRequest="1" BackgroundColor="{StaticResource Line}" />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                            <Image Source="icon_location.svg" WidthRequest="20" HeightRequest="20" />
+                            <Label x:Name="AddressLabel" Grid.Column="1" Style="{StaticResource Muted}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                            <Image Source="icon_document.svg" WidthRequest="20" HeightRequest="20" />
+                            <Label x:Name="PriceLabel" Grid.Column="1" Style="{StaticResource Muted}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="MapCard" Style="{StaticResource PremiumCard}" Padding="0" IsVisible="False">
+                    <maps:Map x:Name="MissionMap" HeightRequest="210" MapType="Street" />
+                </Border>
+
+                <Border x:Name="ProviderCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Prestataire affecté" Style="{StaticResource CardTitle}" />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                            <Border WidthRequest="48" HeightRequest="48" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 24">
+                                <Image Source="icon_user.svg" WidthRequest="25" HeightRequest="25" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                <Label x:Name="ProviderNameLabel" FontAttributes="Bold" />
+                                <Label x:Name="ProviderStateLabel" Style="{StaticResource Muted}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button x:Name="ProviderCallButton" Text="Appeler" Style="{StaticResource SecondaryButton}" Clicked="OnProviderCallClicked" />
+                            <Button Grid.Column="1" x:Name="ProviderMessageButton" Text="Message" Style="{StaticResource SecondaryButton}" Clicked="OnProviderMessageClicked" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="AssignmentCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                    <VerticalStackLayout Spacing="11">
+                        <Label Text="Affecter un prestataire" Style="{StaticResource CardTitle}" />
+                        <Label Text="Choisissez un prestataire compatible, puis envoyez le prix au client." Style="{StaticResource Muted}" />
+                        <Picker x:Name="ProviderPicker" Title="Choisir un prestataire" SelectedIndexChanged="OnProviderSelected" ItemDisplayBinding="{Binding FullName}" />
+                        <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="12,0">
+                            <Entry x:Name="QuoteAmountEntry" Placeholder="Montant proposé" Keyboard="Numeric" />
+                        </Border>
+                        <Label x:Name="PriceRangeLabel" Style="{StaticResource Muted}" />
+                        <Button x:Name="AssignButton" Text="Affecter et envoyer le prix" Clicked="OnAssignClicked" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border x:Name="AdditionalQuoteCard" Style="{StaticResource PremiumCard}" IsVisible="False" Stroke="#B8CCFF">
+                    <VerticalStackLayout Spacing="11">
+                        <Label Text="Remarque du prestataire" Style="{StaticResource Eyebrow}" />
+                        <Label Text="Devis complémentaire à préparer" Style="{StaticResource CardTitle}" />
+                        <CollectionView x:Name="AdditionalQuotesView" SelectionMode="Single" SelectionChanged="OnAdditionalQuoteSelected" HeightRequest="90">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="*,Auto" Padding="0,5">
+                                        <VerticalStackLayout>
+                                            <Label Text="{Binding Reason}" FontAttributes="Bold" />
+                                            <Label Text="{Binding StatusLabel}" Style="{StaticResource Muted}" />
+                                        </VerticalStackLayout>
+                                        <Image Grid.Column="1" Source="icon_forward.svg" WidthRequest="18" HeightRequest="18" />
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                        <VerticalStackLayout x:Name="QuoteEditor" IsVisible="False" Spacing="9">
+                            <Label x:Name="ProviderRemarkLabel" Style="{StaticResource Muted}" />
+                            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="12,0">
+                                <Entry x:Name="AdditionalAmountEntry" Placeholder="Montant du complément" Keyboard="Numeric" />
+                            </Border>
+                            <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="12,6">
+                                <Editor x:Name="AdditionalDescriptionEditor" Placeholder="Détail du devis adressé au client" AutoSize="TextChanges" MinimumHeightRequest="80" />
+                            </Border>
+                            <Button Text="Émettre et envoyer au client" Clicked="OnSubmitAdditionalQuoteClicked" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+                <Label x:Name="MessageLabel" IsVisible="False" Style="{StaticResource Muted}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

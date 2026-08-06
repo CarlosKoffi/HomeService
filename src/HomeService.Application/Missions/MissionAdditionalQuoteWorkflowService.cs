@@ -13,6 +13,24 @@ public sealed class MissionAdditionalQuoteWorkflowService(
     CompanyPortalNotificationWriter companyNotifications,
     MobilePushNotificationQueueService mobilePushNotifications)
 {
+    public async Task<IReadOnlyList<MissionAdditionalQuoteResponse>> ListForCompanyAsync(
+        Guid companyId,
+        Guid missionId,
+        CancellationToken cancellationToken)
+    {
+        var quotes = await db.MissionAdditionalQuotes
+            .AsNoTracking()
+            .Include(item => item.Mission)
+            .Where(item => item.CompanyId == companyId && item.MissionId == missionId)
+            .OrderByDescending(item => item.RequestedAt)
+            .ToListAsync(cancellationToken);
+
+        return quotes
+            .Where(item => item.Mission is not null)
+            .Select(item => ToResponse(item, item.Mission!))
+            .ToList();
+    }
+
     public async Task<MissionAdditionalQuoteWorkflowResult> RequestFromProviderAsync(
         Guid providerId,
         Guid missionId,
@@ -64,6 +82,17 @@ public sealed class MissionAdditionalQuoteWorkflowService(
             $"{provider.FullName} demande un devis complementaire. {request.Reason.Trim()}",
             "warning",
             $"missions/{mission.Id}");
+
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Company,
+            mission.CompanyId.Value,
+            "Action requise sur le terrain",
+            $"{provider.FullName} a transmis une remarque sur {mission.MissionNumber}. Préparez le devis complémentaire.",
+            nameof(MissionAdditionalQuote),
+            quote.Id,
+            null,
+            cancellationToken,
+            saveChanges: false);
 
         db.CompanyPortalActivities.Add(new CompanyPortalActivity(
             mission.CompanyId.Value,

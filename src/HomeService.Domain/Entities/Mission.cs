@@ -79,8 +79,10 @@ public sealed class Mission : AuditableEntity
     public decimal? ServiceLongitude { get; private set; }
     public int ArrivalToleranceMeters { get; private set; } = 250;
     public DateTimeOffset? ProviderAcceptedAt { get; private set; }
+    public DateTimeOffset? CustomerPaymentExpiresAt { get; private set; }
     public DateTimeOffset? CustomerConfirmedAt { get; private set; }
     public DateTimeOffset? CustomerCompletionValidatedAt { get; private set; }
+    public DateTimeOffset? CustomerCompletionValidationExpiresAt { get; private set; }
     public DateTimeOffset? CancelledAt { get; private set; }
     public MissionCancellationActor? CancelledBy { get; private set; }
     public MissionCancellationReason? CancellationReason { get; private set; }
@@ -254,7 +256,10 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
-    public void MarkProviderAccepted(Guid providerId, Guid companyId)
+    public void MarkProviderAccepted(
+        Guid providerId,
+        Guid companyId,
+        DateTimeOffset? customerPaymentExpiresAt = null)
     {
         if (Status is not (MissionStatus.Assigned or MissionStatus.Offered))
         {
@@ -275,6 +280,7 @@ public sealed class Mission : AuditableEntity
         CompanyId = companyId;
         Status = MissionStatus.Accepted;
         ProviderAcceptedAt = DateTimeOffset.UtcNow;
+        CustomerPaymentExpiresAt = customerPaymentExpiresAt;
         Touch();
     }
 
@@ -368,6 +374,7 @@ public sealed class Mission : AuditableEntity
         CompanyPayoutAmount = Math.Max(0, (CompanyQuotedAmount ?? EstimatedTotalAmount ?? FinalTotalAmount ?? 0) - PlatformCommissionAmount);
         PaymentStatus = PaymentStatus.Authorized;
         CustomerConfirmedAt = DateTimeOffset.UtcNow;
+        CustomerPaymentExpiresAt = null;
         ContactDetailsReleasedAt = CustomerConfirmedAt;
         Touch();
     }
@@ -480,7 +487,9 @@ public sealed class Mission : AuditableEntity
         Touch();
     }
 
-    public void Complete(int actualDurationMinutes)
+    public void Complete(
+        int actualDurationMinutes,
+        DateTimeOffset? customerCompletionValidationExpiresAt = null)
     {
         if (Status != MissionStatus.Started)
         {
@@ -491,10 +500,11 @@ public sealed class Mission : AuditableEntity
         FinalTotalAmount = CompanyQuotedAmount ?? CalculateAmount(actualDurationMinutes, HourlyRateAmount ?? 0);
         CompanyPayoutAmount = Math.Max(0, FinalTotalAmount.Value - PlatformCommissionAmount);
         Status = MissionStatus.Completed;
+        CustomerCompletionValidationExpiresAt = customerCompletionValidationExpiresAt;
         Touch();
     }
 
-    public void ValidateCompletionByCustomer()
+    public void ValidateCompletionByCustomer(DateTimeOffset? validatedAt = null)
     {
         if (Status != MissionStatus.Completed)
         {
@@ -506,7 +516,8 @@ public sealed class Mission : AuditableEntity
             return;
         }
 
-        CustomerCompletionValidatedAt = DateTimeOffset.UtcNow;
+        CustomerCompletionValidatedAt = validatedAt ?? DateTimeOffset.UtcNow;
+        CustomerCompletionValidationExpiresAt = null;
         CompanyPayoutReleasedAt = CustomerCompletionValidatedAt;
         PaymentStatus = PaymentStatus.Paid;
         Touch();

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Company.Mobile.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    NavigationPage.HasNavigationBar="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="28,54,28,34" Spacing="22">
+            <Image Source="wele_logo.png" HeightRequest="62" HorizontalOptions="Center" Aspect="AspectFit" />
+            <VerticalStackLayout Spacing="6" Margin="0,16,0,6">
+                <Label Text="Espace entreprise" Style="{StaticResource ScreenTitle}" HorizontalTextAlignment="Center" />
+                <Label Text="Pilotez vos missions et vos équipes, même loin du bureau." Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Adresse email" FontAttributes="Bold" FontSize="13" />
+                <Border Style="{StaticResource PremiumCard}" Padding="14,0" Shadow="{x:Null}">
+                    <Entry x:Name="EmailEntry" Placeholder="entreprise@exemple.com" Keyboard="Email" />
+                </Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="8">
+                <Label Text="Mot de passe" FontAttributes="Bold" FontSize="13" />
+                <Border Style="{StaticResource PremiumCard}" Padding="14,0" Shadow="{x:Null}">
+                    <Entry x:Name="PasswordEntry" Placeholder="Votre mot de passe" IsPassword="True" />
+                </Border>
+            </VerticalStackLayout>
+
+            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                <Label Text="Rester connecté" Style="{StaticResource Muted}" VerticalTextAlignment="Center" />
+                <Switch x:Name="RememberSwitch" Grid.Column="1" IsToggled="True" OnColor="{StaticResource WeleBlue}" />
+            </Grid>
+            <Label x:Name="ErrorLabel" IsVisible="False" TextColor="{StaticResource Danger}" FontSize="13" HorizontalTextAlignment="Center" />
+            <Button x:Name="LoginButton" Text="Se connecter" Clicked="OnLoginClicked" />
+            <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="False" Color="{StaticResource WeleBlue}" />
+            <Border BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="15" Margin="0,14,0,0">
+                <Label Text="Version mobile légère : missions, validation des prestataires, affectations, suivi en direct et alertes." Style="{StaticResource Muted}" />
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

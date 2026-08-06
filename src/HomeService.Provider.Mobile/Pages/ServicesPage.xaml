@@ -6,10 +6,26 @@
     Shell.NavBarIsVisible="False">
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="18,18,18,30" Spacing="15">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><Button Text="‹" FontSize="28" WidthRequest="42" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnBackClicked" /><Label Grid.Column="1" Text="Services &amp; prestations" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" /></Grid>
-                <Label Text="Compétences validées pour les missions que vous pouvez recevoir." Style="{StaticResource MutedLabel}" />
-                <Border BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 16" Padding="13"><Label Text="Pour un salarié, les tarifs ne sont jamais affichés. Les compétences restent gérées avec l’entreprise." Style="{StaticResource MutedLabel}" /></Border>
+            <VerticalStackLayout Padding="18,16,18,32" Spacing="15">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                    <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Services &amp; prestations" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
+                </Grid>
+
+                <Label Text="Les compétences validées par votre entreprise déterminent les missions que vous recevez." Style="{StaticResource MutedLabel}" />
+
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13">
+                    <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
+                </Border>
+
+                <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 16" Padding="13">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Image Source="icon_info.svg" WidthRequest="22" HeightRequest="22" VerticalOptions="Start" />
+                        <Label Grid.Column="1" Text="Les tarifs restent masqués pour les salariés. Ils ne sont visibles que pour les prestataires intérimaires autorisés." Style="{StaticResource MutedLabel}" />
+                    </Grid>
+                </Border>
+
+                <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="False" Color="{StaticResource WeleBlue}" />
                 <VerticalStackLayout x:Name="ContentHost" Spacing="11" />
             </VerticalStackLayout>
         </ScrollView>

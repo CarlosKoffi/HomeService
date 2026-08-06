@@ -13,8 +13,7 @@ public sealed class CompanyMissionAssignmentService(
     IAppDbContext db,
     MobilePushNotificationQueueService mobilePushNotifications,
     NotificationDeliveryPreferenceService notificationPreferences,
-    NotificationTemplateService notificationTemplates,
-    CustomerMissionProgressNotificationService? customerNotifications = null)
+    NotificationTemplateService notificationTemplates)
 {
     private static readonly TimeSpan AssignmentAcceptanceWindow = TimeSpan.FromMinutes(3);
     private const string MissionAssignedToProviderEventKey = "MissionAssignedToProvider";
@@ -256,15 +255,6 @@ public sealed class CompanyMissionAssignmentService(
             assignment,
             companyId,
             cancellationToken);
-
-        if (customerNotifications is not null)
-        {
-            await customerNotifications.NotifyTechnicianProposedAsync(
-                validMission,
-                validProvider,
-                assignment,
-                cancellationToken);
-        }
 
         await db.SaveChangesAsync(cancellationToken);
 

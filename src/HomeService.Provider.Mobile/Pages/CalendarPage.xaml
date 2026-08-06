@@ -9,9 +9,9 @@
             <VerticalStackLayout Padding="18,20,18,30" Spacing="16">
                 <Label Text="Calendrier" Style="{StaticResource ScreenTitleLabel}" />
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Button Text="‹" Style="{StaticResource SecondaryButton}" WidthRequest="48" Clicked="OnPreviousMonthClicked" />
+                    <ImageButton Source="icon_back.svg" WidthRequest="48" Clicked="OnPreviousMonthClicked" />
                     <Label x:Name="MonthLabel" Grid.Column="1" FontSize="17" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
-                    <Button Grid.Column="2" Text="›" Style="{StaticResource SecondaryButton}" WidthRequest="48" Clicked="OnNextMonthClicked" />
+                    <ImageButton Grid.Column="2" Source="icon_forward.svg" WidthRequest="48" Clicked="OnNextMonthClicked" />
                 </Grid>
 
                 <Border Style="{StaticResource PremiumCard}" Padding="10">

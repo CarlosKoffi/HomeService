@@ -39,6 +39,7 @@
                         <Label x:Name="OverviewActionTitle" FontSize="17" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
                         <Label x:Name="OverviewActionAmount" IsVisible="False" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" LineBreakMode="NoWrap" />
                         <Label x:Name="OverviewActionHelp" FontSize="13" TextColor="{StaticResource MutedInk}" LineHeight="1.25" LineBreakMode="WordWrap" />
+                        <Label x:Name="OverviewActionCountdownLabel" IsVisible="False" FontSize="13" FontAttributes="Bold" TextColor="#B54708" LineBreakMode="WordWrap" />
                         <Button x:Name="OverviewConfirmButton" Text="Accepter et payer" IsVisible="False" Clicked="OnConfirmClicked" Margin="0,6,0,0" />
                         <Button x:Name="OverviewChoosePaymentButton" Text="Choisir un moyen de paiement" IsVisible="False" Clicked="OnChoosePaymentClicked" Margin="0,6,0,0" />
                         <Button x:Name="OverviewCompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" Margin="0,6,0,0" />

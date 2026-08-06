@@ -6,16 +6,22 @@
     Shell.NavBarIsVisible="False">
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
-            <VerticalStackLayout Padding="18,18,18,30" Spacing="16">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                    <Button Text="‹" FontSize="28" WidthRequest="42" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnBackClicked" />
+            <VerticalStackLayout Padding="18,16,18,30" Spacing="15">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                    <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
                     <Label Grid.Column="1" Text="Notifications" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
                 </Grid>
+
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                     <Button x:Name="AllButton" Text="Toutes" Style="{StaticResource PrimaryButton}" Clicked="OnAllClicked" />
                     <Button x:Name="UnreadButton" Grid.Column="1" Text="Non lues" Style="{StaticResource SecondaryButton}" Clicked="OnUnreadClicked" />
                 </Grid>
+
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13">
+                    <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
+                </Border>
                 <Label x:Name="UnreadSummaryLabel" Style="{StaticResource MutedLabel}" />
+                <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="False" Color="{StaticResource WeleBlue}" />
                 <VerticalStackLayout x:Name="NotificationsStack" Spacing="9" />
             </VerticalStackLayout>
         </ScrollView>

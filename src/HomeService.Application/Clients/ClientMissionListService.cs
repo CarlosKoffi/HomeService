@@ -140,7 +140,9 @@ public sealed class ClientMissionListService(IAppDbContext db)
 
     private static string ResolvePrimaryAction(MissionStatus status, PaymentStatus paymentStatus, MissionQuoteStatus quoteStatus)
     {
-        if (quoteStatus == MissionQuoteStatus.Submitted && paymentStatus == PaymentStatus.Pending)
+        if (status == MissionStatus.Accepted
+            && quoteStatus == MissionQuoteStatus.Submitted
+            && paymentStatus == PaymentStatus.Pending)
         {
             return "AcceptQuote";
         }

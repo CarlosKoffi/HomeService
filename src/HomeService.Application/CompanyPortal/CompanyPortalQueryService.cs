@@ -139,7 +139,10 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 row.mission.Status == MissionStatus.Cancelled
                     ? (row.mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
                     : null,
-                row.mission.PlatformCommissionAmount))
+                row.mission.PlatformCommissionAmount,
+                row.mission.CompanyAssignmentExpiresAt,
+                row.mission.ServiceLatitude,
+                row.mission.ServiceLongitude))
             .ToListAsync(cancellationToken);
 
         return CompanyPortalMissionsResult.Ok(missions);
@@ -354,7 +357,10 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   mission.Status == MissionStatus.Cancelled
                                       ? (mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
                                       : null,
-                                  mission.PlatformCommissionAmount))
+                                  mission.PlatformCommissionAmount,
+                                  mission.CompanyAssignmentExpiresAt,
+                                  mission.ServiceLatitude,
+                                  mission.ServiceLongitude))
             .ToListAsync(cancellationToken);
 
         var paidMissions = missions

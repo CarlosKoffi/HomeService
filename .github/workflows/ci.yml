@@ -86,3 +86,6 @@ jobs:
 
       - name: Build provider mobile application
         run: dotnet build src/HomeService.Provider.Mobile/HomeService.Provider.Mobile.csproj --configuration Release --framework net9.0-windows10.0.19041.0
+
+      - name: Build company mobile application
+        run: dotnet build src/HomeService.Company.Mobile/HomeService.Company.Mobile.csproj --configuration Release --framework net9.0-windows10.0.19041.0

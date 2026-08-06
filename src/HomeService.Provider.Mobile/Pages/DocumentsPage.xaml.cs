@@ -41,7 +41,7 @@ public partial class DocumentsPage : ContentPage
         foreach (var document in documents)
         {
             var grid = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star, GridLength.Auto), ColumnSpacing = 11 };
-            grid.Add(new Border { WidthRequest = 44, HeightRequest = 44, BackgroundColor = Color.FromArgb("#EEF4FF"), Stroke = Color.FromArgb("#EEF4FF"), StrokeShape = new RoundRectangle { CornerRadius = 13 }, Content = new Label { Text = DocumentIcon(document.Type), FontSize = 20, HorizontalTextAlignment = TextAlignment.Center, VerticalTextAlignment = TextAlignment.Center } }, 0);
+            grid.Add(new Border { WidthRequest = 44, HeightRequest = 44, BackgroundColor = Color.FromArgb("#EEF4FF"), Stroke = Color.FromArgb("#DCE8FF"), StrokeShape = new RoundRectangle { CornerRadius = 13 }, Content = new Image { Source = DocumentIcon(document.Type), WidthRequest = 23, HeightRequest = 23 } }, 0);
             grid.Add(new VerticalStackLayout { Spacing = 3, Children = { new Label { Text = DocumentLabel(document.Type), FontFamily = "PlusJakartaSans", FontAttributes = FontAttributes.Bold, FontSize = 14 }, new Label { Text = document.OriginalFileName, FontFamily = "PlusJakartaSans", FontSize = 12, TextColor = Color.FromArgb("#667085"), LineBreakMode = LineBreakMode.TailTruncation } } }, 1);
             grid.Add(new Label { Text = "Transmis", FontFamily = "PlusJakartaSans", FontSize = 11, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#16B364"), VerticalTextAlignment = TextAlignment.Center }, 2);
             DocumentsStack.Add(new Border { Style = (Style)Application.Current!.Resources["PremiumCard"], Content = grid });
@@ -86,6 +86,6 @@ public partial class DocumentsPage : ContentPage
     private async void OnDiplomaClicked(object? sender, EventArgs e) => await UploadAsync("Diploma");
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
     private static string DocumentLabel(string type) => type switch { "Photo" => "Photo de profil", "IdentityDocument" => "Pièce d’identité", "Diploma" => "Diplôme / attestation", _ => type };
-    private static string DocumentIcon(string type) => type switch { "Photo" => "◉", "IdentityDocument" => "▤", "Diploma" => "♢", _ => "□" };
+    private static string DocumentIcon(string type) => type switch { "Photo" => "icon_user.svg", "IdentityDocument" => "icon_document.svg", "Diploma" => "icon_check.svg", _ => "icon_document.svg" };
     private static ColumnDefinitionCollection Columns(params GridLength[] widths) { var result = new ColumnDefinitionCollection(); foreach (var width in widths) result.Add(new ColumnDefinition(width)); return result; }
 }

@@ -82,10 +82,32 @@ public sealed class ClientMissionConfirmationServiceTests
             CancellationToken.None);
 
         Assert.Equal(ClientMissionConfirmationStatus.Invalid, result.Status);
+        Assert.Contains("prestataire", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Null(scenario.Mission.CustomerConfirmedAt);
     }
 
-    private static async Task<ConfirmationScenario> SeedAcceptedMissionAsync(HomeServiceDbContext db, bool markProviderAccepted = true)
+    [Fact]
+    public async Task AutoConfirmExpiredAsync_WhenSavedPaymentMethodExists_ConfirmsMissionAndClearsDeadline()
+    {
+        await using var db = CreateDbContext();
+        var now = DateTimeOffset.UtcNow;
+        var scenario = await SeedAcceptedMissionAsync(db, paymentExpiresAt: now.AddSeconds(-1));
+        var sut = CreateService(db);
+
+        var confirmedCount = await sut.AutoConfirmExpiredAsync(now, 20, CancellationToken.None);
+
+        Assert.Equal(1, confirmedCount);
+        Assert.NotNull(scenario.Mission.CustomerConfirmedAt);
+        Assert.Null(scenario.Mission.CustomerPaymentExpiresAt);
+        Assert.Equal(PaymentStatus.Authorized, scenario.Mission.PaymentStatus);
+        var milestone = await db.MissionPaymentMilestones.SingleAsync();
+        Assert.Equal($"AUTO-CLIENT-DEADLINE-{scenario.Mission.Id:N}", milestone.ExternalPaymentReference);
+    }
+
+    private static async Task<ConfirmationScenario> SeedAcceptedMissionAsync(
+        HomeServiceDbContext db,
+        bool markProviderAccepted = true,
+        DateTimeOffset? paymentExpiresAt = null)
     {
         var service = new Service("Plomberie", null, createdByCompanyId: null);
         var customer = new CustomerProfile("Aya", "Kone", "+2250700000000");
@@ -128,7 +150,7 @@ public sealed class ClientMissionConfirmationServiceTests
         mission.AssignWithCompanyQuote(provider.Id, company.Id, 20_000, 25_000, null);
         if (markProviderAccepted)
         {
-            mission.MarkProviderAccepted(provider.Id, company.Id);
+            mission.MarkProviderAccepted(provider.Id, company.Id, paymentExpiresAt);
         }
 
         db.Services.Add(service);

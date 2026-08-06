@@ -180,15 +180,12 @@ public sealed class ClientMissionWorkflowIntegrationTests
             .Where(message => message.Channel == NotificationChannel.MobilePush)
             .OrderBy(message => message.CreatedAt)
             .ToListAsync();
-        Assert.Equal(8, mobilePushMessages.Count);
+        Assert.Equal(5, mobilePushMessages.Count);
         Assert.All(mobilePushMessages, message => Assert.Equal(NotificationStatus.Pending, message.Status));
         Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Nouvelle mission", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("technicien est confirme", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("paiement", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission confirmee", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Technicien arrive", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission demarree", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission terminee", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Votre avis compte", StringComparison.OrdinalIgnoreCase));
         Assert.Contains(mobilePushMessages, message => message.Subject.Contains("Mission validee", StringComparison.OrdinalIgnoreCase));
     }
 

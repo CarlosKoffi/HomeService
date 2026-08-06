@@ -4,32 +4,46 @@ using Microsoft.Maui.Controls.Shapes;
 
 namespace HomeService.Provider.Mobile.Pages;
 
+[QueryProperty(nameof(AssignmentId), "assignmentId")]
 public partial class ChatPage : ContentPage
 {
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
+    private readonly Dictionary<Guid, Border> conversationCards = [];
     private string? accessToken;
+    private Guid? requestedAssignmentId;
     private Guid? assignmentId;
+    private IReadOnlyList<ProviderMobileMissionSummaryResponse> missions = [];
+
+    public string AssignmentId
+    {
+        set
+        {
+            if (Guid.TryParse(value, out var parsed)) requestedAssignmentId = parsed;
+        }
+    }
 
     public ChatPage()
     {
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
+        SetComposerEnabled(false);
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await LoadChatAsync();
+        await LoadConversationsAsync();
     }
 
-    private async Task LoadChatAsync()
+    private async Task LoadConversationsAsync()
     {
+        MessageBanner.IsVisible = false;
         if (apiClient is null || sessionService is null)
         {
-            ShowMessage("Configuration mobile incomplete. Client API introuvable.");
-            SetComposerEnabled(false);
+            ShowMessage("Configuration mobile incomplète. Client API introuvable.");
+            RenderConversationChoices([]);
             return;
         }
 
@@ -37,127 +51,204 @@ public partial class ChatPage : ContentPage
         if (string.IsNullOrWhiteSpace(accessToken))
         {
             ShowMessage("Connectez-vous pour consulter vos messages.");
-            SetComposerEnabled(false);
+            RenderConversationChoices([]);
             return;
         }
 
-        var homeResult = await apiClient.GetHomeResultAsync(accessToken);
-        if (!homeResult.IsSuccess || homeResult.Response is null)
+        var result = await apiClient.GetMissionsAsync(accessToken);
+        if (!result.IsSuccess || result.Response is null)
         {
-            ShowMessage(homeResult.ErrorMessage ?? "Impossible de charger la mission courante.");
-            SetComposerEnabled(false);
+            ShowMessage(result.ErrorMessage ?? "Impossible de charger les conversations.");
+            RenderConversationChoices([]);
             return;
         }
 
-        assignmentId = homeResult.Response.LiveOffer?.AssignmentId ?? homeResult.Response.UpcomingMission?.AssignmentId;
-        if (assignmentId is null)
-        {
-            MissionTitleLabel.Text = "Aucune mission active";
-            MissionSubtitleLabel.Text = "Les messages seront disponibles quand une mission sera affectee.";
-            MissionNumberLabel.Text = string.Empty;
-            MessagesStack.Children.Clear();
-            SetComposerEnabled(false);
-            return;
-        }
+        missions = result.Response.Items
+            .Where(item => item.Status is "Offered" or "Accepted" or "Started" or "Completed")
+            .OrderBy(item => StatusOrder(item.Status))
+            .ThenByDescending(item => item.ScheduledFor ?? DateTimeOffset.MinValue)
+            .Take(20)
+            .ToList();
+        RenderConversationChoices(missions);
 
-        var detailResult = await apiClient.GetMissionDetailAsync(accessToken, assignmentId.Value);
-        var chatResult = await apiClient.GetMissionMessagesAsync(accessToken, assignmentId.Value);
-        if (!chatResult.IsSuccess || chatResult.Response is null)
-        {
-            ShowMessage(chatResult.ErrorMessage ?? "Impossible de charger les messages.");
-            SetComposerEnabled(false);
-            return;
-        }
-
-
-        MissionTitleLabel.Text = chatResult.Response.MissionLabel;
-        MissionNumberLabel.Text = $"Mission {chatResult.Response.MissionNumber}";
-        MissionSubtitleLabel.Text = detailResult.Response is null
-            ? "Conversation avec le client de cette mission."
-            : $"{detailResult.Response.CustomerDisplayName} - {detailResult.Response.LocationLabel}";
-
-        HideMessage();
-        RenderMessages(chatResult.Response.Messages);
-        SetComposerEnabled(true);
+        var selectedId = requestedAssignmentId is not null && missions.Any(item => item.AssignmentId == requestedAssignmentId)
+            ? requestedAssignmentId
+            : assignmentId is not null && missions.Any(item => item.AssignmentId == assignmentId)
+                ? assignmentId
+                : missions.FirstOrDefault()?.AssignmentId;
+        requestedAssignmentId = null;
+        if (selectedId is not null) await SelectConversationAsync(selectedId.Value);
+        else RenderNoConversation();
     }
 
-    private void RenderMessages(IReadOnlyList<ProviderMobileMissionMessageResponse> messages)
+    private void RenderConversationChoices(IReadOnlyList<ProviderMobileMissionSummaryResponse> items)
     {
-        MessagesStack.Children.Clear();
-        if (messages.Count == 0)
+        ConversationListStack.Children.Clear();
+        conversationCards.Clear();
+        if (items.Count == 0)
         {
-            MessagesStack.Children.Add(CreateMessageCard("Aucun message pour le moment.", "Systeme", false));
+            ConversationListStack.Add(new Label { Text = "Aucune conversation", FontFamily = "PlusJakartaSans", FontSize = 13, TextColor = Color.FromArgb("#667085") });
             return;
         }
 
-        foreach (var message in messages.OrderBy(item => item.CreatedAt))
+        foreach (var mission in items)
         {
-            var isProvider = message.SenderType.Equals("Provider", StringComparison.OrdinalIgnoreCase);
-            MessagesStack.Children.Add(CreateMessageCard(message.Body, BuildSenderLabel(message), isProvider));
-        }
-    }
-
-    private static View CreateMessageCard(string body, string senderLabel, bool isProvider)
-    {
-        return new Border
-        {
-            BackgroundColor = isProvider ? Color.FromArgb("#EEF4FF") : Colors.White,
-            Stroke = isProvider ? Color.FromArgb("#CFE0FF") : Color.FromArgb("#E6E9EF"),
-            StrokeShape = new RoundRectangle { CornerRadius = 18 },
-            Padding = 14,
-            Content = new VerticalStackLayout
+            var title = string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName;
+            var grid = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Auto), ColumnSpacing = 8 };
+            grid.Add(new Image { Source = ProviderIconResolver.ForService(mission.ServiceIconName, mission.ServiceName), WidthRequest = 22, HeightRequest = 22 }, 0);
+            grid.Add(new VerticalStackLayout
             {
-                Spacing = 5,
+                Spacing = 1,
                 Children =
                 {
-                    new Label
+                    new Label { Text = title, FontFamily = "PlusJakartaSans", FontSize = 12, FontAttributes = FontAttributes.Bold, MaxLines = 1 },
+                    new Label { Text = mission.MissionNumber, FontFamily = "PlusJakartaSans", FontSize = 9, TextColor = Color.FromArgb("#667085") }
+                }
+            }, 1);
+            var card = new Border
+            {
+                BackgroundColor = Colors.White,
+                Stroke = Color.FromArgb("#DCE8FF"),
+                StrokeShape = new RoundRectangle { CornerRadius = 14 },
+                Padding = new Thickness(11, 8),
+                Content = grid,
+                MaximumWidthRequest = 210
+            };
+            var tap = new TapGestureRecognizer { CommandParameter = mission.AssignmentId };
+            tap.Tapped += OnConversationTapped;
+            card.GestureRecognizers.Add(tap);
+            ConversationListStack.Add(card);
+            conversationCards[mission.AssignmentId] = card;
+        }
+    }
+
+    private async void OnConversationTapped(object? sender, TappedEventArgs e)
+    {
+        if (e.Parameter is Guid id) await SelectConversationAsync(id);
+    }
+
+    private async Task SelectConversationAsync(Guid id)
+    {
+        if (apiClient is null || string.IsNullOrWhiteSpace(accessToken)) return;
+        assignmentId = id;
+        UpdateSelectedCard();
+        SetComposerEnabled(false);
+        MessagesStack.Children.Clear();
+        MessagesStack.Add(new ActivityIndicator { IsRunning = true, Color = Color.FromArgb("#155EEF") });
+
+        var detailTask = apiClient.GetMissionDetailAsync(accessToken, id);
+        var chatTask = apiClient.GetMissionMessagesAsync(accessToken, id);
+        await Task.WhenAll(detailTask, chatTask);
+        var detailResult = await detailTask;
+        var chatResult = await chatTask;
+        if (!chatResult.IsSuccess || chatResult.Response is null)
+        {
+            ShowMessage(chatResult.ErrorMessage ?? "Impossible de charger cette conversation.");
+            MessagesStack.Children.Clear();
+            return;
+        }
+
+        var mission = missions.First(item => item.AssignmentId == id);
+        var customer = detailResult.Response?.CustomerDisplayName;
+        RecipientCard.IsVisible = true;
+        RecipientTitleLabel.Text = string.IsNullOrWhiteSpace(customer) ? "Vous écrivez au client" : $"Vous écrivez à {customer}";
+        RecipientSubtitleLabel.Text = $"Mission {mission.MissionNumber} · {(string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName)}";
+        MessageEntry.Placeholder = string.IsNullOrWhiteSpace(customer) ? "Écrire au client…" : $"Écrire à {FirstName(customer)}…";
+        MessageBanner.IsVisible = false;
+        RenderMessages(chatResult.Response.Messages);
+        SetComposerEnabled(mission.Status is "Offered" or "Accepted" or "Started");
+        await Task.Delay(50);
+        await MessagesScroll.ScrollToAsync(MessagesStack, ScrollToPosition.End, false);
+    }
+
+    private void RenderMessages(IReadOnlyList<ProviderMobileMissionMessageResponse> items)
+    {
+        MessagesStack.Children.Clear();
+        if (items.Count == 0)
+        {
+            MessagesStack.Add(new Border
+            {
+                Style = (Style)Application.Current!.Resources["PremiumCard"],
+                Content = new VerticalStackLayout
+                {
+                    Spacing = 7,
+                    Children =
                     {
-                        Text = senderLabel,
-                        FontAttributes = FontAttributes.Bold,
-                        FontSize = 13,
-                        TextColor = Colors.Black
-                    },
-                    new Label
-                    {
-                        Text = body,
-                        FontSize = 14,
-                        TextColor = Colors.Black,
-                        LineHeight = 1.25
+                        new Image { Source = "icon_message.svg", WidthRequest = 38, HeightRequest = 38, HorizontalOptions = LayoutOptions.Center },
+                        new Label { Text = "Aucun message pour le moment", FontFamily = "PlusJakartaSans", FontSize = 14, FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center },
+                        new Label { Text = "Utilisez cette conversation uniquement pour cette mission.", FontFamily = "PlusJakartaSans", FontSize = 12, TextColor = Color.FromArgb("#667085"), HorizontalTextAlignment = TextAlignment.Center }
                     }
                 }
-            }
-        };
+            });
+            return;
+        }
+
+        foreach (var message in items.OrderBy(item => item.CreatedAt))
+        {
+            var mine = message.SenderType.Equals("Provider", StringComparison.OrdinalIgnoreCase);
+            var bubble = new Border
+            {
+                BackgroundColor = Color.FromArgb(mine ? "#155EEF" : "#F8FAFC"),
+                Stroke = Color.FromArgb(mine ? "#155EEF" : "#E6E9EF"),
+                StrokeShape = new RoundRectangle { CornerRadius = 18 },
+                Padding = new Thickness(13, 10),
+                HorizontalOptions = mine ? LayoutOptions.End : LayoutOptions.Start,
+                MaximumWidthRequest = 310,
+                Content = new VerticalStackLayout
+                {
+                    Spacing = 4,
+                    Children =
+                    {
+                        new Label { Text = SenderLabel(message), FontFamily = "PlusJakartaSans", FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(mine ? "#DDE8FF" : "#667085") },
+                        new Label { Text = message.Body, FontFamily = "PlusJakartaSans", FontSize = 14, TextColor = Color.FromArgb(mine ? "#FFFFFF" : "#0F172A"), LineHeight = 1.2 }
+                    }
+                }
+            };
+            MessagesStack.Add(bubble);
+        }
     }
 
     private async void OnSendClicked(object? sender, EventArgs e)
     {
         var body = MessageEntry.Text?.Trim();
-        if (apiClient is null || assignmentId is null || string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(body))
-        {
-            return;
-        }
-
+        if (apiClient is null || assignmentId is null || string.IsNullOrWhiteSpace(accessToken) || string.IsNullOrWhiteSpace(body)) return;
         SetComposerEnabled(false);
-        var result = await apiClient.SendMissionMessageAsync(
-            accessToken,
-            assignmentId.Value,
-            new SendProviderMissionMessageRequest(body));
-
+        var result = await apiClient.SendMissionMessageAsync(accessToken, assignmentId.Value, new SendProviderMissionMessageRequest(body));
         if (!result.IsSuccess)
         {
-            ShowMessage(result.ErrorMessage ?? "Message non envoye.");
+            ShowMessage(result.ErrorMessage ?? "Message non envoyé.");
             SetComposerEnabled(true);
             return;
         }
 
         MessageEntry.Text = string.Empty;
-        await LoadChatAsync();
+        await SelectConversationAsync(assignmentId.Value);
     }
 
-    private void SetComposerEnabled(bool isEnabled)
+    private void UpdateSelectedCard()
     {
-        MessageEntry.IsEnabled = isEnabled;
-        SendButton.IsEnabled = isEnabled;
+        foreach (var pair in conversationCards)
+        {
+            var selected = pair.Key == assignmentId;
+            pair.Value.BackgroundColor = Color.FromArgb(selected ? "#EEF4FF" : "#FFFFFF");
+            pair.Value.Stroke = Color.FromArgb(selected ? "#155EEF" : "#DCE8FF");
+        }
+    }
+
+    private void RenderNoConversation()
+    {
+        assignmentId = null;
+        RecipientCard.IsVisible = false;
+        MessagesStack.Children.Clear();
+        MessagesStack.Add(new Label { Text = "Une conversation apparaîtra dès qu’une mission vous sera affectée.", FontFamily = "PlusJakartaSans", FontSize = 13, TextColor = Color.FromArgb("#667085"), HorizontalTextAlignment = TextAlignment.Center, Margin = new Thickness(20) });
+        MessageEntry.Placeholder = "Choisissez d’abord une mission";
+        SetComposerEnabled(false);
+    }
+
+    private void SetComposerEnabled(bool enabled)
+    {
+        MessageEntry.IsEnabled = enabled;
+        SendButton.IsEnabled = enabled;
     }
 
     private void ShowMessage(string message)
@@ -166,19 +257,21 @@ public partial class ChatPage : ContentPage
         MessageBanner.IsVisible = true;
     }
 
-    private void HideMessage()
+    private static string SenderLabel(ProviderMobileMissionMessageResponse message) => message.SenderType switch
     {
-        MessageBanner.IsVisible = false;
-    }
+        "Provider" => $"Vous · {message.CreatedAt.LocalDateTime:HH:mm}",
+        "Customer" => $"Client · {message.CreatedAt.LocalDateTime:HH:mm}",
+        "Company" => $"Entreprise · {message.CreatedAt.LocalDateTime:HH:mm}",
+        _ => $"{message.SenderType} · {message.CreatedAt.LocalDateTime:HH:mm}"
+    };
 
-    private static string BuildSenderLabel(ProviderMobileMissionMessageResponse message)
+    private static int StatusOrder(string status) => status switch { "Started" => 0, "Accepted" => 1, "Offered" => 2, _ => 3 };
+    private static string FirstName(string value) => value.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? value;
+
+    private static ColumnDefinitionCollection Columns(params GridLength[] widths)
     {
-        return message.SenderType switch
-        {
-            "Provider" => $"Vous - {message.CreatedAt.LocalDateTime:g}",
-            "Customer" => $"Client - {message.CreatedAt.LocalDateTime:g}",
-            "Company" => $"Entreprise - {message.CreatedAt.LocalDateTime:g}",
-            _ => $"{message.SenderType} - {message.CreatedAt.LocalDateTime:g}"
-        };
+        var result = new ColumnDefinitionCollection();
+        foreach (var width in widths) result.Add(new ColumnDefinition(width));
+        return result;
     }
 }

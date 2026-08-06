@@ -9,7 +9,8 @@ public sealed class ProviderMissionWorkflowService
     public ProviderMissionOperationResult AcceptMission(
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
-        ProviderAcceptMissionRequest request)
+        ProviderAcceptMissionRequest request,
+        DateTimeOffset? customerPaymentExpiresAt = null)
     {
         if (!CanProviderUsePortal(provider))
         {
@@ -35,7 +36,10 @@ public sealed class ProviderMissionWorkflowService
         try
         {
             assignment.Accept(request.Latitude, request.Longitude, request.AccuracyMeters);
-            assignment.Mission.MarkProviderAccepted(assignment.ProviderId, assignment.CompanyId);
+            assignment.Mission.MarkProviderAccepted(
+                assignment.ProviderId,
+                assignment.CompanyId,
+                customerPaymentExpiresAt);
             provider.SetAvailability(false, request.Latitude, request.Longitude);
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
         }
@@ -245,7 +249,8 @@ public sealed class ProviderMissionWorkflowService
     public ProviderMissionOperationResult CompleteMission(
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
-        ProviderCompleteMissionRequest request)
+        ProviderCompleteMissionRequest request,
+        DateTimeOffset? customerCompletionValidationExpiresAt = null)
     {
         if (!CanProviderUsePortal(provider))
         {
@@ -270,7 +275,9 @@ public sealed class ProviderMissionWorkflowService
         try
         {
             assignment.Complete(request.Note, request.CompletionPhotoPath);
-            assignment.Mission.Complete(request.ActualDurationMinutes);
+            assignment.Mission.Complete(
+                request.ActualDurationMinutes,
+                customerCompletionValidationExpiresAt);
             provider.SetAvailability(true, provider.CurrentLatitude, provider.CurrentLongitude);
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
         }

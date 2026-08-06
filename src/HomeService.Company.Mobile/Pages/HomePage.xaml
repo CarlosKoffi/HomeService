@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Company.Mobile.Pages.HomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False">
+    <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="20,20,20,34" Spacing="20">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="3">
+                        <Label Text="WÉLÉ ENTREPRISE" Style="{StaticResource Eyebrow}" />
+                        <Label x:Name="GreetingLabel" Text="Bonjour" Style="{StaticResource ScreenTitle}" />
+                        <Label x:Name="CompanyLabel" Style="{StaticResource Muted}" />
+                    </VerticalStackLayout>
+                    <ImageButton Grid.Column="1" Source="icon_message.svg" Clicked="OnNotificationsClicked" />
+                </Grid>
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                    <Border Style="{StaticResource PremiumCard}" Padding="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="À accepter" Style="{StaticResource Muted}" />
+                            <Label x:Name="OffersCountLabel" Text="0" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource PremiumCard}" Padding="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="À affecter" Style="{StaticResource Muted}" />
+                            <Label x:Name="AssignCountLabel" Text="0" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource Warning}" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource PremiumCard}" Padding="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="En cours" Style="{StaticResource Muted}" />
+                            <Label x:Name="ActiveCountLabel" Text="0" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource Success}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Text="À traiter maintenant" Style="{StaticResource CardTitle}" />
+                        <Label Grid.Column="1" Text="Temps réel" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource Success}" />
+                    </Grid>
+                    <Label x:Name="EmptyOffersLabel" Text="Aucune nouvelle mission à accepter." Style="{StaticResource Muted}" />
+                    <CollectionView x:Name="OffersView" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource PremiumCard}" Margin="0,0,0,10">
+                                    <VerticalStackLayout Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Label Text="NOUVELLE MISSION" Style="{StaticResource Eyebrow}" />
+                                            <Label Grid.Column="1" Text="{Binding RemainingText}" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource Danger}" />
+                                        </Grid>
+                                        <Label Text="{Binding ServiceName}" Style="{StaticResource CardTitle}" />
+                                        <Label Text="{Binding CustomerAndLocation}" Style="{StaticResource Muted}" />
+                                        <Label Text="{Binding ScheduleLabel}" Style="{StaticResource Muted}" />
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                            <Button Text="Voir" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding .}" Clicked="OnOfferDetailsClicked" />
+                                            <Button Grid.Column="1" Text="J’accepte" CommandParameter="{Binding .}" Clicked="OnAcceptOfferClicked" IsEnabled="{Binding CanAccept}" />
+                                        </Grid>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <Border BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="16">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Image Source="icon_info.svg" WidthRequest="25" HeightRequest="25" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="3">
+                            <Label Text="Priorité aux actions utiles" Style="{StaticResource CardTitle}" />
+                            <Label Text="L’application vous alerte lorsqu’une mission doit être acceptée, affectée ou suivie." Style="{StaticResource Muted}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+                <Label x:Name="ErrorLabel" IsVisible="False" TextColor="{StaticResource Danger}" Style="{StaticResource Muted}" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

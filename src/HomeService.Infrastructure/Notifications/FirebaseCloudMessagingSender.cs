@@ -64,6 +64,10 @@ public sealed class FirebaseCloudMessagingSender(
                 token = deviceToken,
                 notification = new { title, body },
                 data = payloadData,
+                fcmOptions = new
+                {
+                    analyticsLabel = "wele_transactional"
+                },
                 android = new
                 {
                     priority = "HIGH",

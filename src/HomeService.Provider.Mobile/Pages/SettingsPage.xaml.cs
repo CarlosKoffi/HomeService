@@ -14,6 +14,8 @@ public partial class SettingsPage : ContentPage
 
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 
+    private void OnNotificationSettingsTapped(object? sender, TappedEventArgs e) => AppInfo.Current.ShowSettingsUI();
+
     private async void OnLogoutClicked(object? sender, EventArgs e)
     {
         if (sessionService is not null) await sessionService.ClearAsync();

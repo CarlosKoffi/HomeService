@@ -60,6 +60,12 @@ public sealed class CompanyMissionAssignmentNotificationTests
             MobileDevicePlatform.Android,
             "provider-token",
             "Samsung test"));
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Customer,
+            customer.Id,
+            MobileDevicePlatform.Android,
+            "customer-token",
+            "Telephone client"));
         db.NotificationDeliveryRules.Add(new NotificationDeliveryRule(
             "MissionAssignedToProvider",
             "Mission affectee au prestataire",
@@ -98,6 +104,7 @@ public sealed class CompanyMissionAssignmentNotificationTests
         var notification = await db.NotificationOutboxMessages.SingleAsync();
         Assert.Equal(NotificationChannel.MobilePush, notification.Channel);
         Assert.Equal("provider-token", notification.Recipient);
+        Assert.DoesNotContain(await db.NotificationOutboxMessages.ToListAsync(), message => message.Recipient == "customer-token");
         Assert.Equal($"Mission {mission.MissionNumber}", notification.Subject);
         Assert.Equal("Malou Diallo, mission Jardinage pour CI Home Service.", notification.Body);
         Assert.Contains(result.Response!.AssignmentId.ToString(), notification.MetadataJson);

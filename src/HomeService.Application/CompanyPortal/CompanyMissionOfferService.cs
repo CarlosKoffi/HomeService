@@ -1,6 +1,5 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Missions;
-using HomeService.Application.Notifications;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -9,8 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HomeService.Application.CompanyPortal;
 
 public sealed class CompanyMissionOfferService(
-    IAppDbContext db,
-    CustomerMissionProgressNotificationService? customerNotifications = null)
+    IAppDbContext db)
 {
     private static readonly TimeSpan ProviderAssignmentWindow = TimeSpan.FromMinutes(10);
 
@@ -190,14 +188,6 @@ public sealed class CompanyMissionOfferService(
             "blue",
             nameof(Mission),
             mission.Id));
-
-        if (customerNotifications is not null)
-        {
-            await customerNotifications.NotifyCompanyAnalyzingAsync(
-                mission,
-                companyId,
-                cancellationToken);
-        }
 
         await db.SaveChangesAsync(cancellationToken);
 

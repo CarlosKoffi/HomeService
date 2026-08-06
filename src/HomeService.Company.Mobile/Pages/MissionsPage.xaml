@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Company.Mobile.Pages.MissionsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="20,20,20,0" RowSpacing="14">
+        <Grid ColumnDefinitions="*,Auto">
+            <VerticalStackLayout Spacing="3">
+                <Label Text="MISSIONS" Style="{StaticResource Eyebrow}" />
+                <Label Text="Pilotage opérationnel" Style="{StaticResource ScreenTitle}" />
+            </VerticalStackLayout>
+            <ImageButton Grid.Column="1" Source="icon_calendar.svg" />
+        </Grid>
+        <Border Grid.Row="1" Style="{StaticResource PremiumCard}" Padding="12,0" Shadow="{x:Null}">
+            <Picker x:Name="FilterPicker" Title="Filtrer les missions" SelectedIndexChanged="OnFilterChanged">
+                <Picker.Items>
+                    <x:String>Toutes</x:String>
+                    <x:String>À affecter</x:String>
+                    <x:String>En cours</x:String>
+                    <x:String>Terminées</x:String>
+                    <x:String>Annulées</x:String>
+                </Picker.Items>
+            </Picker>
+        </Border>
+        <RefreshView x:Name="RefreshHost" Grid.Row="2" Refreshing="OnRefreshing">
+            <CollectionView x:Name="MissionsView" SelectionMode="Single" SelectionChanged="OnMissionSelected" EmptyView="Aucune mission dans cette catégorie.">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource PremiumCard}" Margin="0,0,0,11">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <Border WidthRequest="48" HeightRequest="48" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 15">
+                                    <Image Source="icon_mission.svg" WidthRequest="25" HeightRequest="25" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                    <Label Text="{Binding ServiceName}" Style="{StaticResource CardTitle}" />
+                                    <Label Text="{Binding CustomerLabel}" Style="{StaticResource Muted}" />
+                                    <Label Text="{Binding ProviderLabel}" Style="{StaticResource Muted}" />
+                                    <Label Text="{Binding ScheduleLabel}" FontSize="12" TextColor="{StaticResource MutedInk}" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="2" Spacing="8" HorizontalOptions="End">
+                                    <Label Text="{Binding StatusLabel}" FontSize="11" FontAttributes="Bold" TextColor="{Binding StatusColor}" HorizontalTextAlignment="End" />
+                                    <Image Source="icon_forward.svg" WidthRequest="18" HeightRequest="18" HorizontalOptions="End" />
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

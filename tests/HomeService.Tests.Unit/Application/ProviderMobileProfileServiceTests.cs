@@ -79,6 +79,8 @@ public sealed class ProviderMobileProfileServiceTests
         Assert.False(result.Response.CanViewPrices);
         Assert.NotNull(result.Response.ProfilePhotoUrl);
         Assert.True(result.Response.IsApprovedForMissions);
+        Assert.Equal(5.348850m, result.Response.MissionLatitude);
+        Assert.Equal(-4.003150m, result.Response.MissionLongitude);
         Assert.Null(result.Response.ProfileCompletion);
         Assert.Equal(2, result.Response.Documents.Count);
         var profileService = Assert.Single(result.Response.Services);
@@ -166,6 +168,42 @@ public sealed class ProviderMobileProfileServiceTests
         Assert.Contains("Piece d'identite", result.Response.ProfileCompletion.MissingItems);
         Assert.Contains("Service actif", result.Response.ProfileCompletion.MissingItems);
         Assert.Contains("Zone de mission", result.Response.ProfileCompletion.MissingItems);
+    }
+
+    [Fact]
+    public async Task GetAsync_ForLegacyProviderWithoutExplicitSelection_ReturnsActiveCatalogPrestations()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("Wele Services", "+2250701111111", "ops@wele.ci");
+        var service = new Service("Blanchisserie", null, null);
+        service.AddPrestation("Lavage et pliage", null, 10, 2_500, 4_000);
+        service.AddPrestation("Repassage", null, 20, 3_000, 4_500);
+        var provider = new ProviderProfile(
+            company.Id,
+            "Malou",
+            "Diallo",
+            "+2250703333333",
+            null,
+            new DateOnly(1998, 5, 4),
+            "Yopougon",
+            ProviderGender.Male,
+            ProviderEmploymentType.CompanyEmployee,
+            2,
+            5.348850m,
+            -4.003150m,
+            5);
+        provider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)]);
+
+        db.Companies.Add(company);
+        db.Services.Add(service);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new ProviderMobileProfileService(db).GetAsync(provider.Id, CancellationToken.None);
+
+        var profileService = Assert.Single(result.Response!.Services);
+        Assert.Equal(["Lavage et pliage", "Repassage"], profileService.Prestations.Select(item => item.Name));
+        Assert.All(profileService.Prestations, item => Assert.Null(item.PriceMinAmount));
     }
 
     private static HomeServiceDbContext CreateDbContext()

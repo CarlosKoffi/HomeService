@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.MissionDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+    Shell.NavBarIsVisible="False">
+    <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
+        <ScrollView>
+            <VerticalStackLayout Padding="18,16,18,32" Spacing="14">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
+                    <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Détail mission" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
+                    <Border Grid.Column="2" x:Name="StatusPill" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 12" Padding="9,5" VerticalOptions="Center">
+                        <Label x:Name="StatusLabel" Text="Chargement" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                    </Border>
+                </Grid>
+
+                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13">
+                    <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
+                </Border>
+                <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="False" Color="{StaticResource WeleBlue}" />
+
+                <VerticalStackLayout x:Name="DetailHost" IsVisible="False" Spacing="14">
+                    <Border Style="{StaticResource PremiumCard}">
+                        <VerticalStackLayout Spacing="11">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Border WidthRequest="54" HeightRequest="54" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 16">
+                                    <Image x:Name="ServiceIcon" Source="service_default.svg" WidthRequest="30" HeightRequest="30" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                    <Label x:Name="MissionTitleLabel" Text="Mission" Style="{StaticResource CardTitleLabel}" />
+                                    <Label x:Name="ServiceLabel" Style="{StaticResource MutedLabel}" />
+                                    <Label x:Name="MissionNumberLabel" Style="{StaticResource EyebrowLabel}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <BoxView HeightRequest="1" BackgroundColor="#EEF1F6" />
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                                <Image Source="icon_calendar.svg" WidthRequest="20" HeightRequest="20" />
+                                <Label x:Name="ScheduleLabel" Grid.Column="1" Style="{StaticResource BodyLabel}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                                <Image Source="icon_location.svg" WidthRequest="20" HeightRequest="20" />
+                                <Label x:Name="LocationLabel" Grid.Column="1" Style="{StaticResource BodyLabel}" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border Style="{StaticResource PremiumCard}">
+                        <VerticalStackLayout Spacing="11">
+                            <Label Text="Informations client" Style="{StaticResource CardTitleLabel}" />
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Border WidthRequest="44" HeightRequest="44" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 22">
+                                    <Image Source="icon_user.svg" WidthRequest="22" HeightRequest="22" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                    <Label x:Name="CustomerNameLabel" FontAttributes="Bold" FontSize="14" />
+                                    <Label x:Name="CustomerPhoneLabel" Style="{StaticResource MutedLabel}" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <Button x:Name="CallButton" Text="Appeler" Style="{StaticResource SecondaryButton}" Clicked="OnCallClicked" />
+                                <Button x:Name="MessageButton" Grid.Column="1" Text="Message" Style="{StaticResource SecondaryButton}" Clicked="OnMessageClicked" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border x:Name="DescriptionCard" Style="{StaticResource PremiumCard}">
+                        <VerticalStackLayout Spacing="7">
+                            <Label Text="Détails de l’intervention" Style="{StaticResource CardTitleLabel}" />
+                            <Label x:Name="DescriptionLabel" Style="{StaticResource BodyLabel}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border x:Name="MapCard" Style="{StaticResource PremiumCard}" Padding="0" IsVisible="False">
+                        <Grid RowDefinitions="210,Auto">
+                            <maps:Map x:Name="MissionMap" MapType="Street" IsShowingUser="True" />
+                            <Button Grid.Row="1" Margin="12" Text="Ouvrir l’itinéraire dans Google Maps" Clicked="OnOpenRouteClicked" />
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="ArrivalCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                            <Image Source="icon_location.svg" WidthRequest="25" HeightRequest="25" VerticalOptions="Start" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="3">
+                                <Label x:Name="ArrivalTitleLabel" Text="Arrivée sur place" Style="{StaticResource CardTitleLabel}" />
+                                <Label x:Name="ArrivalDetailLabel" Style="{StaticResource MutedLabel}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="OfferCard" Style="{StaticResource PremiumCard}" IsVisible="False" Stroke="{StaticResource WeleBlue}">
+                        <VerticalStackLayout Spacing="11">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="NOUVELLE MISSION" Style="{StaticResource EyebrowLabel}" />
+                                <Label x:Name="CountdownLabel" Grid.Column="1" FontAttributes="Bold" FontSize="12" TextColor="#B54708" />
+                            </Grid>
+                            <Label Text="Acceptez-la avant la fin du délai." Style="{StaticResource MutedLabel}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <Button x:Name="RefuseButton" Text="Refuser" Style="{StaticResource SecondaryButton}" Clicked="OnRefuseClicked" />
+                                <Button x:Name="AcceptButton" Grid.Column="1" Text="Accepter" Clicked="OnAcceptClicked" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <VerticalStackLayout x:Name="FieldActionsStack" IsVisible="False" Spacing="10">
+                        <Button x:Name="VerifyArrivalButton" Text="J’ai pris la route / Je suis arrivé" Clicked="OnVerifyArrivalClicked" />
+                        <Button x:Name="StartButton" Text="Démarrer la mission" Clicked="OnStartClicked" />
+                        <Button x:Name="AdditionalQuoteButton" Text="Signaler un besoin à l’entreprise" Style="{StaticResource SecondaryButton}" Clicked="OnAdditionalQuoteClicked" />
+                        <Button x:Name="CompleteButton" Text="Terminer la mission" Clicked="OnCompleteClicked" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

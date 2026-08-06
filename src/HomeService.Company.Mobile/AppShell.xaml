@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Shell
+    x:Class="HomeService.Company.Mobile.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:pages="clr-namespace:HomeService.Company.Mobile.Pages"
+    Shell.FlyoutBehavior="Disabled"
+    Shell.NavBarIsVisible="False"
+    Title="Wélé Entreprise">
+    <TabBar>
+        <ShellContent Route="home" Title="Accueil" Icon="tab_home.svg" ContentTemplate="{DataTemplate pages:HomePage}" />
+        <ShellContent Route="missions" Title="Missions" Icon="tab_missions.svg" ContentTemplate="{DataTemplate pages:MissionsPage}" />
+        <ShellContent Route="providers" Title="Prestataires" Icon="icon_user.svg" ContentTemplate="{DataTemplate pages:ProvidersPage}" />
+        <ShellContent Route="notifications" Title="Alertes" Icon="icon_message.svg" ContentTemplate="{DataTemplate pages:NotificationsPage}" />
+    </TabBar>
+</Shell>

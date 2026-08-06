@@ -66,6 +66,19 @@
             <Setter Property="MinimumHeightRequest" Value="50" /><Setter Property="FontAttributes" Value="Bold" /><Setter Property="FontSize" Value="14" />
             <Setter Property="BackgroundColor" Value="{StaticResource WeleBlue}" /><Setter Property="TextColor" Value="White" />
         </Style>
+        <Style TargetType="ImageButton">
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="HeightRequest" Value="42" />
+            <Setter Property="WidthRequest" Value="42" />
+        </Style>
+        <Style x:Key="FilterChip" TargetType="Border">
+            <Setter Property="BackgroundColor" Value="White" />
+            <Setter Property="Stroke" Value="{StaticResource Line}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+            <Setter Property="Padding" Value="14,9" />
+        </Style>
         <Style x:Key="SecondaryButton" TargetType="Button">
             <Setter Property="BackgroundColor" Value="White" /><Setter Property="TextColor" Value="{StaticResource Ink}" />
             <Setter Property="BorderColor" Value="{StaticResource Line}" /><Setter Property="BorderWidth" Value="1" />

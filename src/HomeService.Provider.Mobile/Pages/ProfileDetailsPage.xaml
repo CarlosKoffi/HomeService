@@ -3,10 +3,11 @@
     x:Class="HomeService.Provider.Mobile.Pages.ProfileDetailsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:clients="clr-namespace:HomeService.Contracts.Clients;assembly=HomeService.Contracts"
     Shell.NavBarIsVisible="False">
     <ScrollView>
         <VerticalStackLayout Padding="18,18,18,30" Spacing="15">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><Button Text="‹" FontSize="28" WidthRequest="42" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnBackClicked" /><Label Grid.Column="1" Text="Mes informations" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" /></Grid>
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7"><ImageButton Source="icon_back.svg" Clicked="OnBackClicked" /><Label Grid.Column="1" Text="Mes informations" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" /></Grid>
 
             <VerticalStackLayout HorizontalOptions="Center" Spacing="8">
                 <Border WidthRequest="108" HeightRequest="108" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 54" Padding="2"><Image x:Name="ProfileImage" Source="wele_profile_placeholder.svg" Aspect="AspectFill" /></Border>
@@ -17,7 +18,52 @@
             <VerticalStackLayout Spacing="6"><Label Text="Nom" FontSize="13" FontAttributes="Bold" /><Border Style="{StaticResource FieldBorder}"><Entry x:Name="LastNameEntry" /></Border></VerticalStackLayout>
             <VerticalStackLayout Spacing="6"><Label Text="Téléphone" FontSize="13" FontAttributes="Bold" /><Border Style="{StaticResource FieldBorder}" BackgroundColor="{StaticResource BlueWash}"><Entry x:Name="PhoneEntry" IsReadOnly="True" /></Border><Label Text="Le téléphone de connexion est géré avec votre entreprise." Style="{StaticResource MutedLabel}" /></VerticalStackLayout>
             <VerticalStackLayout Spacing="6"><Label Text="Email" FontSize="13" FontAttributes="Bold" /><Border Style="{StaticResource FieldBorder}"><Entry x:Name="EmailEntry" Keyboard="Email" /></Border></VerticalStackLayout>
-            <VerticalStackLayout Spacing="6"><Label Text="Adresse" FontSize="13" FontAttributes="Bold" /><Border Style="{StaticResource FieldBorder}"><Entry x:Name="AddressEntry" /></Border></VerticalStackLayout>
+            <VerticalStackLayout Spacing="7">
+                <Label Text="Adresse d’intervention" FontSize="13" FontAttributes="Bold" />
+                <Border Style="{StaticResource FieldBorder}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                        <Image Source="icon_location.svg" WidthRequest="20" HeightRequest="20" VerticalOptions="Center" />
+                        <Entry
+                            Grid.Column="1"
+                            x:Name="AddressEntry"
+                            Placeholder="Rechercher une adresse, un quartier…"
+                            MaxLength="160"
+                            TextChanged="OnAddressTextChanged" />
+                    </Grid>
+                </Border>
+                <Border
+                    x:Name="SuggestionsPanel"
+                    IsVisible="False"
+                    BackgroundColor="White"
+                    Stroke="{StaticResource Line}"
+                    StrokeShape="RoundRectangle 14"
+                    Padding="0">
+                    <VerticalStackLayout Spacing="0">
+                        <CollectionView
+                            x:Name="SuggestionsView"
+                            SelectionMode="Single"
+                            SelectionChanged="OnSuggestionSelected"
+                            MaximumHeightRequest="220">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate x:DataType="clients:ClientAddressSuggestionResponse">
+                                    <Grid Padding="14,11" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="2">
+                                        <Image Source="icon_location.svg" WidthRequest="17" HeightRequest="17" VerticalOptions="Start" Margin="0,2,0,0" />
+                                        <Label Grid.Column="1" Text="{Binding MainText}" FontSize="13" FontAttributes="Bold" />
+                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding SecondaryText}" FontSize="11" TextColor="{StaticResource MutedInk}" LineBreakMode="TailTruncation" />
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                        <Label Text="Suggestions fournies par Google" FontSize="9" TextColor="{StaticResource MutedInk}" Padding="14,7" HorizontalTextAlignment="End" />
+                    </VerticalStackLayout>
+                </Border>
+                <HorizontalStackLayout x:Name="VerifiedAddressRow" IsVisible="False" Spacing="6">
+                    <Label Text="✓" TextColor="{StaticResource Success}" FontAttributes="Bold" />
+                    <Label Text="Adresse vérifiée par Google" FontSize="11" TextColor="{StaticResource Success}" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                </HorizontalStackLayout>
+                <Label x:Name="AddressErrorLabel" IsVisible="False" TextColor="{StaticResource Danger}" FontSize="11" />
+                <Label Text="Cette adresse définit votre zone de départ pour les missions proches." Style="{StaticResource MutedLabel}" />
+            </VerticalStackLayout>
             <VerticalStackLayout Spacing="6"><Label Text="Rayon d’intervention (km)" FontSize="13" FontAttributes="Bold" /><Border Style="{StaticResource FieldBorder}"><Entry x:Name="RadiusEntry" Keyboard="Numeric" /></Border></VerticalStackLayout>
 
             <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13"><Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" /></Border>

@@ -44,7 +44,9 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal(20_000, result.Response.CompanyQuotedAmount);
         Assert.Equal(3_000, result.Response.PartsEstimateAmount);
         Assert.Equal("Joint a remplacer", result.Response.PartsDescription);
-        Assert.Equal("Votre technicien est affecte. Les informations utiles sont disponibles.", result.Response.Message);
+        Assert.Equal(
+            "Le prestataire a confirme la mission. Validez le prix et payez pour lancer l'intervention.",
+            result.Response.Message);
     }
 
     [Fact]
@@ -60,6 +62,24 @@ public sealed class ClientMissionStatusServiceTests
         Assert.True(result.Response!.Actions.CanAcceptQuote);
         Assert.Equal(20_000, result.Response.Actions.AmountToPayNow);
         Assert.Equal("AcceptQuote", result.Response.Actions.PrimaryAction);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenProviderHasNotAcceptedYet_HidesEveryPaymentAction()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedMissionAsync(db, markProviderAccepted: false);
+        var sut = new ClientMissionStatusService(db);
+
+        var result = await sut.GetAsync(scenario.Mission.Id, scenario.Customer.PhoneNumber, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Response);
+        Assert.Equal(MissionStatus.Assigned.ToString(), result.Response.Status);
+        Assert.False(result.Response.Actions.CanAcceptQuote);
+        Assert.False(result.Response.Actions.RequiresPaymentMethod);
+        Assert.Null(result.Response.Actions.AmountToPayNow);
+        Assert.NotEqual("AcceptQuote", result.Response.Actions.PrimaryAction);
     }
 
     [Fact]
@@ -190,7 +210,9 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal("ValidateCompletion", result.Response.Actions.PrimaryAction);
     }
 
-    private static async Task<ClientMissionStatusScenario> SeedMissionAsync(HomeServiceDbContext db)
+    private static async Task<ClientMissionStatusScenario> SeedMissionAsync(
+        HomeServiceDbContext db,
+        bool markProviderAccepted = true)
     {
         var service = new Service("Plomberie", "Depannage eau", createdByCompanyId: null);
         var prestation = service.AddPrestation("Fuite evier", null, 1, 5_000, 25_000);
@@ -232,7 +254,10 @@ public sealed class ClientMissionStatusServiceTests
         mission.SelectCustomerPaymentMethod(paymentMethod);
         mission.SetServiceLocation("Cocody Angre", 5.348850m, -4.003150m);
         mission.AssignWithCompanyQuote(provider.Id, company.Id, 20_000, 25_000, null, 3_000, "Joint a remplacer");
-        mission.MarkProviderAccepted(provider.Id, company.Id);
+        if (markProviderAccepted)
+        {
+            mission.MarkProviderAccepted(provider.Id, company.Id);
+        }
 
         var offer = new MissionDispatchOffer(
             mission.Id,

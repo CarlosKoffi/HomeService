@@ -7,7 +7,7 @@
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
             <VerticalStackLayout Padding="18,18,18,30" Spacing="15">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><Button Text="‹" FontSize="28" WidthRequest="42" BackgroundColor="White" TextColor="{StaticResource Ink}" Clicked="OnBackClicked" /><Label Grid.Column="1" Text="Documents &amp; diplômes" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" /></Grid>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7"><ImageButton Source="icon_back.svg" Clicked="OnBackClicked" /><Label Grid.Column="1" Text="Documents &amp; diplômes" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" /></Grid>
                 <Label Text="Ajoutez les pièces nécessaires à la validation de votre profil professionnel." Style="{StaticResource MutedLabel}" />
                 <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13"><Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" /></Border>
                 <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">

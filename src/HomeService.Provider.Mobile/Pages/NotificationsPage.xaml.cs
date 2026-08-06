@@ -18,21 +18,43 @@ public partial class NotificationsPage : ContentPage
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
     }
 
-    protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
-    private async void OnRefreshing(object? sender, EventArgs e) { await LoadAsync(); RefreshHost.IsRefreshing = false; }
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await LoadAsync();
+    }
+
+    private async void OnRefreshing(object? sender, EventArgs e)
+    {
+        await LoadAsync();
+        RefreshHost.IsRefreshing = false;
+    }
 
     private async Task LoadAsync()
     {
+        SetLoading(true);
+        MessageBanner.IsVisible = false;
         accessToken = sessionService is null ? null : await sessionService.GetAccessTokenAsync();
-        if (string.IsNullOrWhiteSpace(accessToken) || apiClient is null) return;
-        var result = await apiClient.GetNotificationsAsync(accessToken, unreadOnly);
-        if (result.Response is null)
+        if (string.IsNullOrWhiteSpace(accessToken) || apiClient is null)
         {
+            SetLoading(false);
+            ShowMessage("Votre session a expiré. Reconnectez-vous pour voir les notifications.");
             Render([]);
             return;
         }
 
-        UnreadSummaryLabel.Text = result.Response.UnreadCount == 0 ? "Vous êtes à jour." : $"{result.Response.UnreadCount} notification(s) non lue(s)";
+        var result = await apiClient.GetNotificationsAsync(accessToken, unreadOnly);
+        SetLoading(false);
+        if (!result.IsSuccess || result.Response is null)
+        {
+            ShowMessage(result.ErrorMessage ?? "Impossible de charger les notifications depuis l’API.");
+            Render([]);
+            return;
+        }
+
+        UnreadSummaryLabel.Text = result.Response.UnreadCount == 0
+            ? "Vous êtes à jour."
+            : result.Response.UnreadCount == 1 ? "1 notification non lue" : $"{result.Response.UnreadCount} notifications non lues";
         Render(result.Response.Items);
     }
 
@@ -41,61 +63,130 @@ public partial class NotificationsPage : ContentPage
         NotificationsStack.Children.Clear();
         if (notifications.Count == 0)
         {
-            NotificationsStack.Add(new Label { Text = "Aucune notification.", Style = (Style)Application.Current!.Resources["MutedLabel"] });
+            NotificationsStack.Add(new Border
+            {
+                Style = (Style)Application.Current!.Resources["PremiumCard"],
+                Content = new VerticalStackLayout
+                {
+                    Spacing = 8,
+                    Children =
+                    {
+                        new Image { Source = "app_bell.svg", WidthRequest = 42, HeightRequest = 42, HorizontalOptions = LayoutOptions.Center },
+                        new Label { Text = unreadOnly ? "Aucune notification non lue" : "Aucune notification", FontFamily = "PlusJakartaSans", FontSize = 16, FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center },
+                        new Label { Text = "Les nouvelles missions et les changements importants apparaîtront ici.", FontFamily = "PlusJakartaSans", FontSize = 13, TextColor = Color.FromArgb("#667085"), HorizontalTextAlignment = TextAlignment.Center }
+                    }
+                }
+            });
             return;
         }
 
         foreach (var notification in notifications)
         {
-            var card = new Border
+            var icon = new Border
             {
-                BackgroundColor = Colors.White,
-                Stroke = notification.IsRead ? Color.FromArgb("#DCE8FF") : Color.FromArgb("#155EEF"),
-                StrokeShape = new RoundRectangle { CornerRadius = 17 },
-                Padding = 13,
-                Content = new Grid
-                {
-                    ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star, GridLength.Auto),
-                    ColumnSpacing = 11
-                }
+                BackgroundColor = Color.FromArgb("#EEF4FF"),
+                Stroke = Color.FromArgb("#DCE8FF"),
+                StrokeShape = new RoundRectangle { CornerRadius = 14 },
+                WidthRequest = 46,
+                HeightRequest = 46,
+                Content = new Image { Source = ProviderIconResolver.ForNotification(notification.RelatedEntityType, notification.Title), WidthRequest = 24, HeightRequest = 24 }
             };
-            var grid = (Grid)card.Content;
-            grid.Add(new Border
-            {
-                BackgroundColor = Color.FromArgb("#EEF4FF"), Stroke = Color.FromArgb("#EEF4FF"), StrokeShape = new RoundRectangle { CornerRadius = 13 }, WidthRequest = 44, HeightRequest = 44,
-                Content = new Label { Text = IconFor(notification), FontSize = 20, TextColor = Color.FromArgb("#155EEF"), HorizontalTextAlignment = TextAlignment.Center, VerticalTextAlignment = TextAlignment.Center }
-            }, 0);
-            grid.Add(new VerticalStackLayout
+            var text = new VerticalStackLayout
             {
                 Spacing = 4,
                 Children =
                 {
                     new Label { Text = notification.Title, FontFamily = "PlusJakartaSans", FontSize = 15, FontAttributes = FontAttributes.Bold },
                     new Label { Text = notification.Body, FontFamily = "PlusJakartaSans", FontSize = 13, TextColor = Color.FromArgb("#667085"), LineHeight = 1.2 },
-                    new Label { Text = notification.CreatedAt.LocalDateTime.ToString("dd.MM.yyyy · HH:mm"), FontFamily = "PlusJakartaSans", FontSize = 11, TextColor = Color.FromArgb("#667085") }
+                    new Label { Text = notification.CreatedAt.LocalDateTime.ToString("dd.MM.yyyy · HH:mm"), FontFamily = "PlusJakartaSans", FontSize = 11, TextColor = Color.FromArgb("#98A2B3") }
                 }
-            }, 1);
-            grid.Add(new Label { Text = notification.IsRead ? string.Empty : "Nouveau", FontFamily = "PlusJakartaSans", FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#155EEF"), VerticalTextAlignment = TextAlignment.Start }, 2);
-            if (!notification.IsRead)
+            };
+            var unreadMarker = new Border
             {
-                var tap = new TapGestureRecognizer { CommandParameter = notification.Id };
-                tap.Tapped += OnNotificationTapped;
-                card.GestureRecognizers.Add(tap);
-            }
+                IsVisible = !notification.IsRead,
+                BackgroundColor = Color.FromArgb("#155EEF"),
+                Stroke = Color.FromArgb("#155EEF"),
+                StrokeShape = new RoundRectangle { CornerRadius = 5 },
+                WidthRequest = 9,
+                HeightRequest = 9,
+                VerticalOptions = LayoutOptions.Start,
+                Margin = new Thickness(0, 5, 0, 0)
+            };
+            var grid = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star, GridLength.Auto), ColumnSpacing = 11 };
+            grid.Add(icon, 0);
+            grid.Add(text, 1);
+            grid.Add(unreadMarker, 2);
+
+            var card = new Border
+            {
+                BackgroundColor = Colors.White,
+                Stroke = Color.FromArgb(notification.IsRead ? "#E6E9EF" : "#CFE0FF"),
+                StrokeShape = new RoundRectangle { CornerRadius = 17 },
+                Padding = 13,
+                Content = grid
+            };
+            var tap = new TapGestureRecognizer { CommandParameter = notification };
+            tap.Tapped += OnNotificationTapped;
+            card.GestureRecognizers.Add(tap);
             NotificationsStack.Add(card);
         }
     }
 
     private async void OnNotificationTapped(object? sender, TappedEventArgs e)
     {
-        if (apiClient is null || string.IsNullOrWhiteSpace(accessToken) || e.Parameter is not Guid id) return;
-        await apiClient.MarkNotificationReadAsync(accessToken, id);
+        if (apiClient is null || string.IsNullOrWhiteSpace(accessToken) || e.Parameter is not ProviderMobileNotificationResponse notification) return;
+        if (!notification.IsRead) await apiClient.MarkNotificationReadAsync(accessToken, notification.Id);
+
+        if (notification.RelatedEntityId is not null
+            && string.Equals(notification.RelatedEntityType, "Mission", StringComparison.OrdinalIgnoreCase))
+        {
+            var missionsResult = await apiClient.GetMissionsAsync(accessToken);
+            var assignment = missionsResult.Response?.Items.FirstOrDefault(item =>
+                item.MissionId == notification.RelatedEntityId || item.AssignmentId == notification.RelatedEntityId);
+            if (assignment is not null)
+            {
+                await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?assignmentId={assignment.AssignmentId:D}");
+                return;
+            }
+        }
+
         await LoadAsync();
     }
 
-    private async void OnAllClicked(object? sender, EventArgs e) { unreadOnly = false; AllButton.Style = (Style)Application.Current!.Resources["PrimaryButton"]; UnreadButton.Style = (Style)Application.Current.Resources["SecondaryButton"]; await LoadAsync(); }
-    private async void OnUnreadClicked(object? sender, EventArgs e) { unreadOnly = true; UnreadButton.Style = (Style)Application.Current!.Resources["PrimaryButton"]; AllButton.Style = (Style)Application.Current.Resources["SecondaryButton"]; await LoadAsync(); }
+    private async void OnAllClicked(object? sender, EventArgs e)
+    {
+        unreadOnly = false;
+        AllButton.Style = (Style)Application.Current!.Resources["PrimaryButton"];
+        UnreadButton.Style = (Style)Application.Current.Resources["SecondaryButton"];
+        await LoadAsync();
+    }
+
+    private async void OnUnreadClicked(object? sender, EventArgs e)
+    {
+        unreadOnly = true;
+        UnreadButton.Style = (Style)Application.Current!.Resources["PrimaryButton"];
+        AllButton.Style = (Style)Application.Current.Resources["SecondaryButton"];
+        await LoadAsync();
+    }
+
+    private void SetLoading(bool value)
+    {
+        LoadingIndicator.IsVisible = value;
+        LoadingIndicator.IsRunning = value;
+    }
+
+    private void ShowMessage(string value)
+    {
+        MessageLabel.Text = value;
+        MessageBanner.IsVisible = true;
+    }
+
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
-    private static string IconFor(ProviderMobileNotificationResponse notification) => notification.RelatedEntityType switch { "Mission" => "▣", "ProviderProfile" => "♙", _ => "◇" };
-    private static ColumnDefinitionCollection Columns(params GridLength[] widths) { var result = new ColumnDefinitionCollection(); foreach (var width in widths) result.Add(new ColumnDefinition(width)); return result; }
+
+    private static ColumnDefinitionCollection Columns(params GridLength[] widths)
+    {
+        var result = new ColumnDefinitionCollection();
+        foreach (var width in widths) result.Add(new ColumnDefinition(width));
+        return result;
+    }
 }

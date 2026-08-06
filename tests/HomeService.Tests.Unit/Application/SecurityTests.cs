@@ -62,6 +62,16 @@ public sealed class SecurityTests
         Assert.True(Sha256PasswordHasher.NeedsRehash(storedHash));
     }
 
+    [Fact]
+    public void CompanyTestPasswordResetHash_AcceptsRequestedTemporaryPasswordOnly()
+    {
+        const string storedHash = "pbkdf2-sha256:210000:ujkrPXile6wimyqDsvluxw==:2YEeBWl5HwAdNmKrdqzbwiytYQeQJROIWqIgHBCJb34=";
+
+        Assert.True(Sha256PasswordHasher.Verify("testeur12345", storedHash));
+        Assert.False(Sha256PasswordHasher.Verify("testeur1234", storedHash));
+        Assert.False(Sha256PasswordHasher.NeedsRehash(storedHash));
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("bad-format")]

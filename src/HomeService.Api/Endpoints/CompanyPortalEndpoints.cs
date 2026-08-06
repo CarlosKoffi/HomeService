@@ -4,8 +4,10 @@ using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Missions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Contracts.Missions;
+using HomeService.Contracts.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -48,6 +50,25 @@ public static class CompanyPortalEndpoints
         })
         .WithName("LoginCompanyPortal")
         .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName);
+
+        group.MapPost("/{companyId:guid}/mobile/device-token", async (
+            Guid companyId,
+            RegisterMobileDeviceTokenRequest request,
+            MobileDeviceTokenService tokenService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await tokenService.RegisterAsync(
+                MobileDeviceOwnerType.Company,
+                companyId,
+                request,
+                cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("RegisterCompanyMobileDeviceToken")
+        .Produces<MobileDeviceTokenResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
 
         group.MapGet("/{companyId:guid}/interim-candidates", async (
             Guid companyId,
@@ -508,6 +529,20 @@ public static class CompanyPortalEndpoints
                 : Results.BadRequest(new { message = result.Message });
         })
         .WithName("AssignCompanyPortalMission");
+
+        group.MapGet("/{companyId:guid}/missions/{missionId:guid}/additional-quotes", async (
+            Guid companyId,
+            Guid missionId,
+            MissionAdditionalQuoteWorkflowService additionalQuoteService,
+            CancellationToken cancellationToken) =>
+        {
+            return Results.Ok(await additionalQuoteService.ListForCompanyAsync(
+                companyId,
+                missionId,
+                cancellationToken));
+        })
+        .WithName("ListCompanyPortalMissionAdditionalQuotes")
+        .Produces<IReadOnlyList<MissionAdditionalQuoteResponse>>();
 
         group.MapPost("/{companyId:guid}/missions/{missionId:guid}/additional-quotes/{quoteId:guid}/submit", async (
             Guid companyId,

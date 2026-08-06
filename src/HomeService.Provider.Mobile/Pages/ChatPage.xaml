@@ -4,26 +4,32 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="Messages">
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="18,20,18,18" Spacing="14">
-                <Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" />
-                <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="13"><Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" /></Border>
+    <Grid RowDefinitions="Auto,*,Auto" BackgroundColor="White">
+        <VerticalStackLayout Grid.Row="0" Padding="18,18,18,10" Spacing="12">
+            <Label Text="Messages" Style="{StaticResource ScreenTitleLabel}" />
+            <Label Text="Choisissez une mission : la conversation indique toujours clairement à qui vous écrivez." Style="{StaticResource MutedLabel}" />
+            <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13"><Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" /></Border>
+            <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                <HorizontalStackLayout x:Name="ConversationListStack" Spacing="9" />
+            </ScrollView>
+            <Border x:Name="RecipientCard" Style="{StaticResource PremiumCard}" IsVisible="False" Padding="13">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
+                    <Border WidthRequest="46" HeightRequest="46" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 23"><Image Source="icon_user.svg" WidthRequest="23" HeightRequest="23" /></Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                        <Label x:Name="RecipientTitleLabel" Text="Vous écrivez au client" Style="{StaticResource CardTitleLabel}" />
+                        <Label x:Name="RecipientSubtitleLabel" Style="{StaticResource MutedLabel}" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+        </VerticalStackLayout>
 
-                <Border Style="{StaticResource PremiumCard}">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
-                        <Border WidthRequest="46" HeightRequest="46" BackgroundColor="{StaticResource BlueWash}" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 23"><Label Text="♙" FontSize="21" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" /></Border>
-                        <VerticalStackLayout Grid.Column="1" Spacing="3"><Label x:Name="MissionTitleLabel" Text="Aucune mission active" Style="{StaticResource CardTitleLabel}" /><Label x:Name="MissionSubtitleLabel" Text="Les messages seront disponibles avec une mission affectée." Style="{StaticResource MutedLabel}" /><Label x:Name="MissionNumberLabel" Style="{StaticResource EyebrowLabel}" /></VerticalStackLayout>
-                    </Grid>
-                </Border>
-
-                <VerticalStackLayout x:Name="MessagesStack" Spacing="10" />
-            </VerticalStackLayout>
+        <ScrollView x:Name="MessagesScroll" Grid.Row="1">
+            <VerticalStackLayout x:Name="MessagesStack" Padding="18,8,18,16" Spacing="10" />
         </ScrollView>
 
-        <Grid Grid.Row="1" Padding="14,10,14,14" ColumnDefinitions="*,Auto" ColumnSpacing="10" BackgroundColor="White">
-            <Border Style="{StaticResource FieldBorder}"><Entry x:Name="MessageEntry" Placeholder="Écrire un message…" /></Border>
-            <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" Clicked="OnSendClicked" />
+        <Grid Grid.Row="2" Padding="14,10,14,14" ColumnDefinitions="*,Auto" ColumnSpacing="10" BackgroundColor="White">
+            <Border Style="{StaticResource FieldBorder}"><Entry x:Name="MessageEntry" Placeholder="Choisissez d’abord une mission" /></Border>
+            <Button x:Name="SendButton" Grid.Column="1" WidthRequest="54" Padding="14" Clicked="OnSendClicked"><Button.ImageSource><FileImageSource File="icon_send.svg" /></Button.ImageSource></Button>
         </Grid>
     </Grid>
 </ContentPage>

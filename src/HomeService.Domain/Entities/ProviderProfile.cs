@@ -108,7 +108,9 @@ public sealed class ProviderProfile : AuditableEntity
         string lastName,
         string? email,
         string address,
-        int missionRadiusKm)
+        int missionRadiusKm,
+        decimal? missionLatitude = null,
+        decimal? missionLongitude = null)
     {
         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
         {
@@ -120,11 +122,26 @@ public sealed class ProviderProfile : AuditableEntity
             throw new ArgumentException("L'adresse est obligatoire.");
         }
 
+        if (missionLatitude.HasValue != missionLongitude.HasValue)
+        {
+            throw new ArgumentException("Sélectionnez une adresse complète proposée par Google.");
+        }
+
+        if (missionLatitude is < -90 or > 90 || missionLongitude is < -180 or > 180)
+        {
+            throw new ArgumentException("Les coordonnées de l'adresse sont invalides.");
+        }
+
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         Email = NormalizeEmail(email);
         Address = address.Trim();
         MissionRadiusKm = Math.Clamp(missionRadiusKm, 1, 100);
+        if (missionLatitude is not null && missionLongitude is not null)
+        {
+            MissionLatitude = missionLatitude;
+            MissionLongitude = missionLongitude;
+        }
         Touch();
     }
 

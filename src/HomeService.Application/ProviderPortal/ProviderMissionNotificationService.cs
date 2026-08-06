@@ -17,12 +17,8 @@ public sealed class ProviderMissionNotificationService(
 {
     private const string MissionProviderAcceptedEventKey = "MissionProviderAccepted";
     private const string MissionProviderRefusedEventKey = "MissionProviderRefused";
-    private const string MissionTechnicianAssignedEventKey = "MissionTechnicianAssigned";
-    private const string MissionTechnicianOnTheWayEventKey = "MissionTechnicianOnTheWay";
-    private const string MissionTechnicianArrivedEventKey = "MissionTechnicianArrived";
-    private const string MissionStartedEventKey = "MissionStarted";
+    private const string MissionPaymentRequiredEventKey = "MissionPaymentRequired";
     private const string MissionCompletedEventKey = "MissionCompleted";
-    private const string MissionReviewRequestedEventKey = "MissionReviewRequested";
 
     public async Task NotifyAcceptedAsync(
         Mission mission,
@@ -47,13 +43,27 @@ public sealed class ProviderMissionNotificationService(
             "success",
             $"missions/{mission.Id}");
 
+        if (mission.CompanyId.HasValue)
+        {
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Company,
+                mission.CompanyId.Value,
+                "Prestataire confirmé",
+                $"{provider.FullName} a accepté la mission {mission.MissionNumber}. Le paiement client est maintenant attendu.",
+                nameof(Mission),
+                mission.Id,
+                null,
+                cancellationToken,
+                saveChanges: false);
+        }
+
         await QueueCustomerPushAsync(
             mission,
-            MissionTechnicianAssignedEventKey,
-            "Votre technicien est confirme",
-            "{NomTechnicien} a accepte votre mission {NumeroMission}. Vous pouvez suivre son arrivee dans l'application.",
+            MissionPaymentRequiredEventKey,
+            "Votre paiement est attendu",
+            "{NomTechnicien} a accepte la mission {NumeroMission}. Validez le prix de {Montant} et payez pour lancer l'intervention.",
             variables,
-            "mission_technician_assigned",
+            "mission_payment_required",
             assignment.Id,
             cancellationToken);
     }
@@ -84,60 +94,47 @@ public sealed class ProviderMissionNotificationService(
             message.Body,
             "warning",
             $"missions/{mission.Id}");
+
+        if (mission.CompanyId.HasValue)
+        {
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Company,
+                mission.CompanyId.Value,
+                "Prestataire indisponible",
+                $"{provider.FullName} a refusé la mission {mission.MissionNumber}. Affectez rapidement un autre prestataire.",
+                nameof(Mission),
+                mission.Id,
+                null,
+                cancellationToken,
+                saveChanges: false);
+        }
     }
 
-    public async Task NotifyArrivedAsync(
+    public Task NotifyArrivedAsync(
         Mission mission,
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
         CancellationToken cancellationToken)
     {
-        var variables = await BuildVariablesAsync(mission, provider, cancellationToken);
-        await QueueCustomerPushAsync(
-            mission,
-            MissionTechnicianArrivedEventKey,
-            "Technicien arrive",
-            "{NomTechnicien} est arrive pour la mission {NumeroMission}.",
-            variables,
-            "mission_technician_arrived",
-            assignment.Id,
-            cancellationToken);
+        return Task.CompletedTask;
     }
 
-    public async Task NotifyOnTheWayAsync(
+    public Task NotifyOnTheWayAsync(
         Mission mission,
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
         CancellationToken cancellationToken)
     {
-        var variables = await BuildVariablesAsync(mission, provider, cancellationToken);
-        await QueueCustomerPushAsync(
-            mission,
-            MissionTechnicianOnTheWayEventKey,
-            "Technicien en route",
-            "{NomTechnicien} est en route vers {Adresse}.",
-            variables,
-            "mission_technician_on_the_way",
-            assignment.Id,
-            cancellationToken);
+        return Task.CompletedTask;
     }
 
-    public async Task NotifyStartedAsync(
+    public Task NotifyStartedAsync(
         Mission mission,
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
         CancellationToken cancellationToken)
     {
-        var variables = await BuildVariablesAsync(mission, provider, cancellationToken);
-        await QueueCustomerPushAsync(
-            mission,
-            MissionStartedEventKey,
-            "Mission demarree",
-            "La mission {NumeroMission} a demarre.",
-            variables,
-            "mission_started",
-            assignment.Id,
-            cancellationToken);
+        return Task.CompletedTask;
     }
 
     public async Task NotifyCompletedAsync(
@@ -157,15 +154,6 @@ public sealed class ProviderMissionNotificationService(
             assignment.Id,
             cancellationToken);
 
-        await QueueCustomerPushAsync(
-            mission,
-            MissionReviewRequestedEventKey,
-            "Votre avis compte",
-            "Notez la mission {NumeroMission}: qualite, ponctualite, politesse et proprete.",
-            variables,
-            "mission_review_requested",
-            assignment.Id,
-            cancellationToken);
     }
 
     private async Task QueueCustomerPushAsync(

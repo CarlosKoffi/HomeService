@@ -185,11 +185,13 @@ public sealed class MissionTests
     public void MarkProviderAccepted_WhenAssigned_MovesMissionToAcceptedWithoutReleasingContacts()
     {
         var mission = CreateAssignedMission();
+        var paymentExpiresAt = DateTimeOffset.UtcNow.AddMinutes(30);
 
-        mission.MarkProviderAccepted(ProviderId, CompanyId);
+        mission.MarkProviderAccepted(ProviderId, CompanyId, paymentExpiresAt);
 
         Assert.Equal(MissionStatus.Accepted, mission.Status);
         Assert.NotNull(mission.ProviderAcceptedAt);
+        Assert.Equal(paymentExpiresAt, mission.CustomerPaymentExpiresAt);
         Assert.False(mission.CanRevealContactDetails);
         Assert.Null(mission.ContactDetailsReleasedAt);
     }
@@ -213,6 +215,7 @@ public sealed class MissionTests
         Assert.Equal(300, mission.CompanyPayoutAmount);
         Assert.Equal(800, mission.TransportFeeAmount);
         Assert.NotNull(mission.CustomerConfirmedAt);
+        Assert.Null(mission.CustomerPaymentExpiresAt);
         Assert.NotNull(mission.ContactDetailsReleasedAt);
         Assert.True(mission.CanRevealContactDetails);
     }
@@ -226,10 +229,16 @@ public sealed class MissionTests
         mission.ConfirmByCustomer(platformCommissionAmount: 1800, transportFeeAmount: 0, platformCommissionRateBasisPoints: 2000);
         mission.Start(ProviderId, CompanyId);
 
-        mission.Complete(actualDurationMinutes: 30);
+        var validationExpiresAt = DateTimeOffset.UtcNow.AddHours(2);
+        mission.Complete(actualDurationMinutes: 30, customerCompletionValidationExpiresAt: validationExpiresAt);
 
         Assert.Equal(9000, mission.FinalTotalAmount);
         Assert.Equal(7200, mission.CompanyPayoutAmount);
+        Assert.Equal(validationExpiresAt, mission.CustomerCompletionValidationExpiresAt);
+
+        mission.ValidateCompletionByCustomer();
+
+        Assert.Null(mission.CustomerCompletionValidationExpiresAt);
     }
 
     [Fact]
