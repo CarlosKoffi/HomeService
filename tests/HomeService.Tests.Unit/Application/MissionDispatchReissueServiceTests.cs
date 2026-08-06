@@ -213,6 +213,55 @@ public sealed class MissionDispatchReissueServiceTests
     }
 
     [Fact]
+    public async Task ExpireAndReissueMissionOffersAsync_WhenCompanyRefused_NeverOffersMissionToItAgain()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Nettoyage", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var refusedCompany = ApprovedCompany("Refus explicite", priority: 1);
+        var retryCompany = ApprovedCompany("Entreprise relancee", priority: 2);
+        var refusedProvider = Provider(refusedCompany.Id, service.Id, "Aminata");
+        var retryProvider = Provider(retryCompany.Id, service.Id, "Fatou");
+        var mission = new Mission(customer.Id, service.Id, MissionMode.Instant, PaymentMethod.MobileMoney, null, 60);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        var now = DateTimeOffset.UtcNow;
+        var refusedOffer = new MissionDispatchOffer(
+            mission.Id,
+            refusedCompany.Id,
+            rank: 1,
+            score: 10,
+            scoreDetails: "Premier tour",
+            now.AddMinutes(5));
+        refusedOffer.Refuse(now.AddMinutes(-2));
+        var expiredOffer = new MissionDispatchOffer(
+            mission.Id,
+            retryCompany.Id,
+            rank: 2,
+            score: 20,
+            scoreDetails: "Premier tour",
+            now.AddMinutes(-1));
+
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Companies.AddRange(refusedCompany, retryCompany);
+        db.Providers.AddRange(refusedProvider, retryProvider);
+        db.Missions.Add(mission);
+        db.MissionDispatchOffers.AddRange(refusedOffer, expiredOffer);
+        await db.SaveChangesAsync();
+
+        var sut = new MissionDispatchService(db, new MissionDispatchScoringService());
+        var result = await sut.ExpireAndReissueMissionOffersAsync(mission.Id, now, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, result.CreatedOfferCount);
+        Assert.Equal(MissionDispatchOfferStatus.Refused, refusedOffer.Status);
+        Assert.Equal(MissionDispatchOfferStatus.Sent, expiredOffer.Status);
+        Assert.DoesNotContain(db.MissionDispatchOffers, offer =>
+            offer.CompanyId == refusedCompany.Id && offer.Status == MissionDispatchOfferStatus.Sent);
+    }
+
+    [Fact]
     public async Task ExpireAndReissueMissionOffersAsync_WhenAcceptedCompanyDoesNotAssignProvider_ReissuesToAnotherCompany()
     {
         await using var db = CreateDbContext();

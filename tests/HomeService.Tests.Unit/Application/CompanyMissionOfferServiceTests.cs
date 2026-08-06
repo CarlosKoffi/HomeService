@@ -119,6 +119,39 @@ public sealed class CompanyMissionOfferServiceTests
         Assert.Null(mission.CompanyId);
     }
 
+    [Fact]
+    public async Task RefuseAsync_WhenOfferIsOpen_MarksItRefusedWithoutAttachingMission()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Climatisation", null, createdByCompanyId: null);
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var company = ApprovedCompany("Clim CI", 1);
+        var mission = new Mission(customer.Id, service.Id, MissionMode.Instant, PaymentMethod.MobileMoney, null, 60);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        var offer = new MissionDispatchOffer(
+            mission.Id,
+            company.Id,
+            rank: 1,
+            score: 10,
+            scoreDetails: "Disponible",
+            DateTimeOffset.UtcNow.AddMinutes(5));
+
+        db.Services.Add(service);
+        db.Customers.Add(customer);
+        db.Companies.Add(company);
+        db.Missions.Add(mission);
+        db.MissionDispatchOffers.Add(offer);
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyMissionOfferService(db).RefuseAsync(company.Id, offer.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(MissionDispatchOfferStatus.Refused, offer.Status);
+        Assert.Null(mission.CompanyId);
+        Assert.Single(db.CompanyPortalActivities);
+    }
+
     private static Company ApprovedCompany(string name, int priority)
     {
         var company = new Company(name, "+2250700000000", $"{name.Replace(" ", "").ToLowerInvariant()}@wele.ci");

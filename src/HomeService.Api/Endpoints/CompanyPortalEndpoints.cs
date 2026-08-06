@@ -457,6 +457,58 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalMissions");
 
+        group.MapGet("/{companyId:guid}/missions/{missionId:guid}", async (
+            Guid companyId,
+            Guid missionId,
+            CompanyPortalQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await queryService.GetMissionDetailAsync(companyId, missionId, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("GetCompanyPortalMissionDetail")
+        .Produces<CompanyPortalMissionDetailResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapGet("/{companyId:guid}/missions/{missionId:guid}/messages", async (
+            Guid companyId,
+            Guid missionId,
+            CompanyMissionChatService chatService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await chatService.ListAsync(companyId, missionId, cancellationToken);
+            return result.Status == CompanyMissionChatResultStatus.NotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.Ok(result.ChatResponse);
+        })
+        .WithName("ListCompanyPortalMissionMessages")
+        .Produces<CompanyMissionChatResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{companyId:guid}/missions/{missionId:guid}/messages", async (
+            Guid companyId,
+            Guid missionId,
+            SendCompanyMissionMessageRequest request,
+            CompanyMissionChatService chatService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await chatService.SendAsync(companyId, missionId, request, cancellationToken);
+            return result.Status switch
+            {
+                CompanyMissionChatResultStatus.Created => Results.Created(
+                    $"/api/company-portal/{companyId}/missions/{missionId}/messages",
+                    result.SendResponse),
+                CompanyMissionChatResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("SendCompanyPortalMissionMessage")
+        .Produces<SendCompanyMissionMessageResponse>(StatusCodes.Status201Created)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapGet("/{companyId:guid}/missions/{missionId:guid}/assignable-providers", async (
             Guid companyId,
             Guid missionId,
@@ -482,6 +534,27 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalMissionOffers")
         .Produces<IReadOnlyList<CompanyMissionOfferResponse>>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{companyId:guid}/mission-offers/{offerId:guid}/refuse", async (
+            Guid companyId,
+            Guid offerId,
+            CompanyMissionOfferService offerService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await offerService.RefuseAsync(companyId, offerId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.IsNotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("RefuseCompanyPortalMissionOffer")
+        .Produces<CompanyMissionOfferRefuseResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
         group.MapPost("/{companyId:guid}/mission-offers/{offerId:guid}/accept", async (

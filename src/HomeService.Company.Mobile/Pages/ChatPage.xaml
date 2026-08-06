@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Company.Mobile.Pages.ChatPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="18,18,18,16" RowSpacing="12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <ImageButton x:Name="BackButton" Source="icon_back.svg" Clicked="OnBackClicked" IsVisible="False" />
+            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                <Label Text="Messages" Style="{StaticResource ScreenTitle}" />
+                <Label Text="Client · prestataire · entreprise" Style="{StaticResource Muted}" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <Border Grid.Row="1" Style="{StaticResource PremiumCard}" Padding="12,0" Shadow="{x:Null}">
+            <Picker x:Name="MissionPicker" Title="Choisir une mission" ItemDisplayBinding="{Binding Label}" SelectedIndexChanged="OnMissionSelected" />
+        </Border>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="8">
+            <Label x:Name="RecipientLabel" Style="{StaticResource Muted}" />
+            <RefreshView x:Name="ChatRefreshView" Grid.Row="1" Refreshing="OnRefreshing">
+                <CollectionView x:Name="MessagesView" SelectionMode="None">
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout Padding="20,50" Spacing="8">
+                            <Image Source="icon_message.svg" WidthRequest="42" HeightRequest="42" HorizontalOptions="Center" />
+                            <Label Text="Aucun message pour le moment" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Label Text="La conversation est réservée au suivi de cette mission." Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border BackgroundColor="{Binding BubbleColor}" Stroke="{Binding StrokeColor}" StrokeShape="RoundRectangle 18" Padding="13,10" Margin="0,4" HorizontalOptions="{Binding Alignment}" MaximumWidthRequest="310">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="{Binding SenderLabel}" FontSize="10" FontAttributes="Bold" TextColor="{Binding MetaColor}" />
+                                    <Label Text="{Binding Body}" FontSize="14" TextColor="{Binding TextColor}" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
+        </Grid>
+
+        <VerticalStackLayout Grid.Row="3" Spacing="7">
+            <Label x:Name="ErrorLabel" IsVisible="False" TextColor="{StaticResource Danger}" Style="{StaticResource Muted}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 18" Padding="12,0">
+                    <Entry x:Name="MessageEntry" Placeholder="Écrire un message…" Completed="OnMessageCompleted" />
+                </Border>
+                <Button x:Name="SendButton" Grid.Column="1" Text="Envoyer" Clicked="OnSendClicked" />
+            </Grid>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

@@ -19,4 +19,5 @@ public sealed record CompanyMissionOfferResponse(
     bool HasCompatibleProvider,
     string AccessState,
     string AccessMessage,
-    int CompanyPriority);
+    int CompanyPriority,
+    bool CanRefuse = false);

@@ -148,6 +148,145 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
         return CompanyPortalMissionsResult.Ok(missions);
     }
 
+    public async Task<CompanyPortalMissionDetailResult> GetMissionDetailAsync(
+        Guid companyId,
+        Guid missionId,
+        CancellationToken cancellationToken)
+    {
+        if (!await CompanyExistsAsync(companyId, cancellationToken))
+        {
+            return CompanyPortalMissionDetailResult.NotFound();
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var row = await (
+                from missionRow in db.Missions.AsNoTracking()
+                where missionRow.Id == missionId
+                    && (missionRow.CompanyId == companyId
+                        || db.MissionDispatchOffers.Any(offer =>
+                            offer.MissionId == missionRow.Id
+                            && offer.CompanyId == companyId
+                            && offer.Status == MissionDispatchOfferStatus.Sent
+                            && offer.ExpiresAt > now))
+                join service in db.Services.AsNoTracking() on missionRow.ServiceId equals service.Id
+                join customer in db.Customers.AsNoTracking() on missionRow.CustomerId equals customer.Id
+                join provider in db.Providers.AsNoTracking() on missionRow.ProviderId equals provider.Id into providerJoin
+                from provider in providerJoin.DefaultIfEmpty()
+                join prestation in db.ServicePrestations.AsNoTracking() on missionRow.ServicePrestationId equals prestation.Id into prestationJoin
+                from prestation in prestationJoin.DefaultIfEmpty()
+                join option in db.ServiceOptions.AsNoTracking() on missionRow.ServiceOptionId equals option.Id into optionJoin
+                from option in optionJoin.DefaultIfEmpty()
+                select new
+                {
+                    Mission = missionRow,
+                    ServiceName = service.Name,
+                    ServiceIconName = service.IconName,
+                    CustomerId = customer.Id,
+                    CustomerName = customer.FirstName + " " + customer.LastName,
+                    customer.PhoneNumber,
+                    PrestationName = prestation == null ? null : prestation.Name,
+                    OptionName = option == null ? null : option.Name,
+                    ProviderName = provider == null ? null : provider.FirstName + " " + provider.LastName,
+                    ProviderPhoneNumber = provider == null ? null : provider.PhoneNumber,
+                    ProviderLatitude = provider == null ? null : provider.CurrentLatitude ?? provider.MissionLatitude,
+                    ProviderLongitude = provider == null ? null : provider.CurrentLongitude ?? provider.MissionLongitude
+                })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (row is null)
+        {
+            return CompanyPortalMissionDetailResult.NotFound();
+        }
+
+        var offer = await db.MissionDispatchOffers
+            .AsNoTracking()
+            .Where(item => item.MissionId == missionId && item.CompanyId == companyId)
+            .OrderByDescending(item => item.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
+        var offerOpen = offer?.Status == MissionDispatchOfferStatus.Sent && offer.ExpiresAt > now;
+        var mission = row.Mission;
+        var canAssign = mission.CompanyId == companyId
+            && mission.ProviderId is null
+            && mission.Status == MissionStatus.SearchingProvider;
+
+        var history = await (
+                from historyMission in db.Missions.AsNoTracking()
+                where historyMission.Id != missionId
+                    && historyMission.CompanyId == companyId
+                    && historyMission.CustomerId == row.CustomerId
+                join service in db.Services.AsNoTracking() on historyMission.ServiceId equals service.Id
+                join prestation in db.ServicePrestations.AsNoTracking() on historyMission.ServicePrestationId equals prestation.Id into prestationJoin
+                from prestation in prestationJoin.DefaultIfEmpty()
+                orderby historyMission.CreatedAt descending
+                select new CompanyCustomerMissionHistoryResponse(
+                    historyMission.Id,
+                    historyMission.MissionNumber,
+                    service.Name,
+                    prestation == null ? null : prestation.Name,
+                    historyMission.Status.ToString(),
+                    historyMission.CustomerCompletionValidatedAt ?? historyMission.ScheduledFor ?? historyMission.UpdatedAt ?? historyMission.CreatedAt,
+                    db.MissionReviews
+                        .Where(review => review.MissionId == historyMission.Id)
+                        .Select(review => (int?)review.OverallRating)
+                        .FirstOrDefault()))
+            .Take(20)
+            .ToListAsync(cancellationToken);
+
+        var response = new CompanyPortalMissionResponse(
+            mission.Id,
+            mission.MissionNumber,
+            row.ServiceName,
+            row.CustomerName,
+            row.PhoneNumber,
+            mission.Mode.ToString(),
+            mission.Status.ToString(),
+            mission.PaymentMethod.ToString(),
+            mission.PaymentStatus.ToString(),
+            mission.ScheduledFor,
+            mission.EstimatedDurationMinutes,
+            mission.FinalTotalAmount ?? mission.EstimatedTotalAmount,
+            mission.Currency,
+            mission.ProviderId,
+            row.ProviderName,
+            mission.CompanyQuotedAmount,
+            mission.CompanyQuoteJustification,
+            mission.CompanyQuotedAt,
+            mission.CustomerQuoteAcceptedAt,
+            row.ServiceIconName,
+            mission.ServiceAddress,
+            mission.ActualDurationMinutes,
+            null,
+            mission.Status == MissionStatus.Cancelled
+                ? (mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
+                : null,
+            mission.PlatformCommissionAmount,
+            mission.CompanyAssignmentExpiresAt,
+            mission.ServiceLatitude,
+            mission.ServiceLongitude);
+
+        return CompanyPortalMissionDetailResult.Ok(new CompanyPortalMissionDetailResponse(
+            response,
+            row.PrestationName,
+            row.OptionName,
+            mission.Description,
+            mission.CreatedAt,
+            offer?.Id,
+            offerOpen ? "Pending" : offer?.Status.ToString(),
+            offer?.ExpiresAt,
+            offerOpen,
+            offerOpen,
+            canAssign,
+            row.ProviderPhoneNumber,
+            row.ProviderLatitude,
+            row.ProviderLongitude,
+            CalculateDistanceKilometers(
+                mission.ServiceLatitude,
+                mission.ServiceLongitude,
+                row.ProviderLatitude,
+                row.ProviderLongitude),
+            history));
+    }
+
     public async Task<CompanyPortalEmployeesResult> ListEmployeesAsync(Guid companyId, CancellationToken cancellationToken)
     {
         if (!await CompanyExistsAsync(companyId, cancellationToken))
@@ -407,6 +546,30 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             or MissionStatus.OnTheWay
             or MissionStatus.Started;
     }
+
+    private static double? CalculateDistanceKilometers(
+        decimal? destinationLatitude,
+        decimal? destinationLongitude,
+        decimal? providerLatitude,
+        decimal? providerLongitude)
+    {
+        if (!destinationLatitude.HasValue || !destinationLongitude.HasValue
+            || !providerLatitude.HasValue || !providerLongitude.HasValue)
+        {
+            return null;
+        }
+
+        const double earthRadiusKilometers = 6371.0088;
+        var latitude1 = DegreesToRadians((double)providerLatitude.Value);
+        var latitude2 = DegreesToRadians((double)destinationLatitude.Value);
+        var deltaLatitude = latitude2 - latitude1;
+        var deltaLongitude = DegreesToRadians((double)destinationLongitude.Value - (double)providerLongitude.Value);
+        var haversine = Math.Pow(Math.Sin(deltaLatitude / 2), 2)
+            + Math.Cos(latitude1) * Math.Cos(latitude2) * Math.Pow(Math.Sin(deltaLongitude / 2), 2);
+        return Math.Round(earthRadiusKilometers * 2 * Math.Atan2(Math.Sqrt(haversine), Math.Sqrt(1 - haversine)), 2);
+    }
+
+    private static double DegreesToRadians(double degrees) => degrees * Math.PI / 180d;
 }
 
 internal sealed record EmployeeMissionRow(
@@ -429,6 +592,18 @@ public sealed record CompanyPortalMissionsResult(bool IsSuccess, IReadOnlyList<C
 {
     public static CompanyPortalMissionsResult Ok(IReadOnlyList<CompanyPortalMissionResponse> missions) => new(true, missions, null);
     public static CompanyPortalMissionsResult NotFound() => new(false, [], "Entreprise introuvable ou inactive.");
+}
+
+public sealed record CompanyPortalMissionDetailResult(
+    bool IsSuccess,
+    CompanyPortalMissionDetailResponse? Response,
+    string? Message)
+{
+    public static CompanyPortalMissionDetailResult Ok(CompanyPortalMissionDetailResponse response)
+        => new(true, response, null);
+
+    public static CompanyPortalMissionDetailResult NotFound()
+        => new(false, null, "Mission introuvable ou non accessible a cette entreprise.");
 }
 
 public sealed record CompanyPortalEmployeesResult(bool IsSuccess, IReadOnlyList<CompanyEmployeeResponse> Employees, string? Message)

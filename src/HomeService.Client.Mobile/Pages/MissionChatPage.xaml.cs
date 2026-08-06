@@ -11,6 +11,8 @@ public partial class MissionChatPage : ContentPage
     private readonly ClientSessionStore sessionStore;
     private readonly ObservableCollection<ClientMessageRow> messages = [];
     private readonly SemaphoreSlim loadGate = new(1, 1);
+    private CancellationTokenSource? refreshCancellation;
+    private string? lastMessageSignature;
     private Guid? missionId;
     private bool isSending;
     private bool isNavigating;
@@ -33,6 +35,15 @@ public partial class MissionChatPage : ContentPage
         base.OnAppearing();
         isNavigating = false;
         await LoadMessagesSafelyAsync();
+        StartRefresh();
+    }
+
+    protected override void OnDisappearing()
+    {
+        refreshCancellation?.Cancel();
+        refreshCancellation?.Dispose();
+        refreshCancellation = null;
+        base.OnDisappearing();
     }
 
     private async void OnRefreshing(object sender, EventArgs e)
@@ -62,8 +73,8 @@ public partial class MissionChatPage : ContentPage
                 await MainThread.InvokeOnMainThreadAsync(() =>
                     MissionContextLabel.Text = "WL-000145 · Déboucher un évier");
                 await ReplaceMessagesAsync([
-                    new ClientMessageRow("Mohamed Kouyaté", "Bonjour, j'arrive dans 13 min.", "10:45"),
-                    new ClientMessageRow("Vous", "Parfait, je suis là.", "10:50")]);
+                    new ClientMessageRow(Guid.NewGuid(), "Mohamed Kouyaté", "Bonjour, j'arrive dans 13 min.", "10:45"),
+                    new ClientMessageRow(Guid.NewGuid(), "Vous", "Parfait, je suis là.", "10:50")]);
                 return;
             }
 
@@ -110,7 +121,7 @@ public partial class MissionChatPage : ContentPage
         {
             if (sessionStore.IsPreviewMode())
             {
-                messages.Add(new ClientMessageRow("Vous", body, DateTime.Now.ToString("HH:mm")));
+                messages.Add(new ClientMessageRow(Guid.NewGuid(), "Vous", body, DateTime.Now.ToString("HH:mm")));
                 MessageEntry.Text = string.Empty;
                 return;
             }
@@ -164,24 +175,58 @@ public partial class MissionChatPage : ContentPage
     {
         return MainThread.InvokeOnMainThreadAsync(() =>
         {
+            var next = rows.ToArray();
+            var signature = string.Join('|', next.Select(item => item.MessageId));
+            if (signature == lastMessageSignature) return;
+            lastMessageSignature = signature;
             messages.Clear();
-            foreach (var row in rows)
+            foreach (var row in next)
             {
                 messages.Add(row);
             }
+            if (messages.Count > 0)
+            {
+                MessagesView.ScrollTo(messages[^1], position: ScrollToPosition.End, animate: false);
+            }
         });
+    }
+
+    private void StartRefresh()
+    {
+        if (sessionStore.IsPreviewMode()) return;
+        refreshCancellation?.Cancel();
+        refreshCancellation?.Dispose();
+        refreshCancellation = new CancellationTokenSource();
+        _ = RefreshLoopAsync(refreshCancellation.Token);
+    }
+
+    private async Task RefreshLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(4));
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await LoadMessagesSafelyAsync();
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
     }
 }
 
-public sealed record ClientMessageRow(string Sender, string Body, string SentAt)
+public sealed record ClientMessageRow(Guid MessageId, string Sender, string Body, string SentAt)
 {
     public bool IsMine => Sender.Equals("Vous", StringComparison.OrdinalIgnoreCase);
 
     public static ClientMessageRow From(ClientMissionMessageResponse response)
     {
-        var sender = response.SenderType.Equals("Customer", StringComparison.OrdinalIgnoreCase)
-            ? "Vous"
-            : response.SenderType;
-        return new ClientMessageRow(sender, response.Body, response.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm"));
+        var sender = response.SenderType switch
+        {
+            "Customer" => "Vous",
+            "Provider" => "Prestataire",
+            "Company" => "Entreprise",
+            _ => "Wélé"
+        };
+        return new ClientMessageRow(response.MessageId, sender, response.Body, response.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm"));
     }
 }

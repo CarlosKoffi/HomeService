@@ -53,6 +53,18 @@ public sealed class MissionDispatchOffer : AuditableEntity
         Touch();
     }
 
+    public void Refuse(DateTimeOffset now)
+    {
+        if (!IsOpen(now))
+        {
+            throw new InvalidOperationException("Cette offre de mission n'est plus disponible.");
+        }
+
+        Status = MissionDispatchOfferStatus.Refused;
+        RespondedAt = now;
+        Touch();
+    }
+
     public void MarkLost()
     {
         if (Status != MissionDispatchOfferStatus.Sent)

@@ -69,7 +69,9 @@ public partial class HomePage : ContentPage
             }
 
             offers.Clear();
-            foreach (var offer in (offerResult.Response ?? []).Where(item => item.CanAccept).OrderBy(item => item.ExpiresAt))
+            foreach (var offer in (offerResult.Response ?? [])
+                         .Where(item => item.CanAccept || item.CanRefuse)
+                         .OrderBy(item => item.ExpiresAt))
             {
                 offers.Add(new OfferRow(offer));
             }
@@ -123,14 +125,14 @@ public partial class HomePage : ContentPage
     private async void OnAcceptOfferClicked(object? sender, EventArgs e)
     {
         if ((sender as Button)?.CommandParameter is not OfferRow row || row.Offer.OfferId is null) return;
-        row.CanAccept = false;
+        row.DisableActions();
         var token = await sessionStore.GetTokenAsync();
         var companyId = await sessionStore.GetCompanyIdAsync();
         if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
         var result = await apiClient.AcceptOfferAsync(token, companyId.Value, row.Offer.OfferId.Value);
         if (!result.IsSuccess)
         {
-            row.CanAccept = true;
+            row.RestoreActions();
             ShowError(result.ErrorMessage ?? "Cette mission ne peut plus être acceptée.");
             return;
         }
@@ -139,11 +141,36 @@ public partial class HomePage : ContentPage
         await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={row.Offer.MissionId:D}");
     }
 
+    private async void OnRefuseOfferClicked(object? sender, EventArgs e)
+    {
+        if ((sender as Button)?.CommandParameter is not OfferRow row || row.Offer.OfferId is null) return;
+        var confirmed = await DisplayAlert(
+            "Refuser cette mission ?",
+            "Elle ne sera plus disponible pour votre entreprise.",
+            "Refuser",
+            "Annuler");
+        if (!confirmed) return;
+
+        row.DisableActions();
+        var token = await sessionStore.GetTokenAsync();
+        var companyId = await sessionStore.GetCompanyIdAsync();
+        if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
+        var result = await apiClient.RefuseOfferAsync(token, companyId.Value, row.Offer.OfferId.Value);
+        if (!result.IsSuccess)
+        {
+            row.RestoreActions();
+            ShowError(result.ErrorMessage ?? "Cette mission ne peut plus être refusée.");
+            return;
+        }
+
+        await LoadAsync();
+    }
+
     private async void OnOfferDetailsClicked(object? sender, EventArgs e)
     {
         if ((sender as Button)?.CommandParameter is OfferRow row)
         {
-            await DisplayAlert(row.Offer.ServiceName, $"{row.CustomerAndLocation}\n{row.Offer.Description}", "Fermer");
+            await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={row.Offer.MissionId:D}");
         }
     }
 
@@ -168,12 +195,14 @@ public partial class HomePage : ContentPage
     public sealed class OfferRow : INotifyPropertyChanged
     {
         private bool canAccept;
+        private bool canRefuse;
         private string remainingText = string.Empty;
 
         public OfferRow(CompanyMissionOfferResponse offer)
         {
             Offer = offer;
             canAccept = offer.CanAccept;
+            canRefuse = offer.CanRefuse;
             RefreshCountdown();
         }
 
@@ -183,6 +212,19 @@ public partial class HomePage : ContentPage
         public string ScheduleLabel => Offer.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy · HH:mm") ?? "Dès que possible";
         public string RemainingText { get => remainingText; private set => SetField(ref remainingText, value); }
         public bool CanAccept { get => canAccept; set => SetField(ref canAccept, value); }
+        public bool CanRefuse { get => canRefuse; set => SetField(ref canRefuse, value); }
+
+        public void DisableActions()
+        {
+            CanAccept = false;
+            CanRefuse = false;
+        }
+
+        public void RestoreActions()
+        {
+            CanAccept = Offer.CanAccept;
+            CanRefuse = Offer.CanRefuse;
+        }
 
         public void RefreshCountdown()
         {
@@ -191,6 +233,7 @@ public partial class HomePage : ContentPage
             {
                 RemainingText = "Expirée";
                 CanAccept = false;
+                CanRefuse = false;
                 return;
             }
 

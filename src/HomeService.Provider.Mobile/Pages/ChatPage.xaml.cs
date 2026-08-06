@@ -10,10 +10,13 @@ public partial class ChatPage : ContentPage
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
     private readonly Dictionary<Guid, Border> conversationCards = [];
+    private readonly SemaphoreSlim refreshGate = new(1, 1);
     private string? accessToken;
     private Guid? requestedAssignmentId;
     private Guid? assignmentId;
     private IReadOnlyList<ProviderMobileMissionSummaryResponse> missions = [];
+    private CancellationTokenSource? refreshCancellation;
+    private string? lastMessageSignature;
 
     public string AssignmentId
     {
@@ -35,6 +38,15 @@ public partial class ChatPage : ContentPage
     {
         base.OnAppearing();
         await LoadConversationsAsync();
+        StartRefresh();
+    }
+
+    protected override void OnDisappearing()
+    {
+        refreshCancellation?.Cancel();
+        refreshCancellation?.Dispose();
+        refreshCancellation = null;
+        base.OnDisappearing();
     }
 
     private async Task LoadConversationsAsync()
@@ -155,10 +167,56 @@ public partial class ChatPage : ContentPage
         RecipientSubtitleLabel.Text = $"Mission {mission.MissionNumber} · {(string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName)}";
         MessageEntry.Placeholder = string.IsNullOrWhiteSpace(customer) ? "Écrire au client…" : $"Écrire à {FirstName(customer)}…";
         MessageBanner.IsVisible = false;
+        lastMessageSignature = string.Join('|', chatResult.Response.Messages.Select(item => item.MessageId));
         RenderMessages(chatResult.Response.Messages);
         SetComposerEnabled(mission.Status is "Offered" or "Accepted" or "Started");
         await Task.Delay(50);
         await MessagesScroll.ScrollToAsync(MessagesStack, ScrollToPosition.End, false);
+    }
+
+    private void StartRefresh()
+    {
+        refreshCancellation?.Cancel();
+        refreshCancellation?.Dispose();
+        refreshCancellation = new CancellationTokenSource();
+        _ = RefreshLoopAsync(refreshCancellation.Token);
+    }
+
+    private async Task RefreshLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(4));
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await RefreshSelectedConversationAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
+    private async Task RefreshSelectedConversationAsync(CancellationToken cancellationToken)
+    {
+        if (apiClient is null || assignmentId is null || string.IsNullOrWhiteSpace(accessToken)) return;
+        if (!await refreshGate.WaitAsync(0, cancellationToken)) return;
+        try
+        {
+            var result = await apiClient.GetMissionMessagesAsync(accessToken, assignmentId.Value, cancellationToken);
+            if (!result.IsSuccess || result.Response is null) return;
+            var signature = string.Join('|', result.Response.Messages.Select(item => item.MessageId));
+            if (signature == lastMessageSignature) return;
+            lastMessageSignature = signature;
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                RenderMessages(result.Response.Messages);
+                await Task.Delay(30);
+                await MessagesScroll.ScrollToAsync(MessagesStack, ScrollToPosition.End, false);
+            });
+        }
+        finally
+        {
+            refreshGate.Release();
+        }
     }
 
     private void RenderMessages(IReadOnlyList<ProviderMobileMissionMessageResponse> items)

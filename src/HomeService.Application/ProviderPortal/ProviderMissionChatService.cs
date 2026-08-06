@@ -92,6 +92,24 @@ public sealed class ProviderMissionChatService(
             }),
             cancellationToken,
             saveChanges: false);
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Company,
+            assignment.CompanyId,
+            $"Message prestataire - {assignment.Mission.MissionNumber}",
+            body,
+            nameof(MissionConversation),
+            conversation.Id,
+            JsonSerializer.Serialize(new
+            {
+                type = "mission_chat_message",
+                missionId = assignment.MissionId,
+                missionNumber = assignment.Mission.MissionNumber,
+                assignmentId,
+                conversationId = conversation.Id,
+                senderType = MissionMessageSenderType.Provider.ToString()
+            }),
+            cancellationToken,
+            saveChanges: false);
 
         await db.SaveChangesAsync(cancellationToken);
 

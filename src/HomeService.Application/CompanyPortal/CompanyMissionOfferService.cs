@@ -79,6 +79,9 @@ public sealed class CompanyMissionOfferService(
                     && hasCompatibleProvider
                     && companyOffer?.Status == MissionDispatchOfferStatus.Sent
                     && companyOffer.ExpiresAt > now;
+                var canRefuse = company.Status == CompanyStatus.Approved
+                    && companyOffer?.Status == MissionDispatchOfferStatus.Sent
+                    && companyOffer.ExpiresAt > now;
                 var accessState = canAccept
                     ? "Available"
                     : company.Status != CompanyStatus.Approved
@@ -100,6 +103,7 @@ public sealed class CompanyMissionOfferService(
                     nameof(MissionDispatchOfferStatus.Lost) => "Une autre entreprise a accepte cette demande avant vous.",
                     nameof(MissionDispatchOfferStatus.Cancelled) => "Cette demande a ete annulee par le client ou la plateforme.",
                     nameof(MissionDispatchOfferStatus.AssignmentTimedOut) => "Le delai d'affectation d'un prestataire est depasse.",
+                    nameof(MissionDispatchOfferStatus.Refused) => "Votre entreprise a refuse cette demande.",
                     _ => "Cette demande n'est actuellement pas accessible a votre entreprise."
                 };
 
@@ -122,7 +126,8 @@ public sealed class CompanyMissionOfferService(
                     hasCompatibleProvider,
                     accessState,
                     accessMessage,
-                    company.MissionDispatchPriority);
+                    company.MissionDispatchPriority,
+                    canRefuse);
             })
             .OrderByDescending(offer => offer.CanAccept)
             .ThenBy(offer => offer.Rank ?? int.MaxValue)
@@ -197,6 +202,53 @@ public sealed class CompanyMissionOfferService(
             mission.Status.ToString(),
             "Demande acceptee. Affectez maintenant un prestataire."));
     }
+
+    public async Task<CompanyMissionOfferRefuseResult> RefuseAsync(
+        Guid companyId,
+        Guid offerId,
+        CancellationToken cancellationToken)
+    {
+        var offer = await db.MissionDispatchOffers
+            .Include(item => item.Mission)
+            .FirstOrDefaultAsync(item => item.Id == offerId && item.CompanyId == companyId, cancellationToken);
+        if (offer?.Mission is null)
+        {
+            return CompanyMissionOfferRefuseResult.NotFound();
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        if (!offer.IsOpen(now))
+        {
+            offer.MarkExpired(now);
+            await db.SaveChangesAsync(cancellationToken);
+            return CompanyMissionOfferRefuseResult.Invalid("Cette demande n'est plus disponible.");
+        }
+
+        try
+        {
+            offer.Refuse(now);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return CompanyMissionOfferRefuseResult.Invalid(exception.Message);
+        }
+
+        db.CompanyPortalActivities.Add(new CompanyPortalActivity(
+            companyId,
+            "mission",
+            "Demande refusee",
+            $"La mission {offer.Mission.MissionNumber} a ete refusee et sera proposee a une autre entreprise.",
+            "gray",
+            nameof(Mission),
+            offer.MissionId));
+
+        await db.SaveChangesAsync(cancellationToken);
+        return CompanyMissionOfferRefuseResult.Ok(new CompanyMissionOfferRefuseResponse(
+            offer.MissionId,
+            offer.Mission.MissionNumber,
+            offer.Status.ToString(),
+            "Demande refusee."));
+    }
 }
 
 public sealed record CompanyMissionOfferListResult(
@@ -235,4 +287,20 @@ public sealed record CompanyMissionOfferAcceptResult(
     {
         return new CompanyMissionOfferAcceptResult(false, null, "Demande introuvable.", true);
     }
+}
+
+public sealed record CompanyMissionOfferRefuseResult(
+    bool IsSuccess,
+    CompanyMissionOfferRefuseResponse? Response,
+    string? Message,
+    bool IsNotFound)
+{
+    public static CompanyMissionOfferRefuseResult Ok(CompanyMissionOfferRefuseResponse response)
+        => new(true, response, null, false);
+
+    public static CompanyMissionOfferRefuseResult Invalid(string message)
+        => new(false, null, message, false);
+
+    public static CompanyMissionOfferRefuseResult NotFound()
+        => new(false, null, "Demande introuvable.", true);
 }

@@ -85,6 +85,26 @@ public sealed class ClientMissionChatService(
                 cancellationToken,
                 saveChanges: false);
         }
+        if (mission.CompanyId is not null)
+        {
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Company,
+                mission.CompanyId.Value,
+                $"Message client - {mission.MissionNumber}",
+                body,
+                nameof(MissionConversation),
+                conversation.Id,
+                JsonSerializer.Serialize(new
+                {
+                    type = "mission_chat_message",
+                    missionId,
+                    mission.MissionNumber,
+                    conversationId = conversation.Id,
+                    senderType = MissionMessageSenderType.Customer.ToString()
+                }),
+                cancellationToken,
+                saveChanges: false);
+        }
 
         await db.SaveChangesAsync(cancellationToken);
         return ClientMissionChatResult.Created(new SendClientMissionMessageResponse(

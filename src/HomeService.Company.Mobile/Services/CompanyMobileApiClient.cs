@@ -27,6 +27,18 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
             null,
             cancellationToken);
 
+    public Task<ApiCallResult<CompanyPortalMissionDetailResponse>> GetMissionDetailAsync(
+        string token,
+        Guid companyId,
+        Guid missionId,
+        CancellationToken cancellationToken = default)
+        => SendAsync<CompanyPortalMissionDetailResponse>(
+            HttpMethod.Get,
+            $"api/company-portal/{companyId:D}/missions/{missionId:D}",
+            token,
+            null,
+            cancellationToken);
+
     public Task<ApiCallResult<IReadOnlyList<CompanyMissionOfferResponse>>> GetOffersAsync(
         string token,
         Guid companyId,
@@ -48,6 +60,43 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
             $"api/company-portal/{companyId:D}/mission-offers/{offerId:D}/accept",
             token,
             null,
+            cancellationToken);
+
+    public Task<ApiCallResult<bool>> RefuseOfferAsync(
+        string token,
+        Guid companyId,
+        Guid offerId,
+        CancellationToken cancellationToken = default)
+        => SendWithoutBodyAsync(
+            HttpMethod.Post,
+            $"api/company-portal/{companyId:D}/mission-offers/{offerId:D}/refuse",
+            token,
+            null,
+            cancellationToken);
+
+    public Task<ApiCallResult<CompanyMissionChatResponse>> GetMissionMessagesAsync(
+        string token,
+        Guid companyId,
+        Guid missionId,
+        CancellationToken cancellationToken = default)
+        => SendAsync<CompanyMissionChatResponse>(
+            HttpMethod.Get,
+            $"api/company-portal/{companyId:D}/missions/{missionId:D}/messages",
+            token,
+            null,
+            cancellationToken);
+
+    public Task<ApiCallResult<SendCompanyMissionMessageResponse>> SendMissionMessageAsync(
+        string token,
+        Guid companyId,
+        Guid missionId,
+        SendCompanyMissionMessageRequest request,
+        CancellationToken cancellationToken = default)
+        => SendAsync<SendCompanyMissionMessageResponse>(
+            HttpMethod.Post,
+            $"api/company-portal/{companyId:D}/missions/{missionId:D}/messages",
+            token,
+            request,
             cancellationToken);
 
     public Task<ApiCallResult<IReadOnlyList<CompanyEmployeeResponse>>> GetProvidersAsync(

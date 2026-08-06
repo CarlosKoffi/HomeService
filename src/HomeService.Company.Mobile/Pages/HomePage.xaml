@@ -55,9 +55,10 @@
                                         <Label Text="{Binding ServiceName}" Style="{StaticResource CardTitle}" />
                                         <Label Text="{Binding CustomerAndLocation}" Style="{StaticResource Muted}" />
                                         <Label Text="{Binding ScheduleLabel}" Style="{StaticResource Muted}" />
-                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                                             <Button Text="Voir" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding .}" Clicked="OnOfferDetailsClicked" />
-                                            <Button Grid.Column="1" Text="J’accepte" CommandParameter="{Binding .}" Clicked="OnAcceptOfferClicked" IsEnabled="{Binding CanAccept}" />
+                                            <Button Grid.Column="1" Text="Refuser" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding .}" Clicked="OnRefuseOfferClicked" IsEnabled="{Binding CanRefuse}" />
+                                            <Button Grid.Column="2" Text="Accepter" CommandParameter="{Binding .}" Clicked="OnAcceptOfferClicked" IsEnabled="{Binding CanAccept}" />
                                         </Grid>
                                     </VerticalStackLayout>
                                 </Border>

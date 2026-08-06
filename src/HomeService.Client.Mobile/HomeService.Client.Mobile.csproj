@@ -10,8 +10,8 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>Wélé</ApplicationTitle>
     <ApplicationId>ci.wele.client</ApplicationId>
-    <ApplicationDisplayVersion>1.0.43</ApplicationDisplayVersion>
-    <ApplicationVersion>44</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.44</ApplicationDisplayVersion>
+    <ApplicationVersion>45</ApplicationVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">23.0</SupportedOSPlatformVersion>

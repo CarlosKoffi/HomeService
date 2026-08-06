@@ -13,9 +13,9 @@ public partial class MissionDetailPage : ContentPage
     private readonly CompanyMobileApiClient apiClient;
     private readonly CompanySessionStore sessionStore;
     private readonly ObservableCollection<AdditionalQuoteRow> additionalQuotes = [];
+    private CompanyPortalMissionDetailResponse? detail;
     private CompanyPortalMissionResponse? mission;
     private IReadOnlyList<CompanyPortalAssignableProviderResponse> candidates = [];
-    private CompanyEmployeeResponse? assignedProvider;
     private MissionAdditionalQuoteResponse? selectedAdditionalQuote;
     private CancellationTokenSource? refreshCancellation;
     private Guid missionId;
@@ -39,6 +39,7 @@ public partial class MissionDetailPage : ContentPage
         base.OnAppearing();
         await LoadAsync();
         refreshCancellation?.Cancel();
+        refreshCancellation?.Dispose();
         refreshCancellation = new CancellationTokenSource();
         _ = RefreshLoopAsync(refreshCancellation.Token);
     }
@@ -61,25 +62,30 @@ public partial class MissionDetailPage : ContentPage
             var companyId = await sessionStore.GetCompanyIdAsync();
             if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
 
-            var missionsResult = await apiClient.GetMissionsAsync(token, companyId.Value);
-            mission = missionsResult.Response?.FirstOrDefault(item => item.Id == missionId);
-            if (mission is null)
+            var detailResult = await apiClient.GetMissionDetailAsync(token, companyId.Value, missionId);
+            if (!detailResult.IsSuccess || detailResult.Response is null)
             {
-                if (!quiet) ShowMessage("Mission introuvable.", true);
+                if (!quiet) ShowMessage(detailResult.ErrorMessage ?? "Mission introuvable.", true);
                 return;
             }
 
-            var providersTask = apiClient.GetProvidersAsync(token, companyId.Value);
-            var quotesTask = apiClient.GetAdditionalQuotesAsync(token, companyId.Value, missionId);
-            var candidatesTask = mission.ProviderId is null
+            detail = detailResult.Response;
+            mission = detail.Mission;
+
+            var candidatesTask = detail.CanAssign
                 ? apiClient.GetAssignableProvidersAsync(token, companyId.Value, missionId)
                 : Task.FromResult(ApiCallResult<IReadOnlyList<CompanyPortalAssignableProviderResponse>>.Ok([]));
-            await Task.WhenAll(providersTask, quotesTask, candidatesTask);
-            assignedProvider = (await providersTask).Response?.FirstOrDefault(item => item.Id == mission.ProviderId);
+            var quotesTask = detail.CanAccept || detail.CanRefuse
+                ? Task.FromResult(ApiCallResult<IReadOnlyList<MissionAdditionalQuoteResponse>>.Ok([]))
+                : apiClient.GetAdditionalQuotesAsync(token, companyId.Value, missionId);
+            await Task.WhenAll(candidatesTask, quotesTask);
+
             candidates = (await candidatesTask).Response ?? [];
-            RenderMission(mission);
+            RenderMission(detail);
             RenderCandidates();
             RenderAdditionalQuotes((await quotesTask).Response ?? []);
+            RenderHistory(detail.CustomerHistory);
+            MessageLabel.IsVisible = false;
         }
         finally
         {
@@ -87,19 +93,32 @@ public partial class MissionDetailPage : ContentPage
         }
     }
 
-    private void RenderMission(CompanyPortalMissionResponse item)
+    private void RenderMission(CompanyPortalMissionDetailResponse response)
     {
+        var item = response.Mission;
         MissionNumberLabel.Text = item.MissionNumber;
-        StatusLabel.Text = ResolveStatus(item);
+        StatusLabel.Text = ResolveStatus(response);
         ServiceLabel.Text = item.ServiceName;
-        CustomerLabel.Text = item.CustomerName;
+        PrestationLabel.Text = string.Join(" · ", new[] { response.PrestationName, response.OptionName }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        PrestationLabel.IsVisible = !string.IsNullOrWhiteSpace(PrestationLabel.Text);
         ScheduleLabel.Text = item.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy · HH:mm") ?? "Dès que possible";
         AddressLabel.Text = item.LocationLabel ?? "Adresse à confirmer";
+        DescriptionLabel.Text = response.Description;
+        DescriptionLabel.IsVisible = !string.IsNullOrWhiteSpace(response.Description);
         PriceLabel.Text = item.CompanyQuotedAmount.HasValue
             ? $"Prix envoyé : {item.CompanyQuotedAmount:N0} {item.Currency}"
-            : "Prix à définir lors de l’affectation";
+            : "Prix à définir après acceptation";
 
-        AssignmentCard.IsVisible = item.ProviderId is null && item.Status is not ("Completed" or "Cancelled");
+        CustomerLabel.Text = item.CustomerName;
+        CustomerPhoneLabel.Text = item.CustomerPhoneNumber;
+
+        OfferActionCard.IsVisible = response.CanAccept || response.CanRefuse;
+        AcceptOfferButton.IsVisible = response.CanAccept;
+        RefuseOfferButton.IsVisible = response.CanRefuse;
+        MissionChatButton.IsEnabled = !OfferActionCard.IsVisible;
+        UpdateOfferDeadline(response.OfferExpiresAt);
+
+        AssignmentCard.IsVisible = response.CanAssign;
         ProviderCard.IsVisible = item.ProviderId.HasValue;
         ProviderNameLabel.Text = item.ProviderName ?? "Prestataire";
         ProviderStateLabel.Text = item.Status switch
@@ -109,26 +128,67 @@ public partial class MissionDetailPage : ContentPage
             "Completed" => "Mission terminée",
             _ => "Mission affectée"
         };
-        ProviderCallButton.IsEnabled = assignedProvider is not null;
-        ProviderMessageButton.IsEnabled = assignedProvider is not null;
+        ProviderCallButton.IsEnabled = !string.IsNullOrWhiteSpace(response.ProviderPhoneNumber);
+        ProviderMessageButton.IsEnabled = !OfferActionCard.IsVisible;
 
-        DeadlineCard.IsVisible = AssignmentCard.IsVisible && item.CompanyAssignmentExpiresAt.HasValue;
+        DeadlineCard.IsVisible = response.CanAssign && item.CompanyAssignmentExpiresAt.HasValue;
         UpdateDeadline(item.CompanyAssignmentExpiresAt);
-        RenderMap(item);
+        RenderMap(response);
     }
 
-    private void RenderMap(CompanyPortalMissionResponse item)
+    private void RenderMap(CompanyPortalMissionDetailResponse response)
     {
+        var item = response.Mission;
         if (!item.ServiceLatitude.HasValue || !item.ServiceLongitude.HasValue)
         {
             MapCard.IsVisible = false;
             return;
         }
 
-        var location = new Location((double)item.ServiceLatitude.Value, (double)item.ServiceLongitude.Value);
+        var clientLocation = new Location((double)item.ServiceLatitude.Value, (double)item.ServiceLongitude.Value);
         MissionMap.Pins.Clear();
-        MissionMap.Pins.Add(new Pin { Label = item.ServiceName, Address = item.LocationLabel ?? string.Empty, Location = location });
-        MissionMap.MoveToRegion(MapSpan.FromCenterAndRadius(location, Distance.FromKilometers(0.8)));
+        MissionMap.MapElements.Clear();
+        MissionMap.Pins.Add(new Pin
+        {
+            Label = $"Client · {item.CustomerName}",
+            Address = item.LocationLabel ?? string.Empty,
+            Location = clientLocation,
+            Type = PinType.Place
+        });
+
+        var center = clientLocation;
+        var radius = 0.8;
+        if (response.ProviderLatitude.HasValue && response.ProviderLongitude.HasValue)
+        {
+            var providerLocation = new Location((double)response.ProviderLatitude.Value, (double)response.ProviderLongitude.Value);
+            MissionMap.Pins.Add(new Pin
+            {
+                Label = response.Mission.ProviderName ?? "Prestataire",
+                Address = "Position actuelle",
+                Location = providerLocation,
+                Type = PinType.SavedPin
+            });
+
+            var route = new Polyline { StrokeColor = Color.FromArgb("#1A73E8"), StrokeWidth = 5 };
+            route.Geopath.Add(providerLocation);
+            route.Geopath.Add(clientLocation);
+            MissionMap.MapElements.Add(route);
+
+            center = new Location(
+                (providerLocation.Latitude + clientLocation.Latitude) / 2,
+                (providerLocation.Longitude + clientLocation.Longitude) / 2);
+            radius = Math.Max(0.8, (response.ProviderDistanceKilometers ?? 1) * 0.7);
+            DistanceLabel.Text = response.ProviderDistanceKilometers.HasValue
+                ? $"Prestataire à {response.ProviderDistanceKilometers.Value:0.0} km"
+                : "Prestataire localisé";
+            DistanceLabel.IsVisible = true;
+        }
+        else
+        {
+            DistanceLabel.IsVisible = false;
+        }
+
+        MissionMap.MoveToRegion(MapSpan.FromCenterAndRadius(center, Distance.FromKilometers(radius)));
         MapCard.IsVisible = true;
     }
 
@@ -138,6 +198,37 @@ public partial class MissionDetailPage : ContentPage
         if (ProviderPicker.ItemsSource is IReadOnlyCollection<CompanyPortalAssignableProviderResponse> items && items.Count == 1)
         {
             ProviderPicker.SelectedIndex = 0;
+        }
+    }
+
+    private void RenderHistory(IReadOnlyList<CompanyCustomerMissionHistoryResponse> rows)
+    {
+        HistoryList.Children.Clear();
+        EmptyHistoryLabel.IsVisible = rows.Count == 0;
+        foreach (var row in rows)
+        {
+            var title = new Label { Text = row.ServiceName, FontAttributes = FontAttributes.Bold, FontSize = 15 };
+            var prestation = new Label
+            {
+                Text = row.PrestationName,
+                FontSize = 13,
+                TextColor = Color.FromArgb("#667085"),
+                IsVisible = !string.IsNullOrWhiteSpace(row.PrestationName)
+            };
+            var meta = new Label
+            {
+                Text = $"{row.Date.ToLocalTime():dd/MM/yyyy} · {ResolveHistoryStatus(row.Status)}" + (row.Rating.HasValue ? $" · {row.Rating}/5 ★" : string.Empty),
+                FontSize = 13,
+                TextColor = Color.FromArgb("#667085")
+            };
+            HistoryList.Children.Add(new Border
+            {
+                BackgroundColor = Colors.White,
+                Stroke = Color.FromArgb("#E4E7EC"),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 16 },
+                Padding = 14,
+                Content = new VerticalStackLayout { Spacing = 4, Children = { title, prestation, meta } }
+            });
         }
     }
 
@@ -163,7 +254,11 @@ public partial class MissionDetailPage : ContentPage
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
                 second++;
-                await MainThread.InvokeOnMainThreadAsync(() => UpdateDeadline(mission?.CompanyAssignmentExpiresAt));
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    UpdateDeadline(mission?.CompanyAssignmentExpiresAt);
+                    UpdateOfferDeadline(detail?.OfferExpiresAt);
+                });
                 if (second % 15 == 0)
                 {
                     await MainThread.InvokeOnMainThreadAsync(() => LoadAsync(quiet: true));
@@ -171,6 +266,23 @@ public partial class MissionDetailPage : ContentPage
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
+    private void UpdateOfferDeadline(DateTimeOffset? expiresAt)
+    {
+        if (!expiresAt.HasValue || !OfferActionCard.IsVisible) return;
+        var remaining = expiresAt.Value - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            OfferDeadlineLabel.Text = "Délai expiré";
+            AcceptOfferButton.IsEnabled = false;
+            RefuseOfferButton.IsEnabled = false;
+            return;
+        }
+
+        OfferDeadlineLabel.Text = $"Temps restant : {(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}";
+        AcceptOfferButton.IsEnabled = detail?.CanAccept == true;
+        RefuseOfferButton.IsEnabled = detail?.CanRefuse == true;
     }
 
     private void UpdateDeadline(DateTimeOffset? expiresAt)
@@ -202,6 +314,42 @@ public partial class MissionDetailPage : ContentPage
         PriceRangeLabel.Text = provider.IsFixedPrice
             ? $"Prix fixe : {maximum:N0} {provider.Currency}"
             : $"Fourchette : {minimum:N0} – {maximum:N0} {provider.Currency}";
+    }
+
+    private async void OnAcceptOfferClicked(object? sender, EventArgs e)
+    {
+        if (detail?.OfferId is not Guid offerId) return;
+        SetOfferButtonsEnabled(false);
+        var token = await sessionStore.GetTokenAsync();
+        var companyId = await sessionStore.GetCompanyIdAsync();
+        if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
+        var result = await apiClient.AcceptOfferAsync(token, companyId.Value, offerId);
+        ShowMessage(result.IsSuccess ? "Mission acceptée. Vous pouvez maintenant l’affecter." : result.ErrorMessage ?? "Acceptation impossible.", !result.IsSuccess);
+        await LoadAsync();
+    }
+
+    private async void OnRefuseOfferClicked(object? sender, EventArgs e)
+    {
+        if (detail?.OfferId is not Guid offerId) return;
+        var confirmed = await DisplayAlert("Refuser cette mission ?", "Elle ne sera plus proposée à votre entreprise.", "Refuser", "Annuler");
+        if (!confirmed) return;
+        SetOfferButtonsEnabled(false);
+        var token = await sessionStore.GetTokenAsync();
+        var companyId = await sessionStore.GetCompanyIdAsync();
+        if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
+        var result = await apiClient.RefuseOfferAsync(token, companyId.Value, offerId);
+        if (result.IsSuccess) await Shell.Current.GoToAsync("..");
+        else
+        {
+            ShowMessage(result.ErrorMessage ?? "Refus impossible.", true);
+            SetOfferButtonsEnabled(true);
+        }
+    }
+
+    private void SetOfferButtonsEnabled(bool enabled)
+    {
+        AcceptOfferButton.IsEnabled = enabled && detail?.CanAccept == true;
+        RefuseOfferButton.IsEnabled = enabled && detail?.CanRefuse == true;
     }
 
     private async void OnAssignClicked(object? sender, EventArgs e)
@@ -263,14 +411,35 @@ public partial class MissionDetailPage : ContentPage
         await LoadAsync();
     }
 
-    private async void OnProviderCallClicked(object? sender, EventArgs e)
+    private async void OnCustomerCallClicked(object? sender, EventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(assignedProvider?.PhoneNumber)) await Launcher.Default.OpenAsync($"tel:{assignedProvider.PhoneNumber}");
+        if (!string.IsNullOrWhiteSpace(mission?.CustomerPhoneNumber)) await Launcher.Default.OpenAsync($"tel:{mission.CustomerPhoneNumber}");
     }
 
-    private async void OnProviderMessageClicked(object? sender, EventArgs e)
+    private async void OnProviderCallClicked(object? sender, EventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(assignedProvider?.PhoneNumber)) await Launcher.Default.OpenAsync($"sms:{assignedProvider.PhoneNumber}");
+        if (!string.IsNullOrWhiteSpace(detail?.ProviderPhoneNumber)) await Launcher.Default.OpenAsync($"tel:{detail.ProviderPhoneNumber}");
+    }
+
+    private async void OnMissionChatClicked(object? sender, EventArgs e)
+    {
+        if (mission is not null) await Shell.Current.GoToAsync($"{nameof(ChatPage)}?missionId={mission.Id:D}");
+    }
+
+    private void OnMissionTabClicked(object? sender, EventArgs e)
+    {
+        MissionContent.IsVisible = true;
+        HistoryContent.IsVisible = false;
+        MissionTabButton.Style = (Style)Resources["MissionTabActive"];
+        HistoryTabButton.Style = (Style)Resources["MissionTabInactive"];
+    }
+
+    private void OnHistoryTabClicked(object? sender, EventArgs e)
+    {
+        MissionContent.IsVisible = false;
+        HistoryContent.IsVisible = true;
+        MissionTabButton.Style = (Style)Resources["MissionTabInactive"];
+        HistoryTabButton.Style = (Style)Resources["MissionTabActive"];
     }
 
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
@@ -288,15 +457,27 @@ public partial class MissionDetailPage : ContentPage
         MessageLabel.IsVisible = true;
     }
 
-    private static string ResolveStatus(CompanyPortalMissionResponse item) => item.Status switch
+    private static string ResolveStatus(CompanyPortalMissionDetailResponse response)
     {
-        "SearchingProvider" or "Assigned" or "Offered" when item.ProviderId is null => "À AFFECTER",
-        "Accepted" => "CONFIRMÉE",
-        "OnTheWay" => "EN ROUTE",
-        "Started" => "EN COURS",
-        "Completed" => "TERMINÉE",
-        "Cancelled" => "ANNULÉE",
-        _ => item.Status.ToUpperInvariant()
+        if (response.CanAccept || response.CanRefuse) return "À VALIDER";
+        return response.Mission.Status switch
+        {
+            "SearchingProvider" or "Assigned" or "Offered" when response.Mission.ProviderId is null => "À AFFECTER",
+            "Accepted" => "CONFIRMÉE",
+            "OnTheWay" => "EN ROUTE",
+            "Started" => "EN COURS",
+            "Completed" => "TERMINÉE",
+            "Cancelled" => "ANNULÉE",
+            _ => response.Mission.Status.ToUpperInvariant()
+        };
+    }
+
+    private static string ResolveHistoryStatus(string status) => status switch
+    {
+        "Completed" => "Terminée",
+        "Cancelled" => "Annulée",
+        "Started" => "En cours",
+        _ => status
     };
 
     public sealed record AdditionalQuoteRow(MissionAdditionalQuoteResponse Quote, string Reason, string StatusLabel)

@@ -56,7 +56,12 @@ public sealed class MissionDispatchService(
             mission.ServiceAddress,
             isUrgent);
 
-        var candidates = await GetCandidatesAsync(mission, excludedCompanyIds: EmptyCompanySet, cancellationToken);
+        var refusedCompanyIds = await db.MissionDispatchOffers
+            .AsNoTracking()
+            .Where(offer => offer.MissionId == missionId && offer.Status == MissionDispatchOfferStatus.Refused)
+            .Select(offer => offer.CompanyId)
+            .ToHashSetAsync(cancellationToken);
+        var candidates = await GetCandidatesAsync(mission, refusedCompanyIds, cancellationToken);
         var scores = scoringService.SelectTopCompanies(request, candidates);
 
         if (scores.Count == 0)
@@ -219,6 +224,10 @@ public sealed class MissionDispatchService(
         }
 
         var excludedCompanyIds = offers.Select(offer => offer.CompanyId).ToHashSet();
+        var refusedCompanyIds = offers
+            .Where(offer => offer.Status == MissionDispatchOfferStatus.Refused)
+            .Select(offer => offer.CompanyId)
+            .ToHashSet();
         var request = new MissionDispatchRequest(
             mission.Id,
             mission.ServiceId,
@@ -229,9 +238,9 @@ public sealed class MissionDispatchService(
         var scores = scoringService.SelectTopCompanies(request, candidates);
 
         var restartedCycle = false;
-        if (scores.Count == 0 && excludedCompanyIds.Count > 0)
+        if (scores.Count == 0 && excludedCompanyIds.Count > refusedCompanyIds.Count)
         {
-            candidates = await GetCandidatesAsync(mission, EmptyCompanySet, cancellationToken);
+            candidates = await GetCandidatesAsync(mission, refusedCompanyIds, cancellationToken);
             scores = scoringService.SelectTopCompanies(request, candidates);
             restartedCycle = scores.Count > 0;
         }
@@ -275,7 +284,7 @@ public sealed class MissionDispatchService(
         await db.SaveChangesAsync(cancellationToken);
 
         var message = restartedCycle
-            ? "Toutes les entreprises eligibles ont ete relancees avec un nouveau delai."
+            ? "Les entreprises eligibles n'ayant pas refuse ont ete relancees avec un nouveau delai."
             : "Nouvelle vague envoyee.";
         return MissionDispatchReissueResult.Ok(missionId, expiredCount + assignmentTimedOutCount, issuedOffers.Count, message);
     }
