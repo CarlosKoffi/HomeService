@@ -7,6 +7,7 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      SeedData__DemoMissionsEnabled: ${SEED_DEMO_MISSIONS:-false}
       STORAGE_ROOT_PATH: /app/storage
     ports:
       - "${API_PORT:-8080}:8080"

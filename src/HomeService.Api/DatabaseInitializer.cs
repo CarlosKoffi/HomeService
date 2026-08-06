@@ -15,6 +15,7 @@ public static class DatabaseInitializer
     {
         using var scope = services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<HomeServiceDbContext>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
         await db.Database.MigrateAsync(cancellationToken);
         await EnsureMissionNumbersAsync(db, cancellationToken);
@@ -36,9 +37,12 @@ public static class DatabaseInitializer
         await SeedServiceOptionsAsync(db, cancellationToken);
         await SeedServicePrestationPhotosAsync(db, cancellationToken);
         await SeedServiceMediaAsync(db, cancellationToken);
-        await SeedDemoMissionsAsync(db, cancellationToken);
+        if (configuration.GetValue<bool>("SeedData:DemoMissionsEnabled"))
+        {
+            await SeedDemoMissionsAsync(db, cancellationToken);
+        }
+
         await EnableCompanyProvidersForTestingAsync(db, cancellationToken);
-        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         await SeedAdminAccessAsync(db, configuration, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
         await SeedCmsFoundationAsync(db, cancellationToken);

@@ -47,6 +47,9 @@ Variables:
 - `ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=homeservice;Username=homeservice;Password=...`
 - Alternative acceptee: `DATABASE_URL=postgres://homeservice:motdepasse@postgres:5432/homeservice`
 - L'API applique les migrations EF automatiquement au demarrage.
+- Les missions de demonstration sont desactivees par defaut. Ne definir
+  `SEED_DEMO_MISSIONS=true` que sur un environnement qui doit volontairement
+  recreer les donnees de demonstration.
 - Volume persistant recommande: destination `/app/storage`
 
 Notifications mobile Firebase:
