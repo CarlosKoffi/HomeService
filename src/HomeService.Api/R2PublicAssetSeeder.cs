@@ -17,8 +17,20 @@ public sealed class R2PublicAssetSeeder(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!objectStorage.UsesR2 || !IsEnabled(configuration))
+        var seedEnabled = IsEnabled(configuration);
+        logger.LogWarning(
+            "[STORAGE-DIAGNOSTIC] Public asset seed starting. UsesR2={UsesR2}; SeedEnabled={SeedEnabled}; WebRootPath={WebRootPath}; WebRootExists={WebRootExists}.",
+            objectStorage.UsesR2,
+            seedEnabled,
+            environment.WebRootPath ?? "<missing>",
+            !string.IsNullOrWhiteSpace(environment.WebRootPath) && Directory.Exists(environment.WebRootPath));
+
+        if (!objectStorage.UsesR2 || !seedEnabled)
         {
+            logger.LogWarning(
+                "[STORAGE-DIAGNOSTIC] Public asset seed skipped. UsesR2={UsesR2}; SeedEnabled={SeedEnabled}.",
+                objectStorage.UsesR2,
+                seedEnabled);
             return;
         }
 
@@ -31,7 +43,11 @@ public sealed class R2PublicAssetSeeder(
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "The R2 public asset seed did not complete and will be retried on the next API start.");
+            logger.LogError(
+                exception,
+                "[STORAGE-DIAGNOSTIC] R2 public asset seed failed. ExceptionType={ExceptionType}; Message={ExceptionMessage}. It will retry on the next API start.",
+                exception.GetType().FullName,
+                exception.Message);
         }
     }
 
@@ -47,17 +63,28 @@ public sealed class R2PublicAssetSeeder(
         var contentTypeProvider = new FileExtensionContentTypeProvider();
         var uploaded = 0;
         var alreadyPresent = 0;
+        var discovered = 0;
 
         foreach (var relativeFolder in PublicAssetFolders)
         {
             var folder = Path.Combine(webRoot, relativeFolder.Replace('/', Path.DirectorySeparatorChar));
             if (!Directory.Exists(folder))
             {
-                logger.LogWarning("Public asset folder {AssetFolder} does not exist.", folder);
+                logger.LogWarning(
+                    "[STORAGE-DIAGNOSTIC] Public asset folder is missing. RelativeFolder={RelativeFolder}; AbsoluteFolder={AssetFolder}.",
+                    relativeFolder,
+                    folder);
                 continue;
             }
 
-            foreach (var filePath in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+            var files = Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories).ToArray();
+            discovered += files.Length;
+            logger.LogWarning(
+                "[STORAGE-DIAGNOSTIC] Public asset folder discovered. RelativeFolder={RelativeFolder}; FileCount={FileCount}.",
+                relativeFolder,
+                files.Length);
+
+            foreach (var filePath in files)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var objectKey = Path.GetRelativePath(webRoot, filePath).Replace('\\', '/');
@@ -93,8 +120,9 @@ public sealed class R2PublicAssetSeeder(
             }
         }
 
-        logger.LogInformation(
-            "R2 public asset seed completed: {UploadedCount} uploaded, {ExistingCount} already present.",
+        logger.LogWarning(
+            "[STORAGE-DIAGNOSTIC] R2 public asset seed completed. DiscoveredCount={DiscoveredCount}; UploadedCount={UploadedCount}; ExistingCount={ExistingCount}.",
+            discovered,
             uploaded,
             alreadyPresent);
     }

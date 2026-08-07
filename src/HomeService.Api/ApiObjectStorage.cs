@@ -63,8 +63,19 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
         var provider = FirstConfigured(
             configuration["Storage:Provider"],
             configuration["STORAGE_PROVIDER"]);
+        _logger.LogWarning(
+            "[STORAGE-DIAGNOSTIC] Storage configuration resolved. Provider={Provider}; AccountIdConfigured={AccountIdConfigured}; AccessKeyIdConfigured={AccessKeyIdConfigured}; SecretAccessKeyConfigured={SecretAccessKeyConfigured}; PublicBucketConfigured={PublicBucketConfigured}; PrivateBucketConfigured={PrivateBucketConfigured}.",
+            provider ?? "<missing>",
+            HasConfiguredValue(configuration, "Storage:R2:AccountId", "R2:AccountId", "R2_ACCOUNT_ID"),
+            HasConfiguredValue(configuration, "Storage:R2:AccessKeyId", "R2:AccessKeyId", "R2_ACCESS_KEY_ID"),
+            HasConfiguredValue(configuration, "Storage:R2:SecretAccessKey", "R2:SecretAccessKey", "R2_SECRET_ACCESS_KEY"),
+            HasConfiguredValue(configuration, "Storage:R2:PublicBucket", "R2:PublicBucket", "R2_PUBLIC_BUCKET"),
+            HasConfiguredValue(configuration, "Storage:R2:PrivateBucket", "R2:PrivateBucket", "R2_PRIVATE_BUCKET"));
         if (!string.Equals(provider, "R2", StringComparison.OrdinalIgnoreCase))
         {
+            _logger.LogWarning(
+                "[STORAGE-DIAGNOSTIC] R2 is disabled because STORAGE_PROVIDER resolved to {Provider} instead of R2.",
+                provider ?? "<missing>");
             return;
         }
 
@@ -98,10 +109,13 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
                 AuthenticationRegion = "auto"
             });
 
-        _logger.LogInformation(
-            "Cloudflare R2 storage enabled with public bucket {PublicBucket} and private bucket {PrivateBucket}.",
+        _logger.LogWarning(
+            "[STORAGE-DIAGNOSTIC] Cloudflare R2 client enabled. PublicBucket={PublicBucket}; PrivateBucket={PrivateBucket}; PublicBaseUrlConfigured={PublicBaseUrlConfigured}; DirectDeliveryEnabled={DirectDeliveryEnabled}; EndpointHost={EndpointHost}.",
             _publicBucket,
-            _privateBucket);
+            _privateBucket,
+            !string.IsNullOrWhiteSpace(_publicBaseUrl),
+            _publicDirectDeliveryEnabled,
+            Uri.TryCreate(endpoint, UriKind.Absolute, out var endpointUri) ? endpointUri.Host : "<invalid>");
     }
 
     public bool UsesR2 => _r2Client is not null;
@@ -371,6 +385,11 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
     private static string? FirstConfigured(params string?[] values)
     {
         return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim();
+    }
+
+    private static bool HasConfiguredValue(IConfiguration configuration, params string[] keys)
+    {
+        return keys.Any(key => !string.IsNullOrWhiteSpace(configuration[key]));
     }
 
     private static string? NormalizeBaseUrl(string? value)
