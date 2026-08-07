@@ -61,8 +61,8 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
         _logger = logger ?? NullLogger<ApiObjectStorage>.Instance;
 
         var provider = FirstConfigured(
-            configuration["Storage:Provider"],
-            configuration["STORAGE_PROVIDER"]);
+            configuration["STORAGE_PROVIDER"],
+            configuration["Storage:Provider"]);
         _logger.LogWarning(
             "[STORAGE-DIAGNOSTIC] Storage configuration resolved. Provider={Provider}; AccountIdConfigured={AccountIdConfigured}; AccessKeyIdConfigured={AccessKeyIdConfigured}; SecretAccessKeyConfigured={SecretAccessKeyConfigured}; PublicBucketConfigured={PublicBucketConfigured}; PrivateBucketConfigured={PrivateBucketConfigured}.",
             provider ?? "<missing>",
@@ -79,25 +79,25 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
             return;
         }
 
-        var accountId = RequireConfiguration(configuration, "AccountId", "Storage:R2:AccountId", "R2:AccountId", "R2_ACCOUNT_ID");
-        var accessKeyId = RequireConfiguration(configuration, "AccessKeyId", "Storage:R2:AccessKeyId", "R2:AccessKeyId", "R2_ACCESS_KEY_ID");
-        var secretAccessKey = RequireConfiguration(configuration, "SecretAccessKey", "Storage:R2:SecretAccessKey", "R2:SecretAccessKey", "R2_SECRET_ACCESS_KEY");
-        _publicBucket = RequireConfiguration(configuration, "PublicBucket", "Storage:R2:PublicBucket", "R2:PublicBucket", "R2_PUBLIC_BUCKET");
-        _privateBucket = RequireConfiguration(configuration, "PrivateBucket", "Storage:R2:PrivateBucket", "R2:PrivateBucket", "R2_PRIVATE_BUCKET");
+        var accountId = RequireConfiguration(configuration, "AccountId", "R2_ACCOUNT_ID", "R2:AccountId", "Storage:R2:AccountId");
+        var accessKeyId = RequireConfiguration(configuration, "AccessKeyId", "R2_ACCESS_KEY_ID", "R2:AccessKeyId", "Storage:R2:AccessKeyId");
+        var secretAccessKey = RequireConfiguration(configuration, "SecretAccessKey", "R2_SECRET_ACCESS_KEY", "R2:SecretAccessKey", "Storage:R2:SecretAccessKey");
+        _publicBucket = RequireConfiguration(configuration, "PublicBucket", "R2_PUBLIC_BUCKET", "R2:PublicBucket", "Storage:R2:PublicBucket");
+        _privateBucket = RequireConfiguration(configuration, "PrivateBucket", "R2_PRIVATE_BUCKET", "R2:PrivateBucket", "Storage:R2:PrivateBucket");
         _publicBaseUrl = NormalizeBaseUrl(FirstConfigured(
-            configuration["Storage:R2:PublicBaseUrl"],
+            configuration["R2_PUBLIC_BASE_URL"],
             configuration["R2:PublicBaseUrl"],
-            configuration["R2_PUBLIC_BASE_URL"]));
+            configuration["Storage:R2:PublicBaseUrl"]));
         _publicDirectDeliveryEnabled = bool.TryParse(FirstConfigured(
-            configuration["Storage:R2:PublicDirectDeliveryEnabled"],
+            configuration["R2_PUBLIC_DIRECT_DELIVERY_ENABLED"],
             configuration["R2:PublicDirectDeliveryEnabled"],
-            configuration["R2_PUBLIC_DIRECT_DELIVERY_ENABLED"]), out var directDeliveryEnabled)
+            configuration["Storage:R2:PublicDirectDeliveryEnabled"]), out var directDeliveryEnabled)
             && directDeliveryEnabled;
 
         var endpoint = FirstConfigured(
-            configuration["Storage:R2:Endpoint"],
+            configuration["R2_ENDPOINT"],
             configuration["R2:Endpoint"],
-            configuration["R2_ENDPOINT"])
+            configuration["Storage:R2:Endpoint"])
             ?? $"https://{accountId}.r2.cloudflarestorage.com";
 
         _r2Client = new AmazonS3Client(

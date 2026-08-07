@@ -129,9 +129,9 @@ public sealed class R2PublicAssetSeeder(
 
     private static bool IsEnabled(IConfiguration configuration)
     {
-        var configured = configuration["Storage:R2:SeedPublicAssetsOnStartup"]
+        var configured = configuration["R2_SEED_PUBLIC_ASSETS_ON_STARTUP"]
             ?? configuration["R2:SeedPublicAssetsOnStartup"]
-            ?? configuration["R2_SEED_PUBLIC_ASSETS_ON_STARTUP"];
+            ?? configuration["Storage:R2:SeedPublicAssetsOnStartup"];
         return !bool.TryParse(configured, out var enabled) || enabled;
     }
 }

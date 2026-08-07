@@ -100,6 +100,34 @@ public sealed class ApiObjectStorageTests
             storage.GetPublicUrl("cms/mon image.jpg"));
     }
 
+    [Fact]
+    public void Coolify_environment_variables_override_local_appsettings_defaults()
+    {
+        var configuration = CreateConfiguration(new Dictionary<string, string?>
+        {
+            ["Storage:Provider"] = "Local",
+            ["Storage:R2:PublicBucket"] = "default-public",
+            ["Storage:R2:PrivateBucket"] = "default-private",
+            ["Storage:R2:PublicBaseUrl"] = "",
+            ["Storage:R2:PublicDirectDeliveryEnabled"] = "false",
+            ["STORAGE_PROVIDER"] = "R2",
+            ["R2_ACCOUNT_ID"] = "account",
+            ["R2_ACCESS_KEY_ID"] = "access",
+            ["R2_SECRET_ACCESS_KEY"] = "secret",
+            ["R2_PUBLIC_BUCKET"] = "wele-public-media-prod",
+            ["R2_PRIVATE_BUCKET"] = "wele-private-media-prod",
+            ["R2_PUBLIC_BASE_URL"] = "https://media.wele.africa",
+            ["R2_PUBLIC_DIRECT_DELIVERY_ENABLED"] = "true"
+        });
+
+        using var storage = new ApiObjectStorage(configuration);
+
+        Assert.True(storage.UsesR2);
+        Assert.Equal(
+            "https://media.wele.africa/assets/services/menage.png",
+            storage.GetPublicUrl("assets/services/menage.png"));
+    }
+
     private static IConfiguration CreateConfiguration(Dictionary<string, string?>? values = null)
     {
         return new ConfigurationBuilder()
