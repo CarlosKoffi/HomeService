@@ -54,6 +54,7 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
     private readonly string? _publicBucket;
     private readonly string? _privateBucket;
     private readonly string? _publicBaseUrl;
+    private readonly string? _publicAssetVersion;
     private readonly bool _publicDirectDeliveryEnabled;
 
     public ApiObjectStorage(IConfiguration configuration, ILogger<ApiObjectStorage>? logger = null)
@@ -88,6 +89,10 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
             configuration["R2_PUBLIC_BASE_URL"],
             configuration["R2:PublicBaseUrl"],
             configuration["Storage:R2:PublicBaseUrl"]));
+        _publicAssetVersion = FirstConfigured(
+            configuration["R2_PUBLIC_ASSET_VERSION"],
+            configuration["R2:PublicAssetVersion"],
+            configuration["Storage:R2:PublicAssetVersion"]);
         _publicDirectDeliveryEnabled = bool.TryParse(FirstConfigured(
             configuration["R2_PUBLIC_DIRECT_DELIVERY_ENABLED"],
             configuration["R2:PublicDirectDeliveryEnabled"],
@@ -142,7 +147,7 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
                 content.Position = 0;
             }
 
-            await _r2Client.PutObjectAsync(new PutObjectRequest
+            var request = new PutObjectRequest
             {
                 BucketName = ResolveBucket(visibility),
                 Key = normalizedKey,
@@ -151,7 +156,11 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
                 AutoCloseStream = false,
                 DisablePayloadSigning = true,
                 DisableDefaultChecksumValidation = true
-            }, cancellationToken);
+            };
+            request.Headers.CacheControl = visibility == ApiStorageVisibility.Public
+                ? "public, max-age=2592000, immutable"
+                : "private, no-store";
+            await _r2Client.PutObjectAsync(request, cancellationToken);
         }
         catch (Exception exception) when (exception is AmazonS3Exception or AmazonServiceException or HttpRequestException)
         {
@@ -300,7 +309,10 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
         var encodedPath = string.Join('/', NormalizeObjectKey(objectKey)
             .Split('/', StringSplitOptions.RemoveEmptyEntries)
             .Select(Uri.EscapeDataString));
-        return $"{_publicBaseUrl}/{encodedPath}";
+        var versionSuffix = string.IsNullOrWhiteSpace(_publicAssetVersion)
+            ? string.Empty
+            : $"?v={Uri.EscapeDataString(_publicAssetVersion)}";
+        return $"{_publicBaseUrl}/{encodedPath}{versionSuffix}";
     }
 
     public void Dispose()

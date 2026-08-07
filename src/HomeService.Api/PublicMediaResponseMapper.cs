@@ -13,8 +13,13 @@ public static class PublicMediaResponseMapper
         }
 
         var objectKey = value.Trim();
-        if (Uri.TryCreate(objectKey, UriKind.Absolute, out _))
+        if (Uri.TryCreate(objectKey, UriKind.Absolute, out var absoluteUri))
         {
+            if (string.Equals(absoluteUri.Host, "media.wele.africa", StringComparison.OrdinalIgnoreCase))
+            {
+                return storage.GetPublicUrl(absoluteUri.AbsolutePath.TrimStart('/')) ?? value;
+            }
+
             return value;
         }
 

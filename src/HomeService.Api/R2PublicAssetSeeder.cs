@@ -61,6 +61,7 @@ public sealed class R2PublicAssetSeeder(
         }
 
         var contentTypeProvider = new FileExtensionContentTypeProvider();
+        var synchronizeExistingAssets = ShouldSynchronizeExistingAssets(configuration);
         var uploaded = 0;
         var alreadyPresent = 0;
         var discovered = 0;
@@ -88,7 +89,7 @@ public sealed class R2PublicAssetSeeder(
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var objectKey = Path.GetRelativePath(webRoot, filePath).Replace('\\', '/');
-                if (await objectStorage.ExistsAsync(
+                if (!synchronizeExistingAssets && await objectStorage.ExistsAsync(
                     ApiStorageVisibility.Public,
                     webRoot,
                     objectKey,
@@ -134,6 +135,14 @@ public sealed class R2PublicAssetSeeder(
             ?? configuration["Storage:R2:SeedPublicAssetsOnStartup"];
         return !bool.TryParse(configured, out var enabled) || enabled;
     }
+
+    private static bool ShouldSynchronizeExistingAssets(IConfiguration configuration)
+    {
+        var configured = configuration["R2_SYNC_PUBLIC_ASSETS_ON_STARTUP"]
+            ?? configuration["R2:SyncPublicAssetsOnStartup"]
+            ?? configuration["Storage:R2:SyncPublicAssetsOnStartup"];
+        return !bool.TryParse(configured, out var enabled) || enabled;
+    }
 }
 
 public static class R2PublicAssetDeliveryExtensions
@@ -152,6 +161,7 @@ public static class R2PublicAssetDeliveryExtensions
             var path = context.Request.Path.Value;
             if ((HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method))
                 && path is not null
+                && !string.Equals(context.Request.Query["proxy"], "1", StringComparison.Ordinal)
                 && PublicPrefixes.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
             {
                 var storage = context.RequestServices.GetRequiredService<IApiObjectStorage>();

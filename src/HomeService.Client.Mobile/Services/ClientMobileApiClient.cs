@@ -13,6 +13,7 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
 {
     private const int MaxProfilePhotoBytes = 25 * 1024 * 1024;
     private const int MaxCachedMediaEntries = 64;
+    private static readonly TimeSpan MediaDownloadTimeout = TimeSpan.FromSeconds(8);
     private static readonly ConcurrentDictionary<string, Lazy<Task<byte[]?>>> MediaCache = new(StringComparer.OrdinalIgnoreCase);
     public Task<ApiCallResult<ClientAuthResponse>> RegisterAsync(RegisterClientRequest request, CancellationToken cancellationToken = default)
     {
@@ -234,22 +235,69 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
                 ? null
                 : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
         }
-        catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
+        catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException)
         {
             return null;
         }
 
         async Task<byte[]?> DownloadMediaBytesAsync(string mediaUrl)
         {
-            try
+            var candidates = new List<Uri>();
+            if (Uri.TryCreate(mediaUrl, UriKind.Absolute, out var directUri))
             {
-                return await httpClient.GetByteArrayAsync(mediaUrl);
+                candidates.Add(directUri);
+                var proxyUri = BuildPublicMediaProxyUri(directUri);
+                if (proxyUri is not null)
+                {
+                    candidates.Add(proxyUri);
+                }
             }
-            catch (Exception exception) when (exception is HttpRequestException or IOException or TaskCanceledException)
+
+            foreach (var candidate in candidates)
             {
-                MediaCache.TryRemove(mediaUrl, out _);
+                try
+                {
+                    using var timeout = new CancellationTokenSource(MediaDownloadTimeout);
+                    using var response = await httpClient.GetAsync(
+                        candidate,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        timeout.Token);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        continue;
+                    }
+
+                    return await response.Content.ReadAsByteArrayAsync(timeout.Token);
+                }
+                catch (Exception exception) when (
+                    exception is HttpRequestException or IOException or OperationCanceledException)
+                {
+                    // The API proxy below is the resilience path when the CDN DNS or route is unavailable.
+                }
+            }
+
+            MediaCache.TryRemove(mediaUrl, out _);
+            return null;
+        }
+
+        Uri? BuildPublicMediaProxyUri(Uri directUri)
+        {
+            if (httpClient.BaseAddress is null
+                || !string.Equals(directUri.Host, "media.wele.africa", StringComparison.OrdinalIgnoreCase)
+                || !(directUri.AbsolutePath.StartsWith("/assets/services/", StringComparison.OrdinalIgnoreCase)
+                    || directUri.AbsolutePath.StartsWith("/catalog/prestations/", StringComparison.OrdinalIgnoreCase)
+                    || directUri.AbsolutePath.StartsWith("/media/payment-providers/", StringComparison.OrdinalIgnoreCase)))
+            {
                 return null;
             }
+
+            var proxyUri = new Uri(httpClient.BaseAddress, directUri.AbsolutePath.TrimStart('/'));
+            var builder = new UriBuilder(proxyUri);
+            var existingQuery = directUri.Query.TrimStart('?');
+            builder.Query = string.IsNullOrWhiteSpace(existingQuery)
+                ? "proxy=1"
+                : $"{existingQuery}&proxy=1";
+            return builder.Uri;
         }
     }
 

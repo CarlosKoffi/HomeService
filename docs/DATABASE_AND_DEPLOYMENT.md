@@ -111,8 +111,10 @@ En developpement et dans les tests, l'API conserve le stockage local par defaut.
 - `R2_PUBLIC_BUCKET=wele-public-media-prod`
 - `R2_PRIVATE_BUCKET=wele-private-media-prod`
 - `R2_PUBLIC_BASE_URL=https://media.wele.africa` lorsque le domaine sera actif
+- `R2_PUBLIC_ASSET_VERSION=20260807-optimized-1` pour invalider proprement les caches lors d'une nouvelle version des images integrees
 - `R2_PUBLIC_DIRECT_DELIVERY_ENABLED=false` pendant la migration, puis `true` lorsque tous les medias CMS historiques sont presents dans R2
 - `R2_SEED_PUBLIC_ASSETS_ON_STARTUP=true` pour copier automatiquement les images de services, prestations et moyens de paiement absentes de R2
+- `R2_SYNC_PUBLIC_ASSETS_ON_STARTUP=true` pour resynchroniser les images integrees a chaque deploiement et propager leurs optimisations
 - `R2_MIGRATE_LOCAL_ASSETS_ON_STARTUP=true` pour copier automatiquement les anciens medias du volume local vers les buckets public et prive
 
 Ne jamais placer les trois valeurs secretes dans `appsettings.json`, un fichier `.env` commite ou un APK. L'API refuse de demarrer avec `STORAGE_PROVIDER=R2` si une valeur obligatoire manque.

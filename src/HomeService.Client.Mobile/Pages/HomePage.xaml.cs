@@ -69,9 +69,9 @@ public partial class HomePage : ContentPage
         popularServices.Clear();
         allPopularServices.Clear();
 
-        var serviceItems = result.Response
+        var serviceItems = await Task.WhenAll(result.Response
             .Where(item => item.IsActive)
-            .Select(service => ServiceItem.From(service, apiClient));
+            .Select(service => ServiceItem.FromAsync(service, apiClient)));
         foreach (var service in serviceItems)
         {
             services.Add(service);
@@ -93,12 +93,16 @@ public partial class HomePage : ContentPage
                 .Where(prestation => prestation.IsActive)
                 .Select(prestation => new { Service = service, Prestation = prestation }))
             .OrderByDescending(item => item.Prestation.MissionCount)
-            .ThenBy(item => item.Prestation.Name);
+            .ThenBy(item => item.Prestation.Name)
+            .ToList();
 
-        var popularItems = mostRequestedPrestations.Select(item =>
+        var popularItems = await Task.WhenAll(mostRequestedPrestations.Take(3).Select(async item =>
         {
-            var illustrationUrl = apiClient.ToRemoteImageSource(item.Prestation.IllustrationUrl);
-            var serviceIconUrl = apiClient.ToRemoteImageSource(item.Service.IconUrl);
+            var illustrationUrlTask = apiClient.DownloadMediaImageSourceAsync(item.Prestation.IllustrationUrl);
+            var serviceIconUrlTask = apiClient.DownloadMediaImageSourceAsync(item.Service.IconUrl);
+            await Task.WhenAll(illustrationUrlTask, serviceIconUrlTask);
+            var illustrationUrl = await illustrationUrlTask;
+            var serviceIconUrl = await serviceIconUrlTask;
             return new PopularItem(
                 item.Service.Id,
                 item.Prestation.Id,
@@ -113,10 +117,31 @@ public partial class HomePage : ContentPage
                 illustrationUrl is not null,
                 illustrationUrl is null && serviceIconUrl is not null,
                 illustrationUrl is null && serviceIconUrl is null);
-        });
+        }));
         foreach (var item in popularItems)
         {
             allPopularServices.Add(item);
+        }
+        foreach (var item in mostRequestedPrestations.Skip(3))
+        {
+            var illustrationUrl = apiClient.ToRemoteImageSource(item.Prestation.IllustrationUrl);
+            var serviceIconUrl = apiClient.ToRemoteImageSource(item.Service.IconUrl);
+            allPopularServices.Add(new PopularItem(
+                item.Service.Id,
+                item.Prestation.Id,
+                item.Prestation.Name,
+                item.Service.Name,
+                item.Prestation.PriceMinAmount.HasValue
+                    ? $"À partir de {item.Prestation.PriceMinAmount:N0} {item.Prestation.Currency}"
+                    : "Prix à confirmer",
+                illustrationUrl,
+                serviceIconUrl,
+                string.IsNullOrWhiteSpace(item.Prestation.Name)
+                    ? "WE"
+                    : item.Prestation.Name[..Math.Min(2, item.Prestation.Name.Length)].ToUpperInvariant(),
+                illustrationUrl is not null,
+                illustrationUrl is null && serviceIconUrl is not null,
+                illustrationUrl is null && serviceIconUrl is null));
         }
         foreach (var item in allPopularServices.Take(3))
         {
@@ -300,13 +325,15 @@ public partial class HomePage : ContentPage
         string Price,
         string DisplayCategory)
     {
-        public static ServiceItem From(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
+        public static async Task<ServiceItem> FromAsync(
+            ServiceSummaryResponse response,
+            ClientMobileApiClient apiClient)
         {
             var price = response.PriceMinAmount.HasValue
                 ? $"À partir de {response.PriceMinAmount:N0} {response.Currency}"
                 : $"{response.NormalPriceAmount:N0} {response.Currency}";
 
-            var iconUrl = apiClient.ToRemoteImageSource(response.IconUrl);
+            var iconUrl = await apiClient.DownloadMediaImageSourceAsync(response.IconUrl);
             var fallback = ResolveIcon(response.IconName, response.Name);
             return new ServiceItem(
                 response.Id,

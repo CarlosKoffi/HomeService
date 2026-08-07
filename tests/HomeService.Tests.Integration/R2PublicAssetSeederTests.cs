@@ -20,7 +20,12 @@ public sealed class R2PublicAssetSeederTests
         var storage = new RecordingObjectStorage();
         var seeder = new R2PublicAssetSeeder(
             new TestWebHostEnvironment(webRoot),
-            new ConfigurationBuilder().Build(),
+            new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["R2_SYNC_PUBLIC_ASSETS_ON_STARTUP"] = "false"
+                })
+                .Build(),
             storage,
             NullLogger<R2PublicAssetSeeder>.Instance);
 
@@ -32,6 +37,7 @@ public sealed class R2PublicAssetSeederTests
         Assert.Contains("catalog/prestations/reparer-fuite.jpg", storage.SavedKeys);
         Assert.Contains("media/payment-providers/wave.svg", storage.SavedKeys);
         Assert.DoesNotContain("unrelated/ignored.png", storage.SavedKeys);
+        Assert.Equal(3, storage.SaveCount);
     }
 
     private static void WriteAsset(string webRoot, string relativePath, byte[] content)
@@ -44,6 +50,7 @@ public sealed class R2PublicAssetSeederTests
     private sealed class RecordingObjectStorage : IApiObjectStorage
     {
         public HashSet<string> SavedKeys { get; } = new(StringComparer.Ordinal);
+        public int SaveCount { get; private set; }
         public bool UsesR2 => true;
 
         public async Task SaveAsync(
@@ -59,6 +66,7 @@ public sealed class R2PublicAssetSeederTests
             await content.CopyToAsync(sink, cancellationToken);
             Assert.NotEmpty(sink.ToArray());
             SavedKeys.Add(objectKey);
+            SaveCount++;
         }
 
         public Task<Stream?> OpenReadAsync(
