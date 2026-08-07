@@ -100,6 +100,27 @@ Formats acceptes pour la base API:
 
 Si une URL PostgreSQL est fournie et que la configuration par defaut pointe encore vers `localhost`, l'API utilise automatiquement l'URL Coolify.
 
+## Stockage des medias avec Cloudflare R2
+
+En developpement et dans les tests, l'API conserve le stockage local par defaut. En production, activer R2 uniquement apres avoir cree les deux buckets et ajoute les secrets dans la plateforme d'hebergement:
+
+- `STORAGE_PROVIDER=R2`
+- `R2_ACCOUNT_ID=<identifiant du compte Cloudflare>`
+- `R2_ACCESS_KEY_ID=<access key du jeton R2>`
+- `R2_SECRET_ACCESS_KEY=<secret du jeton R2>`
+- `R2_PUBLIC_BUCKET=wele-public-media-prod`
+- `R2_PRIVATE_BUCKET=wele-private-media-prod`
+- `R2_PUBLIC_BASE_URL=https://media.wele.africa` lorsque le domaine sera actif
+- `R2_PUBLIC_DIRECT_DELIVERY_ENABLED=false` pendant la migration, puis `true` lorsque tous les medias CMS historiques sont presents dans R2
+
+Ne jamais placer les trois valeurs secretes dans `appsettings.json`, un fichier `.env` commite ou un APK. L'API refuse de demarrer avec `STORAGE_PROVIDER=R2` si une valeur obligatoire manque.
+
+Le bucket public est reserve aux medias CMS diffusables par CDN. Les photos de mission, pieces d'identite, diplomes, candidatures et photos de profil client restent dans le bucket prive et sont servis uniquement par les routes authentifiees de l'API.
+
+Lors du passage a R2, les nouvelles ecritures partent dans R2. Pour garantir une migration sans coupure, une lecture absente de R2 recherche encore le fichier dans l'ancien volume local. Ce volume doit donc rester monte jusqu'a la fin de la migration des objets historiques.
+
+La diffusion directe par `media.wele.africa` reste volontairement desactivee pendant cette phase. Tant que `R2_PUBLIC_DIRECT_DELIVERY_ENABLED=false`, l'API conserve les routes historiques et peut donc retomber sur le volume local. Activer la redirection CDN seulement apres la verification de la migration du bucket public.
+
 ## Regle de livraison
 
 Avant push/deploiement:

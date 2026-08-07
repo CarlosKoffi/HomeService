@@ -2,7 +2,7 @@ using HomeService.Domain.Enums;
 
 namespace HomeService.Api;
 
-public sealed class CompanyApplicationUploadService(IConfiguration configuration)
+public sealed class CompanyApplicationUploadService
 {
     private const long MaxFileSize = 10 * 1024 * 1024;
 
@@ -45,6 +45,15 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
         ["diploma"] = ProviderDocumentType.Diploma
     };
 
+    private readonly IConfiguration _configuration;
+    private readonly IApiObjectStorage _objectStorage;
+
+    public CompanyApplicationUploadService(IConfiguration configuration, IApiObjectStorage? objectStorage = null)
+    {
+        _configuration = configuration;
+        _objectStorage = objectStorage ?? new ApiObjectStorage(configuration);
+    }
+
     public async Task<IReadOnlyList<StoredCompanyApplicationDocument>> SaveAsync(
         Guid companyApplicationId,
         IFormFileCollection files,
@@ -71,22 +80,15 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
                 throw new InvalidOperationException($"Le format du fichier {file.FileName} n'est pas accepte.");
             }
 
-            var root = GetDocumentsRoot();
             var relativeDirectory = Path.Combine(
                 "company-applications",
                 DateTime.UtcNow.ToString("yyyy"),
                 DateTime.UtcNow.ToString("MM"),
                 companyApplicationId.ToString("N"),
                 ToFolderName(documentType));
-            var absoluteDirectory = Path.Combine(root, relativeDirectory);
-            Directory.CreateDirectory(absoluteDirectory);
-
             var safeFileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}_{SanitizeFileName(originalFileName)}";
-            var absolutePath = Path.Combine(absoluteDirectory, safeFileName);
-            await using var stream = File.Create(absolutePath);
-            await file.CopyToAsync(stream, cancellationToken);
-
             var relativePath = Path.Combine(relativeDirectory, safeFileName).Replace('\\', '/');
+            await SaveFileAsync(relativePath, file, cancellationToken);
             storedDocuments.Add(new StoredCompanyApplicationDocument(
                 documentType,
                 originalFileName,
@@ -120,50 +122,53 @@ public sealed class CompanyApplicationUploadService(IConfiguration configuration
             throw new InvalidOperationException($"Le format du fichier {file.FileName} n'est pas accepte.");
         }
 
-        var root = GetDocumentsRoot();
         var relativeDirectory = Path.Combine(
             "providers",
             DateTime.UtcNow.ToString("yyyy"),
             DateTime.UtcNow.ToString("MM"),
             providerId.ToString("N"),
             ToProviderFolderName(documentType));
-        var absoluteDirectory = Path.Combine(root, relativeDirectory);
-        Directory.CreateDirectory(absoluteDirectory);
-
         var safeFileName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}_{SanitizeFileName(originalFileName)}";
-        var absolutePath = Path.Combine(absoluteDirectory, safeFileName);
-        await using var stream = File.Create(absolutePath);
-        await file.CopyToAsync(stream, cancellationToken);
-
         var relativePath = Path.Combine(relativeDirectory, safeFileName).Replace('\\', '/');
+        await SaveFileAsync(relativePath, file, cancellationToken);
         return new StoredProviderDocument(documentType, originalFileName, relativePath, file.ContentType);
     }
 
     public string GetAbsolutePath(string storagePath)
     {
-        var root = Path.GetFullPath(GetDocumentsRoot());
-        var normalizedPath = storagePath.Replace('/', Path.DirectorySeparatorChar);
-        var absolutePath = Path.GetFullPath(Path.Combine(root, normalizedPath));
-
-        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Chemin de document invalide.");
-        }
-
-        return absolutePath;
+        return _objectStorage.GetLocalAbsolutePath(GetDocumentsRoot(), storagePath);
     }
+
+    public Task<Stream?> OpenReadAsync(string storagePath, CancellationToken cancellationToken) =>
+        _objectStorage.OpenReadAsync(
+            ApiStorageVisibility.Private,
+            GetDocumentsRoot(),
+            storagePath,
+            cancellationToken);
 
     private string GetDocumentsRoot()
     {
-        var configuredRoot = configuration["Storage:DocumentsRoot"];
+        var configuredRoot = _configuration["Storage:DocumentsRoot"];
         if (string.IsNullOrWhiteSpace(configuredRoot))
         {
-            configuredRoot = configuration["DOCUMENT_STORAGE_ROOT"];
+            configuredRoot = _configuration["DOCUMENT_STORAGE_ROOT"];
         }
 
         return string.IsNullOrWhiteSpace(configuredRoot)
             ? Path.Combine(AppContext.BaseDirectory, "storage", "documents")
             : configuredRoot;
+    }
+
+    private async Task SaveFileAsync(string storagePath, IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        await _objectStorage.SaveAsync(
+            ApiStorageVisibility.Private,
+            GetDocumentsRoot(),
+            storagePath,
+            stream,
+            file.ContentType,
+            cancellationToken);
     }
 
     private static string ToFolderName(CompanyDocumentType documentType)

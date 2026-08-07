@@ -2,7 +2,7 @@ using HomeService.Domain.Entities;
 
 namespace HomeService.Api;
 
-public sealed class CmsMediaUploadService(IConfiguration configuration)
+public sealed class CmsMediaUploadService
 {
     private const long MaxFileSize = 8 * 1024 * 1024;
 
@@ -14,9 +14,16 @@ public sealed class CmsMediaUploadService(IConfiguration configuration)
         "image/gif"
     };
 
-    private readonly string _rootPath = configuration["Storage:RootPath"]
-        ?? configuration["STORAGE_ROOT_PATH"]
-        ?? Path.Combine(AppContext.BaseDirectory, "storage");
+    private readonly string _rootPath;
+    private readonly IApiObjectStorage _objectStorage;
+
+    public CmsMediaUploadService(IConfiguration configuration, IApiObjectStorage? objectStorage = null)
+    {
+        _rootPath = configuration["Storage:RootPath"]
+            ?? configuration["STORAGE_ROOT_PATH"]
+            ?? Path.Combine(AppContext.BaseDirectory, "storage");
+        _objectStorage = objectStorage ?? new ApiObjectStorage(configuration);
+    }
 
     public async Task<CmsMediaAsset> SaveAsync(IFormFile file, CancellationToken cancellationToken)
     {
@@ -43,15 +50,19 @@ public sealed class CmsMediaUploadService(IConfiguration configuration)
             DateTimeOffset.UtcNow.ToString("MM"),
             $"{Guid.NewGuid():N}{safeExtension}");
 
-        var absolutePath = GetAbsolutePath(relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-
-        await using var stream = File.Create(absolutePath);
-        await file.CopyToAsync(stream, cancellationToken);
+        var storagePath = relativePath.Replace('\\', '/');
+        await using var stream = file.OpenReadStream();
+        await _objectStorage.SaveAsync(
+            ApiStorageVisibility.Public,
+            _rootPath,
+            storagePath,
+            stream,
+            file.ContentType,
+            cancellationToken);
 
         var asset = new CmsMediaAsset(
             SanitizeFileName(file.FileName),
-            relativePath.Replace('\\', '/'),
+            storagePath,
             file.ContentType,
             file.Length);
         asset.MarkAvailable();
@@ -61,17 +72,13 @@ public sealed class CmsMediaUploadService(IConfiguration configuration)
 
     public string GetAbsolutePath(string relativePath)
     {
-        var normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
-        var absolutePath = Path.GetFullPath(Path.Combine(_rootPath, normalized));
-        var root = Path.GetFullPath(_rootPath);
-
-        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Chemin media CMS invalide.");
-        }
-
-        return absolutePath;
+        return _objectStorage.GetLocalAbsolutePath(_rootPath, relativePath);
     }
+
+    public Task<Stream?> OpenReadAsync(string storagePath, CancellationToken cancellationToken) =>
+        _objectStorage.OpenReadAsync(ApiStorageVisibility.Public, _rootPath, storagePath, cancellationToken);
+
+    public string? GetPublicUrl(string storagePath) => _objectStorage.GetPublicUrl(storagePath);
 
     private static string SanitizeFileName(string fileName)
     {

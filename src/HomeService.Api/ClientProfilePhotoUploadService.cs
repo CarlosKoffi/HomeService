@@ -1,8 +1,6 @@
 namespace HomeService.Api;
 
-public sealed class ClientProfilePhotoUploadService(
-    IConfiguration configuration,
-    ILogger<ClientProfilePhotoUploadService> logger)
+public sealed class ClientProfilePhotoUploadService
 {
     private const long MaxFileSize = 25 * 1024 * 1024;
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -10,9 +8,21 @@ public sealed class ClientProfilePhotoUploadService(
         ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"
     };
 
-    private readonly string _rootPath = configuration["Storage:RootPath"]
-        ?? configuration["STORAGE_ROOT_PATH"]
-        ?? Path.Combine(AppContext.BaseDirectory, "storage");
+    private readonly string _rootPath;
+    private readonly ILogger<ClientProfilePhotoUploadService> _logger;
+    private readonly IApiObjectStorage _objectStorage;
+
+    public ClientProfilePhotoUploadService(
+        IConfiguration configuration,
+        ILogger<ClientProfilePhotoUploadService> logger,
+        IApiObjectStorage? objectStorage = null)
+    {
+        _rootPath = configuration["Storage:RootPath"]
+            ?? configuration["STORAGE_ROOT_PATH"]
+            ?? Path.Combine(AppContext.BaseDirectory, "storage");
+        _logger = logger;
+        _objectStorage = objectStorage ?? new ApiObjectStorage(configuration);
+    }
 
     public async Task<string> SaveAsync(Guid customerId, IFormFile file, CancellationToken cancellationToken)
     {
@@ -28,33 +38,26 @@ public sealed class ClientProfilePhotoUploadService(
         }
 
         var relativePath = Path.Combine("client-profiles", customerId.ToString("N"), $"{Guid.NewGuid():N}{extension}");
-        var absolutePath = GetAbsolutePath(relativePath);
-        var temporaryPath = $"{absolutePath}.uploading";
+        var storagePath = relativePath.Replace('\\', '/');
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-            await using var stream = new FileStream(
-                temporaryPath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: 81920,
-                FileOptions.Asynchronous);
-            await file.CopyToAsync(stream, cancellationToken);
-            await stream.FlushAsync(cancellationToken);
-            stream.Close();
-            File.Move(temporaryPath, absolutePath);
-            return relativePath.Replace('\\', '/');
+            await using var stream = file.OpenReadStream();
+            await _objectStorage.SaveAsync(
+                ApiStorageVisibility.Private,
+                _rootPath,
+                storagePath,
+                stream,
+                file.ContentType,
+                cancellationToken);
+            return storagePath;
         }
         catch (OperationCanceledException)
         {
-            TryDeleteAbsolutePath(temporaryPath);
             throw;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            TryDeleteAbsolutePath(temporaryPath);
-            logger.LogError(exception, "Unable to store client profile photo for customer {CustomerId} in {RootPath}", customerId, _rootPath);
+            _logger.LogError(exception, "Unable to store client profile photo for customer {CustomerId}.", customerId);
             throw new ClientProfilePhotoStorageException(
                 "Le stockage de la photo est momentanement indisponible. Reessayez dans quelques instants.",
                 exception);
@@ -85,17 +88,10 @@ public sealed class ClientProfilePhotoUploadService(
 
     public string GetAbsolutePath(string relativePath)
     {
-        var root = Path.GetFullPath(_rootPath);
-        var absolutePath = Path.GetFullPath(Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar)));
-        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Chemin de photo de profil invalide.");
-        }
-
-        return absolutePath;
+        return _objectStorage.GetLocalAbsolutePath(_rootPath, relativePath);
     }
 
-    public void DeleteIfExists(string? relativePath)
+    public async Task DeleteIfExistsAsync(string? relativePath, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(relativePath))
         {
@@ -104,21 +100,20 @@ public sealed class ClientProfilePhotoUploadService(
 
         try
         {
-            TryDeleteAbsolutePath(GetAbsolutePath(relativePath));
+            await _objectStorage.DeleteIfExistsAsync(
+                ApiStorageVisibility.Private,
+                _rootPath,
+                relativePath,
+                cancellationToken);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            logger.LogWarning(exception, "Unable to delete obsolete client profile photo {RelativePath}.", relativePath);
+            _logger.LogWarning(exception, "Unable to delete obsolete client profile photo {RelativePath}.", relativePath);
         }
     }
 
-    private static void TryDeleteAbsolutePath(string path)
-    {
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
-    }
+    public Task<Stream?> OpenReadAsync(string storagePath, CancellationToken cancellationToken) =>
+        _objectStorage.OpenReadAsync(ApiStorageVisibility.Private, _rootPath, storagePath, cancellationToken);
 }
 
 public sealed class ClientProfilePhotoStorageException(string message, Exception innerException)

@@ -2,7 +2,7 @@ using HomeService.Contracts.Clients;
 
 namespace HomeService.Api;
 
-public sealed class ClientMissionPhotoUploadService(IConfiguration configuration)
+public sealed class ClientMissionPhotoUploadService
 {
     private const long MaxFileSize = 25 * 1024 * 1024;
 
@@ -27,9 +27,16 @@ public sealed class ClientMissionPhotoUploadService(IConfiguration configuration
         ".heif"
     };
 
-    private readonly string _rootPath = configuration["Storage:RootPath"]
-        ?? configuration["STORAGE_ROOT_PATH"]
-        ?? Path.Combine(AppContext.BaseDirectory, "storage");
+    private readonly string _rootPath;
+    private readonly IApiObjectStorage _objectStorage;
+
+    public ClientMissionPhotoUploadService(IConfiguration configuration, IApiObjectStorage? objectStorage = null)
+    {
+        _rootPath = configuration["Storage:RootPath"]
+            ?? configuration["STORAGE_ROOT_PATH"]
+            ?? Path.Combine(AppContext.BaseDirectory, "storage");
+        _objectStorage = objectStorage ?? new ApiObjectStorage(configuration);
+    }
 
     public async Task<ClientMissionPhotoUploadResponse> SaveAsync(
         IFormFile file,
@@ -60,15 +67,19 @@ public sealed class ClientMissionPhotoUploadService(IConfiguration configuration
             DateTimeOffset.UtcNow.ToString("MM"),
             $"{Guid.NewGuid():N}{safeExtension}");
 
-        var absolutePath = GetAbsolutePath(relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-
-        await using var stream = File.Create(absolutePath);
-        await file.CopyToAsync(stream, cancellationToken);
+        var storagePath = relativePath.Replace('\\', '/');
+        await using var stream = file.OpenReadStream();
+        await _objectStorage.SaveAsync(
+            ApiStorageVisibility.Private,
+            _rootPath,
+            storagePath,
+            stream,
+            NormalizeStoredContentType(file.ContentType, safeExtension),
+            cancellationToken);
 
         return new ClientMissionPhotoUploadResponse(
             originalFileName,
-            relativePath.Replace('\\', '/'),
+            storagePath,
             NormalizeStoredContentType(file.ContentType, safeExtension),
             file.Length,
             Clean(caption, 500));
@@ -76,17 +87,11 @@ public sealed class ClientMissionPhotoUploadService(IConfiguration configuration
 
     public string GetAbsolutePath(string relativePath)
     {
-        var normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
-        var absolutePath = Path.GetFullPath(Path.Combine(_rootPath, normalized));
-        var root = Path.GetFullPath(_rootPath);
-
-        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Chemin de photo client invalide.");
-        }
-
-        return absolutePath;
+        return _objectStorage.GetLocalAbsolutePath(_rootPath, relativePath);
     }
+
+    public Task<Stream?> OpenReadAsync(string storagePath, CancellationToken cancellationToken) =>
+        _objectStorage.OpenReadAsync(ApiStorageVisibility.Private, _rootPath, storagePath, cancellationToken);
 
     private static string? ResolveExtension(string fileName, string contentType)
     {

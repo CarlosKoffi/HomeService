@@ -436,13 +436,10 @@ public static class AdminEndpoints
                 return Results.NotFound(new { message = "Piece client introuvable." });
             }
 
-            var absolutePath = uploadService.GetAbsolutePath(file.Value.StoragePath);
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "Le fichier client n'existe plus sur le serveur." });
-            }
-
-            return Results.File(absolutePath, file.Value.ContentType, enableRangeProcessing: true);
+            var stream = await uploadService.OpenReadAsync(file.Value.StoragePath, cancellationToken);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier client n'existe plus dans le stockage." })
+                : Results.Stream(stream, file.Value.ContentType);
         })
         .WithName("PreviewAdminClientAttachment");
 
@@ -458,13 +455,10 @@ public static class AdminEndpoints
                 return Results.NotFound(new { message = "Document prestataire introuvable." });
             }
 
-            var absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "Le fichier prestataire n'existe plus sur le serveur." });
-            }
-
-            return Results.File(absolutePath, document.ContentType, enableRangeProcessing: true);
+            var stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier prestataire n'existe plus dans le stockage." })
+                : Results.Stream(stream, document.ContentType);
         })
         .WithName("PreviewAdminProviderDocument");
 
@@ -2210,22 +2204,19 @@ public static class AdminEndpoints
                 return Results.NotFound(new { message = "Document entreprise introuvable." });
             }
 
-            string absolutePath;
+            Stream? stream;
             try
             {
-                absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+                stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
             }
             catch (InvalidOperationException)
             {
                 return Results.BadRequest(new { message = "Chemin de document invalide." });
             }
 
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "Le fichier n'existe plus sur le serveur." });
-            }
-
-            return Results.File(absolutePath, document.ContentType, enableRangeProcessing: true);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier n'existe plus dans le stockage." })
+                : Results.Stream(stream, document.ContentType);
         })
         .WithName("PreviewCompanyApplicationDocument");
 
@@ -2241,22 +2232,19 @@ public static class AdminEndpoints
                 return Results.NotFound();
             }
         
-            string absolutePath;
+            Stream? stream;
             try
             {
-                absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+                stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
             }
             catch (InvalidOperationException)
             {
                 return Results.BadRequest(new { message = "Chemin de document invalide." });
             }
         
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "Le fichier n'existe plus sur le serveur." });
-            }
-        
-            return Results.File(absolutePath, document.ContentType, document.OriginalFileName);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier n'existe plus dans le stockage." })
+                : Results.Stream(stream, document.ContentType, document.OriginalFileName);
         })
         .WithName("DownloadCompanyApplicationDocument");
         return app;

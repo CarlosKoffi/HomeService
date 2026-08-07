@@ -241,13 +241,16 @@ public static class PublicEndpoints
                 return Results.NotFound(new { message = "Image CMS introuvable." });
             }
 
-            var absolutePath = uploadService.GetAbsolutePath(asset.StoragePath);
-            if (!File.Exists(absolutePath))
+            var publicUrl = uploadService.GetPublicUrl(asset.StoragePath);
+            if (!string.IsNullOrWhiteSpace(publicUrl))
             {
-                return Results.NotFound(new { message = "Le fichier image CMS n'existe plus sur le serveur." });
+                return Results.Redirect(publicUrl);
             }
 
-            return Results.File(absolutePath, asset.ContentType, enableRangeProcessing: true);
+            var stream = await uploadService.OpenReadAsync(asset.StoragePath, cancellationToken);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier image CMS n'existe plus dans le stockage." })
+                : Results.Stream(stream, asset.ContentType);
         })
         .WithName("GetCmsMedia")
         .Produces(StatusCodes.Status404NotFound);
@@ -360,12 +363,12 @@ public static class PublicEndpoints
                 try
                 {
                     var response = await profileService.UpdatePhotoAsync(customer.Id, storagePath, cancellationToken);
-                    uploadService.DeleteIfExists(previousStoragePath);
+                    await uploadService.DeleteIfExistsAsync(previousStoragePath, cancellationToken);
                     return Results.Ok(response);
                 }
                 catch
                 {
-                    uploadService.DeleteIfExists(storagePath);
+                    await uploadService.DeleteIfExistsAsync(storagePath, cancellationToken);
                     throw;
                 }
             }
@@ -408,13 +411,10 @@ public static class PublicEndpoints
                 return Results.NotFound();
             }
 
-            var absolutePath = uploadService.GetAbsolutePath(customer.ProfilePhotoPath);
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound();
-            }
-
-            return Results.File(absolutePath, GetImageContentType(absolutePath));
+            var stream = await uploadService.OpenReadAsync(customer.ProfilePhotoPath, cancellationToken);
+            return stream is null
+                ? Results.NotFound()
+                : Results.Stream(stream, GetImageContentType(customer.ProfilePhotoPath));
         })
         .WithName("GetClientProfilePhoto")
         .Produces(StatusCodes.Status200OK)
@@ -1005,13 +1005,10 @@ public static class PublicEndpoints
                 return Results.NotFound(new { message = "Photo introuvable pour cette mission." });
             }
 
-            var absolutePath = uploadService.GetAbsolutePath(attachment.StoragePath);
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "La photo n'existe plus sur le serveur." });
-            }
-
-            return Results.File(absolutePath, attachment.ContentType, enableRangeProcessing: true);
+            var stream = await uploadService.OpenReadAsync(attachment.StoragePath, cancellationToken);
+            return stream is null
+                ? Results.NotFound(new { message = "La photo n'existe plus dans le stockage." })
+                : Results.Stream(stream, attachment.ContentType);
         })
         .WithName("PreviewClientMissionAttachment")
         .Produces(StatusCodes.Status401Unauthorized)

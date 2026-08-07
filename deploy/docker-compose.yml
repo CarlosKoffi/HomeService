@@ -9,6 +9,14 @@ services:
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       SeedData__DemoMissionsEnabled: ${SEED_DEMO_MISSIONS:-false}
       STORAGE_ROOT_PATH: /app/storage
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-Local}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_PUBLIC_BUCKET: ${R2_PUBLIC_BUCKET:-wele-public-media-prod}
+      R2_PRIVATE_BUCKET: ${R2_PRIVATE_BUCKET:-wele-private-media-prod}
+      R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
+      R2_PUBLIC_DIRECT_DELIVERY_ENABLED: ${R2_PUBLIC_DIRECT_DELIVERY_ENABLED:-false}
     ports:
       - "${API_PORT:-8080}:8080"
     depends_on:

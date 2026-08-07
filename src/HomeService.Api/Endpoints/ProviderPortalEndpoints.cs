@@ -656,7 +656,7 @@ public static class ProviderPortalEndpoints
                 cancellationToken);
             if (!result.IsSuccess || result.Response is null)
             {
-                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                await TryDeleteProviderFileAsync(uploadService, stored.StoragePath, cancellationToken);
                 return Results.NotFound(new { message = result.Message });
             }
 
@@ -675,7 +675,7 @@ public static class ProviderPortalEndpoints
             }
             catch (DbUpdateException exception)
             {
-                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                await TryDeleteProviderFileAsync(uploadService, stored.StoragePath, cancellationToken);
                 logger.LogError(exception, "Provider mobile document upload failed for provider {ProviderId}.", session.ProviderId);
                 return Results.Problem(
                     title: "Upload de la piece impossible.",
@@ -720,25 +720,21 @@ public static class ProviderPortalEndpoints
                 return Results.NotFound();
             }
 
-            string absolutePath;
+            Stream? stream;
             try
             {
-                absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+                stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
             }
             catch (InvalidOperationException)
             {
                 return Results.NotFound(new { message = "Le chemin du fichier prestataire est invalide." });
             }
 
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "Le fichier prestataire n'existe plus sur le serveur." });
-            }
-
-            return Results.File(
-                absolutePath,
-                string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType,
-                enableRangeProcessing: true);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier prestataire n'existe plus dans le stockage." })
+                : Results.Stream(
+                    stream,
+                    string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType);
         })
         .WithName("PreviewProviderMobileProfileDocument")
         .Produces(StatusCodes.Status200OK)
@@ -811,7 +807,7 @@ public static class ProviderPortalEndpoints
                 cancellationToken);
             if (!result.IsSuccess || result.Response is null)
             {
-                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                await TryDeleteProviderFileAsync(uploadService, stored.StoragePath, cancellationToken);
                 return Results.NotFound(new { message = result.Message });
             }
 
@@ -829,7 +825,7 @@ public static class ProviderPortalEndpoints
             }
             catch (DbUpdateException exception)
             {
-                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                await TryDeleteProviderFileAsync(uploadService, stored.StoragePath, cancellationToken);
                 logger.LogError(exception, "Provider mobile portfolio upload failed for provider {ProviderId}.", session.ProviderId);
                 return Results.Problem(
                     title: "Upload de la photo impossible.",
@@ -874,25 +870,21 @@ public static class ProviderPortalEndpoints
                 return Results.NotFound();
             }
 
-            string absolutePath;
+            Stream? stream;
             try
             {
-                absolutePath = uploadService.GetAbsolutePath(item.StoragePath);
+                stream = await uploadService.OpenReadAsync(item.StoragePath, cancellationToken);
             }
             catch (InvalidOperationException)
             {
                 return Results.NotFound(new { message = "Le chemin de la photo de book est invalide." });
             }
 
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "La photo de book n'existe plus sur le serveur." });
-            }
-
-            return Results.File(
-                absolutePath,
-                string.IsNullOrWhiteSpace(item.ContentType) ? "application/octet-stream" : item.ContentType,
-                enableRangeProcessing: true);
+            return stream is null
+                ? Results.NotFound(new { message = "La photo de book n'existe plus dans le stockage." })
+                : Results.Stream(
+                    stream,
+                    string.IsNullOrWhiteSpace(item.ContentType) ? "application/octet-stream" : item.ContentType);
         })
         .WithName("PreviewProviderMobilePortfolioPhoto")
         .Produces(StatusCodes.Status200OK)
@@ -2082,17 +2074,16 @@ public static class ProviderPortalEndpoints
             && documentType is ProviderDocumentType.Photo or ProviderDocumentType.IdentityDocument or ProviderDocumentType.Diploma;
     }
 
-    private static void TryDeleteProviderFile(CompanyProviderUploadService uploadService, string storagePath)
+    private static async Task TryDeleteProviderFileAsync(
+        CompanyProviderUploadService uploadService,
+        string storagePath,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var absolutePath = uploadService.GetAbsolutePath(storagePath);
-            if (File.Exists(absolutePath))
-            {
-                File.Delete(absolutePath);
-            }
+            await uploadService.DeleteIfExistsAsync(storagePath, cancellationToken);
         }
-        catch (Exception)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
             // Best effort cleanup only; upload failure is already reported to the caller.
         }

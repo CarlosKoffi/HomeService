@@ -2,7 +2,7 @@ using HomeService.Domain.Enums;
 
 namespace HomeService.Api;
 
-public sealed class CompanyProviderUploadService(IConfiguration configuration)
+public sealed class CompanyProviderUploadService
 {
     private const long MaxFileSize = 25 * 1024 * 1024;
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -28,9 +28,16 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
         ".pdf"
     };
 
-    private readonly string _rootPath = configuration["Storage:RootPath"]
-        ?? configuration["STORAGE_ROOT_PATH"]
-        ?? Path.Combine(AppContext.BaseDirectory, "storage");
+    private readonly string _rootPath;
+    private readonly IApiObjectStorage _objectStorage;
+
+    public CompanyProviderUploadService(IConfiguration configuration, IApiObjectStorage? objectStorage = null)
+    {
+        _rootPath = configuration["Storage:RootPath"]
+            ?? configuration["STORAGE_ROOT_PATH"]
+            ?? Path.Combine(AppContext.BaseDirectory, "storage");
+        _objectStorage = objectStorage ?? new ApiObjectStorage(configuration);
+    }
 
     public async Task<IReadOnlyList<StoredCompanyProviderDocument>> SaveAsync(
         Guid companyId,
@@ -66,16 +73,13 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
                 providerId.ToString("D"),
                 $"{documentType.ToString().ToLowerInvariant()}-{Guid.NewGuid():N}{safeExtension}");
 
-            var absolutePath = GetAbsolutePath(relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-
-            await using var stream = File.Create(absolutePath);
-            await file.CopyToAsync(stream, cancellationToken);
+            var storagePath = relativePath.Replace('\\', '/');
+            await SaveFileAsync(storagePath, file, safeExtension, cancellationToken);
 
             documents.Add(new StoredCompanyProviderDocument(
                 documentType,
                 originalFileName,
-                relativePath.Replace('\\', '/'),
+                storagePath,
                 NormalizeStoredContentType(file.ContentType, safeExtension)));
         }
 
@@ -114,16 +118,13 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
             providerId.ToString("D"),
             $"{documentType.ToString().ToLowerInvariant()}-{Guid.NewGuid():N}{safeExtension}");
 
-        var absolutePath = GetAbsolutePath(relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-
-        await using var stream = File.Create(absolutePath);
-        await file.CopyToAsync(stream, cancellationToken);
+        var storagePath = relativePath.Replace('\\', '/');
+        await SaveFileAsync(storagePath, file, safeExtension, cancellationToken);
 
         return new StoredCompanyProviderDocument(
             documentType,
             originalFileName,
-            relativePath.Replace('\\', '/'),
+            storagePath,
             NormalizeStoredContentType(file.ContentType, safeExtension));
     }
 
@@ -172,31 +173,25 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
             serviceId.ToString("D"),
             $"book-{Guid.NewGuid():N}{safeExtension}");
 
-        var absolutePath = GetAbsolutePath(relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-
-        await using var stream = File.Create(absolutePath);
-        await file.CopyToAsync(stream, cancellationToken);
+        var storagePath = relativePath.Replace('\\', '/');
+        await SaveFileAsync(storagePath, file, safeExtension, cancellationToken);
 
         return new StoredProviderPortfolioFile(
             originalFileName,
-            relativePath.Replace('\\', '/'),
+            storagePath,
             NormalizeStoredContentType(file.ContentType, safeExtension));
     }
 
     public string GetAbsolutePath(string relativePath)
     {
-        var normalized = relativePath.Replace('/', Path.DirectorySeparatorChar);
-        var absolutePath = Path.GetFullPath(Path.Combine(_rootPath, normalized));
-        var root = Path.GetFullPath(_rootPath);
-
-        if (!absolutePath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Chemin de document invalide.");
-        }
-
-        return absolutePath;
+        return _objectStorage.GetLocalAbsolutePath(_rootPath, relativePath);
     }
+
+    public Task<Stream?> OpenReadAsync(string storagePath, CancellationToken cancellationToken) =>
+        _objectStorage.OpenReadAsync(ApiStorageVisibility.Private, _rootPath, storagePath, cancellationToken);
+
+    public Task DeleteIfExistsAsync(string storagePath, CancellationToken cancellationToken = default) =>
+        _objectStorage.DeleteIfExistsAsync(ApiStorageVisibility.Private, _rootPath, storagePath, cancellationToken);
 
     private static IEnumerable<(string FieldName, ProviderDocumentType DocumentType)> GetDocumentFields()
     {
@@ -233,17 +228,30 @@ public sealed class CompanyProviderUploadService(IConfiguration configuration)
         var originalFileName = NormalizeOriginalFileName(file.FileName, safeExtension);
         var relativePath = Path.Combine(folder, $"{filePrefix}-{Guid.NewGuid():N}{safeExtension}");
 
-        var absolutePath = GetAbsolutePath(relativePath);
-        Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
-
-        await using var stream = File.Create(absolutePath);
-        await file.CopyToAsync(stream, cancellationToken);
+        var storagePath = relativePath.Replace('\\', '/');
+        await SaveFileAsync(storagePath, file, safeExtension, cancellationToken);
 
         return new StoredCompanyProviderDocument(
             documentType,
             originalFileName,
-            relativePath.Replace('\\', '/'),
+            storagePath,
             NormalizeStoredContentType(file.ContentType, safeExtension));
+    }
+
+    private async Task SaveFileAsync(
+        string storagePath,
+        IFormFile file,
+        string extension,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        await _objectStorage.SaveAsync(
+            ApiStorageVisibility.Private,
+            _rootPath,
+            storagePath,
+            stream,
+            NormalizeStoredContentType(file.ContentType, extension),
+            cancellationToken);
     }
 
     private static string? ResolveSafeExtension(IFormFile file, bool allowPdf)

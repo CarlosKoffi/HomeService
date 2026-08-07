@@ -1190,7 +1190,7 @@ public static class CompanyPortalEndpoints
                 cancellationToken);
             if (result.Status == CompanyEmployeeOperationStatus.NotFound)
             {
-                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                await TryDeleteProviderFileAsync(uploadService, stored.StoragePath, cancellationToken);
                 return Results.NotFound(new { message = result.Message });
             }
 
@@ -1208,12 +1208,12 @@ public static class CompanyPortalEndpoints
                 await db.SaveChangesAsync(cancellationToken);
                 foreach (var oldStoragePath in result.ReplacedStoragePaths.Where(path => !string.Equals(path, stored.StoragePath, StringComparison.OrdinalIgnoreCase)))
                 {
-                    TryDeleteProviderFile(uploadService, oldStoragePath);
+                    await TryDeleteProviderFileAsync(uploadService, oldStoragePath, cancellationToken);
                 }
             }
             catch (DbUpdateException exception)
             {
-                TryDeleteProviderFile(uploadService, stored.StoragePath);
+                await TryDeleteProviderFileAsync(uploadService, stored.StoragePath, cancellationToken);
                 logger.LogError(exception, "Company employee document upload failed for company {CompanyId} and provider {ProviderId}.", companyId, employeeId);
                 return Results.Problem(
                     title: "Upload de la piece impossible.",
@@ -1242,7 +1242,7 @@ public static class CompanyPortalEndpoints
                 return Results.NotFound(new { message = "Piece introuvable." });
             }
 
-            TryDeleteProviderFile(uploadService, document.StoragePath);
+            await TryDeleteProviderFileAsync(uploadService, document.StoragePath, cancellationToken);
             db.ProviderDocuments.Remove(document);
             db.AuditLogEntries.Add(AuditLogFactory.Create(
                 AuditActor.Company(companyId, null),
@@ -1292,25 +1292,21 @@ public static class CompanyPortalEndpoints
                 return Results.NotFound();
             }
 
-            string absolutePath;
+            Stream? stream;
             try
             {
-                absolutePath = uploadService.GetAbsolutePath(document.StoragePath);
+                stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
             }
             catch (InvalidOperationException)
             {
                 return Results.NotFound(new { message = "Le chemin du fichier employe est invalide." });
             }
 
-            if (!File.Exists(absolutePath))
-            {
-                return Results.NotFound(new { message = "Le fichier employe n'existe plus sur le serveur." });
-            }
-
-            return Results.File(
-                absolutePath,
-                string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType,
-                enableRangeProcessing: true);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier employe n'existe plus dans le stockage." })
+                : Results.Stream(
+                    stream,
+                    string.IsNullOrWhiteSpace(document.ContentType) ? "application/octet-stream" : document.ContentType);
         })
         .WithName("PreviewCompanyPortalProviderDocument");
 
@@ -1474,21 +1470,18 @@ public static class CompanyPortalEndpoints
             form.Files.GetFile("identityDocument") is not null);
     }
 
-    private static void TryDeleteProviderFile(CompanyProviderUploadService uploadService, string storagePath)
+    private static async Task TryDeleteProviderFileAsync(
+        CompanyProviderUploadService uploadService,
+        string storagePath,
+        CancellationToken cancellationToken)
     {
         try
         {
-            var absolutePath = uploadService.GetAbsolutePath(storagePath);
-            if (File.Exists(absolutePath))
-            {
-                File.Delete(absolutePath);
-            }
+            await uploadService.DeleteIfExistsAsync(storagePath, cancellationToken);
         }
-        catch (IOException)
+        catch (Exception) when (!cancellationToken.IsCancellationRequested)
         {
-        }
-        catch (UnauthorizedAccessException)
-        {
+            // Best effort cleanup only; the operation result is already reported to the caller.
         }
     }
 }

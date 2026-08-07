@@ -11,6 +11,7 @@ public static class ApiStorageServiceCollectionExtensions
             options.MultipartBodyLengthLimit = 30L * 1024 * 1024;
         });
 
+        services.AddSingleton<IApiObjectStorage, ApiObjectStorage>();
         services.AddSingleton<CompanyApplicationUploadService>();
         services.AddSingleton<CompanyProviderUploadService>();
         services.AddSingleton<CmsMediaUploadService>();
