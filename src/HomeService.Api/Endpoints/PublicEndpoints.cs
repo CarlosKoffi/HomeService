@@ -29,7 +29,10 @@ public static class PublicEndpoints
         app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "HomeService.Api" }))
             .WithName("HealthCheck");
 
-        app.MapGet("/api/services", async (IAppDbContext db, CancellationToken cancellationToken) =>
+        app.MapGet("/api/services", async (
+            IAppDbContext db,
+            IApiObjectStorage objectStorage,
+            CancellationToken cancellationToken) =>
         {
             var services = await db.Services
                 .AsNoTracking()
@@ -90,7 +93,7 @@ public static class PublicEndpoints
                     service.IsFixedPrice))
                 .ToListAsync(cancellationToken);
 
-            return Results.Ok(services);
+            return Results.Ok(services.Select(service => PublicMediaResponseMapper.Map(objectStorage, service)).ToList());
         })
         .WithName("ListServices");
 
@@ -425,6 +428,7 @@ public static class PublicEndpoints
             HttpRequest httpRequest,
             ClientAuthService authService,
             ClientHomeService homeService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
@@ -433,7 +437,8 @@ public static class PublicEndpoints
                 return Results.Unauthorized();
             }
 
-            return Results.Ok(await homeService.GetAsync(customer, cancellationToken));
+            var home = await homeService.GetAsync(customer, cancellationToken);
+            return Results.Ok(PublicMediaResponseMapper.Map(objectStorage, home));
         })
         .WithName("GetClientHome")
         .Produces<ClientHomeResponse>()
@@ -462,10 +467,11 @@ public static class PublicEndpoints
         client.MapGet("/catalog/search", async (
             string? q,
             ClientCatalogSearchService searchService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var results = await searchService.SearchAsync(q, cancellationToken);
-            return Results.Ok(results);
+            return Results.Ok(results.Select(result => PublicMediaResponseMapper.Map(objectStorage, result)).ToList());
         })
         .WithName("SearchClientCatalog")
         .Produces<IReadOnlyList<ClientCatalogSearchResultResponse>>();
@@ -473,12 +479,13 @@ public static class PublicEndpoints
         client.MapPost("/missions/prepare", async (
             PrepareClientMissionRequest request,
             ClientMissionPreparationService preparationService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var result = await preparationService.PrepareAsync(request, cancellationToken);
             if (result.IsSuccess)
             {
-                return Results.Ok(result.Response);
+                return Results.Ok(PublicMediaResponseMapper.Map(objectStorage, result.Response!));
             }
 
             return result.IsNotFound
@@ -496,12 +503,13 @@ public static class PublicEndpoints
             HttpRequest httpRequest,
             ClientAuthService authService,
             ClientMissionListService missionListService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
             var result = await missionListService.ListAsync(customer?.Id, phoneNumber, status, cancellationToken);
             return result.IsSuccess
-                ? Results.Ok(result.Missions)
+                ? Results.Ok(result.Missions.Select(mission => PublicMediaResponseMapper.Map(objectStorage, mission)).ToList())
                 : Results.NotFound(new { message = result.Message });
         })
         .WithName("ListClientMissions")
@@ -673,12 +681,17 @@ public static class PublicEndpoints
             HttpRequest httpRequest,
             ClientAuthService authService,
             ClientProfileService profileService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
-            return customer is null
-                ? Results.Unauthorized()
-                : Results.Ok(await profileService.ListPaymentMethodsAsync(customer.Id, cancellationToken));
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var methods = await profileService.ListPaymentMethodsAsync(customer.Id, cancellationToken);
+            return Results.Ok(methods.Select(method => PublicMediaResponseMapper.Map(objectStorage, method)).ToList());
         })
         .WithName("ListClientPaymentMethods")
         .Produces<IReadOnlyList<ClientPaymentMethodResponse>>()
@@ -686,8 +699,12 @@ public static class PublicEndpoints
 
         client.MapGet("/payment-providers", async (
             ClientProfileService profileService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
-            Results.Ok(await profileService.ListPaymentProvidersAsync(cancellationToken)))
+        {
+            var providers = await profileService.ListPaymentProvidersAsync(cancellationToken);
+            return Results.Ok(providers.Select(provider => PublicMediaResponseMapper.Map(objectStorage, provider)).ToList());
+        })
         .WithName("ListClientPaymentProviders")
         .Produces<IReadOnlyList<PaymentProviderResponse>>();
 
@@ -696,6 +713,7 @@ public static class PublicEndpoints
             HttpRequest httpRequest,
             ClientAuthService authService,
             ClientProfileService profileService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
@@ -706,7 +724,9 @@ public static class PublicEndpoints
 
             var result = await profileService.AddPaymentMethodAsync(customer.Id, request, cancellationToken);
             return result.IsSuccess
-                ? Results.Created($"/api/client/payment-methods/{result.Response!.Id}", result.Response)
+                ? Results.Created(
+                    $"/api/client/payment-methods/{result.Response!.Id}",
+                    PublicMediaResponseMapper.Map(objectStorage, result.Response))
                 : Results.BadRequest(new { message = result.Message });
         })
         .WithName("CreateClientPaymentMethod")
@@ -719,6 +739,7 @@ public static class PublicEndpoints
             HttpRequest httpRequest,
             ClientAuthService authService,
             ClientProfileService profileService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
@@ -729,7 +750,9 @@ public static class PublicEndpoints
 
             var result = await profileService.AddMobileMoneyAccountAsync(customer.Id, request, cancellationToken);
             return result.IsSuccess
-                ? Results.Created("/api/client/payment-methods", result.Response)
+                ? Results.Created(
+                    "/api/client/payment-methods",
+                    PublicMediaResponseMapper.Map(objectStorage, result.Response!))
                 : Results.BadRequest(new { message = result.Message });
         })
         .WithName("CreateClientMobileMoneyAccount")
@@ -743,6 +766,7 @@ public static class PublicEndpoints
             HttpRequest httpRequest,
             ClientAuthService authService,
             ClientProfileService profileService,
+            IApiObjectStorage objectStorage,
             CancellationToken cancellationToken) =>
         {
             var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
@@ -757,7 +781,7 @@ public static class PublicEndpoints
                 request,
                 cancellationToken);
             return result.IsSuccess
-                ? Results.Ok(result.Response)
+                ? Results.Ok(PublicMediaResponseMapper.Map(objectStorage, result.Response!))
                 : Results.BadRequest(new { message = result.Message });
         })
         .WithName("UpdateClientMobileMoneyAccount")
