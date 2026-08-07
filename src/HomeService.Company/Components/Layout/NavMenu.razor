@@ -11,13 +11,13 @@
         </a>
 
         <input type="checkbox" id="menu-toggle" class="menu-toggle" />
-        <label for="menu-toggle" class="menu-button" title="Menu">
+        <label for="menu-toggle" class="menu-button" title="Menu" aria-label="Ouvrir ou fermer le menu" aria-controls="company-site-navigation">
             <span></span>
             <span></span>
             <span></span>
         </label>
 
-        <nav class="site-nav public-nav">
+        <nav id="company-site-navigation" class="site-nav public-nav" aria-label="Navigation entreprise">
             <a href="@($"{PublicLandingBase}#home")" data-section-nav="home">Accueil</a>
             <a href="@($"{PublicLandingBase}#how")" data-section-nav="how">Fonctionnement</a>
             <a href="@($"{PublicLandingBase}#trusted")" data-section-nav="trusted">References</a>

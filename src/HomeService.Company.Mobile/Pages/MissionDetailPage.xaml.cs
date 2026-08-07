@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using HomeService.Company.Mobile.Services;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Contracts.Missions;
+using HomeService.Mobile.Shared;
 using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Maps;
 
@@ -12,6 +13,7 @@ public partial class MissionDetailPage : ContentPage
 {
     private readonly CompanyMobileApiClient apiClient;
     private readonly CompanySessionStore sessionStore;
+    private readonly CatalogMediaResolver catalogMedia;
     private readonly ObservableCollection<AdditionalQuoteRow> additionalQuotes = [];
     private CompanyPortalMissionDetailResponse? detail;
     private CompanyPortalMissionResponse? mission;
@@ -31,6 +33,7 @@ public partial class MissionDetailPage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current!.Services.GetRequiredService<CompanyMobileApiClient>();
         sessionStore = IPlatformApplication.Current.Services.GetRequiredService<CompanySessionStore>();
+        catalogMedia = IPlatformApplication.Current.Services.GetRequiredService<CatalogMediaResolver>();
         AdditionalQuotesView.ItemsSource = additionalQuotes;
     }
 
@@ -81,7 +84,7 @@ public partial class MissionDetailPage : ContentPage
             await Task.WhenAll(candidatesTask, quotesTask);
 
             candidates = (await candidatesTask).Response ?? [];
-            RenderMission(detail);
+            await RenderMissionAsync(detail);
             RenderCandidates();
             RenderAdditionalQuotes((await quotesTask).Response ?? []);
             RenderHistory(detail.CustomerHistory);
@@ -93,7 +96,7 @@ public partial class MissionDetailPage : ContentPage
         }
     }
 
-    private void RenderMission(CompanyPortalMissionDetailResponse response)
+    private async Task RenderMissionAsync(CompanyPortalMissionDetailResponse response)
     {
         var item = response.Mission;
         MissionNumberLabel.Text = item.MissionNumber;
@@ -101,6 +104,10 @@ public partial class MissionDetailPage : ContentPage
         ServiceLabel.Text = item.ServiceName;
         PrestationLabel.Text = string.Join(" · ", new[] { response.PrestationName, response.OptionName }.Where(value => !string.IsNullOrWhiteSpace(value)));
         PrestationLabel.IsVisible = !string.IsNullOrWhiteSpace(PrestationLabel.Text);
+        var serviceMedia = string.IsNullOrWhiteSpace(response.PrestationName)
+            ? await catalogMedia.ResolveServiceAsync(null, item.ServiceName)
+            : await catalogMedia.ResolvePrestationAsync(null, response.PrestationName, serviceName: item.ServiceName);
+        ServiceImage.Source = serviceMedia ?? "icon_mission.svg";
         ScheduleLabel.Text = item.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy · HH:mm") ?? "Dès que possible";
         AddressLabel.Text = item.LocationLabel ?? "Adresse à confirmer";
         DescriptionLabel.Text = response.Description;

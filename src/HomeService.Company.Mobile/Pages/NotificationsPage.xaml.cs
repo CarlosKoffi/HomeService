@@ -37,6 +37,7 @@ public partial class NotificationsPage : ContentPage
         {
             notifications.Add(NotificationRow.From(notification));
         }
+        if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
     }
 
     private async void OnRefreshing(object? sender, EventArgs e)

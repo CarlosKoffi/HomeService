@@ -1,5 +1,6 @@
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
+using HomeService.Mobile.Shared;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace HomeService.Provider.Mobile.Pages;
@@ -8,12 +9,14 @@ public partial class ServicesPage : ContentPage
 {
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
+    private readonly CatalogMediaResolver? catalogMedia;
 
     public ServicesPage()
     {
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
+        catalogMedia = IPlatformApplication.Current?.Services.GetService<CatalogMediaResolver>();
     }
 
     protected override async void OnAppearing()
@@ -38,7 +41,7 @@ public partial class ServicesPage : ContentPage
         if (string.IsNullOrWhiteSpace(token) || apiClient is null)
         {
             ShowError("Votre session a expiré. Reconnectez-vous pour charger vos compétences.");
-            RenderServices([], false);
+            await RenderServicesAsync([], false);
             StopLoading();
             return;
         }
@@ -48,14 +51,14 @@ public partial class ServicesPage : ContentPage
         if (!result.IsSuccess || result.Response is null)
         {
             ShowError(result.ErrorMessage ?? "Impossible de charger les services depuis l’API.");
-            RenderServices([], false);
+            await RenderServicesAsync([], false);
             return;
         }
 
-        RenderServices(result.Response.Services, result.Response.CanViewPrices);
+        await RenderServicesAsync(result.Response.Services, result.Response.CanViewPrices);
     }
 
-    private void RenderServices(IReadOnlyList<ProviderMobileProfileServiceResponse> services, bool canViewPrices)
+    private async Task RenderServicesAsync(IReadOnlyList<ProviderMobileProfileServiceResponse> services, bool canViewPrices)
     {
         ContentHost.Children.Clear();
         if (services.Count == 0)
@@ -81,6 +84,9 @@ public partial class ServicesPage : ContentPage
         {
             var content = new VerticalStackLayout { Spacing = 12 };
             var header = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star, GridLength.Auto), ColumnSpacing = 11 };
+            var serviceImage = new Image { Source = ProviderIconResolver.ForService(service.IconName, service.ServiceName), WidthRequest = 34, HeightRequest = 34, Aspect = Aspect.AspectFit };
+            var remoteServiceImage = catalogMedia is null ? null : await catalogMedia.ResolveServiceAsync(service.ServiceId, service.ServiceName);
+            if (remoteServiceImage is not null) serviceImage.Source = remoteServiceImage;
             header.Add(new Border
             {
                 WidthRequest = 50,
@@ -88,7 +94,7 @@ public partial class ServicesPage : ContentPage
                 BackgroundColor = Color.FromArgb("#EEF4FF"),
                 Stroke = Color.FromArgb("#DCE8FF"),
                 StrokeShape = new RoundRectangle { CornerRadius = 15 },
-                Content = new Image { Source = ProviderIconResolver.ForService(service.IconName, service.ServiceName), WidthRequest = 28, HeightRequest = 28 }
+                Content = serviceImage
             }, 0);
             header.Add(new VerticalStackLayout
             {
@@ -126,7 +132,12 @@ public partial class ServicesPage : ContentPage
             foreach (var prestation in service.Prestations.OrderBy(item => item.Name))
             {
                 var row = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star, GridLength.Auto), ColumnSpacing = 9, Padding = new Thickness(0, 3) };
-                row.Add(new Image { Source = "icon_check.svg", WidthRequest = 19, HeightRequest = 19, VerticalOptions = LayoutOptions.Start }, 0);
+                var prestationImage = new Image { Source = "icon_check.svg", WidthRequest = 30, HeightRequest = 30, Aspect = Aspect.AspectFit, VerticalOptions = LayoutOptions.Start };
+                var remotePrestationImage = catalogMedia is null
+                    ? null
+                    : await catalogMedia.ResolvePrestationAsync(prestation.ServicePrestationId, prestation.Name, service.ServiceId, service.ServiceName);
+                if (remotePrestationImage is not null) prestationImage.Source = remotePrestationImage;
+                row.Add(prestationImage, 0);
                 row.Add(new Label { Text = prestation.Name, FontFamily = "PlusJakartaSans", FontSize = 13, LineBreakMode = LineBreakMode.WordWrap }, 1);
                 if (canViewPrices && prestation.PriceMinAmount is not null)
                 {

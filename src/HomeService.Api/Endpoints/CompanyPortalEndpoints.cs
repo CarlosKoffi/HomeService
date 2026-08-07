@@ -144,6 +144,14 @@ public static class CompanyPortalEndpoints
         })
         .WithName("ListCompanyPortalNotifications");
 
+        group.MapGet("/{companyId:guid}/mobile/navigation-badges", async (
+            Guid companyId,
+            MobileNavigationBadgeService badgeService,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await badgeService.GetForCompanyAsync(companyId, cancellationToken)))
+        .WithName("GetCompanyMobileNavigationBadges")
+        .Produces<MobileNavigationBadgeResponse>();
+
         group.MapPost("/{companyId:guid}/notifications/mark-read", async (
             Guid companyId,
             HttpRequest httpRequest,

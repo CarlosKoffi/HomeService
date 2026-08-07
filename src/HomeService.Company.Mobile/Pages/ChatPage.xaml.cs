@@ -37,7 +37,6 @@ public partial class ChatPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        BackButton.IsVisible = requestedMissionId.HasValue;
         await LoadMissionsAsync();
         StartRefresh();
     }
@@ -140,6 +139,7 @@ public partial class ChatPage : ContentPage
             var mission = missions.FirstOrDefault(item => item.MissionId == missionId);
             SetComposerEnabled(mission?.Status is not ("Completed" or "Cancelled" or "Resolved"));
             ErrorLabel.IsVisible = false;
+            if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
         }
         finally
         {
@@ -220,7 +220,32 @@ public partial class ChatPage : ContentPage
         ChatRefreshView.IsRefreshing = false;
     }
 
-    private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
+    private async void OnBackClicked(object? sender, EventArgs e) => await NavigateBackSafelyAsync();
+
+    protected override bool OnBackButtonPressed()
+    {
+        MainThread.BeginInvokeOnMainThread(async () => await NavigateBackSafelyAsync());
+        return true;
+    }
+
+    private static async Task NavigateBackSafelyAsync()
+    {
+        try
+        {
+            if (Shell.Current.Navigation.NavigationStack.Count > 1)
+            {
+                await Shell.Current.GoToAsync("..");
+            }
+            else
+            {
+                await Shell.Current.GoToAsync("//home");
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            await Shell.Current.GoToAsync("//home");
+        }
+    }
 
     private void SetComposerEnabled(bool enabled)
     {

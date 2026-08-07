@@ -6,7 +6,7 @@
     Shell.NavBarIsVisible="False">
     <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="18,18,18,16" RowSpacing="12">
         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-            <ImageButton x:Name="BackButton" Source="icon_back.svg" Clicked="OnBackClicked" IsVisible="False" />
+            <ImageButton x:Name="BackButton" Source="icon_back.svg" Clicked="OnBackClicked" />
             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                 <Label Text="Messages" Style="{StaticResource ScreenTitle}" />
                 <Label Text="Client · prestataire · entreprise" Style="{StaticResource Muted}" />

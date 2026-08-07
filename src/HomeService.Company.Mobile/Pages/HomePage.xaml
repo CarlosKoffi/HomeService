@@ -13,7 +13,12 @@
                         <Label x:Name="GreetingLabel" Text="Bonjour" Style="{StaticResource ScreenTitle}" />
                         <Label x:Name="CompanyLabel" Style="{StaticResource Muted}" />
                     </VerticalStackLayout>
-                    <ImageButton Grid.Column="1" Source="icon_message.svg" Clicked="OnNotificationsClicked" />
+                    <Grid Grid.Column="1">
+                        <ImageButton Source="app_bell.svg" Clicked="OnNotificationsClicked" />
+                        <Border x:Name="AlertBadge" IsVisible="False" HorizontalOptions="End" VerticalOptions="Start" BackgroundColor="{StaticResource Danger}" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="5,2">
+                            <Label x:Name="AlertBadgeLabel" Text="0" FontSize="10" FontAttributes="Bold" TextColor="White" />
+                        </Border>
+                    </Grid>
                 </Grid>
 
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
@@ -52,7 +57,12 @@
                                             <Label Text="NOUVELLE MISSION" Style="{StaticResource Eyebrow}" />
                                             <Label Grid.Column="1" Text="{Binding RemainingText}" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource Danger}" />
                                         </Grid>
-                                        <Label Text="{Binding ServiceName}" Style="{StaticResource CardTitle}" />
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                            <Border WidthRequest="46" HeightRequest="46" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 14">
+                                                <Image Source="{Binding ServiceImage}" WidthRequest="34" HeightRequest="34" Aspect="AspectFit" />
+                                            </Border>
+                                            <Label Grid.Column="1" Text="{Binding ServiceName}" Style="{StaticResource CardTitle}" VerticalOptions="Center" />
+                                        </Grid>
                                         <Label Text="{Binding CustomerAndLocation}" Style="{StaticResource Muted}" />
                                         <Label Text="{Binding ScheduleLabel}" Style="{StaticResource Muted}" />
                                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">

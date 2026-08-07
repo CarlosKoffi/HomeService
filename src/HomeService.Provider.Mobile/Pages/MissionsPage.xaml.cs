@@ -1,5 +1,6 @@
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
+using HomeService.Mobile.Shared;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace HomeService.Provider.Mobile.Pages;
@@ -8,6 +9,7 @@ public partial class MissionsPage : ContentPage
 {
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
+    private readonly CatalogMediaResolver? catalogMedia;
     private IReadOnlyList<ProviderMobileMissionSummaryResponse> missions = [];
     private MissionFilter activeFilter = MissionFilter.InProgress;
 
@@ -16,6 +18,7 @@ public partial class MissionsPage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
+        catalogMedia = IPlatformApplication.Current?.Services.GetService<CatalogMediaResolver>();
         UpdateFilterStyles();
     }
 
@@ -41,7 +44,7 @@ public partial class MissionsPage : ContentPage
             SetLoading(false);
             ShowMessage("Votre session a expiré. Reconnectez-vous pour consulter vos missions.");
             missions = [];
-            RenderActiveFilter();
+            await RenderActiveFilterAsync();
             return;
         }
 
@@ -51,7 +54,7 @@ public partial class MissionsPage : ContentPage
         {
             ShowMessage(result.ErrorMessage ?? "Impossible de charger les missions depuis l’API.");
             missions = [];
-            RenderActiveFilter();
+            await RenderActiveFilterAsync();
             return;
         }
 
@@ -64,18 +67,18 @@ public partial class MissionsPage : ContentPage
         }
 
         UpdateFilterStyles();
-        RenderActiveFilter();
+        await RenderActiveFilterAsync();
     }
 
-    private void OnFilterTapped(object? sender, TappedEventArgs e)
+    private async void OnFilterTapped(object? sender, TappedEventArgs e)
     {
         if (e.Parameter is not string value || !Enum.TryParse<MissionFilter>(value, out var filter)) return;
         activeFilter = filter;
         UpdateFilterStyles();
-        RenderActiveFilter();
+        await RenderActiveFilterAsync();
     }
 
-    private void RenderActiveFilter()
+    private async Task RenderActiveFilterAsync()
     {
         var items = missions.Where(item => Matches(item, activeFilter));
         items = activeFilter is MissionFilter.Completed or MissionFilter.Cancelled
@@ -93,14 +96,23 @@ public partial class MissionsPage : ContentPage
             return;
         }
 
-        foreach (var mission in filtered)
+        var cards = await Task.WhenAll(filtered.Select(CreateMissionCardAsync));
+        foreach (var card in cards)
         {
-            MissionListStack.Add(CreateMissionCard(mission));
+            MissionListStack.Add(card);
         }
     }
 
-    private View CreateMissionCard(ProviderMobileMissionSummaryResponse mission)
+    private async Task<View> CreateMissionCardAsync(ProviderMobileMissionSummaryResponse mission)
     {
+        var image = new Image { Source = ProviderIconResolver.ForService(mission.ServiceIconName, mission.ServiceName), WidthRequest = 34, HeightRequest = 34, Aspect = Aspect.AspectFit };
+        if (catalogMedia is not null)
+        {
+            var remote = string.IsNullOrWhiteSpace(mission.PrestationName)
+                ? await catalogMedia.ResolveServiceAsync(null, mission.ServiceName)
+                : await catalogMedia.ResolvePrestationAsync(null, mission.PrestationName, serviceName: mission.ServiceName);
+            if (remote is not null) image.Source = remote;
+        }
         var icon = new Border
         {
             WidthRequest = 50,
@@ -108,7 +120,7 @@ public partial class MissionsPage : ContentPage
             BackgroundColor = Color.FromArgb("#EEF4FF"),
             Stroke = Color.FromArgb("#DCE8FF"),
             StrokeShape = new RoundRectangle { CornerRadius = 15 },
-            Content = new Image { Source = ProviderIconResolver.ForService(mission.ServiceIconName, mission.ServiceName), WidthRequest = 28, HeightRequest = 28 }
+            Content = image
         };
 
         var title = string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName;

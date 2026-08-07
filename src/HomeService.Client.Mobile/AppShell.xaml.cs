@@ -5,6 +5,9 @@ namespace HomeService.Client.Mobile;
 
 public partial class AppShell : Shell
 {
+    private static readonly TimeSpan BadgeRefreshInterval = TimeSpan.FromSeconds(12);
+    private readonly SemaphoreSlim badgeRefreshGate = new(1, 1);
+
     public AppShell()
     {
         InitializeComponent();
@@ -52,6 +55,54 @@ public partial class AppShell : Shell
             }
 
             await ClientNotificationNavigationService.TryNavigateAsync();
+            _ = RunBadgeRefreshLoopAsync();
         });
     }
+
+    public async Task RefreshNavigationBadgesAsync()
+    {
+        if (!await badgeRefreshGate.WaitAsync(0)) return;
+        try
+        {
+            var apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
+            var sessionStore = MobileServiceLocator.GetRequiredService<ClientSessionStore>();
+            if (!await sessionStore.HasValidSessionAsync())
+            {
+                SetBadgeTitles(0, 0);
+                return;
+            }
+
+            var result = await apiClient.GetNavigationBadgesAsync();
+            if (result.IsSuccess && result.Response is not null)
+            {
+                SetBadgeTitles(result.Response.ActionCount, result.Response.MessageCount);
+            }
+        }
+        finally
+        {
+            badgeRefreshGate.Release();
+        }
+    }
+
+    private async Task RunBadgeRefreshLoopAsync()
+    {
+        await RefreshNavigationBadgesAsync();
+        using var timer = new PeriodicTimer(BadgeRefreshInterval);
+        while (await timer.WaitForNextTickAsync())
+        {
+            await RefreshNavigationBadgesAsync();
+        }
+    }
+
+    private void SetBadgeTitles(int requestCount, int messageCount)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            RequestsTab.Title = BadgeTitle("Demandes", requestCount);
+            MessagesTab.Title = BadgeTitle("Messages", messageCount);
+        });
+    }
+
+    private static string BadgeTitle(string title, int count)
+        => count <= 0 ? title : $"{title} ({Math.Min(count, 99)}{(count > 99 ? "+" : string.Empty)})";
 }

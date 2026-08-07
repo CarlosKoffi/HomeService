@@ -2,6 +2,43 @@ window.weleCompanyNavigation = (() => {
     let observer;
     let trackedLinks = [];
     let headerScrollBound = false;
+    let mobileMenuBound = false;
+
+    const closeMobileMenus = () => {
+        ["menu-toggle", "portal-sidebar-toggle"].forEach((id) => {
+            const toggle = document.getElementById(id);
+            if (toggle instanceof HTMLInputElement) {
+                toggle.checked = false;
+            }
+        });
+    };
+
+    const bindMobileMenus = () => {
+        if (mobileMenuBound) {
+            return;
+        }
+
+        document.addEventListener("click", (event) => {
+            if (event.target instanceof Element
+                && event.target.closest(".site-nav a, .brand-logo, .portal-sidebar-nav a, .portal-sidebar-logo")) {
+                closeMobileMenus();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeMobileMenus();
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            if (window.innerWidth > 980) {
+                closeMobileMenus();
+            }
+        }, { passive: true });
+
+        mobileMenuBound = true;
+    };
 
     const updateHeaderState = () => {
         const header = document.querySelector(".site-header.theme-premium");
@@ -42,6 +79,7 @@ window.weleCompanyNavigation = (() => {
 
     const init = () => {
         updateHeaderState();
+        bindMobileMenus();
 
         if (!headerScrollBound) {
             window.addEventListener("scroll", updateHeaderState, { passive: true });
@@ -98,5 +136,5 @@ window.weleCompanyNavigation = (() => {
         element.focus({ preventScroll: true });
     };
 
-    return { init, scrollTo };
+    return { init, scrollTo, closeMobileMenus };
 })();

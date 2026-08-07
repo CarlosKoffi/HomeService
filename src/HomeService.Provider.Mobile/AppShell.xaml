@@ -9,9 +9,9 @@
     Title="Wélé Pro">
     <TabBar>
         <ShellContent Route="home" Title="Accueil" Icon="tab_home.svg" ContentTemplate="{DataTemplate pages:HomePage}" />
-        <ShellContent Route="missions" Title="Missions" Icon="tab_missions.svg" ContentTemplate="{DataTemplate pages:MissionsPage}" />
+        <ShellContent x:Name="MissionsTab" Route="missions" Title="Missions" Icon="tab_missions.svg" ContentTemplate="{DataTemplate pages:MissionsPage}" />
         <ShellContent Route="calendar" Title="Calendrier" Icon="tab_calendar.svg" ContentTemplate="{DataTemplate pages:CalendarPage}" />
-        <ShellContent Route="messages" Title="Messages" Icon="tab_messages.svg" ContentTemplate="{DataTemplate pages:ChatPage}" />
+        <ShellContent x:Name="MessagesTab" Route="messages" Title="Messages" Icon="tab_messages.svg" ContentTemplate="{DataTemplate pages:ChatPage}" />
         <ShellContent Route="profile" Title="Profil" Icon="tab_profile.svg" ContentTemplate="{DataTemplate pages:ProfilePage}" />
     </TabBar>
 </Shell>

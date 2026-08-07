@@ -11,7 +11,7 @@
         <ShellContent Route="home" Title="Accueil" Icon="tab_home.svg" ContentTemplate="{DataTemplate pages:HomePage}" />
         <ShellContent Route="missions" Title="Missions" Icon="tab_missions.svg" ContentTemplate="{DataTemplate pages:MissionsPage}" />
         <ShellContent Route="providers" Title="Prestataires" Icon="icon_user.svg" ContentTemplate="{DataTemplate pages:ProvidersPage}" />
-        <ShellContent Route="messages" Title="Messages" Icon="icon_message.svg" ContentTemplate="{DataTemplate pages:ChatPage}" />
-        <ShellContent Route="notifications" Title="Alertes" Icon="icon_message.svg" ContentTemplate="{DataTemplate pages:NotificationsPage}" />
+        <ShellContent x:Name="MessagesTab" Route="messages" Title="Messages" Icon="icon_message.svg" ContentTemplate="{DataTemplate pages:ChatPage}" />
+        <ShellContent x:Name="AlertsTab" Route="notifications" Title="Alertes" Icon="app_bell.svg" ContentTemplate="{DataTemplate pages:NotificationsPage}" />
     </TabBar>
 </Shell>

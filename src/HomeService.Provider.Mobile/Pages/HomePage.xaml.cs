@@ -1,5 +1,6 @@
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
+using HomeService.Mobile.Shared;
 using Microsoft.Maui.Devices.Sensors;
 
 namespace HomeService.Provider.Mobile.Pages;
@@ -8,6 +9,7 @@ public partial class HomePage : ContentPage
 {
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
+    private readonly CatalogMediaResolver? catalogMedia;
     private ProviderMobileMissionOfferResponse? currentLiveOffer;
     private ProviderMobileMissionSummaryResponse? currentUpcomingMission;
     private string? accessToken;
@@ -20,6 +22,7 @@ public partial class HomePage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
+        catalogMedia = IPlatformApplication.Current?.Services.GetService<CatalogMediaResolver>();
     }
 
     protected override async void OnAppearing()
@@ -77,10 +80,10 @@ public partial class HomePage : ContentPage
         }
 
         MessageBanner.IsVisible = false;
-        RenderHome(homeResult.Response, missionsResult.Response?.Items ?? [], notificationsResult.Response?.UnreadCount ?? 0);
+        await RenderHomeAsync(homeResult.Response, missionsResult.Response?.Items ?? [], notificationsResult.Response?.UnreadCount ?? 0);
     }
 
-    private void RenderHome(ProviderMobileHomeResponse home, IReadOnlyList<ProviderMobileMissionSummaryResponse> missions, int unreadCount)
+    private async Task RenderHomeAsync(ProviderMobileHomeResponse home, IReadOnlyList<ProviderMobileMissionSummaryResponse> missions, int unreadCount)
     {
         GreetingLabel.Text = $"Bonjour {FirstName(home.Status.DisplayName)} 👋";
         ProviderStatusLabel.Text = home.Status.CompanyName;
@@ -120,6 +123,12 @@ public partial class HomePage : ContentPage
             UpcomingMissionIcon.Source = ProviderIconResolver.ForService(currentUpcomingMission.ServiceIconName, currentUpcomingMission.ServiceName);
             UpcomingMissionTitleLabel.Text = string.IsNullOrWhiteSpace(currentUpcomingMission.PrestationName) ? currentUpcomingMission.ServiceName : currentUpcomingMission.PrestationName;
             UpcomingMissionDetailLabel.Text = $"{FormatMissionTime(currentUpcomingMission.ScheduledFor)} · {currentUpcomingMission.LocationLabel}";
+            var remote = string.IsNullOrWhiteSpace(currentUpcomingMission.PrestationName)
+                ? await ResolveServiceMediaAsync(currentUpcomingMission.ServiceName)
+                : catalogMedia is null
+                    ? null
+                    : await catalogMedia.ResolvePrestationAsync(null, currentUpcomingMission.PrestationName, serviceName: currentUpcomingMission.ServiceName);
+            if (remote is not null) UpcomingMissionIcon.Source = remote;
         }
 
         currentLiveOffer = home.LiveOffer;
@@ -133,8 +142,15 @@ public partial class HomePage : ContentPage
             UpdateOfferCountdown(currentLiveOffer.ExpiresAt);
             SetBusy(false);
             StartOfferCountdown(currentLiveOffer.AssignmentId, currentLiveOffer.ExpiresAt);
+            var remote = await ResolveServiceMediaAsync(currentLiveOffer.ServiceName);
+            if (remote is not null) LiveOfferIcon.Source = remote;
         }
     }
+
+    private Task<ImageSource?> ResolveServiceMediaAsync(string serviceName)
+        => catalogMedia is null
+            ? Task.FromResult<ImageSource?>(null)
+            : catalogMedia.ResolveServiceAsync(null, serviceName);
 
     private async void OnAvailabilityToggled(object? sender, ToggledEventArgs e)
     {

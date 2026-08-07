@@ -71,7 +71,7 @@
                                     <DataTemplate>
                                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="0,3">
                                             <Border WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 12">
-                                                <Image Source="icon_mission.svg" WidthRequest="20" HeightRequest="20" />
+                                                <Image Source="{Binding Image}" WidthRequest="28" HeightRequest="28" Aspect="AspectFit" />
                                             </Border>
                                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                                 <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="14" />

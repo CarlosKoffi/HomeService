@@ -130,7 +130,10 @@ public sealed class ProviderMissionChatServiceTests
 
     private static ProviderMissionChatService CreateService(HomeServiceDbContext db)
     {
-        return new ProviderMissionChatService(db, new MobilePushNotificationQueueService(db));
+        return new ProviderMissionChatService(
+            db,
+            new MobilePushNotificationQueueService(db),
+            new MobileNavigationBadgeService(db));
     }
 
     private static async Task<ProviderMissionChatScenario> SeedScenarioAsync(HomeServiceDbContext db)

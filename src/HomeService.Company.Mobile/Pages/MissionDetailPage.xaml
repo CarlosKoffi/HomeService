@@ -70,7 +70,7 @@
                         <VerticalStackLayout Spacing="11">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                 <Border WidthRequest="54" HeightRequest="54" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 16">
-                                    <Image Source="icon_mission.svg" WidthRequest="29" HeightRequest="29" />
+                                    <Image x:Name="ServiceImage" Source="icon_mission.svg" WidthRequest="40" HeightRequest="40" Aspect="AspectFit" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                                     <Label x:Name="ServiceLabel" Style="{StaticResource CardTitle}" />

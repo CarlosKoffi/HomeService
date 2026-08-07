@@ -238,6 +238,17 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
             null,
             cancellationToken);
 
+    public Task<ApiCallResult<MobileNavigationBadgeResponse>> GetNavigationBadgesAsync(
+        string token,
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+        => SendAsync<MobileNavigationBadgeResponse>(
+            HttpMethod.Get,
+            $"api/company-portal/{companyId:D}/mobile/navigation-badges",
+            token,
+            null,
+            cancellationToken);
+
     public Task<ApiCallResult<bool>> MarkNotificationReadAsync(
         string token,
         Guid companyId,

@@ -1,5 +1,6 @@
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
+using HomeService.Mobile.Shared;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace HomeService.Provider.Mobile.Pages;
@@ -9,6 +10,7 @@ public partial class ChatPage : ContentPage
 {
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
+    private readonly CatalogMediaResolver? catalogMedia;
     private readonly Dictionary<Guid, Border> conversationCards = [];
     private readonly SemaphoreSlim refreshGate = new(1, 1);
     private string? accessToken;
@@ -31,6 +33,7 @@ public partial class ChatPage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
+        catalogMedia = IPlatformApplication.Current?.Services.GetService<CatalogMediaResolver>();
         SetComposerEnabled(false);
     }
 
@@ -55,7 +58,7 @@ public partial class ChatPage : ContentPage
         if (apiClient is null || sessionService is null)
         {
             ShowMessage("Configuration mobile incomplète. Client API introuvable.");
-            RenderConversationChoices([]);
+            await RenderConversationChoicesAsync([]);
             return;
         }
 
@@ -63,7 +66,7 @@ public partial class ChatPage : ContentPage
         if (string.IsNullOrWhiteSpace(accessToken))
         {
             ShowMessage("Connectez-vous pour consulter vos messages.");
-            RenderConversationChoices([]);
+            await RenderConversationChoicesAsync([]);
             return;
         }
 
@@ -71,7 +74,7 @@ public partial class ChatPage : ContentPage
         if (!result.IsSuccess || result.Response is null)
         {
             ShowMessage(result.ErrorMessage ?? "Impossible de charger les conversations.");
-            RenderConversationChoices([]);
+            await RenderConversationChoicesAsync([]);
             return;
         }
 
@@ -81,7 +84,7 @@ public partial class ChatPage : ContentPage
             .ThenByDescending(item => item.ScheduledFor ?? DateTimeOffset.MinValue)
             .Take(20)
             .ToList();
-        RenderConversationChoices(missions);
+        await RenderConversationChoicesAsync(missions);
 
         var selectedId = requestedAssignmentId is not null && missions.Any(item => item.AssignmentId == requestedAssignmentId)
             ? requestedAssignmentId
@@ -93,7 +96,7 @@ public partial class ChatPage : ContentPage
         else RenderNoConversation();
     }
 
-    private void RenderConversationChoices(IReadOnlyList<ProviderMobileMissionSummaryResponse> items)
+    private async Task RenderConversationChoicesAsync(IReadOnlyList<ProviderMobileMissionSummaryResponse> items)
     {
         ConversationListStack.Children.Clear();
         conversationCards.Clear();
@@ -107,7 +110,15 @@ public partial class ChatPage : ContentPage
         {
             var title = string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName;
             var grid = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Auto), ColumnSpacing = 8 };
-            grid.Add(new Image { Source = ProviderIconResolver.ForService(mission.ServiceIconName, mission.ServiceName), WidthRequest = 22, HeightRequest = 22 }, 0);
+            var serviceImage = new Image { Source = ProviderIconResolver.ForService(mission.ServiceIconName, mission.ServiceName), WidthRequest = 30, HeightRequest = 30, Aspect = Aspect.AspectFit };
+            if (catalogMedia is not null)
+            {
+                var remote = string.IsNullOrWhiteSpace(mission.PrestationName)
+                    ? await catalogMedia.ResolveServiceAsync(null, mission.ServiceName)
+                    : await catalogMedia.ResolvePrestationAsync(null, mission.PrestationName, serviceName: mission.ServiceName);
+                if (remote is not null) serviceImage.Source = remote;
+            }
+            grid.Add(serviceImage, 0);
             grid.Add(new VerticalStackLayout
             {
                 Spacing = 1,
@@ -169,6 +180,7 @@ public partial class ChatPage : ContentPage
         MessageBanner.IsVisible = false;
         lastMessageSignature = string.Join('|', chatResult.Response.Messages.Select(item => item.MessageId));
         RenderMessages(chatResult.Response.Messages);
+        if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
         SetComposerEnabled(mission.Status is "Offered" or "Accepted" or "Started");
         await Task.Delay(50);
         await MessagesScroll.ScrollToAsync(MessagesStack, ScrollToPosition.End, false);
@@ -206,6 +218,7 @@ public partial class ChatPage : ContentPage
             var signature = string.Join('|', result.Response.Messages.Select(item => item.MessageId));
             if (signature == lastMessageSignature) return;
             lastMessageSignature = signature;
+            if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
                 RenderMessages(result.Response.Messages);

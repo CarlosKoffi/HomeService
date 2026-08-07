@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using HomeService.Company.Mobile.Services;
 using HomeService.Contracts.CompanyPortal;
+using HomeService.Mobile.Shared;
 
 namespace HomeService.Company.Mobile.Pages;
 
@@ -10,6 +11,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
 {
     private readonly CompanyMobileApiClient apiClient;
     private readonly CompanySessionStore sessionStore;
+    private readonly CatalogMediaResolver catalogMedia;
     private Guid requestId;
     private Guid providerId;
     private bool isAffiliationRequest;
@@ -34,6 +36,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current!.Services.GetRequiredService<CompanyMobileApiClient>();
         sessionStore = IPlatformApplication.Current.Services.GetRequiredService<CompanySessionStore>();
+        catalogMedia = IPlatformApplication.Current.Services.GetRequiredService<CatalogMediaResolver>();
         BindingContext = this;
     }
 
@@ -70,7 +73,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
                     && string.Equals(item.Status, "Pending", StringComparison.OrdinalIgnoreCase)));
             if (candidate is not null)
             {
-                Bind(candidate);
+                await BindAsync(candidate);
                 return;
             }
 
@@ -78,7 +81,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
             var employee = employeesResult.Response?.FirstOrDefault(item => item.Id == providerId);
             if (employee is not null)
             {
-                Bind(employee);
+                await BindAsync(employee);
                 return;
             }
 
@@ -92,7 +95,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
         }
     }
 
-    private void Bind(CompanyInterimCandidateResponse candidate)
+    private async Task BindAsync(CompanyInterimCandidateResponse candidate)
     {
         isAffiliationRequest = true;
         requestId = candidate.RequestId;
@@ -107,6 +110,11 @@ public partial class ProviderCandidateDetailPage : ContentPage
             ? "Aucun message joint à la candidature."
             : candidate.Message.Trim();
         ApplicationCard.IsVisible = true;
+        var services = await Task.WhenAll(candidate.Services.Select(async service => new ServiceRow(
+            service.ServiceName,
+            ExperienceLevelText(service.ExperienceLevel),
+            FormatYears(service.YearsOfExperience),
+            await catalogMedia.ResolveServiceAsync(service.ServiceId, service.ServiceName) ?? "icon_mission.svg")));
         BindCommon(
             candidate.PhoneNumber,
             candidate.Email,
@@ -114,15 +122,12 @@ public partial class ProviderCandidateDetailPage : ContentPage
             candidate.Gender,
             candidate.BirthDate,
             candidate.PhotoUrl,
-            candidate.Services.Select(service => new ServiceRow(
-                service.ServiceName,
-                ExperienceLevelText(service.ExperienceLevel),
-                FormatYears(service.YearsOfExperience))),
+            services,
             candidate.Documents,
             string.Equals(candidate.Status, "Pending", StringComparison.OrdinalIgnoreCase));
     }
 
-    private void Bind(CompanyEmployeeResponse employee)
+    private async Task BindAsync(CompanyEmployeeResponse employee)
     {
         isAffiliationRequest = false;
         providerId = employee.Id;
@@ -132,6 +137,11 @@ public partial class ProviderCandidateDetailPage : ContentPage
         ExperienceLabel.Text = FormatExperience(employee.YearsOfExperience);
         StatusLabel.Text = StatusText(employee.Status);
         ApplicationCard.IsVisible = false;
+        var services = await Task.WhenAll(employee.Services.Select(async service => new ServiceRow(
+            service.ServiceName,
+            ExperienceLevelText(service.ExperienceLevel),
+            FormatYears(service.YearsOfExperience),
+            await catalogMedia.ResolveServiceAsync(service.ServiceId, service.ServiceName) ?? "icon_mission.svg")));
         BindCommon(
             employee.PhoneNumber,
             employee.Email,
@@ -139,10 +149,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
             employee.Gender,
             employee.BirthDate,
             employee.PhotoUrl,
-            employee.Services.Select(service => new ServiceRow(
-                service.ServiceName,
-                ExperienceLevelText(service.ExperienceLevel),
-                FormatYears(service.YearsOfExperience))),
+            services,
             employee.Documents,
             employee.Status is "Invited" or "ProfileIncomplete" or "PendingPlatformReview");
     }
@@ -169,7 +176,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
 
         Services.Clear();
         foreach (var service in services) Services.Add(service);
-        if (Services.Count == 0) Services.Add(new ServiceRow("Services à vérifier", "Aucune compétence déclarée", string.Empty));
+        if (Services.Count == 0) Services.Add(new ServiceRow("Services à vérifier", "Aucune compétence déclarée", string.Empty, "icon_mission.svg"));
 
         Documents.Clear();
         foreach (var document in documents)
@@ -293,6 +300,6 @@ public partial class ProviderCandidateDetailPage : ContentPage
     private static string StatusText(string value) => value switch { "Pending" => "Candidature à vérifier", "Approved" => "Candidature acceptée", "Rejected" => "Candidature refusée", "Invited" => "Invitation envoyée", "ProfileIncomplete" => "Profil à compléter", "PendingPlatformReview" => "Dossier à valider", _ => value };
     private static string DocumentTypeText(string value) => value switch { "Photo" => "Photo de profil", "IdentityDocument" => "Pièce d’identité", "Diploma" => "Diplôme ou certificat", _ => "Document" };
 
-    public sealed record ServiceRow(string Name, string Level, string Years);
+    public sealed record ServiceRow(string Name, string Level, string Years, ImageSource Image);
     public sealed record DocumentRow(string Label, string Url);
 }

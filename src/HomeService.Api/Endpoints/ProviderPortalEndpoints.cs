@@ -431,6 +431,21 @@ public static class ProviderPortalEndpoints
         .Produces<ProviderMobileNotificationListResponse>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/mobile/navigation-badges", async (
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            MobileNavigationBadgeService badgeService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            return session?.Provider is null
+                ? Results.Unauthorized()
+                : Results.Ok(await badgeService.GetForProviderAsync(session.ProviderId, cancellationToken));
+        })
+        .WithName("GetProviderMobileNavigationBadges")
+        .Produces<MobileNavigationBadgeResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
         group.MapPost("/mobile/notifications/{notificationId:guid}/read", async (
             Guid notificationId,
             HttpRequest httpRequest,

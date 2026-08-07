@@ -30,7 +30,7 @@
                         <Border Style="{StaticResource PremiumCard}" Margin="0,0,0,11">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                 <Border WidthRequest="48" HeightRequest="48" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 15">
-                                    <Image Source="icon_mission.svg" WidthRequest="25" HeightRequest="25" />
+                                    <Image Source="{Binding ServiceImage}" WidthRequest="35" HeightRequest="35" Aspect="AspectFit" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="3">
                                     <Label Text="{Binding ServiceName}" Style="{StaticResource CardTitle}" />

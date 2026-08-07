@@ -2,6 +2,41 @@ window.weleProviderNavigation = (() => {
     let observer;
     let trackedLinks = [];
     let headerScrollBound = false;
+    let mobileMenuBound = false;
+
+    const closeMobileMenu = () => {
+        const toggle = document.getElementById("menu-toggle");
+        if (toggle instanceof HTMLInputElement) {
+            toggle.checked = false;
+        }
+    };
+
+    const bindMobileMenu = () => {
+        if (mobileMenuBound) {
+            return;
+        }
+
+        document.addEventListener("click", (event) => {
+            if (event.target instanceof Element
+                && event.target.closest(".site-nav a, .brand-logo")) {
+                closeMobileMenu();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeMobileMenu();
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            if (window.innerWidth > 980) {
+                closeMobileMenu();
+            }
+        }, { passive: true });
+
+        mobileMenuBound = true;
+    };
 
     const updateHeaderState = () => {
         const header = document.querySelector(".site-header.theme-premium");
@@ -42,6 +77,7 @@ window.weleProviderNavigation = (() => {
 
     const init = () => {
         updateHeaderState();
+        bindMobileMenu();
 
         if (!headerScrollBound) {
             window.addEventListener("scroll", updateHeaderState, { passive: true });
@@ -88,5 +124,5 @@ window.weleProviderNavigation = (() => {
         update();
     };
 
-    return { init };
+    return { init, closeMobileMenu };
 })();

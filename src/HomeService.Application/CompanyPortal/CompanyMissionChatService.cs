@@ -10,7 +10,8 @@ namespace HomeService.Application.CompanyPortal;
 
 public sealed class CompanyMissionChatService(
     IAppDbContext db,
-    MobilePushNotificationQueueService mobilePushNotifications)
+    MobilePushNotificationQueueService mobilePushNotifications,
+    MobileNavigationBadgeService navigationBadges)
 {
     public async Task<CompanyMissionChatResult> ListAsync(
         Guid companyId,
@@ -25,6 +26,11 @@ public sealed class CompanyMissionChatService(
 
         var conversation = await GetOrCreateConversationAsync(mission, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        await navigationBadges.MarkConversationMessagesReadAsync(
+            MobileDeviceOwnerType.Company,
+            companyId,
+            conversation.Id,
+            cancellationToken);
         return CompanyMissionChatResult.Ok(await BuildResponseAsync(mission, conversation.Id, cancellationToken));
     }
 
@@ -71,6 +77,7 @@ public sealed class CompanyMissionChatService(
             mission.CustomerId,
             mission,
             conversation.Id,
+            message.Id,
             body,
             cancellationToken);
         if (mission.ProviderId.HasValue)
@@ -80,6 +87,7 @@ public sealed class CompanyMissionChatService(
                 mission.ProviderId.Value,
                 mission,
                 conversation.Id,
+                message.Id,
                 body,
                 cancellationToken);
         }
@@ -160,6 +168,7 @@ public sealed class CompanyMissionChatService(
         Guid ownerId,
         Mission mission,
         Guid conversationId,
+        Guid messageId,
         string body,
         CancellationToken cancellationToken)
     {
@@ -176,6 +185,7 @@ public sealed class CompanyMissionChatService(
                 missionId = mission.Id,
                 mission.MissionNumber,
                 conversationId,
+                messageId,
                 senderType = MissionMessageSenderType.Company.ToString()
             }),
             cancellationToken,

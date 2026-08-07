@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using HomeService.Company.Mobile.Services;
 using HomeService.Contracts.CompanyPortal;
+using HomeService.Mobile.Shared;
 
 namespace HomeService.Company.Mobile.Pages;
 
@@ -11,6 +12,7 @@ public partial class HomePage : ContentPage
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(15);
     private readonly CompanyMobileApiClient apiClient;
     private readonly CompanySessionStore sessionStore;
+    private readonly CatalogMediaResolver catalogMedia;
     private readonly ObservableCollection<OfferRow> offers = [];
     private CancellationTokenSource? refreshCancellation;
     private bool loading;
@@ -20,6 +22,7 @@ public partial class HomePage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current!.Services.GetRequiredService<CompanyMobileApiClient>();
         sessionStore = IPlatformApplication.Current.Services.GetRequiredService<CompanySessionStore>();
+        catalogMedia = IPlatformApplication.Current.Services.GetRequiredService<CatalogMediaResolver>();
         OffersView.ItemsSource = offers;
     }
 
@@ -59,29 +62,39 @@ public partial class HomePage : ContentPage
 
             var offersTask = apiClient.GetOffersAsync(token, companyId.Value);
             var missionsTask = apiClient.GetMissionsAsync(token, companyId.Value);
-            await Task.WhenAll(offersTask, missionsTask);
+            var badgesTask = apiClient.GetNavigationBadgesAsync(token, companyId.Value);
+            await Task.WhenAll(offersTask, missionsTask, badgesTask);
             var offerResult = await offersTask;
             var missionResult = await missionsTask;
+            var badgeResult = await badgesTask;
             if (!offerResult.IsSuccess || !missionResult.IsSuccess)
             {
                 if (!quiet) ShowError(offerResult.ErrorMessage ?? missionResult.ErrorMessage ?? "Actualisation impossible.");
                 return;
             }
 
+            var activeOffers = (offerResult.Response ?? [])
+                .Where(item => item.CanAccept || item.CanRefuse)
+                .OrderBy(item => item.ExpiresAt)
+                .ToList();
+            var offerRows = await Task.WhenAll(activeOffers.Select(async offer =>
+                new OfferRow(offer, await catalogMedia.ResolveServiceAsync(null, offer.ServiceName))));
             offers.Clear();
-            foreach (var offer in (offerResult.Response ?? [])
-                         .Where(item => item.CanAccept || item.CanRefuse)
-                         .OrderBy(item => item.ExpiresAt))
+            foreach (var row in offerRows)
             {
-                offers.Add(new OfferRow(offer));
+                offers.Add(row);
             }
 
             var missions = missionResult.Response ?? [];
             OffersCountLabel.Text = offers.Count.ToString();
             AssignCountLabel.Text = missions.Count(IsWaitingForAssignment).ToString();
             ActiveCountLabel.Text = missions.Count(IsActive).ToString();
+            var alertCount = badgeResult.Response?.AlertCount ?? 0;
+            AlertBadge.IsVisible = alertCount > 0;
+            AlertBadgeLabel.Text = alertCount > 99 ? "99+" : alertCount.ToString();
             EmptyOffersLabel.IsVisible = offers.Count == 0;
             ErrorLabel.IsVisible = false;
+            if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
         }
         finally
         {
@@ -198,15 +211,17 @@ public partial class HomePage : ContentPage
         private bool canRefuse;
         private string remainingText = string.Empty;
 
-        public OfferRow(CompanyMissionOfferResponse offer)
+        public OfferRow(CompanyMissionOfferResponse offer, ImageSource? serviceImage)
         {
             Offer = offer;
+            ServiceImage = serviceImage ?? "icon_mission.svg";
             canAccept = offer.CanAccept;
             canRefuse = offer.CanRefuse;
             RefreshCountdown();
         }
 
         public CompanyMissionOfferResponse Offer { get; }
+        public ImageSource ServiceImage { get; }
         public string ServiceName => Offer.ServiceName;
         public string CustomerAndLocation => $"{Offer.CustomerName}\n{Offer.ServiceAddress ?? "Adresse à confirmer"}";
         public string ScheduleLabel => Offer.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy · HH:mm") ?? "Dès que possible";

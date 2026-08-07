@@ -204,6 +204,18 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
+    public Task<ApiCallResult<MobileNavigationBadgeResponse>> GetNavigationBadgesAsync(
+        string bearerToken,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsync<MobileNavigationBadgeResponse>(
+            HttpMethod.Get,
+            "api/provider-portal/mobile/navigation-badges",
+            bearerToken,
+            body: null,
+            cancellationToken);
+    }
+
     public Task<ApiCallResult<bool>> MarkNotificationReadAsync(
         string bearerToken,
         Guid notificationId,

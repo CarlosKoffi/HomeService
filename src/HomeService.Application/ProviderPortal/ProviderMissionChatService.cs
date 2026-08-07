@@ -10,7 +10,8 @@ namespace HomeService.Application.ProviderPortal;
 
 public sealed class ProviderMissionChatService(
     IAppDbContext db,
-    MobilePushNotificationQueueService mobilePushNotifications)
+    MobilePushNotificationQueueService mobilePushNotifications,
+    MobileNavigationBadgeService navigationBadges)
 {
     public async Task<ProviderMissionChatResult> ListAsync(
         Guid providerId,
@@ -34,6 +35,11 @@ public sealed class ProviderMissionChatService(
 
         var conversation = await GetOrCreateConversationAsync(assignment, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        await navigationBadges.MarkConversationMessagesReadAsync(
+            MobileDeviceOwnerType.Provider,
+            providerId,
+            conversation.Id,
+            cancellationToken);
         var messages = await GetMessagesAsync(conversation.Id, cancellationToken);
         return ProviderMissionChatResult.Ok(new ProviderMissionChatResponse(
             assignment.Id,
@@ -97,6 +103,7 @@ public sealed class ProviderMissionChatService(
                 missionNumber = assignment.Mission.MissionNumber,
                 assignmentId,
                 conversationId = conversation.Id,
+                messageId = message.Id,
                 senderType = MissionMessageSenderType.Provider.ToString()
             }),
             cancellationToken,
@@ -115,6 +122,7 @@ public sealed class ProviderMissionChatService(
                 missionNumber = assignment.Mission.MissionNumber,
                 assignmentId,
                 conversationId = conversation.Id,
+                messageId = message.Id,
                 senderType = MissionMessageSenderType.Provider.ToString()
             }),
             cancellationToken,

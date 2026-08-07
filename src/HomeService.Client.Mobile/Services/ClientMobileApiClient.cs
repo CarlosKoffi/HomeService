@@ -310,6 +310,16 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<IReadOnlyList<ClientMissionListItemResponse>>(HttpMethod.Get, path, body: null, cancellationToken);
     }
 
+    public async Task<ApiCallResult<MobileNavigationBadgeResponse>> GetNavigationBadgesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<MobileNavigationBadgeResponse>(
+            HttpMethod.Get,
+            "api/client/mobile/navigation-badges",
+            body: null,
+            cancellationToken);
+    }
+
     public async Task<ApiCallResult<ClientMissionStatusResponse>> GetMissionAsync(Guid missionId, CancellationToken cancellationToken = default)
     {
         return await SendWithSessionAsync<ClientMissionStatusResponse>(HttpMethod.Get, $"api/client/missions/{missionId:D}", body: null, cancellationToken);

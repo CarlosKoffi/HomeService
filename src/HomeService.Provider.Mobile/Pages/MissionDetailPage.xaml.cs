@@ -1,6 +1,7 @@
 using System.Globalization;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
+using HomeService.Mobile.Shared;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Devices.Sensors;
@@ -14,6 +15,7 @@ public partial class MissionDetailPage : ContentPage
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(15);
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
+    private readonly CatalogMediaResolver? catalogMedia;
     private string? accessToken;
     private Guid? assignmentId;
     private ProviderMobileMissionDetailResponse? detail;
@@ -38,6 +40,7 @@ public partial class MissionDetailPage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
+        catalogMedia = IPlatformApplication.Current?.Services.GetService<CatalogMediaResolver>();
     }
 
     protected override async void OnAppearing()
@@ -83,11 +86,11 @@ public partial class MissionDetailPage : ContentPage
         }
 
         detail = result.Response;
-        Render(detail);
+        await RenderAsync(detail);
         FinishLoading();
     }
 
-    private void Render(ProviderMobileMissionDetailResponse mission)
+    private async Task RenderAsync(ProviderMobileMissionDetailResponse mission)
     {
         var isClosed = mission.AssignmentStatus is "Completed" or "Cancelled" or "Refused" or "Expired"
             || mission.MissionStatus is "Completed" or "Cancelled" or "Disputed" or "Resolved";
@@ -99,6 +102,13 @@ public partial class MissionDetailPage : ContentPage
         StatusPill.BackgroundColor = Color.FromArgb(mission.AssignmentStatus == "Completed" ? "#ECFDF3" : "#EEF4FF");
 
         ServiceIcon.Source = ProviderIconResolver.ForService(mission.ServiceIconName, mission.ServiceName);
+        if (catalogMedia is not null)
+        {
+            var remote = string.IsNullOrWhiteSpace(mission.PrestationName)
+                ? await catalogMedia.ResolveServiceAsync(null, mission.ServiceName)
+                : await catalogMedia.ResolvePrestationAsync(null, mission.PrestationName, serviceName: mission.ServiceName);
+            if (remote is not null) ServiceIcon.Source = remote;
+        }
         MissionTitleLabel.Text = string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName;
         ServiceLabel.Text = string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.CompanyName : $"{mission.ServiceName} · {mission.CompanyName}";
         MissionNumberLabel.Text = $"MISSION {mission.MissionNumber}";

@@ -17,8 +17,8 @@
         Shell.TabBarIsVisible="False" />
     <TabBar>
         <ShellContent Title="Accueil" Icon="nav_home.svg" Route="home" ContentTemplate="{DataTemplate pages:HomePage}" />
-        <ShellContent Title="Demandes" Icon="nav_requests.svg" Route="requests" ContentTemplate="{DataTemplate pages:RequestsPage}" />
-        <ShellContent Title="Messages" Icon="nav_messages.svg" Route="messages" ContentTemplate="{DataTemplate pages:MessagesPage}" />
+        <ShellContent x:Name="RequestsTab" Title="Demandes" Icon="nav_requests.svg" Route="requests" ContentTemplate="{DataTemplate pages:RequestsPage}" />
+        <ShellContent x:Name="MessagesTab" Title="Messages" Icon="nav_messages.svg" Route="messages" ContentTemplate="{DataTemplate pages:MessagesPage}" />
         <ShellContent Title="Profil" Icon="nav_profile.svg" Route="profile" ContentTemplate="{DataTemplate pages:ProfilePage}" />
     </TabBar>
 </Shell>

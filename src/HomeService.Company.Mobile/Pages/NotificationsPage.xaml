@@ -11,7 +11,7 @@
                 <Label Text="Alertes" Style="{StaticResource ScreenTitle}" />
                 <Label x:Name="UnreadLabel" Style="{StaticResource Muted}" />
             </VerticalStackLayout>
-            <Image Source="icon_message.svg" WidthRequest="30" HeightRequest="30" />
+            <Image Source="app_bell.svg" WidthRequest="30" HeightRequest="30" />
         </Grid>
         <RefreshView x:Name="RefreshHost" Grid.Row="1" Refreshing="OnRefreshing">
             <CollectionView x:Name="NotificationsView" SelectionMode="Single" SelectionChanged="OnNotificationSelected" EmptyView="Aucune alerte pour le moment.">

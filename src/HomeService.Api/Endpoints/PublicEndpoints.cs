@@ -876,6 +876,23 @@ public static class PublicEndpoints
         .Produces<ClientNotificationUnreadCountResponse>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapGet("/mobile/navigation-badges", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            MobileNavigationBadgeService badgeService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            return customer is null
+                ? Results.Unauthorized()
+                : Results.Ok(await badgeService.GetForClientAsync(customer.Id, cancellationToken));
+        })
+        .WithName("GetClientMobileNavigationBadges")
+        .Produces<MobileNavigationBadgeResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
         client.MapPost("/notifications/{notificationId:guid}/mark-read", async (
             Guid notificationId,
             HttpRequest httpRequest,

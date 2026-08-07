@@ -27,6 +27,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\HomeService.Mobile.Shared\CatalogMediaResolver.cs" Link="Services\CatalogMediaResolver.cs" />
     <MauiIcon Include="Resources\AppIcon\wele_appicon.png" />
     <MauiImage Include="Resources\Images\*" />
     <MauiImage Include="..\HomeService.Client.Mobile\Resources\Images\app_bell.svg" Link="Resources\Images\app_bell.svg" />

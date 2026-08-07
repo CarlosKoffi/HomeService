@@ -12,7 +12,7 @@
             <img src="images/wele-logo.png" alt="wele" />
         </a>
 
-        <nav class="portal-sidebar-nav">
+        <nav id="company-portal-navigation" class="portal-sidebar-nav">
             <a class="@GetClass("dashboard")" href="@PortalLink("dashboard")">
                 <PlatformIcon Name="dashboard" Tone="blue" />
                 Tableau de bord
@@ -70,7 +70,7 @@
 
     <section class="portal-main">
         <header class="portal-topbar">
-            <label for="portal-sidebar-toggle" class="portal-menu-button" title="Menu">
+            <label for="portal-sidebar-toggle" class="portal-menu-button" title="Menu" aria-label="Ouvrir ou fermer le menu" aria-controls="company-portal-navigation">
                 <span></span>
                 <span></span>
                 <span></span>

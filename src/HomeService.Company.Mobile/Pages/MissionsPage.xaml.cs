@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using HomeService.Company.Mobile.Services;
 using HomeService.Contracts.CompanyPortal;
+using HomeService.Mobile.Shared;
 
 namespace HomeService.Company.Mobile.Pages;
 
@@ -8,6 +9,7 @@ public partial class MissionsPage : ContentPage
 {
     private readonly CompanyMobileApiClient apiClient;
     private readonly CompanySessionStore sessionStore;
+    private readonly CatalogMediaResolver catalogMedia;
     private readonly ObservableCollection<MissionRow> visibleMissions = [];
     private IReadOnlyList<CompanyPortalMissionResponse> allMissions = [];
     private CancellationTokenSource? refreshCancellation;
@@ -18,6 +20,7 @@ public partial class MissionsPage : ContentPage
         InitializeComponent();
         apiClient = IPlatformApplication.Current!.Services.GetRequiredService<CompanyMobileApiClient>();
         sessionStore = IPlatformApplication.Current.Services.GetRequiredService<CompanySessionStore>();
+        catalogMedia = IPlatformApplication.Current.Services.GetRequiredService<CatalogMediaResolver>();
         MissionsView.ItemsSource = visibleMissions;
         FilterPicker.SelectedIndex = 0;
     }
@@ -50,7 +53,7 @@ public partial class MissionsPage : ContentPage
             if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
             var result = await apiClient.GetMissionsAsync(token, companyId.Value);
             if (result.IsSuccess) allMissions = result.Response ?? [];
-            ApplyFilter();
+            await ApplyFilterAsync();
         }
         finally
         {
@@ -58,7 +61,7 @@ public partial class MissionsPage : ContentPage
         }
     }
 
-    private void ApplyFilter()
+    private async Task ApplyFilterAsync()
     {
         var filter = FilterPicker.SelectedItem?.ToString() ?? "Toutes";
         var query = allMissions.Where(mission => filter switch
@@ -70,10 +73,14 @@ public partial class MissionsPage : ContentPage
             _ => true
         });
 
+        var ordered = query.OrderBy(MissionSort).ThenBy(item => item.ScheduledFor ?? DateTimeOffset.MaxValue).ToList();
+        var rows = await Task.WhenAll(ordered.Select(async mission => MissionRow.From(
+            mission,
+            await catalogMedia.ResolveServiceAsync(null, mission.ServiceName))));
         visibleMissions.Clear();
-        foreach (var mission in query.OrderBy(MissionSort).ThenBy(item => item.ScheduledFor ?? DateTimeOffset.MaxValue))
+        foreach (var row in rows)
         {
-            visibleMissions.Add(MissionRow.From(mission));
+            visibleMissions.Add(row);
         }
     }
 
@@ -90,7 +97,7 @@ public partial class MissionsPage : ContentPage
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
     }
 
-    private void OnFilterChanged(object? sender, EventArgs e) => ApplyFilter();
+    private async void OnFilterChanged(object? sender, EventArgs e) => await ApplyFilterAsync();
 
     private async void OnRefreshing(object? sender, EventArgs e)
     {
@@ -110,6 +117,7 @@ public partial class MissionsPage : ContentPage
 
     public sealed record MissionRow(
         CompanyPortalMissionResponse Mission,
+        ImageSource ServiceImage,
         string ServiceName,
         string CustomerLabel,
         string ProviderLabel,
@@ -117,7 +125,7 @@ public partial class MissionsPage : ContentPage
         string StatusLabel,
         Color StatusColor)
     {
-        public static MissionRow From(CompanyPortalMissionResponse mission)
+        public static MissionRow From(CompanyPortalMissionResponse mission, ImageSource? serviceImage)
         {
             var status = mission.Status switch
             {
@@ -139,6 +147,7 @@ public partial class MissionsPage : ContentPage
             };
             return new MissionRow(
                 mission,
+                serviceImage ?? "icon_mission.svg",
                 mission.ServiceName,
                 $"{mission.CustomerName} · {mission.LocationLabel ?? "Adresse à confirmer"}",
                 mission.ProviderName ?? "Prestataire à affecter",

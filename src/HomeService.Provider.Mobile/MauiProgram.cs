@@ -1,4 +1,5 @@
 using HomeService.Provider.Mobile.Services;
+using HomeService.Mobile.Shared;
 using Microsoft.Maui.Storage;
 
 namespace HomeService.Provider.Mobile;
@@ -25,6 +26,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<ProviderMobileApiClient>();
         builder.Services.AddSingleton<ProviderSessionService>();
         builder.Services.AddSingleton<ProviderDeviceRegistrationService>();
+        builder.Services.AddSingleton<CatalogMediaResolver>();
 
         return builder.Build();
     }

@@ -91,6 +91,7 @@ public partial class MissionChatPage : ContentPage
             await MainThread.InvokeOnMainThreadAsync(() =>
                 MissionContextLabel.Text = $"{result.Response.MissionNumber} · {result.Response.MissionLabel}");
             await ReplaceMessagesAsync(rows);
+            if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
         }
         catch
         {
