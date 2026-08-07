@@ -30,6 +30,12 @@ public interface IApiObjectStorage
         string objectKey,
         CancellationToken cancellationToken);
 
+    Task<bool> ExistsAsync(
+        ApiStorageVisibility visibility,
+        string localRoot,
+        string objectKey,
+        CancellationToken cancellationToken);
+
     Task DeleteIfExistsAsync(
         ApiStorageVisibility visibility,
         string localRoot,
@@ -174,6 +180,39 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
         return File.Exists(absolutePath)
             ? new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous)
             : null;
+    }
+
+    public async Task<bool> ExistsAsync(
+        ApiStorageVisibility visibility,
+        string localRoot,
+        string objectKey,
+        CancellationToken cancellationToken)
+    {
+        var normalizedKey = NormalizeObjectKey(objectKey);
+        if (_r2Client is null)
+        {
+            return File.Exists(GetLocalAbsolutePath(localRoot, normalizedKey));
+        }
+
+        try
+        {
+            await _r2Client.GetObjectMetadataAsync(
+                ResolveBucket(visibility),
+                normalizedKey,
+                cancellationToken);
+            return true;
+        }
+        catch (AmazonS3Exception exception) when (
+            exception.StatusCode == HttpStatusCode.NotFound
+            || string.Equals(exception.ErrorCode, "NoSuchKey", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        catch (Exception exception) when (exception is AmazonS3Exception or AmazonServiceException or HttpRequestException)
+        {
+            _logger.LogError(exception, "Unable to check object {ObjectKey} in Cloudflare R2.", normalizedKey);
+            throw new ApiObjectStorageException("Le stockage distant est momentanement indisponible.", exception);
+        }
     }
 
     public async Task DeleteIfExistsAsync(

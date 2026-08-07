@@ -40,6 +40,11 @@ public sealed class ApiObjectStorageTests
             root,
             "cms/2026/08/image test.jpg");
 
+        Assert.False(await storage.ExistsAsync(
+            ApiStorageVisibility.Public,
+            root,
+            "cms/2026/08/image test.jpg",
+            CancellationToken.None));
         Assert.Null(await storage.OpenReadAsync(
             ApiStorageVisibility.Public,
             root,

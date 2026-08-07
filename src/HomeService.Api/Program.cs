@@ -27,6 +27,7 @@ var app = builder.Build();
 await DatabaseInitializer.InitializeAsync(app.Services);
 
 app.UseSiteAccessGate();
+app.UseR2PublicAssetDelivery();
 app.UseStaticFiles();
 app.UseRateLimiter();
 

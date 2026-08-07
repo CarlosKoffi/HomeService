@@ -112,6 +112,7 @@ En developpement et dans les tests, l'API conserve le stockage local par defaut.
 - `R2_PRIVATE_BUCKET=wele-private-media-prod`
 - `R2_PUBLIC_BASE_URL=https://media.wele.africa` lorsque le domaine sera actif
 - `R2_PUBLIC_DIRECT_DELIVERY_ENABLED=false` pendant la migration, puis `true` lorsque tous les medias CMS historiques sont presents dans R2
+- `R2_SEED_PUBLIC_ASSETS_ON_STARTUP=true` pour copier automatiquement les images de services, prestations et moyens de paiement absentes de R2
 
 Ne jamais placer les trois valeurs secretes dans `appsettings.json`, un fichier `.env` commite ou un APK. L'API refuse de demarrer avec `STORAGE_PROVIDER=R2` si une valeur obligatoire manque.
 
@@ -120,6 +121,8 @@ Le bucket public est reserve aux medias CMS diffusables par CDN. Les photos de m
 Lors du passage a R2, les nouvelles ecritures partent dans R2. Pour garantir une migration sans coupure, une lecture absente de R2 recherche encore le fichier dans l'ancien volume local. Ce volume doit donc rester monte jusqu'a la fin de la migration des objets historiques.
 
 La diffusion directe par `media.wele.africa` reste volontairement desactivee pendant cette phase. Tant que `R2_PUBLIC_DIRECT_DELIVERY_ENABLED=false`, l'API conserve les routes historiques et peut donc retomber sur le volume local. Activer la redirection CDN seulement apres la verification de la migration du bucket public.
+
+Lorsque R2 est active, un traitement en arriere-plan inventorie les repertoires `wwwroot/assets/services`, `wwwroot/catalog/prestations` et `wwwroot/media/payment-providers`. Il envoie uniquement les fichiers absents du bucket public. Le traitement est idempotent et peut donc etre relance apres un redemarrage sans dupliquer les objets.
 
 ## Regle de livraison
 
