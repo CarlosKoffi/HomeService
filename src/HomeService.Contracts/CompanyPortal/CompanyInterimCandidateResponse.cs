@@ -13,6 +13,7 @@ public sealed record CompanyInterimCandidateResponse(
     string FirstName,
     string LastName,
     string PhoneNumber,
+    string? Email,
     DateOnly? BirthDate,
     string? Address,
     string Gender,
@@ -23,7 +24,9 @@ public sealed record CompanyInterimCandidateResponse(
     string? ReviewNote,
     DateTimeOffset RequestedAt,
     DateTimeOffset? ReviewedAt,
+    string? PhotoUrl,
     IReadOnlyList<CompanyInterimCandidateServiceResponse> Services,
+    IReadOnlyList<CompanyEmployeeDocumentResponse> Documents,
     IReadOnlyList<CompanyInterimCandidateAffiliationResponse> Applications);
 
 public sealed record CompanyInterimCandidateServiceResponse(

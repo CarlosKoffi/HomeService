@@ -28,4 +28,6 @@ public sealed record CompanyPortalMissionResponse(
     int PlatformCommissionAmount = 0,
     DateTimeOffset? CompanyAssignmentExpiresAt = null,
     decimal? ServiceLatitude = null,
-    decimal? ServiceLongitude = null);
+    decimal? ServiceLongitude = null,
+    string? CancellationActor = null,
+    string? CancellationComment = null);

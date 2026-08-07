@@ -1,15 +1,17 @@
 using HomeService.Application.Abstractions;
-using HomeService.Domain.Entities;
-using HomeService.Domain.Enums;
+using HomeService.Application.CompanyPortal;
+using HomeService.Application.Missions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
+using HomeService.Contracts.Missions;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Clients;
 
-public sealed class ClientMissionCancellationService(IAppDbContext db)
+public sealed class ClientMissionCancellationService(
+    IAppDbContext db,
+    MissionCancellationWorkflowService? cancellationWorkflow = null)
 {
-    private const int DefaultAfterContactReleaseFeeAmount = 2500;
-
     public async Task<ClientMissionCancellationResult> CancelAsync(
         Guid missionId,
         CancelClientMissionRequest request,
@@ -42,38 +44,39 @@ public sealed class ClientMissionCancellationService(IAppDbContext db)
             return ClientMissionCancellationResult.Forbidden("Ce numero ne correspond pas au client de la mission.");
         }
 
-        try
+        var workflow = cancellationWorkflow ?? new MissionCancellationWorkflowService(
+            db,
+            new CompanyPortalNotificationWriter(db),
+            new MobilePushNotificationQueueService(db));
+        var cancellationResult = await workflow.CancelAsync(
+            mission.Id,
+            Domain.Enums.MissionCancellationActor.Customer,
+            new CancelMissionRequest(request.Reason, request.Comment),
+            expectedCompanyId: null,
+            expectedProviderId: null,
+            cancellationToken);
+
+        if (!cancellationResult.IsSuccess || cancellationResult.Response is null)
         {
-            var reason = ParseReason(request.Reason);
-            var cancellationFee = mission.ContactDetailsReleasedAt is null ? 0 : DefaultAfterContactReleaseFeeAmount;
-            var refundAmount = CalculateRefundAmount(mission, cancellationFee);
-            mission.Cancel(
-                MissionCancellationActor.Customer,
-                reason,
-                request.Comment,
-                cancellationFee,
-                refundAmount);
-
-            TrackCancellationFinancials(mission, cancellationFee, refundAmount);
-            TrackCancellationMilestone(mission, cancellationFee);
-            TrackCompanyActivity(mission, reason);
-
-            await db.SaveChangesAsync(cancellationToken);
-
-            return ClientMissionCancellationResult.Success(new CancelClientMissionResponse(
-                mission.Id,
-                mission.MissionNumber,
-                mission.Status.ToString(),
-                mission.PaymentStatus.ToString(),
-                mission.CancellationFeeAmount,
-                mission.RefundAmount,
-                mission.Currency,
-                mission.CancelledAt!.Value));
+            return cancellationResult.Status switch
+            {
+                MissionCancellationWorkflowStatus.NotFound => ClientMissionCancellationResult.NotFound(cancellationResult.Message),
+                MissionCancellationWorkflowStatus.Forbidden => ClientMissionCancellationResult.Forbidden(cancellationResult.Message),
+                MissionCancellationWorkflowStatus.ValidationFailed => ClientMissionCancellationResult.ValidationFailed(cancellationResult.Errors),
+                _ => ClientMissionCancellationResult.Invalid(cancellationResult.Message)
+            };
         }
-        catch (InvalidOperationException exception)
-        {
-            return ClientMissionCancellationResult.Invalid(exception.Message);
-        }
+
+        var response = cancellationResult.Response;
+        return ClientMissionCancellationResult.Success(new CancelClientMissionResponse(
+            response.MissionId,
+            response.MissionNumber,
+            response.Status,
+            response.PaymentStatus,
+            response.CancellationFeeAmount,
+            response.RefundAmount,
+            response.Currency,
+            response.CancelledAt));
     }
 
     private static IReadOnlyList<string> Validate(CancelClientMissionRequest request)
@@ -95,90 +98,6 @@ public sealed class ClientMissionCancellationService(IAppDbContext db)
         }
 
         return errors;
-    }
-
-    private static MissionCancellationReason ParseReason(string reason)
-    {
-        return Enum.TryParse<MissionCancellationReason>(reason, ignoreCase: true, out var parsed)
-            ? parsed
-            : MissionCancellationReason.Other;
-    }
-
-    private static int CalculateRefundAmount(Mission mission, int cancellationFee)
-    {
-        if (mission.PaymentStatus is not (PaymentStatus.Authorized or PaymentStatus.Paid))
-        {
-            return 0;
-        }
-
-        var paidAmount = mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? mission.FinalTotalAmount ?? 0;
-        return Math.Max(0, paidAmount - cancellationFee);
-    }
-
-    private void TrackCancellationFinancials(Mission mission, int cancellationFee, int refundAmount)
-    {
-        if (cancellationFee > 0 && !db.MissionFinancialBreakdowns.Local.Any(line =>
-                line.MissionId == mission.Id && line.LineType == MissionFinancialLineType.CancellationFee))
-        {
-            db.MissionFinancialBreakdowns.Add(new MissionFinancialBreakdown(
-                mission.Id,
-                MissionFinancialLineType.CancellationFee,
-                "Frais d'annulation",
-                cancellationFee,
-                mission.Currency,
-                90));
-        }
-
-        if (refundAmount > 0 && !db.MissionFinancialBreakdowns.Local.Any(line =>
-                line.MissionId == mission.Id && line.LineType == MissionFinancialLineType.Refund))
-        {
-            db.MissionFinancialBreakdowns.Add(new MissionFinancialBreakdown(
-                mission.Id,
-                MissionFinancialLineType.Refund,
-                "Remboursement client",
-                -refundAmount,
-                mission.Currency,
-                100));
-        }
-    }
-
-    private void TrackCancellationMilestone(Mission mission, int cancellationFee)
-    {
-        var milestone = new MissionPaymentMilestone(
-            mission.Id,
-            MissionPaymentMilestoneTrigger.Cancellation,
-            cancellationFee,
-            mission.Currency,
-            cancellationFee > 0 ? "Annulation client - frais conserves" : "Annulation client - aucun frais",
-            90);
-
-        if (cancellationFee > 0)
-        {
-            milestone.MarkDue(DateTimeOffset.UtcNow);
-        }
-        else
-        {
-            milestone.Cancel();
-        }
-
-        db.MissionPaymentMilestones.Add(milestone);
-    }
-
-    private void TrackCompanyActivity(Mission mission, MissionCancellationReason reason)
-    {
-        if (mission.CompanyId is null)
-        {
-            return;
-        }
-
-        db.CompanyPortalActivities.Add(new CompanyPortalActivity(
-            mission.CompanyId.Value,
-            "mission",
-            "Mission annulee par le client",
-            $"{mission.MissionNumber} - {reason}",
-            "orange",
-            nameof(Mission),
-            mission.Id));
     }
 
     private static bool PhoneMatches(string? storedPhone, string inputPhone)

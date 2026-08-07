@@ -5,7 +5,7 @@ namespace HomeService.Company.Mobile.Services;
 public static class CompanyNotificationNavigationService
 {
     private const string PendingKey = "CompanyPendingNotification";
-    private static readonly string[] Keys = ["type", "missionId", "assignmentId", "quoteId", "conversationId", "providerId"];
+    private static readonly string[] Keys = ["type", "missionId", "assignmentId", "quoteId", "conversationId", "providerId", "requestId"];
 
     public static void Store(IReadOnlyDictionary<string, string> data)
     {
@@ -34,7 +34,9 @@ public static class CompanyNotificationNavigationService
         if (!string.IsNullOrWhiteSpace(type) && (type.Contains("provider_validation", StringComparison.OrdinalIgnoreCase)
             || type.Contains("provider_application", StringComparison.OrdinalIgnoreCase)))
         {
-            route = "//providers";
+            data.TryGetValue("requestId", out var requestValue);
+            data.TryGetValue("providerId", out var providerValue);
+            route = $"{nameof(ProviderCandidateDetailPage)}?requestId={Uri.EscapeDataString(requestValue ?? string.Empty)}&providerId={Uri.EscapeDataString(providerValue ?? string.Empty)}";
         }
         else if (data.TryGetValue("missionId", out var missionValue) && Guid.TryParse(missionValue, out var missionId))
         {

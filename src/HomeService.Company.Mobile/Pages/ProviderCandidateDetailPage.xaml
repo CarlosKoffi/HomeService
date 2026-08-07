@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Company.Mobile.Pages.ProviderCandidateDetailPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Shell.NavBarIsVisible="False">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="18,18,18,20" RowSpacing="14">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
+            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                <Label Text="Dossier prestataire" Style="{StaticResource ScreenTitle}" />
+                <Label x:Name="StatusLabel" Text="Candidature à vérifier" Style="{StaticResource Muted}" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <RefreshView x:Name="RefreshHost" Grid.Row="1" Refreshing="OnRefreshing">
+            <ScrollView>
+                <VerticalStackLayout Padding="0,2,0,12" Spacing="14">
+                    <ActivityIndicator x:Name="LoadingIndicator" IsRunning="False" Color="{StaticResource WeleBlue}" />
+                    <Label x:Name="ErrorLabel" IsVisible="False" TextColor="{StaticResource Danger}" HorizontalTextAlignment="Center" />
+
+                    <Border x:Name="ProfileCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                        <VerticalStackLayout Spacing="12" HorizontalOptions="Fill">
+                            <Border WidthRequest="88" HeightRequest="88" BackgroundColor="{StaticResource BlueWash}" Stroke="#B8CCFF" StrokeThickness="1" StrokeShape="RoundRectangle 44" HorizontalOptions="Center">
+                                <Image x:Name="ProfileImage" Source="icon_user.svg" Aspect="AspectFill" WidthRequest="88" HeightRequest="88" />
+                            </Border>
+                            <VerticalStackLayout Spacing="3" HorizontalOptions="Center">
+                                <Label x:Name="FullNameLabel" FontSize="22" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                <Label x:Name="CandidateTypeLabel" TextColor="{StaticResource WeleBlue}" FontSize="11" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                <Label x:Name="ExperienceLabel" Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border x:Name="ApplicationCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Candidature" Style="{StaticResource CardTitle}" />
+                            <Label x:Name="RequestedAtLabel" Style="{StaticResource Muted}" />
+                            <Label x:Name="ApplicationMessageLabel" Style="{StaticResource Muted}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border x:Name="InformationCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                        <VerticalStackLayout Spacing="11">
+                            <Label Text="Informations personnelles" Style="{StaticResource CardTitle}" />
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Image Source="icon_phone.svg" WidthRequest="19" HeightRequest="19" />
+                                <Label x:Name="PhoneLabel" Grid.Column="1" Style="{StaticResource Muted}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Image Source="icon_message.svg" WidthRequest="19" HeightRequest="19" />
+                                <Label x:Name="EmailLabel" Grid.Column="1" Style="{StaticResource Muted}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                <Image Source="icon_location.svg" WidthRequest="19" HeightRequest="19" />
+                                <Label x:Name="AddressLabel" Grid.Column="1" Style="{StaticResource Muted}" />
+                            </Grid>
+                            <Label x:Name="IdentityLabel" Style="{StaticResource Muted}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <Button Text="Appeler" Style="{StaticResource SecondaryButton}" Clicked="OnCallClicked" />
+                                <Button Grid.Column="1" Text="Message" Style="{StaticResource SecondaryButton}" Clicked="OnMessageClicked" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border x:Name="ServicesCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                        <VerticalStackLayout Spacing="11">
+                            <Label Text="Services et compétences" Style="{StaticResource CardTitle}" />
+                            <VerticalStackLayout x:Name="ServicesLayout" Spacing="9" BindableLayout.ItemsSource="{Binding Services}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="0,3">
+                                            <Border WidthRequest="38" HeightRequest="38" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 12">
+                                                <Image Source="icon_mission.svg" WidthRequest="20" HeightRequest="20" />
+                                            </Border>
+                                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                                <Label Text="{Binding Name}" FontAttributes="Bold" FontSize="14" />
+                                                <Label Text="{Binding Level}" Style="{StaticResource Muted}" />
+                                            </VerticalStackLayout>
+                                            <Label Grid.Column="2" Text="{Binding Years}" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" FontSize="12" VerticalOptions="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border x:Name="DocumentsCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                        <VerticalStackLayout Spacing="11">
+                            <Label Text="Pièces du dossier" Style="{StaticResource CardTitle}" />
+                            <Label x:Name="DocumentsEmptyLabel" Text="Aucune pièce n’a encore été ajoutée." Style="{StaticResource Muted}" IsVisible="False" />
+                            <VerticalStackLayout x:Name="DocumentsLayout" Spacing="8" BindableLayout.ItemsSource="{Binding Documents}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Text="{Binding Label}" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding Url}" Clicked="OnDocumentClicked" />
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+        </RefreshView>
+
+        <Grid x:Name="ActionsBar" Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
+            <Button Text="Refuser" Style="{StaticResource SecondaryButton}" Clicked="OnRejectClicked" />
+            <Button Grid.Column="1" Text="Accepter" Clicked="OnApproveClicked" />
+        </Grid>
+    </Grid>
+</ContentPage>

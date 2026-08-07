@@ -12,6 +12,7 @@ namespace HomeService.Client.Mobile.Services;
 public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionStore sessionStore)
 {
     private const int MaxProfilePhotoBytes = 25 * 1024 * 1024;
+    private const int MaxCachedMediaEntries = 64;
     private static readonly ConcurrentDictionary<string, Lazy<Task<byte[]?>>> MediaCache = new(StringComparer.OrdinalIgnoreCase);
     public Task<ApiCallResult<ClientAuthResponse>> RegisterAsync(RegisterClientRequest request, CancellationToken cancellationToken = default)
     {
@@ -214,6 +215,15 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
 
         try
         {
+            if (MediaCache.Count >= MaxCachedMediaEntries && !MediaCache.ContainsKey(absoluteUrl))
+            {
+                var oldestKey = MediaCache.Keys.FirstOrDefault();
+                if (oldestKey is not null)
+                {
+                    MediaCache.TryRemove(oldestKey, out _);
+                }
+            }
+
             var lazyBytes = MediaCache.GetOrAdd(
                 absoluteUrl,
                 key => new Lazy<Task<byte[]?>>(

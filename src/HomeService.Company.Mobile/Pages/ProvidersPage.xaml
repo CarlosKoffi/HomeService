@@ -44,6 +44,8 @@
                                         <Label Text="{Binding MessageLabel}" Style="{StaticResource Muted}" IsVisible="{Binding HasMessage}" />
                                         <Label Text="{Binding DetailLabel}" FontSize="11" TextColor="{StaticResource MutedInk}" />
 
+                                        <Button Text="Voir le dossier complet" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding .}" Clicked="OnCandidateDetailClicked" />
+
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                                             <Button Text="Refuser" Style="{StaticResource SecondaryButton}" CommandParameter="{Binding .}" Clicked="OnRejectCandidateClicked" />
                                             <Button Grid.Column="1" Text="Accepter" CommandParameter="{Binding .}" Clicked="OnApproveCandidateClicked" />

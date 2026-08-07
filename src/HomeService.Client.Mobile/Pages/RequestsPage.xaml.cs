@@ -54,7 +54,7 @@ public partial class RequestsPage : ContentPage, IQueryAttributable
         {
             foreach (var item in result.Response)
             {
-                var image = await apiClient.DownloadMediaImageSourceAsync(item.IconUrl);
+                var image = apiClient.ToRemoteImageSource(item.IconUrl);
                 missions.Add(MissionRow.From(item, image));
             }
         }

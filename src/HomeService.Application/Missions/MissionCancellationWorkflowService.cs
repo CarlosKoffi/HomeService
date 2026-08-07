@@ -240,8 +240,13 @@ public sealed class MissionCancellationWorkflowService(
         db.CompanyPortalActivities.Add(new CompanyPortalActivity(
             mission.CompanyId.Value,
             "mission",
-            "Mission annulee",
-            $"{mission.MissionNumber} - annulation {actor}. Raison: {reason}.",
+            actor == MissionCancellationActor.Customer
+                ? "Mission annulée par le client"
+                : "Mission annulée",
+            $"{mission.MissionNumber} - {DescribeActor(actor)}. Motif : {DescribeReason(reason)}."
+                + (string.IsNullOrWhiteSpace(mission.CancellationComment)
+                    ? string.Empty
+                    : $" Détail : {mission.CancellationComment}."),
             "orange",
             nameof(Mission),
             mission.Id));
@@ -269,22 +274,36 @@ public sealed class MissionCancellationWorkflowService(
             missionNumber = mission.MissionNumber,
             assignmentId,
             providerId = mission.ProviderId,
-            companyId = mission.CompanyId
+            companyId = mission.CompanyId,
+            cancelledBy = actor.ToString(),
+            reason = reason.ToString(),
+            comment = mission.CancellationComment
         });
+        var actorLabel = DescribeActor(actor);
+        var reasonLabel = DescribeReason(reason);
+        var commentText = string.IsNullOrWhiteSpace(mission.CancellationComment)
+            ? string.Empty
+            : $" Détail : {mission.CancellationComment}.";
+        var title = actor == MissionCancellationActor.Customer
+            ? "Mission annulée par le client"
+            : $"Mission annulée par {actorLabel.ToLowerInvariant()}";
+        var body = $"{actorLabel} a annulé la mission {mission.MissionNumber}. Motif : {reasonLabel}.{commentText}";
 
         companyNotifications.AddForMission(
             mission,
             "MissionCancelled",
-            $"Mission {mission.MissionNumber} annulee",
-            BuildCompanyCancellationMessage(actor, reason, refundAmount, mission.Currency),
+            title,
+            BuildCompanyCancellationMessage(mission, actor, reason, refundAmount),
             refundAmount > 0 ? "warning" : "danger",
             $"missions/{mission.Id}");
 
         await mobilePushNotifications.QueueForOwnerAsync(
             MobileDeviceOwnerType.Customer,
             mission.CustomerId,
-            "Mission annulee",
-            $"La mission {mission.MissionNumber} a ete annulee. Raison: {reason}.",
+            "Mission annulée",
+            actor == MissionCancellationActor.Customer
+                ? $"Votre mission {mission.MissionNumber} a bien été annulée. Motif : {reasonLabel}."
+                : body,
             nameof(Mission),
             mission.Id,
             metadataJson,
@@ -296,8 +315,8 @@ public sealed class MissionCancellationWorkflowService(
             await mobilePushNotifications.QueueForOwnerAsync(
                 MobileDeviceOwnerType.Company,
                 mission.CompanyId.Value,
-                "Mission annulée",
-                $"La mission {mission.MissionNumber} a été annulée. Raison : {reason}.",
+                title,
+                body,
                 nameof(Mission),
                 mission.Id,
                 metadataJson,
@@ -313,8 +332,8 @@ public sealed class MissionCancellationWorkflowService(
         await mobilePushNotifications.QueueForOwnerAsync(
             MobileDeviceOwnerType.Provider,
             mission.ProviderId.Value,
-            "Mission annulee",
-            $"La mission {mission.MissionNumber} a ete annulee. Raison: {reason}.",
+            title,
+            body,
             nameof(Mission),
             mission.Id,
             metadataJson,
@@ -323,17 +342,42 @@ public sealed class MissionCancellationWorkflowService(
     }
 
     private static string BuildCompanyCancellationMessage(
+        Mission mission,
         MissionCancellationActor actor,
         MissionCancellationReason reason,
-        int refundAmount,
-        string currency)
+        int refundAmount)
     {
         var refundText = refundAmount > 0
-            ? $" Remboursement client prevu: {refundAmount:N0} {currency}."
+            ? $" Remboursement client prévu : {refundAmount:N0} {mission.Currency}."
             : " Aucun remboursement automatique n'est prevu.";
+        var commentText = string.IsNullOrWhiteSpace(mission.CancellationComment)
+            ? string.Empty
+            : $" Détail communiqué : {mission.CancellationComment}.";
 
-        return $"Annulation par {actor}. Raison: {reason}.{refundText}";
+        return $"Annulation par {DescribeActor(actor)}. Motif : {DescribeReason(reason)}.{commentText}{refundText}";
     }
+
+    private static string DescribeActor(MissionCancellationActor actor) => actor switch
+    {
+        MissionCancellationActor.Customer => "Le client",
+        MissionCancellationActor.Provider => "Le prestataire",
+        MissionCancellationActor.Company => "L'entreprise",
+        MissionCancellationActor.Admin => "L'administration",
+        _ => "Un intervenant"
+    };
+
+    private static string DescribeReason(MissionCancellationReason reason) => reason switch
+    {
+        MissionCancellationReason.CustomerChangedMind => "le client n'a plus besoin de l'intervention",
+        MissionCancellationReason.CustomerUnavailable => "le client est indisponible",
+        MissionCancellationReason.CustomerAbsent => "le client est absent",
+        MissionCancellationReason.AccessRefused => "l'accès au lieu d'intervention est impossible",
+        MissionCancellationReason.ProviderUnavailable => "le prestataire est indisponible",
+        MissionCancellationReason.ProviderNoShow => "le prestataire ne s'est pas présenté",
+        MissionCancellationReason.CompanyUnavailable => "l'entreprise est indisponible",
+        MissionCancellationReason.Other => "autre raison",
+        _ => reason.ToString()
+    };
 
     private static CancelMissionResponse ToResponse(Mission mission)
     {

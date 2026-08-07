@@ -69,9 +69,9 @@ public partial class HomePage : ContentPage
         popularServices.Clear();
         allPopularServices.Clear();
 
-        var serviceItems = await Task.WhenAll(result.Response
+        var serviceItems = result.Response
             .Where(item => item.IsActive)
-            .Select(service => ServiceItem.FromAsync(service, apiClient)));
+            .Select(service => ServiceItem.From(service, apiClient));
         foreach (var service in serviceItems)
         {
             services.Add(service);
@@ -95,10 +95,10 @@ public partial class HomePage : ContentPage
             .OrderByDescending(item => item.Prestation.MissionCount)
             .ThenBy(item => item.Prestation.Name);
 
-        var popularItems = await Task.WhenAll(mostRequestedPrestations.Select(async item =>
+        var popularItems = mostRequestedPrestations.Select(item =>
         {
-            var illustrationUrl = await apiClient.DownloadMediaImageSourceAsync(item.Prestation.IllustrationUrl);
-            var serviceIconUrl = await apiClient.DownloadMediaImageSourceAsync(item.Service.IconUrl);
+            var illustrationUrl = apiClient.ToRemoteImageSource(item.Prestation.IllustrationUrl);
+            var serviceIconUrl = apiClient.ToRemoteImageSource(item.Service.IconUrl);
             return new PopularItem(
                 item.Service.Id,
                 item.Prestation.Id,
@@ -113,7 +113,7 @@ public partial class HomePage : ContentPage
                 illustrationUrl is not null,
                 illustrationUrl is null && serviceIconUrl is not null,
                 illustrationUrl is null && serviceIconUrl is null);
-        }));
+        });
         foreach (var item in popularItems)
         {
             allPopularServices.Add(item);
@@ -163,8 +163,14 @@ public partial class HomePage : ContentPage
 
     private async void OnRefreshing(object sender, EventArgs e)
     {
-        await LoadAsync();
-        Refresh.IsRefreshing = false;
+        try
+        {
+            await LoadSafelyAsync();
+        }
+        finally
+        {
+            Refresh.IsRefreshing = false;
+        }
     }
 
     private async void OnSearchTapped(object sender, TappedEventArgs e)
@@ -294,13 +300,13 @@ public partial class HomePage : ContentPage
         string Price,
         string DisplayCategory)
     {
-        public static async Task<ServiceItem> FromAsync(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
+        public static ServiceItem From(ServiceSummaryResponse response, ClientMobileApiClient apiClient)
         {
             var price = response.PriceMinAmount.HasValue
                 ? $"À partir de {response.PriceMinAmount:N0} {response.Currency}"
                 : $"{response.NormalPriceAmount:N0} {response.Currency}";
 
-            var iconUrl = await apiClient.DownloadMediaImageSourceAsync(response.IconUrl);
+            var iconUrl = apiClient.ToRemoteImageSource(response.IconUrl);
             var fallback = ResolveIcon(response.IconName, response.Name);
             return new ServiceItem(
                 response.Id,

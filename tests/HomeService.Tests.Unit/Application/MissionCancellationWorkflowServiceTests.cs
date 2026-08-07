@@ -50,7 +50,7 @@ public sealed class MissionCancellationWorkflowServiceTests
             && item.OwnerType == MobileDeviceOwnerType.Customer);
         Assert.Equal(NotificationChannel.MobilePush, push.Channel);
         Assert.Equal("customer-device-token", push.Recipient);
-        Assert.Equal("Mission annulee", push.Subject);
+        Assert.Equal("Mission annulée", push.Subject);
     }
 
     [Fact]

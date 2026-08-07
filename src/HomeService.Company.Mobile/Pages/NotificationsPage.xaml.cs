@@ -68,6 +68,13 @@ public partial class NotificationsPage : ContentPage
         if (row.Source.Type.Contains("Provider", StringComparison.OrdinalIgnoreCase)
             || row.Source.ActionUrl?.Contains("provider", StringComparison.OrdinalIgnoreCase) == true)
         {
+            if (row.Source.ActionUrl?.StartsWith("providers/", StringComparison.OrdinalIgnoreCase) == true
+                && Guid.TryParse(row.Source.ActionUrl["providers/".Length..], out var requestId))
+            {
+                await Shell.Current.GoToAsync($"{nameof(ProviderCandidateDetailPage)}?requestId={requestId:D}");
+                return;
+            }
+
             await Shell.Current.GoToAsync("//providers");
             return;
         }

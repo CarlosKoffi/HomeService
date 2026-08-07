@@ -16,6 +16,11 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
         CancellationToken cancellationToken = default)
         => SendAsync<CompanyPortalLoginResponse>(HttpMethod.Post, "api/company-portal/login", null, request, cancellationToken);
 
+    public Uri ResolveUri(string path)
+        => Uri.TryCreate(path, UriKind.Absolute, out var absolute)
+            ? absolute
+            : new Uri(httpClient.BaseAddress!, path.TrimStart('/'));
+
     public Task<ApiCallResult<IReadOnlyList<CompanyPortalMissionResponse>>> GetMissionsAsync(
         string token,
         Guid companyId,

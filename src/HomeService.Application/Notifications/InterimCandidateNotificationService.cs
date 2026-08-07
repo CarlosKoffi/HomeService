@@ -26,7 +26,7 @@ public sealed class InterimCandidateNotificationService(
             title,
             body,
             "warning",
-            "providers"));
+            $"providers/{affiliationRequest.Id:D}"));
 
         await mobilePushNotifications.QueueForOwnerAsync(
             MobileDeviceOwnerType.Company,

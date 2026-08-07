@@ -82,7 +82,7 @@ public partial class CatalogSearchPage : ContentPage
         cancellationToken.ThrowIfCancellationRequested();
 
         var loadedResults = response.IsSuccess && response.Response is not null
-            ? await Task.WhenAll(response.Response.Select(item => SearchItem.FromAsync(item, apiClient, cancellationToken)))
+            ? response.Response.Select(item => SearchItem.From(item, apiClient)).ToArray()
             : [];
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -276,15 +276,14 @@ public partial class CatalogSearchPage : ContentPage
         Guid ServiceId, Guid? PrestationId, string Name, string ServiceName,
         ImageSource? IconSource, ImageSource? ImageSource, string Fallback, bool HasIcon, bool HasImage)
     {
-        public static async Task<SearchItem> FromAsync(
+        public static SearchItem From(
             ClientCatalogSearchResultResponse response,
-            ClientMobileApiClient apiClient,
-            CancellationToken cancellationToken)
+            ClientMobileApiClient apiClient)
         {
             var name = response.PrestationName ?? response.Name;
-            var imageSource = await apiClient.DownloadMediaImageSourceAsync(response.ImageUrl, cancellationToken);
+            var imageSource = apiClient.ToRemoteImageSource(response.ImageUrl);
             var iconSource = imageSource is null
-                ? await apiClient.DownloadMediaImageSourceAsync(response.IconUrl, cancellationToken)
+                ? apiClient.ToRemoteImageSource(response.IconUrl)
                 : null;
             var fallback = string.IsNullOrWhiteSpace(name) ? "WE" : name[..Math.Min(2, name.Length)].ToUpperInvariant();
             return new SearchItem(response.ServiceId, response.PrestationId, name, response.ServiceName,

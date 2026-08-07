@@ -140,11 +140,10 @@ public partial class CreateRequestPage : ContentPage
             .Where(item => item.IsActive)
             .OrderBy(item => item.Name)
             .ToList();
-        var serviceItems = await Task.WhenAll(activeServices.Select(async service =>
-        {
-            var imageSource = await apiClient.DownloadMediaImageSourceAsync(service.IconUrl ?? service.ImageUrl);
-            return ServicePickerItem.From(service, imageSource);
-        }));
+        var serviceItems = activeServices.Select(service =>
+            ServicePickerItem.From(
+                service,
+                apiClient.ToRemoteImageSource(service.IconUrl ?? service.ImageUrl)));
         foreach (var item in serviceItems)
         {
             availableServices.Add(item);
@@ -177,11 +176,11 @@ public partial class CreateRequestPage : ContentPage
             return;
         }
 
-        var items = await Task.WhenAll(activePrestations.Select(async prestation =>
-        {
-            var imageSource = await apiClient.DownloadMediaImageSourceAsync(prestation.IllustrationUrl);
-            return PrestationPickerItem.From(prestation, selectedService.Name, imageSource);
-        }));
+        var items = activePrestations.Select(prestation =>
+            PrestationPickerItem.From(
+                prestation,
+                selectedService.Name,
+                apiClient.ToRemoteImageSource(prestation.IllustrationUrl)));
         foreach (var item in items)
         {
             availablePrestations.Add(item);
@@ -263,8 +262,7 @@ public partial class CreateRequestPage : ContentPage
             ? $"Prix : {preparation.MaximumPriceAmount:N0} {preparation.Currency}"
             : $"A partir de {preparation.StartingPriceAmount:N0} {preparation.Currency} - max {preparation.MaximumPriceAmount:N0} {preparation.Currency}";
         PreparationHintLabel.Text = preparation.Message;
-        PreparationIcon.Source = await apiClient.DownloadMediaImageSourceAsync(
-            preparation.ImageUrl ?? preparation.IconUrl);
+        PreparationIcon.Source = apiClient.ToRemoteImageSource(preparation.ImageUrl ?? preparation.IconUrl);
         PreparationCard.IsVisible = true;
         PhotoHintLabel.Text = preparation.PhotosRequired
             ? $"Photos demandees pour faciliter le devis. Maximum {maxPhotoCount}."

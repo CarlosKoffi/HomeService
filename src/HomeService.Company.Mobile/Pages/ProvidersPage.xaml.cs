@@ -106,6 +106,18 @@ public partial class ProvidersPage : ContentPage
         await ReviewCandidateAsync(row, approve: true, note: "Profil et compétences validés depuis l’application Entreprise.");
     }
 
+    private async void OnCandidateDetailClicked(object? sender, EventArgs e)
+    {
+        if ((sender as Button)?.CommandParameter is not PendingApprovalRow row)
+        {
+            return;
+        }
+
+        var requestPart = row.RequestId.HasValue ? row.RequestId.Value.ToString("D") : string.Empty;
+        await Shell.Current.GoToAsync(
+            $"{nameof(ProviderCandidateDetailPage)}?requestId={requestPart}&providerId={row.ProviderId:D}");
+    }
+
     private async void OnRejectCandidateClicked(object? sender, EventArgs e)
     {
         if (isReviewingCandidate || (sender as Button)?.CommandParameter is not PendingApprovalRow row)

@@ -133,7 +133,40 @@ public partial class MissionDetailPage : ContentPage
 
         DeadlineCard.IsVisible = response.CanAssign && item.CompanyAssignmentExpiresAt.HasValue;
         UpdateDeadline(item.CompanyAssignmentExpiresAt);
+        RenderCancellation(item);
         RenderMap(response);
+    }
+
+    private void RenderCancellation(CompanyPortalMissionResponse item)
+    {
+        CancellationCard.IsVisible = string.Equals(item.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
+        if (!CancellationCard.IsVisible)
+        {
+            return;
+        }
+
+        CancellationTitleLabel.Text = item.CancellationActor switch
+        {
+            "Customer" => "Mission annulée par le client",
+            "Provider" => "Mission annulée par le prestataire",
+            "Company" => "Mission annulée par votre entreprise",
+            "Admin" => "Mission annulée par l’administration",
+            _ => "Mission annulée"
+        };
+        var reason = item.CancellationReason switch
+        {
+            "CustomerChangedMind" => "Le client n’a plus besoin de l’intervention.",
+            "CustomerUnavailable" => "Le client est indisponible.",
+            "CustomerAbsent" => "Le client était absent.",
+            "AccessRefused" => "L’accès au lieu d’intervention est impossible.",
+            "ProviderUnavailable" => "Le prestataire est indisponible.",
+            "ProviderNoShow" => "Le prestataire ne s’est pas présenté.",
+            "CompanyUnavailable" => "L’entreprise est indisponible.",
+            _ => "Autre motif d’annulation."
+        };
+        CancellationReasonLabel.Text = string.IsNullOrWhiteSpace(item.CancellationComment)
+            ? reason
+            : $"{reason} Détail : {item.CancellationComment}";
     }
 
     private void RenderMap(CompanyPortalMissionDetailResponse response)

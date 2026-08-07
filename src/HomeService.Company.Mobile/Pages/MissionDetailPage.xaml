@@ -56,6 +56,16 @@
                         </Grid>
                     </Border>
 
+                    <Border x:Name="CancellationCard" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FDBA74" StrokeShape="RoundRectangle 16" Padding="14">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <Image Source="icon_info.svg" WidthRequest="24" HeightRequest="24" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                <Label x:Name="CancellationTitleLabel" Text="Mission annulée" FontAttributes="Bold" TextColor="#9A3412" />
+                                <Label x:Name="CancellationReasonLabel" FontSize="13" TextColor="#9A3412" LineHeight="1.25" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
                     <Border Style="{StaticResource PremiumCard}">
                         <VerticalStackLayout Spacing="11">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">

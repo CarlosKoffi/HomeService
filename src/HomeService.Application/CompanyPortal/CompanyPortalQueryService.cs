@@ -137,12 +137,14 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 row.mission.ActualDurationMinutes,
                 null,
                 row.mission.Status == MissionStatus.Cancelled
-                    ? (row.mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
+                    ? row.mission.CancellationReason.ToString()
                     : null,
                 row.mission.PlatformCommissionAmount,
                 row.mission.CompanyAssignmentExpiresAt,
                 row.mission.ServiceLatitude,
-                row.mission.ServiceLongitude))
+                row.mission.ServiceLongitude,
+                row.mission.CancelledBy == null ? null : row.mission.CancelledBy.ToString(),
+                row.mission.CancellationComment))
             .ToListAsync(cancellationToken);
 
         return CompanyPortalMissionsResult.Ok(missions);
@@ -257,12 +259,14 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             mission.ActualDurationMinutes,
             null,
             mission.Status == MissionStatus.Cancelled
-                ? (mission.CancellationFeeAmount > 0 ? "Annulation apres confirmation client" : "Annulation sans frais")
+                ? mission.CancellationReason.ToString()
                 : null,
             mission.PlatformCommissionAmount,
             mission.CompanyAssignmentExpiresAt,
             mission.ServiceLatitude,
-            mission.ServiceLongitude);
+            mission.ServiceLongitude,
+            mission.CancelledBy?.ToString(),
+            mission.CancellationComment);
 
         return CompanyPortalMissionDetailResult.Ok(new CompanyPortalMissionDetailResponse(
             response,
@@ -499,7 +503,9 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   mission.PlatformCommissionAmount,
                                   mission.CompanyAssignmentExpiresAt,
                                   mission.ServiceLatitude,
-                                  mission.ServiceLongitude))
+                                  mission.ServiceLongitude,
+                                  null,
+                                  null))
             .ToListAsync(cancellationToken);
 
         var paidMissions = missions

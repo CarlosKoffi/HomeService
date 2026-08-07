@@ -28,8 +28,21 @@ public sealed class ClientMissionCancellationServiceTests
         Assert.Equal(MissionCancellationActor.Customer, scenario.Mission.CancelledBy);
         Assert.Equal(MissionCancellationReason.CustomerChangedMind, scenario.Mission.CancellationReason);
         Assert.Equal("Plus besoin", scenario.Mission.CancellationComment);
+        Assert.Equal(ProviderMissionAssignmentStatus.Cancelled, scenario.Assignment.Status);
+        Assert.True(scenario.Provider.IsAvailable);
         Assert.Single(await db.MissionPaymentMilestones.ToListAsync());
         Assert.Empty(await db.MissionFinancialBreakdowns.ToListAsync());
+        Assert.Contains(
+            await db.CompanyPortalNotifications.ToListAsync(),
+            notification => notification.Title == "Mission annulée par le client"
+                && notification.Message.Contains("Plus besoin", StringComparison.Ordinal));
+
+        var recipients = await db.NotificationOutboxMessages
+            .Select(notification => notification.OwnerType)
+            .ToListAsync();
+        Assert.Contains(MobileDeviceOwnerType.Customer, recipients);
+        Assert.Contains(MobileDeviceOwnerType.Company, recipients);
+        Assert.Contains(MobileDeviceOwnerType.Provider, recipients);
     }
 
     [Fact]
@@ -49,6 +62,8 @@ public sealed class ClientMissionCancellationServiceTests
         Assert.Equal(PaymentStatus.Refunded, scenario.Mission.PaymentStatus);
         Assert.Equal(2500, scenario.Mission.CancellationFeeAmount);
         Assert.Equal(17_500, scenario.Mission.RefundAmount);
+        Assert.Equal(ProviderMissionAssignmentStatus.Cancelled, scenario.Assignment.Status);
+        Assert.True(scenario.Provider.IsAvailable);
         Assert.Equal(2, await db.MissionPaymentMilestones.CountAsync());
         Assert.Equal(2, await db.MissionFinancialBreakdowns.CountAsync());
         Assert.Equal(1, await db.CompanyPortalActivities.CountAsync());
@@ -106,15 +121,23 @@ public sealed class ClientMissionCancellationServiceTests
             "Fuite sous evier",
             requiresCompanyQuote: true);
         mission.AssignWithCompanyQuote(provider.Id, company.Id, 20_000, 25_000, null);
+        var assignment = new ProviderMissionAssignment(
+            mission.Id,
+            provider.Id,
+            company.Id,
+            DateTimeOffset.UtcNow.AddMinutes(20));
+        assignment.Accept();
+        provider.SetAvailability(false, provider.CurrentLatitude, provider.CurrentLongitude);
 
         db.Services.Add(service);
         db.Customers.Add(customer);
         db.Companies.Add(company);
         db.Providers.Add(provider);
         db.Missions.Add(mission);
+        db.ProviderMissionAssignments.Add(assignment);
         await db.SaveChangesAsync();
 
-        return new CancellationScenario(customer, company, provider, mission);
+        return new CancellationScenario(customer, company, provider, mission, assignment);
     }
 
     private static async Task<CancellationScenario> SeedAcceptedAndConfirmedMissionAsync(HomeServiceDbContext db)
@@ -148,5 +171,6 @@ public sealed class ClientMissionCancellationServiceTests
         CustomerProfile Customer,
         Company Company,
         ProviderProfile Provider,
-        Mission Mission);
+        Mission Mission,
+        ProviderMissionAssignment Assignment);
 }

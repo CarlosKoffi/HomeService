@@ -50,6 +50,8 @@ public sealed class CompanyInterimCandidateService(
             .Include(request => request.Provider)
                 .ThenInclude(provider => provider!.CandidateServices)
                     .ThenInclude(candidateService => candidateService.Service)
+            .Include(request => request.Provider)
+                .ThenInclude(provider => provider!.Documents)
             .Include(request => request.Company)
             .Where(request => request.CompanyId == companyId)
             .OrderBy(request => request.Status)
@@ -60,6 +62,7 @@ public sealed class CompanyInterimCandidateService(
                 request.Provider!.FirstName,
                 request.Provider.LastName,
                 request.Provider.PhoneNumber,
+                request.Provider.Email,
                 request.Provider.DateOfBirth,
                 request.Provider.Address,
                 request.Provider.Gender.ToString(),
@@ -70,6 +73,11 @@ public sealed class CompanyInterimCandidateService(
                 request.ReviewNote,
                 request.RequestedAt,
                 request.ReviewedAt,
+                request.Provider.Documents
+                    .Where(document => document.DocumentType == ProviderDocumentType.Photo)
+                    .OrderByDescending(document => document.CreatedAt)
+                    .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                    .FirstOrDefault(),
                 request.Provider.CandidateServices
                     .Where(candidateService => candidateService.IsActive)
                     .OrderBy(candidateService => candidateService.Service!.Name)
@@ -78,6 +86,17 @@ public sealed class CompanyInterimCandidateService(
                         candidateService.Service!.Name,
                         candidateService.ExperienceLevel.ToString(),
                         candidateService.YearsOfExperience))
+                    .ToList(),
+                request.Provider.Documents
+                    .OrderBy(document => document.DocumentType)
+                    .ThenByDescending(document => document.CreatedAt)
+                    .Select(document => new CompanyEmployeeDocumentResponse(
+                        document.Id,
+                        document.DocumentType.ToString(),
+                        document.OriginalFileName,
+                        document.ContentType,
+                        $"/api/company-portal/provider-documents/{document.Id}/preview",
+                        document.CreatedAt))
                     .ToList(),
                 db.ProviderAffiliationRequests
                     .Where(otherRequest => otherRequest.ProviderId == request.ProviderId)

@@ -230,7 +230,16 @@ public sealed class ClientMissionWorkflowIntegrationTests
 
         Assert.Contains(await db.CompanyPortalActivities.ToListAsync(), activity =>
             activity.CompanyId == scenario.CompanyId
-            && activity.Title == "Mission annulee par le client");
+            && activity.Title == "Mission annulée par le client"
+            && activity.Description.Contains("Client indisponible", StringComparison.Ordinal));
+
+        var portalMission = Assert.Single((await new CompanyPortalQueryService(db).ListMissionsAsync(
+            scenario.CompanyId,
+            "past",
+            CancellationToken.None)).Missions);
+        Assert.Equal("Customer", portalMission.CancellationActor);
+        Assert.Equal("Other", portalMission.CancellationReason);
+        Assert.Equal("Client indisponible.", portalMission.CancellationComment);
     }
 
     [Fact]
