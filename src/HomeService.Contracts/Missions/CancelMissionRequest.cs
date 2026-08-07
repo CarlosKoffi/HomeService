@@ -3,7 +3,9 @@ namespace HomeService.Contracts.Missions;
 public sealed record CancelMissionRequest(
     string Reason,
     string? Comment,
-    int? CancellationFeeAmount = null);
+    int? CancellationFeeAmount = null,
+    int? RefundPercent = null,
+    bool IncludeCustomerServiceFeeInRefund = false);
 
 public sealed record CancelMissionResponse(
     Guid MissionId,

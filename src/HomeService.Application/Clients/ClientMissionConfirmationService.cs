@@ -1,6 +1,7 @@
 using System.Text.Json;
 using HomeService.Application.Abstractions;
 using HomeService.Application.CompanyPortal;
+using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
@@ -12,7 +13,8 @@ namespace HomeService.Application.Clients;
 public sealed class ClientMissionConfirmationService(
     IAppDbContext db,
     CompanyPortalNotificationWriter companyNotifications,
-    MobilePushNotificationQueueService mobilePushNotifications)
+    MobilePushNotificationQueueService mobilePushNotifications,
+    MissionCommercialPricingService? commercialPricing = null)
 {
     public async Task<ClientMissionConfirmationResult> ConfirmAsync(
         Guid missionId,
@@ -90,7 +92,7 @@ public sealed class ClientMissionConfirmationService(
             await db.SaveChangesAsync(cancellationToken);
         }
 
-        return ClientMissionConfirmationResult.Ok(ToResponse(mission, company, provider, totalAmount.Value));
+        return ClientMissionConfirmationResult.Ok(ToResponse(mission, company, provider));
     }
 
     public async Task<int> AutoConfirmExpiredAsync(
@@ -155,20 +157,25 @@ public sealed class ClientMissionConfirmationService(
         bool automatic,
         CancellationToken cancellationToken)
     {
-        var commissionRule = await ResolvePlatformCommissionRuleAsync(mission, cancellationToken);
-        var platformCommissionAmount = commissionRule.CalculateAmount(totalAmount);
+        var pricing = await (commercialPricing ?? new MissionCommercialPricingService(db))
+            .CalculateAsync(mission, totalAmount, cancellationToken);
         mission.AcceptCompanyQuote();
         mission.ConfirmByCustomer(
-            platformCommissionAmount,
+            pricing.CompanyCommissionAmount,
             mission.TransportFeeAmount,
-            commissionRule.RateBasisPoints,
-            0);
+            pricing.CompanyCommissionRateBasisPoints,
+            0,
+            pricing.CustomerServiceFeeAmount,
+            pricing.CustomerServiceFeeRateBasisPoints,
+            pricing.CustomerTotalAmount,
+            pricing.CommissionableAmount,
+            pricing.IsFirstCustomerCompanyOrder);
 
         var milestone = new MissionPaymentMilestone(
             mission.Id,
             MissionPaymentMilestoneTrigger.QuoteAccepted,
-            totalAmount,
-            commissionRule.Currency,
+            pricing.CustomerTotalAmount,
+            pricing.Currency,
             automatic
                 ? "Paiement client confirme automatiquement a expiration du delai"
                 : "Paiement client bloque a l'acceptation du devis",
@@ -248,41 +255,17 @@ public sealed class ClientMissionConfirmationService(
             saveChanges: false);
     }
 
-    private async Task<CommissionRule> ResolvePlatformCommissionRuleAsync(Mission mission, CancellationToken cancellationToken)
-    {
-        var now = DateTimeOffset.UtcNow;
-        var rules = await db.CommissionRules
-            .AsNoTracking()
-            .Where(rule => rule.IsActive
-                && rule.Target == CommissionRuleTarget.PlatformConnection
-                && rule.EffectiveFrom <= now
-                && (rule.EffectiveUntil == null || rule.EffectiveUntil > now)
-                && (rule.CompanyId == null || rule.CompanyId == mission.CompanyId)
-                && (rule.ServiceId == null || rule.ServiceId == mission.ServiceId)
-                && (rule.ServicePrestationId == null || rule.ServicePrestationId == mission.ServicePrestationId)
-                && (rule.AssignmentSource == null || rule.AssignmentSource == mission.AssignmentSource))
-            .ToListAsync(cancellationToken);
-
-        return rules
-            .OrderByDescending(rule => rule.CompanyId.HasValue)
-            .ThenByDescending(rule => rule.ServicePrestationId.HasValue)
-            .ThenByDescending(rule => rule.ServiceId.HasValue)
-            .ThenByDescending(rule => rule.AssignmentSource.HasValue)
-            .ThenByDescending(rule => rule.EffectiveFrom)
-            .FirstOrDefault()
-            ?? new CommissionRule("Commission mise en relation wélé", CommissionRuleTarget.PlatformConnection, 1500, 0, "XOF");
-    }
-
-    private static ConfirmClientMissionResponse ToResponse(Mission mission, Company company, ProviderProfile provider, int totalAmount)
+    private static ConfirmClientMissionResponse ToResponse(Mission mission, Company company, ProviderProfile provider)
     {
         return new ConfirmClientMissionResponse(
             mission.Id,
             mission.MissionNumber,
             mission.Status.ToString(),
             mission.PaymentStatus.ToString(),
-            totalAmount,
-            mission.PlatformCommissionAmount,
-            mission.CompanyPayoutAmount,
+            mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? mission.FinalTotalAmount ?? 0,
+            mission.CustomerServiceFeeAmount,
+            mission.CustomerServiceFeeRateBasisPoints,
+            mission.CustomerChargedAmount,
             mission.Currency,
             mission.CanRevealContactDetails,
             mission.ContactDetailsReleasedAt,

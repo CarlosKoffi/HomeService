@@ -19,13 +19,15 @@ public sealed class Mission : AuditableEntity
         Guid? servicePrestationId = null,
         string? description = null,
         bool requiresCompanyQuote = false,
-        Guid? serviceOptionId = null)
+        Guid? serviceOptionId = null,
+        Guid? preferredCompanyId = null)
     {
         CustomerId = customerId;
         ServiceId = serviceId;
         MissionNumber = GenerateMissionNumber();
         ServicePrestationId = servicePrestationId;
         ServiceOptionId = serviceOptionId;
+        PreferredCompanyId = preferredCompanyId;
         Mode = mode;
         PaymentMethod = paymentMethod;
         ScheduledFor = scheduledFor;
@@ -44,6 +46,7 @@ public sealed class Mission : AuditableEntity
     public ServiceOption? ServiceOption { get; private set; }
     public Guid? ProviderId { get; private set; }
     public Guid? CompanyId { get; private set; }
+    public Guid? PreferredCompanyId { get; private set; }
     public MissionMode Mode { get; private set; }
     public MissionStatus Status { get; private set; } = MissionStatus.Created;
     public string? Description { get; private set; }
@@ -67,6 +70,11 @@ public sealed class Mission : AuditableEntity
     public DateTimeOffset? CustomerQuoteAcceptedAt { get; private set; }
     public int PlatformCommissionAmount { get; private set; }
     public int PlatformCommissionRateBasisPoints { get; private set; }
+    public int CustomerServiceFeeAmount { get; private set; }
+    public int CustomerServiceFeeRateBasisPoints { get; private set; }
+    public int CustomerTotalAmount { get; private set; }
+    public int CommissionableAmount { get; private set; }
+    public bool IsFirstCustomerCompanyOrder { get; private set; }
     public int KazaAssignmentCommissionRateBasisPoints { get; private set; }
     public int CompanyPayoutAmount { get; private set; }
     public int TransportFeeAmount { get; private set; }
@@ -97,6 +105,9 @@ public sealed class Mission : AuditableEntity
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
     public bool IsInitialPaymentConfirmed => CustomerConfirmedAt is not null
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
+    public int CustomerChargedAmount => CustomerTotalAmount > 0
+        ? CustomerTotalAmount
+        : CompanyQuotedAmount ?? EstimatedTotalAmount ?? FinalTotalAmount ?? 0;
 
     public void SelectCustomerPaymentMethod(CustomerPaymentMethod paymentMethod)
     {
@@ -135,6 +146,12 @@ public sealed class Mission : AuditableEntity
         }
 
         Status = MissionStatus.SearchingProvider;
+        Touch();
+    }
+
+    public void BroadenCompanySearch()
+    {
+        PreferredCompanyId = null;
         Touch();
     }
 
@@ -360,7 +377,12 @@ public sealed class Mission : AuditableEntity
         int platformCommissionAmount,
         int transportFeeAmount,
         int platformCommissionRateBasisPoints = 0,
-        int kazaAssignmentCommissionRateBasisPoints = 0)
+        int kazaAssignmentCommissionRateBasisPoints = 0,
+        int customerServiceFeeAmount = 0,
+        int customerServiceFeeRateBasisPoints = 0,
+        int? customerTotalAmount = null,
+        int? commissionableAmount = null,
+        bool isFirstCustomerCompanyOrder = false)
     {
         if (Status != MissionStatus.Accepted)
         {
@@ -369,9 +391,15 @@ public sealed class Mission : AuditableEntity
 
         PlatformCommissionAmount = Math.Max(0, platformCommissionAmount);
         PlatformCommissionRateBasisPoints = Math.Clamp(platformCommissionRateBasisPoints, 0, 10000);
+        CustomerServiceFeeAmount = Math.Max(0, customerServiceFeeAmount);
+        CustomerServiceFeeRateBasisPoints = Math.Clamp(customerServiceFeeRateBasisPoints, 0, 10000);
+        var quotedAmount = CompanyQuotedAmount ?? EstimatedTotalAmount ?? FinalTotalAmount ?? 0;
+        CustomerTotalAmount = Math.Max(0, customerTotalAmount ?? quotedAmount + CustomerServiceFeeAmount);
+        CommissionableAmount = Math.Max(0, commissionableAmount ?? quotedAmount - PartsEstimateAmount.GetValueOrDefault());
+        IsFirstCustomerCompanyOrder = isFirstCustomerCompanyOrder;
         KazaAssignmentCommissionRateBasisPoints = Math.Clamp(kazaAssignmentCommissionRateBasisPoints, 0, 10000);
         TransportFeeAmount = Math.Max(0, transportFeeAmount);
-        CompanyPayoutAmount = Math.Max(0, (CompanyQuotedAmount ?? EstimatedTotalAmount ?? FinalTotalAmount ?? 0) - PlatformCommissionAmount);
+        CompanyPayoutAmount = Math.Max(0, quotedAmount - PlatformCommissionAmount);
         PaymentStatus = PaymentStatus.Authorized;
         CustomerConfirmedAt = DateTimeOffset.UtcNow;
         CustomerPaymentExpiresAt = null;
@@ -407,9 +435,13 @@ public sealed class Mission : AuditableEntity
         CancelledBy = cancelledBy;
         CancellationReason = reason;
         CancellationComment = Clean(comment);
-        if (PaymentStatus == PaymentStatus.Authorized)
+        if (RefundAmount > 0 && PaymentStatus is (PaymentStatus.Authorized or PaymentStatus.Paid))
         {
-            PaymentStatus = RefundAmount > 0 ? PaymentStatus.Refunded : PaymentStatus.Failed;
+            PaymentStatus = PaymentStatus.Refunded;
+        }
+        else if (PaymentStatus == PaymentStatus.Authorized)
+        {
+            PaymentStatus = PaymentStatus.Failed;
         }
 
         Status = MissionStatus.Cancelled;

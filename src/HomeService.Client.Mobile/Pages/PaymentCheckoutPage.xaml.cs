@@ -67,18 +67,22 @@ public partial class PaymentCheckoutPage : ContentPage
         }
 
         currentMethodId = mission.CustomerPaymentMethodId;
-        var amount = mission.Actions.AmountToPayNow
-            ?? mission.CompanyQuotedAmount
-            ?? mission.FinalTotalAmount
-            ?? mission.EstimatedTotalAmount
-            ?? 0;
+        var amount = mission.CustomerTotalAmount > 0
+            ? mission.CustomerTotalAmount
+            : mission.Actions.AmountToPayNow
+                ?? mission.CompanyQuotedAmount
+                ?? mission.FinalTotalAmount
+                ?? mission.EstimatedTotalAmount
+                ?? 0;
         ServiceLabel.Text = string.Join(
             " · ",
             new[] { mission.ServiceName, mission.PrestationName, mission.OptionName }
                 .Where(value => !string.IsNullOrWhiteSpace(value)));
-        ServiceAmountLabel.Text = $"{Math.Max(0, amount - mission.PartsEstimateAmount.GetValueOrDefault()):N0} {mission.Currency}";
+        ServiceAmountLabel.Text = $"{mission.ServiceAmount:N0} {mission.Currency}";
         PartsRow.IsVisible = mission.PartsEstimateAmount is > 0;
         PartsAmountLabel.Text = $"{mission.PartsEstimateAmount.GetValueOrDefault():N0} {mission.Currency}";
+        ServiceFeeLabel.Text = $"Frais de mise en relation Wélé ({mission.CustomerServiceFeeRateBasisPoints / 100m:0.##} %)";
+        ServiceFeeAmountLabel.Text = $"{mission.CustomerServiceFeeAmount:N0} {mission.Currency}";
         TotalLabel.Text = $"{amount:N0} {mission.Currency}";
         PayButton.Text = $"Payer {amount:N0} {mission.Currency}";
 

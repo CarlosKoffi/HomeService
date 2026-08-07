@@ -583,6 +583,9 @@ public sealed class AdminQueryService(IAppDbContext db)
                 item.CompanyQuotedAt,
                 item.CustomerQuoteAcceptedAt,
                 item.PartsEstimateAmount,
+                item.CustomerServiceFeeAmount,
+                item.CustomerServiceFeeRateBasisPoints,
+                item.CustomerTotalAmount,
                 item.PlatformCommissionAmount,
                 item.CompanyPayoutAmount,
                 item.TransportFeeAmount,
@@ -712,6 +715,7 @@ public sealed class AdminQueryService(IAppDbContext db)
         var financialLines = BuildAdminMissionFinancialLines(
             mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0,
             mission.PartsEstimateAmount,
+            mission.CustomerServiceFeeAmount,
             mission.PlatformCommissionAmount,
             mission.CompanyPayoutAmount,
             mission.TransportFeeAmount,
@@ -744,6 +748,9 @@ public sealed class AdminQueryService(IAppDbContext db)
             mission.CompanyQuotedAt,
             mission.CustomerQuoteAcceptedAt,
             mission.PartsEstimateAmount,
+            mission.CustomerServiceFeeAmount,
+            mission.CustomerServiceFeeRateBasisPoints,
+            mission.CustomerTotalAmount,
             mission.PlatformCommissionAmount,
             mission.CompanyPayoutAmount,
             mission.TransportFeeAmount,
@@ -776,6 +783,7 @@ public sealed class AdminQueryService(IAppDbContext db)
     private static IReadOnlyList<AdminMissionFinancialLineResponse> BuildAdminMissionFinancialLines(
         int clientPriceAmount,
         int? partsEstimateAmount,
+        int customerServiceFeeAmount,
         int platformCommissionAmount,
         int companyPayoutAmount,
         int transportFeeAmount,
@@ -804,6 +812,16 @@ public sealed class AdminQueryService(IAppDbContext db)
                 partsEstimateAmount.Value,
                 currency,
                 20));
+        }
+
+        if (customerServiceFeeAmount > 0)
+        {
+            lines.Add(new AdminMissionFinancialLineResponse(
+                MissionFinancialLineType.CustomerServiceFee.ToString(),
+                "Frais de mise en relation client",
+                customerServiceFeeAmount,
+                currency,
+                25));
         }
 
         if (transportFeeAmount > 0)

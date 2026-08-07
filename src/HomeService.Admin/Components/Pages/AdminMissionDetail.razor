@@ -53,7 +53,7 @@ else
     <section class="admin-metric-grid compact">
         <article>
             <span>Prix client</span>
-            <strong>@FormatMoney(Mission.CompanyQuotedAmount ?? Mission.EstimatedTotalAmount ?? Mission.FinalTotalAmount, Mission.Currency)</strong>
+            <strong>@FormatMoney(CustomerChargedAmount, Mission.Currency)</strong>
         </article>
         <article>
             <span>Paiement</span>
@@ -134,6 +134,8 @@ else
                     <div><dt>Mode</dt><dd>@TranslatePaymentMethod(Mission.PaymentMethod)</dd></div>
                     <div><dt>Statut</dt><dd>@TranslatePaymentStatus(Mission.PaymentStatus)</dd></div>
                     <div><dt>Devis entreprise</dt><dd>@FormatMoney(Mission.CompanyQuotedAmount, Mission.Currency)</dd></div>
+                    <div><dt>Frais de mise en relation</dt><dd>@FormatMoney(Mission.CustomerServiceFeeAmount, Mission.Currency)</dd></div>
+                    <div><dt>Total paye par le client</dt><dd>@FormatMoney(CustomerChargedAmount, Mission.Currency)</dd></div>
                     <div><dt>Justification</dt><dd>@(Mission.CompanyQuoteJustification ?? "Aucune")</dd></div>
                     <div><dt>Transport</dt><dd>@FormatMoney(Mission.TransportFeeAmount, Mission.Currency)</dd></div>
                     <div><dt>Annulation</dt><dd>@FormatMoney(Mission.CancellationFeeAmount, Mission.Currency)</dd></div>
@@ -196,6 +198,18 @@ else
                                 Frais retenus au client
                                 <input type="number" min="0" step="100" @bind="CancellationFeeAmount" placeholder="0" />
                             </label>
+                            <label>
+                                Pourcentage rembourse
+                                <input type="number" min="0" max="100" step="1" @bind="CancellationRefundPercent" placeholder="100" />
+                            </label>
+                            <label class="inline-check">
+                                <input type="checkbox" @bind="IncludeCustomerServiceFeeInCancellationRefund" />
+                                Inclure les frais de mise en relation dans ce remboursement exceptionnel
+                            </label>
+                            <p class="mission-dispute-hint">
+                                Remboursement prepare : @FormatMoney(CancellationRefundPreviewAmount, Mission.Currency).
+                                La decision est propre a ce dossier.
+                            </p>
                             <button type="button" class="danger-action" @onclick="CancelMissionAsync" disabled="@IsActionBusy">Annuler la mission</button>
                         </div>
                     }
@@ -221,7 +235,7 @@ else
                             <div>
                                 <span>Base de calcul</span>
                                 <strong>@FormatMoney(RefundReferenceAmount, Mission.Currency)</strong>
-                                <small>Prix final, devis entreprise ou estimation client.</small>
+                                <small>Montant mission, avec les frais client uniquement si l'admin les inclut.</small>
                             </div>
                             <div>
                                 <span>Remboursement prepare</span>
@@ -241,6 +255,10 @@ else
                         </label>
                         @if (RequiresRefundInput)
                         {
+                            <label class="inline-check">
+                                <input type="checkbox" @bind="IncludeCustomerServiceFeeInDisputeRefund" />
+                                Inclure les frais de mise en relation dans ce remboursement exceptionnel
+                            </label>
                             <div class="mission-refund-actions">
                                 <button type="button" class="light-action" @onclick="PrepareFullRefund" disabled="@IsActionBusy">
                                     Rembourser 100%
@@ -319,7 +337,11 @@ else
             <div class="mission-finance-summary">
                 <article>
                     <span>Prix client</span>
-                    <strong>@FormatMoney(Mission.CompanyQuotedAmount ?? Mission.FinalTotalAmount ?? Mission.EstimatedTotalAmount, Mission.Currency)</strong>
+                    <strong>@FormatMoney(CustomerChargedAmount, Mission.Currency)</strong>
+                </article>
+                <article>
+                    <span>Frais de mise en relation</span>
+                    <strong>@FormatMoney(Mission.CustomerServiceFeeAmount, Mission.Currency)</strong>
                 </article>
                 <article>
                     <span>Commission wélé</span>
@@ -458,17 +480,35 @@ else
     private string? DisputeNote { get; set; }
     private string? CancellationNote { get; set; }
     private int? CancellationFeeAmount { get; set; }
+    private int? CancellationRefundPercent { get; set; } = 100;
+    private bool IncludeCustomerServiceFeeInCancellationRefund { get; set; }
     private string? ResolutionNote { get; set; }
     private string ResolutionType { get; set; } = "PartialRefund";
     private int? RefundPercent { get; set; }
     private int? RefundAmount { get; set; }
+    private bool IncludeCustomerServiceFeeInDisputeRefund { get; set; }
     private string SelectedTab { get; set; } = "summary";
     private bool DispatchAsUrgent { get; set; }
     private bool RequiresRefundInput => ResolutionType is "PartialRefund" or "RefundCustomer";
-    private int RefundReferenceAmount => Mission?.FinalTotalAmount ?? Mission?.CompanyQuotedAmount ?? Mission?.EstimatedTotalAmount ?? 0;
+    private int MissionRefundBaseAmount => Mission?.FinalTotalAmount ?? Mission?.CompanyQuotedAmount ?? Mission?.EstimatedTotalAmount ?? 0;
+    private int CustomerChargedAmount => Mission is null
+        ? 0
+        : Mission.CustomerTotalAmount > 0
+            ? Mission.CustomerTotalAmount
+            : MissionRefundBaseAmount + Mission.CustomerServiceFeeAmount;
+    private int RefundReferenceAmount => MissionRefundBaseAmount
+        + (IncludeCustomerServiceFeeInDisputeRefund ? Mission?.CustomerServiceFeeAmount ?? 0 : 0);
     private int PreviewRefundAmount => RefundAmount ?? (RefundPercent.HasValue
         ? (int)Math.Round(RefundReferenceAmount * RefundPercent.Value / 100m, MidpointRounding.AwayFromZero)
         : ResolutionType == "RefundCustomer" ? RefundReferenceAmount : 0);
+    private int CancellationRefundReferenceAmount => MissionRefundBaseAmount
+        + (IncludeCustomerServiceFeeInCancellationRefund ? Mission?.CustomerServiceFeeAmount ?? 0 : 0);
+    private int CancellationRefundPreviewAmount => Math.Max(
+        0,
+        (int)Math.Round(
+            CancellationRefundReferenceAmount * (CancellationRefundPercent ?? 100) / 100m,
+            MidpointRounding.AwayFromZero)
+        - (CancellationFeeAmount ?? 0));
 
     protected override async Task OnParametersSetAsync()
     {
@@ -590,11 +630,18 @@ else
 
         try
         {
-            Mission = await ApiClient.ResolveAdminMissionDisputeAsync(Mission.Id, ResolutionType, ResolutionNote ?? string.Empty, RefundPercent, RefundAmount);
+            Mission = await ApiClient.ResolveAdminMissionDisputeAsync(
+                Mission.Id,
+                ResolutionType,
+                ResolutionNote ?? string.Empty,
+                RefundPercent,
+                RefundAmount,
+                IncludeCustomerServiceFeeInDisputeRefund);
             Message = "Litige cloture.";
             ResolutionNote = null;
             RefundPercent = null;
             RefundAmount = null;
+            IncludeCustomerServiceFeeInDisputeRefund = false;
             await LoadAsync();
         }
         catch (Exception exception)
@@ -620,6 +667,12 @@ else
             return;
         }
 
+        if (CancellationRefundPercent is < 0 or > 100)
+        {
+            ErrorMessage = "Le pourcentage de remboursement doit etre compris entre 0 et 100.";
+            return;
+        }
+
         IsActionBusy = true;
         ErrorMessage = null;
         Message = null;
@@ -630,11 +683,15 @@ else
                 Mission.Id,
                 CancellationReason,
                 CancellationNote,
-                CancellationFeeAmount);
+                CancellationFeeAmount,
+                CancellationRefundPercent,
+                IncludeCustomerServiceFeeInCancellationRefund);
             Message = "Mission annulee par l'administration.";
             CancellationReason = "Other";
             CancellationNote = null;
             CancellationFeeAmount = null;
+            CancellationRefundPercent = 100;
+            IncludeCustomerServiceFeeInCancellationRefund = false;
             await LoadAsync();
         }
         catch (Exception exception)
@@ -677,6 +734,7 @@ else
     {
         RefundPercent = null;
         RefundAmount = null;
+        IncludeCustomerServiceFeeInDisputeRefund = false;
         ErrorMessage = null;
     }
 
@@ -893,6 +951,7 @@ else
     {
         "ServicePrice" => "Prix",
         "PartsEstimate" => "Pieces",
+        "CustomerServiceFee" => "Frais client",
         "PlatformCommission" => "Commission",
         "CompanyPayout" => "Reversement",
         "CancellationFee" => "Annulation",

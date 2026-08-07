@@ -1,5 +1,6 @@
 using HomeService.Application.Clients;
 using HomeService.Application.Missions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -60,6 +61,53 @@ public sealed class ClientMissionRequestServiceTests
         Assert.Equal(3, await db.MissionDispatchOffers.CountAsync());
         Assert.Equal(1, await db.Customers.CountAsync());
         Assert.Empty(db.MissionAttachments);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenPreferredCompanyIsUnavailable_NotifiesAndBroadensSearch()
+    {
+        await using var db = CreateDbContext();
+        var service = new Service("Jardinage", "Entretien exterieur", createdByCompanyId: null);
+        var preferredCompany = new Company("Entreprise habituelle", "+2250700000001", "habituelle@wele.ci");
+        preferredCompany.Approve();
+        var fallbackCompany = new Company("Entreprise disponible", "+2250700000002", "disponible@wele.ci");
+        fallbackCompany.Approve();
+        var fallbackProvider = new ProviderProfile(
+            fallbackCompany.Id,
+            "Awa",
+            "Kone",
+            "+2250102030405",
+            "awa@wele.ci",
+            new DateOnly(1995, 1, 10),
+            "Cocody",
+            ProviderGender.Female,
+            ProviderEmploymentType.CompanyEmployee,
+            4,
+            null,
+            null,
+            5);
+        fallbackProvider.Approve();
+        fallbackProvider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 4, ProviderServicePriceTier.Normal)]);
+        db.AddRange(service, preferredCompany, fallbackCompany, fallbackProvider);
+        await db.SaveChangesAsync();
+        var dispatch = new MissionDispatchService(
+            db,
+            new MissionDispatchScoringService(),
+            new MobilePushNotificationQueueService(db));
+        var sut = new ClientMissionRequestService(db, dispatch);
+
+        var result = await sut.CreateAsync(
+            ValidRequest(service.Id) with { PreferredCompanyId = preferredCompany.Id },
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains("habituelle", result.Response!.Message, StringComparison.OrdinalIgnoreCase);
+        var mission = await db.Missions.SingleAsync();
+        Assert.Null(mission.PreferredCompanyId);
+        Assert.Equal(fallbackCompany.Id, (await db.MissionDispatchOffers.SingleAsync()).CompanyId);
+        var notification = await db.NotificationOutboxMessages.SingleAsync(item =>
+            item.OwnerType == MobileDeviceOwnerType.Customer);
+        Assert.Contains("preferred_company_unavailable", notification.MetadataJson);
     }
 
     [Fact]

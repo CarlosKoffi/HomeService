@@ -297,30 +297,48 @@ public static class DatabaseInitializer
     private static async Task EnsureDefaultCommissionRulesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         await db.Database.ExecuteSqlRawAsync("""
-            UPDATE "CommissionRules"
-            SET "Name" = 'Commission mise en relation wélé',
-                "RateBasisPoints" = 1500,
-                "FixedAmount" = 0,
-                "Currency" = 'XOF',
-                "IsActive" = true,
-                "EffectiveUntil" = NULL,
-                "UpdatedAt" = now()
-            WHERE "Target" = 'PlatformConnection'
-              AND "ServiceId" IS NULL
-              AND "ServicePrestationId" IS NULL
-              AND "CompanyId" IS NULL
-              AND "AssignmentSource" IS NULL;
+            INSERT INTO "CommissionRules"
+                ("Id", "Name", "Target", "ServiceId", "ServicePrestationId", "CompanyId", "AssignmentSource",
+                 "RateBasisPoints", "FixedAmount", "Currency", "EffectiveFrom", "EffectiveUntil", "IsActive",
+                 "CreatedAt", "UpdatedAt")
+            SELECT gen_random_uuid(), 'Commission entreprise - premiere commande client', 'CompanyFirstCustomerOrder',
+                   NULL, NULL, NULL, NULL, 1200, 0, 'XOF', now(), NULL, true, now(), now()
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM "CommissionRules"
+                WHERE "Target" = 'CompanyFirstCustomerOrder'
+                  AND "ServiceId" IS NULL
+                  AND "ServicePrestationId" IS NULL
+                  AND "CompanyId" IS NULL
+                  AND "AssignmentSource" IS NULL
+            );
 
             INSERT INTO "CommissionRules"
                 ("Id", "Name", "Target", "ServiceId", "ServicePrestationId", "CompanyId", "AssignmentSource",
                  "RateBasisPoints", "FixedAmount", "Currency", "EffectiveFrom", "EffectiveUntil", "IsActive",
                  "CreatedAt", "UpdatedAt")
-            SELECT gen_random_uuid(), 'Commission mise en relation wélé', 'PlatformConnection',
-                   NULL, NULL, NULL, NULL, 1500, 0, 'XOF', now(), NULL, true, now(), now()
+            SELECT gen_random_uuid(), 'Commission entreprise - commande recurrente', 'CompanyRepeatCustomerOrder',
+                   NULL, NULL, NULL, NULL, 900, 0, 'XOF', now(), NULL, true, now(), now()
             WHERE NOT EXISTS (
                 SELECT 1
                 FROM "CommissionRules"
-                WHERE "Target" = 'PlatformConnection'
+                WHERE "Target" = 'CompanyRepeatCustomerOrder'
+                  AND "ServiceId" IS NULL
+                  AND "ServicePrestationId" IS NULL
+                  AND "CompanyId" IS NULL
+                  AND "AssignmentSource" IS NULL
+            );
+
+            INSERT INTO "CommissionRules"
+                ("Id", "Name", "Target", "ServiceId", "ServicePrestationId", "CompanyId", "AssignmentSource",
+                 "RateBasisPoints", "FixedAmount", "Currency", "EffectiveFrom", "EffectiveUntil", "IsActive",
+                 "CreatedAt", "UpdatedAt")
+            SELECT gen_random_uuid(), 'Frais de service client', 'CustomerServiceFee',
+                   NULL, NULL, NULL, NULL, 400, 0, 'XOF', now(), NULL, true, now(), now()
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM "CommissionRules"
+                WHERE "Target" = 'CustomerServiceFee'
                   AND "ServiceId" IS NULL
                   AND "ServicePrestationId" IS NULL
                   AND "CompanyId" IS NULL

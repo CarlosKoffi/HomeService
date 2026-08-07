@@ -1,11 +1,14 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Missions;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Clients;
 
-public sealed class ClientMissionStatusService(IAppDbContext db)
+public sealed class ClientMissionStatusService(
+    IAppDbContext db,
+    MissionCommercialPricingService? commercialPricing = null)
 {
     public async Task<ClientMissionStatusResult> GetAsync(
         Guid missionId,
@@ -144,6 +147,22 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             .ToList();
 
         var priceRange = ResolvePriceRange(service, prestation, option);
+        var quotedAmount = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0;
+        var pricing = quotedAmount > 0 && mission.CompanyId.HasValue
+            ? await (commercialPricing ?? new MissionCommercialPricingService(db))
+                .CalculateAsync(mission, quotedAmount, cancellationToken)
+            : new MissionCommercialPricing(
+                quotedAmount,
+                Math.Clamp(mission.PartsEstimateAmount.GetValueOrDefault(), 0, quotedAmount),
+                Math.Max(0, quotedAmount - mission.PartsEstimateAmount.GetValueOrDefault()),
+                0,
+                0,
+                0,
+                0,
+                quotedAmount,
+                quotedAmount,
+                true,
+                mission.Currency);
         var response = new ClientMissionStatusResponse(
             mission.Id,
             mission.MissionNumber,
@@ -175,8 +194,10 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             mission.PartsEstimateAmount,
             mission.PartsDescription,
             mission.FinalTotalAmount,
-            mission.PlatformCommissionAmount,
-            mission.CompanyPayoutAmount,
+            pricing.ServiceAmount,
+            pricing.CustomerServiceFeeAmount,
+            pricing.CustomerServiceFeeRateBasisPoints,
+            pricing.CustomerTotalAmount,
             mission.TransportFeeAmount,
             mission.Currency,
             mission.RequiresCompanyQuote,
@@ -203,7 +224,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             offers,
             additionalQuotes,
             photos,
-            BuildActions(mission),
+            BuildActions(mission, pricing.CustomerTotalAmount),
             BuildMessage(mission));
 
         return ClientMissionStatusResult.Ok(response);
@@ -232,7 +253,9 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
         return new ClientMissionStatusPriceRange(0, 0);
     }
 
-    private static ClientMissionAvailableActionsResponse BuildActions(Domain.Entities.Mission mission)
+    private static ClientMissionAvailableActionsResponse BuildActions(
+        Domain.Entities.Mission mission,
+        int customerTotalAmount)
     {
         var paymentActionIsAvailable = mission.Status == MissionStatus.Accepted
             && mission.QuoteStatus == MissionQuoteStatus.Submitted
@@ -258,7 +281,7 @@ public sealed class ClientMissionStatusService(IAppDbContext db)
             canRateMission,
             canOpenDispute,
             paymentActionIsAvailable && !mission.CustomerPaymentMethodId.HasValue,
-            canAcceptQuote ? mission.CompanyQuotedAmount : null,
+            canAcceptQuote ? customerTotalAmount : null,
             BuildPrimaryAction(canAcceptQuote, canValidateCompletion, canCall, canCancel));
     }
 

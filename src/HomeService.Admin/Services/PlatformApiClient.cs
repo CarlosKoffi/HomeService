@@ -253,12 +253,18 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         string note,
         int? refundPercent,
         int? refundAmount,
+        bool includeCustomerServiceFeeInRefund = false,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<AdminMissionDetailResponse>(
             $"/api/admin/missions/{missionId}/resolve-dispute",
-            new ResolveMissionDisputeRequest(resolution, note, refundPercent, refundAmount),
+            new ResolveMissionDisputeRequest(
+                resolution,
+                note,
+                refundPercent,
+                refundAmount,
+                includeCustomerServiceFeeInRefund),
             cancellationToken);
     }
 
@@ -267,12 +273,19 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         string reason,
         string note,
         int? cancellationFeeAmount,
+        int? refundPercent = null,
+        bool includeCustomerServiceFeeInRefund = false,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
         return await PostJsonAsync<AdminMissionDetailResponse>(
             $"/api/admin/missions/{missionId}/cancel",
-            new CancelMissionRequest(reason, note, cancellationFeeAmount),
+            new CancelMissionRequest(
+                reason,
+                note,
+                cancellationFeeAmount,
+                refundPercent,
+                includeCustomerServiceFeeInRefund),
             cancellationToken);
     }
 

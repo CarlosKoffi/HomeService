@@ -344,6 +344,18 @@
                                    FontSize="10"
                                    TextColor="#687386" />
                         </VerticalStackLayout>
+                        <Border x:Name="ReorderCompanyPanel"
+                                IsVisible="False"
+                                Stroke="{StaticResource PremiumLine}"
+                                BackgroundColor="White"
+                                StrokeShape="RoundRectangle 14"
+                                Padding="13,11">
+                            <VerticalStackLayout Spacing="3">
+                                <Label Text="Entreprise choisie" FontSize="10" TextColor="#687386" />
+                                <Label x:Name="ReorderCompanyLabel" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                <Label Text="Cette demande sera envoyée uniquement à cette entreprise." FontSize="10" TextColor="#687386" />
+                            </VerticalStackLayout>
+                        </Border>
                         <Grid ColumnDefinitions="*,Auto">
                             <VerticalStackLayout Spacing="4">
                                 <Label Text="Adresse" FontSize="11" TextColor="#687386" />

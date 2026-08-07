@@ -102,8 +102,11 @@ public sealed class ClientMissionWorkflowIntegrationTests
             CancellationToken.None);
         Assert.True(confirmation.IsSuccess);
         Assert.NotNull(confirmation.Response);
-        Assert.Equal(1800, confirmation.Response.PlatformCommissionAmount);
-        Assert.Equal(10200, confirmation.Response.CompanyPayoutAmount);
+        Assert.Equal(12_000, confirmation.Response.ServiceAndPartsAmount);
+        Assert.Equal(480, confirmation.Response.CustomerServiceFeeAmount);
+        Assert.Equal(12_480, confirmation.Response.TotalAmount);
+        Assert.Equal(1800, assignment.Mission!.PlatformCommissionAmount);
+        Assert.Equal(10200, assignment.Mission.CompanyPayoutAmount);
         Assert.True(confirmation.Response.ContactDetailsReleased);
 
         Assert.Contains(await db.CompanyPortalNotifications.ToListAsync(), notification =>

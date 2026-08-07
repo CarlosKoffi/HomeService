@@ -12,6 +12,8 @@ namespace HomeService.Client.Mobile.Pages;
 [QueryProperty(nameof(PrestationId), "prestationId")]
 [QueryProperty(nameof(OptionId), "optionId")]
 [QueryProperty(nameof(Name), "name")]
+[QueryProperty(nameof(PreferredCompanyId), "preferredCompanyId")]
+[QueryProperty(nameof(PreferredCompanyName), "preferredCompanyName")]
 public partial class CreateRequestPage : ContentPage
 {
     private readonly ClientMobileApiClient apiClient;
@@ -68,6 +70,10 @@ public partial class CreateRequestPage : ContentPage
 
     public string? Name { get; set; }
 
+    public string? PreferredCompanyId { get; set; }
+
+    public string? PreferredCompanyName { get; set; }
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
@@ -98,6 +104,8 @@ public partial class CreateRequestPage : ContentPage
 
         await LoadAddressesAsync();
         await LoadServiceCatalogAsync();
+        ReorderCompanyPanel.IsVisible = Guid.TryParse(PreferredCompanyId, out _);
+        ReorderCompanyLabel.Text = Uri.UnescapeDataString(PreferredCompanyName ?? "Entreprise choisie");
         if (Guid.TryParse(ServiceId, out _))
         {
             await LoadPreparationAsync(
@@ -827,7 +835,10 @@ public partial class CreateRequestPage : ContentPage
             RequiresCompanyQuote: true,
             IsUrgent: IsUrgentRequested(),
             Photos: photoRequests,
-            ServiceOptionId: optionId);
+            ServiceOptionId: optionId,
+            PreferredCompanyId: Guid.TryParse(PreferredCompanyId, out var preferredCompanyId)
+                ? preferredCompanyId
+                : null);
 
         var result = await apiClient.CreateMissionAsync(request);
         if (!result.IsSuccess || result.Response is null)

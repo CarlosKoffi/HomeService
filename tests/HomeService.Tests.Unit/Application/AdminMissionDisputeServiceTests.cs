@@ -99,6 +99,31 @@ public sealed class AdminMissionDisputeServiceTests
     }
 
     [Fact]
+    public async Task ResolveAsync_WhenAdminIncludesCustomerFee_UsesItInPercentageBase()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedMissionAsync(db);
+        var sut = CreateService(db);
+        await sut.OpenAsync(mission.Id, "Other", "Analyse du dossier", AuditActor.Admin(), null, CancellationToken.None);
+
+        var result = await sut.ResolveAsync(
+            mission.Id,
+            "PartialRefund",
+            "Exception validee apres analyse",
+            50,
+            null,
+            includeCustomerServiceFeeInRefund: true,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        var dispute = await db.MissionDisputes.SingleAsync();
+        Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(1_100, dispute.RefundAmount);
+        Assert.Equal(1_100, mission.RefundAmount);
+    }
+
+    [Fact]
     public async Task ResolveAsync_WhenRefundExceedsMissionAmount_IsRejected()
     {
         await using var db = CreateDbContext();
@@ -224,7 +249,13 @@ public sealed class AdminMissionDisputeServiceTests
         var mission = new Mission(customer.Id, service.Id, MissionMode.Instant, PaymentMethod.MobileMoney, null, 60);
         mission.Assign(provider.Id, company.Id, 2000);
         mission.MarkProviderAccepted(provider.Id, company.Id);
-        mission.ConfirmByCustomer(300, 0, 1500);
+        mission.ConfirmByCustomer(
+            300,
+            0,
+            1500,
+            customerServiceFeeAmount: 200,
+            customerServiceFeeRateBasisPoints: 1_000,
+            customerTotalAmount: 2_200);
 
         db.Services.Add(service);
         db.Customers.Add(customer);

@@ -28,6 +28,7 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
         builder.Property(mission => mission.ServiceLongitude).HasPrecision(9, 6);
         builder.Property(mission => mission.DispatchRound).HasDefaultValue(0);
         builder.Ignore(mission => mission.CanRevealContactDetails);
+        builder.Ignore(mission => mission.CustomerChargedAmount);
         builder.HasOne(mission => mission.ServicePrestation)
             .WithMany()
             .HasForeignKey(mission => mission.ServicePrestationId)
@@ -52,5 +53,6 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
         builder.HasIndex(mission => new { mission.CustomerPaymentExpiresAt, mission.Status });
         builder.HasIndex(mission => new { mission.CustomerCompletionValidationExpiresAt, mission.Status });
         builder.HasIndex(mission => mission.CustomerPaymentMethodId);
+        builder.HasIndex(mission => new { mission.PreferredCompanyId, mission.Status });
     }
 }

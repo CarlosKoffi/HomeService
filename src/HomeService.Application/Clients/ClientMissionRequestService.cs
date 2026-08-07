@@ -128,7 +128,8 @@ public sealed class ClientMissionRequestService(
             request.ServicePrestationId,
             request.Description,
             request.RequiresCompanyQuote,
-            request.ServiceOptionId);
+            request.ServiceOptionId,
+            request.PreferredCompanyId);
 
         mission.SetServiceLocation(
             request.ServiceAddress,
@@ -161,7 +162,11 @@ public sealed class ClientMissionRequestService(
         }
 
         var message = dispatchResult.IsSuccess && dispatchResult.Offers.Count > 0
-            ? "Votre demande a ete transmise aux entreprises disponibles."
+            ? dispatchResult.PreferredCompanyUnavailable
+                ? "L'entreprise habituelle n'est pas disponible. Votre demande a ete elargie aux autres entreprises eligibles."
+                : request.PreferredCompanyId.HasValue
+                ? "Votre nouvelle demande a ete transmise a l'entreprise choisie."
+                : "Votre demande a ete transmise aux entreprises disponibles."
             : "Votre demande est enregistree. Nous recherchons une entreprise disponible.";
 
         var priceRange = ResolvePriceRange(service, request.ServicePrestationId, request.ServiceOptionId);

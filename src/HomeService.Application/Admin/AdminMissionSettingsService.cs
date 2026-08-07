@@ -132,6 +132,9 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
         {
             CommissionRuleTarget.PlatformConnection => "Commission mise en relation",
             CommissionRuleTarget.KazaAssignmentExtra => "Surcommission affectation wélé",
+            CommissionRuleTarget.CompanyFirstCustomerOrder => "Entreprise - premiere commande de ce client",
+            CommissionRuleTarget.CompanyRepeatCustomerOrder => "Entreprise - commandes suivantes de ce client",
+            CommissionRuleTarget.CustomerServiceFee => "Client - frais de service ajoutes au paiement",
             _ => target.ToString()
         };
     }

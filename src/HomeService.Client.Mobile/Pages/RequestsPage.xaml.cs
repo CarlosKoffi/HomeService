@@ -133,6 +133,24 @@ public partial class RequestsPage : ContentPage, IQueryAttributable
         await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={mission.MissionId:D}");
     }
 
+    private async void OnReorderClicked(object sender, EventArgs e)
+    {
+        if (sender is not Button { CommandParameter: MissionRow mission }
+            || !mission.CanReorder
+            || mission.CompanyId is null)
+        {
+            return;
+        }
+
+        var path = $"{nameof(CreateRequestPage)}?serviceId={mission.ServiceId:D}"
+            + $"&prestationId={mission.ServicePrestationId?.ToString("D") ?? string.Empty}"
+            + $"&optionId={mission.ServiceOptionId?.ToString("D") ?? string.Empty}"
+            + $"&preferredCompanyId={mission.CompanyId.Value:D}"
+            + $"&preferredCompanyName={Uri.EscapeDataString(mission.CompanyName ?? "Entreprise choisie")}"
+            + $"&name={Uri.EscapeDataString(mission.ServiceLabel)}";
+        await Shell.Current.GoToAsync(path);
+    }
+
     private void SetFilter(Button selected)
     {
         var blue = (Color)Application.Current!.Resources["WeleBlue"];
@@ -158,12 +176,22 @@ public partial class RequestsPage : ContentPage, IQueryAttributable
         ImageSource? IconSource,
         bool HasImage,
         Color StatusColor,
-        Color StatusBackground)
+        Color StatusBackground,
+        Guid ServiceId,
+        Guid? ServicePrestationId,
+        Guid? ServiceOptionId,
+        Guid? CompanyId,
+        string? CompanyName,
+        bool CanReorder,
+        string ServiceLabel)
     {
         public static MissionRow Preview(Guid missionId, string title, string address, string schedule, string status, string amount, string icon)
         {
             var (label, color, background) = ResolveStatus(status);
-            return new MissionRow(missionId, title, address, schedule, label, amount, ImageSource.FromFile("nav_requests.svg"), true, color, background);
+            return new MissionRow(
+                missionId, title, address, schedule, label, amount,
+                ImageSource.FromFile("nav_requests.svg"), true, color, background,
+                Guid.Empty, null, null, null, null, false, title);
         }
 
         public static MissionRow From(ClientMissionListItemResponse item, ImageSource? image)
@@ -174,7 +202,24 @@ public partial class RequestsPage : ContentPage, IQueryAttributable
                 : item.CreatedAt.ToString("dd/MM HH:mm");
             var amount = item.Amount.HasValue ? $"{item.Amount:N0} {item.Currency}" : "Prix à venir";
             var (label, color, background) = ResolveStatus(item.Status);
-            return new MissionRow(item.MissionId, title, item.ServiceAddress ?? "Adresse à confirmer", schedule, label, amount, image, image is not null, color, background);
+            return new MissionRow(
+                item.MissionId,
+                title,
+                item.ServiceAddress ?? "Adresse à confirmer",
+                schedule,
+                label,
+                amount,
+                image,
+                image is not null,
+                color,
+                background,
+                item.ServiceId,
+                item.ServicePrestationId,
+                item.ServiceOptionId,
+                item.CompanyId,
+                item.CompanyName,
+                item.CanReorder,
+                item.OptionName ?? item.PrestationName ?? item.ServiceName ?? "Service");
         }
 
         private static (string Label, Color Color, Color Background) ResolveStatus(string status)

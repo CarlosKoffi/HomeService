@@ -631,6 +631,7 @@ public static class AdminEndpoints
                 request.Note,
                 request.RefundPercent,
                 request.RefundAmount,
+                request.IncludeCustomerServiceFeeInRefund,
                 GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);
@@ -661,6 +662,8 @@ public static class AdminEndpoints
                 request.Reason,
                 request.Comment,
                 request.CancellationFeeAmount,
+                request.RefundPercent,
+                request.IncludeCustomerServiceFeeInRefund,
                 GetAdminAuditActor(httpRequest),
                 GetAuditRequestContext(httpRequest),
                 cancellationToken);

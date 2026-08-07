@@ -64,6 +64,15 @@ public sealed class MissionDispatchService(
             .ToHashSetAsync(cancellationToken);
         var candidates = await GetCandidatesAsync(mission, refusedCompanyIds, cancellationToken);
         var scores = scoringService.SelectTopCompanies(request, candidates);
+        var preferredCompanyUnavailable = false;
+
+        if (scores.Count == 0 && mission.PreferredCompanyId.HasValue)
+        {
+            preferredCompanyUnavailable = true;
+            mission.BroadenCompanySearch();
+            candidates = await GetCandidatesAsync(mission, refusedCompanyIds, cancellationToken);
+            scores = scoringService.SelectTopCompanies(request, candidates);
+        }
 
         if (scores.Count == 0)
         {
@@ -88,9 +97,13 @@ public sealed class MissionDispatchService(
         }
 
         await QueueCompanyOfferPushesAsync(mission, offers, cancellationToken);
+        if (preferredCompanyUnavailable)
+        {
+            await QueuePreferredCompanyUnavailablePushAsync(mission, cancellationToken);
+        }
 
         await db.SaveChangesAsync(cancellationToken);
-        return MissionDispatchCreationResult.Ok(offers);
+        return MissionDispatchCreationResult.Ok(offers, preferredCompanyUnavailable);
     }
 
     public async Task<int> DispatchUnroutedMissionsAsync(
@@ -327,7 +340,9 @@ public sealed class MissionDispatchService(
             .ToListAsync(cancellationToken);
         var companies = await db.Companies
             .AsNoTracking()
-            .Where(company => company.Status == CompanyStatus.Approved && !excludedCompanyIds.Contains(company.Id))
+            .Where(company => company.Status == CompanyStatus.Approved
+                && !excludedCompanyIds.Contains(company.Id)
+                && (mission.PreferredCompanyId == null || company.Id == mission.PreferredCompanyId))
             .ToListAsync(cancellationToken);
 
         var eligibleCompanies = companies
@@ -504,5 +519,31 @@ public sealed class MissionDispatchService(
                 cancellationToken,
                 saveChanges: false);
         }
+    }
+
+    private async Task QueuePreferredCompanyUnavailablePushAsync(
+        Mission mission,
+        CancellationToken cancellationToken)
+    {
+        if (mobilePushNotifications is null)
+        {
+            return;
+        }
+
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Customer,
+            mission.CustomerId,
+            "Entreprise habituelle indisponible",
+            $"Votre demande {mission.MissionNumber} a ete transmise aux autres entreprises disponibles.",
+            nameof(Mission),
+            mission.Id,
+            JsonSerializer.Serialize(new
+            {
+                type = "customer_preferred_company_unavailable",
+                missionId = mission.Id,
+                missionNumber = mission.MissionNumber
+            }),
+            cancellationToken,
+            saveChanges: false);
     }
 }

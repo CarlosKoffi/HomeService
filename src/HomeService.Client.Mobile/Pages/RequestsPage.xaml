@@ -34,7 +34,7 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Border Style="{StaticResource CompactListBorder}">
-                                <Grid ColumnDefinitions="50,*,88" ColumnSpacing="10">
+                                <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="50,*,88" ColumnSpacing="10" RowSpacing="10">
                                     <Border BackgroundColor="White" Stroke="{StaticResource PremiumLine}" StrokeThickness="1" StrokeShape="RoundRectangle 13" HeightRequest="50" WidthRequest="50" Padding="4">
                                         <Image Source="{Binding IconSource}" Aspect="AspectFit" HeightRequest="40" WidthRequest="40" HorizontalOptions="Center" VerticalOptions="Center" />
                                     </Border>
@@ -49,6 +49,19 @@
                                         </Border>
                                         <Label Text="{Binding Amount}" FontSize="11" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" HorizontalTextAlignment="End" LineBreakMode="WordWrap" MaxLines="2" />
                                     </VerticalStackLayout>
+                                    <Button Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                                            Text="Commander à nouveau"
+                                            IsVisible="{Binding CanReorder}"
+                                            CommandParameter="{Binding .}"
+                                            Clicked="OnReorderClicked"
+                                            HorizontalOptions="End"
+                                            HeightRequest="38"
+                                            Padding="14,0"
+                                            FontSize="11"
+                                            BackgroundColor="White"
+                                            BorderColor="{StaticResource WeleBlue}"
+                                            BorderWidth="1"
+                                            TextColor="{StaticResource WeleBlue}" />
                                 </Grid>
                             </Border>
                         </DataTemplate>

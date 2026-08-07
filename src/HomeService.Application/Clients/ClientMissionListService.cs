@@ -82,6 +82,15 @@ public sealed class ClientMissionListService(IAppDbContext db)
         var providerPhotos = providerPhotoRows
             .GroupBy(document => document.ProviderId)
             .ToDictionary(group => group.Key, group => group.First().StoragePath);
+        var companyIds = missions
+            .Where(mission => mission.CompanyId.HasValue)
+            .Select(mission => mission.CompanyId!.Value)
+            .Distinct()
+            .ToList();
+        var companies = await db.Companies
+            .AsNoTracking()
+            .Where(company => companyIds.Contains(company.Id))
+            .ToDictionaryAsync(company => company.Id, cancellationToken);
 
         var rows = missions.Select(mission =>
         {
@@ -93,6 +102,10 @@ public sealed class ClientMissionListService(IAppDbContext db)
             var providerPhoto = mission.ProviderId is { } photoProviderId
                 && providerPhotos.TryGetValue(photoProviderId, out var photoPath)
                     ? photoPath
+                    : null;
+            var company = mission.CompanyId is { } companyId
+                && companies.TryGetValue(companyId, out var assignedCompany)
+                    ? assignedCompany
                     : null;
             return new ClientMissionListItemResponse(
                 mission.Id,
@@ -106,9 +119,17 @@ public sealed class ClientMissionListService(IAppDbContext db)
                 mission.ServiceAddress,
                 mission.CreatedAt,
                 mission.ScheduledFor,
-                mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount,
+                mission.CustomerTotalAmount > 0
+                    ? mission.CustomerTotalAmount
+                    : mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount,
                 mission.Currency,
                 ResolvePrimaryAction(mission.Status, mission.PaymentStatus, mission.QuoteStatus),
+                mission.ServiceId,
+                mission.ServicePrestationId,
+                mission.ServiceOptionId,
+                company?.Id,
+                company?.Name,
+                company is not null && mission.Status is MissionStatus.Completed or MissionStatus.Resolved,
                 mission.ServicePrestation?.IllustrationUrl
                     ?? service?.IconUrl
                     ?? service?.ImageUrl,

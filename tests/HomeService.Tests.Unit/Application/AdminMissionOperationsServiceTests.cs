@@ -110,6 +110,36 @@ public sealed class AdminMissionOperationsServiceTests
     }
 
     [Fact]
+    public async Task CancelAsync_WhenAdminChoosesPercentAndIncludesCustomerFee_UsesBothDecisions()
+    {
+        await using var db = CreateDbContext();
+        var mission = await SeedAcceptedMissionAsync(db);
+        mission.ConfirmByCustomer(
+            platformCommissionAmount: 1_500,
+            transportFeeAmount: 0,
+            platformCommissionRateBasisPoints: 1_500,
+            customerServiceFeeAmount: 500,
+            customerServiceFeeRateBasisPoints: 500,
+            customerTotalAmount: 10_500);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.CancelAsync(
+            mission.Id,
+            "Other",
+            "Remboursement exceptionnel apres analyse",
+            cancellationFeeAmount: 0,
+            refundPercent: 50,
+            includeCustomerServiceFeeInRefund: true,
+            AuditActor.Admin(),
+            null,
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(5_250, mission.RefundAmount);
+    }
+
+    [Fact]
     public async Task CancelAsync_WhenAdminFeeExceedsMissionAmount_IsRejected()
     {
         await using var db = CreateDbContext();

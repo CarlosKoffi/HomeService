@@ -28,16 +28,19 @@ public sealed class ClientMissionInvoiceService(IAppDbContext db)
         var option = mission.ServiceOptionId.HasValue
             ? await db.ServiceOptions.AsNoTracking().Where(x => x.Id == mission.ServiceOptionId.Value).Select(x => x.Name).FirstOrDefaultAsync(cancellationToken)
             : null;
-        var amount = mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0;
+        var serviceAndPartsAmount = mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0;
+        var amount = mission.CustomerChargedAmount;
         var invoiceDate = mission.CustomerConfirmedAt ?? DateTimeOffset.UtcNow;
         var bytes = BasicPdfInvoice.Create(new InvoiceData(
             mission.MissionNumber, invoiceDate, customer.FirstName + " " + customer.LastName, address,
-            service, prestation, option, mission.Description, amount, mission.Currency));
+            service, prestation, option, mission.Description, serviceAndPartsAmount,
+            mission.CustomerServiceFeeAmount, amount, mission.Currency));
         return ClientMissionInvoiceResult.Ok(bytes, $"facture-wele-{mission.MissionNumber}.pdf");
     }
 
     private sealed record InvoiceData(string Number, DateTimeOffset Date, string CustomerName, string Address,
-        string Service, string? Prestation, string? Option, string? Description, int Amount, string Currency);
+        string Service, string? Prestation, string? Option, string? Description, int ServiceAndPartsAmount,
+        int CustomerServiceFeeAmount, int Amount, string Currency);
 
     private static class BasicPdfInvoice
     {
@@ -61,6 +64,8 @@ public sealed class ClientMissionInvoiceService(IAppDbContext db)
             if (!string.IsNullOrWhiteSpace(data.Prestation)) { Text(42, y, 11, "Prestation"); Text(240, y, 11, data.Prestation!, true); y -= 24; }
             if (!string.IsNullOrWhiteSpace(data.Option)) { Text(42, y, 11, "Option"); Text(240, y, 11, data.Option!, true); y -= 24; }
             if (!string.IsNullOrWhiteSpace(data.Description)) { Text(42, y, 11, "Description"); Text(240, y, 10, Trim(data.Description!, 52)); y -= 30; }
+            Text(42, y, 11, "Intervention"); Text(430, y, 11, $"{data.ServiceAndPartsAmount:N0} {data.Currency}", true); y -= 24;
+            if (data.CustomerServiceFeeAmount > 0) { Text(42, y, 11, "Frais de service Wele"); Text(430, y, 11, $"{data.CustomerServiceFeeAmount:N0} {data.Currency}", true); y -= 30; }
             content.AppendLine($"0.12 0.38 0.92 rg 330 {y - 22} 223 48 re f");
             Text(348, y - 5, 12, "TOTAL PAYE", true);
             Text(455, y - 5, 14, $"{data.Amount:N0} {data.Currency}", true);

@@ -15,6 +15,12 @@ public sealed record ClientMissionListItemResponse(
     int? Amount,
     string Currency,
     string PrimaryAction,
+    Guid ServiceId,
+    Guid? ServicePrestationId,
+    Guid? ServiceOptionId,
+    Guid? CompanyId,
+    string? CompanyName,
+    bool CanReorder,
     string? IconUrl = null,
     string? AssignedProviderName = null,
     string? AssignedProviderPhotoUrl = null);

@@ -85,6 +85,27 @@ public sealed class AdminMissionDisputeService(
         AuditActor actor,
         AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
+        => await ResolveAsync(
+            missionId,
+            resolution,
+            note,
+            refundPercent,
+            refundAmount,
+            includeCustomerServiceFeeInRefund: false,
+            actor,
+            auditContext,
+            cancellationToken);
+
+    public async Task<AdminMissionDisputeResult> ResolveAsync(
+        Guid missionId,
+        string? resolution,
+        string? note,
+        int? refundPercent,
+        int? refundAmount,
+        bool includeCustomerServiceFeeInRefund,
+        AuditActor actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(note))
         {
@@ -107,7 +128,12 @@ public sealed class AdminMissionDisputeService(
 
         var previousStatus = mission.Status;
         var parsedResolution = ParseResolution(resolution);
-        var refundDecision = ResolveRefundDecision(mission, parsedResolution, refundPercent, refundAmount);
+        var refundDecision = ResolveRefundDecision(
+            mission,
+            parsedResolution,
+            refundPercent,
+            refundAmount,
+            includeCustomerServiceFeeInRefund);
         if (!refundDecision.IsValid)
         {
             return AdminMissionDisputeResult.ValidationFailed(refundDecision.Message!);
@@ -146,6 +172,7 @@ public sealed class AdminMissionDisputeService(
                 Status = mission.Status.ToString(),
                 Resolution = dispute.Resolution?.ToString(),
                 RefundPercent = dispute.RefundPercentBasisPoints.HasValue ? dispute.RefundPercentBasisPoints.Value / 100 : (int?)null,
+                IncludeCustomerServiceFeeInRefund = includeCustomerServiceFeeInRefund,
                 dispute.RefundAmount,
                 dispute.Currency,
                 dispute.ResolutionNote
@@ -287,9 +314,11 @@ public sealed class AdminMissionDisputeService(
         Mission mission,
         MissionDisputeResolution resolution,
         int? refundPercent,
-        int? refundAmount)
+        int? refundAmount,
+        bool includeCustomerServiceFeeInRefund)
     {
-        var totalAmount = mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0;
+        var missionAmount = mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0;
+        var totalAmount = missionAmount + (includeCustomerServiceFeeInRefund ? mission.CustomerServiceFeeAmount : 0);
         if (refundPercent is < 0 or > 100)
         {
             return MissionDisputeRefundDecision.Invalid("Le pourcentage de remboursement doit etre compris entre 0 et 100.");

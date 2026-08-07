@@ -23,6 +23,27 @@ public sealed class AdminMissionOperationsService(
         AuditActor actor,
         AuditRequestContext? auditContext,
         CancellationToken cancellationToken)
+        => await CancelAsync(
+            missionId,
+            reason,
+            note,
+            cancellationFeeAmount,
+            refundPercent: null,
+            includeCustomerServiceFeeInRefund: false,
+            actor,
+            auditContext,
+            cancellationToken);
+
+    public async Task<AdminMissionOperationResult> CancelAsync(
+        Guid missionId,
+        string? reason,
+        string? note,
+        int? cancellationFeeAmount,
+        int? refundPercent,
+        bool includeCustomerServiceFeeInRefund,
+        AuditActor actor,
+        AuditRequestContext? auditContext,
+        CancellationToken cancellationToken)
     {
         var mission = await db.Missions.FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
         if (mission is null)
@@ -37,7 +58,13 @@ public sealed class AdminMissionOperationsService(
 
         var previousStatus = mission.Status;
         var parsedReason = ParseCancellationReason(reason, MissionCancellationActor.Admin);
-        var refundBase = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0;
+        if (refundPercent is < 0 or > 100)
+        {
+            return AdminMissionOperationResult.ValidationFailed("Le pourcentage de remboursement doit etre compris entre 0 et 100.");
+        }
+
+        var missionAmount = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0;
+        var refundBase = missionAmount + (includeCustomerServiceFeeInRefund ? mission.CustomerServiceFeeAmount : 0);
         var feeDecision = ResolveCancellationFee(mission, refundBase, cancellationFeeAmount);
         if (!feeDecision.IsValid)
         {
@@ -45,7 +72,10 @@ public sealed class AdminMissionOperationsService(
         }
 
         var refund = mission.PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid
-            ? Math.Max(0, refundBase - feeDecision.FeeAmount)
+            ? Math.Max(
+                0,
+                (int)Math.Round(refundBase * (refundPercent ?? 100) / 100m, MidpointRounding.AwayFromZero)
+                - feeDecision.FeeAmount)
             : 0;
 
         try
@@ -66,14 +96,23 @@ public sealed class AdminMissionOperationsService(
         }
 
         var cleanNote = note.Trim();
-        AddMissionAudit(
+        db.AuditLogEntries.Add(AuditLogFactory.Create(
             actor,
-            auditContext,
             "AdminMissionCancelled",
-            mission,
-            previousStatus,
-            cleanNote,
-            $"Mission annulee par l'administration. Note: {cleanNote}");
+            nameof(Mission),
+            mission.Id,
+            $"Mission annulee par l'administration. Note: {cleanNote}",
+            auditContext,
+            before: new { Status = previousStatus.ToString() },
+            after: new
+            {
+                Status = mission.Status.ToString(),
+                Note = cleanNote,
+                RefundPercent = refundPercent ?? 100,
+                IncludeCustomerServiceFeeInRefund = includeCustomerServiceFeeInRefund,
+                RefundBase = refundBase,
+                RefundAmount = refund
+            }));
         companyNotifications.AddForMission(
             mission,
             "MissionCancelled",
