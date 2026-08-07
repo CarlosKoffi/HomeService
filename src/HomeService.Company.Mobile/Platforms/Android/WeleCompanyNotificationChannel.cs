@@ -5,7 +5,7 @@ namespace HomeService.Company.Mobile;
 
 public static class WeleCompanyNotificationChannel
 {
-    public const string ChannelId = "wele_company_operations";
+    public const string ChannelId = "wele_missions";
 
     public static void EnsureCreated(Context context)
     {

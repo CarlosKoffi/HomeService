@@ -4,5 +4,6 @@ public enum NotificationChannel
 {
     Email = 1,
     WhatsApp = 2,
-    MobilePush = 3
+    MobilePush = 3,
+    InApp = 4
 }

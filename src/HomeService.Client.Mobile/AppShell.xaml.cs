@@ -50,6 +50,8 @@ public partial class AppShell : Shell
             {
                 await GoToAsync("//home");
             }
+
+            await ClientNotificationNavigationService.TryNavigateAsync();
         });
     }
 }

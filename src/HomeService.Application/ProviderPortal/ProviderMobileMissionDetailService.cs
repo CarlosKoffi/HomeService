@@ -31,6 +31,7 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
         }
 
         var mission = assignment.Mission;
+        var isClosed = IsClosedForProvider(assignment.Status, mission.Status);
         var service = await db.Services
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == mission.ServiceId, cancellationToken);
@@ -39,25 +40,29 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
             : await db.ServicePrestations
                 .AsNoTracking()
                 .FirstOrDefaultAsync(item => item.Id == mission.ServicePrestationId.Value, cancellationToken);
-        var customer = await db.Customers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(item => item.Id == mission.CustomerId, cancellationToken);
+        var customer = isClosed
+            ? null
+            : await db.Customers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == mission.CustomerId, cancellationToken);
 
-        var photos = await db.MissionAttachments
-            .AsNoTracking()
-            .Where(attachment => attachment.MissionId == mission.Id
-                && attachment.AttachmentType == MissionAttachmentType.CustomerPhoto
-                && !attachment.IsDeleted)
-            .OrderBy(attachment => attachment.CreatedAt)
-            .Select(attachment => new ProviderMobileMissionPhotoResponse(
-                attachment.Id,
-                attachment.OriginalFileName,
-                attachment.StoragePath,
-                attachment.ContentType,
-                attachment.Caption))
-            .ToListAsync(cancellationToken);
+        IReadOnlyList<ProviderMobileMissionPhotoResponse> photos = isClosed
+            ? []
+            : await db.MissionAttachments
+                .AsNoTracking()
+                .Where(attachment => attachment.MissionId == mission.Id
+                    && attachment.AttachmentType == MissionAttachmentType.CustomerPhoto
+                    && !attachment.IsDeleted)
+                .OrderBy(attachment => attachment.CreatedAt)
+                .Select(attachment => new ProviderMobileMissionPhotoResponse(
+                    attachment.Id,
+                    attachment.OriginalFileName,
+                    attachment.StoragePath,
+                    attachment.ContentType,
+                    attachment.Caption))
+                .ToListAsync(cancellationToken);
 
-        var conversationIds = await db.MissionConversations
+        var conversationIds = isClosed ? [] : await db.MissionConversations
             .AsNoTracking()
             .Where(conversation => conversation.MissionId == mission.Id
                 && (conversation.ProviderId == null || conversation.ProviderId == providerId))
@@ -81,24 +86,29 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                     message.ReadAt))
                 .ToListAsync(cancellationToken);
 
-        var additionalQuotes = await db.MissionAdditionalQuotes
-            .AsNoTracking()
-            .Where(quote => quote.MissionId == mission.Id && quote.ProviderId == providerId)
-            .OrderByDescending(quote => quote.RequestedAt)
-            .Select(quote => new ProviderMobileMissionAdditionalQuoteResponse(
-                quote.Id,
-                quote.Status.ToString(),
-                quote.Reason,
-                quote.RequestedPhotoStoragePath,
-                null,
-                quote.Currency,
-                quote.CompanyDescription,
-                quote.RequestedAt,
-                quote.SubmittedAt,
-                quote.PaidAt))
-            .ToListAsync(cancellationToken);
+        IReadOnlyList<ProviderMobileMissionAdditionalQuoteResponse> additionalQuotes = isClosed
+            ? []
+            : await db.MissionAdditionalQuotes
+                .AsNoTracking()
+                .Where(quote => quote.MissionId == mission.Id && quote.ProviderId == providerId)
+                .OrderByDescending(quote => quote.RequestedAt)
+                .Select(quote => new ProviderMobileMissionAdditionalQuoteResponse(
+                    quote.Id,
+                    quote.Status.ToString(),
+                    quote.Reason,
+                    quote.RequestedPhotoStoragePath,
+                    null,
+                    quote.Currency,
+                    quote.CompanyDescription,
+                    quote.RequestedAt,
+                    quote.SubmittedAt,
+                    quote.PaidAt))
+                .ToListAsync(cancellationToken);
 
-        var canCallCustomer = mission.CanRevealContactDetails && customer is not null;
+        var hasBlockingAdditionalQuote = additionalQuotes.Any(quote =>
+            quote.Status is nameof(MissionAdditionalQuoteStatus.Requested)
+                or nameof(MissionAdditionalQuoteStatus.Submitted));
+        var canCallCustomer = !isClosed && mission.CanRevealContactDetails && customer is not null;
         var now = DateTimeOffset.UtcNow;
         var response = new ProviderMobileMissionDetailResponse(
             assignment.Id,
@@ -110,13 +120,13 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
             service?.IconName ?? "sparkles",
             prestation?.Name,
             assignment.Company?.Name ?? "Entreprise",
-            BuildCustomerDisplayName(customer),
+            isClosed ? "Client" : BuildCustomerDisplayName(customer),
             canCallCustomer ? customer!.PhoneNumber : null,
             canCallCustomer,
-            BuildLocationLabel(mission.ServiceAddress),
-            mission.ServiceLatitude,
-            mission.ServiceLongitude,
-            CalculateDistanceKm(
+            isClosed ? "Adresse masquee apres la mission" : BuildLocationLabel(mission.ServiceAddress),
+            isClosed ? null : mission.ServiceLatitude,
+            isClosed ? null : mission.ServiceLongitude,
+            isClosed ? null : CalculateDistanceKm(
                 provider.CurrentLatitude ?? provider.MissionLatitude,
                 provider.CurrentLongitude ?? provider.MissionLongitude,
                 mission.ServiceLatitude,
@@ -126,17 +136,17 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
             Math.Max(0, (int)Math.Floor((assignment.ExpiresAt - now).TotalSeconds)),
             null,
             null,
-            mission.PartsDescription,
+            isClosed ? null : mission.PartsDescription,
             mission.Currency,
             mission.Description,
-            BuildActions(assignment, mission),
+            BuildActions(assignment, mission, hasBlockingAdditionalQuote),
             new ProviderMobileMissionArrivalResponse(
                 assignment.ArrivalVerificationStatus.ToString(),
                 assignment.HasVerifiedArrival,
-                assignment.ArrivalDistanceMeters,
+                isClosed ? null : assignment.ArrivalDistanceMeters,
                 assignment.ArrivalToleranceMeters,
-                assignment.ArrivalAccuracyMeters,
-                assignment.ArrivalVerifiedAt),
+                isClosed ? null : assignment.ArrivalAccuracyMeters,
+                isClosed ? null : assignment.ArrivalVerifiedAt),
             additionalQuotes,
             photos,
             messages
@@ -148,7 +158,8 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
 
     private static ProviderMobileMissionActionsResponse BuildActions(
         Domain.Entities.ProviderMissionAssignment assignment,
-        Domain.Entities.Mission mission)
+        Domain.Entities.Mission mission,
+        bool hasBlockingAdditionalQuote)
     {
         return new ProviderMobileMissionActionsResponse(
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
@@ -159,8 +170,22 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                 && mission.IsInitialPaymentConfirmed
                 && assignment.HasVerifiedArrival
                 && mission.CanStartFor(assignment.ProviderId, assignment.CompanyId),
-            assignment.Status == ProviderMissionAssignmentStatus.Started,
+            assignment.Status == ProviderMissionAssignmentStatus.Started && !hasBlockingAdditionalQuote,
             assignment.Status is ProviderMissionAssignmentStatus.Offered or ProviderMissionAssignmentStatus.Accepted or ProviderMissionAssignmentStatus.Started);
+    }
+
+    private static bool IsClosedForProvider(
+        ProviderMissionAssignmentStatus assignmentStatus,
+        MissionStatus missionStatus)
+    {
+        return assignmentStatus is ProviderMissionAssignmentStatus.Completed
+                or ProviderMissionAssignmentStatus.Cancelled
+                or ProviderMissionAssignmentStatus.Refused
+                or ProviderMissionAssignmentStatus.Expired
+            || missionStatus is MissionStatus.Completed
+                or MissionStatus.Cancelled
+                or MissionStatus.Disputed
+                or MissionStatus.Resolved;
     }
 
     private static string BuildLocationLabel(string? address)

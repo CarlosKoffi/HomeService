@@ -144,6 +144,26 @@ public sealed class ProviderMissionWorkflowServiceTests
     }
 
     [Fact]
+    public void CompleteMission_WhenAdditionalQuoteIsOpen_KeepsMissionPaused()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission);
+        _service.StartMission(provider, assignment, ValidLocation());
+
+        var result = _service.CompleteMission(
+            provider,
+            assignment,
+            new ProviderCompleteMissionRequest(60, "Intervention terminee.", null),
+            hasBlockingAdditionalQuote: true);
+
+        Assert.Equal(ProviderMissionOperationStatus.BadRequest, result.Status);
+        Assert.Contains("pause", result.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(ProviderMissionAssignmentStatus.Started, assignment.Status);
+        Assert.Equal(MissionStatus.Started, mission.Status);
+    }
+
+    [Fact]
     public void AcceptMission_WhenLocationIsValid_AcceptsAssignmentAndMissionWithoutReleasingContacts()
     {
         var provider = CreateApprovedProvider();

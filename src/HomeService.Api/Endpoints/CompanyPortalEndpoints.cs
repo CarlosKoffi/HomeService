@@ -966,6 +966,7 @@ public static class CompanyPortalEndpoints
             Guid employeeId,
             HttpRequest httpRequest,
             CompanyEmployeeManagementService employeeManagementService,
+            MobilePushNotificationQueueService mobilePushNotifications,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
@@ -974,6 +975,22 @@ public static class CompanyPortalEndpoints
             {
                 return Results.NotFound();
             }
+
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Provider,
+                employeeId,
+                "Profil suspendu",
+                "Votre entreprise a suspendu votre accès aux missions.",
+                nameof(ProviderProfile),
+                employeeId,
+                JsonSerializer.Serialize(new
+                {
+                    type = "provider_profile_suspended",
+                    providerId = employeeId,
+                    companyId
+                }),
+                cancellationToken,
+                saveChanges: false);
 
             AddCompanyEmployeeAudit(
                 db,
@@ -994,6 +1011,7 @@ public static class CompanyPortalEndpoints
             Guid employeeId,
             HttpRequest httpRequest,
             CompanyEmployeeManagementService employeeManagementService,
+            MobilePushNotificationQueueService mobilePushNotifications,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
@@ -1007,6 +1025,22 @@ public static class CompanyPortalEndpoints
             {
                 return Results.BadRequest(new { message = result.Message });
             }
+
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Provider,
+                employeeId,
+                "Profil validé",
+                "Votre entreprise a validé votre profil. Vous pouvez maintenant recevoir des missions.",
+                nameof(ProviderProfile),
+                employeeId,
+                JsonSerializer.Serialize(new
+                {
+                    type = "provider_profile_validated",
+                    providerId = employeeId,
+                    companyId
+                }),
+                cancellationToken,
+                saveChanges: false);
 
             AddCompanyEmployeeAudit(
                 db,
@@ -1027,6 +1061,7 @@ public static class CompanyPortalEndpoints
             Guid employeeId,
             HttpRequest httpRequest,
             CompanyEmployeeManagementService employeeManagementService,
+            MobilePushNotificationQueueService mobilePushNotifications,
             IAppDbContext db,
             CancellationToken cancellationToken) =>
         {
@@ -1035,6 +1070,22 @@ public static class CompanyPortalEndpoints
             {
                 return Results.NotFound();
             }
+
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Provider,
+                employeeId,
+                "Profil désactivé",
+                "Votre rattachement à cette entreprise a été désactivé.",
+                nameof(ProviderProfile),
+                employeeId,
+                JsonSerializer.Serialize(new
+                {
+                    type = "provider_profile_deactivated",
+                    providerId = employeeId,
+                    companyId
+                }),
+                cancellationToken,
+                saveChanges: false);
 
             AddCompanyEmployeeAudit(
                 db,

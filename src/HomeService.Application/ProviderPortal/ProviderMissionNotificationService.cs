@@ -18,6 +18,9 @@ public sealed class ProviderMissionNotificationService(
     private const string MissionProviderAcceptedEventKey = "MissionProviderAccepted";
     private const string MissionProviderRefusedEventKey = "MissionProviderRefused";
     private const string MissionPaymentRequiredEventKey = "MissionPaymentRequired";
+    private const string MissionTechnicianOnTheWayEventKey = "MissionTechnicianOnTheWay";
+    private const string MissionTechnicianArrivedEventKey = "MissionTechnicianArrived";
+    private const string MissionStartedEventKey = "MissionStarted";
     private const string MissionCompletedEventKey = "MissionCompleted";
 
     public async Task NotifyAcceptedAsync(
@@ -52,7 +55,15 @@ public sealed class ProviderMissionNotificationService(
                 $"{provider.FullName} a accepté la mission {mission.MissionNumber}. Le paiement client est maintenant attendu.",
                 nameof(Mission),
                 mission.Id,
-                null,
+                JsonSerializer.Serialize(new
+                {
+                    type = "company_provider_accepted",
+                    missionId = mission.Id,
+                    missionNumber = mission.MissionNumber,
+                    assignmentId = assignment.Id,
+                    providerId = provider.Id,
+                    companyId = mission.CompanyId.Value
+                }),
                 cancellationToken,
                 saveChanges: false);
         }
@@ -104,37 +115,99 @@ public sealed class ProviderMissionNotificationService(
                 $"{provider.FullName} a refusé la mission {mission.MissionNumber}. Affectez rapidement un autre prestataire.",
                 nameof(Mission),
                 mission.Id,
-                null,
+                JsonSerializer.Serialize(new
+                {
+                    type = "company_provider_refused_reassign",
+                    missionId = mission.Id,
+                    missionNumber = mission.MissionNumber,
+                    assignmentId = assignment.Id,
+                    providerId = provider.Id,
+                    companyId = mission.CompanyId.Value
+                }),
                 cancellationToken,
                 saveChanges: false);
         }
     }
 
-    public Task NotifyArrivedAsync(
+    public async Task NotifyArrivedAsync(
         Mission mission,
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
         CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        var variables = await BuildVariablesAsync(mission, provider, cancellationToken);
+        await QueueCustomerPushAsync(
+            mission,
+            MissionTechnicianArrivedEventKey,
+            "Votre prestataire est arrivé",
+            "{NomTechnicien} est arrivé pour la mission {NumeroMission}.",
+            variables,
+            "mission_technician_arrived",
+            assignment.Id,
+            cancellationToken);
+        await QueueCompanyStatusPushAsync(
+            mission,
+            provider,
+            assignment,
+            "MissionTechnicianArrivedCompany",
+            "Prestataire arrivé",
+            $"{provider.FullName} est arrivé pour la mission {mission.MissionNumber}.",
+            "company_provider_arrived",
+            cancellationToken);
     }
 
-    public Task NotifyOnTheWayAsync(
+    public async Task NotifyOnTheWayAsync(
         Mission mission,
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
         CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        var variables = await BuildVariablesAsync(mission, provider, cancellationToken);
+        await QueueCustomerPushAsync(
+            mission,
+            MissionTechnicianOnTheWayEventKey,
+            "Votre prestataire est en route",
+            "{NomTechnicien} est en route vers {Adresse} pour la mission {NumeroMission}.",
+            variables,
+            "mission_technician_on_the_way",
+            assignment.Id,
+            cancellationToken);
+        await QueueCompanyStatusPushAsync(
+            mission,
+            provider,
+            assignment,
+            "MissionProviderOnTheWayCompany",
+            "Prestataire en route",
+            $"{provider.FullName} est en route pour la mission {mission.MissionNumber}.",
+            "company_provider_on_the_way",
+            cancellationToken);
     }
 
-    public Task NotifyStartedAsync(
+    public async Task NotifyStartedAsync(
         Mission mission,
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
         CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        var variables = await BuildVariablesAsync(mission, provider, cancellationToken);
+        await QueueCustomerPushAsync(
+            mission,
+            MissionStartedEventKey,
+            "Votre intervention a démarré",
+            "La mission {NumeroMission} a démarré.",
+            variables,
+            "mission_started",
+            assignment.Id,
+            cancellationToken);
+        await QueueCompanyStatusPushAsync(
+            mission,
+            provider,
+            assignment,
+            "MissionStartedCompany",
+            "Mission démarrée",
+            $"{provider.FullName} a démarré la mission {mission.MissionNumber}.",
+            "company_mission_started",
+            cancellationToken);
     }
 
     public async Task NotifyCompletedAsync(
@@ -153,7 +226,58 @@ public sealed class ProviderMissionNotificationService(
             "mission_completed",
             assignment.Id,
             cancellationToken);
+        await QueueCompanyStatusPushAsync(
+            mission,
+            provider,
+            assignment,
+            "MissionCompletedCompany",
+            "Mission terminée",
+            $"La mission {mission.MissionNumber} est terminée et attend la validation du client.",
+            "company_mission_completed",
+            cancellationToken);
+    }
 
+    private async Task QueueCompanyStatusPushAsync(
+        Mission mission,
+        ProviderProfile provider,
+        ProviderMissionAssignment assignment,
+        string eventKey,
+        string title,
+        string body,
+        string metadataType,
+        CancellationToken cancellationToken)
+    {
+        if (!mission.CompanyId.HasValue)
+        {
+            return;
+        }
+
+        companyNotifications.AddForMission(
+            mission,
+            eventKey,
+            title,
+            body,
+            "info",
+            $"missions/{mission.Id}");
+
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Company,
+            mission.CompanyId.Value,
+            title,
+            body,
+            nameof(Mission),
+            mission.Id,
+            JsonSerializer.Serialize(new
+            {
+                type = metadataType,
+                missionId = mission.Id,
+                missionNumber = mission.MissionNumber,
+                assignmentId = assignment.Id,
+                providerId = provider.Id,
+                companyId = mission.CompanyId.Value
+            }),
+            cancellationToken,
+            saveChanges: false);
     }
 
     private async Task QueueCustomerPushAsync(

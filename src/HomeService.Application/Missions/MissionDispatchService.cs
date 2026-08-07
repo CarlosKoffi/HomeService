@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Notifications;
 using HomeService.Domain.Common;
@@ -471,8 +472,19 @@ public sealed class MissionDispatchService(
             return;
         }
 
-        foreach (var companyId in offers.Select(offer => offer.CompanyId).Distinct())
+        foreach (var offer in offers.GroupBy(item => item.CompanyId).Select(group => group.First()))
         {
+            var companyId = offer.CompanyId;
+            db.CompanyPortalNotifications.Add(new CompanyPortalNotification(
+                companyId,
+                null,
+                null,
+                "MissionOfferReceived",
+                $"Nouvelle mission {mission.MissionNumber}",
+                "Une nouvelle mission attend votre acceptation avant la fin du delai.",
+                "warning",
+                $"missions/{mission.Id}"));
+
             await mobilePushNotifications.QueueForOwnerAsync(
                 MobileDeviceOwnerType.Company,
                 companyId,
@@ -480,7 +492,15 @@ public sealed class MissionDispatchService(
                 $"La mission {mission.MissionNumber} attend votre réponse avant expiration du délai.",
                 nameof(Mission),
                 mission.Id,
-                null,
+                JsonSerializer.Serialize(new
+                {
+                    type = "company_mission_offer",
+                    missionId = mission.Id,
+                    missionNumber = mission.MissionNumber,
+                    offerId = offer.Id,
+                    companyId,
+                    expiresAt = offer.ExpiresAt
+                }),
                 cancellationToken,
                 saveChanges: false);
         }

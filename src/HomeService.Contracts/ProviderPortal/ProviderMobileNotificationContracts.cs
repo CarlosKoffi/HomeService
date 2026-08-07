@@ -10,5 +10,6 @@ public sealed record ProviderMobileNotificationResponse(
     string Body,
     string? RelatedEntityType,
     Guid? RelatedEntityId,
+    string? MetadataJson,
     DateTimeOffset CreatedAt,
     bool IsRead);

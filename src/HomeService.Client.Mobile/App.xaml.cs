@@ -41,6 +41,7 @@ public partial class App : Application
                 .RegisterCurrentDeviceAsync();
             await services.GetRequiredService<ClientNotificationState>()
                 .RefreshAsync();
+            await ClientNotificationNavigationService.TryNavigateAsync();
         }
         catch (Exception)
         {

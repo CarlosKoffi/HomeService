@@ -9,6 +9,8 @@ public sealed class CompanyDeviceRegistrationService(
     CompanyMobileApiClient apiClient,
     CompanySessionStore sessionStore)
 {
+    private const string FirebaseTokenKey = "CompanyFirebaseCloudMessagingToken";
+
     public async Task RegisterCurrentDeviceAsync(CancellationToken cancellationToken = default)
     {
         var token = await sessionStore.GetTokenAsync();
@@ -34,6 +36,14 @@ public sealed class CompanyDeviceRegistrationService(
             cancellationToken);
     }
 
+    public static void StoreFirebaseToken(string token)
+    {
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            Preferences.Default.Set(FirebaseTokenKey, token.Trim());
+        }
+    }
+
     private static Task<string> ResolveFirebaseTokenAsync()
     {
 #if ANDROID
@@ -49,11 +59,13 @@ public sealed class CompanyDeviceRegistrationService(
         try
         {
             var javaToken = await Firebase.Messaging.FirebaseMessaging.Instance.GetToken().AsAsync<Java.Lang.String>();
-            return javaToken?.ToString() ?? string.Empty;
+            var token = javaToken?.ToString() ?? string.Empty;
+            StoreFirebaseToken(token);
+            return token;
         }
         catch
         {
-            return string.Empty;
+            return Preferences.Default.Get(FirebaseTokenKey, string.Empty);
         }
     }
 #endif

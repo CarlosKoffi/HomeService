@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HomeService.Application.Abstractions;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
@@ -59,6 +60,18 @@ public sealed class MissionAdditionalQuoteWorkflowService(
             return MissionAdditionalQuoteWorkflowResult.ValidationFailed("Le devis complementaire peut etre demande apres le debut de mission.");
         }
 
+        var hasOpenQuote = await db.MissionAdditionalQuotes
+            .AsNoTracking()
+            .AnyAsync(item => item.MissionId == mission.Id
+                && item.ProviderId == providerId
+                && (item.Status == MissionAdditionalQuoteStatus.Requested
+                    || item.Status == MissionAdditionalQuoteStatus.Submitted), cancellationToken);
+        if (hasOpenQuote)
+        {
+            return MissionAdditionalQuoteWorkflowResult.ValidationFailed(
+                "Un devis complementaire est deja en attente. La mission reste en pause jusqu'au paiement du client.");
+        }
+
         var provider = await db.Providers
             .AsNoTracking()
             .FirstOrDefaultAsync(item => item.Id == providerId, cancellationToken);
@@ -90,7 +103,19 @@ public sealed class MissionAdditionalQuoteWorkflowService(
             $"{provider.FullName} a transmis une remarque sur {mission.MissionNumber}. Préparez le devis complémentaire.",
             nameof(MissionAdditionalQuote),
             quote.Id,
-            null,
+            JsonSerializer.Serialize(new
+            {
+                type = "company_additional_quote_required",
+                missionId = mission.Id,
+                missionNumber = mission.MissionNumber,
+                assignmentId = await db.ProviderMissionAssignments
+                    .Where(item => item.MissionId == mission.Id && item.ProviderId == providerId)
+                    .OrderByDescending(item => item.CreatedAt)
+                    .Select(item => (Guid?)item.Id)
+                    .FirstOrDefaultAsync(cancellationToken),
+                quoteId = quote.Id,
+                companyId = mission.CompanyId.Value
+            }),
             cancellationToken,
             saveChanges: false);
 
@@ -155,7 +180,14 @@ public sealed class MissionAdditionalQuoteWorkflowService(
             $"Un devis complementaire de {request.Amount:N0} {quote.Currency} est disponible pour {quote.Mission.MissionNumber}.",
             nameof(MissionAdditionalQuote),
             quote.Id,
-            null,
+            JsonSerializer.Serialize(new
+            {
+                type = "customer_additional_quote_payment_required",
+                missionId = quote.Mission.Id,
+                missionNumber = quote.Mission.MissionNumber,
+                quoteId = quote.Id,
+                companyId
+            }),
             cancellationToken,
             saveChanges: false);
 
@@ -222,13 +254,47 @@ public sealed class MissionAdditionalQuoteWorkflowService(
             $"missions/{quote.Mission.Id}");
 
         await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Company,
+            quote.CompanyId,
+            "Complément payé",
+            $"Le client a payé le devis complémentaire de {amount:N0} {quote.Currency} pour {quote.Mission.MissionNumber}.",
+            nameof(MissionAdditionalQuote),
+            quote.Id,
+            JsonSerializer.Serialize(new
+            {
+                type = "company_additional_quote_paid",
+                missionId = quote.Mission.Id,
+                missionNumber = quote.Mission.MissionNumber,
+                quoteId = quote.Id,
+                providerId = quote.ProviderId,
+                companyId = quote.CompanyId
+            }),
+            cancellationToken,
+            saveChanges: false);
+
+        var assignmentId = await db.ProviderMissionAssignments
+            .AsNoTracking()
+            .Where(item => item.MissionId == quote.MissionId && item.ProviderId == quote.ProviderId)
+            .OrderByDescending(item => item.CreatedAt)
+            .Select(item => (Guid?)item.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        await mobilePushNotifications.QueueForOwnerAsync(
             MobileDeviceOwnerType.Provider,
             quote.ProviderId,
             "Complement accepte",
             $"Le client a paye le devis complementaire pour {quote.Mission.MissionNumber}.",
             nameof(MissionAdditionalQuote),
             quote.Id,
-            null,
+            JsonSerializer.Serialize(new
+            {
+                type = "provider_additional_quote_paid",
+                missionId = quote.Mission.Id,
+                missionNumber = quote.Mission.MissionNumber,
+                assignmentId,
+                quoteId = quote.Id,
+                companyId = quote.CompanyId
+            }),
             cancellationToken,
             saveChanges: false);
 

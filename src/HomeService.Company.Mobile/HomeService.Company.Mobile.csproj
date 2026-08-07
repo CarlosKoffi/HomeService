@@ -29,7 +29,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <MauiIcon Include="Resources\AppIcon\wele_appicon.png" />
+    <MauiIcon Include="Resources\AppIcon\wele_appicon.svg" />
     <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#FFFFFF" BaseSize="128,128" />
     <MauiImage Include="Resources\Images\*" />
     <MauiImage Include="..\HomeService.Provider.Mobile\Resources\Images\*" Link="Resources\Images\%(Filename)%(Extension)" />

@@ -24,6 +24,25 @@ public sealed class MobilePushNotificationQueueService(IAppDbContext db)
             .Select(token => token.Token)
             .ToListAsync(cancellationToken);
 
+        // Preserve a logical in-app notification even when Firebase has not yet
+        // registered this device. When a token exists, its push outbox row also
+        // serves as the in-app inbox entry.
+        if (tokens.Count == 0)
+        {
+            var inboxMessage = new NotificationOutboxMessage(
+                NotificationChannel.InApp,
+                $"in-app:{ownerType}:{ownerId:D}",
+                title,
+                body,
+                relatedEntityType,
+                relatedEntityId,
+                metadataJson,
+                ownerType,
+                ownerId);
+            inboxMessage.MarkSent();
+            db.NotificationOutboxMessages.Add(inboxMessage);
+        }
+
         foreach (var token in tokens)
         {
             db.NotificationOutboxMessages.Add(new NotificationOutboxMessage(

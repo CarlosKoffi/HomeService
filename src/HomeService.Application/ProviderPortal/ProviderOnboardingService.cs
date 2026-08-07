@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -6,7 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.ProviderPortal;
 
-public sealed class ProviderOnboardingService(IAppDbContext db)
+public sealed class ProviderOnboardingService(
+    IAppDbContext db,
+    InterimCandidateNotificationService? candidateNotifications = null)
 {
     public async Task<IReadOnlyList<ProviderOnboardingOptionResponse>> SearchOptionsAsync(
         string? search,
@@ -274,6 +277,14 @@ public sealed class ProviderOnboardingService(IAppDbContext db)
 
         var affiliationRequest = new ProviderAffiliationRequest(request.ProviderId, request.CompanyId, request.Message);
         db.ProviderAffiliationRequests.Add(affiliationRequest);
+        if (candidateNotifications is not null)
+        {
+            await candidateNotifications.QueueForCompanyAsync(
+                request.CompanyId,
+                affiliationRequest,
+                $"{provider!.FirstName} {provider.LastName}".Trim(),
+                cancellationToken);
+        }
         await db.SaveChangesAsync(cancellationToken);
 
         return ProviderAffiliationRequestResult.Ok(new ProviderAffiliationRequestResponse(

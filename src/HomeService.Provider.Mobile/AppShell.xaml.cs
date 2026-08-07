@@ -14,5 +14,11 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ServicesPage), typeof(ServicesPage));
         Routing.RegisterRoute(nameof(PortfolioPage), typeof(PortfolioPage));
         Routing.RegisterRoute(nameof(SettingsPage), typeof(SettingsPage));
+
+        Dispatcher.Dispatch(async () =>
+        {
+            await Task.Delay(150);
+            await Services.ProviderNotificationNavigationService.TryNavigateAsync();
+        });
     }
 }

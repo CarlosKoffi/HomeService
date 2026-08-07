@@ -35,7 +35,9 @@ public sealed class ProviderMissionChatServiceTests
         var message = await db.MissionMessages.SingleAsync();
         Assert.Equal(MissionMessageSenderType.Provider, message.SenderType);
         Assert.Equal("Pouvez-vous envoyer une photo de l'evier ?", message.Body);
-        var push = await db.NotificationOutboxMessages.SingleAsync();
+        var push = await db.NotificationOutboxMessages.SingleAsync(item =>
+            item.Channel == NotificationChannel.MobilePush
+            && item.OwnerType == MobileDeviceOwnerType.Customer);
         Assert.Equal(NotificationChannel.MobilePush, push.Channel);
         Assert.Equal("customer-token", push.Recipient);
         Assert.Contains(scenario.Mission.MissionNumber, push.Subject);

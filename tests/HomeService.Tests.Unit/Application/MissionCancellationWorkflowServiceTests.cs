@@ -45,7 +45,9 @@ public sealed class MissionCancellationWorkflowServiceTests
         Assert.Equal(2, await db.MissionPaymentMilestones.CountAsync());
         Assert.Equal(1, await db.CompanyPortalActivities.CountAsync());
         Assert.Equal(1, await db.CompanyPortalNotifications.CountAsync());
-        var push = await db.NotificationOutboxMessages.SingleAsync();
+        var push = await db.NotificationOutboxMessages.SingleAsync(item =>
+            item.Channel == NotificationChannel.MobilePush
+            && item.OwnerType == MobileDeviceOwnerType.Customer);
         Assert.Equal(NotificationChannel.MobilePush, push.Channel);
         Assert.Equal("customer-device-token", push.Recipient);
         Assert.Equal("Mission annulee", push.Subject);
@@ -96,10 +98,16 @@ public sealed class MissionCancellationWorkflowServiceTests
         Assert.Equal(MissionCancellationActor.Provider, scenario.Mission.CancelledBy);
         Assert.Equal(1500, scenario.Mission.CancellationFeeAmount);
         Assert.Equal(18_500, scenario.Mission.RefundAmount);
-        Assert.Equal(1, await db.NotificationOutboxMessages.CountAsync());
-        var push = await db.NotificationOutboxMessages.SingleAsync();
+        Assert.Equal(3, await db.NotificationOutboxMessages.CountAsync());
+        var push = await db.NotificationOutboxMessages.SingleAsync(item =>
+            item.Channel == NotificationChannel.MobilePush
+            && item.OwnerType == MobileDeviceOwnerType.Provider);
         Assert.Equal(NotificationChannel.MobilePush, push.Channel);
         Assert.Equal("provider-device-token", push.Recipient);
+        Assert.Contains("mission_cancelled", push.MetadataJson);
+        Assert.Contains(await db.NotificationOutboxMessages.ToListAsync(), item =>
+            item.OwnerType == MobileDeviceOwnerType.Company
+            && item.MetadataJson!.Contains("mission_cancelled"));
     }
 
     private static async Task<CancellationWorkflowScenario> SeedAcceptedMissionAsync(HomeServiceDbContext db)

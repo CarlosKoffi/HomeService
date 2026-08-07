@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HomeService.Application.Abstractions;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
@@ -104,6 +105,13 @@ public sealed class ClientMissionCompletionValidationService(
             "success",
             $"missions/{mission.Id}");
 
+        await QueueCompanyCompletionPushAsync(
+            mission,
+            "company_mission_validated",
+            "Mission validée par le client",
+            $"Le client a validé la mission {mission.MissionNumber} avec une note globale de {review.OverallRating}/5.",
+            cancellationToken);
+
         await mobilePushNotifications.QueueForOwnerAsync(
             MobileDeviceOwnerType.Provider,
             mission.ProviderId.Value,
@@ -111,7 +119,7 @@ public sealed class ClientMissionCompletionValidationService(
             $"Le client a valide la mission {mission.MissionNumber}. Note globale: {review.OverallRating}/5.",
             nameof(Mission),
             mission.Id,
-            null,
+            await BuildProviderMetadataAsync(mission, "provider_mission_validated", cancellationToken),
             cancellationToken,
             saveChanges: false);
 
@@ -168,6 +176,13 @@ public sealed class ClientMissionCompletionValidationService(
                 "success",
                 $"missions/{mission.Id}");
 
+            await QueueCompanyCompletionPushAsync(
+                mission,
+                "company_mission_auto_validated",
+                "Mission validée automatiquement",
+                $"Le délai client de la mission {mission.MissionNumber} a expiré. Le paiement entreprise est libéré.",
+                cancellationToken);
+
             await mobilePushNotifications.QueueForOwnerAsync(
                 MobileDeviceOwnerType.Provider,
                 mission.ProviderId!.Value,
@@ -175,7 +190,7 @@ public sealed class ClientMissionCompletionValidationService(
                 $"Le delai client de la mission {mission.MissionNumber} a expire. La mission est maintenant validee.",
                 nameof(Mission),
                 mission.Id,
-                null,
+                await BuildProviderMetadataAsync(mission, "provider_mission_auto_validated", cancellationToken),
                 cancellationToken,
                 saveChanges: false);
 
@@ -190,6 +205,32 @@ public sealed class ClientMissionCompletionValidationService(
         return validatedCount;
     }
 
+    private Task QueueCompanyCompletionPushAsync(
+        Mission mission,
+        string type,
+        string title,
+        string body,
+        CancellationToken cancellationToken)
+    {
+        return mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Company,
+            mission.CompanyId!.Value,
+            title,
+            body,
+            nameof(Mission),
+            mission.Id,
+            JsonSerializer.Serialize(new
+            {
+                type,
+                missionId = mission.Id,
+                missionNumber = mission.MissionNumber,
+                providerId = mission.ProviderId,
+                companyId = mission.CompanyId
+            }),
+            cancellationToken,
+            saveChanges: false);
+    }
+
     private static ValidateClientMissionCompletionResponse ToResponse(Mission mission, int overallRating)
     {
         return new ValidateClientMissionCompletionResponse(
@@ -202,6 +243,28 @@ public sealed class ClientMissionCompletionValidationService(
             overallRating,
             mission.CompanyPayoutAmount,
             mission.Currency);
+    }
+
+    private async Task<string> BuildProviderMetadataAsync(
+        Mission mission,
+        string type,
+        CancellationToken cancellationToken)
+    {
+        var assignmentId = await db.ProviderMissionAssignments
+            .AsNoTracking()
+            .Where(item => item.MissionId == mission.Id && item.ProviderId == mission.ProviderId)
+            .OrderByDescending(item => item.CreatedAt)
+            .Select(item => (Guid?)item.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+        return JsonSerializer.Serialize(new
+        {
+            type,
+            missionId = mission.Id,
+            missionNumber = mission.MissionNumber,
+            assignmentId,
+            providerId = mission.ProviderId,
+            companyId = mission.CompanyId
+        });
     }
 
     private static List<string> Validate(ValidateClientMissionCompletionRequest request)

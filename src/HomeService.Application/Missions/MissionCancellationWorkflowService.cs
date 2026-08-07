@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HomeService.Application.Abstractions;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
@@ -253,6 +254,24 @@ public sealed class MissionCancellationWorkflowService(
         int refundAmount,
         CancellationToken cancellationToken)
     {
+        var assignmentId = mission.ProviderId is null
+            ? null
+            : await db.ProviderMissionAssignments
+                .AsNoTracking()
+                .Where(item => item.MissionId == mission.Id && item.ProviderId == mission.ProviderId)
+                .OrderByDescending(item => item.CreatedAt)
+                .Select(item => (Guid?)item.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+        var metadataJson = JsonSerializer.Serialize(new
+        {
+            type = "mission_cancelled",
+            missionId = mission.Id,
+            missionNumber = mission.MissionNumber,
+            assignmentId,
+            providerId = mission.ProviderId,
+            companyId = mission.CompanyId
+        });
+
         companyNotifications.AddForMission(
             mission,
             "MissionCancelled",
@@ -268,9 +287,23 @@ public sealed class MissionCancellationWorkflowService(
             $"La mission {mission.MissionNumber} a ete annulee. Raison: {reason}.",
             nameof(Mission),
             mission.Id,
-            null,
+            metadataJson,
             cancellationToken,
             saveChanges: false);
+
+        if (mission.CompanyId.HasValue)
+        {
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Company,
+                mission.CompanyId.Value,
+                "Mission annulée",
+                $"La mission {mission.MissionNumber} a été annulée. Raison : {reason}.",
+                nameof(Mission),
+                mission.Id,
+                metadataJson,
+                cancellationToken,
+                saveChanges: false);
+        }
 
         if (mission.ProviderId is null)
         {
@@ -284,7 +317,7 @@ public sealed class MissionCancellationWorkflowService(
             $"La mission {mission.MissionNumber} a ete annulee. Raison: {reason}.",
             nameof(Mission),
             mission.Id,
-            null,
+            metadataJson,
             cancellationToken,
             saveChanges: false);
     }

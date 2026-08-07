@@ -1,7 +1,9 @@
 using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using AndroidX.AppCompat.App;
+using HomeService.Provider.Mobile.Services;
 
 namespace HomeService.Provider.Mobile;
 
@@ -20,6 +22,7 @@ public class MainActivity : MauiAppCompatActivity
     {
         AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightNo;
         base.OnCreate(savedInstanceState);
+        CaptureNotificationIntent(Intent);
         WeleProviderNotificationChannel.EnsureCreated(this);
 
         if (OperatingSystem.IsAndroidVersionAtLeast(33)
@@ -27,5 +30,25 @@ public class MainActivity : MauiAppCompatActivity
         {
             RequestPermissions([Android.Manifest.Permission.PostNotifications], 2001);
         }
+    }
+
+    protected override void OnNewIntent(Intent? intent)
+    {
+        base.OnNewIntent(intent);
+        Intent = intent;
+        CaptureNotificationIntent(intent);
+        _ = ProviderNotificationNavigationService.TryNavigateAsync();
+    }
+
+    private static void CaptureNotificationIntent(Intent? intent)
+    {
+        if (intent?.Extras is null) return;
+        var keys = intent.Extras.KeySet();
+        if (keys is null) return;
+        var data = keys
+            .Select(key => new { key, value = intent.Extras.Get(key)?.ToString() })
+            .Where(item => !string.IsNullOrWhiteSpace(item.value))
+            .ToDictionary(item => item.key, item => item.value!);
+        ProviderNotificationNavigationService.Store(data);
     }
 }

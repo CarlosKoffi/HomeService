@@ -44,6 +44,10 @@ public sealed class WeleFirebaseMessagingService : FirebaseMessagingService
 
         var launchIntent = PackageManager?.GetLaunchIntentForPackage(PackageName!);
         launchIntent?.AddFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop);
+        foreach (var item in message.Data)
+        {
+            launchIntent?.PutExtra(item.Key, item.Value);
+        }
         var pendingIntent = PendingIntent.GetActivity(
             this,
             message.MessageId?.GetHashCode() ?? 0,

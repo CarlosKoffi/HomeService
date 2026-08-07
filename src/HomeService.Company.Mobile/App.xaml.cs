@@ -43,6 +43,7 @@ public partial class App : Application
             {
                 await services.GetRequiredService<CompanyDeviceRegistrationService>()
                     .RegisterCurrentDeviceAsync();
+                await CompanyNotificationNavigationService.TryNavigateAsync();
             }
         }
         catch

@@ -89,6 +89,9 @@ public partial class MissionDetailPage : ContentPage
 
     private void Render(ProviderMobileMissionDetailResponse mission)
     {
+        var isClosed = mission.AssignmentStatus is "Completed" or "Cancelled" or "Refused" or "Expired"
+            || mission.MissionStatus is "Completed" or "Cancelled" or "Disputed" or "Resolved";
+        var blockingQuote = mission.AdditionalQuotes.FirstOrDefault(quote => quote.Status is "Requested" or "Submitted");
         DetailHost.IsVisible = true;
         StatusLabel.Text = StatusText(mission.AssignmentStatus);
         var statusColor = StatusColor(mission.AssignmentStatus);
@@ -102,18 +105,19 @@ public partial class MissionDetailPage : ContentPage
         ScheduleLabel.Text = mission.ScheduledFor?.LocalDateTime.ToString("dddd d MMMM · HH:mm") ?? "Horaire à confirmer";
         LocationLabel.Text = $"{mission.LocationLabel} · {FormatDistance(mission.DistanceKm)}";
 
+        CustomerCard.IsVisible = !isClosed;
         CustomerNameLabel.Text = mission.CustomerDisplayName;
         CustomerPhoneLabel.Text = mission.CanCallCustomer && !string.IsNullOrWhiteSpace(mission.CustomerPhoneNumber)
             ? mission.CustomerPhoneNumber
             : "Coordonnées disponibles selon l’état de la mission";
         CallButton.IsVisible = mission.CanCallCustomer && !string.IsNullOrWhiteSpace(mission.CustomerPhoneNumber);
-        MessageButton.IsVisible = mission.AssignmentStatus is not ("Cancelled" or "Refused" or "Expired");
+        MessageButton.IsVisible = !isClosed;
 
         DescriptionCard.IsVisible = !string.IsNullOrWhiteSpace(mission.Description);
         DescriptionLabel.Text = mission.Description ?? string.Empty;
         RenderMap(mission);
 
-        ArrivalCard.IsVisible = mission.AssignmentStatus is "Accepted" or "Started";
+        ArrivalCard.IsVisible = !isClosed && mission.AssignmentStatus is "Accepted" or "Started";
         ArrivalTitleLabel.Text = mission.Arrival.IsVerified ? "Arrivée vérifiée" : "Arrivée à confirmer";
         ArrivalDetailLabel.Text = mission.Arrival.DistanceMeters is null
             ? $"La vérification s’effectue dans un rayon de {mission.Arrival.ToleranceMeters} m."
@@ -125,10 +129,16 @@ public partial class MissionDetailPage : ContentPage
         RefuseButton.IsVisible = mission.Actions.CanRefuse;
         SetActionsEnabled(true);
 
-        FieldActionsStack.IsVisible = mission.Actions.CanVerifyArrival || mission.Actions.CanStart || mission.Actions.CanComplete;
+        AdditionalQuotePauseCard.IsVisible = blockingQuote is not null;
+        AdditionalQuotePauseLabel.Text = blockingQuote?.Status == "Requested"
+            ? "L'entreprise prépare le devis. La mission reste verrouillée."
+            : "Le devis a été envoyé. La mission reprendra automatiquement après le paiement du client.";
+
+        FieldActionsStack.IsVisible = mission.Actions.CanVerifyArrival || mission.Actions.CanStart || mission.Actions.CanComplete
+            || (!isClosed && mission.MissionStatus == "Started" && blockingQuote is null);
         VerifyArrivalButton.IsVisible = mission.Actions.CanVerifyArrival;
         StartButton.IsVisible = mission.Actions.CanStart;
-        AdditionalQuoteButton.IsVisible = mission.MissionStatus == "Started";
+        AdditionalQuoteButton.IsVisible = !isClosed && mission.MissionStatus == "Started" && blockingQuote is null;
         CompleteButton.IsVisible = mission.Actions.CanComplete;
         RestartLocationUpdates(mission);
     }

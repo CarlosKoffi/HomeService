@@ -110,6 +110,67 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
             null,
             cancellationToken);
 
+    public Task<ApiCallResult<IReadOnlyList<CompanyInterimCandidateResponse>>> GetInterimCandidatesAsync(
+        string token,
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+        => SendAsync<IReadOnlyList<CompanyInterimCandidateResponse>>(
+            HttpMethod.Get,
+            $"api/company-portal/{companyId:D}/interim-candidates",
+            token,
+            null,
+            cancellationToken);
+
+    public Task<ApiCallResult<bool>> ApproveInterimCandidateAsync(
+        string token,
+        Guid companyId,
+        Guid requestId,
+        CompanyReviewInterimCandidateRequest request,
+        CancellationToken cancellationToken = default)
+        => SendWithoutBodyAsync(
+            HttpMethod.Post,
+            $"api/company-portal/{companyId:D}/interim-candidates/{requestId:D}/approve",
+            token,
+            request,
+            cancellationToken);
+
+    public Task<ApiCallResult<bool>> RejectInterimCandidateAsync(
+        string token,
+        Guid companyId,
+        Guid requestId,
+        CompanyReviewInterimCandidateRequest request,
+        CancellationToken cancellationToken = default)
+        => SendWithoutBodyAsync(
+            HttpMethod.Post,
+            $"api/company-portal/{companyId:D}/interim-candidates/{requestId:D}/reject",
+            token,
+            request,
+            cancellationToken);
+
+    public Task<ApiCallResult<bool>> ApproveEmployeeAsync(
+        string token,
+        Guid companyId,
+        Guid employeeId,
+        CancellationToken cancellationToken = default)
+        => SendWithoutBodyAsync(
+            HttpMethod.Post,
+            $"api/company-portal/{companyId:D}/employees/{employeeId:D}/approve",
+            token,
+            null,
+            cancellationToken);
+
+    public Task<ApiCallResult<bool>> DeactivateEmployeeAsync(
+        string token,
+        Guid companyId,
+        Guid employeeId,
+        CancellationToken cancellationToken = default)
+        => SendWithoutBodyAsync(
+            HttpMethod.Delete,
+            $"api/company-portal/{companyId:D}/employees/{employeeId:D}",
+            token,
+            null,
+            cancellationToken);
+
     public Task<ApiCallResult<IReadOnlyList<CompanyPortalAssignableProviderResponse>>> GetAssignableProvidersAsync(
         string token,
         Guid companyId,
@@ -168,6 +229,18 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
         => SendAsync<CompanyPortalNotificationListResponse>(
             HttpMethod.Get,
             $"api/company-portal/{companyId:D}/notifications",
+            token,
+            null,
+            cancellationToken);
+
+    public Task<ApiCallResult<bool>> MarkNotificationReadAsync(
+        string token,
+        Guid companyId,
+        Guid notificationId,
+        CancellationToken cancellationToken = default)
+        => SendWithoutBodyAsync(
+            HttpMethod.Post,
+            $"api/company-portal/{companyId:D}/notifications/{notificationId:D}/mark-read",
             token,
             null,
             cancellationToken);

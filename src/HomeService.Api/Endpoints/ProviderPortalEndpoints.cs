@@ -394,7 +394,8 @@ public static class ProviderPortalEndpoints
                 .AsNoTracking()
                 .Where(item => item.OwnerType == MobileDeviceOwnerType.Provider
                     && item.OwnerId == session.ProviderId
-                    && item.Channel == NotificationChannel.MobilePush);
+                    && (item.Channel == NotificationChannel.MobilePush
+                        || item.Channel == NotificationChannel.InApp));
             if (unreadOnly == true)
             {
                 query = query.Where(item => item.ReadAt == null);
@@ -415,6 +416,7 @@ public static class ProviderPortalEndpoints
                     item.Body,
                     item.RelatedEntityType,
                     item.RelatedEntityId,
+                    item.MetadataJson,
                     item.CreatedAt,
                     item.ReadAt is not null))
                 .ToList();
@@ -1434,11 +1436,17 @@ public static class ProviderPortalEndpoints
                 MissionWorkflowSettingsResolver.CustomerCompletionValidationMinutes,
                 120,
                 cancellationToken);
+            var hasBlockingAdditionalQuote = await db.MissionAdditionalQuotes
+                .AsNoTracking()
+                .AnyAsync(item => item.MissionId == assignment.MissionId
+                    && (item.Status == MissionAdditionalQuoteStatus.Requested
+                        || item.Status == MissionAdditionalQuoteStatus.Submitted), cancellationToken);
             var result = workflow.CompleteMission(
                 session.Provider,
                 assignment,
                 request,
-                DateTimeOffset.UtcNow.Add(customerValidationWindow));
+                DateTimeOffset.UtcNow.Add(customerValidationWindow),
+                hasBlockingAdditionalQuote);
             if (result.Status != ProviderMissionOperationStatus.Ok)
             {
                 return ToProviderMissionHttpResult(result);
@@ -1874,11 +1882,17 @@ public static class ProviderPortalEndpoints
             MissionWorkflowSettingsResolver.CustomerCompletionValidationMinutes,
             120,
             cancellationToken);
+        var hasBlockingAdditionalQuote = await db.MissionAdditionalQuotes
+            .AsNoTracking()
+            .AnyAsync(item => item.MissionId == assignment.MissionId
+                && (item.Status == MissionAdditionalQuoteStatus.Requested
+                    || item.Status == MissionAdditionalQuoteStatus.Submitted), cancellationToken);
         var result = workflow.CompleteMission(
             session.Provider,
             assignment,
             request,
-            DateTimeOffset.UtcNow.Add(customerValidationWindow));
+            DateTimeOffset.UtcNow.Add(customerValidationWindow),
+            hasBlockingAdditionalQuote);
         if (result.Status != ProviderMissionOperationStatus.Ok)
         {
             return ToProviderMissionHttpResult(result);
@@ -1992,7 +2006,15 @@ public static class ProviderPortalEndpoints
 
         servicesById.TryGetValue(assignment.Mission.ServiceId, out var service);
         customersById.TryGetValue(assignment.Mission.CustomerId, out var customer);
-        var canCallCustomer = assignment.Mission.CanRevealContactDetails && customer is not null;
+        var isClosed = assignment.Status is ProviderMissionAssignmentStatus.Completed
+                or ProviderMissionAssignmentStatus.Cancelled
+                or ProviderMissionAssignmentStatus.Refused
+                or ProviderMissionAssignmentStatus.Expired
+            || assignment.Mission.Status is MissionStatus.Completed
+                or MissionStatus.Cancelled
+                or MissionStatus.Disputed
+                or MissionStatus.Resolved;
+        var canCallCustomer = !isClosed && assignment.Mission.CanRevealContactDetails && customer is not null;
         return new ProviderMobileMissionSummaryResponse(
             assignment.Id,
             assignment.MissionId,
@@ -2001,7 +2023,7 @@ public static class ProviderPortalEndpoints
             service?.IconName ?? "sparkles",
             assignment.Mission.ServicePrestation?.Name,
             assignment.Company?.Name ?? "Entreprise",
-            BuildLocationLabel(assignment.Mission.ServiceAddress),
+            isClosed ? "Adresse masquee apres la mission" : BuildLocationLabel(assignment.Mission.ServiceAddress),
             assignment.Mission.ScheduledFor,
             assignment.Status.ToString(),
             canCallCustomer,

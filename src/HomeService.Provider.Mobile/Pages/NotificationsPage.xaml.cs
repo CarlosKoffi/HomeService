@@ -1,6 +1,7 @@
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Provider.Mobile.Services;
 using Microsoft.Maui.Controls.Shapes;
+using System.Text.Json;
 
 namespace HomeService.Provider.Mobile.Pages;
 
@@ -136,6 +137,23 @@ public partial class NotificationsPage : ContentPage
     {
         if (apiClient is null || string.IsNullOrWhiteSpace(accessToken) || e.Parameter is not ProviderMobileNotificationResponse notification) return;
         if (!notification.IsRead) await apiClient.MarkNotificationReadAsync(accessToken, notification.Id);
+
+        if (!string.IsNullOrWhiteSpace(notification.MetadataJson))
+        {
+            try
+            {
+                var data = JsonSerializer.Deserialize<Dictionary<string, string>>(notification.MetadataJson);
+                if (data is not null)
+                {
+                    ProviderNotificationNavigationService.Store(data);
+                    if (await ProviderNotificationNavigationService.TryNavigateAsync()) return;
+                }
+            }
+            catch (JsonException)
+            {
+                // Older notifications fall back to their related entity below.
+            }
+        }
 
         if (notification.RelatedEntityId is not null
             && string.Equals(notification.RelatedEntityType, "Mission", StringComparison.OrdinalIgnoreCase))

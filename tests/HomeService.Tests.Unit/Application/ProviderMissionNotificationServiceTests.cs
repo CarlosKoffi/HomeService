@@ -41,7 +41,9 @@ public sealed class ProviderMissionNotificationServiceTests
         Assert.Equal("MissionProviderAccepted", portal.Type);
         Assert.Contains(scenario.Provider.FullName, portal.Message);
 
-        var push = await db.NotificationOutboxMessages.SingleAsync();
+        var push = await db.NotificationOutboxMessages.SingleAsync(item =>
+            item.Channel == NotificationChannel.MobilePush
+            && item.OwnerType == MobileDeviceOwnerType.Customer);
         Assert.Equal(NotificationChannel.MobilePush, push.Channel);
         Assert.Equal("customer-token", push.Recipient);
         Assert.Equal($"Paiement requis pour {scenario.Mission.MissionNumber}", push.Subject);
@@ -51,7 +53,7 @@ public sealed class ProviderMissionNotificationServiceTests
     }
 
     [Fact]
-    public async Task NotifyArrivedAsync_DoesNotNotifyCustomerWithoutRequiredAction()
+    public async Task NotifyArrivedAsync_QueuesCustomerAndCompanyStatusNotifications()
     {
         await using var db = CreateDbContext();
         var scenario = await SeedScenarioAsync(db);
@@ -61,6 +63,12 @@ public sealed class ProviderMissionNotificationServiceTests
             MobileDevicePlatform.Ios,
             "ios-token",
             "iPhone test"));
+        db.MobileDeviceTokens.Add(new MobileDeviceToken(
+            MobileDeviceOwnerType.Company,
+            scenario.Company.Id,
+            MobileDevicePlatform.Android,
+            "company-token",
+            "Entreprise test"));
         db.NotificationTemplates.Add(new NotificationTemplate(
             "MissionTechnicianArrived",
             NotificationTemplateChannel.MobilePush,
@@ -76,7 +84,21 @@ public sealed class ProviderMissionNotificationServiceTests
         await service.NotifyArrivedAsync(scenario.Mission, scenario.Provider, scenario.Assignment, CancellationToken.None);
         await db.SaveChangesAsync();
 
-        Assert.Empty(await db.NotificationOutboxMessages.ToListAsync());
+        var pushes = await db.NotificationOutboxMessages
+            .Where(item => item.Channel == NotificationChannel.MobilePush)
+            .ToListAsync();
+        Assert.Equal(2, pushes.Count);
+        Assert.Contains(pushes, item =>
+            item.OwnerType == MobileDeviceOwnerType.Customer
+            && item.Recipient == "ios-token"
+            && item.MetadataJson!.Contains("mission_technician_arrived"));
+        Assert.Contains(pushes, item =>
+            item.OwnerType == MobileDeviceOwnerType.Company
+            && item.Recipient == "company-token"
+            && item.MetadataJson!.Contains("company_provider_arrived"));
+        Assert.Contains(await db.CompanyPortalNotifications.ToListAsync(), item =>
+            item.CompanyId == scenario.Company.Id
+            && item.Type == "MissionTechnicianArrivedCompany");
     }
 
     private static ProviderMissionNotificationService CreateService(HomeServiceDbContext db)

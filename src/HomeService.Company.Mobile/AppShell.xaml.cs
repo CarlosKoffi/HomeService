@@ -9,5 +9,11 @@ public partial class AppShell : Shell
         InitializeComponent();
         Routing.RegisterRoute(nameof(MissionDetailPage), typeof(MissionDetailPage));
         Routing.RegisterRoute(nameof(ChatPage), typeof(ChatPage));
+
+        Dispatcher.Dispatch(async () =>
+        {
+            await Task.Delay(150);
+            await Services.CompanyNotificationNavigationService.TryNavigateAsync();
+        });
     }
 }

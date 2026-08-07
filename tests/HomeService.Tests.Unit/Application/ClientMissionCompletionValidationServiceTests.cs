@@ -45,10 +45,14 @@ public sealed class ClientMissionCompletionValidationServiceTests
         var notification = await db.CompanyPortalNotifications.SingleAsync();
         Assert.Equal("MissionPaymentReleased", notification.Type);
         Assert.Equal(scenario.Company.Id, notification.CompanyId);
-        Assert.Equal(1, await db.NotificationOutboxMessages.CountAsync());
-        var push = await db.NotificationOutboxMessages.SingleAsync();
+        Assert.Equal(2, await db.NotificationOutboxMessages.CountAsync());
+        var push = await db.NotificationOutboxMessages.SingleAsync(item =>
+            item.OwnerType == MobileDeviceOwnerType.Provider);
         Assert.Equal(NotificationChannel.MobilePush, push.Channel);
         Assert.Equal("provider-token", push.Recipient);
+        var companyPush = await db.NotificationOutboxMessages.SingleAsync(item =>
+            item.OwnerType == MobileDeviceOwnerType.Company);
+        Assert.Contains("company_mission_validated", companyPush.MetadataJson);
         var milestone = await db.MissionPaymentMilestones.SingleAsync();
         Assert.Equal(MissionPaymentMilestoneStatus.Paid, milestone.Status);
         Assert.Equal("PAYOUT-001", milestone.ExternalPaymentReference);

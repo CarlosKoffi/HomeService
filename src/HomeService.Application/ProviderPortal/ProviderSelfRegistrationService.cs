@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Application.Security;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
@@ -7,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.ProviderPortal;
 
-public sealed class ProviderSelfRegistrationService(IAppDbContext db)
+public sealed class ProviderSelfRegistrationService(
+    IAppDbContext db,
+    InterimCandidateNotificationService? candidateNotifications = null)
 {
     public async Task<ProviderSelfRegistrationResponse> RegisterAsync(
         ProviderSelfRegistrationRequest request,
@@ -127,6 +130,14 @@ public sealed class ProviderSelfRegistrationService(IAppDbContext db)
         foreach (var affiliationRequest in affiliationRequests)
         {
             db.ProviderAffiliationRequests.Add(affiliationRequest);
+            if (candidateNotifications is not null)
+            {
+                await candidateNotifications.QueueForCompanyAsync(
+                    affiliationRequest.CompanyId,
+                    affiliationRequest,
+                    $"{provider.FirstName} {provider.LastName}".Trim(),
+                    cancellationToken);
+            }
         }
 
         await db.SaveChangesAsync(cancellationToken);

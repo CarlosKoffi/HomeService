@@ -93,7 +93,8 @@ public sealed class ClientNotificationInboxService(IAppDbContext db)
     {
         return db.NotificationOutboxMessages
             .Where(notification =>
-                notification.Channel == NotificationChannel.MobilePush
+                (notification.Channel == NotificationChannel.MobilePush
+                    || notification.Channel == NotificationChannel.InApp)
                 && notification.OwnerType == MobileDeviceOwnerType.Customer
                 && notification.OwnerId == customerId);
     }

@@ -384,6 +384,17 @@ public partial class MissionDetailPage : ContentPage
         selectedAdditionalQuote = row.Quote;
         ProviderRemarkLabel.Text = row.Quote.Reason;
         QuoteEditor.IsVisible = row.Quote.Status == "Requested";
+        QuoteReadOnlyCard.IsVisible = row.Quote.Status != "Requested";
+        QuoteReadOnlyTitle.Text = row.Quote.Status == "Paid"
+            ? "Devis payé - mission débloquée"
+            : row.Quote.Status == "Submitted"
+                ? "Devis envoyé - paiement attendu"
+                : $"Devis {row.StatusLabel.ToLowerInvariant()}";
+        QuoteReadOnlyDetail.Text = row.Quote.Status == "Submitted"
+            ? $"{row.Quote.Amount:N0} {row.Quote.Currency} - {row.Quote.Description}. Ce devis est maintenant en lecture seule."
+            : row.Quote.Status == "Paid"
+                ? $"{row.Quote.Amount:N0} {row.Quote.Currency} - le prestataire peut reprendre et terminer la mission."
+                : row.Quote.Description ?? row.Quote.Reason;
         AdditionalAmountEntry.Text = row.Quote.Amount?.ToString() ?? string.Empty;
         AdditionalDescriptionEditor.Text = row.Quote.Description ?? row.Quote.Reason;
     }

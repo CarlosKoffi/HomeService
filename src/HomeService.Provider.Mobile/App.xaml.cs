@@ -31,6 +31,7 @@ public partial class App : Application
             {
                 await services.GetRequiredService<ProviderDeviceRegistrationService>()
                     .RegisterCurrentDeviceAsync();
+                await ProviderNotificationNavigationService.TryNavigateAsync();
             }
         }
         catch

@@ -46,7 +46,7 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Border Style="{StaticResource PremiumCard}">
+                    <Border x:Name="CustomerCard" Style="{StaticResource PremiumCard}">
                         <VerticalStackLayout Spacing="11">
                             <Label Text="Informations client" Style="{StaticResource CardTitleLabel}" />
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
@@ -87,6 +87,14 @@
                                 <Label x:Name="ArrivalDetailLabel" Style="{StaticResource MutedLabel}" />
                             </VerticalStackLayout>
                         </Grid>
+                    </Border>
+
+                    <Border x:Name="AdditionalQuotePauseCard" Style="{StaticResource PremiumCard}" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FDBA74">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="MISSION EN PAUSE" Style="{StaticResource EyebrowLabel}" TextColor="#B54708" />
+                            <Label Text="Devis complémentaire en attente" Style="{StaticResource CardTitleLabel}" />
+                            <Label x:Name="AdditionalQuotePauseLabel" Text="La mission reprendra automatiquement après le paiement du client." Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
                     </Border>
 
                     <Border x:Name="OfferCard" Style="{StaticResource PremiumCard}" IsVisible="False" Stroke="{StaticResource WeleBlue}">

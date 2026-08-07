@@ -2,46 +2,42 @@ using Android.App;
 using Android.Content;
 using AndroidX.Core.App;
 using Firebase.Messaging;
-using HomeService.Provider.Mobile.Services;
+using HomeService.Company.Mobile.Services;
 
-namespace HomeService.Provider.Mobile;
+namespace HomeService.Company.Mobile;
 
 [Service(Exported = false)]
 [IntentFilter(["com.google.firebase.MESSAGING_EVENT"])]
-public sealed class WeleProviderFirebaseMessagingService : FirebaseMessagingService
+public sealed class WeleCompanyFirebaseMessagingService : FirebaseMessagingService
 {
     public override void OnNewToken(string token)
     {
         base.OnNewToken(token);
-        ProviderDeviceRegistrationService.StoreFirebaseToken(token);
+        CompanyDeviceRegistrationService.StoreFirebaseToken(token);
         _ = RegisterTokenAsync();
     }
 
     public override void OnMessageReceived(RemoteMessage message)
     {
         base.OnMessageReceived(message);
-        WeleProviderNotificationChannel.EnsureCreated(this);
+        WeleCompanyNotificationChannel.EnsureCreated(this);
 
-        var title = message.GetNotification()?.Title
-            ?? ReadData(message, "title")
-            ?? "Wélé Pro";
-        var body = message.GetNotification()?.Body
-            ?? ReadData(message, "body")
-            ?? "Une mission a été mise à jour.";
-
+        var title = message.GetNotification()?.Title ?? ReadData(message, "title") ?? "Wélé Entreprise";
+        var body = message.GetNotification()?.Body ?? ReadData(message, "body") ?? "Une action attend votre entreprise.";
         var launchIntent = PackageManager?.GetLaunchIntentForPackage(PackageName!);
         launchIntent?.AddFlags(ActivityFlags.ClearTop | ActivityFlags.SingleTop);
         foreach (var item in message.Data)
         {
             launchIntent?.PutExtra(item.Key, item.Value);
         }
+
+        var requestCode = message.MessageId?.GetHashCode() ?? DateTime.UtcNow.Millisecond;
         var pendingIntent = PendingIntent.GetActivity(
             this,
-            message.MessageId?.GetHashCode() ?? 0,
+            requestCode,
             launchIntent,
             PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
-
-        var notification = new NotificationCompat.Builder(this, WeleProviderNotificationChannel.ChannelId)
+        var notification = new NotificationCompat.Builder(this, WeleCompanyNotificationChannel.ChannelId)
             .SetSmallIcon(Resource.Drawable.notification_icon)
             .SetContentTitle(title)
             .SetContentText(body)
@@ -50,9 +46,7 @@ public sealed class WeleProviderFirebaseMessagingService : FirebaseMessagingServ
             .SetAutoCancel(true)
             .SetContentIntent(pendingIntent)
             .Build();
-
-        NotificationManagerCompat.From(this)
-            .Notify(message.MessageId?.GetHashCode() ?? DateTime.UtcNow.Millisecond, notification);
+        NotificationManagerCompat.From(this).Notify(requestCode, notification);
     }
 
     private static string? ReadData(RemoteMessage message, string key)
@@ -62,15 +56,12 @@ public sealed class WeleProviderFirebaseMessagingService : FirebaseMessagingServ
     {
         try
         {
-            var service = IPlatformApplication.Current?.Services.GetService<ProviderDeviceRegistrationService>();
-            if (service is not null)
-            {
-                await service.RegisterCurrentDeviceAsync();
-            }
+            var service = IPlatformApplication.Current?.Services.GetService<CompanyDeviceRegistrationService>();
+            if (service is not null) await service.RegisterCurrentDeviceAsync();
         }
         catch
         {
-            // Persisted token is retried at the next authenticated app resume.
+            // The persisted token is retried on the next authenticated resume.
         }
     }
 }

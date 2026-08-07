@@ -45,7 +45,38 @@ public partial class NotificationsPage : ContentPage
         RefreshHost.IsRefreshing = false;
     }
 
+    private async void OnNotificationSelected(object? sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not NotificationRow row) return;
+        NotificationsView.SelectedItem = null;
+        var token = await sessionStore.GetTokenAsync();
+        var companyId = await sessionStore.GetCompanyIdAsync();
+        if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
+        if (!row.Source.IsRead)
+        {
+            await apiClient.MarkNotificationReadAsync(token, companyId.Value, row.Source.Id);
+        }
+
+        if (!string.IsNullOrWhiteSpace(row.Source.ActionUrl)
+            && row.Source.ActionUrl.StartsWith("missions/", StringComparison.OrdinalIgnoreCase)
+            && Guid.TryParse(row.Source.ActionUrl["missions/".Length..], out var missionId))
+        {
+            await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={missionId:D}");
+            return;
+        }
+
+        if (row.Source.Type.Contains("Provider", StringComparison.OrdinalIgnoreCase)
+            || row.Source.ActionUrl?.Contains("provider", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            await Shell.Current.GoToAsync("//providers");
+            return;
+        }
+
+        await LoadAsync();
+    }
+
     public sealed record NotificationRow(
+        CompanyPortalNotificationResponse Source,
         string Title,
         string Message,
         string TimeLabel,
@@ -57,6 +88,7 @@ public partial class NotificationsPage : ContentPage
         {
             var urgent = item.Tone is "warning" or "danger" || !item.IsRead;
             return new NotificationRow(
+                item,
                 item.Title,
                 item.Message,
                 item.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy · HH:mm"),

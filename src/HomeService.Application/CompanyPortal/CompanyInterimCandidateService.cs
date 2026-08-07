@@ -1,4 +1,6 @@
+using System.Text.Json;
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -6,7 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.CompanyPortal;
 
-public sealed class CompanyInterimCandidateService(IAppDbContext db)
+public sealed class CompanyInterimCandidateService(
+    IAppDbContext db,
+    MobilePushNotificationQueueService mobilePushNotifications)
 {
     public async Task<CompanyInterimSettingsResult> GetSettingsAsync(Guid companyId, CancellationToken cancellationToken)
     {
@@ -153,6 +157,17 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
 
         await SyncApprovedInterimServicesAsync(companyId, provider.Id, candidateServices, cancellationToken);
 
+        await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Provider,
+            provider.Id,
+            "Candidature acceptée",
+            $"{request.Company.Name} a accepté votre candidature. Votre profil est maintenant rattaché à cette entreprise.",
+            nameof(ProviderAffiliationRequest),
+            request.Id,
+            BuildProviderReviewMetadata("provider_affiliation_approved", request),
+            cancellationToken,
+            saveChanges: false);
+
         try
         {
             await db.SaveChangesAsync(cancellationToken);
@@ -196,6 +211,18 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
         }
         try
         {
+            await mobilePushNotifications.QueueForOwnerAsync(
+                MobileDeviceOwnerType.Provider,
+                request.ProviderId,
+                "Candidature non retenue",
+                string.IsNullOrWhiteSpace(note)
+                    ? $"{request.Company.Name} n'a pas retenu votre candidature."
+                    : $"{request.Company.Name} n'a pas retenu votre candidature. Motif : {note.Trim()}",
+                nameof(ProviderAffiliationRequest),
+                request.Id,
+                BuildProviderReviewMetadata("provider_affiliation_rejected", request),
+                cancellationToken,
+                saveChanges: false);
             await db.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException)
@@ -205,6 +232,15 @@ public sealed class CompanyInterimCandidateService(IAppDbContext db)
 
         return CompanyInterimCandidateReviewResult.Ok();
     }
+
+    private static string BuildProviderReviewMetadata(string type, ProviderAffiliationRequest request)
+        => JsonSerializer.Serialize(new
+        {
+            type,
+            providerId = request.ProviderId,
+            companyId = request.CompanyId,
+            requestId = request.Id
+        });
 
     private static CompanyInterimSettingsResponse ToSettingsResponse(Company company)
     {

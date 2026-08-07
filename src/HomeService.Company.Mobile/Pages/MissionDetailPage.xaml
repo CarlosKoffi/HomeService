@@ -156,6 +156,12 @@
                                     </DataTemplate>
                                 </CollectionView.ItemTemplate>
                             </CollectionView>
+                            <Border x:Name="QuoteReadOnlyCard" IsVisible="False" BackgroundColor="#F8FAFF" Stroke="#DCE8FF" StrokeShape="RoundRectangle 14" Padding="12">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label x:Name="QuoteReadOnlyTitle" Text="Devis envoyé au client" FontAttributes="Bold" />
+                                    <Label x:Name="QuoteReadOnlyDetail" Style="{StaticResource Muted}" />
+                                </VerticalStackLayout>
+                            </Border>
                             <VerticalStackLayout x:Name="QuoteEditor" IsVisible="False" Spacing="9">
                                 <Label x:Name="ProviderRemarkLabel" Style="{StaticResource Muted}" />
                                 <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="12,0">

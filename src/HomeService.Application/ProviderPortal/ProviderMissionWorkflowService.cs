@@ -250,7 +250,8 @@ public sealed class ProviderMissionWorkflowService
         ProviderProfile provider,
         ProviderMissionAssignment assignment,
         ProviderCompleteMissionRequest request,
-        DateTimeOffset? customerCompletionValidationExpiresAt = null)
+        DateTimeOffset? customerCompletionValidationExpiresAt = null,
+        bool hasBlockingAdditionalQuote = false)
     {
         if (!CanProviderUsePortal(provider))
         {
@@ -265,6 +266,12 @@ public sealed class ProviderMissionWorkflowService
         if (assignment.Status == ProviderMissionAssignmentStatus.Completed)
         {
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+        }
+
+        if (hasBlockingAdditionalQuote)
+        {
+            return ProviderMissionOperationResult.BadRequest(
+                "La mission est en pause jusqu'au paiement du devis complementaire par le client.");
         }
 
         if (request.ActualDurationMinutes <= 0)

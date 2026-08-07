@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HomeService.Application.Abstractions;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
@@ -202,6 +203,26 @@ public sealed class ClientMissionConfirmationService(
             $"missions/{mission.Id}");
 
         await mobilePushNotifications.QueueForOwnerAsync(
+            MobileDeviceOwnerType.Company,
+            company.Id,
+            automatic ? "Paiement confirmé automatiquement" : "Paiement client confirmé",
+            automatic
+                ? $"Le délai client de la mission {mission.MissionNumber} a expiré. Le paiement a été confirmé automatiquement."
+                : $"Le client a payé la mission {mission.MissionNumber}. L’intervention peut être préparée.",
+            nameof(Mission),
+            mission.Id,
+            JsonSerializer.Serialize(new
+            {
+                type = automatic ? "company_customer_payment_auto_confirmed" : "company_customer_payment_confirmed",
+                missionId = mission.Id,
+                missionNumber = mission.MissionNumber,
+                providerId = mission.ProviderId,
+                companyId = company.Id
+            }),
+            cancellationToken,
+            saveChanges: false);
+
+        await mobilePushNotifications.QueueForOwnerAsync(
             MobileDeviceOwnerType.Provider,
             mission.ProviderId!.Value,
             "Mission confirmee",
@@ -210,7 +231,19 @@ public sealed class ClientMissionConfirmationService(
                 : $"Le client a confirme la mission {mission.MissionNumber}. Preparez votre intervention.",
             nameof(Mission),
             mission.Id,
-            null,
+            JsonSerializer.Serialize(new
+            {
+                type = "provider_mission_payment_confirmed",
+                missionId = mission.Id,
+                missionNumber = mission.MissionNumber,
+                assignmentId = await db.ProviderMissionAssignments
+                    .Where(item => item.MissionId == mission.Id && item.ProviderId == mission.ProviderId)
+                    .OrderByDescending(item => item.CreatedAt)
+                    .Select(item => (Guid?)item.Id)
+                    .FirstOrDefaultAsync(cancellationToken),
+                providerId = mission.ProviderId,
+                companyId = mission.CompanyId
+            }),
             cancellationToken,
             saveChanges: false);
     }
