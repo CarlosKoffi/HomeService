@@ -113,6 +113,7 @@ En developpement et dans les tests, l'API conserve le stockage local par defaut.
 - `R2_PUBLIC_BASE_URL=https://media.wele.africa` lorsque le domaine sera actif
 - `R2_PUBLIC_DIRECT_DELIVERY_ENABLED=false` pendant la migration, puis `true` lorsque tous les medias CMS historiques sont presents dans R2
 - `R2_SEED_PUBLIC_ASSETS_ON_STARTUP=true` pour copier automatiquement les images de services, prestations et moyens de paiement absentes de R2
+- `R2_MIGRATE_LOCAL_ASSETS_ON_STARTUP=true` pour copier automatiquement les anciens medias du volume local vers les buckets public et prive
 
 Ne jamais placer les trois valeurs secretes dans `appsettings.json`, un fichier `.env` commite ou un APK. L'API refuse de demarrer avec `STORAGE_PROVIDER=R2` si une valeur obligatoire manque.
 
@@ -123,6 +124,8 @@ Lors du passage a R2, les nouvelles ecritures partent dans R2. Pour garantir une
 La diffusion directe par `media.wele.africa` reste volontairement desactivee pendant cette phase. Tant que `R2_PUBLIC_DIRECT_DELIVERY_ENABLED=false`, l'API conserve les routes historiques et peut donc retomber sur le volume local. Activer la redirection CDN seulement apres la verification de la migration du bucket public.
 
 Lorsque R2 est active, un traitement en arriere-plan inventorie les repertoires `wwwroot/assets/services`, `wwwroot/catalog/prestations` et `wwwroot/media/payment-providers`. Il envoie uniquement les fichiers absents du bucket public. Le traitement est idempotent et peut donc etre relance apres un redemarrage sans dupliquer les objets.
+
+Un second traitement migre les anciens medias du volume persistant. Seul `storage/cms` rejoint le bucket public. Les repertoires `storage/client-profiles`, `storage/client-missions`, `storage/providers`, `storage/documents/company-applications` et `storage/documents/providers` rejoignent exclusivement le bucket prive. La migration est idempotente et ne supprime jamais les fichiers locaux; le volume peut etre conserve jusqu'a verification complete des objets R2.
 
 ## Regle de livraison
 

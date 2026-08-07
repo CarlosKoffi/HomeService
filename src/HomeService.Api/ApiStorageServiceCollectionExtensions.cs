@@ -13,6 +13,7 @@ public static class ApiStorageServiceCollectionExtensions
 
         services.AddSingleton<IApiObjectStorage, ApiObjectStorage>();
         services.AddHostedService<R2PublicAssetSeeder>();
+        services.AddHostedService<R2HistoricalAssetSeeder>();
         services.AddSingleton<CompanyApplicationUploadService>();
         services.AddSingleton<CompanyProviderUploadService>();
         services.AddSingleton<CmsMediaUploadService>();
