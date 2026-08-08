@@ -36,6 +36,43 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
         return new Uri(httpClient.BaseAddress!, relativePath);
     }
 
+    public async Task<ImageSource?> GetImageSourceAsync(
+        string token,
+        string? path,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, ResolveUri(path));
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var response = await httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            return bytes.Length == 0
+                ? null
+                : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
+        }
+        catch (Exception exception) when (exception is HttpRequestException
+            or IOException
+            or OperationCanceledException
+            or ObjectDisposedException)
+        {
+            return null;
+        }
+    }
+
     public Task<ApiCallResult<IReadOnlyList<CompanyPortalMissionResponse>>> GetMissionsAsync(
         string token,
         Guid companyId,

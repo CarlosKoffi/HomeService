@@ -158,6 +158,26 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal(PaymentStatus.Paid, mission.PaymentStatus);
         Assert.NotNull(mission.CompanyPayoutReleasedAt);
 
+        var completedPortalMission = Assert.Single((await new CompanyPortalQueryService(db).ListMissionsAsync(
+            seed.Company.Id,
+            "past",
+            CancellationToken.None)).Missions);
+        Assert.Empty(completedPortalMission.CustomerPhoneNumber);
+        Assert.Null(completedPortalMission.LocationLabel);
+        Assert.Null(completedPortalMission.ServiceLatitude);
+        Assert.Null(completedPortalMission.ServiceLongitude);
+
+        var completedPortalDetail = await new CompanyPortalQueryService(db).GetMissionDetailAsync(
+            seed.Company.Id,
+            mission.Id,
+            CancellationToken.None);
+        Assert.True(completedPortalDetail.IsSuccess);
+        Assert.Empty(completedPortalDetail.Response!.Mission.CustomerPhoneNumber);
+        Assert.Null(completedPortalDetail.Response.Mission.LocationLabel);
+        Assert.Null(completedPortalDetail.Response.Mission.ServiceLatitude);
+        Assert.Null(completedPortalDetail.Response.Mission.ServiceLongitude);
+        Assert.Null(completedPortalDetail.Response.ProviderDistanceKilometers);
+
         var review = await db.MissionReviews.SingleAsync(review => review.MissionId == mission.Id);
         Assert.Equal(5, review.QualityRating);
         Assert.Equal(5, review.PunctualityRating);
@@ -240,6 +260,10 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal("Customer", portalMission.CancellationActor);
         Assert.Equal("Other", portalMission.CancellationReason);
         Assert.Equal("Client indisponible.", portalMission.CancellationComment);
+        Assert.Empty(portalMission.CustomerPhoneNumber);
+        Assert.Null(portalMission.LocationLabel);
+        Assert.Null(portalMission.ServiceLatitude);
+        Assert.Null(portalMission.ServiceLongitude);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Companies;
+using HomeService.Application.Missions;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -199,7 +200,7 @@ public sealed class CompanyPortalDashboardService(IAppDbContext db)
             row.MissionNumber,
             row.ServiceName,
             row.CustomerName,
-            row.CustomerPhoneNumber,
+            MissionCustomerContactAccessPolicy.CanAccess(row.Status) ? row.CustomerPhoneNumber : string.Empty,
             row.Mode,
             row.Status.ToString(),
             row.PaymentMethod.ToString(),

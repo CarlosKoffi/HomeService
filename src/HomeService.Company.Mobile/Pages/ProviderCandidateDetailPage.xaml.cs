@@ -73,7 +73,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
                     && string.Equals(item.Status, "Pending", StringComparison.OrdinalIgnoreCase)));
             if (candidate is not null)
             {
-                await BindAsync(candidate);
+                await BindAsync(candidate, token);
                 return;
             }
 
@@ -81,7 +81,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
             var employee = employeesResult.Response?.FirstOrDefault(item => item.Id == providerId);
             if (employee is not null)
             {
-                await BindAsync(employee);
+                await BindAsync(employee, token);
                 return;
             }
 
@@ -103,7 +103,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
         }
     }
 
-    private async Task BindAsync(CompanyInterimCandidateResponse candidate)
+    private async Task BindAsync(CompanyInterimCandidateResponse candidate, string token)
     {
         isAffiliationRequest = true;
         requestId = candidate.RequestId;
@@ -123,7 +123,8 @@ public partial class ProviderCandidateDetailPage : ContentPage
             ExperienceLevelText(service.ExperienceLevel),
             FormatYears(service.YearsOfExperience),
             await catalogMedia.ResolveServiceAsync(service.ServiceId, service.ServiceName) ?? "icon_mission.svg")));
-        BindCommon(
+        await BindCommonAsync(
+            token,
             candidate.PhoneNumber,
             candidate.Email,
             candidate.Address,
@@ -135,7 +136,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
             string.Equals(candidate.Status, "Pending", StringComparison.OrdinalIgnoreCase));
     }
 
-    private async Task BindAsync(CompanyEmployeeResponse employee)
+    private async Task BindAsync(CompanyEmployeeResponse employee, string token)
     {
         isAffiliationRequest = false;
         providerId = employee.Id;
@@ -150,7 +151,8 @@ public partial class ProviderCandidateDetailPage : ContentPage
             ExperienceLevelText(service.ExperienceLevel),
             FormatYears(service.YearsOfExperience),
             await catalogMedia.ResolveServiceAsync(service.ServiceId, service.ServiceName) ?? "icon_mission.svg")));
-        BindCommon(
+        await BindCommonAsync(
+            token,
             employee.PhoneNumber,
             employee.Email,
             employee.Address,
@@ -162,7 +164,8 @@ public partial class ProviderCandidateDetailPage : ContentPage
             employee.Status is "Invited" or "ProfileIncomplete" or "PendingPlatformReview");
     }
 
-    private void BindCommon(
+    private async Task BindCommonAsync(
+        string token,
         string phone,
         string? email,
         string? address,
@@ -177,10 +180,7 @@ public partial class ProviderCandidateDetailPage : ContentPage
         EmailLabel.Text = string.IsNullOrWhiteSpace(email) ? "Email non renseigné" : email;
         AddressLabel.Text = string.IsNullOrWhiteSpace(address) ? "Adresse non renseignée" : address;
         IdentityLabel.Text = $"{GenderText(gender)} · {(birthDate.HasValue ? $"né(e) le {birthDate:dd/MM/yyyy}" : "date de naissance non renseignée")}";
-        if (!string.IsNullOrWhiteSpace(photoUrl))
-        {
-            ProfileImage.Source = ImageSource.FromUri(apiClient.ResolveUri(photoUrl));
-        }
+        ProfileImage.Source = await apiClient.GetImageSourceAsync(token, photoUrl) ?? "icon_user.svg";
 
         Services.Clear();
         foreach (var service in services) Services.Add(service);

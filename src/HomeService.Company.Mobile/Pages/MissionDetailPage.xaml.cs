@@ -84,7 +84,7 @@ public partial class MissionDetailPage : ContentPage
             await Task.WhenAll(candidatesTask, quotesTask);
 
             candidates = (await candidatesTask).Response ?? [];
-            await RenderMissionAsync(detail);
+            await RenderMissionAsync(detail, token);
             RenderCandidates();
             RenderAdditionalQuotes((await quotesTask).Response ?? []);
             RenderHistory(detail.CustomerHistory);
@@ -96,7 +96,7 @@ public partial class MissionDetailPage : ContentPage
         }
     }
 
-    private async Task RenderMissionAsync(CompanyPortalMissionDetailResponse response)
+    private async Task RenderMissionAsync(CompanyPortalMissionDetailResponse response, string token)
     {
         var item = response.Mission;
         MissionNumberLabel.Text = item.MissionNumber;
@@ -109,7 +109,10 @@ public partial class MissionDetailPage : ContentPage
             : await catalogMedia.ResolvePrestationAsync(null, response.PrestationName, serviceName: item.ServiceName);
         ServiceImage.Source = serviceMedia ?? "icon_mission.svg";
         ScheduleLabel.Text = item.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy · HH:mm") ?? "Dès que possible";
-        AddressLabel.Text = item.LocationLabel ?? "Adresse à confirmer";
+        var customerContactAvailable = IsCustomerContactAvailable(item.Status);
+        AddressLabel.Text = customerContactAvailable
+            ? item.LocationLabel ?? "Adresse à confirmer"
+            : "Adresse masquée après la mission";
         DescriptionLabel.Text = response.Description;
         DescriptionLabel.IsVisible = !string.IsNullOrWhiteSpace(response.Description);
         PriceLabel.Text = item.CompanyQuotedAmount.HasValue
@@ -117,7 +120,11 @@ public partial class MissionDetailPage : ContentPage
             : "Prix à définir après acceptation";
 
         CustomerLabel.Text = item.CustomerName;
-        CustomerPhoneLabel.Text = item.CustomerPhoneNumber;
+        CustomerPhoneLabel.Text = customerContactAvailable
+            ? item.CustomerPhoneNumber
+            : "Coordonnées masquées après la mission";
+        CustomerCallButton.IsVisible = customerContactAvailable
+            && !string.IsNullOrWhiteSpace(item.CustomerPhoneNumber);
 
         OfferActionCard.IsVisible = response.CanAccept || response.CanRefuse;
         AcceptOfferButton.IsVisible = response.CanAccept;
@@ -128,6 +135,7 @@ public partial class MissionDetailPage : ContentPage
 
         AssignmentCard.IsVisible = response.CanAssign;
         ProviderCard.IsVisible = item.ProviderId.HasValue;
+        ProviderImage.Source = await apiClient.GetImageSourceAsync(token, response.ProviderPhotoUrl) ?? "icon_user.svg";
         ProviderNameLabel.Text = item.ProviderName ?? "Prestataire";
         ProviderStateLabel.Text = item.Status switch
         {
@@ -180,7 +188,9 @@ public partial class MissionDetailPage : ContentPage
     private void RenderMap(CompanyPortalMissionDetailResponse response)
     {
         var item = response.Mission;
-        if (!item.ServiceLatitude.HasValue || !item.ServiceLongitude.HasValue)
+        if (!IsCustomerContactAvailable(item.Status)
+            || !item.ServiceLatitude.HasValue
+            || !item.ServiceLongitude.HasValue)
         {
             MapCard.IsVisible = false;
             return;
@@ -465,7 +475,12 @@ public partial class MissionDetailPage : ContentPage
 
     private async void OnCustomerCallClicked(object? sender, EventArgs e)
     {
-        if (!string.IsNullOrWhiteSpace(mission?.CustomerPhoneNumber)) await Launcher.Default.OpenAsync($"tel:{mission.CustomerPhoneNumber}");
+        if (mission is not null
+            && IsCustomerContactAvailable(mission.Status)
+            && !string.IsNullOrWhiteSpace(mission.CustomerPhoneNumber))
+        {
+            await Launcher.Default.OpenAsync($"tel:{mission.CustomerPhoneNumber}");
+        }
     }
 
     private async void OnProviderCallClicked(object? sender, EventArgs e)
@@ -482,6 +497,12 @@ public partial class MissionDetailPage : ContentPage
         => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
             || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
             || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsCustomerContactAvailable(string status)
+        => !status.Equals("Completed", StringComparison.OrdinalIgnoreCase)
+            && !status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)
+            && !status.Equals("Disputed", StringComparison.OrdinalIgnoreCase)
+            && !status.Equals("Resolved", StringComparison.OrdinalIgnoreCase);
 
     private void OnMissionTabClicked(object? sender, EventArgs e)
     {

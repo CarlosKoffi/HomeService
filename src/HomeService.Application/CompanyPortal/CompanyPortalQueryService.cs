@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Missions;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -147,7 +148,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 row.mission.CancellationComment))
             .ToListAsync(cancellationToken);
 
-        return CompanyPortalMissionsResult.Ok(missions);
+        return CompanyPortalMissionsResult.Ok(missions.Select(HideClosedMissionCustomerContact).ToList());
     }
 
     public async Task<CompanyPortalMissionDetailResult> GetMissionDetailAsync(
@@ -190,6 +191,13 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                     OptionName = option == null ? null : option.Name,
                     ProviderName = provider == null ? null : provider.FirstName + " " + provider.LastName,
                     ProviderPhoneNumber = provider == null ? null : provider.PhoneNumber,
+                    ProviderPhotoUrl = provider == null
+                        ? null
+                        : provider.Documents
+                            .Where(document => document.DocumentType == ProviderDocumentType.Photo)
+                            .OrderByDescending(document => document.CreatedAt)
+                            .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
+                            .FirstOrDefault(),
                     ProviderLatitude = provider == null ? null : provider.CurrentLatitude ?? provider.MissionLatitude,
                     ProviderLongitude = provider == null ? null : provider.CurrentLongitude ?? provider.MissionLongitude
                 })
@@ -210,6 +218,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
         var canAssign = mission.CompanyId == companyId
             && mission.ProviderId is null
             && mission.Status == MissionStatus.SearchingProvider;
+        var canAccessCustomerContact = MissionCustomerContactAccessPolicy.CanAccess(mission.Status);
 
         var history = await (
                 from historyMission in db.Missions.AsNoTracking()
@@ -239,7 +248,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             mission.MissionNumber,
             row.ServiceName,
             row.CustomerName,
-            row.PhoneNumber,
+            canAccessCustomerContact ? row.PhoneNumber : string.Empty,
             mission.Mode.ToString(),
             mission.Status.ToString(),
             mission.PaymentMethod.ToString(),
@@ -255,7 +264,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             mission.CompanyQuotedAt,
             mission.CustomerQuoteAcceptedAt,
             row.ServiceIconName,
-            mission.ServiceAddress,
+            canAccessCustomerContact ? mission.ServiceAddress : null,
             mission.ActualDurationMinutes,
             null,
             mission.Status == MissionStatus.Cancelled
@@ -263,8 +272,8 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 : null,
             mission.PlatformCommissionAmount,
             mission.CompanyAssignmentExpiresAt,
-            mission.ServiceLatitude,
-            mission.ServiceLongitude,
+            canAccessCustomerContact ? mission.ServiceLatitude : null,
+            canAccessCustomerContact ? mission.ServiceLongitude : null,
             mission.CancelledBy?.ToString(),
             mission.CancellationComment);
 
@@ -283,12 +292,15 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             row.ProviderPhoneNumber,
             row.ProviderLatitude,
             row.ProviderLongitude,
-            CalculateDistanceKilometers(
-                mission.ServiceLatitude,
-                mission.ServiceLongitude,
-                row.ProviderLatitude,
-                row.ProviderLongitude),
-            history));
+            canAccessCustomerContact
+                ? CalculateDistanceKilometers(
+                    mission.ServiceLatitude,
+                    mission.ServiceLongitude,
+                    row.ProviderLatitude,
+                    row.ProviderLongitude)
+                : null,
+            history,
+            row.ProviderPhotoUrl));
     }
 
     public async Task<CompanyPortalEmployeesResult> ListEmployeesAsync(Guid companyId, CancellationToken cancellationToken)
@@ -478,7 +490,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   mission.MissionNumber,
                                   service.Name,
                                   customer.FirstName + " " + customer.LastName,
-                                  customer.PhoneNumber,
+                                  string.Empty,
                                   mission.Mode.ToString(),
                                   mission.Status.ToString(),
                                   mission.PaymentMethod.ToString(),
@@ -494,7 +506,7 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   mission.CompanyQuotedAt,
                                   mission.CustomerQuoteAcceptedAt,
                                   service.IconName,
-                                  mission.ServiceAddress,
+                                  null,
                                   mission.ActualDurationMinutes,
                                   null,
                                   mission.Status == MissionStatus.Cancelled
@@ -502,8 +514,8 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                       : null,
                                   mission.PlatformCommissionAmount,
                                   mission.CompanyAssignmentExpiresAt,
-                                  mission.ServiceLatitude,
-                                  mission.ServiceLongitude,
+                                  null,
+                                  null,
                                   null,
                                   null))
             .ToListAsync(cancellationToken);
@@ -531,6 +543,23 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
     private async Task<bool> CompanyExistsAsync(Guid companyId, CancellationToken cancellationToken)
     {
         return await db.Companies.AnyAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
+    }
+
+    private static CompanyPortalMissionResponse HideClosedMissionCustomerContact(CompanyPortalMissionResponse mission)
+    {
+        if (!Enum.TryParse<MissionStatus>(mission.Status, true, out var status)
+            || MissionCustomerContactAccessPolicy.CanAccess(status))
+        {
+            return mission;
+        }
+
+        return mission with
+        {
+            CustomerPhoneNumber = string.Empty,
+            LocationLabel = null,
+            ServiceLatitude = null,
+            ServiceLongitude = null
+        };
     }
 
     private static string GetCompanyDocumentLabel(CompanyDocumentType documentType)

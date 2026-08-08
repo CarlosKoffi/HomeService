@@ -44,33 +44,45 @@ public partial class ProvidersPage : ContentPage
         var candidatesResult = await candidatesTask;
         if (candidatesResult.IsSuccess)
         {
-            foreach (var candidate in (candidatesResult.Response ?? [])
-                         .Where(item => string.Equals(item.Status, "Pending", StringComparison.OrdinalIgnoreCase))
-                         .OrderByDescending(item => item.RequestedAt))
+            var pendingCandidates = (candidatesResult.Response ?? [])
+                .Where(item => string.Equals(item.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(item => item.RequestedAt)
+                .ToList();
+            var candidateRows = await Task.WhenAll(pendingCandidates.Select(async candidate =>
             {
-                PendingApprovals.Add(PendingApprovalRow.From(candidate));
-            }
+                var photo = await apiClient.GetImageSourceAsync(token, candidate.PhotoUrl);
+                return PendingApprovalRow.From(candidate, photo);
+            }));
+            foreach (var row in candidateRows) PendingApprovals.Add(row);
         }
 
         var providersResult = await providersTask;
         if (providersResult.IsSuccess)
         {
             var providerItems = providersResult.Response ?? [];
-            foreach (var provider in providerItems
-                         .Where(IsAwaitingCompanyApproval)
-                         .OrderByDescending(item => item.CreatedAt))
+            var pendingProviders = providerItems
+                .Where(IsAwaitingCompanyApproval)
+                .OrderByDescending(item => item.CreatedAt)
+                .ToList();
+            var pendingProviderRows = await Task.WhenAll(pendingProviders.Select(async provider =>
             {
-                PendingApprovals.Add(PendingApprovalRow.From(provider));
-            }
+                var photo = await apiClient.GetImageSourceAsync(token, provider.PhotoUrl);
+                return PendingApprovalRow.From(provider, photo);
+            }));
+            foreach (var row in pendingProviderRows) PendingApprovals.Add(row);
 
             Providers.Clear();
-            foreach (var provider in providerItems
-                         .Where(item => !IsAwaitingCompanyApproval(item))
-                         .OrderByDescending(item => item.IsAvailable)
-                         .ThenBy(item => item.FirstName))
+            var teamProviders = providerItems
+                .Where(item => !IsAwaitingCompanyApproval(item))
+                .OrderByDescending(item => item.IsAvailable)
+                .ThenBy(item => item.FirstName)
+                .ToList();
+            var providerRows = await Task.WhenAll(teamProviders.Select(async provider =>
             {
-                Providers.Add(ProviderRow.From(provider));
-            }
+                var photo = await apiClient.GetImageSourceAsync(token, provider.PhotoUrl);
+                return ProviderRow.From(provider, photo);
+            }));
+            foreach (var row in providerRows) Providers.Add(row);
         }
 
         PendingHeader.IsVisible = PendingApprovals.Count > 0;
@@ -214,9 +226,10 @@ public partial class ProvidersPage : ContentPage
         string ExperienceLabel,
         string MessageLabel,
         bool HasMessage,
-        string DetailLabel)
+        string DetailLabel,
+        ImageSource Photo)
     {
-        public static PendingApprovalRow From(CompanyInterimCandidateResponse candidate)
+        public static PendingApprovalRow From(CompanyInterimCandidateResponse candidate, ImageSource? photo)
         {
             var services = string.Join(", ", candidate.Services.Take(3).Select(item => item.ServiceName));
             var message = candidate.Message?.Trim() ?? string.Empty;
@@ -232,10 +245,11 @@ public partial class ProvidersPage : ContentPage
                     : "Expérience à vérifier",
                 message,
                 message.Length > 0,
-                $"Demande reçue le {candidate.RequestedAt.ToLocalTime():dd/MM/yyyy à HH:mm}");
+                $"Demande reçue le {candidate.RequestedAt.ToLocalTime():dd/MM/yyyy à HH:mm}",
+                photo ?? "icon_user.svg");
         }
 
-        public static PendingApprovalRow From(CompanyEmployeeResponse provider)
+        public static PendingApprovalRow From(CompanyEmployeeResponse provider, ImageSource? photo)
         {
             var services = string.Join(", ", provider.Services.Take(3).Select(item => item.ServiceName));
             var hasIdentity = !string.IsNullOrWhiteSpace(provider.IdentityDocumentUrl);
@@ -256,7 +270,8 @@ public partial class ProvidersPage : ContentPage
                     : "Expérience à vérifier",
                 documentStatus,
                 true,
-                $"Créé le {provider.CreatedAt.ToLocalTime():dd/MM/yyyy à HH:mm} • {ProviderStatusLabel(provider.Status)}");
+                $"Créé le {provider.CreatedAt.ToLocalTime():dd/MM/yyyy à HH:mm} • {ProviderStatusLabel(provider.Status)}",
+                photo ?? "icon_user.svg");
         }
 
         private static string ProviderStatusLabel(string status) => status switch
@@ -275,9 +290,10 @@ public partial class ProvidersPage : ContentPage
         string ServiceLabel,
         string MissionLabel,
         string AvailabilityLabel,
-        Color AvailabilityColor)
+        Color AvailabilityColor,
+        ImageSource Photo)
     {
-        public static ProviderRow From(CompanyEmployeeResponse provider)
+        public static ProviderRow From(CompanyEmployeeResponse provider, ImageSource? photo)
         {
             var services = string.Join(", ", provider.Services.Take(2).Select(item => item.ServiceName));
             return new ProviderRow(
@@ -289,7 +305,8 @@ public partial class ProvidersPage : ContentPage
                 provider.CurrentMission is not null ? "EN MISSION" : provider.IsAvailable ? "DISPONIBLE" : "HORS LIGNE",
                 provider.CurrentMission is not null
                     ? Color.FromArgb("#155EEF")
-                    : provider.IsAvailable ? Color.FromArgb("#16B364") : Color.FromArgb("#667085"));
+                    : provider.IsAvailable ? Color.FromArgb("#16B364") : Color.FromArgb("#667085"),
+                photo ?? "icon_user.svg");
         }
     }
 }

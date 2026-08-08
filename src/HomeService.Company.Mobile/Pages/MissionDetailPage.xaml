@@ -101,7 +101,7 @@
                                 </VerticalStackLayout>
                             </Grid>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                                <Button Text="Appeler" Style="{StaticResource SecondaryButton}" Clicked="OnCustomerCallClicked" />
+                                <Button x:Name="CustomerCallButton" Text="Appeler" Style="{StaticResource SecondaryButton}" Clicked="OnCustomerCallClicked" />
                                 <Button x:Name="MissionChatButton" Grid.Column="1" Text="Message" Style="{StaticResource SecondaryButton}" Clicked="OnMissionChatClicked" />
                             </Grid>
                         </VerticalStackLayout>
@@ -122,7 +122,7 @@
                             <Label Text="Prestataire affecté" Style="{StaticResource CardTitle}" />
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="11">
                                 <Border WidthRequest="48" HeightRequest="48" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 24">
-                                    <Image Source="icon_user.svg" WidthRequest="25" HeightRequest="25" />
+                                    <Image x:Name="ProviderImage" Source="icon_user.svg" Aspect="AspectFill" WidthRequest="48" HeightRequest="48" />
                                 </Border>
                                 <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                                     <Label x:Name="ProviderNameLabel" FontAttributes="Bold" />

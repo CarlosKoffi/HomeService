@@ -16,7 +16,8 @@ public sealed record CompanyPortalMissionDetailResponse(
     decimal? ProviderLatitude,
     decimal? ProviderLongitude,
     double? ProviderDistanceKilometers,
-    IReadOnlyList<CompanyCustomerMissionHistoryResponse> CustomerHistory);
+    IReadOnlyList<CompanyCustomerMissionHistoryResponse> CustomerHistory,
+    string? ProviderPhotoUrl = null);
 
 public sealed record CompanyCustomerMissionHistoryResponse(
     Guid MissionId,

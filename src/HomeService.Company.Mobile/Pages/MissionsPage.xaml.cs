@@ -149,7 +149,7 @@ public partial class MissionsPage : ContentPage
                 mission,
                 serviceImage ?? "icon_mission.svg",
                 mission.ServiceName,
-                $"{mission.CustomerName} · {mission.LocationLabel ?? "Adresse à confirmer"}",
+                $"{mission.CustomerName} · {(mission.Status is "Completed" or "Cancelled" or "Disputed" or "Resolved" ? "Adresse masquée après la mission" : mission.LocationLabel ?? "Adresse à confirmer")}",
                 mission.ProviderName ?? "Prestataire à affecter",
                 mission.ScheduledFor?.ToLocalTime().ToString("dd/MM/yyyy · HH:mm") ?? "Dès que possible",
                 status,

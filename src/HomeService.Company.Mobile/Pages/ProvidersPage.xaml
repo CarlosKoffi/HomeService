@@ -31,7 +31,7 @@
                                     <VerticalStackLayout Spacing="12">
                                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                             <Border WidthRequest="50" HeightRequest="50" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 25">
-                                                <Image Source="icon_user.svg" WidthRequest="24" HeightRequest="24" />
+                                                <Image Source="{Binding Photo}" Aspect="AspectFill" WidthRequest="50" HeightRequest="50" />
                                             </Border>
                                             <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                                                 <Label Text="{Binding FullName}" Style="{StaticResource CardTitle}" />
@@ -75,7 +75,7 @@
                                     <VerticalStackLayout Spacing="12">
                                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                             <Border WidthRequest="50" HeightRequest="50" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 25">
-                                                <Image Source="icon_user.svg" WidthRequest="25" HeightRequest="25" />
+                                                <Image Source="{Binding Photo}" Aspect="AspectFill" WidthRequest="50" HeightRequest="50" />
                                             </Border>
                                             <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
                                                 <Label Text="{Binding FullName}" Style="{StaticResource CardTitle}" />
