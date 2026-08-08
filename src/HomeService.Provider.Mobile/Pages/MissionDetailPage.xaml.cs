@@ -105,8 +105,7 @@ public partial class MissionDetailPage : ContentPage
 
     private async Task RenderAsync(ProviderMobileMissionDetailResponse mission)
     {
-        var isClosed = mission.AssignmentStatus is "Completed" or "Cancelled" or "Refused" or "Expired"
-            || mission.MissionStatus is "Completed" or "Cancelled" or "Disputed" or "Resolved";
+        var isClosed = IsClosed(mission);
         var blockingQuote = mission.AdditionalQuotes.FirstOrDefault(quote => quote.Status is "Requested" or "Submitted");
         DetailHost.IsVisible = true;
         var displayedStatus = isClosed
@@ -132,6 +131,9 @@ public partial class MissionDetailPage : ContentPage
         MissionNumberLabel.Text = $"MISSION {mission.MissionNumber}";
         ScheduleLabel.Text = mission.ScheduledFor?.LocalDateTime.ToString("dddd d MMMM · HH:mm") ?? "Horaire à confirmer";
         LocationLabel.Text = $"{mission.LocationLabel} · {FormatDistance(mission.DistanceKm)}";
+        MissionMetaDivider.IsVisible = !isClosed;
+        ScheduleRow.IsVisible = !isClosed;
+        LocationRow.IsVisible = !isClosed;
 
         CustomerCard.IsVisible = !isClosed;
         CustomerNameLabel.Text = mission.CustomerDisplayName;
@@ -143,7 +145,16 @@ public partial class MissionDetailPage : ContentPage
 
         DescriptionCard.IsVisible = !string.IsNullOrWhiteSpace(mission.Description);
         DescriptionLabel.Text = mission.Description ?? string.Empty;
-        RenderMap(mission);
+        if (isClosed)
+        {
+            MapCard.IsVisible = false;
+            destinationLatitude = null;
+            destinationLongitude = null;
+        }
+        else
+        {
+            RenderMap(mission);
+        }
 
         ArrivalCard.IsVisible = !isClosed && (mission.Actions.CanVerifyArrival || mission.AssignmentStatus == "Started");
         ArrivalTitleLabel.Text = mission.Arrival.IsVerified ? "Arrivée vérifiée" : "Arrivée à confirmer";
@@ -311,7 +322,9 @@ public partial class MissionDetailPage : ContentPage
         StatusLabel.Text = StatusText("Completed");
         StatusLabel.TextColor = StatusColor("Completed");
         StatusPill.BackgroundColor = Color.FromArgb("#ECFDF3");
-        LocationLabel.Text = "Adresse masquée après la mission";
+        MissionMetaDivider.IsVisible = false;
+        ScheduleRow.IsVisible = false;
+        LocationRow.IsVisible = false;
         CustomerCard.IsVisible = false;
         MapCard.IsVisible = false;
         ArrivalCard.IsVisible = false;
@@ -326,6 +339,10 @@ public partial class MissionDetailPage : ContentPage
         locationCancellation?.Dispose();
         locationCancellation = null;
     }
+
+    private static bool IsClosed(ProviderMobileMissionDetailResponse mission)
+        => mission.AssignmentStatus is "Completed" or "Cancelled" or "Refused" or "Expired"
+            || mission.MissionStatus is "Completed" or "Cancelled" or "Disputed" or "Resolved";
 
     private async void OnCallClicked(object? sender, EventArgs e)
     {

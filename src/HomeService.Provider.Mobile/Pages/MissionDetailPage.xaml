@@ -34,12 +34,12 @@
                                     <Label x:Name="MissionNumberLabel" Style="{StaticResource EyebrowLabel}" />
                                 </VerticalStackLayout>
                             </Grid>
-                            <BoxView HeightRequest="1" BackgroundColor="#EEF1F6" />
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                            <BoxView x:Name="MissionMetaDivider" HeightRequest="1" BackgroundColor="#EEF1F6" />
+                            <Grid x:Name="ScheduleRow" ColumnDefinitions="Auto,*" ColumnSpacing="9">
                                 <Image Source="icon_calendar.svg" WidthRequest="20" HeightRequest="20" />
                                 <Label x:Name="ScheduleLabel" Grid.Column="1" Style="{StaticResource BodyLabel}" />
                             </Grid>
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                            <Grid x:Name="LocationRow" ColumnDefinitions="Auto,*" ColumnSpacing="9">
                                 <Image Source="icon_location.svg" WidthRequest="20" HeightRequest="20" />
                                 <Label x:Name="LocationLabel" Grid.Column="1" Style="{StaticResource BodyLabel}" />
                             </Grid>
