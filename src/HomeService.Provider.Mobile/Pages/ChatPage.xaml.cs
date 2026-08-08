@@ -79,7 +79,7 @@ public partial class ChatPage : ContentPage
         }
 
         missions = result.Response.Items
-            .Where(item => item.Status is "Offered" or "Accepted" or "Started" or "Completed")
+            .Where(item => IsConversationActive(item.Status))
             .OrderBy(item => StatusOrder(item.Status))
             .ThenByDescending(item => item.ScheduledFor ?? DateTimeOffset.MinValue)
             .Take(20)
@@ -166,6 +166,12 @@ public partial class ChatPage : ContentPage
         var chatResult = await chatTask;
         if (!chatResult.IsSuccess || chatResult.Response is null)
         {
+            if (chatResult.StatusCode is 400 or 404)
+            {
+                await LoadConversationsAsync();
+                return;
+            }
+
             ShowMessage(chatResult.ErrorMessage ?? "Impossible de charger cette conversation.");
             MessagesStack.Children.Clear();
             return;
@@ -181,7 +187,7 @@ public partial class ChatPage : ContentPage
         lastMessageSignature = string.Join('|', chatResult.Response.Messages.Select(item => item.MessageId));
         RenderMessages(chatResult.Response.Messages);
         if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
-        SetComposerEnabled(mission.Status is "Offered" or "Accepted" or "Started");
+        SetComposerEnabled(IsConversationActive(mission.Status));
         await Task.Delay(50);
         await MessagesScroll.ScrollToAsync(MessagesStack, ScrollToPosition.End, false);
     }
@@ -214,7 +220,14 @@ public partial class ChatPage : ContentPage
         try
         {
             var result = await apiClient.GetMissionMessagesAsync(accessToken, assignmentId.Value, cancellationToken);
-            if (!result.IsSuccess || result.Response is null) return;
+            if (!result.IsSuccess || result.Response is null)
+            {
+                if (result.StatusCode is 400 or 404)
+                {
+                    await MainThread.InvokeOnMainThreadAsync(LoadConversationsAsync);
+                }
+                return;
+            }
             var signature = string.Join('|', result.Response.Messages.Select(item => item.MessageId));
             if (signature == lastMessageSignature) return;
             lastMessageSignature = signature;
@@ -336,7 +349,11 @@ public partial class ChatPage : ContentPage
         _ => $"{message.SenderType} · {message.CreatedAt.LocalDateTime:HH:mm}"
     };
 
-    private static int StatusOrder(string status) => status switch { "Started" => 0, "Accepted" => 1, "Offered" => 2, _ => 3 };
+    private static int StatusOrder(string status) => status switch { "Started" => 0, "OnTheWay" => 1, "Accepted" => 2, _ => 3 };
+    private static bool IsConversationActive(string status)
+        => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
     private static string FirstName(string value) => value.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? value;
 
     private static ColumnDefinitionCollection Columns(params GridLength[] widths)

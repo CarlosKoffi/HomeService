@@ -16,6 +16,7 @@ public partial class HomePage : ContentPage
     private readonly ObservableCollection<PopularItem> popularServices = [];
     private readonly ObservableCollection<PopularItem> allPopularServices = [];
     private readonly ObservableCollection<SearchResultItem> searchResults = [];
+    private readonly SemaphoreSlim loadGate = new(1, 1);
 
     public HomePage()
     {
@@ -35,17 +36,22 @@ public partial class HomePage : ContentPage
         base.OnAppearing();
         if (sessionStore.HasSession())
         {
-            try
-            {
-                await deviceRegistrationService.RegisterCurrentDeviceAsync();
-            }
-            catch
-            {
-                // The home screen remains available when push registration is temporarily unavailable.
-            }
+            _ = RegisterDeviceWithoutBlockingHomeAsync();
         }
 
         await LoadSafelyAsync();
+    }
+
+    private async Task RegisterDeviceWithoutBlockingHomeAsync()
+    {
+        try
+        {
+            await deviceRegistrationService.RegisterCurrentDeviceAsync();
+        }
+        catch
+        {
+            // Push registration must never delay or break the home screen.
+        }
     }
 
     private async Task LoadAsync()
@@ -69,9 +75,9 @@ public partial class HomePage : ContentPage
         popularServices.Clear();
         allPopularServices.Clear();
 
-        var serviceItems = await Task.WhenAll(result.Response
+        var serviceItems = result.Response
             .Where(item => item.IsActive)
-            .Select(service => ServiceItem.FromAsync(service, apiClient)));
+            .Select(service => ServiceItem.From(service, apiClient));
         foreach (var service in serviceItems)
         {
             services.Add(service);
@@ -96,13 +102,10 @@ public partial class HomePage : ContentPage
             .ThenBy(item => item.Prestation.Name)
             .ToList();
 
-        var popularItems = await Task.WhenAll(mostRequestedPrestations.Take(3).Select(async item =>
+        var popularItems = mostRequestedPrestations.Take(3).Select(item =>
         {
-            var illustrationUrlTask = apiClient.DownloadMediaImageSourceAsync(item.Prestation.IllustrationUrl);
-            var serviceIconUrlTask = apiClient.DownloadMediaImageSourceAsync(item.Service.IconUrl);
-            await Task.WhenAll(illustrationUrlTask, serviceIconUrlTask);
-            var illustrationUrl = await illustrationUrlTask;
-            var serviceIconUrl = await serviceIconUrlTask;
+            var illustrationUrl = apiClient.ToRemoteImageSource(item.Prestation.IllustrationUrl);
+            var serviceIconUrl = apiClient.ToRemoteImageSource(item.Service.IconUrl);
             return new PopularItem(
                 item.Service.Id,
                 item.Prestation.Id,
@@ -117,7 +120,7 @@ public partial class HomePage : ContentPage
                 illustrationUrl is not null,
                 illustrationUrl is null && serviceIconUrl is not null,
                 illustrationUrl is null && serviceIconUrl is null);
-        }));
+        });
         foreach (var item in popularItems)
         {
             allPopularServices.Add(item);
@@ -175,6 +178,11 @@ public partial class HomePage : ContentPage
 
     private async Task LoadSafelyAsync()
     {
+        if (!await loadGate.WaitAsync(0))
+        {
+            return;
+        }
+
         try
         {
             await LoadAsync();
@@ -183,6 +191,10 @@ public partial class HomePage : ContentPage
         {
             LoadErrorLabel.Text = "La page n'a pas pu etre chargee. Verifiez votre connexion puis reessayez.";
             LoadErrorPanel.IsVisible = true;
+        }
+        finally
+        {
+            loadGate.Release();
         }
     }
 
@@ -325,7 +337,7 @@ public partial class HomePage : ContentPage
         string Price,
         string DisplayCategory)
     {
-        public static async Task<ServiceItem> FromAsync(
+        public static ServiceItem From(
             ServiceSummaryResponse response,
             ClientMobileApiClient apiClient)
         {
@@ -333,7 +345,7 @@ public partial class HomePage : ContentPage
                 ? $"À partir de {response.PriceMinAmount:N0} {response.Currency}"
                 : $"{response.NormalPriceAmount:N0} {response.Currency}";
 
-            var iconUrl = await apiClient.DownloadMediaImageSourceAsync(response.IconUrl);
+            var iconUrl = apiClient.ToRemoteImageSource(response.IconUrl);
             var fallback = ResolveIcon(response.IconName, response.Name);
             return new ServiceItem(
                 response.Id,

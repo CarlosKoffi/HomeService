@@ -1,5 +1,6 @@
 using HomeService.Application.Missions;
 using HomeService.Application.Clients;
+using HomeService.Application.ProviderPortal;
 
 namespace HomeService.Api;
 
@@ -8,7 +9,7 @@ public sealed class MissionDispatchAutomationHostedService(
     IConfiguration configuration,
     ILogger<MissionDispatchAutomationHostedService> logger) : BackgroundService
 {
-    private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(10);
     private const int DefaultBatchSize = 50;
     private bool startupRecoveryPending = true;
 
@@ -39,6 +40,7 @@ public sealed class MissionDispatchAutomationHostedService(
             var assignmentExpirationService = scope.ServiceProvider.GetRequiredService<ProviderAssignmentExpirationService>();
             var clientConfirmationService = scope.ServiceProvider.GetRequiredService<ClientMissionConfirmationService>();
             var clientCompletionService = scope.ServiceProvider.GetRequiredService<ClientMissionCompletionValidationService>();
+            var providerDepartureService = scope.ServiceProvider.GetRequiredService<ProviderDepartureAutomationService>();
             var now = DateTimeOffset.UtcNow;
             var recoveredRecentCount = 0;
             if (startupRecoveryPending)
@@ -71,16 +73,21 @@ public sealed class MissionDispatchAutomationHostedService(
                 now,
                 GetBatchSize(),
                 stoppingToken);
+            var autoDepartedCount = await providerDepartureService.MarkDueMissionsOnTheWayAsync(
+                now,
+                GetBatchSize(),
+                stoppingToken);
 
             if (recoveredRecentCount > 0
                 || recoveredMissionCount > 0
                 || result.MissionCount > 0
                 || assignmentResult.ExpiredAssignmentCount > 0
                 || autoConfirmedCount > 0
-                || autoValidatedCount > 0)
+                || autoValidatedCount > 0
+                || autoDepartedCount > 0)
             {
                 logger.LogInformation(
-                    "Mission dispatch automation repaired {RecoveredRecentCount} recent stalled missions, recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers, expired {AssignmentCount} provider assignments, auto-confirmed {AutoConfirmedCount} client payments and auto-validated {AutoValidatedCount} completed missions.",
+                    "Mission dispatch automation repaired {RecoveredRecentCount} recent stalled missions, recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers, expired {AssignmentCount} provider assignments, auto-confirmed {AutoConfirmedCount} client payments, auto-departed {AutoDepartedCount} providers and auto-validated {AutoValidatedCount} completed missions.",
                     recoveredRecentCount,
                     recoveredMissionCount,
                     result.MissionCount,
@@ -88,6 +95,7 @@ public sealed class MissionDispatchAutomationHostedService(
                     result.CreatedOfferCount,
                     assignmentResult.ExpiredAssignmentCount,
                     autoConfirmedCount,
+                    autoDepartedCount,
                     autoValidatedCount);
             }
         }

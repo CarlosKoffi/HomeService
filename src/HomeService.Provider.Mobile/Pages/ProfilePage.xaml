@@ -7,9 +7,10 @@
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
             <VerticalStackLayout Padding="18,18,18,30" Spacing="15">
-                <Grid ColumnDefinitions="*,Auto">
-                    <Label Text="Profil" Style="{StaticResource ScreenTitleLabel}" />
-                    <ImageButton Grid.Column="1" Source="icon_settings.svg" Clicked="OnSettingsClicked" />
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
+                    <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Profil" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
+                    <ImageButton Grid.Column="2" Source="icon_settings.svg" Clicked="OnSettingsClicked" />
                 </Grid>
 
                 <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13">
@@ -31,6 +32,17 @@
                     <Label x:Name="CompanyLabel" Style="{StaticResource MutedLabel}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
 
+                <Border Style="{StaticResource PremiumCard}" Padding="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Disponibilité" FontAttributes="Bold" />
+                            <Label x:Name="AvailabilityLabel" Text="Disponible" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource Success}" />
+                            <Label x:Name="AvailabilityMessageLabel" Text="Vous pouvez recevoir de nouvelles missions." Style="{StaticResource MutedLabel}" />
+                        </VerticalStackLayout>
+                        <Switch x:Name="AvailabilitySwitch" Grid.Column="1" OnColor="{StaticResource Success}" HorizontalOptions="End" VerticalOptions="Center" Toggled="OnAvailabilityToggled" />
+                    </Grid>
+                </Border>
+
                 <Border Style="{StaticResource PremiumCard}">
                     <VerticalStackLayout Spacing="8">
                         <Grid ColumnDefinitions="*,Auto"><Label Text="Complétude du profil" FontAttributes="Bold" /><Label x:Name="CompletionLabel" Grid.Column="1" Text="0%" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" /></Grid>
@@ -48,9 +60,6 @@
                     <Border Style="{StaticResource PremiumCard}" Padding="13"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11"><Image Source="icon_settings.svg" WidthRequest="23" HeightRequest="23" /><VerticalStackLayout Grid.Column="1" Spacing="2"><Label Text="Paramètres" FontAttributes="Bold" /><Label Text="Notifications, sécurité et préférences" Style="{StaticResource MutedLabel}" /></VerticalStackLayout><Image Grid.Column="2" Source="chevron_right.svg" WidthRequest="18" HeightRequest="18" VerticalOptions="Center" /></Grid><Border.GestureRecognizers><TapGestureRecognizer Tapped="OnSettingsTapped" /></Border.GestureRecognizers></Border>
                 </VerticalStackLayout>
 
-                <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 17" Padding="14">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"><Image Source="icon_info.svg" WidthRequest="22" HeightRequest="22" VerticalOptions="Start" /><Label Grid.Column="1" Text="Les tarifs restent masqués pour un salarié d’entreprise. Seuls les intérimaires autorisés peuvent les consulter." Style="{StaticResource MutedLabel}" /></Grid>
-                </Border>
             </VerticalStackLayout>
         </ScrollView>
     </RefreshView>

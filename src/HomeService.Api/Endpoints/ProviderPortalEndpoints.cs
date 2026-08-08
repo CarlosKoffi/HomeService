@@ -177,6 +177,11 @@ public static class ProviderPortalEndpoints
                     .ThenInclude(mission => mission!.ServicePrestation)
                 .Where(assignment =>
                     assignment.ProviderId == provider.Id
+                    && assignment.Mission != null
+                    && assignment.Mission.Status != MissionStatus.Completed
+                    && assignment.Mission.Status != MissionStatus.Cancelled
+                    && assignment.Mission.Status != MissionStatus.Disputed
+                    && assignment.Mission.Status != MissionStatus.Resolved
                     && assignment.Status != ProviderMissionAssignmentStatus.Refused
                     && assignment.Status != ProviderMissionAssignmentStatus.Completed
                     && assignment.Status != ProviderMissionAssignmentStatus.Expired
@@ -207,13 +212,15 @@ public static class ProviderPortalEndpoints
                 .FirstOrDefault();
 
             var upcomingMission = assignments
-                .Where(assignment => assignment.Status != ProviderMissionAssignmentStatus.Offered || assignment.ExpiresAt <= now)
+                .Where(assignment => assignment.Status is ProviderMissionAssignmentStatus.Accepted
+                    or ProviderMissionAssignmentStatus.Started)
                 .OrderBy(assignment => assignment.Mission!.ScheduledFor ?? assignment.ExpiresAt)
                 .Select(assignment => ToProviderMobileMissionSummary(assignment, servicesById, customersById))
                 .FirstOrDefault();
 
             var hasActiveMission = assignments.Any(assignment =>
-                assignment.Status is ProviderMissionAssignmentStatus.Accepted or ProviderMissionAssignmentStatus.Started);
+                assignment.Status is ProviderMissionAssignmentStatus.Accepted or ProviderMissionAssignmentStatus.Started
+                && assignment.Mission!.Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started);
             var effectiveAvailability = provider.IsAvailable && !hasActiveMission;
 
             return Results.Ok(new ProviderMobileHomeResponse(
@@ -1000,6 +1007,9 @@ public static class ProviderPortalEndpoints
         group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/refuse", RefuseProviderMissionAsync)
             .WithName("RefuseProviderMobileMission");
 
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/on-the-way", MarkProviderOnTheWayAsync)
+            .WithName("MarkProviderMobileMissionOnTheWay");
+
         group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/verify-arrival", VerifyProviderMissionArrivalAsync)
             .WithName("VerifyProviderMobileMissionArrival");
 
@@ -1141,7 +1151,6 @@ public static class ProviderPortalEndpoints
             HttpRequest httpRequest,
             IAppDbContext db,
             ProviderMissionWorkflowService workflow,
-            ProviderMissionNotificationService notifications,
             CancellationToken cancellationToken) =>
         {
             var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -1162,34 +1171,10 @@ public static class ProviderPortalEndpoints
                 return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
             }
 
-            var wasOnTheWay = assignment.Mission.Status == MissionStatus.OnTheWay;
             var result = workflow.UpdatePosition(session.Provider, assignment, request);
             if (result.Status != ProviderMissionOperationStatus.Ok)
             {
                 return ToProviderMissionHttpResult(result);
-            }
-
-            if (!wasOnTheWay && assignment.Mission.Status == MissionStatus.OnTheWay)
-            {
-                AddProviderAudit(
-                    db,
-                    httpRequest,
-                    session.ProviderId,
-                    session.Provider.FullName,
-                    "ProviderOnTheWay",
-                    nameof(ProviderMissionAssignment),
-                    assignment.Id,
-                    "Le prestataire a demarre son trajet vers le client.",
-                    after: new
-                    {
-                        assignment.MissionId,
-                        MissionStatus = assignment.Mission.Status
-                    });
-                await notifications.NotifyOnTheWayAsync(
-                    assignment.Mission,
-                    session.Provider,
-                    assignment,
-                    cancellationToken);
             }
 
             await db.SaveChangesAsync(cancellationToken);
@@ -1640,6 +1625,66 @@ public static class ProviderPortalEndpoints
         return ToProviderMissionHttpResult(result);
     }
 
+    private static async Task<IResult> MarkProviderOnTheWayAsync(
+        Guid assignmentId,
+        ProviderLocationVerificationRequest request,
+        HttpRequest httpRequest,
+        IAppDbContext db,
+        ProviderMissionWorkflowService workflow,
+        ProviderMissionNotificationService notifications,
+        CancellationToken cancellationToken)
+    {
+        var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+        if (session?.Provider is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var assignment = await db.ProviderMissionAssignments
+            .Include(item => item.Mission)
+            .FirstOrDefaultAsync(item =>
+                item.Id == assignmentId
+                && item.ProviderId == session.ProviderId,
+                cancellationToken);
+        if (assignment?.Mission is null)
+        {
+            return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
+        }
+
+        var wasOnTheWay = assignment.Mission.Status == MissionStatus.OnTheWay;
+        var result = workflow.MarkOnTheWay(session.Provider, assignment, request);
+        if (result.Status != ProviderMissionOperationStatus.Ok)
+        {
+            return ToProviderMissionHttpResult(result);
+        }
+
+        if (!wasOnTheWay && assignment.Mission.Status == MissionStatus.OnTheWay)
+        {
+            AddProviderAudit(
+                db,
+                httpRequest,
+                session.ProviderId,
+                session.Provider.FullName,
+                "ProviderOnTheWay",
+                nameof(ProviderMissionAssignment),
+                assignment.Id,
+                "Le prestataire a confirme son depart vers le client depuis l'application mobile.",
+                after: new
+                {
+                    assignment.MissionId,
+                    MissionStatus = assignment.Mission.Status
+                });
+            await notifications.NotifyOnTheWayAsync(
+                assignment.Mission,
+                session.Provider,
+                assignment,
+                cancellationToken);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return ToProviderMissionHttpResult(result);
+    }
+
     private static async Task<IResult> CancelProviderMissionAsync(
         Guid assignmentId,
         CancelMissionRequest request,
@@ -2021,6 +2066,15 @@ public static class ProviderPortalEndpoints
                 or MissionStatus.Cancelled
                 or MissionStatus.Disputed
                 or MissionStatus.Resolved;
+        var effectiveStatus = assignment.Mission.Status switch
+        {
+            MissionStatus.Completed or MissionStatus.Resolved => "Completed",
+            MissionStatus.Cancelled or MissionStatus.Disputed => "Cancelled",
+            MissionStatus.OnTheWay => "OnTheWay",
+            MissionStatus.Started => "Started",
+            MissionStatus.Accepted => "Accepted",
+            _ => assignment.Status.ToString()
+        };
         var canCallCustomer = !isClosed && assignment.Mission.CanRevealContactDetails && customer is not null;
         return new ProviderMobileMissionSummaryResponse(
             assignment.Id,
@@ -2032,7 +2086,7 @@ public static class ProviderPortalEndpoints
             assignment.Company?.Name ?? "Entreprise",
             isClosed ? "Adresse masquee apres la mission" : BuildLocationLabel(assignment.Mission.ServiceAddress),
             assignment.Mission.ScheduledFor,
-            assignment.Status.ToString(),
+            effectiveStatus,
             canCallCustomer,
             canCallCustomer ? customer!.PhoneNumber : null);
     }

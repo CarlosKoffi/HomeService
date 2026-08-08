@@ -25,7 +25,14 @@ public partial class ClientNotificationButton : ContentView
         }
 
         UpdateBadge();
-        await RefreshWhenSessionIsReadyAsync();
+        try
+        {
+            await RefreshWhenSessionIsReadyAsync();
+        }
+        catch
+        {
+            // The notification badge is optional and must never close the current screen.
+        }
     }
 
     private void OnUnloaded(object? sender, EventArgs e)

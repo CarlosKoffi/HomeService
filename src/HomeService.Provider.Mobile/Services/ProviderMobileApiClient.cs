@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using HomeService.Contracts.Clients;
 using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
@@ -312,6 +313,20 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
+    public Task<ApiCallResult<ProviderLocationVerificationResponse>> MarkMissionOnTheWayAsync(
+        string bearerToken,
+        Guid assignmentId,
+        ProviderLocationVerificationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return SendAsync<ProviderLocationVerificationResponse>(
+            HttpMethod.Post,
+            $"api/provider-portal/mobile/mission-assignments/{assignmentId:D}/on-the-way",
+            bearerToken,
+            request,
+            cancellationToken);
+    }
+
     public Task<ApiCallResult<ProviderLocationVerificationResponse>> UpdateMissionLocationAsync(
         string bearerToken,
         Guid assignmentId,
@@ -431,7 +446,14 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
         {
             return ApiCallResult<TResponse>.Failed(0, "Connexion trop lente. Reessayez dans quelques instants.");
         }
-        catch (HttpRequestException)
+        catch (JsonException)
+        {
+            return ApiCallResult<TResponse>.Failed(0, "La reponse du serveur est invalide. Reessayez dans quelques instants.");
+        }
+        catch (Exception exception) when (exception is HttpRequestException
+            or IOException
+            or ObjectDisposedException
+            or InvalidCastException)
         {
             return ApiCallResult<TResponse>.Failed(0, "Connexion impossible. Verifiez votre reseau.");
         }

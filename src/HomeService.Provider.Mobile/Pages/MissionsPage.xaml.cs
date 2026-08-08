@@ -34,6 +34,9 @@ public partial class MissionsPage : ContentPage
         RefreshHost.IsRefreshing = false;
     }
 
+    private async void OnBackClicked(object? sender, EventArgs e)
+        => await Shell.Current.GoToAsync("//home");
+
     private async Task LoadMissionsAsync()
     {
         MessageBanner.IsVisible = false;
@@ -204,7 +207,7 @@ public partial class MissionsPage : ContentPage
         return filter switch
         {
             MissionFilter.Available => mission.Status == "Offered",
-            MissionFilter.InProgress => mission.Status == "Started" || (mission.Status == "Accepted" && isFuture != true),
+            MissionFilter.InProgress => mission.Status is "Started" or "OnTheWay" || (mission.Status == "Accepted" && isFuture != true),
             MissionFilter.Upcoming => mission.Status == "Accepted" && isFuture == true,
             MissionFilter.Completed => mission.Status == "Completed",
             MissionFilter.Cancelled => mission.Status is "Cancelled" or "Refused" or "Expired",
@@ -248,6 +251,7 @@ public partial class MissionsPage : ContentPage
     {
         "Offered" => "À confirmer",
         "Accepted" => "Acceptée",
+        "OnTheWay" => "En route",
         "Started" => "En cours",
         "Completed" => "Terminée",
         "Cancelled" => "Annulée",

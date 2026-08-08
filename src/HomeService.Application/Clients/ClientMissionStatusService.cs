@@ -163,6 +163,7 @@ public sealed class ClientMissionStatusService(
                 quotedAmount,
                 true,
                 mission.Currency);
+        var canRevealPrice = mission.ProviderAcceptedAt is not null;
         var response = new ClientMissionStatusResponse(
             mission.Id,
             mission.MissionNumber,
@@ -189,16 +190,16 @@ public sealed class ClientMissionStatusService(
             mission.CustomerCompletionValidatedAt,
             priceRange.StartingPriceAmount,
             priceRange.MaximumPriceAmount,
-            mission.EstimatedTotalAmount,
-            mission.CompanyQuotedAmount,
-            mission.PartsEstimateAmount,
-            mission.PartsDescription,
-            mission.FinalTotalAmount,
-            pricing.ServiceAmount,
-            pricing.CustomerServiceFeeAmount,
-            pricing.CustomerServiceFeeRateBasisPoints,
-            pricing.CustomerTotalAmount,
-            mission.TransportFeeAmount,
+            canRevealPrice ? mission.EstimatedTotalAmount : null,
+            canRevealPrice ? mission.CompanyQuotedAmount : null,
+            canRevealPrice ? mission.PartsEstimateAmount : null,
+            canRevealPrice ? mission.PartsDescription : null,
+            canRevealPrice ? mission.FinalTotalAmount : null,
+            canRevealPrice ? pricing.ServiceAmount : 0,
+            canRevealPrice ? pricing.CustomerServiceFeeAmount : 0,
+            canRevealPrice ? pricing.CustomerServiceFeeRateBasisPoints : 0,
+            canRevealPrice ? pricing.CustomerTotalAmount : 0,
+            canRevealPrice ? mission.TransportFeeAmount : 0,
             mission.Currency,
             mission.RequiresCompanyQuote,
             mission.CanRevealContactDetails,
@@ -337,7 +338,7 @@ public sealed class ClientMissionStatusService(
 
         if (status == MissionStatus.Accepted && paymentStatus == PaymentStatus.Pending)
         {
-            return "Le prestataire a confirme la mission. Validez le prix et payez pour lancer l'intervention.";
+            return "Votre prestataire est pret. Verifiez le montant et payez pour lancer l'intervention.";
         }
 
         if (status is MissionStatus.OnTheWay or MissionStatus.Started)
@@ -347,7 +348,7 @@ public sealed class ClientMissionStatusService(
 
         if (quoteStatus == MissionQuoteStatus.Submitted)
         {
-            return "Une entreprise a propose un prix. Vous pouvez accepter pour confirmer la mission.";
+            return "Une entreprise prepare votre intervention et confirme la disponibilite d'un prestataire.";
         }
 
         if (status == MissionStatus.Assigned)

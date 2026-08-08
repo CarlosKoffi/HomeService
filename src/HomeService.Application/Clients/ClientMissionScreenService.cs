@@ -20,7 +20,9 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
 
     private static ClientMissionScreenResponse Map(ClientMissionStatusResponse mission)
     {
-        var currentAmount = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount;
+        var currentAmount = mission.ProviderAcceptedAt is null
+            ? null
+            : mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount;
         var title = !string.IsNullOrWhiteSpace(mission.OptionName)
             ? mission.OptionName!
             : !string.IsNullOrWhiteSpace(mission.PrestationName)
@@ -141,7 +143,7 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
 
         if (mission.QuoteStatus == "Submitted")
         {
-            return ("Devis disponible", "primary");
+            return ("Intervention en preparation", "primary");
         }
 
         if (mission.AssignedProvider is not null)
@@ -154,17 +156,12 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
 
     private static string BuildPriceLabel(ClientMissionStatusResponse mission, int? currentAmount)
     {
-        if (mission.QuoteStatus == "Submitted" && currentAmount is > 0)
-        {
-            return $"Prix propose: {currentAmount:N0} {mission.Currency}";
-        }
-
         if (currentAmount is > 0)
         {
             return $"Montant mission: {currentAmount:N0} {mission.Currency}";
         }
 
-        return $"A partir de {mission.StartingPriceAmount:N0} {mission.Currency}";
+        return "Le montant sera affiche lorsque votre prestataire sera pret.";
     }
 
     private static IReadOnlyList<ClientMissionScreenTimelineStepResponse> BuildTimeline(ClientMissionStatusResponse mission)
@@ -174,16 +171,20 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
             Step("request", "Demande envoyee", "Votre demande a ete transmise a la plateforme.", "done", mission.CreatedAt),
             Step(
                 "quote",
-                "Prix confirme",
-                mission.QuoteStatus == "Submitted"
-                    ? "Un prix est disponible pour votre intervention."
-                    : "Une entreprise analyse la demande.",
-                mission.QuoteStatus is "Submitted" or "Accepted" ? "done" : "current",
+                "Intervention en preparation",
+                mission.AssignedCompany is null
+                    ? "Une entreprise analyse la demande."
+                    : $"{mission.AssignedCompany.Name} prepare votre intervention.",
+                mission.AssignedCompany is not null ? "done" : "current",
                 mission.CompanyQuotedAt),
             Step(
                 "provider",
-                "Technicien",
-                mission.AssignedProvider is null ? "Aucun technicien affecte pour le moment." : $"{mission.AssignedProvider.FullName} est affecte.",
+                mission.ProviderAcceptedAt is not null ? "Votre prestataire est pret" : "Prestataire",
+                mission.AssignedProvider is null
+                    ? "Aucun prestataire affecte pour le moment."
+                    : mission.ProviderAcceptedAt is not null
+                        ? $"{mission.AssignedProvider.FullName} a confirme sa disponibilite."
+                        : $"{mission.AssignedProvider.FullName} confirme sa disponibilite.",
                 mission.ProviderAcceptedAt is not null ? "done" : mission.AssignedProvider is not null ? "current" : "pending",
                 mission.ProviderAcceptedAt),
             Step(
@@ -191,7 +192,7 @@ public sealed class ClientMissionScreenService(ClientMissionStatusService missio
                 "Paiement",
                 mission.ProviderAcceptedAt is null
                     ? "Le paiement sera disponible apres la confirmation du technicien."
-                    : "Validez le prix et payez pour lancer l'intervention.",
+                    : "Verifiez le montant et payez pour lancer l'intervention.",
                 mission.PaymentStatus is "Authorized" or "Paid"
                     ? "done"
                     : mission.ProviderAcceptedAt is not null && mission.Status == "Accepted"

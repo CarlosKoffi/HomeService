@@ -1,5 +1,6 @@
 using System.Text.Json;
 using HomeService.Application.Abstractions;
+using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
@@ -24,6 +25,11 @@ public sealed class CompanyMissionChatService(
             return CompanyMissionChatResult.NotFound("Mission introuvable pour cette entreprise.");
         }
 
+        if (!MissionConversationAccessPolicy.CanAccess(mission.Status))
+        {
+            return CompanyMissionChatResult.Invalid("Le chat n'est disponible que pendant une mission active.");
+        }
+
         var conversation = await GetOrCreateConversationAsync(mission, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         await navigationBadges.MarkConversationMessagesReadAsync(
@@ -46,9 +52,9 @@ public sealed class CompanyMissionChatService(
             return CompanyMissionChatResult.NotFound("Mission introuvable pour cette entreprise.");
         }
 
-        if (mission.Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
+        if (!MissionConversationAccessPolicy.CanAccess(mission.Status))
         {
-            return CompanyMissionChatResult.Invalid("Le chat n'est plus disponible pour cette mission.");
+            return CompanyMissionChatResult.Invalid("Le chat n'est disponible que pendant une mission active.");
         }
 
         var body = Clean(request.Body);

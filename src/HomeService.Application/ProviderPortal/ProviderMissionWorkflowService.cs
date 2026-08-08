@@ -173,7 +173,28 @@ public sealed class ProviderMissionWorkflowService
         try
         {
             provider.SetAvailability(provider.IsAvailable, request.Latitude, request.Longitude);
-            assignment.Mission.MarkProviderOnTheWay(assignment.ProviderId, assignment.CompanyId);
+            return ProviderMissionOperationResult.Ok(ToResponse(assignment));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return ProviderMissionOperationResult.BadRequest(exception.Message);
+        }
+    }
+
+    public ProviderMissionOperationResult MarkOnTheWay(
+        ProviderProfile provider,
+        ProviderMissionAssignment assignment,
+        ProviderLocationVerificationRequest request)
+    {
+        var positionResult = UpdatePosition(provider, assignment, request);
+        if (positionResult.Status != ProviderMissionOperationStatus.Ok)
+        {
+            return positionResult;
+        }
+
+        try
+        {
+            assignment.Mission!.MarkProviderOnTheWay(assignment.ProviderId, assignment.CompanyId);
             return ProviderMissionOperationResult.Ok(ToResponse(assignment));
         }
         catch (InvalidOperationException exception)

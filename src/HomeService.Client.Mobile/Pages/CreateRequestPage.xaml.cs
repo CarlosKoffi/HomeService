@@ -236,7 +236,7 @@ public partial class CreateRequestPage : ContentPage
                 TitleLabel.Text = Uri.UnescapeDataString(Name ?? "Service sélectionné");
                 PreparationTitleLabel.Text = Uri.UnescapeDataString(Name ?? "Service sélectionné");
                 PreparationPriceLabel.Text = "À partir de 15 000 FCFA - max 25 000 FCFA";
-                PreparationHintLabel.Text = "Décrivez votre besoin. Une entreprise vous proposera un prix clair.";
+                PreparationHintLabel.Text = "Décrivez votre besoin. Une entreprise préparera votre intervention.";
                 PreparationCard.IsVisible = true;
                 PhotoHintLabel.Text = "Photos recommandées si elles aident à comprendre le besoin. Maximum 3.";
             }
@@ -1301,7 +1301,7 @@ public partial class CreateRequestPage : ContentPage
         await Shell.Current.DisplayAlert(
             "Demande envoyee",
             methods.Count == 0
-                ? $"{message}\n\nAjoutez maintenant un moyen de paiement pour pouvoir accepter le prix plus tard."
+                ? $"{message}\n\nAjoutez maintenant un moyen de paiement pour confirmer rapidement la mission lorsque le prestataire sera prêt."
                 : $"{message}\n\nChoisissez le moyen de paiement a utiliser pour cette demande.",
             "Continuer");
         await Shell.Current.GoToAsync($"{route}?missionId={missionId:D}");

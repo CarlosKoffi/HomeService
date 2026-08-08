@@ -28,7 +28,15 @@ public partial class HomePage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await LoadHomeAsync();
+        try
+        {
+            await LoadHomeAsync();
+        }
+        catch
+        {
+            SetBusy(false);
+            ShowMessage("L'accueil n'a pas pu etre actualise. Verifiez votre connexion puis reessayez.");
+        }
     }
 
     protected override void OnDisappearing()
@@ -39,8 +47,19 @@ public partial class HomePage : ContentPage
 
     private async void OnRefreshing(object? sender, EventArgs e)
     {
-        await LoadHomeAsync();
-        RefreshHost.IsRefreshing = false;
+        try
+        {
+            await LoadHomeAsync();
+        }
+        catch
+        {
+            SetBusy(false);
+            ShowMessage("Actualisation impossible pour le moment.");
+        }
+        finally
+        {
+            RefreshHost.IsRefreshing = false;
+        }
     }
 
     private async Task LoadHomeAsync()

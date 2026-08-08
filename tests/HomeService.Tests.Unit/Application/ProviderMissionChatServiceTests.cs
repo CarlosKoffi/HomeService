@@ -110,10 +110,30 @@ public sealed class ProviderMissionChatServiceTests
     }
 
     [Fact]
-    public async Task SendAsync_WhenAssignmentIsRefused_IsRejected()
+    public async Task ListAsync_WhenMissionWasCancelledButAssignmentIsStillAccepted_IsRejected()
     {
         await using var db = CreateDbContext();
         var scenario = await SeedScenarioAsync(db);
+        scenario.Mission.Cancel(
+            MissionCancellationActor.Customer,
+            MissionCancellationReason.Other,
+            "Le client a annulé.",
+            cancellationFeeAmount: 0,
+            refundAmount: 0);
+        await db.SaveChangesAsync();
+        var sut = CreateService(db);
+
+        var result = await sut.ListAsync(scenario.Provider.Id, scenario.Assignment.Id, CancellationToken.None);
+
+        Assert.Equal(ProviderMissionChatResultStatus.Invalid, result.Status);
+        Assert.Empty(db.MissionConversations);
+    }
+
+    [Fact]
+    public async Task SendAsync_WhenAssignmentIsRefused_IsRejected()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db, acceptAssignment: false);
         scenario.Assignment.Refuse(ProviderMissionRefusalReason.Unavailable, "Pas disponible.");
         await db.SaveChangesAsync();
         var sut = CreateService(db);
@@ -136,7 +156,9 @@ public sealed class ProviderMissionChatServiceTests
             new MobileNavigationBadgeService(db));
     }
 
-    private static async Task<ProviderMissionChatScenario> SeedScenarioAsync(HomeServiceDbContext db)
+    private static async Task<ProviderMissionChatScenario> SeedScenarioAsync(
+        HomeServiceDbContext db,
+        bool acceptAssignment = true)
     {
         var company = new Company("Wele Services", "+2250701111111", "ops@wele.ci");
         company.Approve();
@@ -174,6 +196,11 @@ public sealed class ProviderMissionChatServiceTests
             provider.Id,
             company.Id,
             DateTimeOffset.UtcNow.AddMinutes(3));
+        if (acceptAssignment)
+        {
+            assignment.Accept();
+            mission.MarkProviderAccepted(provider.Id, company.Id);
+        }
 
         db.Companies.Add(company);
         db.Customers.Add(customer);

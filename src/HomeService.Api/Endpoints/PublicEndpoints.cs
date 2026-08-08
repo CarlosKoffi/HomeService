@@ -414,10 +414,23 @@ public static class PublicEndpoints
                 return Results.NotFound();
             }
 
-            var stream = await uploadService.OpenReadAsync(customer.ProfilePhotoPath, cancellationToken);
-            return stream is null
-                ? Results.NotFound()
-                : Results.Stream(stream, GetImageContentType(customer.ProfilePhotoPath));
+            try
+            {
+                var stream = await uploadService.OpenReadAsync(customer.ProfilePhotoPath, cancellationToken);
+                return stream is null
+                    ? Results.NotFound()
+                    : Results.Stream(
+                        stream,
+                        GetImageContentType(customer.ProfilePhotoPath),
+                        enableRangeProcessing: false);
+            }
+            catch (ApiObjectStorageException exception)
+            {
+                return Results.Problem(
+                    title: "Photo momentanement indisponible.",
+                    detail: exception.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
         })
         .WithName("GetClientProfilePhoto")
         .Produces(StatusCodes.Status200OK)

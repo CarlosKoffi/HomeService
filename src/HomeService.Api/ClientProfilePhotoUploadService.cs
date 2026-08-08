@@ -55,7 +55,8 @@ public sealed class ClientProfilePhotoUploadService
         {
             throw;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or ApiObjectStorageException)
         {
             _logger.LogError(exception, "Unable to store client profile photo for customer {CustomerId}.", customerId);
             throw new ClientProfilePhotoStorageException(

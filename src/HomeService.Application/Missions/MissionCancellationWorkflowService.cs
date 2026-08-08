@@ -115,8 +115,12 @@ public sealed class MissionCancellationWorkflowService(
                 .AnyAsync(assignment =>
                     assignment.ProviderId == provider.Id
                     && assignment.MissionId != cancelledMissionId
+                    && assignment.Mission != null
                     && (assignment.Status == ProviderMissionAssignmentStatus.Accepted
-                        || assignment.Status == ProviderMissionAssignmentStatus.Started),
+                        || assignment.Status == ProviderMissionAssignmentStatus.Started)
+                    && (assignment.Mission.Status == MissionStatus.Accepted
+                        || assignment.Mission.Status == MissionStatus.OnTheWay
+                        || assignment.Mission.Status == MissionStatus.Started),
                     cancellationToken);
 
             if (!hasAnotherActiveMission)

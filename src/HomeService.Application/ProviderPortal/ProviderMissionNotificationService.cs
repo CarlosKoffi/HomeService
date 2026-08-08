@@ -71,8 +71,8 @@ public sealed class ProviderMissionNotificationService(
         await QueueCustomerPushAsync(
             mission,
             MissionPaymentRequiredEventKey,
-            "Votre paiement est attendu",
-            "{NomTechnicien} a accepte la mission {NumeroMission}. Validez le prix de {Montant} et payez pour lancer l'intervention.",
+            "Votre prestataire est pret",
+            "{NomTechnicien} est pret pour la mission {NumeroMission}. Verifiez le montant de {Montant} et payez pour lancer l'intervention.",
             variables,
             "mission_payment_required",
             assignment.Id,

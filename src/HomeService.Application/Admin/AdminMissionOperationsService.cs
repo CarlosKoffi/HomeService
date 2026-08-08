@@ -90,10 +90,17 @@ public sealed class AdminMissionOperationsService(
         var assignments = await db.ProviderMissionAssignments
             .Where(assignment => assignment.MissionId == missionId)
             .ToListAsync(cancellationToken);
+        var busyProviderIds = assignments
+            .Where(assignment => assignment.Status is ProviderMissionAssignmentStatus.Accepted
+                or ProviderMissionAssignmentStatus.Started)
+            .Select(assignment => assignment.ProviderId)
+            .Distinct()
+            .ToList();
         foreach (var assignment in assignments)
         {
             assignment.Cancel();
         }
+        await RestoreProviderAvailabilityAsync(missionId, busyProviderIds, cancellationToken);
 
         var cleanNote = note.Trim();
         db.AuditLogEntries.Add(AuditLogFactory.Create(
@@ -130,6 +137,37 @@ public sealed class AdminMissionOperationsService(
         await db.SaveChangesAsync(cancellationToken);
 
         return AdminMissionOperationResult.Ok(mission, previousStatus, cleanNote);
+    }
+
+    private async Task RestoreProviderAvailabilityAsync(
+        Guid cancelledMissionId,
+        IReadOnlyList<Guid> providerIds,
+        CancellationToken cancellationToken)
+    {
+        if (providerIds.Count == 0) return;
+
+        var providers = await db.Providers
+            .Where(provider => providerIds.Contains(provider.Id))
+            .ToListAsync(cancellationToken);
+        foreach (var provider in providers.Where(provider => provider.Status == ProviderStatus.Approved))
+        {
+            var hasAnotherActiveMission = await db.ProviderMissionAssignments
+                .AsNoTracking()
+                .AnyAsync(assignment =>
+                    assignment.ProviderId == provider.Id
+                    && assignment.MissionId != cancelledMissionId
+                    && assignment.Mission != null
+                    && (assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                        || assignment.Status == ProviderMissionAssignmentStatus.Started)
+                    && (assignment.Mission.Status == MissionStatus.Accepted
+                        || assignment.Mission.Status == MissionStatus.OnTheWay
+                        || assignment.Mission.Status == MissionStatus.Started),
+                    cancellationToken);
+            if (!hasAnotherActiveMission)
+            {
+                provider.SetAvailability(true, provider.CurrentLatitude, provider.CurrentLongitude);
+            }
+        }
     }
 
     public async Task<AdminMissionOperationResult> MarkDisputedAsync(

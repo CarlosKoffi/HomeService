@@ -41,7 +41,7 @@ public partial class ServicesPage : ContentPage
         if (string.IsNullOrWhiteSpace(token) || apiClient is null)
         {
             ShowError("Votre session a expiré. Reconnectez-vous pour charger vos compétences.");
-            await RenderServicesAsync([], false);
+            await RenderServicesAsync([]);
             StopLoading();
             return;
         }
@@ -51,14 +51,14 @@ public partial class ServicesPage : ContentPage
         if (!result.IsSuccess || result.Response is null)
         {
             ShowError(result.ErrorMessage ?? "Impossible de charger les services depuis l’API.");
-            await RenderServicesAsync([], false);
+            await RenderServicesAsync([]);
             return;
         }
 
-        await RenderServicesAsync(result.Response.Services, result.Response.CanViewPrices);
+        await RenderServicesAsync(result.Response.Services);
     }
 
-    private async Task RenderServicesAsync(IReadOnlyList<ProviderMobileProfileServiceResponse> services, bool canViewPrices)
+    private async Task RenderServicesAsync(IReadOnlyList<ProviderMobileProfileServiceResponse> services)
     {
         ContentHost.Children.Clear();
         if (services.Count == 0)
@@ -131,7 +131,7 @@ public partial class ServicesPage : ContentPage
 
             foreach (var prestation in service.Prestations.OrderBy(item => item.Name))
             {
-                var row = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star, GridLength.Auto), ColumnSpacing = 9, Padding = new Thickness(0, 3) };
+                var row = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star), ColumnSpacing = 9, Padding = new Thickness(0, 3) };
                 var prestationImage = new Image { Source = "icon_check.svg", WidthRequest = 30, HeightRequest = 30, Aspect = Aspect.AspectFit, VerticalOptions = LayoutOptions.Start };
                 var remotePrestationImage = catalogMedia is null
                     ? null
@@ -139,17 +139,6 @@ public partial class ServicesPage : ContentPage
                 if (remotePrestationImage is not null) prestationImage.Source = remotePrestationImage;
                 row.Add(prestationImage, 0);
                 row.Add(new Label { Text = prestation.Name, FontFamily = "PlusJakartaSans", FontSize = 13, LineBreakMode = LineBreakMode.WordWrap }, 1);
-                if (canViewPrices && prestation.PriceMinAmount is not null)
-                {
-                    row.Add(new Label
-                    {
-                        Text = FormatPrice(prestation),
-                        FontFamily = "PlusJakartaSans",
-                        FontSize = 11,
-                        FontAttributes = FontAttributes.Bold,
-                        TextColor = Color.FromArgb("#155EEF")
-                    }, 2);
-                }
                 content.Add(row);
             }
 
@@ -173,14 +162,6 @@ public partial class ServicesPage : ContentPage
             TextColor = Color.FromArgb(canReceiveMissions ? "#067647" : "#B54708")
         }
     };
-
-    private static string FormatPrice(ProviderMobileProfilePrestationResponse prestation)
-    {
-        var currency = string.IsNullOrWhiteSpace(prestation.Currency) ? "FCFA" : prestation.Currency;
-        return prestation.PriceMaxAmount is not null && prestation.PriceMaxAmount != prestation.PriceMinAmount
-            ? $"{prestation.PriceMinAmount:N0}–{prestation.PriceMaxAmount:N0} {currency}"
-            : $"{prestation.PriceMinAmount:N0} {currency}";
-    }
 
     private void StopLoading()
     {

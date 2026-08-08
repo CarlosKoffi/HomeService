@@ -38,6 +38,21 @@
                         <Label x:Name="OverviewActionCaption" Text="Action requise" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
                         <Label x:Name="OverviewActionTitle" FontSize="17" FontAttributes="Bold" TextColor="{StaticResource Ink}" LineBreakMode="WordWrap" />
                         <Label x:Name="OverviewActionAmount" IsVisible="False" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" LineBreakMode="NoWrap" />
+                        <VerticalStackLayout x:Name="OverviewPriceBreakdown" IsVisible="False" Spacing="8" Margin="0,6,0,4">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label Text="Montant de la prestation" FontSize="13" TextColor="{StaticResource Ink}" />
+                                <Label x:Name="OverviewServiceAmountLabel" Grid.Column="1" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label x:Name="OverviewServiceFeeLabel" Text="Frais de service (4 %)" FontSize="13" TextColor="{StaticResource Ink}" />
+                                <Label x:Name="OverviewServiceFeeAmountLabel" Grid.Column="1" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
+                            </Grid>
+                            <BoxView HeightRequest="1" Color="{StaticResource Line}" Margin="0,3" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label Text="Total à payer" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource Ink}" />
+                                <Label x:Name="OverviewTotalAmountLabel" Grid.Column="1" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                            </Grid>
+                        </VerticalStackLayout>
                         <Label x:Name="OverviewActionHelp" FontSize="13" TextColor="{StaticResource MutedInk}" LineHeight="1.25" LineBreakMode="WordWrap" />
                         <Label x:Name="OverviewActionCountdownLabel" IsVisible="False" FontSize="13" FontAttributes="Bold" TextColor="#B54708" LineBreakMode="WordWrap" />
                         <Button x:Name="OverviewConfirmButton" Text="Accepter et payer" IsVisible="False" Clicked="OnConfirmClicked" Margin="0,6,0,0" />
@@ -113,7 +128,7 @@
                             </VerticalStackLayout>
                         </Grid>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                            <Button Text="Message" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" />
+                            <Button x:Name="ProviderChatButton" Text="Message" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" />
                             <Button Grid.Column="1" x:Name="CallButton" Text="Appeler" BackgroundColor="#EFF6FF" TextColor="{StaticResource WeleBlue}" Clicked="OnCallClicked" />
                         </Grid>
                     </VerticalStackLayout>
@@ -122,10 +137,10 @@
                 <VerticalStackLayout x:Name="ProviderDetailPanel" IsVisible="False" Spacing="10">
                     <Label Text="Intervention" Style="{StaticResource CardTitleLabel}" />
                     <Label x:Name="ProviderDetailLabel" FontSize="14" TextColor="{StaticResource Ink}" LineHeight="1.35" />
-                    <Button Text="Contacter" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" />
+                    <Button x:Name="ProviderDetailChatButton" Text="Contacter" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" />
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="10">
+                <VerticalStackLayout x:Name="PricePaymentPanel" Spacing="10">
                     <Label Text="Prix et paiement" Style="{StaticResource CardTitleLabel}" />
                     <VerticalStackLayout Spacing="3"><Label Text="Montant" Style="{StaticResource MutedLabel}" /><Label x:Name="PriceLabel" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" FontSize="16" LineBreakMode="WordWrap" /></VerticalStackLayout>
                     <VerticalStackLayout Spacing="3" Margin="0,6,0,0"><Label Text="Paiement" Style="{StaticResource MutedLabel}" /><Label x:Name="PaymentLabel" FontAttributes="Bold" FontSize="14" LineBreakMode="WordWrap" /></VerticalStackLayout>

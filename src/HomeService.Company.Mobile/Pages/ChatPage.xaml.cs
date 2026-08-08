@@ -62,7 +62,7 @@ public partial class ChatPage : ContentPage
         }
 
         missions = (result.Response ?? [])
-            .Where(item => item.Status is not "Cancelled")
+            .Where(item => IsConversationActive(item.Status))
             .OrderBy(item => StatusOrder(item.Status))
             .ThenByDescending(item => item.ScheduledFor ?? DateTimeOffset.MinValue)
             .Take(30)
@@ -137,7 +137,7 @@ public partial class ChatPage : ContentPage
             }
 
             var mission = missions.FirstOrDefault(item => item.MissionId == missionId);
-            SetComposerEnabled(mission?.Status is not ("Completed" or "Cancelled" or "Resolved"));
+            SetComposerEnabled(mission is not null && IsConversationActive(mission.Status));
             ErrorLabel.IsVisible = false;
             if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
         }
@@ -210,7 +210,7 @@ public partial class ChatPage : ContentPage
         {
             sending = false;
             var mission = missions.FirstOrDefault(item => item.MissionId == selectedMissionId);
-            SetComposerEnabled(mission?.Status is not ("Completed" or "Cancelled" or "Resolved"));
+            SetComposerEnabled(mission is not null && IsConversationActive(mission.Status));
         }
     }
 
@@ -267,6 +267,11 @@ public partial class ChatPage : ContentPage
         "Assigned" or "Offered" or "SearchingProvider" => 3,
         _ => 4
     };
+
+    private static bool IsConversationActive(string status)
+        => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed record CompanyChatMissionRow(Guid MissionId, string Status, string Label);

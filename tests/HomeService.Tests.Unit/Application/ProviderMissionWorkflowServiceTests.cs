@@ -48,7 +48,7 @@ public sealed class ProviderMissionWorkflowServiceTests
     }
 
     [Fact]
-    public void UpdatePosition_WhenPaymentIsConfirmed_UpdatesProviderAndMarksMissionOnTheWay()
+    public void UpdatePosition_WhenPaymentIsConfirmed_UpdatesProviderWithoutChangingDepartureStatus()
     {
         var provider = CreateApprovedProvider();
         var mission = CreateAssignedMission();
@@ -58,10 +58,28 @@ public sealed class ProviderMissionWorkflowServiceTests
         var result = _service.UpdatePosition(provider, assignment, request);
 
         Assert.Equal(ProviderMissionOperationStatus.Ok, result.Status);
-        Assert.Equal(MissionStatus.OnTheWay, mission.Status);
+        Assert.Equal(MissionStatus.Accepted, mission.Status);
         Assert.Equal(5.360000m, provider.CurrentLatitude);
         Assert.Equal(-4.010000m, provider.CurrentLongitude);
         Assert.Equal(ProviderMissionAssignmentStatus.Accepted, assignment.Status);
+    }
+
+    [Fact]
+    public void MarkOnTheWay_WhenPaymentIsConfirmed_UpdatesPositionAndDepartureStatus()
+    {
+        var provider = CreateApprovedProvider();
+        var mission = CreateAssignedMission();
+        var assignment = CreateAcceptedAssignment(mission);
+
+        var result = _service.MarkOnTheWay(
+            provider,
+            assignment,
+            new ProviderLocationVerificationRequest(5.360000m, -4.010000m, 18));
+
+        Assert.Equal(ProviderMissionOperationStatus.Ok, result.Status);
+        Assert.Equal(MissionStatus.OnTheWay, mission.Status);
+        Assert.Equal(5.360000m, provider.CurrentLatitude);
+        Assert.Equal(-4.010000m, provider.CurrentLongitude);
     }
 
     [Fact]

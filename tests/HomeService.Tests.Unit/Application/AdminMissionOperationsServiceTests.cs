@@ -59,6 +59,8 @@ public sealed class AdminMissionOperationsServiceTests
         Assert.Equal(10_000, mission.RefundAmount);
         Assert.Equal(MissionCancellationActor.Admin, mission.CancelledBy);
         Assert.Equal("Client injoignable apres plusieurs tentatives", mission.CancellationComment);
+        Assert.True((await db.Providers.SingleAsync()).IsAvailable);
+        Assert.Equal(ProviderMissionAssignmentStatus.Cancelled, (await db.ProviderMissionAssignments.SingleAsync()).Status);
         Assert.Single(await db.AuditLogEntries.ToListAsync());
         Assert.Single(await db.CompanyPortalNotifications.ToListAsync());
         Assert.Equal(2, await db.NotificationOutboxMessages.CountAsync());
@@ -272,6 +274,13 @@ public sealed class AdminMissionOperationsServiceTests
             maxAllowedAmount: 15_000,
             overMaxJustification: null);
         mission.MarkProviderAccepted(provider.Id, company.Id);
+        var assignment = new ProviderMissionAssignment(
+            mission.Id,
+            provider.Id,
+            company.Id,
+            DateTimeOffset.UtcNow.AddMinutes(5));
+        assignment.Accept();
+        provider.SetAvailability(false, null, null);
 
         db.Companies.Add(company);
         db.Services.Add(service);
@@ -279,6 +288,7 @@ public sealed class AdminMissionOperationsServiceTests
         db.MobileDeviceTokens.Add(customerToken);
         db.Providers.Add(provider);
         db.Missions.Add(mission);
+        db.ProviderMissionAssignments.Add(assignment);
         await db.SaveChangesAsync();
 
         return mission;

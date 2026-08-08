@@ -13,6 +13,7 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
 {
     private const int MaxProfilePhotoBytes = 25 * 1024 * 1024;
     private const int MaxCachedMediaEntries = 64;
+    private static readonly Uri PublicMediaBaseUri = new("https://media.wele.africa/", UriKind.Absolute);
     private static readonly TimeSpan MediaDownloadTimeout = TimeSpan.FromSeconds(8);
     private static readonly ConcurrentDictionary<string, Lazy<Task<byte[]?>>> MediaCache = new(StringComparer.OrdinalIgnoreCase);
     public Task<ApiCallResult<ClientAuthResponse>> RegisterAsync(RegisterClientRequest request, CancellationToken cancellationToken = default)
@@ -174,19 +175,31 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
             return null;
         }
 
-        if (Uri.TryCreate(url, UriKind.Absolute, out _))
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absoluteUri)
+            && (absoluteUri.Scheme == Uri.UriSchemeHttp || absoluteUri.Scheme == Uri.UriSchemeHttps))
         {
-            return url;
+            return absoluteUri.ToString();
+        }
+
+        var relativePath = url.TrimStart('/');
+        if (IsPublicMediaPath(relativePath))
+        {
+            return new Uri(PublicMediaBaseUri, relativePath).ToString();
         }
 
         if (httpClient.BaseAddress is null ||
-            !Uri.TryCreate(httpClient.BaseAddress, url.TrimStart('/'), out var resolvedUri))
+            !Uri.TryCreate(httpClient.BaseAddress, relativePath, out var resolvedUri))
         {
             return null;
         }
 
         return resolvedUri.ToString();
     }
+
+    private static bool IsPublicMediaPath(string path) =>
+        path.StartsWith("assets/services/", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("catalog/prestations/", StringComparison.OrdinalIgnoreCase)
+        || path.StartsWith("media/payment-providers/", StringComparison.OrdinalIgnoreCase);
 
     public ImageSource? ToRemoteImageSource(string? url)
     {
@@ -721,7 +734,11 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         {
             return ApiCallResult<TResponse>.Failed(0, "Connexion trop lente. Reessayez avec un meilleur reseau.");
         }
-        catch (HttpRequestException)
+        catch (JsonException)
+        {
+            return ApiCallResult<TResponse>.Failed(0, "La reponse du serveur est invalide. Reessayez dans quelques instants.");
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or ObjectDisposedException)
         {
             return ApiCallResult<TResponse>.Failed(0, "Connexion impossible. Verifiez votre reseau.");
         }

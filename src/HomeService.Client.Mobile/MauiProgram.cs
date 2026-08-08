@@ -22,7 +22,13 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>();
-#if ANDROID || IOS || MACCATALYST
+#if ANDROID
+        // Register the map handler without calling UseMauiMaps(). On Android,
+        // UseMauiMaps eagerly initializes Google Maps on the UI thread during
+        // application startup. The native MapView initializes the SDK when a
+        // map screen is actually opened, so the home screen stays responsive.
+        builder.ConfigureMauiHandlers(handlers => handlers.AddMauiMaps());
+#elif IOS || MACCATALYST
         builder.UseMauiMaps();
 #endif
         builder

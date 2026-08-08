@@ -14,7 +14,9 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>();
-#if ANDROID || IOS || MACCATALYST
+#if ANDROID
+        builder.ConfigureMauiHandlers(handlers => handlers.AddMauiMaps());
+#elif IOS || MACCATALYST
         builder.UseMauiMaps();
 #endif
 

@@ -10,8 +10,8 @@
             </Border>
             <Label Text="Paiement effectué !" FontSize="25" FontAttributes="Bold" HorizontalTextAlignment="Center" />
             <Label Text="Merci pour votre confiance." TextColor="#6B7280" HorizontalTextAlignment="Center" />
-            <Button Text="Voir la facture" Style="{StaticResource OutlineActionButton}" Clicked="OnInvoiceClicked" Margin="0,18,0,0" />
-            <Button Text="Retour à l'accueil" Clicked="OnHomeClicked" />
+            <Button Text="Revenir à la mission" Clicked="OnMissionClicked" Margin="0,18,0,0" />
+            <Button Text="Voir la facture" Style="{StaticResource OutlineActionButton}" Clicked="OnInvoiceClicked" />
             <Label x:Name="ErrorLabel" TextColor="#DC2626" IsVisible="False" HorizontalTextAlignment="Center" />
         </VerticalStackLayout>
     </Grid>

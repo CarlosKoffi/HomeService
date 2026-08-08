@@ -45,7 +45,7 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal(3_000, result.Response.PartsEstimateAmount);
         Assert.Equal("Joint a remplacer", result.Response.PartsDescription);
         Assert.Equal(
-            "Le prestataire a confirme la mission. Validez le prix et payez pour lancer l'intervention.",
+            "Votre prestataire est pret. Verifiez le montant et payez pour lancer l'intervention.",
             result.Response.Message);
     }
 
@@ -83,6 +83,10 @@ public sealed class ClientMissionStatusServiceTests
         Assert.False(result.Response.Actions.RequiresPaymentMethod);
         Assert.Null(result.Response.Actions.AmountToPayNow);
         Assert.NotEqual("AcceptQuote", result.Response.Actions.PrimaryAction);
+        Assert.Null(result.Response.CompanyQuotedAmount);
+        Assert.Null(result.Response.EstimatedTotalAmount);
+        Assert.Equal(0, result.Response.CustomerServiceFeeAmount);
+        Assert.Equal(0, result.Response.CustomerTotalAmount);
     }
 
     [Fact]

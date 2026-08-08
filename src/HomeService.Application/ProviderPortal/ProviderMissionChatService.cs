@@ -1,5 +1,6 @@
 using System.Text.Json;
 using HomeService.Application.Abstractions;
+using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Entities;
@@ -24,11 +25,8 @@ public sealed class ProviderMissionChatService(
             return ProviderMissionChatResult.NotFound("Mission introuvable pour ce prestataire.");
         }
 
-        if (!CanSendMessage(assignment.Status)
-            || assignment.Mission.Status is MissionStatus.Completed
-                or MissionStatus.Cancelled
-                or MissionStatus.Disputed
-                or MissionStatus.Resolved)
+        if (!CanAccessConversation(assignment.Status)
+            || !MissionConversationAccessPolicy.CanAccess(assignment.Mission.Status))
         {
             return ProviderMissionChatResult.Invalid("Le chat n'est plus disponible pour cette affectation.");
         }
@@ -62,8 +60,8 @@ public sealed class ProviderMissionChatService(
             return ProviderMissionChatResult.NotFound("Mission introuvable pour ce prestataire.");
         }
 
-        if (!CanSendMessage(assignment.Status)
-            || assignment.Mission.Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
+        if (!CanAccessConversation(assignment.Status)
+            || !MissionConversationAccessPolicy.CanAccess(assignment.Mission.Status))
         {
             return ProviderMissionChatResult.Invalid("Le chat n'est plus disponible pour cette affectation.");
         }
@@ -210,10 +208,9 @@ public sealed class ProviderMissionChatService(
             .ToListAsync(cancellationToken);
     }
 
-    private static bool CanSendMessage(ProviderMissionAssignmentStatus status)
+    private static bool CanAccessConversation(ProviderMissionAssignmentStatus status)
     {
-        return status is ProviderMissionAssignmentStatus.Offered
-            or ProviderMissionAssignmentStatus.Accepted
+        return status is ProviderMissionAssignmentStatus.Accepted
             or ProviderMissionAssignmentStatus.Started;
     }
 

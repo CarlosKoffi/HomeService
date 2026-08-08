@@ -1,5 +1,6 @@
 using System.Text.Json;
 using HomeService.Application.Abstractions;
+using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
@@ -19,6 +20,11 @@ public sealed class ClientMissionChatService(
         if (mission is null)
         {
             return ClientMissionChatResult.NotFound("Mission introuvable pour ce client.");
+        }
+
+        if (!MissionConversationAccessPolicy.CanAccess(mission.Status))
+        {
+            return ClientMissionChatResult.Invalid("Le chat n'est disponible que pendant une mission active.");
         }
 
         var conversation = await GetOrCreateConversationAsync(mission, cancellationToken);
@@ -45,9 +51,9 @@ public sealed class ClientMissionChatService(
             return ClientMissionChatResult.NotFound("Mission introuvable pour ce client.");
         }
 
-        if (mission.Status is MissionStatus.Completed or MissionStatus.Cancelled or MissionStatus.Resolved)
+        if (!MissionConversationAccessPolicy.CanAccess(mission.Status))
         {
-            return ClientMissionChatResult.Invalid("Le chat n'est plus disponible pour cette mission.");
+            return ClientMissionChatResult.Invalid("Le chat n'est disponible que pendant une mission active.");
         }
 
         var body = Clean(request.Body);

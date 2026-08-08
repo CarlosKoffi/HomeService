@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Missions;
 using HomeService.Contracts.ProviderPortal;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -62,14 +63,14 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                     attachment.Caption))
                 .ToListAsync(cancellationToken);
 
-        var conversationIds = isClosed ? [] : await db.MissionConversations
+        var conversationIds = !MissionConversationAccessPolicy.CanAccess(mission.Status) ? [] : await db.MissionConversations
             .AsNoTracking()
             .Where(conversation => conversation.MissionId == mission.Id
                 && (conversation.ProviderId == null || conversation.ProviderId == providerId))
             .Select(conversation => conversation.Id)
             .ToListAsync(cancellationToken);
 
-        var messages = conversationIds.Count == 0
+        var messages = isClosed || conversationIds.Count == 0
             ? []
             : await db.MissionMessages
                 .AsNoTracking()
@@ -97,8 +98,6 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                     quote.Status.ToString(),
                     quote.Reason,
                     quote.RequestedPhotoStoragePath,
-                    null,
-                    quote.Currency,
                     quote.CompanyDescription,
                     quote.RequestedAt,
                     quote.SubmittedAt,
@@ -110,11 +109,20 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                 or nameof(MissionAdditionalQuoteStatus.Submitted));
         var canCallCustomer = !isClosed && mission.CanRevealContactDetails && customer is not null;
         var now = DateTimeOffset.UtcNow;
+        var effectiveAssignmentStatus = mission.Status switch
+        {
+            MissionStatus.Completed or MissionStatus.Resolved => "Completed",
+            MissionStatus.Cancelled or MissionStatus.Disputed => "Cancelled",
+            MissionStatus.OnTheWay => "OnTheWay",
+            MissionStatus.Started => "Started",
+            MissionStatus.Accepted => "Accepted",
+            _ => assignment.Status.ToString()
+        };
         var response = new ProviderMobileMissionDetailResponse(
             assignment.Id,
             mission.Id,
             mission.MissionNumber,
-            assignment.Status.ToString(),
+            effectiveAssignmentStatus,
             mission.Status.ToString(),
             service?.Name ?? "Service",
             service?.IconName ?? "sparkles",
@@ -134,10 +142,7 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
             mission.ScheduledFor,
             assignment.ExpiresAt,
             Math.Max(0, (int)Math.Floor((assignment.ExpiresAt - now).TotalSeconds)),
-            null,
-            null,
             isClosed ? null : mission.PartsDescription,
-            mission.Currency,
             mission.Description,
             BuildActions(assignment, mission, hasBlockingAdditionalQuote),
             new ProviderMobileMissionArrivalResponse(
@@ -164,6 +169,15 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
         return new ProviderMobileMissionActionsResponse(
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
+            assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                && mission.Status == MissionStatus.Accepted
+                && mission.IsInitialPaymentConfirmed,
+            assignment.Status == ProviderMissionAssignmentStatus.Accepted
+                && mission.Status == MissionStatus.Accepted
+                && mission.IsInitialPaymentConfirmed
+                && mission.CustomerConfirmedAt.HasValue
+                    ? mission.CustomerConfirmedAt.Value + ProviderDepartureAutomationService.DepartureGracePeriod
+                    : null,
             assignment.Status == ProviderMissionAssignmentStatus.Accepted
                 && mission.IsInitialPaymentConfirmed,
             assignment.Status == ProviderMissionAssignmentStatus.Accepted

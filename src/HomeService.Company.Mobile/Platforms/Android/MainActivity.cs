@@ -40,6 +40,12 @@ public class MainActivity : MauiAppCompatActivity
         _ = CompanyNotificationNavigationService.TryNavigateAsync();
     }
 
+    protected override void OnResume()
+    {
+        base.OnResume();
+        BottomNavigationTypography.Apply(this);
+    }
+
     private static void CaptureNotificationIntent(Intent? intent)
     {
         if (intent?.Extras is null) return;

@@ -24,6 +24,7 @@ public partial class MissionDetailPage : ContentPage
     private CancellationTokenSource? refreshCancellation;
     private CancellationTokenSource? locationCancellation;
     private CancellationTokenSource? offerCountdownCancellation;
+    private CancellationTokenSource? departureCountdownCancellation;
     private bool loading;
     private bool offerActionInProgress;
 
@@ -96,8 +97,9 @@ public partial class MissionDetailPage : ContentPage
             || mission.MissionStatus is "Completed" or "Cancelled" or "Disputed" or "Resolved";
         var blockingQuote = mission.AdditionalQuotes.FirstOrDefault(quote => quote.Status is "Requested" or "Submitted");
         DetailHost.IsVisible = true;
-        StatusLabel.Text = StatusText(mission.AssignmentStatus);
-        var statusColor = StatusColor(mission.AssignmentStatus);
+        var displayedStatus = mission.MissionStatus == "OnTheWay" ? "OnTheWay" : mission.AssignmentStatus;
+        StatusLabel.Text = StatusText(displayedStatus);
+        var statusColor = StatusColor(displayedStatus);
         StatusLabel.TextColor = statusColor;
         StatusPill.BackgroundColor = Color.FromArgb(mission.AssignmentStatus == "Completed" ? "#ECFDF3" : "#EEF4FF");
 
@@ -121,13 +123,13 @@ public partial class MissionDetailPage : ContentPage
             ? mission.CustomerPhoneNumber
             : "Coordonnées disponibles selon l’état de la mission";
         CallButton.IsVisible = mission.CanCallCustomer && !string.IsNullOrWhiteSpace(mission.CustomerPhoneNumber);
-        MessageButton.IsVisible = !isClosed;
+        MessageButton.IsVisible = IsConversationActive(mission.MissionStatus);
 
         DescriptionCard.IsVisible = !string.IsNullOrWhiteSpace(mission.Description);
         DescriptionLabel.Text = mission.Description ?? string.Empty;
         RenderMap(mission);
 
-        ArrivalCard.IsVisible = !isClosed && mission.AssignmentStatus is "Accepted" or "Started";
+        ArrivalCard.IsVisible = !isClosed && (mission.Actions.CanVerifyArrival || mission.AssignmentStatus == "Started");
         ArrivalTitleLabel.Text = mission.Arrival.IsVerified ? "Arrivée vérifiée" : "Arrivée à confirmer";
         ArrivalDetailLabel.Text = mission.Arrival.DistanceMeters is null
             ? $"La vérification s’effectue dans un rayon de {mission.Arrival.ToleranceMeters} m."
@@ -142,10 +144,12 @@ public partial class MissionDetailPage : ContentPage
         AdditionalQuotePauseCard.IsVisible = blockingQuote is not null;
         AdditionalQuotePauseLabel.Text = blockingQuote?.Status == "Requested"
             ? "L'entreprise prépare le devis. La mission reste verrouillée."
-            : "Le devis a été envoyé. La mission reprendra automatiquement après le paiement du client.";
+            : "Le devis a été envoyé. La mission reprendra automatiquement après la validation du client.";
 
-        FieldActionsStack.IsVisible = mission.Actions.CanVerifyArrival || mission.Actions.CanStart || mission.Actions.CanComplete
+        FieldActionsStack.IsVisible = mission.Actions.CanMarkOnTheWay || mission.Actions.CanVerifyArrival || mission.Actions.CanStart || mission.Actions.CanComplete
             || (!isClosed && mission.MissionStatus == "Started" && blockingQuote is null);
+        OnTheWayButton.IsVisible = mission.Actions.CanMarkOnTheWay;
+        RestartDepartureCountdown(mission);
         VerifyArrivalButton.IsVisible = mission.Actions.CanVerifyArrival;
         StartButton.IsVisible = mission.Actions.CanStart;
         AdditionalQuoteButton.IsVisible = !isClosed && mission.MissionStatus == "Started" && blockingQuote is null;
@@ -209,6 +213,9 @@ public partial class MissionDetailPage : ContentPage
     private async void OnVerifyArrivalClicked(object? sender, EventArgs e)
         => await SendLocationActionAsync("Arrivée vérifiée.", (token, id, request) => apiClient!.VerifyArrivalAsync(token, id, request));
 
+    private async void OnTheWayClicked(object? sender, EventArgs e)
+        => await SendLocationActionAsync("Départ confirmé. Le client peut maintenant suivre votre arrivée.", (token, id, request) => apiClient!.MarkMissionOnTheWayAsync(token, id, request));
+
     private async void OnStartClicked(object? sender, EventArgs e)
         => await SendLocationActionAsync("Mission démarrée.", (token, id, request) => apiClient!.StartMissionAsync(token, id, request));
 
@@ -225,7 +232,7 @@ public partial class MissionDetailPage : ContentPage
         if (!CanAct() || detail?.MissionStatus != "Started") return;
         var reason = await DisplayPromptAsync(
             "Besoin complémentaire",
-            "Décrivez précisément ce que vous constatez. L’entreprise préparera le montant et enverra le devis au client.",
+            "Décrivez précisément ce que vous constatez. L’entreprise préparera l’ajustement et l’enverra au client.",
             "Transmettre",
             "Annuler",
             "Pièce, réparation ou travail supplémentaire…",
@@ -275,6 +282,11 @@ public partial class MissionDetailPage : ContentPage
         if (assignmentId is not null) await Shell.Current.GoToAsync($"//messages?assignmentId={assignmentId.Value:D}");
     }
 
+    private static bool IsConversationActive(string status)
+        => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
+
     private async void OnOpenRouteClicked(object? sender, EventArgs e)
     {
         if (!IsValidCoordinate(destinationLatitude, destinationLongitude)) return;
@@ -306,7 +318,10 @@ public partial class MissionDetailPage : ContentPage
         locationCancellation?.Cancel();
         locationCancellation?.Dispose();
         locationCancellation = null;
-        if (mission.AssignmentStatus != "Accepted" || apiClient is null || string.IsNullOrWhiteSpace(accessToken)) return;
+        if (mission.AssignmentStatus != "Accepted"
+            || (!mission.Actions.CanMarkOnTheWay && !mission.Actions.CanVerifyArrival)
+            || apiClient is null
+            || string.IsNullOrWhiteSpace(accessToken)) return;
         locationCancellation = new CancellationTokenSource();
         _ = LocationLoopAsync(mission.AssignmentId, locationCancellation.Token);
     }
@@ -329,6 +344,7 @@ public partial class MissionDetailPage : ContentPage
     private void StopBackgroundWork()
     {
         StopOfferCountdown();
+        StopDepartureCountdown();
         refreshCancellation?.Cancel();
         refreshCancellation?.Dispose();
         refreshCancellation = null;
@@ -358,6 +374,7 @@ public partial class MissionDetailPage : ContentPage
         var offerIsActive = detail is not null && !HasOfferExpired(detail.ExpiresAt);
         AcceptButton.IsEnabled = enabled && offerIsActive && detail!.Actions.CanAccept;
         RefuseButton.IsEnabled = enabled && offerIsActive && detail!.Actions.CanRefuse;
+        OnTheWayButton.IsEnabled = enabled && detail?.Actions.CanMarkOnTheWay == true;
         VerifyArrivalButton.IsEnabled = enabled;
         StartButton.IsEnabled = enabled;
         AdditionalQuoteButton.IsEnabled = enabled;
@@ -378,6 +395,62 @@ public partial class MissionDetailPage : ContentPage
 
         offerCountdownCancellation = new CancellationTokenSource();
         _ = RunOfferCountdownAsync(mission.AssignmentId, mission.ExpiresAt, offerCountdownCancellation.Token);
+    }
+
+    private void RestartDepartureCountdown(ProviderMobileMissionDetailResponse mission)
+    {
+        StopDepartureCountdown();
+        DepartureCountdownLabel.IsVisible = false;
+        if (!mission.Actions.CanMarkOnTheWay || !mission.Actions.MarkOnTheWayAutomaticallyAt.HasValue)
+        {
+            return;
+        }
+
+        var deadline = mission.Actions.MarkOnTheWayAutomaticallyAt.Value;
+        DepartureCountdownLabel.IsVisible = true;
+        UpdateDepartureCountdown(deadline);
+        departureCountdownCancellation = new CancellationTokenSource();
+        _ = RunDepartureCountdownAsync(mission.AssignmentId, deadline, departureCountdownCancellation.Token);
+    }
+
+    private async Task RunDepartureCountdownAsync(Guid id, DateTimeOffset deadline, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                var expired = await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    if (detail?.AssignmentId != id) return false;
+                    UpdateDepartureCountdown(deadline);
+                    return deadline <= DateTimeOffset.UtcNow;
+                });
+
+                if (!expired) continue;
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    DepartureCountdownLabel.Text = "Départ automatique en cours…";
+                    OnTheWayButton.IsEnabled = false;
+                    await LoadAsync(false);
+                });
+                return;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
+    private void UpdateDepartureCountdown(DateTimeOffset deadline)
+    {
+        var seconds = RemainingSeconds(deadline);
+        DepartureCountdownLabel.Text = $"Départ automatique dans {seconds / 60:00}:{seconds % 60:00}";
+    }
+
+    private void StopDepartureCountdown()
+    {
+        departureCountdownCancellation?.Cancel();
+        departureCountdownCancellation?.Dispose();
+        departureCountdownCancellation = null;
     }
 
     private async Task RunOfferCountdownAsync(Guid id, DateTimeOffset expiresAt, CancellationToken cancellationToken)
@@ -450,6 +523,6 @@ public partial class MissionDetailPage : ContentPage
     private async void OnBackClicked(object? sender, EventArgs e) => await Shell.Current.GoToAsync("..");
     private static bool IsValidCoordinate(decimal? latitude, decimal? longitude) => latitude is >= -90 and <= 90 && longitude is >= -180 and <= 180;
     private static string FormatDistance(double? value) => value is null ? "distance à confirmer" : $"{value:0.0} km";
-    private static string StatusText(string status) => status switch { "Offered" => "À confirmer", "Accepted" => "Acceptée", "Started" => "En cours", "Completed" => "Terminée", "Cancelled" => "Annulée", "Refused" => "Refusée", "Expired" => "Expirée", _ => status };
+    private static string StatusText(string status) => status switch { "Offered" => "À confirmer", "Accepted" => "Acceptée", "OnTheWay" => "En route", "Started" => "En cours", "Completed" => "Terminée", "Cancelled" => "Annulée", "Refused" => "Refusée", "Expired" => "Expirée", _ => status };
     private static Color StatusColor(string status) => Color.FromArgb(status switch { "Completed" => "#067647", "Cancelled" or "Refused" or "Expired" => "#B42318", "Offered" => "#B54708", _ => "#155EEF" });
 }

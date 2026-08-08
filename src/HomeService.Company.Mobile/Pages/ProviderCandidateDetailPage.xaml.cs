@@ -87,6 +87,14 @@ public partial class ProviderCandidateDetailPage : ContentPage
 
             ShowError(candidatesResult.ErrorMessage ?? employeesResult.ErrorMessage ?? "Ce dossier n’est plus disponible.");
         }
+        catch (Exception exception) when (exception is HttpRequestException
+            or IOException
+            or OperationCanceledException
+            or ObjectDisposedException
+            or InvalidCastException)
+        {
+            ShowError("Impossible de charger ce dossier pour le moment. Réessayez dans un instant.");
+        }
         finally
         {
             LoadingIndicator.IsRunning = false;

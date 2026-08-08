@@ -3115,12 +3115,18 @@ textarea {
 
 @media (max-width: 900px) {
     .provider-landing .premium-hero {
-        min-height: 620px;
-        padding-top: 7.5rem;
+        align-items: flex-start;
+        min-height: 680px;
+        padding-bottom: 3.5rem;
+        padding-top: 6.75rem;
     }
 
     .provider-landing .premium-hero-overlay {
-        background: linear-gradient(180deg, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .88) 58%, rgba(255, 255, 255, .38) 100%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(255, 255, 255, .92) 52%, rgba(255, 255, 255, .42) 100%);
+    }
+
+    .provider-landing .premium-hero-image {
+        object-position: 60% center;
     }
 
     .provider-landing .premium-how-grid,
@@ -3160,17 +3166,125 @@ textarea {
     }
 
     .provider-landing .premium-hero h1 {
-        font-size: clamp(2.35rem, 13vw, 3.2rem);
+        font-size: clamp(2.1rem, 9.5vw, 2.65rem);
+        line-height: 1.04;
+        max-width: 12ch;
+        overflow-wrap: normal;
+        text-wrap: balance;
+        word-break: normal;
+    }
+
+    .provider-landing .premium-hero-content {
+        max-width: 350px;
+    }
+
+    .provider-landing .premium-hero-content > p:not(.premium-label) {
+        font-size: .96rem;
+        line-height: 1.6;
+        margin-top: 1.05rem;
+        max-width: 33ch;
+    }
+
+    .provider-landing .premium-actions {
+        align-items: stretch;
+        display: grid;
+        gap: .7rem;
+        margin-top: 1.45rem;
+        max-width: 260px;
+    }
+
+    .provider-landing .premium-primary,
+    .provider-landing .premium-secondary {
+        border-radius: 14px;
+        min-height: 46px;
+        padding: .75rem 1rem;
+    }
+
+    .provider-landing .premium-proof {
+        font-size: .74rem;
+        gap: .45rem;
+        margin-top: 1.1rem;
+    }
+
+    .provider-landing .premium-proof span {
+        padding: .38rem .55rem;
     }
 
     .provider-landing .premium-section {
-        padding-bottom: 4.5rem;
-        padding-top: 4.5rem;
+        padding-bottom: 3.8rem;
+        padding-top: 3.8rem;
     }
 
     .provider-landing .premium-section-head h2,
     .provider-landing .premium-contact-copy h2 {
-        font-size: clamp(1.85rem, 9vw, 2.45rem);
+        font-size: clamp(1.65rem, 7.4vw, 2rem);
+        line-height: 1.1;
+        overflow-wrap: normal;
+        text-wrap: balance;
+        word-break: normal;
+    }
+
+    .provider-landing .premium-section-head {
+        margin-bottom: 1.7rem;
+    }
+
+    .provider-landing .premium-section-head > p:not(.premium-label),
+    .provider-landing .premium-contact-copy > p {
+        font-size: .94rem;
+        line-height: 1.6;
+    }
+
+    .provider-benefit-cards article {
+        border-radius: 20px;
+        min-height: 0;
+        padding: 1.2rem;
+    }
+
+    .provider-landing .premium-how-grid {
+        border-radius: 22px;
+    }
+
+    .provider-landing .premium-how-grid article {
+        padding: .8rem .8rem 1.35rem;
+    }
+
+    .provider-landing .premium-how-grid figure {
+        border-radius: 17px;
+        height: 180px;
+        margin-bottom: 1.05rem;
+    }
+
+    .provider-landing .premium-step-meta span {
+        font-size: 2rem;
+    }
+
+    .provider-mobile-showcase {
+        border-radius: 26px;
+        padding: 1rem;
+    }
+
+    .provider-mobile-copy strong {
+        font-size: clamp(1.6rem, 7vw, 2rem);
+        line-height: 1.08;
+        overflow-wrap: normal;
+        text-wrap: balance;
+        word-break: normal;
+    }
+
+    .provider-phone-frame {
+        border-radius: 38px;
+        max-width: 318px;
+        padding: 9px;
+    }
+
+    .provider-phone-screen {
+        border-radius: 30px;
+        min-height: 575px;
+        padding: .8rem;
+    }
+
+    .provider-phone-speaker {
+        top: 9px;
     }
 
     .provider-landing .premium-form-grid {

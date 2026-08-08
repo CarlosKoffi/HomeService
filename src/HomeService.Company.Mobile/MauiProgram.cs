@@ -12,7 +12,11 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<App>();
-#if ANDROID || IOS || MACCATALYST
+#if ANDROID
+        // Delay Google Maps initialization until a page actually contains a map.
+        // Eager startup initialization makes Android startup more fragile and slower.
+        builder.ConfigureMauiHandlers(handlers => handlers.AddMauiMaps());
+#elif IOS || MACCATALYST
         builder.UseMauiMaps();
 #endif
         builder.Services.AddSingleton(new HttpClient

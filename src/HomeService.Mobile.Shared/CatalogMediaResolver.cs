@@ -9,6 +9,7 @@ namespace HomeService.Mobile.Shared;
 public sealed class CatalogMediaResolver(HttpClient httpClient)
 {
     private const int MaxCachedImages = 96;
+    private static readonly Uri PublicMediaBaseUri = new("https://media.wele.africa/", UriKind.Absolute);
     private static readonly TimeSpan DownloadTimeout = TimeSpan.FromSeconds(8);
     private readonly SemaphoreSlim catalogGate = new(1, 1);
     private readonly ConcurrentDictionary<string, Lazy<Task<byte[]?>>> imageCache = new(StringComparer.OrdinalIgnoreCase);
@@ -58,7 +59,11 @@ public sealed class CatalogMediaResolver(HttpClient httpClient)
                 catalog = new CatalogIndex(services);
                 return catalog;
             }
-            catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException)
+            catch (Exception exception) when (exception is HttpRequestException
+                or IOException
+                or OperationCanceledException
+                or ObjectDisposedException
+                or InvalidCastException)
             {
                 return CatalogIndex.Empty;
             }
@@ -92,8 +97,13 @@ public sealed class CatalogMediaResolver(HttpClient httpClient)
                 ? null
                 : ImageSource.FromStream(() => new MemoryStream(bytes, writable: false));
         }
-        catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException)
+        catch (Exception exception) when (exception is HttpRequestException
+            or IOException
+            or OperationCanceledException
+            or ObjectDisposedException
+            or InvalidCastException)
         {
+            imageCache.TryRemove(absoluteUrl, out _);
             return null;
         }
     }
@@ -114,7 +124,11 @@ public sealed class CatalogMediaResolver(HttpClient httpClient)
                 var bytes = await response.Content.ReadAsByteArrayAsync(timeout.Token);
                 if (bytes.Length > 0) return bytes;
             }
-            catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException)
+            catch (Exception exception) when (exception is HttpRequestException
+                or IOException
+                or OperationCanceledException
+                or ObjectDisposedException
+                or InvalidCastException)
             {
                 // Le proxy API ci-dessous prend le relais si le CDN est temporairement inaccessible.
             }
@@ -145,10 +159,23 @@ public sealed class CatalogMediaResolver(HttpClient httpClient)
     private string? ResolveAbsoluteUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return null;
-        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute)) return absolute.ToString();
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute)
+            && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
+        {
+            return absolute.ToString();
+        }
+
+        var relativePath = url.TrimStart('/');
+        if (relativePath.StartsWith("assets/services/", StringComparison.OrdinalIgnoreCase)
+            || relativePath.StartsWith("catalog/prestations/", StringComparison.OrdinalIgnoreCase)
+            || relativePath.StartsWith("media/payment-providers/", StringComparison.OrdinalIgnoreCase))
+        {
+            return new Uri(PublicMediaBaseUri, relativePath).ToString();
+        }
+
         return httpClient.BaseAddress is null
             ? null
-            : new Uri(httpClient.BaseAddress, url.TrimStart('/')).ToString();
+            : new Uri(httpClient.BaseAddress, relativePath).ToString();
     }
 
     private sealed class CatalogIndex(IReadOnlyList<ServiceSummaryResponse> services)

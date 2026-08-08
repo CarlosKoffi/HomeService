@@ -11,8 +11,8 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>Wélé Pro</ApplicationTitle>
     <ApplicationId>ci.wele.provider</ApplicationId>
-    <ApplicationDisplayVersion>0.4.8</ApplicationDisplayVersion>
-    <ApplicationVersion>12</ApplicationVersion>
+    <ApplicationDisplayVersion>0.4.9</ApplicationDisplayVersion>
+    <ApplicationVersion>13</ApplicationVersion>
     <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
     <WindowsPackageType>None</WindowsPackageType>
     <EmbedAssembliesIntoApk Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">true</EmbedAssembliesIntoApk>

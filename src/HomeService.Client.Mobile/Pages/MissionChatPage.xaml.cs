@@ -81,6 +81,12 @@ public partial class MissionChatPage : ContentPage
             var result = await apiClient.GetMissionMessagesAsync(missionId.Value);
             if (!result.IsSuccess || result.Response is null)
             {
+                if (result.StatusCode is 400 or 404)
+                {
+                    await CloseConversationAsync();
+                    return;
+                }
+
                 ShowError(result.ErrorMessage ?? "Impossible de charger cette conversation.");
                 return;
             }
@@ -130,6 +136,12 @@ public partial class MissionChatPage : ContentPage
             var result = await apiClient.SendMissionMessageAsync(missionId.Value, body);
             if (!result.IsSuccess)
             {
+                if (result.StatusCode is 400 or 404)
+                {
+                    await CloseConversationAsync();
+                    return;
+                }
+
                 ShowError(result.ErrorMessage ?? "Le message n'a pas pu être envoyé.");
                 return;
             }
@@ -144,7 +156,8 @@ public partial class MissionChatPage : ContentPage
         finally
         {
             isSending = false;
-            SendButton.IsEnabled = true;
+            MessageEntry.IsEnabled = !isNavigating;
+            SendButton.IsEnabled = !isNavigating;
         }
     }
 
@@ -170,6 +183,24 @@ public partial class MissionChatPage : ContentPage
     {
         ErrorLabel.Text = message;
         ErrorLabel.IsVisible = true;
+    }
+
+    private async Task CloseConversationAsync()
+    {
+        if (isNavigating) return;
+        isNavigating = true;
+        refreshCancellation?.Cancel();
+        MessageEntry.IsEnabled = false;
+        SendButton.IsEnabled = false;
+        try
+        {
+            await Shell.Current.GoToAsync("//messages");
+        }
+        catch
+        {
+            isNavigating = false;
+            ShowError("Cette conversation n'est plus disponible.");
+        }
     }
 
     private Task ReplaceMessagesAsync(IEnumerable<ClientMessageRow> rows)

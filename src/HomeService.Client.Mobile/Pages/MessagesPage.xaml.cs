@@ -70,7 +70,7 @@ public partial class MessagesPage : ContentPage
 
             var rows = new List<ClientConversationRow>();
             foreach (var item in result.Response
-                         .Where(item => !IsConversationClosed(item.Status))
+                         .Where(item => IsConversationActive(item.Status))
                          .OrderByDescending(item => item.CreatedAt))
             {
                 var providerPhoto = apiClient.ToRemoteImageSource(item.AssignedProviderPhotoUrl);
@@ -89,11 +89,10 @@ public partial class MessagesPage : ContentPage
         }
     }
 
-    private static bool IsConversationClosed(string status)
-    {
-        return string.Equals(status, "Completed", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(status, "Resolved", StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsConversationActive(string status)
+        => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
 
     private async void OnConversationTapped(object sender, TappedEventArgs e)
     {

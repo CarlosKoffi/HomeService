@@ -93,7 +93,7 @@
                         <VerticalStackLayout Spacing="6">
                             <Label Text="MISSION EN PAUSE" Style="{StaticResource EyebrowLabel}" TextColor="#B54708" />
                             <Label Text="Devis complémentaire en attente" Style="{StaticResource CardTitleLabel}" />
-                            <Label x:Name="AdditionalQuotePauseLabel" Text="La mission reprendra automatiquement après le paiement du client." Style="{StaticResource MutedLabel}" />
+                            <Label x:Name="AdditionalQuotePauseLabel" Text="La mission reprendra automatiquement après la validation du client." Style="{StaticResource MutedLabel}" />
                         </VerticalStackLayout>
                     </Border>
 
@@ -112,7 +112,9 @@
                     </Border>
 
                     <VerticalStackLayout x:Name="FieldActionsStack" IsVisible="False" Spacing="10">
-                        <Button x:Name="VerifyArrivalButton" Text="J’ai pris la route / Je suis arrivé" Clicked="OnVerifyArrivalClicked" />
+                        <Button x:Name="OnTheWayButton" Text="Je suis en route" Clicked="OnTheWayClicked" />
+                        <Label x:Name="DepartureCountdownLabel" IsVisible="False" HorizontalTextAlignment="Center" FontSize="13" FontAttributes="Bold" TextColor="#B54708" />
+                        <Button x:Name="VerifyArrivalButton" Text="Je suis arrivé" Clicked="OnVerifyArrivalClicked" />
                         <Button x:Name="StartButton" Text="Démarrer la mission" Clicked="OnStartClicked" />
                         <Button x:Name="AdditionalQuoteButton" Text="Signaler un besoin à l’entreprise" Style="{StaticResource SecondaryButton}" Clicked="OnAdditionalQuoteClicked" />
                         <Button x:Name="CompleteButton" Text="Terminer la mission" Clicked="OnCompleteClicked" />

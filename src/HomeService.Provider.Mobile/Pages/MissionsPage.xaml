@@ -7,7 +7,10 @@
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
             <VerticalStackLayout Padding="18,20,18,30" Spacing="15">
-                <Label Text="Mes missions" Style="{StaticResource ScreenTitleLabel}" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                    <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
+                    <Label Grid.Column="1" Text="Mes missions" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
+                </Grid>
                 <Label Text="Chaque mission est rangée selon son véritable état." Style="{StaticResource MutedLabel}" />
 
                 <Border x:Name="MessageBanner" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 14" Padding="13">

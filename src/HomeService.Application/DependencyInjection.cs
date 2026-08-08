@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddScoped<ProviderMobileMissionDetailService>();
         services.AddScoped<ProviderMissionChatService>();
         services.AddScoped<ProviderMissionNotificationService>();
+        services.AddScoped<ProviderDepartureAutomationService>();
         services.AddScoped<CompanyHomeCmsQueryService>();
         services.AddScoped<ProviderHomeCmsQueryService>();
         services.AddScoped<ContactRequestService>();

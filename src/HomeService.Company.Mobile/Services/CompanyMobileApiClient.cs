@@ -10,6 +10,7 @@ namespace HomeService.Company.Mobile.Services;
 public sealed class CompanyMobileApiClient(HttpClient httpClient)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly Uri PublicMediaBaseUri = new("https://media.wele.africa/", UriKind.Absolute);
 
     public Task<ApiCallResult<CompanyPortalLoginResponse>> LoginAsync(
         CompanyPortalLoginRequest request,
@@ -17,9 +18,23 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
         => SendAsync<CompanyPortalLoginResponse>(HttpMethod.Post, "api/company-portal/login", null, request, cancellationToken);
 
     public Uri ResolveUri(string path)
-        => Uri.TryCreate(path, UriKind.Absolute, out var absolute)
-            ? absolute
-            : new Uri(httpClient.BaseAddress!, path.TrimStart('/'));
+    {
+        if (Uri.TryCreate(path, UriKind.Absolute, out var absolute)
+            && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
+        {
+            return absolute;
+        }
+
+        var relativePath = path.TrimStart('/');
+        if (relativePath.StartsWith("assets/services/", StringComparison.OrdinalIgnoreCase)
+            || relativePath.StartsWith("catalog/prestations/", StringComparison.OrdinalIgnoreCase)
+            || relativePath.StartsWith("media/payment-providers/", StringComparison.OrdinalIgnoreCase))
+        {
+            return new Uri(PublicMediaBaseUri, relativePath);
+        }
+
+        return new Uri(httpClient.BaseAddress!, relativePath);
+    }
 
     public Task<ApiCallResult<IReadOnlyList<CompanyPortalMissionResponse>>> GetMissionsAsync(
         string token,

@@ -25,5 +25,14 @@ public partial class PaymentSuccessPage : ContentPage
         await Launcher.Default.OpenAsync(new OpenFileRequest("Facture Wélé", new ReadOnlyFile(path, "application/pdf")));
     }
 
-    private async void OnHomeClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("//home");
+    private async void OnMissionClicked(object sender, EventArgs e)
+    {
+        if (Guid.TryParse(MissionId, out var missionId))
+        {
+            await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?missionId={missionId:D}");
+            return;
+        }
+
+        await Shell.Current.GoToAsync("//requests");
+    }
 }

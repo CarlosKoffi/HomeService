@@ -122,7 +122,8 @@ public partial class MissionDetailPage : ContentPage
         OfferActionCard.IsVisible = response.CanAccept || response.CanRefuse;
         AcceptOfferButton.IsVisible = response.CanAccept;
         RefuseOfferButton.IsVisible = response.CanRefuse;
-        MissionChatButton.IsEnabled = !OfferActionCard.IsVisible;
+        var conversationIsActive = IsConversationActive(item.Status);
+        MissionChatButton.IsVisible = conversationIsActive;
         UpdateOfferDeadline(response.OfferExpiresAt);
 
         AssignmentCard.IsVisible = response.CanAssign;
@@ -136,7 +137,7 @@ public partial class MissionDetailPage : ContentPage
             _ => "Mission affectée"
         };
         ProviderCallButton.IsEnabled = !string.IsNullOrWhiteSpace(response.ProviderPhoneNumber);
-        ProviderMessageButton.IsEnabled = !OfferActionCard.IsVisible;
+        ProviderMessageButton.IsVisible = conversationIsActive;
 
         DeadlineCard.IsVisible = response.CanAssign && item.CompanyAssignmentExpiresAt.HasValue;
         UpdateDeadline(item.CompanyAssignmentExpiresAt);
@@ -476,6 +477,11 @@ public partial class MissionDetailPage : ContentPage
     {
         if (mission is not null) await Shell.Current.GoToAsync($"{nameof(ChatPage)}?missionId={mission.Id:D}");
     }
+
+    private static bool IsConversationActive(string status)
+        => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
 
     private void OnMissionTabClicked(object? sender, EventArgs e)
     {

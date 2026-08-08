@@ -149,6 +149,10 @@ public partial class MissionDetailPage : ContentPage
             }
 
             var mission = result.Response;
+        var providerHasAccepted = mission.AssignedProvider is not null
+            && (mission.ProviderAcceptedAt.HasValue
+                || mission.Status is "Accepted" or "OnTheWay" or "Started" or "Completed");
+        var conversationIsActive = IsConversationActive(mission.Status);
         TitleLabel.Text = mission.MissionNumber;
         StatusLabel.Text = ResolveCustomerStatusLabel(mission);
         ServiceLabel.Text = mission.ServiceName ?? "Service";
@@ -161,19 +165,19 @@ public partial class MissionDetailPage : ContentPage
         DateLabel.Text = mission.ScheduledFor.HasValue
             ? AppointmentDisplayFormatter.FormatWindow(mission.ScheduledFor.Value, "dd/MM/yyyy")
             : mission.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy 'à' HH:mm");
-        PriceLabel.Text = mission.CompanyQuotedAmount.HasValue
-            ? $"{mission.CompanyQuotedAmount:N0} {mission.Currency}"
-            : $"À partir de {mission.StartingPriceAmount:N0} {mission.Currency}";
+        PricePaymentPanel.IsVisible = providerHasAccepted;
+        PriceLabel.Text = providerHasAccepted
+            ? $"{(mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? mission.ServiceAmount):N0} {mission.Currency}"
+            : string.Empty;
         PaymentLabel.Text = mission.CustomerPaymentMethodId.HasValue
             ? $"{mission.CustomerPaymentMethodLabel} {mission.CustomerPaymentMaskedReference} - {ResolvePaymentStatusLabel(mission.PaymentStatus)}"
             : "A choisir";
         ChoosePaymentButton.IsVisible = mission.Actions.RequiresPaymentMethod;
         MessageLabel.Text = mission.Message;
         TrackingLabel.Text = BuildTrackingMessage(mission);
-        var providerHasAccepted = mission.AssignedProvider is not null
-            && (mission.ProviderAcceptedAt.HasValue
-                || mission.Status is "Accepted" or "OnTheWay" or "Started" or "Completed");
         ProviderCard.IsVisible = providerHasAccepted;
+        ProviderChatButton.IsVisible = conversationIsActive;
+        ProviderDetailChatButton.IsVisible = conversationIsActive;
         WaitingLabel.IsVisible = !providerHasAccepted;
         RoutePanel.IsVisible = providerHasAccepted;
         currentProviderPhoneNumber = null;
@@ -299,7 +303,7 @@ public partial class MissionDetailPage : ContentPage
         foreach (var row in new[]
         {
             TimelineRow.Done("Demande envoyée", "Aujourd'hui 10:30"),
-            TimelineRow.Done("Prix proposé", "17 000 FCFA"),
+            TimelineRow.Done("Votre prestataire est prêt", "Mohamed Kouyaté"),
             TimelineRow.Done("Technicien attribué", "Mohamed Kouyaté"),
             TimelineRow.Done("Paiement confirmé", "Mission confirmée"),
             TimelineRow.Done("Technicien en route", "Arrivée dans 13 min"),
@@ -321,6 +325,7 @@ public partial class MissionDetailPage : ContentPage
         OverviewActionCaption.Text = "Intervention terminée";
         OverviewActionTitle.Text = "Tout s'est bien passé ?";
         OverviewActionAmount.IsVisible = false;
+        OverviewPriceBreakdown.IsVisible = false;
         OverviewActionHelp.Text = "Confirmez la fin de la prestation et laissez votre avis.";
         OverviewActionCountdownLabel.IsVisible = false;
         OverviewConfirmButton.IsVisible = false;
@@ -333,6 +338,7 @@ public partial class MissionDetailPage : ContentPage
         StopActionCountdown();
         OverviewActionCard.IsVisible = false;
         OverviewActionAmount.IsVisible = false;
+        OverviewPriceBreakdown.IsVisible = false;
         OverviewActionCountdownLabel.IsVisible = false;
         OverviewConfirmButton.IsVisible = false;
         OverviewChoosePaymentButton.IsVisible = false;
@@ -352,14 +358,23 @@ public partial class MissionDetailPage : ContentPage
         if (mission.Actions.CanAcceptQuote)
         {
             var amount = mission.Actions.AmountToPayNow ?? mission.CompanyQuotedAmount;
+            var serviceAmount = mission.CompanyQuotedAmount
+                ?? mission.EstimatedTotalAmount
+                ?? mission.ServiceAmount;
+            var totalAmount = mission.CustomerTotalAmount > 0
+                ? mission.CustomerTotalAmount
+                : amount ?? serviceAmount + mission.CustomerServiceFeeAmount;
             OverviewActionCard.IsVisible = true;
             OverviewActionCaption.Text = "Action requise";
-            OverviewActionTitle.Text = "Le prestataire a accepté votre intervention";
-            OverviewActionAmount.IsVisible = amount.HasValue;
-            OverviewActionAmount.Text = amount.HasValue ? $"{amount:N0} {mission.Currency}" : string.Empty;
+            OverviewActionTitle.Text = "Votre prestataire est prêt";
+            OverviewPriceBreakdown.IsVisible = true;
+            OverviewServiceAmountLabel.Text = $"{serviceAmount:N0} {mission.Currency}";
+            OverviewServiceFeeLabel.Text = $"Frais de service ({mission.CustomerServiceFeeRateBasisPoints / 100m:0.##} %)";
+            OverviewServiceFeeAmountLabel.Text = $"{mission.CustomerServiceFeeAmount:N0} {mission.Currency}";
+            OverviewTotalAmountLabel.Text = $"{totalAmount:N0} {mission.Currency}";
             OverviewActionHelp.Text = "Vérifiez le montant, puis payez pour confirmer la mission et autoriser le départ du prestataire.";
-            OverviewConfirmButton.Text = amount.HasValue
-                ? $"Accepter et payer {amount:N0} {mission.Currency}"
+            OverviewConfirmButton.Text = totalAmount > 0
+                ? $"Accepter et payer {totalAmount:N0} {mission.Currency}"
                 : "Accepter et payer";
             OverviewConfirmButton.IsVisible = true;
             StartActionCountdown(mission.CustomerPaymentExpiresAt, "Confirmation automatique dans");
@@ -587,6 +602,11 @@ public partial class MissionDetailPage : ContentPage
         }
     }
 
+    private static bool IsConversationActive(string status)
+        => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
+
     private async void OnCallClicked(object sender, EventArgs e)
     {
         if (string.IsNullOrWhiteSpace(currentProviderPhoneNumber))
@@ -646,9 +666,9 @@ public partial class MissionDetailPage : ContentPage
     private static IReadOnlyList<TimelineRow> BuildTimeline(ClientMissionStatusResponse mission)
     {
         var status = mission.Status.ToLowerInvariant();
-        var quoteSubmitted = mission.CompanyQuotedAt.HasValue || mission.QuoteStatus.Equals("Submitted", StringComparison.OrdinalIgnoreCase);
         var companyReviewStarted = mission.AssignedCompany is not null;
         var providerAssigned = mission.AssignedProvider is not null;
+        var providerAccepted = mission.ProviderAcceptedAt.HasValue;
         var confirmed = mission.CustomerConfirmedAt.HasValue || mission.PaymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase);
         var started = status is "started" or "ontheway" or "completed";
         var completed = status is "completed";
@@ -656,17 +676,17 @@ public partial class MissionDetailPage : ContentPage
         return
         [
             TimelineRow.Done("Demande envoyée", mission.CreatedAt.ToString("dd/MM HH:mm")),
-            quoteSubmitted
-                ? TimelineRow.Done("Prix proposé", mission.CompanyQuotedAt?.ToString("dd/MM HH:mm") ?? "Devis disponible")
-                : companyReviewStarted
-                    ? TimelineRow.Done("Entreprise en cours d'analyse", mission.AssignedCompany!.Name)
-                    : TimelineRow.Pending("Recherche d'une entreprise", "Votre demande est proposée aux entreprises disponibles."),
-            providerAssigned
-                ? TimelineRow.Done("Technicien attribué", mission.AssignedProvider!.FullName)
-                : TimelineRow.Pending("Technicien à attribuer", "L'entreprise prépare l'intervention."),
+            companyReviewStarted
+                ? TimelineRow.Done("Intervention en préparation", mission.AssignedCompany!.Name)
+                : TimelineRow.Pending("Recherche d'une entreprise", "Votre demande est proposée aux entreprises disponibles."),
+            providerAccepted
+                ? TimelineRow.Done("Votre prestataire est prêt", mission.AssignedProvider!.FullName)
+                : providerAssigned
+                    ? TimelineRow.Pending("Confirmation du prestataire", "Le prestataire confirme sa disponibilité.")
+                    : TimelineRow.Pending("Prestataire à attribuer", "L'entreprise prépare l'intervention."),
             confirmed
                 ? TimelineRow.Done("Paiement confirmé", "La mission peut démarrer.")
-                : TimelineRow.Pending("Paiement client", "À faire après acceptation du prix."),
+                : TimelineRow.Pending("Paiement client", "Disponible dès que le prestataire est prêt."),
             started
                 ? TimelineRow.Done(status == "ontheway" ? "Technicien en route" : "Intervention démarrée", mission.AssignedProvider?.EstimatedArrivalMinutes is null ? null : $"{mission.AssignedProvider.EstimatedArrivalMinutes} min")
                 : TimelineRow.Pending("Intervention", "En attente du démarrage."),
@@ -705,11 +725,6 @@ public partial class MissionDetailPage : ContentPage
             return mission.ContactDetailsReleased
                 ? "Le contact est visible. Vous pouvez joindre le technicien si besoin."
                 : "Un technicien est affecté. Ses coordonnées seront visibles après confirmation.";
-        }
-
-        if (mission.QuoteStatus == "Submitted")
-        {
-            return "Un prix est disponible. Le paiement confirme la mission.";
         }
 
         if (mission.AssignedCompany is not null)
@@ -753,7 +768,7 @@ public partial class MissionDetailPage : ContentPage
         return mission.Status switch
         {
             "Requested" or "SearchingProvider" => "Recherche d'une entreprise disponible",
-            "Quoted" => "Prix proposé par l'entreprise",
+            "Quoted" => "Intervention en préparation",
             "Accepted" => "Technicien affecté",
             "OnTheWay" => "Technicien en route",
             "Started" => "Intervention en cours",
