@@ -2714,6 +2714,14 @@ textarea {
     width: 100%;
 }
 
+.provider-app-showcase-image {
+    background: #ffffff;
+    border-radius: 36px;
+    display: block;
+    height: auto;
+    width: 100%;
+}
+
 .provider-phone-speaker {
     background: #111111;
     border-radius: 0 0 16px 16px;
@@ -3275,6 +3283,10 @@ textarea {
         border-radius: 38px;
         max-width: 318px;
         padding: 9px;
+    }
+
+    .provider-app-showcase-image {
+        border-radius: 30px;
     }
 
     .provider-phone-screen {

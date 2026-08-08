@@ -84,41 +84,26 @@
             <p>@HomeContent.Dashboard.Subtitle</p>
         </div>
 
-        <div class="premium-dashboard">
-            <div class="premium-dashboard-top">
-                <div><span></span><strong>wélé Partner</strong></div>
-                <small>Aujourd'hui</small>
+        <div class="company-mobile-showcase">
+            <div class="company-mobile-copy">
+                <span>wélé entreprise mobile</span>
+                <strong>Décidez vite, même loin du bureau.</strong>
+                <p>Acceptez les demandes, affectez votre équipe et suivez chaque intervention depuis une interface claire conçue pour le quotidien.</p>
+                <div class="company-mobile-features" aria-label="Fonctions de l'application entreprise">
+                    <span>Demandes en direct</span>
+                    <span>Affectation rapide</span>
+                    <span>Suivi terrain</span>
+                    <span>Alertes utiles</span>
+                </div>
             </div>
-            <div class="premium-dashboard-stats">
-                @foreach (var stat in HomeContent.Dashboard.Stats)
-                {
-                    <article><span>@stat.Label</span><strong>@stat.Value</strong><small>@stat.Help</small></article>
-                }
-            </div>
-            <div class="premium-dashboard-body">
-                <section>
-                    <h3>Demandes en cours</h3>
-                    @foreach (var request in HomeContent.Dashboard.Requests)
-                    {
-                        <p>@request</p>
-                    }
-                </section>
-                <section>
-                    <h3>Prestataires disponibles</h3>
-                    @foreach (var provider in HomeContent.Dashboard.Providers)
-                    {
-                        <p>@provider</p>
-                    }
-                </section>
-            </div>
-            <div class="premium-floating-card mission-card">
-                <strong>Mission validee</strong>
-                <span>Client confirme</span>
-            </div>
-            <div class="premium-floating-card growth-card">
-                <strong>+34%</strong>
-                <span>Ce mois</span>
-            </div>
+
+            <figure class="company-phone-frame">
+                <span class="company-phone-speaker" aria-hidden="true"></span>
+                <img
+                    src="images/wele-enterprise-app-showcase.png"
+                    alt="Application mobile wélé Entreprise affichant des missions d'entretien, d'installation et de dépannage de climatiseurs à Abidjan"
+                    loading="lazy" />
+            </figure>
         </div>
     </section>
 
