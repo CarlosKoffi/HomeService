@@ -152,14 +152,18 @@ public sealed class CompanyMissionAssignmentNotificationTests
         var hedge = service.AddPrestation("Tailler une haie", null, 2, 6_000, 10_000, "XOF");
         var matchingProvider = CreateProvider(company.Id, "Malou", "+2250700000002");
         var otherProvider = CreateProvider(company.Id, "Awa", "+2250700000003");
+        var legacyProvider = CreateProvider(company.Id, "Koffi", "+2250700000004");
         matchingProvider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 6, ProviderServicePriceTier.Normal)]);
         matchingProvider.Services.Single().SyncPrestations([lawn.Id]);
         otherProvider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 4, ProviderServicePriceTier.Normal)]);
         otherProvider.Services.Single().SyncPrestations([hedge.Id]);
+        legacyProvider.SyncCompanyServices([(service.Id, ExperienceLevel.Confirmed, 5, ProviderServicePriceTier.Normal)]);
         matchingProvider.Approve();
         otherProvider.Approve();
+        legacyProvider.Approve();
         matchingProvider.SetAvailability(true, 5.35m, -4.02m);
         otherProvider.SetAvailability(true, 5.35m, -4.02m);
+        legacyProvider.SetAvailability(true, 5.35m, -4.02m);
         var mission = new Mission(
             customer.Id,
             service.Id,
@@ -174,19 +178,113 @@ public sealed class CompanyMissionAssignmentNotificationTests
         mission.MarkCompanyOffersSent();
         mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
 
-        db.AddRange(company, customer, service, matchingProvider, otherProvider, mission);
+        db.AddRange(company, customer, service, matchingProvider, otherProvider, legacyProvider, mission);
         await db.SaveChangesAsync();
 
         var result = await CreateAssignmentService(db).ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(2, result.Providers.Count);
+        Assert.Equal(3, result.Providers.Count);
         var provider = Assert.Single(result.Providers, item => item.Id == matchingProvider.Id);
         Assert.True(provider.CanAssign);
         Assert.Null(provider.BlockingReason);
         var blockedProvider = Assert.Single(result.Providers, item => item.Id == otherProvider.Id);
         Assert.False(blockedProvider.CanAssign);
         Assert.Contains("service", blockedProvider.BlockingReason);
+        var legacy = Assert.Single(result.Providers, item => item.Id == legacyProvider.Id);
+        Assert.True(legacy.CanAssign);
+        Assert.Null(legacy.BlockingReason);
+    }
+
+    [Fact]
+    public async Task AssignAsync_WhenPreviousOfferIsExpired_DoesNotBlockAvailableProvider()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedAssignableMissionAsync(db);
+        var previousMission = new Mission(
+            scenario.Mission.CustomerId,
+            scenario.Mission.ServiceId,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            90,
+            description: "Ancienne mission",
+            requiresCompanyQuote: true);
+        previousMission.StartCompanySearch();
+        previousMission.MarkCompanyOffersSent();
+        previousMission.AcceptCompanyOffer(scenario.Company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+        previousMission.AssignWithCompanyQuote(scenario.Provider.Id, scenario.Company.Id, 8_000, 12_000, null);
+        db.Missions.Add(previousMission);
+        db.ProviderMissionAssignments.Add(new ProviderMissionAssignment(
+            previousMission.Id,
+            scenario.Provider.Id,
+            scenario.Company.Id,
+            DateTimeOffset.UtcNow.AddMinutes(-1)));
+        await db.SaveChangesAsync();
+
+        var service = CreateAssignmentService(db);
+        var candidates = await service.ListAssignableProvidersAsync(
+            scenario.Company.Id,
+            scenario.Mission.Id,
+            CancellationToken.None);
+
+        var malou = Assert.Single(candidates.Providers, item => item.Id == scenario.Provider.Id);
+        Assert.True(malou.CanAssign);
+
+        var assignment = await service.AssignAsync(
+            scenario.Company.Id,
+            scenario.Mission.Id,
+            scenario.Provider.Id,
+            quotedAmount: 8_000,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.True(assignment.IsSuccess, assignment.Message);
+    }
+
+    [Fact]
+    public async Task AssignAsync_WhenPreviousMissionIsCancelled_DoesNotTreatStaleAcceptedAssignmentAsBusy()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedAssignableMissionAsync(db);
+        var previousMission = new Mission(
+            scenario.Mission.CustomerId,
+            scenario.Mission.ServiceId,
+            MissionMode.Instant,
+            PaymentMethod.MobileMoney,
+            null,
+            90,
+            description: "Mission annulee",
+            requiresCompanyQuote: true);
+        previousMission.StartCompanySearch();
+        previousMission.MarkCompanyOffersSent();
+        previousMission.AcceptCompanyOffer(scenario.Company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+        previousMission.AssignWithCompanyQuote(scenario.Provider.Id, scenario.Company.Id, 8_000, 12_000, null);
+        var staleAssignment = new ProviderMissionAssignment(
+            previousMission.Id,
+            scenario.Provider.Id,
+            scenario.Company.Id,
+            DateTimeOffset.UtcNow.AddMinutes(3));
+        staleAssignment.Accept();
+        previousMission.MarkProviderAccepted(scenario.Provider.Id, scenario.Company.Id);
+        previousMission.Cancel(
+            MissionCancellationActor.Customer,
+            MissionCancellationReason.CustomerChangedMind,
+            "Test d'une ancienne donnee incoherente.",
+            0,
+            0);
+        db.Missions.Add(previousMission);
+        db.ProviderMissionAssignments.Add(staleAssignment);
+        await db.SaveChangesAsync();
+
+        var result = await CreateAssignmentService(db).AssignAsync(
+            scenario.Company.Id,
+            scenario.Mission.Id,
+            scenario.Provider.Id,
+            quotedAmount: 8_000,
+            overMaxJustification: null,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.Message);
     }
 
     private static CompanyMissionAssignmentService CreateAssignmentService(HomeServiceDbContext db)

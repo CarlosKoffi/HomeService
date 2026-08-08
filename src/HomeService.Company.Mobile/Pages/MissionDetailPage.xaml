@@ -141,6 +141,7 @@
                             <Label Text="Affecter un prestataire" Style="{StaticResource CardTitle}" />
                             <Label Text="Choisissez un prestataire compatible, puis envoyez le prix au client." Style="{StaticResource Muted}" />
                             <Picker x:Name="ProviderPicker" Title="Choisir un prestataire" SelectedIndexChanged="OnProviderSelected" ItemDisplayBinding="{Binding FullName}" />
+                            <Label x:Name="ProviderEligibilityLabel" IsVisible="False" Style="{StaticResource Muted}" LineBreakMode="WordWrap" />
                             <Border BackgroundColor="White" Stroke="{StaticResource Line}" StrokeShape="RoundRectangle 14" Padding="12,0">
                                 <Entry x:Name="QuoteAmountEntry" Placeholder="Montant proposé" Keyboard="Numeric" />
                             </Border>

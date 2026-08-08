@@ -245,7 +245,21 @@ public partial class MissionDetailPage : ContentPage
 
     private void RenderCandidates()
     {
-        ProviderPicker.ItemsSource = candidates.Where(item => item.CanAssign).ToList();
+        var assignable = candidates.Where(item => item.CanAssign).ToList();
+        var blocked = candidates.Where(item => !item.CanAssign).ToList();
+        ProviderPicker.ItemsSource = assignable;
+        ProviderEligibilityLabel.IsVisible = blocked.Count > 0;
+        ProviderEligibilityLabel.Text = blocked.Count == 0
+            ? string.Empty
+            : "Non affectable : " + string.Join("\n", blocked.Take(3).Select(item =>
+                $"{item.FullName} — {item.BlockingReason ?? "raison indisponible"}"));
+
+        if (assignable.Count == 0 && blocked.Count == 0)
+        {
+            ProviderEligibilityLabel.IsVisible = true;
+            ProviderEligibilityLabel.Text = "Aucun prestataire validé n'est rattaché à cette entreprise.";
+        }
+
         if (ProviderPicker.ItemsSource is IReadOnlyCollection<CompanyPortalAssignableProviderResponse> items && items.Count == 1)
         {
             ProviderPicker.SelectedIndex = 0;

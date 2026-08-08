@@ -35,11 +35,17 @@ public sealed class CompanyMissionAssignmentService(
         }
 
         var pricing = await ResolveMissionPricingAsync(mission, cancellationToken);
+        var now = DateTimeOffset.UtcNow;
 
         var busyProviderIds = await db.ProviderMissionAssignments
             .AsNoTracking()
             .Where(assignment => assignment.CompanyId == companyId
-                && (assignment.Status == ProviderMissionAssignmentStatus.Offered
+                && assignment.Mission != null
+                && (assignment.Mission.Status == MissionStatus.Assigned
+                    || assignment.Mission.Status == MissionStatus.Accepted
+                    || assignment.Mission.Status == MissionStatus.OnTheWay
+                    || assignment.Mission.Status == MissionStatus.Started)
+                && ((assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > now)
                     || assignment.Status == ProviderMissionAssignmentStatus.Accepted
                     || assignment.Status == ProviderMissionAssignmentStatus.Started))
             .Select(assignment => assignment.ProviderId)
@@ -68,6 +74,7 @@ public sealed class CompanyMissionAssignmentService(
                     service.IsActive
                     && service.ServiceId == mission.ServiceId
                     && (mission.ServicePrestationId == null
+                        || !service.Prestations.Any()
                         || service.Prestations.Any(prestation =>
                             prestation.IsActive
                             && prestation.ServicePrestationId == mission.ServicePrestationId))),
@@ -168,9 +175,15 @@ public sealed class CompanyMissionAssignmentService(
                 .ThenInclude(service => service.Prestations)
             .FirstOrDefaultAsync(provider => provider.Id == providerId && provider.CompanyId == companyId, cancellationToken);
 
+        var now = DateTimeOffset.UtcNow;
         var hasBlockingAssignment = await db.ProviderMissionAssignments.AnyAsync(assignment =>
             assignment.ProviderId == providerId
-            && (assignment.Status == ProviderMissionAssignmentStatus.Offered
+            && assignment.Mission != null
+            && (assignment.Mission.Status == MissionStatus.Assigned
+                || assignment.Mission.Status == MissionStatus.Accepted
+                || assignment.Mission.Status == MissionStatus.OnTheWay
+                || assignment.Mission.Status == MissionStatus.Started)
+            && ((assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > now)
                 || assignment.Status == ProviderMissionAssignmentStatus.Accepted
                 || assignment.Status == ProviderMissionAssignmentStatus.Started),
             cancellationToken);
@@ -191,6 +204,7 @@ public sealed class CompanyMissionAssignmentService(
                 service.IsActive
                 && service.ServiceId == mission.ServiceId
                 && (mission.ServicePrestationId == null
+                    || service.Prestations.Count == 0
                     || service.Prestations.Any(prestation =>
                         prestation.IsActive
                         && prestation.ServicePrestationId == mission.ServicePrestationId)));
