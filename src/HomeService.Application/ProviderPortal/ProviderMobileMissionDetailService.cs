@@ -166,6 +166,19 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
         Domain.Entities.Mission mission,
         bool hasBlockingAdditionalQuote)
     {
+        if (IsClosedForProvider(assignment.Status, mission.Status))
+        {
+            return new ProviderMobileMissionActionsResponse(
+                false,
+                false,
+                false,
+                null,
+                false,
+                false,
+                false,
+                false);
+        }
+
         return new ProviderMobileMissionActionsResponse(
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
             assignment.Status == ProviderMissionAssignmentStatus.Offered && assignment.ExpiresAt > DateTimeOffset.UtcNow,
@@ -184,7 +197,9 @@ public sealed class ProviderMobileMissionDetailService(IAppDbContext db)
                 && mission.IsInitialPaymentConfirmed
                 && assignment.HasVerifiedArrival
                 && mission.CanStartFor(assignment.ProviderId, assignment.CompanyId),
-            assignment.Status == ProviderMissionAssignmentStatus.Started && !hasBlockingAdditionalQuote,
+            assignment.Status == ProviderMissionAssignmentStatus.Started
+                && mission.Status == MissionStatus.Started
+                && !hasBlockingAdditionalQuote,
             assignment.Status is ProviderMissionAssignmentStatus.Offered or ProviderMissionAssignmentStatus.Accepted or ProviderMissionAssignmentStatus.Started);
     }
 

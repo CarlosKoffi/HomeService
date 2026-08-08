@@ -163,6 +163,39 @@ public sealed class ProviderMobileMissionDetailServiceTests
         Assert.False(response.Actions.CanComplete);
     }
 
+    [Fact]
+    public async Task GetAsync_WhenMissionIsCompletedButAssignmentIsStale_ReturnsNoProviderActions()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedScenarioAsync(db);
+        scenario.Assignment.Accept(5.348850m, -4.003150m, 25);
+        scenario.Mission.MarkProviderAccepted(scenario.Provider.Id, scenario.Company.Id);
+        scenario.Mission.ConfirmByCustomer(3_000, 0, 1_500, 0);
+        scenario.Assignment.VerifyArrival(5.348850m, -4.003150m, 25, 5.348850m, -4.003150m, 250);
+        scenario.Assignment.Start();
+        scenario.Mission.Start(scenario.Provider.Id, scenario.Company.Id);
+        scenario.Mission.Complete(60);
+        await db.SaveChangesAsync();
+
+        var result = await new ProviderMobileMissionDetailService(db)
+            .GetAsync(scenario.Provider.Id, scenario.Assignment.Id, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var response = result.Response!;
+        Assert.Equal("Completed", response.AssignmentStatus);
+        Assert.Equal("Completed", response.MissionStatus);
+        Assert.False(response.Actions.CanAccept);
+        Assert.False(response.Actions.CanRefuse);
+        Assert.False(response.Actions.CanMarkOnTheWay);
+        Assert.False(response.Actions.CanVerifyArrival);
+        Assert.False(response.Actions.CanStart);
+        Assert.False(response.Actions.CanComplete);
+        Assert.False(response.Actions.CanCancel);
+        Assert.False(response.CanCallCustomer);
+        Assert.Null(response.Latitude);
+        Assert.Null(response.Longitude);
+    }
+
     private static async Task<ProviderMissionDetailScenario> SeedScenarioAsync(
         HomeServiceDbContext db,
         DateTimeOffset? assignmentExpiresAt = null)

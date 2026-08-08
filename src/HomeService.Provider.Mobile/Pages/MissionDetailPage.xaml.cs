@@ -63,9 +63,21 @@ public partial class MissionDetailPage : ContentPage
         RefreshHost.IsRefreshing = false;
     }
 
-    private async Task LoadAsync(bool showSpinner = true)
+    private async Task LoadAsync(bool showSpinner = true, bool waitForActiveLoad = false)
     {
-        if (loading || assignmentId is null) return;
+        if (assignmentId is null) return;
+        if (loading)
+        {
+            if (!waitForActiveLoad) return;
+            var waitUntil = DateTimeOffset.UtcNow.AddSeconds(5);
+            while (loading && DateTimeOffset.UtcNow < waitUntil)
+            {
+                await Task.Delay(50);
+            }
+
+            if (loading) return;
+        }
+
         loading = true;
         if (showSpinner) SetLoading(true);
         MessageBanner.IsVisible = false;
@@ -97,7 +109,11 @@ public partial class MissionDetailPage : ContentPage
             || mission.MissionStatus is "Completed" or "Cancelled" or "Disputed" or "Resolved";
         var blockingQuote = mission.AdditionalQuotes.FirstOrDefault(quote => quote.Status is "Requested" or "Submitted");
         DetailHost.IsVisible = true;
-        var displayedStatus = mission.MissionStatus == "OnTheWay" ? "OnTheWay" : mission.AssignmentStatus;
+        var displayedStatus = isClosed
+            ? mission.MissionStatus is "Completed" or "Resolved" || mission.AssignmentStatus == "Completed"
+                ? "Completed"
+                : "Cancelled"
+            : mission.MissionStatus == "OnTheWay" ? "OnTheWay" : mission.AssignmentStatus;
         StatusLabel.Text = StatusText(displayedStatus);
         var statusColor = StatusColor(displayedStatus);
         StatusLabel.TextColor = statusColor;
@@ -146,8 +162,9 @@ public partial class MissionDetailPage : ContentPage
             ? "L'entreprise prépare le devis. La mission reste verrouillée."
             : "Le devis a été envoyé. La mission reprendra automatiquement après la validation du client.";
 
-        FieldActionsStack.IsVisible = mission.Actions.CanMarkOnTheWay || mission.Actions.CanVerifyArrival || mission.Actions.CanStart || mission.Actions.CanComplete
-            || (!isClosed && mission.MissionStatus == "Started" && blockingQuote is null);
+        FieldActionsStack.IsVisible = !isClosed
+            && (mission.Actions.CanMarkOnTheWay || mission.Actions.CanVerifyArrival || mission.Actions.CanStart || mission.Actions.CanComplete
+                || (mission.MissionStatus == "Started" && blockingQuote is null));
         OnTheWayButton.IsVisible = mission.Actions.CanMarkOnTheWay;
         RestartDepartureCountdown(mission);
         VerifyArrivalButton.IsVisible = mission.Actions.CanVerifyArrival;
@@ -221,10 +238,19 @@ public partial class MissionDetailPage : ContentPage
 
     private async void OnCompleteClicked(object? sender, EventArgs e)
     {
-        if (!CanAct()) return;
+        if (!CanAct() || detail?.Actions.CanComplete != true) return;
         SetActionsEnabled(false);
         var result = await apiClient!.CompleteMissionAsync(accessToken!, assignmentId!.Value, new ProviderCompleteMissionRequest(60, "Prestation terminée depuis l’application mobile.", null));
-        await CompleteActionAsync(result.IsSuccess, result.ErrorMessage, "Mission terminée. Le client peut maintenant la valider.");
+        if (result.IsSuccess)
+        {
+            ApplyClosedVisualState();
+        }
+
+        await CompleteActionAsync(
+            result.IsSuccess,
+            result.ErrorMessage,
+            "Mission terminée. Le client peut maintenant la valider.",
+            waitForActiveLoad: true);
     }
 
     private async void OnAdditionalQuoteClicked(object? sender, EventArgs e)
@@ -265,11 +291,40 @@ public partial class MissionDetailPage : ContentPage
         await CompleteActionAsync(result.IsSuccess, result.ErrorMessage, successMessage);
     }
 
-    private async Task CompleteActionAsync(bool success, string? error, string successMessage)
+    private async Task CompleteActionAsync(
+        bool success,
+        string? error,
+        string successMessage,
+        bool waitForActiveLoad = false)
     {
         ShowMessage(success ? successMessage : error ?? "Action impossible.");
-        SetActionsEnabled(true);
-        await LoadAsync(false);
+        if (!success)
+        {
+            SetActionsEnabled(true);
+        }
+
+        await LoadAsync(false, waitForActiveLoad);
+    }
+
+    private void ApplyClosedVisualState()
+    {
+        StatusLabel.Text = StatusText("Completed");
+        StatusLabel.TextColor = StatusColor("Completed");
+        StatusPill.BackgroundColor = Color.FromArgb("#ECFDF3");
+        LocationLabel.Text = "Adresse masquée après la mission";
+        CustomerCard.IsVisible = false;
+        MapCard.IsVisible = false;
+        ArrivalCard.IsVisible = false;
+        OfferCard.IsVisible = false;
+        AdditionalQuotePauseCard.IsVisible = false;
+        FieldActionsStack.IsVisible = false;
+        destinationLatitude = null;
+        destinationLongitude = null;
+        StopOfferCountdown();
+        StopDepartureCountdown();
+        locationCancellation?.Cancel();
+        locationCancellation?.Dispose();
+        locationCancellation = null;
     }
 
     private async void OnCallClicked(object? sender, EventArgs e)
