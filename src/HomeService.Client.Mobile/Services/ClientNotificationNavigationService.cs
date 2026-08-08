@@ -1,4 +1,5 @@
 using HomeService.Client.Mobile.Pages;
+using HomeService.Contracts.Clients;
 
 namespace HomeService.Client.Mobile.Services;
 
@@ -42,16 +43,72 @@ public static class ClientNotificationNavigationService
         }
 
         data.TryGetValue("type", out var type);
-        var route = type switch
-        {
-            "mission_chat_message" => $"{nameof(MissionChatPage)}?missionId={missionId:D}",
-            "mission_payment_required" => $"{nameof(PaymentCheckoutPage)}?missionId={missionId:D}",
-            "mission_completed" => $"{nameof(MissionCompletionPage)}?missionId={missionId:D}",
-            _ => $"{nameof(MissionDetailPage)}?missionId={missionId:D}"
-        };
+        var route = await ResolveMissionRouteAsync(missionId, type);
 
         Preferences.Default.Remove(PendingKey);
         await Shell.Current.GoToAsync(route);
         return true;
     }
+
+    public static async Task<string> ResolveMissionRouteAsync(
+        Guid missionId,
+        string? notificationType,
+        CancellationToken cancellationToken = default)
+    {
+        var detailRoute = $"{nameof(MissionDetailPage)}?missionId={missionId:D}";
+        ClientMissionStatusResponse? mission = null;
+
+        try
+        {
+            var apiClient = MobileServiceLocator.GetRequiredService<ClientMobileApiClient>();
+            var result = await apiClient.GetMissionAsync(missionId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                mission = result.Response;
+            }
+        }
+        catch (Exception exception) when (exception is HttpRequestException or IOException or OperationCanceledException)
+        {
+            // A stale action must never be opened when the current mission state cannot be verified.
+        }
+
+        if (mission is null || IsClosed(mission.Status))
+        {
+            return detailRoute;
+        }
+
+        if (string.Equals(notificationType, "mission_payment_required", StringComparison.OrdinalIgnoreCase))
+        {
+            return mission.Actions.CanAcceptQuote
+                ? $"{nameof(PaymentCheckoutPage)}?missionId={missionId:D}"
+                : detailRoute;
+        }
+
+        if (string.Equals(notificationType, "mission_chat_message", StringComparison.OrdinalIgnoreCase))
+        {
+            return IsConversationActive(mission.Status)
+                ? $"{nameof(MissionChatPage)}?missionId={missionId:D}"
+                : detailRoute;
+        }
+
+        // A completion notification is informative. The detail page reflects the current
+        // status and only exposes a completion action when the API still authorizes it.
+        return detailRoute;
+    }
+
+    private static bool IsClosed(string status)
+        => status.Equals("Completed", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Canceled", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Disputed", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Resolved", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Rejected", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Expired", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Failed", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Refunded", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsConversationActive(string status)
+        => status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("OnTheWay", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
 }

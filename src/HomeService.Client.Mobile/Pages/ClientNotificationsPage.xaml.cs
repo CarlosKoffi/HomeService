@@ -65,7 +65,8 @@ public partial class ClientNotificationsPage : ContentPage
             await apiClient.MarkNotificationReadAsync(row.Source.Id);
         }
 
-        if (TryResolveActionRoute(row.Source, out var route))
+        var route = await TryResolveActionRouteAsync(row.Source);
+        if (!string.IsNullOrWhiteSpace(route))
         {
             await Shell.Current.GoToAsync(route);
             return;
@@ -75,9 +76,8 @@ public partial class ClientNotificationsPage : ContentPage
         await LoadAsync();
     }
 
-    private static bool TryResolveActionRoute(ClientNotificationResponse notification, out string route)
+    private static async Task<string?> TryResolveActionRouteAsync(ClientNotificationResponse notification)
     {
-        route = string.Empty;
         Guid? missionId = notification.RelatedEntityType == "Mission"
             ? notification.RelatedEntityId
             : null;
@@ -101,19 +101,16 @@ public partial class ClientNotificationsPage : ContentPage
             }
             catch (JsonException)
             {
-                return false;
+                return null;
             }
         }
 
         if (missionId is null)
         {
-            return false;
+            return null;
         }
 
-        route = string.Equals(type, "mission_payment_required", StringComparison.OrdinalIgnoreCase)
-            ? $"{nameof(PaymentCheckoutPage)}?missionId={missionId.Value:D}"
-            : $"{nameof(MissionDetailPage)}?missionId={missionId.Value:D}";
-        return true;
+        return await ClientNotificationNavigationService.ResolveMissionRouteAsync(missionId.Value, type);
     }
 
     private async void OnAllClicked(object sender, EventArgs e)
