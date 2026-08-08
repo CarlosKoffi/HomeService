@@ -3,6 +3,12 @@ using HomeService.Company;
 using HomeService.Company.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+if (OperatingSystem.IsWindows())
+{
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Logging.AddDebug();
+}
 
 // Add services to the container.
 builder.Services.AddPersistentDataProtection(builder.Configuration, "HomeService.Company");

@@ -3130,11 +3130,12 @@ textarea {
     }
 
     .provider-landing .premium-hero-overlay {
-        background: linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(255, 255, 255, .92) 52%, rgba(255, 255, 255, .42) 100%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .86) 42%, rgba(255, 255, 255, .5) 64%, rgba(255, 255, 255, .12) 100%);
     }
 
     .provider-landing .premium-hero-image {
         object-position: 60% center;
+        opacity: .88;
     }
 
     .provider-landing .premium-how-grid,

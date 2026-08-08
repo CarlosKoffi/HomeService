@@ -1,12 +1,27 @@
 using HomeService.Client.Components;
 using HomeService.Client;
+using HomeService.Client.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+if (OperatingSystem.IsWindows())
+{
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Logging.AddDebug();
+}
 
 // Add services to the container.
 builder.Services.AddPersistentDataProtection(builder.Configuration, "HomeService.Client");
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddHttpClient<PublicWebsiteApiClient>(client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["API_BASE_URL"]
+        ?? builder.Configuration["ApiBaseUrl"]
+        ?? "http://localhost:5080");
+    client.Timeout = TimeSpan.FromSeconds(8);
+});
 
 var app = builder.Build();
 

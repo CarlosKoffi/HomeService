@@ -1,21 +1,562 @@
 @page "/"
+@implements IDisposable
+@using HomeService.Client.Services
+@using HomeService.Contracts.Clients
+@using HomeService.Contracts.Services
+@inject PublicWebsiteApiClient ApiClient
+@inject IConfiguration Configuration
 
-<PageTitle>wélé Client</PageTitle>
+<PageTitle>Wélé — Le bon service, au bon moment</PageTitle>
 
-<h1>Demander un service</h1>
-<p>Interface client pour chercher un prestataire disponible ou planifier un rendez-vous.</p>
+<div class="client-site @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
+    <header class="client-header">
+        <a class="client-brand" href="#accueil" aria-label="Accueil Wélé" @onclick="CloseMenu">
+            <img src="images/wele-logo-dark.png" alt="Wélé" width="710" height="288" />
+        </a>
 
-<section class="dashboard-grid">
-    <article>
-        <h2>Services</h2>
-        <p>Jardinage, nounou, menage a domicile, puis tous les services valides par la plateforme.</p>
-    </article>
-    <article>
-        <h2>Modes</h2>
-        <p>Demande directe maintenant ou rendez-vous planifie.</p>
-    </article>
-    <article>
-        <h2>Paiement</h2>
-        <p>Paiement par carte bancaire ou Mobile Money au lancement.</p>
-    </article>
-</section>
+        <button class="client-menu-button" type="button" aria-label="Ouvrir le menu" aria-expanded="@mobileMenuOpen" @onclick="ToggleMenu">
+            <span></span><span></span><span></span>
+        </button>
+
+        <nav class="client-navigation @(mobileMenuOpen ? "is-open" : string.Empty)" aria-label="Navigation principale">
+            <div class="client-nav-main">
+                <a href="#services" @onclick="CloseMenu">Services</a>
+                <a href="https://pro.wele.africa">Devenir prestataire</a>
+                <a href="https://entreprise.wele.africa">Pour les entreprises</a>
+                <a href="#a-propos" @onclick="CloseMenu">À propos</a>
+            </div>
+            <div class="client-nav-actions">
+                <span class="client-locale">CI · FR</span>
+                <a href="#aide" @onclick="CloseMenu">Aide</a>
+                <a href="#telecharger" @onclick="CloseMenu">Connexion</a>
+                <a class="client-nav-cta" href="#telecharger" @onclick="CloseMenu">S’inscrire</a>
+            </div>
+        </nav>
+    </header>
+
+    <section class="client-hero" id="accueil">
+        <div class="client-hero-copy">
+            <span class="client-location">● Abidjan, Côte d’Ivoire</span>
+            <h1>Le bon service,<br />au bon moment.</h1>
+            <p>Des professionnels vérifiés pour votre maison, votre bien-être et votre quotidien.</p>
+            <div class="client-hero-actions">
+                <a class="client-button client-button-blue" href="#commander">Commander un service</a>
+                <a class="client-text-link" href="#services">Découvrir Wélé <span>→</span></a>
+            </div>
+        </div>
+        <div class="client-hero-media">
+            <img src="@HeroImageUrl" alt="Une cliente accueille une professionnelle Wélé à Abidjan" width="1672" height="941" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='images/wele-client-hero.png'" />
+            <div class="client-verified-chip"><span>✓</span> Professionnelle vérifiée</div>
+        </div>
+    </section>
+
+    <section class="client-booking-wrap" id="commander" aria-labelledby="booking-title">
+        <div class="client-booking-card">
+            <div class="client-booking-tabs" role="group" aria-label="Choisir le moment de l’intervention">
+                <button type="button" class="@(selectedMode == "Instant" ? "active" : string.Empty)" @onclick="SelectInstant">Dès que possible</button>
+                <button type="button" class="@(selectedMode == "Scheduled" ? "active" : string.Empty)" @onclick="SelectScheduled">Sur rendez-vous</button>
+            </div>
+
+            <h2 id="booking-title" class="visually-hidden">Vérifier la disponibilité d’un service</h2>
+            <div class="client-booking-fields">
+                <label>
+                    <span>Service</span>
+                    <input type="search"
+                           value="@serviceQuery"
+                           @oninput="HandleServiceInput"
+                           @onfocus="ShowServiceSuggestions"
+                           placeholder="Quel service recherchez-vous ?"
+                           autocomplete="off"
+                           aria-autocomplete="list"
+                           aria-controls="service-suggestions" />
+                    @if (showServiceSuggestions && filteredServices.Count > 0)
+                    {
+                        <div class="client-suggestion-list" id="service-suggestions" role="listbox">
+                            @foreach (var service in filteredServices)
+                            {
+                                <button type="button" role="option" @onclick="() => SelectService(service)">
+                                    <span class="client-suggestion-mark">@GetInitials(service.Name)</span>
+                                    <span><strong>@service.Name</strong><small>@GetServiceDetail(service)</small></span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </label>
+                <label class="client-address-field">
+                    <span>Adresse</span>
+                    <input type="search"
+                           value="@interventionAddress"
+                           @oninput="HandleAddressInput"
+                           @onfocus="ShowAddressSuggestions"
+                           placeholder="Où intervenir ?"
+                           autocomplete="off"
+                           aria-autocomplete="list"
+                           aria-controls="address-suggestions" />
+                    @if (showAddressSuggestions && addressSuggestions.Count > 0)
+                    {
+                        <div class="client-suggestion-list client-address-suggestions" id="address-suggestions" role="listbox">
+                            @foreach (var suggestion in addressSuggestions)
+                            {
+                                <button type="button" role="option" @onclick="() => SelectAddressAsync(suggestion)">
+                                    <span class="client-pin-mark">⌖</span>
+                                    <span><strong>@suggestion.MainText</strong><small>@suggestion.SecondaryText</small></span>
+                                </button>
+                            }
+                            <small class="client-google-attribution">Adresses proposées par Google</small>
+                        </div>
+                    }
+                </label>
+                @if (selectedMode == "Scheduled")
+                {
+                    <label class="client-date-field">
+                        <span>Date</span>
+                        <input type="date" @bind="appointmentDate" min="@MinimumDate" />
+                    </label>
+                    <label class="client-slot-field">
+                        <span>Créneau d’arrivée</span>
+                        <select @bind="appointmentSlot">
+                            @foreach (var slot in AppointmentSlots)
+                            {
+                                <option value="@slot.Value">@slot.Label</option>
+                            }
+                        </select>
+                    </label>
+                }
+                <button class="client-button client-button-black client-check-button" type="button" disabled="@isCheckingAvailability" @onclick="CheckAvailabilityAsync">
+                    @(isCheckingAvailability ? "Vérification…" : "Voir les disponibilités")
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(formError))
+            {
+                <p class="client-form-error" role="alert">@formError</p>
+            }
+
+            @if (availability is not null)
+            {
+                <div class="client-availability-result @(availability.HasMatchingProfessionals ? "is-positive" : "is-searching")" role="status">
+                    <span class="client-result-icon">@(availability.HasMatchingProfessionals ? "✓" : "↗")</span>
+                    <div>
+                        <strong>@availability.Headline</strong>
+                        <p>@availability.Message</p>
+                    </div>
+                    <a class="client-button client-button-blue" href="#telecharger">Continuer dans l’application</a>
+                </div>
+            }
+        </div>
+
+        <div class="client-trust-strip" aria-label="Engagements Wélé">
+            <span><b>✓</b> Professionnels vérifiés et notés</span>
+            <span><b>⌁</b> Paiement sécurisé</span>
+            <span><b>◷</b> Service suivi en direct</span>
+            <span><b>◌</b> Assistance réactive</span>
+        </div>
+    </section>
+
+    <section class="client-section client-services-section" id="services">
+        <div class="client-section-heading">
+            <span>Les essentiels Wélé</span>
+            <h2>Tout ce que Wélé peut faire pour vous.</h2>
+            <p>Choisissez un univers, puis retrouvez les prestations réellement disponibles dans votre zone.</p>
+        </div>
+
+        <div class="client-service-grid">
+            @foreach (var card in landingServiceCards)
+            {
+                <article class="client-service-card">
+                    @if (!string.IsNullOrWhiteSpace(card.ImageUrl))
+                    {
+                        <img src="@card.ImageUrl" alt="@card.Title" loading="lazy" decoding="async" />
+                    }
+                    else
+                    {
+                        <div class="client-service-placeholder @card.Tone"><span>@card.ShortLabel</span></div>
+                    }
+                    <div>
+                        <h3>@card.Title</h3>
+                        <p>@card.Description</p>
+                        <a href="#commander" @onclick="() => SelectLandingService(card.ServiceId)">Découvrir <span>→</span></a>
+                    </div>
+                </article>
+            }
+        </div>
+    </section>
+
+    <section class="client-section client-steps-section" id="fonctionnement">
+        <div class="client-section-heading compact">
+            <span>Simple du début à la fin</span>
+            <h2>Commandez en toute confiance.</h2>
+        </div>
+        <div class="client-steps-grid">
+            <article><span>01</span><h3>Choisissez votre service</h3><p>Décrivez votre besoin, ajoutez l’adresse et choisissez maintenant ou sur rendez-vous.</p></article>
+            <article><span>02</span><h3>Un professionnel vérifié accepte</h3><p>Nous cherchons l’entreprise et le professionnel compatibles avec votre demande.</p></article>
+            <article><span>03</span><h3>Suivez, payez et évaluez</h3><p>Recevez les étapes importantes, payez au bon moment et partagez votre avis.</p></article>
+        </div>
+    </section>
+
+    <section class="client-section client-confidence-section" id="a-propos">
+        <div class="client-confidence-copy">
+            <span>La confiance n’est pas une option</span>
+            <h2>Votre quotidien mérite des professionnels fiables.</h2>
+            <p>Identités vérifiées, compétences validées, avis clients, paiement sécurisé et assistance réactive : Wélé encadre chaque étape utile.</p>
+            <ul>
+                <li><b>Professionnels contrôlés</b><small>Les profils et pièces nécessaires sont vérifiés.</small></li>
+                <li><b>Vos informations protégées</b><small>Les coordonnées utiles sont masquées après la mission.</small></li>
+                <li><b>Une équipe à vos côtés</b><small>Un litige ou un imprévu peut être analysé par Wélé.</small></li>
+            </ul>
+            <a class="client-button client-button-blue" href="#telecharger">Découvrir l’application</a>
+        </div>
+        <div class="client-confidence-media">
+            <img src="@TrustTeamImageUrl" alt="Une professionnelle et un professionnel Wélé" width="972" height="1619" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='images/wele-trust-team.png'" />
+            <div class="client-rating-card"><strong>4,8/5</strong><span>★★★★★</span><small>Avis après intervention</small></div>
+        </div>
+    </section>
+
+    <section class="client-section client-repeat-section">
+        <div>
+            <span>Votre historique devient utile</span>
+            <h2>Un service vous a plu ?</h2>
+            <p>Retrouvez votre entreprise favorite et relancez une demande en quelques secondes. Si elle est indisponible, Wélé continue la recherche pour vous.</p>
+            <a class="client-button client-button-black" href="#telecharger">Commander à nouveau</a>
+        </div>
+        <div class="client-repeat-card">
+            <span class="client-repeat-avatar">AK</span>
+            <div><strong>Awa Kouamé</strong><small>Ménage & repassage · 4,9 ★</small></div>
+            <span class="client-repeat-verified">Vérifiée</span>
+        </div>
+    </section>
+
+    <section class="client-app-section" id="telecharger">
+        <div class="client-phone-stage" aria-label="Aperçu de l’application Wélé">
+            <div class="client-phone-shell">
+                <div class="client-phone-top"><strong>wélé</strong><span>●</span></div>
+                <p>Bonjour Aïcha 👋</p>
+                <h3>Que recherchez-vous aujourd’hui ?</h3>
+                <div class="client-phone-search">⌕ Rechercher un service</div>
+                <small>Pour ma maison</small>
+                <div class="client-phone-services">
+                    <span><b>M</b>Ménage</span><span><b>C</b>Climatisation</span><span><b>P</b>Plomberie</span>
+                </div>
+                <small>Prochaine intervention</small>
+                <div class="client-phone-mission"><b>Ménage de bureaux</b><span>Demain · 09:30</span><em>Confirmée</em></div>
+                <div class="client-phone-nav"><b>Accueil</b><span>Demandes</span><span>Messages</span><span>Profil</span></div>
+            </div>
+        </div>
+        <div class="client-app-copy">
+            <span>Tout Wélé dans votre téléphone</span>
+            <h2>Wélé vous accompagne partout.</h2>
+            <p>Finalisez votre demande, recevez les notifications importantes, suivez l’arrivée du professionnel et retrouvez vos factures.</p>
+            <div class="client-app-benefits">
+                <span>Suivi de mission</span><span>Notifications utiles</span><span>Paiement sécurisé</span><span>Messagerie encadrée</span>
+            </div>
+            <div class="client-store-actions">
+                <a class="client-store-button" href="@AndroidAppUrl"><small>Disponible sur</small><strong>Google Play</strong></a>
+                <span class="client-store-button disabled"><small>Prochainement sur</small><strong>App Store</strong></span>
+            </div>
+            <p class="client-download-note">Sur ordinateur ? Ouvrez cette page depuis votre téléphone pour télécharger l’application.</p>
+        </div>
+    </section>
+
+    <section class="client-section client-pathways">
+        <article>
+            <span>Vous êtes professionnel ?</span>
+            <h2>Recevez des missions adaptées à vos compétences.</h2>
+            <a href="https://pro.wele.africa">Rejoindre Wélé Pro <span>→</span></a>
+        </article>
+        <article>
+            <span>Vous représentez une entreprise ?</span>
+            <h2>Développez et pilotez votre activité avec Wélé.</h2>
+            <a href="https://entreprise.wele.africa">Découvrir Wélé Entreprise <span>→</span></a>
+        </article>
+    </section>
+
+    <footer class="client-footer" id="aide">
+        <div class="client-footer-brand"><img src="images/wele-logo-dark.png" alt="Wélé" width="710" height="288" /><p>Le bon service, au bon moment.</p></div>
+        <div><strong>Services</strong><a href="#services">Maison</a><a href="#services">Bien-être</a><a href="#services">Dépannage</a></div>
+        <div><strong>Rejoindre Wélé</strong><a href="https://pro.wele.africa">Prestataires</a><a href="https://entreprise.wele.africa">Entreprises</a></div>
+        <div><strong>Assistance</strong><a href="mailto:contact@wele.africa">contact@wele.africa</a><a href="#a-propos">Confiance et sécurité</a></div>
+        <div class="client-footer-bottom"><span>© @DateTime.UtcNow.Year Wélé. Tous droits réservés.</span><span>Abidjan · Côte d’Ivoire</span></div>
+    </footer>
+</div>
+
+@code {
+    private static readonly IReadOnlyList<AppointmentSlot> AppointmentSlots = Enumerable
+        .Range(0, 20)
+        .Select(index => TimeSpan.FromHours(8).Add(TimeSpan.FromMinutes(index * 30)))
+        .Select(time => new AppointmentSlot(
+            time.ToString(@"hh\:mm"),
+            $"{time.ToString(@"hh\:mm")} – {time.Add(TimeSpan.FromMinutes(30)).ToString(@"hh\:mm")}"))
+        .ToList();
+
+    private IReadOnlyList<ServiceSummaryResponse> services = [];
+    private IReadOnlyList<ServiceSummaryResponse> filteredServices = [];
+    private IReadOnlyList<ClientAddressSuggestionResponse> addressSuggestions = [];
+    private IReadOnlyList<LandingServiceCard> landingServiceCards = BuildFallbackCards();
+    private string selectedMode = "Instant";
+    private string serviceQuery = string.Empty;
+    private Guid? selectedServiceId;
+    private string interventionAddress = string.Empty;
+    private DateTime appointmentDate = DateTime.Today.AddDays(1);
+    private string appointmentSlot = "08:00";
+    private string? formError;
+    private bool isCheckingAvailability;
+    private bool mobileMenuOpen;
+    private bool showServiceSuggestions;
+    private bool showAddressSuggestions;
+    private PublicServiceAvailabilityResponse? availability;
+    private CancellationTokenSource? addressSearchCancellation;
+    private readonly string placesSessionToken = Guid.NewGuid().ToString("N");
+
+    private string AndroidAppUrl => Configuration["ClientApp:AndroidUrl"]
+        ?? "https://play.google.com/store/apps/details?id=ci.wele.client";
+    private string MinimumDate => DateTime.Today.ToString("yyyy-MM-dd");
+    private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"]
+        ?? Configuration["Media:PublicBaseUrl"]
+        ?? "https://media.wele.africa").TrimEnd('/');
+    private string HeroImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-client-hero.png";
+    private string TrustTeamImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-trust-team.png";
+
+    protected override async Task OnInitializedAsync()
+    {
+        services = (await ApiClient.GetServicesAsync())
+            .Where(service => service.IsActive)
+            .OrderBy(service => service.Name)
+            .ToList();
+        filteredServices = services.Take(8).ToList();
+        landingServiceCards = BuildLandingCards(services);
+    }
+
+    private void ToggleMenu() => mobileMenuOpen = !mobileMenuOpen;
+    private void CloseMenu() => mobileMenuOpen = false;
+
+    private void SelectInstant()
+    {
+        selectedMode = "Instant";
+        availability = null;
+    }
+
+    private void SelectScheduled()
+    {
+        selectedMode = "Scheduled";
+        availability = null;
+    }
+
+    private void SelectLandingService(Guid? serviceId)
+    {
+        if (serviceId.HasValue)
+        {
+            var service = services.FirstOrDefault(item => item.Id == serviceId.Value);
+            if (service is not null)
+            {
+                SelectService(service);
+            }
+        }
+    }
+
+    private void HandleServiceInput(ChangeEventArgs args)
+    {
+        serviceQuery = args.Value?.ToString()?.TrimStart() ?? string.Empty;
+        selectedServiceId = null;
+        availability = null;
+        var normalizedQuery = Normalize(serviceQuery);
+        filteredServices = services
+            .Where(service => string.IsNullOrWhiteSpace(normalizedQuery)
+                || Normalize(service.Name).Contains(normalizedQuery, StringComparison.Ordinal)
+                || service.Prestations.Any(prestation => Normalize(prestation.Name).Contains(normalizedQuery, StringComparison.Ordinal)))
+            .Take(8)
+            .ToList();
+        showServiceSuggestions = true;
+    }
+
+    private void ShowServiceSuggestions()
+    {
+        filteredServices = string.IsNullOrWhiteSpace(serviceQuery)
+            ? services.Take(8).ToList()
+            : filteredServices;
+        showServiceSuggestions = true;
+    }
+
+    private void SelectService(ServiceSummaryResponse service)
+    {
+        selectedServiceId = service.Id;
+        serviceQuery = service.Name;
+        filteredServices = [];
+        showServiceSuggestions = false;
+        availability = null;
+    }
+
+    private async Task HandleAddressInput(ChangeEventArgs args)
+    {
+        interventionAddress = args.Value?.ToString()?.TrimStart() ?? string.Empty;
+        availability = null;
+        addressSearchCancellation?.Cancel();
+        addressSearchCancellation?.Dispose();
+        addressSearchCancellation = new CancellationTokenSource();
+        if (interventionAddress.Trim().Length < 3)
+        {
+            addressSuggestions = [];
+            showAddressSuggestions = false;
+            return;
+        }
+
+        var cancellationToken = addressSearchCancellation.Token;
+        try
+        {
+            await Task.Delay(260, cancellationToken);
+            addressSuggestions = await ApiClient.SearchAddressesAsync(
+                interventionAddress.Trim(),
+                placesSessionToken,
+                cancellationToken);
+            showAddressSuggestions = addressSuggestions.Count > 0;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void ShowAddressSuggestions() => showAddressSuggestions = addressSuggestions.Count > 0;
+
+    private async Task SelectAddressAsync(ClientAddressSuggestionResponse suggestion)
+    {
+        var details = await ApiClient.GetPlaceDetailsAsync(suggestion.PlaceId, placesSessionToken);
+        interventionAddress = details?.AddressLine ?? suggestion.FullText;
+        addressSuggestions = [];
+        showAddressSuggestions = false;
+        availability = null;
+    }
+
+    private async Task CheckAvailabilityAsync()
+    {
+        formError = null;
+        availability = null;
+        if (!selectedServiceId.HasValue)
+        {
+            formError = "Choisissez d’abord un service.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(interventionAddress))
+        {
+            formError = "Indiquez l’adresse de l’intervention.";
+            return;
+        }
+
+        DateTimeOffset? scheduledFor = null;
+        if (selectedMode == "Scheduled")
+        {
+            var time = TimeSpan.Parse(appointmentSlot);
+            var localDate = DateTime.SpecifyKind(appointmentDate.Date.Add(time), DateTimeKind.Unspecified);
+            scheduledFor = new DateTimeOffset(localDate, TimeSpan.Zero);
+            if (scheduledFor <= DateTimeOffset.UtcNow.AddMinutes(15))
+            {
+                formError = "Choisissez un créneau situé au moins 15 minutes dans le futur.";
+                return;
+            }
+        }
+
+        isCheckingAvailability = true;
+        try
+        {
+            var result = await ApiClient.CheckAvailabilityAsync(new PublicServiceAvailabilityRequest(
+                selectedServiceId.Value,
+                interventionAddress.Trim(),
+                selectedMode,
+                scheduledFor));
+            if (result.IsSuccess)
+            {
+                availability = result.Value;
+            }
+            else
+            {
+                formError = result.ErrorMessage;
+            }
+        }
+        finally
+        {
+            isCheckingAvailability = false;
+        }
+    }
+
+    private static IReadOnlyList<LandingServiceCard> BuildLandingCards(IReadOnlyList<ServiceSummaryResponse> catalog)
+    {
+        if (catalog.Count == 0)
+        {
+            return BuildFallbackCards();
+        }
+
+        var used = new HashSet<Guid>();
+        return new[]
+        {
+            FindCard(catalog, used, "Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", "menage", "blanch", "repass"),
+            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "clim"),
+            FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "coiff", "esthet", "beaute"),
+            FindCard(catalog, used, "Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", "depannage auto", "auto")
+        };
+    }
+
+    private static LandingServiceCard FindCard(
+        IReadOnlyList<ServiceSummaryResponse> catalog,
+        ISet<Guid> used,
+        string title,
+        string description,
+        string shortLabel,
+        string tone,
+        params string[] keywords)
+    {
+        var match = catalog.FirstOrDefault(service =>
+            !used.Contains(service.Id)
+            && keywords.Any(keyword => Normalize(service.Name).Contains(keyword, StringComparison.Ordinal)));
+        if (match is not null)
+        {
+            used.Add(match.Id);
+        }
+
+        return new LandingServiceCard(
+            title,
+            description,
+            shortLabel,
+            tone,
+            match?.Id,
+            match?.ImageUrl ?? match?.IconUrl);
+    }
+
+    private static IReadOnlyList<LandingServiceCard> BuildFallbackCards() =>
+    [
+        new("Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", null, null),
+        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, null),
+        new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, null),
+        new("Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", null, null)
+    ];
+
+    private static string Normalize(string value) => string.Concat(value
+        .ToLowerInvariant()
+        .Normalize(System.Text.NormalizationForm.FormD)
+        .Where(character => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character) != System.Globalization.UnicodeCategory.NonSpacingMark));
+
+    private static string GetInitials(string value) => string.Concat(value
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Take(2)
+        .Select(part => char.ToUpperInvariant(part[0])));
+
+    private static string GetServiceDetail(ServiceSummaryResponse service) => service.Prestations.Count switch
+    {
+        0 => "Service Wélé",
+        1 => service.Prestations[0].Name,
+        _ => $"{service.Prestations.Count} prestations disponibles"
+    };
+
+    public void Dispose()
+    {
+        addressSearchCancellation?.Cancel();
+        addressSearchCancellation?.Dispose();
+    }
+
+    private sealed record AppointmentSlot(string Value, string Label);
+    private sealed record LandingServiceCard(
+        string Title,
+        string Description,
+        string ShortLabel,
+        string Tone,
+        Guid? ServiceId,
+        string? ImageUrl);
+}

@@ -6,6 +6,7 @@ namespace HomeService.Api;
 public static class AuthenticationRateLimitingExtensions
 {
     public const string PolicyName = "authentication";
+    public const string PublicAutocompletePolicyName = "public-autocomplete";
 
     public static IServiceCollection AddAuthenticationRateLimiting(this IServiceCollection services)
     {
@@ -19,6 +20,17 @@ public static class AuthenticationRateLimitingExtensions
                     {
                         PermitLimit = 10,
                         Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    }));
+            options.AddPolicy(PublicAutocompletePolicyName, httpContext =>
+                RateLimitPartition.GetSlidingWindowLimiter(
+                    httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = 60,
+                        Window = TimeSpan.FromMinutes(1),
+                        SegmentsPerWindow = 6,
                         QueueLimit = 0,
                         AutoReplenishment = true
                     }));

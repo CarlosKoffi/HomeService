@@ -27,6 +27,8 @@
     <None Include="..\HomeService.Admin\Sql\064_seed_service_prestation_photos.sql" Link="Sql\064_seed_service_prestation_photos.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\HomeService.Admin\Sql\065_enable_company_providers_for_testing.sql" Link="Sql\065_enable_company_providers_for_testing.sql" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\HomeService.Admin\Sql\066_reset_provider_test_passwords.sql" Link="Sql\066_reset_provider_test_passwords.sql" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Client\wwwroot\images\wele-client-hero.png" Link="wwwroot\website\client\wele-client-hero.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Client\wwwroot\images\wele-trust-team.png" Link="wwwroot\website\client\wele-trust-team.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

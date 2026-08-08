@@ -97,6 +97,57 @@ public static class PublicEndpoints
         })
         .WithName("ListServices");
 
+        app.MapPost("/api/public/services/availability", async (
+            PublicServiceAvailabilityRequest request,
+            PublicServiceAvailabilityService availabilityService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await availabilityService.CheckAsync(request, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status == PublicServiceAvailabilityStatus.NotFound
+                ? Results.NotFound(new { message = result.Message })
+                : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("CheckPublicServiceAvailability")
+        .Produces<PublicServiceAvailabilityResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
+        app.MapGet("/api/public/addresses/autocomplete", async (
+            string query,
+            string? sessionToken,
+            IAddressAutocompleteService autocompleteService,
+            CancellationToken cancellationToken) =>
+        {
+            var normalizedQuery = query.Trim();
+            return normalizedQuery.Length < 3
+                ? Results.Ok(Array.Empty<ClientAddressSuggestionResponse>())
+                : Results.Ok(await autocompleteService.SearchAsync(normalizedQuery, sessionToken, cancellationToken));
+        })
+        .WithName("AutocompletePublicWebsiteAddress")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PublicAutocompletePolicyName)
+        .Produces<IReadOnlyList<ClientAddressSuggestionResponse>>()
+        .Produces(StatusCodes.Status429TooManyRequests);
+
+        app.MapGet("/api/public/addresses/places/{placeId}", async (
+            string placeId,
+            string? sessionToken,
+            IAddressAutocompleteService autocompleteService,
+            CancellationToken cancellationToken) =>
+        {
+            var details = await autocompleteService.GetDetailsAsync(placeId, sessionToken, cancellationToken);
+            return details is null ? Results.NotFound() : Results.Ok(details);
+        })
+        .WithName("GetPublicWebsitePlaceDetails")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PublicAutocompletePolicyName)
+        .Produces<ClientPlaceDetailsResponse>()
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status429TooManyRequests);
+
         app.MapGet("/api/translations", async (string? scope, string? language, string? country, IAppDbContext db, CancellationToken cancellationToken) =>
         {
             var languageCode = string.IsNullOrWhiteSpace(language) ? "fr" : language.Trim().ToLowerInvariant();
