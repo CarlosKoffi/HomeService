@@ -298,16 +298,7 @@ img {
     position: relative;
     min-height: 620px;
     overflow: hidden;
-    background: var(--wele-blue-soft);
-}
-
-.client-hero-media::after {
-    position: absolute;
-    inset: auto 0 0;
-    height: 20%;
-    background: linear-gradient(transparent, rgba(8, 33, 72, .18));
-    content: "";
-    pointer-events: none;
+    background: #fff;
 }
 
 .client-hero-media > img {
@@ -315,34 +306,6 @@ img {
     height: 100%;
     object-fit: cover;
     object-position: center;
-}
-
-.client-verified-chip {
-    position: absolute;
-    z-index: 2;
-    right: clamp(20px, 4vw, 52px);
-    bottom: 48px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 18px;
-    border: 1px solid rgba(255, 255, 255, .72);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .93);
-    box-shadow: 0 16px 40px rgba(16, 24, 40, .18);
-    font-size: .88rem;
-    font-weight: 800;
-    backdrop-filter: blur(14px);
-}
-
-.client-verified-chip span {
-    display: grid;
-    width: 24px;
-    height: 24px;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--wele-blue);
-    color: #fff;
 }
 
 .client-booking-wrap {
@@ -699,7 +662,7 @@ img {
     width: 100%;
     aspect-ratio: 1.25;
     object-fit: contain;
-    background: #fbfaf7;
+    background: #fff;
 }
 
 .client-service-placeholder {
@@ -1539,7 +1502,13 @@ img {
 
     .client-hero-copy {
         order: 2;
-        padding: 28px 20px 30px;
+        padding: 22px 20px 28px;
+    }
+
+    .client-location {
+        margin-bottom: 12px;
+        padding: 0;
+        background: transparent;
     }
 
     .client-hero h1 {
@@ -1580,18 +1549,14 @@ img {
 
     .client-hero-media {
         order: 1;
-        min-height: clamp(250px, 72vw, 320px);
+        width: calc(100% - 24px);
+        min-height: clamp(210px, 58vw, 250px);
+        margin: 12px auto 0;
+        border-radius: 24px;
     }
 
     .client-hero-media > img {
-        object-position: 60% center;
-    }
-
-    .client-verified-chip {
-        right: 16px;
-        bottom: 24px;
-        padding: 11px 14px;
-        font-size: .74rem;
+        object-position: 59% 43%;
     }
 
     .client-booking-wrap {
