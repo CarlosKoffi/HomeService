@@ -146,10 +146,22 @@
         </div>
 
         <div class="client-trust-strip" aria-label="Engagements Wélé">
-            <span><b>✓</b> Professionnels vérifiés et notés</span>
-            <span><b>⌁</b> Paiement sécurisé</span>
-            <span><b>◷</b> Service suivi en direct</span>
-            <span><b>◌</b> Assistance réactive</span>
+            <span>
+                <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5.1-3.4 8.5-8 10-4.6-1.5-8-4.9-8-10V6l8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></i>
+                <strong>Professionnels vérifiés et notés</strong>
+            </span>
+            <span>
+                <i aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="3"/><path d="M8 10V8a4 4 0 0 1 8 0v2"/><path d="M12 14v2"/></svg></i>
+                <strong>Paiement sécurisé</strong>
+            </span>
+            <span>
+                <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/><path d="M3 12H1m22 0h-2"/></svg></i>
+                <strong>Service suivi en direct</strong>
+            </span>
+            <span>
+                <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14h3v5H5a2 2 0 0 1-2-2v-1a2 2 0 0 1 1-2Zm16 0h-3v5h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-1-2Z"/><path d="M17 19c-.8 1.3-2.5 2-5 2"/></svg></i>
+                <strong>Assistance réactive</strong>
+            </span>
         </div>
     </section>
 
@@ -166,7 +178,7 @@
                 <article class="client-service-card">
                     @if (!string.IsNullOrWhiteSpace(card.ImageUrl))
                     {
-                        <img src="@card.ImageUrl" alt="@card.Title" loading="lazy" decoding="async" />
+                        <img src="@ResolvePublicMediaUrl(card.ImageUrl)" alt="@card.Title" loading="lazy" decoding="async" />
                     }
                     else
                     {
@@ -220,7 +232,7 @@
             <a class="client-button client-button-black" href="#telecharger">Commander à nouveau</a>
         </div>
         <div class="client-repeat-card">
-            <span class="client-repeat-avatar">AK</span>
+            <img class="client-repeat-avatar" src="images/awa-kouame-profile.webp" alt="Portrait d’Awa Kouamé" width="384" height="384" loading="lazy" decoding="async" />
             <div><strong>Awa Kouamé</strong><small>Ménage & repassage · 4,9 ★</small></div>
             <span class="client-repeat-verified">Vérifiée</span>
         </div>
@@ -235,7 +247,9 @@
                 <div class="client-phone-search">⌕ Rechercher un service</div>
                 <small>Pour ma maison</small>
                 <div class="client-phone-services">
-                    <span><b>M</b>Ménage</span><span><b>C</b>Climatisation</span><span><b>P</b>Plomberie</span>
+                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/menage.png")" alt="" /></b>Ménage</span>
+                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/climatisation.png")" alt="" /></b>Climatisation</span>
+                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/plomberie.png")" alt="" /></b>Plomberie</span>
                 </div>
                 <small>Prochaine intervention</small>
                 <div class="client-phone-mission"><b>Ménage de bureaux</b><span>Demain · 09:30</span><em>Confirmée</em></div>
@@ -250,10 +264,20 @@
                 <span>Suivi de mission</span><span>Notifications utiles</span><span>Paiement sécurisé</span><span>Messagerie encadrée</span>
             </div>
             <div class="client-store-actions">
-                <a class="client-store-button" href="@AndroidAppUrl"><small>Disponible sur</small><strong>Google Play</strong></a>
+                <a class="client-store-button" href="/telecharger/android"><small>Disponible sur</small><strong>Google Play</strong></a>
                 <span class="client-store-button disabled"><small>Prochainement sur</small><strong>App Store</strong></span>
             </div>
-            <p class="client-download-note">Sur ordinateur ? Ouvrez cette page depuis votre téléphone pour télécharger l’application.</p>
+            <div class="client-qr-grid">
+                <a class="client-qr-card" href="/telecharger/android" aria-label="Télécharger Wélé pour Android">
+                    <img src="images/qr-android.svg" alt="QR code de téléchargement Android" width="192" height="192" />
+                    <span><small>Scannez avec votre téléphone</small><strong>Application Android</strong><em>Disponible maintenant</em></span>
+                </a>
+                <div class="client-qr-card is-coming" aria-label="Application Wélé pour iPhone bientôt disponible">
+                    <img src="images/qr-ios.svg" alt="QR code Wélé pour iPhone" width="192" height="192" />
+                    <span><small>Préparez votre iPhone</small><strong>Application iOS</strong><em>Bientôt disponible</em></span>
+                </div>
+            </div>
+            <p class="client-download-note">Sur ordinateur, scannez le QR code. Sur téléphone, touchez directement le bouton de votre store.</p>
         </div>
     </section>
 
@@ -307,14 +331,24 @@
     private CancellationTokenSource? addressSearchCancellation;
     private readonly string placesSessionToken = Guid.NewGuid().ToString("N");
 
-    private string AndroidAppUrl => Configuration["ClientApp:AndroidUrl"]
-        ?? "https://play.google.com/store/apps/details?id=ci.wele.client";
     private string MinimumDate => DateTime.Today.ToString("yyyy-MM-dd");
     private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"]
         ?? Configuration["Media:PublicBaseUrl"]
         ?? "https://media.wele.africa").TrimEnd('/');
     private string HeroImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-client-hero.png";
     private string TrustTeamImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-trust-team.png";
+
+    private string ResolvePublicMediaUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return Uri.TryCreate(value, UriKind.Absolute, out var absolute)
+            ? absolute.ToString()
+            : $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -487,10 +521,10 @@
         var used = new HashSet<Guid>();
         return new[]
         {
-            FindCard(catalog, used, "Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", "menage", "blanch", "repass"),
-            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "clim"),
-            FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "coiff", "esthet", "beaute"),
-            FindCard(catalog, used, "Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", "depannage auto", "auto")
+            FindCard(catalog, used, "Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", "/assets/services/blanchisserie.png", "menage", "blanch", "repass"),
+            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/assets/services/climatisation.png", "clim"),
+            FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "/assets/services/coiffure.png", "coiff", "esthet", "beaute"),
+            FindCard(catalog, used, "Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", "/assets/services/depannage-auto.png", "depannage auto", "auto")
         };
     }
 
@@ -501,6 +535,7 @@
         string description,
         string shortLabel,
         string tone,
+        string fallbackImageUrl,
         params string[] keywords)
     {
         var match = catalog.FirstOrDefault(service =>
@@ -517,15 +552,15 @@
             shortLabel,
             tone,
             match?.Id,
-            match?.ImageUrl ?? match?.IconUrl);
+            match?.ImageUrl ?? match?.IconUrl ?? fallbackImageUrl);
     }
 
     private static IReadOnlyList<LandingServiceCard> BuildFallbackCards() =>
     [
-        new("Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", null, null),
-        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, null),
-        new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, null),
-        new("Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", null, null)
+        new("Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", null, "/assets/services/blanchisserie.png"),
+        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/assets/services/climatisation.png"),
+        new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png"),
+        new("Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", null, "/assets/services/depannage-auto.png")
     ];
 
     private static string Normalize(string value) => string.Concat(value

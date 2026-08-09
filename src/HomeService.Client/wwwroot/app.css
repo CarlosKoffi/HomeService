@@ -589,16 +589,39 @@ img {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     color: #344054;
     font-size: .84rem;
     font-weight: 700;
     text-align: center;
 }
 
-.client-trust-strip b {
+.client-trust-strip i {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    place-items: center;
+    border: 1px solid #d7e5ff;
+    border-radius: 12px;
+    background: #eef4ff;
     color: var(--wele-blue);
-    font-size: 1rem;
+    box-shadow: 0 7px 18px rgba(23, 105, 255, .08);
+}
+
+.client-trust-strip svg {
+    width: 19px;
+    height: 19px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.client-trust-strip strong {
+    font-size: inherit;
+    font-weight: 750;
 }
 
 .client-section {
@@ -905,14 +928,14 @@ img {
 }
 
 .client-repeat-avatar {
-    display: grid;
-    width: 58px;
-    height: 58px;
-    place-items: center;
+    display: block;
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    object-position: center 32%;
+    border: 3px solid #fff;
     border-radius: 50%;
-    background: var(--wele-blue);
-    color: #fff;
-    font-weight: 900;
+    box-shadow: 0 0 0 1px #d9e5fb, 0 10px 22px rgba(16, 24, 40, .16);
 }
 
 .client-repeat-card div {
@@ -1020,12 +1043,19 @@ img {
     display: grid;
     aspect-ratio: 1;
     place-items: center;
+    overflow: hidden;
     border: 1px solid #d9e5fb;
     border-radius: 13px;
     background: #fff;
     color: var(--wele-blue);
     box-shadow: 0 7px 13px rgba(16, 24, 40, .08);
     font-size: 1rem;
+}
+
+.client-phone-services img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .client-phone-mission {
@@ -1114,6 +1144,75 @@ img {
 .client-store-button.disabled {
     background: #eef0f3;
     color: #667085;
+}
+
+.client-qr-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.client-qr-card {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--wele-line);
+    border-radius: 18px;
+    background: #fff;
+    color: var(--wele-ink);
+    box-shadow: 0 12px 30px rgba(16, 24, 40, .07);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.client-qr-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(23, 105, 255, .36);
+    box-shadow: 0 16px 34px rgba(16, 24, 40, .11);
+}
+
+.client-qr-card > img {
+    width: 82px;
+    height: 82px;
+    padding: 4px;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.client-qr-card > span {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.client-qr-card small,
+.client-qr-card em {
+    color: var(--wele-muted);
+    font-size: .61rem;
+    font-style: normal;
+    line-height: 1.35;
+}
+
+.client-qr-card strong {
+    font-size: .82rem;
+    line-height: 1.25;
+}
+
+.client-qr-card em {
+    color: var(--wele-blue);
+    font-weight: 800;
+}
+
+.client-qr-card.is-coming {
+    background: #f8f9fb;
+    box-shadow: none;
+}
+
+.client-qr-card.is-coming > img {
+    opacity: .55;
 }
 
 .client-download-note {
@@ -1642,6 +1741,19 @@ img {
 
     .client-store-button {
         width: 100%;
+    }
+
+    .client-qr-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .client-qr-card {
+        grid-template-columns: 76px 1fr;
+    }
+
+    .client-qr-card > img {
+        width: 76px;
+        height: 76px;
     }
 
     .client-pathways {

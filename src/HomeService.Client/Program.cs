@@ -43,6 +43,16 @@ app.UseSiteAccessGate();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapGet("/telecharger/android", (IConfiguration configuration) =>
+    Results.Redirect(configuration["ClientApp:AndroidUrl"]
+        ?? "https://play.google.com/store/apps/details?id=ci.wele.client"));
+app.MapGet("/telecharger/ios", (IConfiguration configuration) =>
+{
+    var target = configuration["ClientApp:IosUrl"];
+    return Results.Redirect(string.IsNullOrWhiteSpace(target) || target.StartsWith('#')
+        ? "https://wele.africa/#telecharger"
+        : target);
+});
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
