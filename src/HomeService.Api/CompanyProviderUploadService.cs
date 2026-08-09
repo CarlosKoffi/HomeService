@@ -182,6 +182,23 @@ public sealed class CompanyProviderUploadService
             NormalizeStoredContentType(file.ContentType, safeExtension));
     }
 
+    public async Task<StoredProviderPortfolioFile> SaveMissionQualityImageAsync(
+        Guid providerId,
+        Guid missionId,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file.Length == 0 || file.Length > MaxFileSize)
+            throw new InvalidOperationException("La photo qualite est vide ou depasse 25 Mo.");
+        var safeExtension = ResolveSafeExtension(file, allowPdf: false);
+        if (safeExtension is null)
+            throw new InvalidOperationException("Formats acceptes: JPG, PNG, WEBP ou HEIC.");
+        var originalFileName = NormalizeOriginalFileName(file.FileName, safeExtension);
+        var storagePath = Path.Combine("mission-quality", missionId.ToString("D"), providerId.ToString("D"), $"evidence-{Guid.NewGuid():N}{safeExtension}").Replace('\\', '/');
+        await SaveFileAsync(storagePath, file, safeExtension, cancellationToken);
+        return new StoredProviderPortfolioFile(originalFileName, storagePath, NormalizeStoredContentType(file.ContentType, safeExtension));
+    }
+
     public string GetAbsolutePath(string relativePath)
     {
         return _objectStorage.GetLocalAbsolutePath(_rootPath, relativePath);

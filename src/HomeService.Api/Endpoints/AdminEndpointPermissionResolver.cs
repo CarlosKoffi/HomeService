@@ -110,7 +110,8 @@ public static class AdminEndpointPermissionResolver
             return AdminModuleKey.ProviderReview;
         }
 
-        if (path.Contains("/mission-settings", StringComparison.OrdinalIgnoreCase)
+        if (path.Contains("/quality", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/mission-settings", StringComparison.OrdinalIgnoreCase)
             || path.Contains("/commission-rules", StringComparison.OrdinalIgnoreCase))
         {
             return AdminModuleKey.MissionSettings;

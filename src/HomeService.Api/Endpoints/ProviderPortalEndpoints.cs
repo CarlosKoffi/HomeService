@@ -5,6 +5,7 @@ using HomeService.Application.Clients;
 using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Application.ProviderPortal;
+using HomeService.Application.Quality;
 using HomeService.Application.Security;
 using HomeService.Contracts.Missions;
 using HomeService.Contracts.Notifications;
@@ -1019,6 +1020,71 @@ public static class ProviderPortalEndpoints
         group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/complete", CompleteProviderMissionAsync)
             .WithName("CompleteProviderMobileMission");
 
+        group.MapGet("/mobile/mission-assignments/{assignmentId:guid}/quality", async (
+            Guid assignmentId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            MissionQualityChecklistService qualityService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null) return Results.Unauthorized();
+            var response = await qualityService.GetForProviderAsync(session.ProviderId, assignmentId, cancellationToken);
+            return response is null ? Results.NotFound(new { message = "Mission introuvable." }) : Results.Ok(response);
+        }).WithName("GetProviderMissionQualityChecklist");
+
+        group.MapPut("/mobile/mission-assignments/{assignmentId:guid}/quality/items/{itemId:guid}", async (
+            Guid assignmentId,
+            Guid itemId,
+            UpdateProviderMissionQualityItemRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            MissionQualityChecklistService qualityService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null) return Results.Unauthorized();
+            var result = await qualityService.RespondAsync(session.ProviderId, assignmentId, itemId, request, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Checklist) : result.IsNotFound ? Results.NotFound(new { message = result.Message }) : Results.BadRequest(new { message = result.Message });
+        }).WithName("UpdateProviderMissionQualityItem");
+
+        group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/quality/items/{itemId:guid}/photo", async (
+            Guid assignmentId,
+            Guid itemId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            MissionQualityChecklistService qualityService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null) return Results.Unauthorized();
+            if (!httpRequest.HasFormContentType) return Results.BadRequest(new { message = "Photo attendue au format multipart/form-data." });
+            var assignment = await db.ProviderMissionAssignments.Include(item => item.Mission)
+                .FirstOrDefaultAsync(item => item.Id == assignmentId && item.ProviderId == session.ProviderId, cancellationToken);
+            if (assignment?.Mission is null) return Results.NotFound(new { message = "Mission introuvable." });
+            var form = await httpRequest.ReadFormAsync(cancellationToken);
+            var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
+            if (file is null) return Results.BadRequest(new { message = "Aucune photo recue." });
+            try
+            {
+                var stored = await uploadService.SaveMissionQualityImageAsync(session.ProviderId, assignment.MissionId, file, cancellationToken);
+                var checklist = await qualityService.GetForProviderAsync(session.ProviderId, assignmentId, cancellationToken);
+                var stage = checklist?.Stages.SelectMany(item => item.Items).FirstOrDefault(item => item.ItemId == itemId);
+                var attachment = new MissionAttachment(assignment.MissionId,
+                    stage?.Code == "final-photo" ? MissionAttachmentType.ProviderCompletionPhoto : MissionAttachmentType.ProviderStartPhoto,
+                    stored.OriginalFileName, stored.StoragePath, stored.ContentType, file.Length, "Preuve checklist qualite");
+                db.MissionAttachments.Add(attachment);
+                await db.SaveChangesAsync(cancellationToken);
+                var result = await qualityService.RespondAsync(session.ProviderId, assignmentId, itemId,
+                    new UpdateProviderMissionQualityItemRequest(true, null, null, attachment.Id), cancellationToken);
+                return result.IsSuccess
+                    ? Results.Ok(new ProviderMissionQualityPhotoUploadResponse(attachment.Id, stored.OriginalFileName, stored.ContentType, file.Length))
+                    : Results.BadRequest(new { message = result.Message });
+            }
+            catch (InvalidOperationException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("UploadProviderMissionQualityPhoto").DisableAntiforgery();
+
         group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/cancel", CancelProviderMissionAsync)
             .WithName("CancelProviderMobileMission");
 
@@ -1818,6 +1884,7 @@ public static class ProviderPortalEndpoints
         ProviderMissionWorkflowService workflow,
         ProviderMissionNotificationService notifications,
         MissionPaymentMilestoneService milestoneService,
+        MissionQualityChecklistService qualityService,
         CancellationToken cancellationToken)
     {
         var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -1837,6 +1904,10 @@ public static class ProviderPortalEndpoints
         {
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
+
+        var qualityGate = await qualityService.ValidateCanStartAsync(session.ProviderId, assignmentId, cancellationToken);
+        if (!qualityGate.IsAllowed)
+            return Results.BadRequest(new { message = qualityGate.Message, missingItems = qualityGate.MissingItems });
 
         var previousStatus = assignment.Status;
         var result = workflow.StartMission(session.Provider, assignment, request);
@@ -1908,6 +1979,8 @@ public static class ProviderPortalEndpoints
         ProviderMissionWorkflowService workflow,
         ProviderMissionNotificationService notifications,
         MissionPaymentMilestoneService milestoneService,
+        MissionQualityChecklistService qualityService,
+        QualityScoringService qualityScoringService,
         CancellationToken cancellationToken)
     {
         var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -1927,6 +2000,10 @@ public static class ProviderPortalEndpoints
         {
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
+
+        var qualityGate = await qualityService.ValidateCanCompleteAsync(session.ProviderId, assignmentId, cancellationToken);
+        if (!qualityGate.IsAllowed)
+            return Results.BadRequest(new { message = qualityGate.Message, missingItems = qualityGate.MissingItems });
 
         var previousStatus = assignment.Status;
         var customerValidationWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
@@ -1982,6 +2059,9 @@ public static class ProviderPortalEndpoints
         {
             await notifications.NotifyCompletedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
         }
+
+        await qualityService.LockAfterCompletionAsync(assignment.MissionId, cancellationToken);
+        await qualityScoringService.EnsureCompletionAuditAndScoresAsync(assignment.Mission, assignment, cancellationToken);
 
         await db.SaveChangesAsync(cancellationToken);
         return ToProviderMissionHttpResult(result);

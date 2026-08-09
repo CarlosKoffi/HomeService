@@ -1,0 +1,154 @@
+@page "/quality"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@inject PlatformApiClient ApiClient
+
+<PageTitle>Qualite terrain</PageTitle>
+
+<section class="admin-page-heading quality-heading">
+    <div>
+        <p class="eyebrow">Excellence operationnelle</p>
+        <h1>Qualite terrain</h1>
+        <p class="lead">Qualification par prestation, checklists obligatoires, preuves photo et controles aleatoires au meme endroit.</p>
+    </div>
+    <button type="button" class="secondary-action" @onclick="LoadAsync" disabled="@IsBusy">Actualiser</button>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Message)) { <p class="admin-message">@Message</p> }
+@if (!string.IsNullOrWhiteSpace(ErrorMessage)) { <p class="admin-message error-message">@ErrorMessage</p> }
+
+@if (Snapshot is null)
+{
+    <section class="quality-loading"><strong>Chargement du pilotage qualite...</strong></section>
+}
+else
+{
+    <section class="quality-kpis">
+        <article><span>Checklists actives</span><strong>@Snapshot.Stats.ActiveTemplates</strong><small>Une version figee par mission</small></article>
+        <article><span>Audits a traiter</span><strong>@Snapshot.Stats.PendingAudits</strong><small>Controles terrain echantillonnes</small></article>
+        <article><span>Qualifications en attente</span><strong>@Snapshot.Stats.PendingQualifications</strong><small>Validation par prestation</small></article>
+        <article class="risk"><span>Prestataires sous revue</span><strong>@Snapshot.Stats.ProvidersUnderReview</strong><small>@Snapshot.Stats.FailedAudits audit(s) echoue(s)</small></article>
+    </section>
+
+    <section class="quality-grid">
+        <article class="quality-panel">
+            <header><div><p class="eyebrow">Action prioritaire</p><h2>Audits a verifier</h2></div><span class="quality-count">@Snapshot.PendingAudits.Count</span></header>
+            @if (Snapshot.PendingAudits.Count == 0)
+            {
+                <div class="quality-empty"><strong>File d'audit vide</strong><p>Les prochains controles aleatoires apparaitront ici.</p></div>
+            }
+            @foreach (var audit in Snapshot.PendingAudits.Take(8))
+            {
+                <div class="quality-row">
+                    <div class="quality-avatar">@Initials(audit.ProviderName)</div>
+                    <div class="quality-main"><strong>@audit.ProviderName</strong><span>@audit.ServiceName · @audit.ServicePrestationName</span><small>@audit.MissionNumber · @audit.CompletedChecklistItems/@audit.TotalChecklistItems controles · @audit.EvidenceCount photo(s)</small></div>
+                    <div class="quality-actions">
+                        <button type="button" class="approve" @onclick="() => DecideAuditAsync(audit.Id, true)">Conforme</button>
+                        <button type="button" class="reject" @onclick="() => DecideAuditAsync(audit.Id, false)">Ecart</button>
+                    </div>
+                </div>
+            }
+        </article>
+
+        <article class="quality-panel">
+            <header><div><p class="eyebrow">Habilitation</p><h2>Qualifications</h2></div><span class="quality-count">@Snapshot.Stats.PendingQualifications</span></header>
+            @if (PendingQualifications.Count == 0)
+            {
+                <div class="quality-empty"><strong>Aucune qualification en attente</strong><p>Les nouvelles competences soumises apparaitront ici.</p></div>
+            }
+            @foreach (var qualification in PendingQualifications.Take(8))
+            {
+                <div class="quality-row">
+                    <div class="quality-avatar soft">@Initials(qualification.ProviderName)</div>
+                    <div class="quality-main"><strong>@qualification.ProviderName</strong><span>@qualification.ServiceName · @qualification.ServicePrestationName</span><small>Examen theorique et pratique a valider</small></div>
+                    <div class="quality-actions">
+                        <button type="button" class="approve" @onclick="() => ApproveQualificationAsync(qualification.Id)">Qualifier</button>
+                        <button type="button" @onclick="() => RequireTrainingAsync(qualification.Id)">Former</button>
+                    </div>
+                </div>
+            }
+        </article>
+    </section>
+
+    <section class="quality-panel templates-panel">
+        <header><div><p class="eyebrow">Standards terrain</p><h2>Checklists par prestation</h2><p>Chaque mission conserve la version utilisee, meme si le modele evolue ensuite.</p></div><span class="quality-count">@Snapshot.Templates.Count</span></header>
+        <div class="template-grid">
+            @foreach (var template in Snapshot.Templates)
+            {
+                <article class="template-card @(template.IsActive ? "" : "inactive")">
+                    <div class="template-title"><div><span>@template.ServiceName</span><h3>@(template.ServicePrestationName ?? "Socle commun")</h3></div><span class="version">v@template.Version</span></div>
+                    <p>@template.Name</p>
+                    <div class="template-stages">
+                        <span>@template.Items.Count(item => item.Stage == "BeforeStart") avant</span>
+                        <span>@template.Items.Count(item => item.Stage == "DuringMission") pendant</span>
+                        <span>@template.Items.Count(item => item.Stage == "BeforeCompletion") final</span>
+                    </div>
+                    <ul>
+                        @foreach (var item in template.Items.Where(item => item.IsActive).Take(5))
+                        {
+                            <li><span class="check-dot"></span><div><strong>@item.Label</strong><small>@ResponseLabel(item.ResponseType)@(item.IsRequired ? " · obligatoire" : "")</small></div></li>
+                        }
+                    </ul>
+                    @if (template.Items.Count > 5) { <small class="more-items">+ @(template.Items.Count - 5) controle(s)</small> }
+                    <button type="button" class="template-toggle" @onclick="() => ToggleTemplateAsync(template)">@(template.IsActive ? "Desactiver" : "Activer")</button>
+                </article>
+            }
+        </div>
+    </section>
+
+    <section class="quality-panel">
+        <header><div><p class="eyebrow">Classement</p><h2>Entreprises les plus fiables</h2></div></header>
+        <div class="leaderboard">
+            @foreach (var company in Snapshot.TopCompanies.Take(10).Select((value, index) => new { value, index }))
+            {
+                <div><span class="rank">@(company.index + 1)</span><strong>@company.value.CompanyName</strong><span>@company.value.ServiceName · @company.value.ServicePrestationName</span><b>@company.value.Score/100</b></div>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    private AdminQualityDashboardResponse? Snapshot;
+    private IReadOnlyList<AdminProviderQualificationResponse> PendingQualifications = [];
+    private bool IsBusy = true;
+    private string? Message;
+    private string? ErrorMessage;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        IsBusy = true; Message = null; ErrorMessage = null;
+        try
+        {
+            Snapshot = await ApiClient.GetAdminQualityDashboardAsync();
+            PendingQualifications = await ApiClient.GetQualityQualificationsAsync("PendingReview");
+        }
+        catch (Exception ex) { ErrorMessage = $"Impossible de charger la qualite. {ex.Message}"; }
+        finally { IsBusy = false; }
+    }
+
+    private async Task DecideAuditAsync(Guid id, bool passed)
+    {
+        try { await ApiClient.ReviewQualityAuditAsync(id, new(passed, passed ? 90 : 45, passed ? "Audit conforme." : "Ecart constate, prestataire a revoir.")); Message = "Audit enregistre."; await LoadAsync(); }
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+    }
+
+    private async Task ReviewQualificationAsync(Guid id, string status)
+    {
+        try { await ApiClient.ReviewQualityQualificationAsync(id, new(status, null, null, status == "Approved" ? "Qualification validee." : "Formation pratique requise.", null)); Message = "Qualification mise a jour."; await LoadAsync(); }
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+    }
+
+    private Task ApproveQualificationAsync(Guid id) => ReviewQualificationAsync(id, "Approved");
+    private Task RequireTrainingAsync(Guid id) => ReviewQualificationAsync(id, "TrainingRequired");
+
+    private async Task ToggleTemplateAsync(AdminQualityChecklistTemplateResponse template)
+    {
+        try { await ApiClient.UpdateQualityTemplateAsync(template.Id, new(template.Name, template.Description, !template.IsActive)); await LoadAsync(); }
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+    }
+
+    private static string Initials(string value) => string.Join(string.Empty, value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    private static string ResponseLabel(string value) => value switch { "Photo" => "Photo", "Automatic" => "Automatique", "YesNo" => "Oui / non", "Confirmation" => "Confirmation", _ => value };
+}

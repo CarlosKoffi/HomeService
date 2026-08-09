@@ -74,6 +74,10 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
                 group => group.Select(prestation => prestation.Id).ToHashSet());
 
         var existingServiceCount = providerServices.Count(service => service.IsActive);
+        var qualifiedPrestationIds = (await db.ProviderPrestationQualifications
+            .Where(item => item.ProviderId == employeeId)
+            .Select(item => item.ServicePrestationId)
+            .ToListAsync(cancellationToken)).ToHashSet();
 
         var requestedServices = request.Services
             .Where(service => activeServiceIds.Contains(service.ServiceId))
@@ -129,6 +133,12 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             db.ProviderServicePrestations.AddRange(providerService.Prestations.Where(prestation =>
                 requestedPrestationIds.Contains(prestation.ServicePrestationId) &&
                 !existingPrestationIds.Contains(prestation.ServicePrestationId)));
+
+            foreach (var prestationId in requestedPrestationIds.Where(id => !qualifiedPrestationIds.Contains(id)))
+            {
+                db.ProviderPrestationQualifications.Add(new ProviderPrestationQualification(employeeId, prestationId));
+                qualifiedPrestationIds.Add(prestationId);
+            }
         }
 
         return CompanyEmployeeOperationResult.Ok(

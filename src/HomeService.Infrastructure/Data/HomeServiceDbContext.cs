@@ -29,6 +29,11 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<ProviderService> ProviderServices => Set<ProviderService>();
     public DbSet<ProviderServicePrestation> ProviderServicePrestations => Set<ProviderServicePrestation>();
     public DbSet<ProviderServicePortfolioItem> ProviderServicePortfolioItems => Set<ProviderServicePortfolioItem>();
+    public DbSet<ProviderPrestationQualification> ProviderPrestationQualifications => Set<ProviderPrestationQualification>();
+    public DbSet<ProviderQualitySummary> ProviderQualitySummaries => Set<ProviderQualitySummary>();
+    public DbSet<CompanyQualitySummary> CompanyQualitySummaries => Set<CompanyQualitySummary>();
+    public DbSet<QualityChecklistTemplate> QualityChecklistTemplates => Set<QualityChecklistTemplate>();
+    public DbSet<QualityChecklistItem> QualityChecklistItems => Set<QualityChecklistItem>();
     public DbSet<CustomerProfile> Customers => Set<CustomerProfile>();
     public DbSet<CustomerSession> CustomerSessions => Set<CustomerSession>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
@@ -40,6 +45,9 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns => Set<MissionFinancialBreakdown>();
     public DbSet<MissionPaymentMilestone> MissionPaymentMilestones => Set<MissionPaymentMilestone>();
     public DbSet<MissionReview> MissionReviews => Set<MissionReview>();
+    public DbSet<MissionQualityControl> MissionQualityControls => Set<MissionQualityControl>();
+    public DbSet<MissionQualityItem> MissionQualityItems => Set<MissionQualityItem>();
+    public DbSet<MissionQualityAudit> MissionQualityAudits => Set<MissionQualityAudit>();
     public DbSet<MissionDispute> MissionDisputes => Set<MissionDispute>();
     public DbSet<MissionStatusHistory> MissionStatusHistories => Set<MissionStatusHistory>();
     public DbSet<MissionDispatchOffer> MissionDispatchOffers => Set<MissionDispatchOffer>();

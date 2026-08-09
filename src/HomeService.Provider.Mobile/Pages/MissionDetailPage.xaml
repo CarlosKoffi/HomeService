@@ -111,6 +111,23 @@
                         </VerticalStackLayout>
                     </Border>
 
+                    <Border x:Name="QualityCard" Style="{StaticResource PremiumCard}" IsVisible="False">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="QUALITE WELE" Style="{StaticResource EyebrowLabel}" />
+                                    <Label Text="Checklist de l'intervention" Style="{StaticResource CardTitleLabel}" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" BackgroundColor="{StaticResource BlueWash}" Stroke="Transparent" StrokeShape="RoundRectangle 12" Padding="9,5">
+                                    <Label x:Name="QualityProgressLabel" Text="0 / 0" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                </Border>
+                            </Grid>
+                            <ProgressBar x:Name="QualityProgressBar" Progress="0" ProgressColor="{StaticResource WeleBlue}" />
+                            <Label Text="Les controles obligatoires protegent votre travail et la satisfaction du client." Style="{StaticResource MutedLabel}" />
+                            <VerticalStackLayout x:Name="QualityStagesHost" Spacing="10" />
+                        </VerticalStackLayout>
+                    </Border>
+
                     <VerticalStackLayout x:Name="FieldActionsStack" IsVisible="False" Spacing="10">
                         <Button x:Name="OnTheWayButton" Text="Je suis en route" Clicked="OnTheWayClicked" />
                         <Label x:Name="DepartureCountdownLabel" IsVisible="False" HorizontalTextAlignment="Center" FontSize="13" FontAttributes="Bold" TextColor="#B54708" />

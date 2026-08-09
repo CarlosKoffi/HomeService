@@ -243,6 +243,28 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
+    public Task<ApiCallResult<ProviderMissionQualityChecklistResponse>> GetMissionQualityAsync(
+        string bearerToken, Guid assignmentId, CancellationToken cancellationToken = default)
+    {
+        return SendAsync<ProviderMissionQualityChecklistResponse>(HttpMethod.Get,
+            $"api/provider-portal/mobile/mission-assignments/{assignmentId:D}/quality", bearerToken, null, cancellationToken);
+    }
+
+    public Task<ApiCallResult<ProviderMissionQualityChecklistResponse>> UpdateMissionQualityItemAsync(
+        string bearerToken, Guid assignmentId, Guid itemId, UpdateProviderMissionQualityItemRequest request, CancellationToken cancellationToken = default)
+    {
+        return SendAsync<ProviderMissionQualityChecklistResponse>(HttpMethod.Put,
+            $"api/provider-portal/mobile/mission-assignments/{assignmentId:D}/quality/items/{itemId:D}", bearerToken, request, cancellationToken);
+    }
+
+    public Task<ApiCallResult<ProviderMissionQualityPhotoUploadResponse>> UploadMissionQualityPhotoAsync(
+        string bearerToken, Guid assignmentId, Guid itemId, FileResult file, CancellationToken cancellationToken = default)
+    {
+        return SendMultipartAsync<ProviderMissionQualityPhotoUploadResponse>(
+            $"api/provider-portal/mobile/mission-assignments/{assignmentId:D}/quality/items/{itemId:D}/photo",
+            bearerToken, file, new Dictionary<string, string>(), cancellationToken);
+    }
+
     public Task<ApiCallResult<ProviderMobileProfileDocumentResponse>> UploadDocumentAsync(
         string bearerToken,
         string documentType,

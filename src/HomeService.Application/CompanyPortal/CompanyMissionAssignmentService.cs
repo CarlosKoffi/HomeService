@@ -64,6 +64,19 @@ public sealed class CompanyMissionAssignmentService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
+        var qualifiedProviderIds = mission.ServicePrestationId.HasValue
+            ? await db.ProviderPrestationQualifications.AsNoTracking()
+                .Where(item => item.ServicePrestationId == mission.ServicePrestationId
+                    && item.Status == ProviderQualificationStatus.Approved
+                    && (item.ExpiresAt == null || item.ExpiresAt > now))
+                .Select(item => item.ProviderId).ToListAsync(cancellationToken)
+            : [];
+        var providersWithQualificationRecord = mission.ServicePrestationId.HasValue
+            ? await db.ProviderPrestationQualifications.AsNoTracking()
+                .Where(item => item.ServicePrestationId == mission.ServicePrestationId)
+                .Select(item => item.ProviderId).ToListAsync(cancellationToken)
+            : [];
+
         var providerCandidates = await db.Providers
             .AsNoTracking()
             .Where(provider => provider.CompanyId == companyId)
@@ -123,7 +136,7 @@ public sealed class CompanyMissionAssignmentService(
                     true,
                     true,
                     provider.Status == ProviderStatus.Approved,
-                    candidate.CoversMission,
+                    candidate.CoversMission && (!providersWithQualificationRecord.Contains(provider.Id) || qualifiedProviderIds.Contains(provider.Id)),
                     busyProviderIds.Contains(provider.Id),
                     unavailableForThisMissionProviderIds.Contains(provider.Id),
                     mission.Status,
@@ -208,6 +221,12 @@ public sealed class CompanyMissionAssignmentService(
                     || service.Prestations.Any(prestation =>
                         prestation.IsActive
                         && prestation.ServicePrestationId == mission.ServicePrestationId)));
+        if (providerService is not null && mission?.ServicePrestationId is Guid prestationId)
+        {
+            var qualification = await db.ProviderPrestationQualifications.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.ProviderId == providerId && item.ServicePrestationId == prestationId, cancellationToken);
+            if (qualification is not null && !qualification.IsEligible(now)) providerService = null;
+        }
         var policy = CompanyMissionAssignmentPolicy.Validate(
             mission is not null,
             provider is not null,

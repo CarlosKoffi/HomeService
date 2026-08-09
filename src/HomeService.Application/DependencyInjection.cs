@@ -7,6 +7,7 @@ using HomeService.Application.Contact;
 using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Application.ProviderPortal;
+using HomeService.Application.Quality;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HomeService.Application;
@@ -103,6 +104,9 @@ public static class DependencyInjection
         services.AddScoped<AdminProviderOperationsService>();
         services.AddScoped<AdminServiceCatalogInsightsService>();
         services.AddScoped<AdminPaymentProviderService>();
+        services.AddScoped<AdminQualityManagementService>();
+        services.AddScoped<MissionQualityChecklistService>();
+        services.AddScoped<QualityScoringService>();
 
         return services;
     }

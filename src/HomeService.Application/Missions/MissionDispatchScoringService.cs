@@ -12,6 +12,7 @@ public sealed class MissionDispatchScoringService
     private const int NoResponsePenalty = 80;
     private const int PriceDeviationPenaltyWeight = 6;
     private const int CompletedMissionExperienceBonusCap = 120;
+    private const int MaxQualityBonus = 320;
 
     public IReadOnlyList<MissionDispatchScore> SelectTopCompanies(
         MissionDispatchRequest request,
@@ -48,6 +49,7 @@ public sealed class MissionDispatchScoringService
         var pricePenalty = CalculatePricePenalty(candidate.PriceDeviationPercent);
         var zonePenalty = candidate.CoversRequestedZone ? 0 : ZonePenalty;
         var urgencyAdjustment = CalculateUrgencyAdjustment(request.IsUrgent, candidate.AcceptsUrgentMissions);
+        var qualityBonus = candidate.QualityScore is null ? 0 : (int)Math.Round(Math.Clamp(candidate.QualityScore.Value, 0, 100) / 100d * MaxQualityBonus);
 
         score -= reputationBonus;
         score -= experienceBonus;
@@ -57,6 +59,7 @@ public sealed class MissionDispatchScoringService
         score += pricePenalty;
         score += zonePenalty;
         score += urgencyAdjustment;
+        score -= qualityBonus;
 
         var details = string.Join("; ", new[]
         {
@@ -68,7 +71,8 @@ public sealed class MissionDispatchScoringService
             $"noResponsePenalty={noResponsePenalty}",
             $"pricePenalty={pricePenalty}",
             $"zonePenalty={zonePenalty}",
-            $"urgencyAdjustment={urgencyAdjustment}"
+            $"urgencyAdjustment={urgencyAdjustment}",
+            $"qualityBonus={qualityBonus}"
         });
 
         return new MissionDispatchScore(candidate.CompanyId, candidate.CompanyName, Rank: 0, Math.Max(0, score), details);

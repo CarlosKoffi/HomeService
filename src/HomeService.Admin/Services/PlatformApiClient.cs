@@ -50,6 +50,41 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminDashboardResponse>("/api/admin/dashboard", cancellationToken);
     }
 
+    public async Task<AdminQualityDashboardResponse?> GetAdminQualityDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminQualityDashboardResponse>("/api/admin/quality", cancellationToken);
+    }
+
+    public async Task<AdminProviderQualificationResponse?> ReviewQualityQualificationAsync(
+        Guid id, ReviewAdminProviderQualificationRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminProviderQualificationResponse>($"/api/admin/quality/qualifications/{id:D}", request, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AdminProviderQualificationResponse>> GetQualityQualificationsAsync(
+        string? status = null, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var suffix = string.IsNullOrWhiteSpace(status) ? string.Empty : $"?status={Uri.EscapeDataString(status)}";
+        return await GetJsonAsync<IReadOnlyList<AdminProviderQualificationResponse>>($"/api/admin/quality/qualifications{suffix}", cancellationToken) ?? [];
+    }
+
+    public async Task<AdminQualityAuditResponse?> ReviewQualityAuditAsync(
+        Guid id, ReviewAdminQualityAuditRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminQualityAuditResponse>($"/api/admin/quality/audits/{id:D}", request, cancellationToken);
+    }
+
+    public async Task<AdminQualityChecklistTemplateResponse?> UpdateQualityTemplateAsync(
+        Guid id, UpdateAdminQualityChecklistTemplateRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminQualityChecklistTemplateResponse>($"/api/admin/quality/templates/{id:D}", request, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<CompanyApplicationSummaryResponse>> GetCompanyApplicationsAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

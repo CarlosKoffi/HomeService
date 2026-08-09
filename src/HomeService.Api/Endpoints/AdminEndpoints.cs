@@ -5,6 +5,7 @@ using HomeService.Application.Companies;
 using HomeService.Application.Contact;
 using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
+using HomeService.Application.Quality;
 using HomeService.Api.Auditing;
 using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
@@ -2247,6 +2248,92 @@ public static class AdminEndpoints
                 : Results.Stream(stream, document.ContentType, document.OriginalFileName);
         })
         .WithName("DownloadCompanyApplicationDocument");
+        admin.MapGet("/quality", async (AdminQualityManagementService service, CancellationToken cancellationToken) =>
+            Results.Ok(await service.GetDashboardAsync(cancellationToken)))
+            .WithName("GetAdminQualityDashboard")
+            .Produces<AdminQualityDashboardResponse>();
+
+        admin.MapGet("/quality/templates", async (AdminQualityManagementService service, CancellationToken cancellationToken) =>
+            Results.Ok(await service.ListTemplatesAsync(cancellationToken)))
+            .WithName("ListAdminQualityTemplates");
+
+        admin.MapPost("/quality/templates", async (CreateAdminQualityChecklistTemplateRequest request, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            try { return Results.Ok(await service.CreateTemplateAsync(request, cancellationToken)); }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("CreateAdminQualityTemplate");
+
+        admin.MapPut("/quality/templates/{id:guid}", async (Guid id, UpdateAdminQualityChecklistTemplateRequest request, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await service.UpdateTemplateAsync(id, request, cancellationToken);
+                return result is null ? Results.NotFound() : Results.Ok(result);
+            }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("UpdateAdminQualityTemplate");
+
+        admin.MapPost("/quality/templates/{id:guid}/items", async (Guid id, CreateAdminQualityChecklistItemRequest request, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await service.AddItemAsync(id, request, cancellationToken);
+                return result is null ? Results.NotFound() : Results.Ok(result);
+            }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return Results.Conflict(new { message = ex.Message }); }
+        }).WithName("CreateAdminQualityTemplateItem");
+
+        admin.MapPut("/quality/items/{id:guid}", async (Guid id, UpdateAdminQualityChecklistItemRequest request, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await service.UpdateItemAsync(id, request, cancellationToken);
+                return result is null ? Results.NotFound() : Results.Ok(result);
+            }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("UpdateAdminQualityTemplateItem");
+
+        admin.MapGet("/quality/qualifications", async (string? status, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            ProviderQualificationStatus? parsed = null;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<ProviderQualificationStatus>(status, true, out var parsedValue))
+                    return Results.BadRequest(new { message = "Statut de qualification invalide." });
+                parsed = parsedValue;
+            }
+            return Results.Ok(await service.ListQualificationsAsync(parsed, cancellationToken));
+        }).WithName("ListAdminQualityQualifications");
+
+        admin.MapPut("/quality/qualifications/{id:guid}", async (Guid id, ReviewAdminProviderQualificationRequest request, HttpRequest httpRequest, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await service.ReviewQualificationAsync(id, request, GetCurrentAdminUserId(httpRequest), cancellationToken);
+                return result is null ? Results.NotFound() : Results.Ok(result);
+            }
+            catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
+        }).WithName("ReviewAdminQualityQualification");
+
+        admin.MapGet("/quality/audits", async (string? status, int? take, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            QualityAuditStatus? parsed = null;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<QualityAuditStatus>(status, true, out var parsedValue))
+                    return Results.BadRequest(new { message = "Statut d'audit invalide." });
+                parsed = parsedValue;
+            }
+            return Results.Ok(await service.ListAuditsAsync(parsed, take ?? 100, cancellationToken));
+        }).WithName("ListAdminQualityAudits");
+
+        admin.MapPut("/quality/audits/{id:guid}", async (Guid id, ReviewAdminQualityAuditRequest request, HttpRequest httpRequest, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            var result = await service.ReviewAuditAsync(id, request, GetCurrentAdminUserId(httpRequest), cancellationToken);
+            return result is null ? Results.NotFound() : Results.Ok(result);
+        }).WithName("ReviewAdminQualityAudit");
+
         return app;
     }
     static CompanyApplicationActionResponse ToCompanyApplicationActionResponse(HomeService.Domain.Entities.CompanyApplication application)
@@ -2302,6 +2389,14 @@ public static class AdminEndpoints
             && value is AdminCurrentUserResponse currentUser
             ? new AuditActor(AuditActorType.Admin, currentUser.Id, currentUser.FullName)
             : AuditActor.Admin();
+    }
+
+    static Guid GetCurrentAdminUserId(HttpRequest request)
+    {
+        return request.HttpContext.Items.TryGetValue(CurrentAdminUserItemKey, out var value)
+            && value is AdminCurrentUserResponse currentUser
+            ? currentUser.Id
+            : Guid.Empty;
     }
 
     static bool ShouldSkipAdminSessionCheck(PathString path)

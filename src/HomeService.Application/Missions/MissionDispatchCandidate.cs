@@ -11,4 +11,5 @@ public sealed record MissionDispatchCandidate(
     int RecentMissionCount,
     int CancellationCount,
     int NoResponseCount,
-    decimal? PriceDeviationPercent);
+    decimal? PriceDeviationPercent,
+    int? QualityScore = null);

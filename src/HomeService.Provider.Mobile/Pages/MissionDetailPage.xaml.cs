@@ -19,6 +19,7 @@ public partial class MissionDetailPage : ContentPage
     private string? accessToken;
     private Guid? assignmentId;
     private ProviderMobileMissionDetailResponse? detail;
+    private ProviderMissionQualityChecklistResponse? qualityChecklist;
     private decimal? destinationLatitude;
     private decimal? destinationLongitude;
     private CancellationTokenSource? refreshCancellation;
@@ -99,6 +100,8 @@ public partial class MissionDetailPage : ContentPage
         }
 
         detail = result.Response;
+        var qualityResult = await apiClient.GetMissionQualityAsync(accessToken, assignmentId.Value);
+        qualityChecklist = qualityResult.IsSuccess ? qualityResult.Response : null;
         await RenderAsync(detail);
         FinishLoading();
     }
@@ -182,7 +185,93 @@ public partial class MissionDetailPage : ContentPage
         StartButton.IsVisible = mission.Actions.CanStart;
         AdditionalQuoteButton.IsVisible = !isClosed && mission.MissionStatus == "Started" && blockingQuote is null;
         CompleteButton.IsVisible = mission.Actions.CanComplete;
+        RenderQualityChecklist(isClosed);
         RestartLocationUpdates(mission);
+    }
+
+    private void RenderQualityChecklist(bool isClosed)
+    {
+        QualityStagesHost.Children.Clear();
+        QualityCard.IsVisible = !isClosed && qualityChecklist is { RequiredItemCount: > 0 };
+        if (!QualityCard.IsVisible || qualityChecklist is null) return;
+        QualityProgressLabel.Text = $"{qualityChecklist.CompletedRequiredItemCount} / {qualityChecklist.RequiredItemCount}";
+        QualityProgressBar.Progress = qualityChecklist.RequiredItemCount == 0 ? 1 : qualityChecklist.CompletedRequiredItemCount / (double)qualityChecklist.RequiredItemCount;
+
+        foreach (var stage in qualityChecklist.Stages)
+        {
+            var stageTitle = new Label { Text = stage.Label, FontSize = 14, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#101828") };
+            QualityStagesHost.Children.Add(stageTitle);
+            foreach (var item in stage.Items)
+            {
+                var row = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) }, ColumnSpacing = 8, Padding = new Thickness(0, 5) };
+                var copy = new VerticalStackLayout { Spacing = 1 };
+                copy.Children.Add(new Label { Text = item.Label, FontSize = 13, FontAttributes = item.IsRequired ? FontAttributes.Bold : FontAttributes.None, TextColor = Color.FromArgb("#101828") });
+                if (!string.IsNullOrWhiteSpace(item.Guidance)) copy.Children.Add(new Label { Text = item.Guidance, FontSize = 11, TextColor = Color.FromArgb("#667085") });
+                row.Children.Add(copy);
+                if (item.ResponseType == "Automatic")
+                {
+                    var state = new Label { Text = item.IsCompleted ? "OK" : "Auto", FontSize = 11, FontAttributes = FontAttributes.Bold, TextColor = item.IsCompleted ? Color.FromArgb("#079455") : Color.FromArgb("#667085"), VerticalTextAlignment = TextAlignment.Center };
+                    Grid.SetColumn(state, 1); row.Children.Add(state);
+                }
+                else
+                {
+                    var action = new Button { Text = item.IsCompleted ? "Fait" : item.ResponseType == "Photo" ? "Photo" : "Valider", FontSize = 11, Padding = new Thickness(12, 5), HeightRequest = 34, IsEnabled = !item.IsCompleted };
+                    action.Clicked += async (_, _) => await RespondQualityItemAsync(item);
+                    Grid.SetColumn(action, 1); row.Children.Add(action);
+                }
+                QualityStagesHost.Children.Add(new Border { Stroke = Color.FromArgb("#E4EAF3"), StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 }, Padding = new Thickness(10), Content = row });
+            }
+        }
+
+        StartButton.IsEnabled = StartButton.IsEnabled && qualityChecklist.CanStart;
+        CompleteButton.IsEnabled = CompleteButton.IsEnabled && qualityChecklist.CanComplete;
+    }
+
+    private async Task RespondQualityItemAsync(ProviderMissionQualityItemResponse item)
+    {
+        if (!CanAct()) return;
+        if (item.ResponseType == "Photo")
+        {
+            var source = await DisplayActionSheet("Preuve photo", "Annuler", null, "Prendre une photo", "Choisir dans la galerie");
+            FileResult? file = null;
+            try
+            {
+                if (source == "Prendre une photo" && MediaPicker.Default.IsCaptureSupported) file = await MediaPicker.Default.CapturePhotoAsync();
+                else if (source == "Choisir dans la galerie") file = await MediaPicker.Default.PickPhotoAsync();
+            }
+            catch { ShowMessage("Impossible d'ouvrir la photo."); }
+            if (file is null) return;
+            var upload = await apiClient!.UploadMissionQualityPhotoAsync(accessToken!, assignmentId!.Value, item.ItemId, file);
+            if (!upload.IsSuccess) { ShowMessage(upload.ErrorMessage ?? "Upload impossible."); return; }
+        }
+        else
+        {
+            bool? booleanValue = true;
+            decimal? numberValue = null;
+            string? textValue = null;
+            if (item.ResponseType == "YesNo")
+            {
+                var answer = await DisplayActionSheet(item.Label, "Annuler", null, "Oui", "Non");
+                if (answer is not ("Oui" or "Non")) return;
+                booleanValue = answer == "Oui";
+            }
+            else if (item.ResponseType is "ShortText" or "Choice")
+            {
+                textValue = await DisplayPromptAsync("Controle qualite", item.Label, "Valider", "Annuler", keyboard: Keyboard.Text);
+                if (string.IsNullOrWhiteSpace(textValue)) return;
+                booleanValue = null;
+            }
+            else if (item.ResponseType == "Number")
+            {
+                var raw = await DisplayPromptAsync("Controle qualite", item.Label, "Valider", "Annuler", keyboard: Keyboard.Numeric);
+                if (!decimal.TryParse(raw, NumberStyles.Number, CultureInfo.CurrentCulture, out var parsed)) return;
+                numberValue = parsed; booleanValue = null;
+            }
+            var result = await apiClient!.UpdateMissionQualityItemAsync(accessToken!, assignmentId!.Value, item.ItemId, new UpdateProviderMissionQualityItemRequest(booleanValue, numberValue, textValue, null));
+            if (!result.IsSuccess) { ShowMessage(result.ErrorMessage ?? "Controle non enregistre."); return; }
+        }
+        ShowMessage("Controle qualite enregistre.");
+        await LoadAsync(false);
     }
 
     private void RenderMap(ProviderMobileMissionDetailResponse mission)

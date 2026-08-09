@@ -37,6 +37,7 @@ public static class DatabaseInitializer
         await SeedServiceOptionsAsync(db, cancellationToken);
         await SeedServicePrestationPhotosAsync(db, cancellationToken);
         await SeedServiceMediaAsync(db, cancellationToken);
+        await EnsureQualityFoundationAsync(db, cancellationToken);
         if (configuration.GetValue<bool>("SeedData:DemoMissionsEnabled"))
         {
             await SeedDemoMissionsAsync(db, cancellationToken);
@@ -84,6 +85,60 @@ public static class DatabaseInitializer
     private static async Task SeedDemoMissionsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         await ExecuteSqlScriptAsync(db, "056_seed_demo_missions.sql", cancellationToken);
+    }
+
+    private static async Task EnsureQualityFoundationAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var existingTemplatePrestations = await db.QualityChecklistTemplates
+            .Where(item => item.ServicePrestationId != null)
+            .Select(item => item.ServicePrestationId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var prestations = await db.ServicePrestations.AsNoTracking()
+            .Where(item => item.IsActive && !existingTemplatePrestations.Contains(item.Id))
+            .Select(item => new { item.Id, item.ServiceId, item.Name })
+            .ToListAsync(cancellationToken);
+
+        foreach (var prestation in prestations)
+        {
+            var template = new QualityChecklistTemplate(
+                prestation.ServiceId,
+                prestation.Id,
+                $"Controle qualite - {prestation.Name}",
+                "Checklist operationnelle de depart, d'execution et de controle final.");
+            db.QualityChecklistTemplates.Add(template);
+            var items = new[]
+            {
+                new QualityChecklistItem(template.Id, "payment-confirmed", "Paiement de la mission confirme", QualityChecklistStage.BeforeStart, QualityChecklistResponseType.Automatic, true, 10),
+                new QualityChecklistItem(template.Id, "arrival-verified", "Arrivee sur place verifiee", QualityChecklistStage.BeforeStart, QualityChecklistResponseType.Automatic, true, 20),
+                new QualityChecklistItem(template.Id, "need-confirmed", "Besoin confirme avec le client", QualityChecklistStage.BeforeStart, QualityChecklistResponseType.Confirmation, true, 30, "Validez le resultat attendu avant de commencer."),
+                new QualityChecklistItem(template.Id, "initial-photo", "Photo de l'etat initial", QualityChecklistStage.BeforeStart, QualityChecklistResponseType.Photo, true, 40, "Cadrez la zone concernee avant intervention."),
+                new QualityChecklistItem(template.Id, "intervention-completed", "Intervention realisee selon la demande", QualityChecklistStage.DuringMission, QualityChecklistResponseType.Confirmation, true, 50),
+                new QualityChecklistItem(template.Id, "result-verified", "Resultat controle et fonctionnel", QualityChecklistStage.BeforeCompletion, QualityChecklistResponseType.YesNo, true, 60, requiresEvidenceOnIssue: true),
+                new QualityChecklistItem(template.Id, "area-cleaned", "Zone de travail nettoyee", QualityChecklistStage.BeforeCompletion, QualityChecklistResponseType.Confirmation, true, 70),
+                new QualityChecklistItem(template.Id, "final-photo", "Photo du resultat final", QualityChecklistStage.BeforeCompletion, QualityChecklistResponseType.Photo, true, 80, "Montrez clairement le resultat livre au client.")
+            };
+            db.QualityChecklistItems.AddRange(items);
+        }
+
+        var existingQualifications = await db.ProviderPrestationQualifications
+            .Select(item => new { item.ProviderId, item.ServicePrestationId })
+            .ToListAsync(cancellationToken);
+        var existingKeys = existingQualifications.Select(item => (item.ProviderId, item.ServicePrestationId)).ToHashSet();
+        var providerPrestations = await (from link in db.ProviderServicePrestations.AsNoTracking()
+                                         join providerService in db.ProviderServices.AsNoTracking() on link.ProviderServiceId equals providerService.Id
+                                         join provider in db.Providers.AsNoTracking() on providerService.ProviderId equals provider.Id
+                                         where link.IsActive && providerService.IsActive
+                                         select new { provider.Id, link.ServicePrestationId, provider.Status }).Distinct().ToListAsync(cancellationToken);
+        foreach (var item in providerPrestations.Where(item => !existingKeys.Contains((item.Id, item.ServicePrestationId))))
+        {
+            var qualification = new ProviderPrestationQualification(item.Id, item.ServicePrestationId);
+            if (item.Status == ProviderStatus.Approved)
+                qualification.Review(ProviderQualificationStatus.Approved, null, null, "Qualification existante reprise lors de l'activation du dispositif qualite.", null, null);
+            db.ProviderPrestationQualifications.Add(qualification);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     private static async Task SeedWellbeingServiceCatalogAsync(

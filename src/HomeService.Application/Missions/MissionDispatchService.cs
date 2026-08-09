@@ -392,6 +392,13 @@ public sealed class MissionDispatchService(
             })
             .ToListAsync(cancellationToken);
 
+        var qualityStats = await db.CompanyQualitySummaries.AsNoTracking()
+            .Where(item => companyIds.Contains(item.CompanyId)
+                && item.ServiceId == mission.ServiceId
+                && (item.ServicePrestationId == mission.ServicePrestationId || item.ServicePrestationId == null))
+            .OrderByDescending(item => item.ServicePrestationId == mission.ServicePrestationId)
+            .ToListAsync(cancellationToken);
+
         var marketAverage = await db.Missions
             .AsNoTracking()
             .Where(item => item.ServiceId == mission.ServiceId && item.CompanyQuotedAmount.HasValue)
@@ -413,7 +420,8 @@ public sealed class MissionDispatchService(
                     stats?.Recent ?? 0,
                     stats?.Cancelled ?? 0,
                     noResponseCounts.FirstOrDefault(item => item.CompanyId == company.Id)?.Count ?? 0,
-                    CalculatePriceDeviation(stats?.AverageQuote, marketAverage));
+                    CalculatePriceDeviation(stats?.AverageQuote, marketAverage),
+                    qualityStats.FirstOrDefault(item => item.CompanyId == company.Id)?.Score);
             })
             .ToList();
     }

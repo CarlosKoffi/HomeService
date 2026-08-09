@@ -27,6 +27,11 @@ public interface IAppDbContext
     DbSet<ProviderService> ProviderServices { get; }
     DbSet<ProviderServicePrestation> ProviderServicePrestations { get; }
     DbSet<ProviderServicePortfolioItem> ProviderServicePortfolioItems { get; }
+    DbSet<ProviderPrestationQualification> ProviderPrestationQualifications { get; }
+    DbSet<ProviderQualitySummary> ProviderQualitySummaries { get; }
+    DbSet<CompanyQualitySummary> CompanyQualitySummaries { get; }
+    DbSet<QualityChecklistTemplate> QualityChecklistTemplates { get; }
+    DbSet<QualityChecklistItem> QualityChecklistItems { get; }
     DbSet<CustomerProfile> Customers { get; }
     DbSet<CustomerSession> CustomerSessions { get; }
     DbSet<CustomerAddress> CustomerAddresses { get; }
@@ -38,6 +43,9 @@ public interface IAppDbContext
     DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns { get; }
     DbSet<MissionPaymentMilestone> MissionPaymentMilestones { get; }
     DbSet<MissionReview> MissionReviews { get; }
+    DbSet<MissionQualityControl> MissionQualityControls { get; }
+    DbSet<MissionQualityItem> MissionQualityItems { get; }
+    DbSet<MissionQualityAudit> MissionQualityAudits { get; }
     DbSet<MissionDispute> MissionDisputes { get; }
     DbSet<MissionStatusHistory> MissionStatusHistories { get; }
     DbSet<MissionDispatchOffer> MissionDispatchOffers { get; }
