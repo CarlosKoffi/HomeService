@@ -942,7 +942,7 @@ img {
 
 .client-phone-stage {
     display: grid;
-    min-height: 700px;
+    min-height: 780px;
     place-items: end center;
     overflow: hidden;
     border-radius: 34px;
@@ -950,9 +950,10 @@ img {
 }
 
 .client-phone-shell {
+    position: relative;
     width: min(335px, calc(100% - 44px));
-    min-height: 630px;
-    padding: 25px 22px 18px;
+    min-height: 720px;
+    padding: 27px 20px 92px;
     border: 9px solid #101828;
     border-bottom: 0;
     border-radius: 42px 42px 0 0;
@@ -962,40 +963,105 @@ img {
 
 .client-phone-top {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
+}
+
+.client-phone-top > div {
+    display: grid;
+    gap: 2px;
 }
 
 .client-phone-top strong {
-    color: var(--wele-blue);
-    font-size: 1.2rem;
+    color: var(--wele-ink);
+    font-size: .93rem;
+    letter-spacing: -.025em;
 }
 
-.client-phone-shell > p {
-    margin: 0 0 5px;
-    font-size: .82rem;
-    font-weight: 700;
+.client-phone-top small {
+    color: var(--wele-muted);
+    font-size: .59rem;
 }
 
-.client-phone-shell > h3 {
-    margin: 0 0 18px;
-    font-size: 1.35rem;
-    letter-spacing: -.035em;
+.client-phone-bell {
+    position: relative;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+}
+
+.client-phone-bell svg,
+.client-phone-search svg,
+.client-phone-mission-icon svg,
+.client-phone-nav svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.client-phone-bell svg {
+    width: 24px;
+    height: 24px;
+}
+
+.client-phone-bell i {
+    position: absolute;
+    top: -2px;
+    right: -1px;
+    display: grid;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    place-items: center;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: var(--wele-blue);
+    color: #fff;
+    font-size: .52rem;
+    font-style: normal;
+    font-weight: 900;
 }
 
 .client-phone-search {
-    margin-bottom: 22px;
-    padding: 14px;
-    border-radius: 13px;
-    background: #f5f7fa;
-    color: #98a2b3;
-    font-size: .76rem;
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 8px 3px 10px;
+    border-bottom: 1px solid var(--wele-ink);
+    background: #fff;
+    color: var(--wele-ink);
+    font-size: .7rem;
 }
 
-.client-phone-shell > small {
-    display: block;
-    margin: 18px 0 10px;
+.client-phone-search svg {
+    width: 18px;
+    height: 18px;
+}
+
+.client-phone-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 9px;
+}
+
+.client-phone-section-heading small {
+    color: var(--wele-blue);
+    font-size: .72rem;
     font-weight: 850;
+}
+
+.client-phone-section-heading em {
+    color: var(--wele-ink);
+    font-size: .54rem;
+    font-style: normal;
+    font-weight: 800;
 }
 
 .client-phone-services {
@@ -1014,6 +1080,7 @@ img {
 }
 
 .client-phone-services b {
+    position: relative;
     display: grid;
     aspect-ratio: 1;
     place-items: center;
@@ -1026,23 +1093,80 @@ img {
     font-size: 1rem;
 }
 
+.client-phone-services b::before {
+    position: absolute;
+    z-index: 2;
+    top: -1px;
+    left: -1px;
+    width: 27px;
+    height: 21px;
+    border-top: 2px solid var(--wele-blue);
+    border-left: 2px solid var(--wele-blue);
+    border-radius: 13px 0 0;
+    content: "";
+    pointer-events: none;
+}
+
 .client-phone-services img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+}
+
+.client-phone-missions-heading {
+    margin-top: 19px;
+}
+
+.client-phone-missions {
+    display: grid;
+    gap: 8px;
 }
 
 .client-phone-mission {
     display: grid;
-    gap: 6px;
-    padding: 15px;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    padding: 10px;
     border: 1px solid #dbe6f8;
-    border-radius: 15px;
-    font-size: .72rem;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 6px 16px rgba(16, 24, 40, .055);
+    font-size: .66rem;
 }
 
-.client-phone-mission span {
+.client-phone-mission-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--wele-blue-soft);
+    color: var(--wele-blue);
+}
+
+.client-phone-mission-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.client-phone-mission > div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.client-phone-mission b {
+    overflow: hidden;
+    color: var(--wele-ink);
+    font-size: .65rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.client-phone-mission > div span {
     color: var(--wele-muted);
+    font-size: .52rem;
 }
 
 .client-phone-mission em {
@@ -1051,23 +1175,66 @@ img {
     border-radius: 999px;
     background: #ecfdf3;
     color: var(--wele-green);
-    font-size: .59rem;
+    font-size: .5rem;
     font-style: normal;
     font-weight: 850;
 }
 
-.client-phone-nav {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 55px;
-    padding-top: 16px;
-    border-top: 1px solid var(--wele-line);
-    color: #98a2b3;
-    font-size: .56rem;
+.client-phone-mission em.is-live {
+    background: var(--wele-blue-soft);
+    color: var(--wele-blue);
 }
 
-.client-phone-nav b {
+.client-phone-nav {
+    position: absolute;
+    right: 16px;
+    bottom: 12px;
+    left: 16px;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    padding-top: 10px;
+    border-top: 1px solid var(--wele-line);
+    color: #98a2b3;
+}
+
+.client-phone-nav > span {
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    font-size: .5rem;
+}
+
+.client-phone-nav svg {
+    width: 21px;
+    height: 21px;
+}
+
+.client-phone-nav small {
+    font-size: .49rem;
+}
+
+.client-phone-nav .active {
     color: var(--wele-blue);
+}
+
+.client-phone-nav .create {
+    align-self: center;
+}
+
+.client-phone-nav .create b {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 2px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--wele-blue);
+    color: #fff;
+    font-size: 1.7rem;
+    font-weight: 350;
+    line-height: 1;
+    box-shadow: 0 7px 15px rgba(23, 105, 255, .25);
 }
 
 .client-app-copy h2 {
@@ -1725,12 +1892,12 @@ img {
     }
 
     .client-phone-stage {
-        min-height: 590px;
+        min-height: 690px;
         border-radius: 25px;
     }
 
     .client-phone-shell {
-        min-height: 550px;
+        min-height: 655px;
     }
 
     .client-store-actions {

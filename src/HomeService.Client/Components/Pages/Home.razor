@@ -240,19 +240,43 @@
     <section class="client-app-section" id="telecharger">
         <div class="client-phone-stage" aria-label="Aperçu de l’application Wélé">
             <div class="client-phone-shell">
-                <div class="client-phone-top"><strong>wélé</strong><span>●</span></div>
-                <p>Bonjour Aïcha 👋</p>
-                <h3>Que recherchez-vous aujourd’hui ?</h3>
-                <div class="client-phone-search">⌕ Rechercher un service</div>
-                <small>Pour ma maison</small>
+                <div class="client-phone-top">
+                    <div><strong>Bonjour Aïcha 👋</strong><small>Votre quotidien, simplifié.</small></div>
+                    <span class="client-phone-bell" aria-label="2 notifications non lues">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 21a2 2 0 0 0 3.4 0"/><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/></svg>
+                        <i>2</i>
+                    </span>
+                </div>
+                <div class="client-phone-search">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                    <span>Que recherchez-vous aujourd’hui ?</span>
+                </div>
+                <div class="client-phone-section-heading"><small>Pour ma maison</small><em>Voir plus&nbsp; →</em></div>
                 <div class="client-phone-services">
                     <span><b><img src="images/services/menage-balai.webp?v=2" alt="" /></b>Ménage</span>
                     <span><b><img src="@ResolvePublicMediaUrl("/assets/services/blanchisserie.png")" alt="" /></b>Blanchisserie</span>
                     <span><b><img src="images/services/climatisation-premium.webp" alt="" /></b>Climatisation</span>
                 </div>
-                <small>Prochaine intervention</small>
-                <div class="client-phone-mission"><b>Ménage de bureaux</b><span>Demain · 09:30</span><em>Confirmée</em></div>
-                <div class="client-phone-nav"><b>Accueil</b><span>Demandes</span><span>Messages</span><span>Profil</span></div>
+                <div class="client-phone-section-heading client-phone-missions-heading"><small>Mes demandes</small><em>Voir tout&nbsp; →</em></div>
+                <div class="client-phone-missions">
+                    <div class="client-phone-mission">
+                        <span class="client-phone-mission-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span>
+                        <div><b>Entretien climatisation</b><span>Riviera 3 · Aujourd’hui, 15:30</span></div>
+                        <em class="is-live">En route</em>
+                    </div>
+                    <div class="client-phone-mission">
+                        <span class="client-phone-mission-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span>
+                        <div><b>Ménage à domicile</b><span>Cocody · Demain, 09:30</span></div>
+                        <em>Confirmée</em>
+                    </div>
+                </div>
+                <div class="client-phone-nav">
+                    <span class="active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg><small>Accueil</small></span>
+                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><small>Demandes</small></span>
+                    <span class="create"><b>+</b></span>
+                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 9h8M8 13h5"/></svg><small>Messages</small></span>
+                    <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><small>Profil</small></span>
+                </div>
             </div>
         </div>
         <div class="client-app-copy">
