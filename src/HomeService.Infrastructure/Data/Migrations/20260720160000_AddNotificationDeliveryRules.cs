@@ -1,9 +1,13 @@
+using HomeService.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace HomeService.Infrastructure.Data.Migrations
 {
+    [DbContext(typeof(HomeServiceDbContext))]
+    [Migration("20260720160000_AddNotificationDeliveryRules")]
     public partial class AddNotificationDeliveryRules : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
