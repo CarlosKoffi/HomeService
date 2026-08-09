@@ -246,7 +246,7 @@
                 <div class="client-phone-search">⌕ Rechercher un service</div>
                 <small>Pour ma maison</small>
                 <div class="client-phone-services">
-                    <span><b><img src="images/services/menage-balai.webp" alt="" /></b>Ménage</span>
+                    <span><b><img src="images/services/menage-balai.webp?v=2" alt="" /></b>Ménage</span>
                     <span><b><img src="@ResolvePublicMediaUrl("/assets/services/blanchisserie.png")" alt="" /></b>Blanchisserie</span>
                     <span><b><img src="images/services/climatisation-premium.webp" alt="" /></b>Climatisation</span>
                 </div>
@@ -534,7 +534,7 @@
         var used = new HashSet<Guid>();
         return new[]
         {
-            FindCard(catalog, used, "Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", "/images/services/menage-balai.webp", "menage"),
+            FindCard(catalog, used, "Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", "/images/services/menage-balai.webp?v=2", "menage"),
             FindCard(catalog, used, "Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", "/assets/services/blanchisserie.png", "blanch", "repass", "linge"),
             FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/images/services/climatisation-premium.webp", "clim"),
             FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "/assets/services/coiffure.png", "coiff", "esthet", "beaute")
@@ -570,7 +570,7 @@
 
     private static IReadOnlyList<LandingServiceCard> BuildFallbackCards() =>
     [
-        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai.webp"),
+        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai.webp?v=2"),
         new("Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", null, "/assets/services/blanchisserie.png"),
         new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/images/services/climatisation-premium.webp"),
         new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png")
