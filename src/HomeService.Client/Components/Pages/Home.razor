@@ -8,6 +8,23 @@
 @inject IConfiguration Configuration
 
 <PageTitle>Wélé — Le bon service, au bon moment</PageTitle>
+<HeadContent>
+    <meta name="description" content="Wélé vous met en relation avec des professionnels vérifiés pour votre maison, votre bien-être et votre quotidien à Abidjan." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://wele.africa/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_CI" />
+    <meta property="og:site_name" content="Wélé" />
+    <meta property="og:title" content="Wélé — Le bon service, au bon moment" />
+    <meta property="og:description" content="Des services fiables à Abidjan auprès de professionnels vérifiés." />
+    <meta property="og:url" content="https://wele.africa/" />
+    <meta property="og:image" content="https://media.wele.africa/website/client/wele-client-hero.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wélé — Le bon service, au bon moment" />
+    <meta name="twitter:description" content="Des services fiables à Abidjan auprès de professionnels vérifiés." />
+    <meta name="twitter:image" content="https://media.wele.africa/website/client/wele-client-hero.png" />
+    @((MarkupString)"<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Wélé\",\"url\":\"https://wele.africa/\",\"logo\":\"https://wele.africa/images/wele-logo-dark.png\",\"areaServed\":{\"@type\":\"City\",\"name\":\"Abidjan\"}}</script>")
+</HeadContent>
 
 <div class="client-site @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
     <header class="client-header">
@@ -21,7 +38,19 @@
 
         <nav class="client-navigation @(mobileMenuOpen ? "is-open" : string.Empty)" aria-label="Navigation principale">
             <div class="client-nav-main">
-                <a href="#services" @onclick="CloseMenu">Services</a>
+                <details class="client-services-dropdown">
+                    <summary>Nos services <span aria-hidden="true">⌄</span></summary>
+                    <div class="client-services-menu">
+                        <strong>Services les plus demandés</strong>
+                        @foreach (var service in PopularServices)
+                        {
+                            <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu">
+                                <span>@GetInitials(service.Name)</span>@service.Name
+                            </a>
+                        }
+                        <a class="client-services-menu-all" href="/services" @onclick="CloseMenu">Voir tous les services <b aria-hidden="true">→</b></a>
+                    </div>
+                </details>
                 <a href="https://pro.wele.africa">Devenir prestataire</a>
                 <a href="https://entreprise.wele.africa">Pour les entreprises</a>
                 <a href="#a-propos" @onclick="CloseMenu">À propos</a>
@@ -187,11 +216,30 @@
                     <div>
                         <h3>@card.Title</h3>
                         <p>@card.Description</p>
-                        <a href="#commander" @onclick="() => SelectLandingService(card.ServiceId)">Découvrir <span>→</span></a>
+                        @if (!string.IsNullOrWhiteSpace(card.Slug))
+                        {
+                            <a href="@($"/services/{card.Slug}")">Découvrir <span>→</span></a>
+                        }
+                        else
+                        {
+                            <a href="#commander" @onclick="() => SelectLandingService(card.ServiceId)">Découvrir <span>→</span></a>
+                        }
                     </div>
                 </article>
             }
         </div>
+        @if (services.Count > 0)
+        {
+            <div class="client-service-directory" aria-label="Tous les services Wélé">
+                <strong>Tous les services disponibles</strong>
+                <div>
+                    @foreach (var service in services)
+                    {
+                        <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")">@service.Name <span>→</span></a>
+                    }
+                </div>
+            </div>
+        }
     </section>
 
     <section class="client-section client-steps-section" id="fonctionnement">
@@ -354,6 +402,19 @@
                 }
             </div>
         }
+        @if (PopularServices.Count > 0)
+        {
+            <div class="client-footer-popular">
+                <strong>Services populaires à Abidjan</strong>
+                <div>
+                    @foreach (var service in PopularServices)
+                    {
+                        <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")">@service.Name</a>
+                    }
+                    <a class="client-footer-all" href="/services">Tous nos services →</a>
+                </div>
+            </div>
+        }
         <div class="client-footer-bottom"><span>@ClientContent.Footer.Copyright</span><span>@ClientContent.Footer.Baseline</span></div>
     </footer>
 </div>
@@ -372,6 +433,7 @@
     private IReadOnlyList<ClientAddressSuggestionResponse> addressSuggestions = [];
     private IReadOnlyList<LandingServiceCard> landingServiceCards = BuildFallbackCards();
     private ClientHomeCmsResponse ClientContent { get; set; } = ClientHomeCmsDefaults.Create();
+    private IReadOnlyList<ServiceSummaryResponse> PopularServices => ServiceSeoCatalog.PopularServices(services);
     private string selectedMode = "Instant";
     private string serviceQuery = string.Empty;
     private Guid? selectedServiceId;
@@ -469,7 +531,7 @@
                 : "https://pro.wele.africa";
         }
 
-        return columnTitle.Contains("Service", StringComparison.OrdinalIgnoreCase) ? "#services" : "#a-propos";
+        return columnTitle.Contains("Service", StringComparison.OrdinalIgnoreCase) ? "/services" : "#a-propos";
     }
 
     private void ToggleMenu() => mobileMenuOpen = !mobileMenuOpen;
@@ -664,15 +726,16 @@
             shortLabel,
             tone,
             match?.Id,
-            fallbackImageUrl);
+            fallbackImageUrl,
+            match is null ? null : ServiceSeoCatalog.ToSlug(match.Name));
     }
 
     private static IReadOnlyList<LandingServiceCard> BuildFallbackCards() =>
     [
-        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai.webp?v=2"),
-        new("Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", null, "/assets/services/blanchisserie.png"),
-        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/images/services/climatisation-premium.webp"),
-        new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png")
+        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai.webp?v=2", null),
+        new("Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", null, "/assets/services/blanchisserie.png", null),
+        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/images/services/climatisation-premium.webp", null),
+        new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png", null)
     ];
 
     private static string Normalize(string value) => string.Concat(value
@@ -705,5 +768,6 @@
         string ShortLabel,
         string Tone,
         Guid? ServiceId,
-        string? ImageUrl);
+        string? ImageUrl,
+        string? Slug);
 }

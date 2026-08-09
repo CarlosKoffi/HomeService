@@ -1,0 +1,226 @@
+@page "/services"
+@using System.Text.Json
+@using HomeService.Client.Services
+@using HomeService.Contracts.Services
+@inject PublicWebsiteApiClient ApiClient
+@inject IConfiguration Configuration
+
+<PageTitle>Tous les services à domicile à Abidjan — Wélé</PageTitle>
+<HeadContent>
+    <meta name="description" content="Découvrez tous les services Wélé disponibles à Abidjan : maison, quotidien, bien-être et mobilité, avec leurs prestations et options actives." />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="@CanonicalUrl" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_CI" />
+    <meta property="og:site_name" content="Wélé" />
+    <meta property="og:title" content="Tous les services Wélé à Abidjan" />
+    <meta property="og:description" content="Maison, quotidien, bien-être et mobilité : explorez les services disponibles et leurs prestations." />
+    <meta property="og:url" content="@CanonicalUrl" />
+    <meta property="og:image" content="https://media.wele.africa/website/client/wele-client-hero.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    @if (!string.IsNullOrWhiteSpace(StructuredData))
+    {
+        @((MarkupString)$"<script type=\"application/ld+json\">{StructuredData}</script>")
+    }
+</HeadContent>
+
+<div class="services-hub @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
+    <header class="client-header">
+        <a class="client-brand" href="/" aria-label="Accueil Wélé" @onclick="CloseMenu">
+            <img src="/images/wele-logo-dark.png" alt="Wélé" width="710" height="288" />
+        </a>
+        <button class="client-menu-button" type="button" aria-label="Ouvrir le menu" aria-expanded="@mobileMenuOpen" @onclick="ToggleMenu">
+            <span></span><span></span><span></span>
+        </button>
+        <nav class="client-navigation @(mobileMenuOpen ? "is-open" : string.Empty)" aria-label="Navigation principale">
+            <div class="client-nav-main">
+                <details class="client-services-dropdown">
+                    <summary>Nos services <span aria-hidden="true">⌄</span></summary>
+                    <div class="client-services-menu">
+                        <strong>Services les plus demandés</strong>
+                        @foreach (var service in PopularServices)
+                        {
+                            <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu"><span>@GetInitials(service.Name)</span>@service.Name</a>
+                        }
+                        <a class="client-services-menu-all" href="/services" @onclick="CloseMenu">Voir tous les services <b aria-hidden="true">→</b></a>
+                    </div>
+                </details>
+                <a href="https://pro.wele.africa">Devenir prestataire</a>
+                <a href="https://entreprise.wele.africa">Pour les entreprises</a>
+                <a href="/#a-propos">À propos</a>
+            </div>
+            <div class="client-nav-actions">
+                <span class="client-locale">CI · FR</span>
+                <a class="client-nav-cta" href="/telecharger/android">Télécharger l’application</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="services-hub-hero">
+            <nav aria-label="Fil d’Ariane"><a href="/">Accueil</a><span>›</span><strong>Services</strong></nav>
+            <span class="services-hub-kicker">● Abidjan · Côte d’Ivoire</span>
+            <h1>Tout ce que Wélé peut faire pour vous.</h1>
+            <p>Explorez les services actuellement disponibles, puis découvrez chaque prestation et ses options avant de poursuivre dans l’application.</p>
+            @if (ServiceGroups.Count > 0)
+            {
+                <div class="services-hub-shortcuts" aria-label="Univers de services">
+                    @foreach (var group in ServiceGroups)
+                    {
+                        <a href="@($"#{ServiceSeoCatalog.ToSlug(group.Name)}")">@group.Name <span>@group.Services.Count</span></a>
+                    }
+                </div>
+            }
+        </section>
+
+        @if (isLoading)
+        {
+            <div class="services-hub-loading" aria-live="polite"><span></span><strong>Chargement des services…</strong></div>
+        }
+        else if (ActiveServices.Count == 0)
+        {
+            <section class="services-hub-empty"><h2>Le catalogue est momentanément indisponible.</h2><p>Retrouvez les services directement dans l’application Wélé.</p></section>
+        }
+        else
+        {
+            @foreach (var group in ServiceGroups)
+            {
+                <section class="services-hub-group" id="@ServiceSeoCatalog.ToSlug(group.Name)">
+                    <div class="services-hub-group-head">
+                        <div><span>@GroupEyebrow(group.Name)</span><h2>@group.Name</h2></div>
+                        <p>@GroupDescription(group.Name)</p>
+                    </div>
+                    <div class="services-hub-grid">
+                        @foreach (var service in group.Services)
+                        {
+                            var imageUrl = ResolveMediaUrl(service.ImageUrl ?? service.Prestations.FirstOrDefault(prestation => prestation.IsActive && !string.IsNullOrWhiteSpace(prestation.IllustrationUrl))?.IllustrationUrl ?? service.IconUrl);
+                            var prestationCount = service.Prestations.Count(prestation => prestation.IsActive);
+                            <article class="services-hub-card">
+                                <a class="services-hub-card-media" href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" aria-label="Découvrir @service.Name">
+                                    @if (!string.IsNullOrWhiteSpace(imageUrl))
+                                    {
+                                        <img src="@imageUrl" alt="@($"{service.Name} à Abidjan avec Wélé")" loading="lazy" decoding="async" />
+                                    }
+                                    else
+                                    {
+                                        <span aria-hidden="true">@GetInitials(service.Name)</span>
+                                    }
+                                </a>
+                                <div class="services-hub-card-body">
+                                    <span>@(prestationCount == 0 ? "Catalogue en préparation" : $"{prestationCount} prestation{(prestationCount > 1 ? "s" : string.Empty)}")</span>
+                                    <h3>@service.Name</h3>
+                                    <p>@ServiceDescription(service)</p>
+                                    <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")">Découvrir les prestations <b aria-hidden="true">→</b></a>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                </section>
+            }
+        }
+
+        <section class="services-hub-cta">
+            <span>Tout Wélé dans votre téléphone</span>
+            <h2>Votre prochain service commence dans l’application.</h2>
+            <p>Sélectionnez la prestation, précisez votre besoin et suivez l’intervention depuis votre téléphone.</p>
+            <a href="/telecharger/android">Télécharger l’application <b aria-hidden="true">→</b></a>
+        </section>
+    </main>
+
+    <footer class="client-footer">
+        <div class="client-footer-brand"><img src="/images/wele-logo-dark.png" alt="Wélé" width="710" height="288" /><p>Le bon service, au bon moment.</p></div>
+        <div><strong>Découvrir</strong><a href="/services">Tous les services</a><a href="/#fonctionnement">Comment ça marche</a><a href="/#a-propos">À propos</a></div>
+        <div><strong>Rejoindre Wélé</strong><a href="https://pro.wele.africa">Devenir prestataire</a><a href="https://entreprise.wele.africa">Espace entreprise</a></div>
+        <div><strong>Application</strong><a href="/telecharger/android">Google Play</a><a href="/telecharger/ios">App Store</a></div>
+        <div class="client-footer-bottom"><span>© 2026 Wélé · Abidjan, Côte d’Ivoire</span><span>Confiance · Simplicité · Proximité</span></div>
+    </footer>
+</div>
+
+@code {
+    private IReadOnlyList<ServiceSummaryResponse> ActiveServices { get; set; } = [];
+    private IReadOnlyList<ServiceGroup> ServiceGroups { get; set; } = [];
+    private bool isLoading = true;
+    private bool mobileMenuOpen;
+
+    private string SiteBaseUrl => (Configuration["Site:BaseUrl"] ?? "https://wele.africa").TrimEnd('/');
+    private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"] ?? Configuration["Media:PublicBaseUrl"] ?? "https://media.wele.africa").TrimEnd('/');
+    private string CanonicalUrl => $"{SiteBaseUrl}/services";
+    private string StructuredData => ActiveServices.Count == 0 ? string.Empty : BuildStructuredData();
+    private IReadOnlyList<ServiceSummaryResponse> PopularServices => ServiceSeoCatalog.PopularServices(ActiveServices);
+
+    protected override async Task OnInitializedAsync()
+    {
+        ActiveServices = (await ApiClient.GetServicesAsync())
+            .Where(service => service.IsActive)
+            .OrderBy(service => service.Name)
+            .ToList();
+
+        var groupOrder = new[] { "Maison", "Quotidien", "Bien-être", "Mobilité" };
+        ServiceGroups = ActiveServices
+            .GroupBy(ServiceSeoCatalog.NavigationGroup)
+            .Select(group => new ServiceGroup(group.Key, group.OrderBy(service => service.Name).ToList()))
+            .OrderBy(group => Array.IndexOf(groupOrder, group.Name) is var index && index >= 0 ? index : groupOrder.Length)
+            .ToList();
+        isLoading = false;
+    }
+
+    private string ResolveMediaUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+        if (value.StartsWith("/images/", StringComparison.OrdinalIgnoreCase) || value.StartsWith("images/", StringComparison.OrdinalIgnoreCase))
+            return value.StartsWith('/') ? value : $"/{value}";
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute) && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
+            return absolute.ToString();
+        return $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
+    }
+
+    private string ServiceDescription(ServiceSummaryResponse service)
+    {
+        var description = string.IsNullOrWhiteSpace(service.Description) ? ServiceSeoCatalog.For(service).Introduction : service.Description.Trim();
+        return description.Length <= 145 ? description : $"{description[..142].TrimEnd()}…";
+    }
+
+    private string BuildStructuredData() => JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "CollectionPage",
+        ["name"] = "Tous les services Wélé à Abidjan",
+        ["description"] = "Maison, quotidien, bien-être et mobilité : tous les services Wélé actuellement disponibles à Abidjan.",
+        ["url"] = CanonicalUrl,
+        ["mainEntity"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "ItemList",
+            ["numberOfItems"] = ActiveServices.Count,
+            ["itemListElement"] = ActiveServices.Select((service, index) => new Dictionary<string, object?>
+            {
+                ["@type"] = "ListItem",
+                ["position"] = index + 1,
+                ["name"] = service.Name,
+                ["url"] = $"{SiteBaseUrl}/services/{ServiceSeoCatalog.ToSlug(service.Name)}",
+            }).ToList(),
+        },
+    });
+
+    private static string GroupEyebrow(string group) => group switch
+    {
+        "Maison" => "Prendre soin de votre intérieur",
+        "Quotidien" => "Vous simplifier la vie",
+        "Bien-être" => "Prendre soin de vous",
+        "Mobilité" => "Rester en mouvement",
+        _ => "Services Wélé",
+    };
+
+    private static string GroupDescription(string group) => group switch
+    {
+        "Maison" => "Entretien, dépannage et interventions pour un intérieur sûr, propre et agréable.",
+        "Quotidien" => "Des prestations pratiques pour gagner du temps dans votre organisation.",
+        "Bien-être" => "Beauté et soins réalisés à domicile, selon vos besoins et votre disponibilité.",
+        "Mobilité" => "Une assistance de proximité lorsque votre véhicule vous immobilise.",
+        _ => "Découvrez les prestations actuellement disponibles dans cet univers.",
+    };
+
+    private static string GetInitials(string value) => string.Concat(value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    private void ToggleMenu() => mobileMenuOpen = !mobileMenuOpen;
+    private void CloseMenu() => mobileMenuOpen = false;
+    private sealed record ServiceGroup(string Name, IReadOnlyList<ServiceSummaryResponse> Services);
+}

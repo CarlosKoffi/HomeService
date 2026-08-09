@@ -1,0 +1,370 @@
+@page "/services/{Slug}"
+@using System.Text.Json
+@using HomeService.Client.Services
+@using HomeService.Contracts.Services
+@inject PublicWebsiteApiClient ApiClient
+@inject IConfiguration Configuration
+
+<PageTitle>@PageTitleText</PageTitle>
+
+<HeadContent>
+    <meta name="description" content="@MetaDescription" />
+    <meta name="robots" content="@(CurrentService is null && !isLoading ? "noindex, nofollow" : "index, follow, max-image-preview:large")" />
+    <link rel="canonical" href="@CanonicalUrl" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_CI" />
+    <meta property="og:site_name" content="Wélé" />
+    <meta property="og:title" content="@PageTitleText" />
+    <meta property="og:description" content="@MetaDescription" />
+    <meta property="og:url" content="@CanonicalUrl" />
+    <meta property="og:image" content="@SocialImageUrl" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@PageTitleText" />
+    <meta name="twitter:description" content="@MetaDescription" />
+    <meta name="twitter:image" content="@SocialImageUrl" />
+    @if (!string.IsNullOrWhiteSpace(StructuredData))
+    {
+        @((MarkupString)$"<script type=\"application/ld+json\">{StructuredData}</script>")
+    }
+</HeadContent>
+
+<div class="seo-service-site @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
+    <header class="seo-header">
+        <a class="seo-brand" href="/" aria-label="Accueil Wélé" @onclick="CloseMenu">
+            <img src="/images/wele-logo-dark.png" alt="Wélé" width="710" height="288" />
+        </a>
+        <button class="seo-menu-button" type="button" aria-label="Ouvrir le menu" aria-expanded="@mobileMenuOpen" @onclick="ToggleMenu">
+            <span></span><span></span><span></span>
+        </button>
+        <nav class="seo-navigation @(mobileMenuOpen ? "is-open" : string.Empty)" aria-label="Navigation principale">
+            <div>
+                <details class="seo-services-dropdown">
+                    <summary>Nos services <span aria-hidden="true">⌄</span></summary>
+                    <div class="seo-services-menu">
+                        @foreach (var service in PopularNavigationServices)
+                        {
+                            <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu">@service.Name</a>
+                        }
+                        <a class="seo-services-menu-all" href="/services" @onclick="CloseMenu">Voir tous les services <b aria-hidden="true">→</b></a>
+                    </div>
+                </details>
+                <a href="https://pro.wele.africa">Devenir prestataire</a>
+                <a href="https://entreprise.wele.africa">Pour les entreprises</a>
+            </div>
+            <a class="seo-nav-cta" href="/telecharger/android">Télécharger l’application</a>
+        </nav>
+    </header>
+
+    @if (isLoading)
+    {
+        <main class="seo-loading" aria-live="polite">
+            <span></span><strong>Chargement du service…</strong>
+        </main>
+    }
+    else if (CurrentService is null)
+    {
+        <main class="seo-not-found">
+            <span>Service introuvable</span>
+            <h1>Cette page n’est pas disponible.</h1>
+            <p>Le service recherché n’est plus actif ou son adresse a changé.</p>
+            <a class="seo-primary" href="/#services">Découvrir les services Wélé</a>
+        </main>
+    }
+    else
+    {
+        <main>
+            <div class="seo-shell">
+                <nav class="seo-breadcrumb" aria-label="Fil d’Ariane">
+                    <a href="/">Accueil</a><span>›</span><a href="/#services">Services</a><span>›</span><strong>@CurrentService.Name</strong>
+                </nav>
+
+                <section class="seo-hero">
+                    <span class="seo-kicker">● @CurrentService.Name · Abidjan</span>
+                    <h1>@Seo.Title</h1>
+                    <p>@Seo.Introduction</p>
+                    <div class="seo-actions">
+                        <a class="seo-primary" href="/telecharger/android">Retrouver ce service dans l’application <span aria-hidden="true">→</span></a>
+                        <a class="seo-secondary" href="#prestations">Voir les prestations</a>
+                    </div>
+                    <div class="seo-trust" aria-label="Engagements Wélé">
+                        <span><b>✓</b> Professionnels vérifiés</span>
+                        <span><b>⌂</b> Service à domicile</span>
+                        <span><b>◉</b> Suivi dans l’application</span>
+                    </div>
+                </section>
+            </div>
+
+            <section class="seo-section" id="prestations">
+                <div class="seo-shell">
+                    <div class="seo-section-head">
+                        <div><span>Ce que couvre le service</span><h2>@PrestationHeading</h2></div>
+                        <p>Cette page reprend toutes les prestations actives et affiche les options uniquement lorsqu’elles existent dans le catalogue Wélé.</p>
+                    </div>
+
+                    @if (ActivePrestations.Count == 0)
+                    {
+                        <div class="seo-empty-catalog"><strong>Le catalogue de ce service est en cours de préparation.</strong><p>Les prestations disponibles seront présentées dans l’application.</p></div>
+                    }
+                    else
+                    {
+                        <div class="seo-prestations">
+                            @foreach (var prestation in ActivePrestations)
+                            {
+                                var imageUrl = ResolveMediaUrl(prestation.IllustrationUrl ?? CurrentService.ImageUrl ?? CurrentService.IconUrl);
+                                var options = prestation.Options?.Where(option => option.IsActive).OrderBy(option => option.SortOrder).ToList() ?? [];
+                                <article class="seo-prestation-card">
+                                    @if (!string.IsNullOrWhiteSpace(imageUrl))
+                                    {
+                                        <img src="@imageUrl" alt="@($"{prestation.Name} — {CurrentService.Name} à Abidjan")" loading="lazy" decoding="async" />
+                                    }
+                                    else
+                                    {
+                                        <div class="seo-image-placeholder" aria-hidden="true">@GetInitials(prestation.Name)</div>
+                                    }
+                                    <div class="seo-prestation-body">
+                                        <h3>@prestation.Name</h3>
+                                        @if (!string.IsNullOrWhiteSpace(prestation.Description))
+                                        {
+                                            <p>@prestation.Description</p>
+                                        }
+                                        @if (options.Count > 0)
+                                        {
+                                            <span class="seo-options-label">Options disponibles</span>
+                                            <div class="seo-options">
+                                                @foreach (var option in options)
+                                                {
+                                                    <span title="@option.Description">@option.Name</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <section class="seo-section" id="conseils">
+                <div class="seo-shell seo-editorial">
+                    <div>
+                        <span class="seo-soft-label">Conseils utiles</span>
+                        <h2>@Seo.EditorialTitle</h2>
+                        <p>@Seo.EditorialText</p>
+                    </div>
+                    <div class="seo-tips">
+                        @for (var index = 0; index < Seo.Tips.Count; index++)
+                        {
+                            var tip = Seo.Tips[index];
+                            <article class="seo-tip"><span>@(index + 1)</span><div><h3>@tip.Title</h3><p>@tip.Text</p></div></article>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <section class="seo-section" id="zones">
+                <div class="seo-shell seo-local">
+                    <div>
+                        <span class="seo-local-label">Abidjan et alentours</span>
+                        <h2>@CurrentService.Name à Abidjan, selon votre commune.</h2>
+                        <p>La couverture dépend de votre adresse et de la disponibilité des professionnels. Ces informations sont vérifiées au moment de la demande dans l’application.</p>
+                        <div class="seo-local-tags"><span>Cocody</span><span>Marcory</span><span>Plateau</span><span>Yopougon</span><span>Abobo</span><span>Treichville</span><span>Bingerville</span></div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(ZoneImageUrl))
+                    {
+                        <div class="seo-zone-photo"><img src="@ZoneImageUrl" alt="@($"{CurrentService.Name} à Abidjan avec Wélé")" loading="lazy" decoding="async" /></div>
+                    }
+                </div>
+            </section>
+
+            <section class="seo-section">
+                <div class="seo-shell">
+                    <div class="seo-section-head">
+                        <div><span>Questions fréquentes</span><h2>Tout savoir sur @CurrentService.Name.ToLowerInvariant() avec Wélé.</h2></div>
+                        <p>Les réponses sont construites à partir des prestations et options actuellement actives dans le catalogue.</p>
+                    </div>
+                    <div class="seo-faq">
+                        @foreach (var faq in Faqs)
+                        {
+                            <details><summary>@faq.Question</summary><p>@faq.Answer</p></details>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            @if (OtherServices.Count > 0)
+            {
+                <section class="seo-section seo-other-services">
+                    <div class="seo-shell">
+                        <div class="seo-section-head compact">
+                            <div><span>Explorer Wélé</span><h2>D’autres services disponibles à Abidjan.</h2></div>
+                        </div>
+                        <div class="seo-service-links">
+                            @foreach (var otherService in OtherServices)
+                            {
+                                <a href="@($"/services/{ServiceSeoCatalog.ToSlug(otherService.Name)}")"><span>@GetInitials(otherService.Name)</span><strong>@otherService.Name</strong><b aria-hidden="true">→</b></a>
+                            }
+                        </div>
+                    </div>
+                </section>
+            }
+
+            <section class="seo-final">
+                <h2>Besoin de @CurrentService.Name.ToLowerInvariant() ? Retrouvez Wélé sur votre téléphone.</h2>
+                <p>Cette page présente les prestations couvertes. Pour sélectionner une option, envoyer votre demande et suivre l’intervention, utilisez l’application Wélé.</p>
+                <div><a class="seo-primary" href="/telecharger/android">Télécharger sur Google Play</a><a class="seo-secondary" href="/telecharger/ios">Version iPhone</a></div>
+            </section>
+        </main>
+    }
+
+    <footer class="seo-footer">
+        <a href="/" class="seo-footer-brand"><img src="/images/wele-logo-dark.png" alt="Wélé" width="710" height="288" /></a>
+        <span>© 2026 Wélé · Abidjan, Côte d’Ivoire</span>
+        <span><a href="/services">Tous les services</a> · Confiance et sécurité · Assistance · Conditions</span>
+    </footer>
+</div>
+
+@code {
+    [Parameter] public string Slug { get; set; } = string.Empty;
+
+    private ServiceSummaryResponse? CurrentService { get; set; }
+    private ServiceSeoProfile Seo { get; set; } = ServiceSeoCatalog.For(new ServiceSummaryResponse(Guid.Empty, "Service", null, "", "", true, 0, 0, "XOF", []));
+    private IReadOnlyList<ServiceSeoFaq> Faqs { get; set; } = [];
+    private IReadOnlyList<ServiceSummaryResponse> OtherServices { get; set; } = [];
+    private IReadOnlyList<ServiceSummaryResponse> NavigationServices { get; set; } = [];
+    private IReadOnlyList<ServicePrestationSummaryResponse> ActivePrestations { get; set; } = [];
+    private bool isLoading = true;
+    private bool mobileMenuOpen;
+
+    private string SiteBaseUrl => (Configuration["Site:BaseUrl"] ?? "https://wele.africa").TrimEnd('/');
+    private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"] ?? Configuration["Media:PublicBaseUrl"] ?? "https://media.wele.africa").TrimEnd('/');
+    private string CanonicalUrl => CurrentService is null ? $"{SiteBaseUrl}/services/{Slug}" : $"{SiteBaseUrl}/services/{ServiceSeoCatalog.ToSlug(CurrentService.Name)}";
+    private string PageTitleText => CurrentService is null ? "Service introuvable — Wélé" : Seo.Title;
+    private string MetaDescription => CurrentService is null ? "Découvrez les services à domicile disponibles à Abidjan avec Wélé." : Seo.MetaDescription;
+    private string SocialImageUrl => CurrentService is null ? $"{PublicMediaBaseUrl}/website/client/wele-client-hero.png" : ResolveMediaUrl(CurrentService.ImageUrl ?? ActivePrestations.FirstOrDefault()?.IllustrationUrl ?? CurrentService.IconUrl);
+    private string ZoneImageUrl => CurrentService is null ? string.Empty : ResolveMediaUrl(ActivePrestations.FirstOrDefault(prestation => !string.IsNullOrWhiteSpace(prestation.IllustrationUrl))?.IllustrationUrl ?? CurrentService.ImageUrl ?? CurrentService.IconUrl);
+    private string PrestationHeading => CurrentService is null ? "Les prestations disponibles." : $"Toutes les prestations de {CurrentService.Name.ToLowerInvariant()}.";
+    private string StructuredData => CurrentService is null ? string.Empty : BuildStructuredData();
+    private IReadOnlyList<ServiceSummaryResponse> PopularNavigationServices => ServiceSeoCatalog.PopularServices(NavigationServices);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        mobileMenuOpen = false;
+        var services = (await ApiClient.GetServicesAsync())
+            .Where(item => item.IsActive)
+            .OrderBy(item => item.Name)
+            .ToList();
+        NavigationServices = services;
+
+        CurrentService = services.FirstOrDefault(item => string.Equals(ServiceSeoCatalog.ToSlug(item.Name), Slug, StringComparison.OrdinalIgnoreCase));
+        if (CurrentService is not null)
+        {
+            Seo = ServiceSeoCatalog.For(CurrentService);
+            ActivePrestations = CurrentService.Prestations.Where(item => item.IsActive).OrderBy(item => item.SortOrder).ThenBy(item => item.Name).ToList();
+            Faqs = ServiceSeoCatalog.BuildFaqs(CurrentService, Seo);
+            OtherServices = services.Where(item => item.Id != CurrentService.Id).Take(8).ToList();
+        }
+        else
+        {
+            ActivePrestations = [];
+            Faqs = [];
+            OtherServices = services.Take(8).ToList();
+        }
+
+        isLoading = false;
+    }
+
+    private string ResolveMediaUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        if (value.StartsWith("/images/", StringComparison.OrdinalIgnoreCase) || value.StartsWith("images/", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.StartsWith('/') ? value : $"/{value}";
+        }
+
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute)
+            && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
+        {
+            return absolute.ToString();
+        }
+
+        return $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
+    }
+
+    private string BuildStructuredData()
+    {
+        var prestationItems = ActivePrestations.Select(prestation =>
+        {
+            var options = prestation.Options?.Where(option => option.IsActive).OrderBy(option => option.SortOrder).Select(option =>
+                new Dictionary<string, object?>
+                {
+                    ["@type"] = "Offer",
+                    ["name"] = option.Name,
+                    ["description"] = option.Description,
+                }).ToList() ?? [];
+
+            return new Dictionary<string, object?>
+            {
+                ["@type"] = "OfferCatalog",
+                ["name"] = prestation.Name,
+                ["description"] = prestation.Description,
+                ["itemListElement"] = options.Count > 0 ? options : null,
+            };
+        }).ToList();
+
+        var graph = new object[]
+        {
+            new Dictionary<string, object?>
+            {
+                ["@type"] = "Service",
+                ["@id"] = $"{CanonicalUrl}#service",
+                ["name"] = CurrentService!.Name,
+                ["description"] = Seo.MetaDescription,
+                ["url"] = CanonicalUrl,
+                ["image"] = SocialImageUrl,
+                ["areaServed"] = new Dictionary<string, object?> { ["@type"] = "City", ["name"] = "Abidjan" },
+                ["provider"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = "Wélé", ["url"] = SiteBaseUrl },
+                ["hasOfferCatalog"] = new Dictionary<string, object?> { ["@type"] = "OfferCatalog", ["name"] = $"Prestations de {CurrentService.Name}", ["itemListElement"] = prestationItems },
+            },
+            new Dictionary<string, object?>
+            {
+                ["@type"] = "BreadcrumbList",
+                ["itemListElement"] = new object[]
+                {
+                    new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 1, ["name"] = "Accueil", ["item"] = SiteBaseUrl },
+                    new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 2, ["name"] = "Services", ["item"] = $"{SiteBaseUrl}/#services" },
+                    new Dictionary<string, object?> { ["@type"] = "ListItem", ["position"] = 3, ["name"] = CurrentService.Name, ["item"] = CanonicalUrl },
+                },
+            },
+            new Dictionary<string, object?>
+            {
+                ["@type"] = "FAQPage",
+                ["mainEntity"] = Faqs.Select(faq => new Dictionary<string, object?>
+                {
+                    ["@type"] = "Question",
+                    ["name"] = faq.Question,
+                    ["acceptedAnswer"] = new Dictionary<string, object?> { ["@type"] = "Answer", ["text"] = faq.Answer },
+                }).ToList(),
+            },
+        };
+
+        return JsonSerializer.Serialize(new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@graph"] = graph,
+        }, new JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+    }
+
+    private static string GetInitials(string value) => string.Concat(value
+        .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Take(2)
+        .Select(part => char.ToUpperInvariant(part[0])));
+
+    private void ToggleMenu() => mobileMenuOpen = !mobileMenuOpen;
+    private void CloseMenu() => mobileMenuOpen = false;
+}

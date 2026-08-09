@@ -43,6 +43,7 @@ app.UseSiteAccessGate();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapPublicSeoEndpoints();
 app.MapGet("/telecharger/android", (IConfiguration configuration) =>
     Results.Redirect(configuration["ClientApp:AndroidUrl"]
         ?? "https://play.google.com/store/apps/details?id=ci.wele.client"));
