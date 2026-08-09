@@ -46,6 +46,8 @@ public static class DatabaseInitializer
         await SeedAdminAccessAsync(db, configuration, cancellationToken);
         await SeedTranslationsAsync(db, cancellationToken);
         await SeedCmsFoundationAsync(db, cancellationToken);
+        await EnsureClientCmsFoundationAsync(db, cancellationToken);
+        await SeedClientEditorialContentAsync(db, cancellationToken);
         await SeedCompanyEditorialContentAsync(db, cancellationToken);
         await SeedProviderEditorialContentAsync(db, cancellationToken);
         await ApplyVisibleRebrandAsync(db, cancellationToken);
@@ -1184,6 +1186,213 @@ public static class DatabaseInitializer
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    private static async Task EnsureClientCmsFoundationAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var french = await db.Languages.FirstAsync(language => language.Code == "fr", cancellationToken);
+        var coteDIvoire = await db.Countries.FirstAsync(country => country.IsoCode == "CI", cancellationToken);
+        var site = await db.CmsSites.FirstOrDefaultAsync(item => item.Code == "client-public", cancellationToken);
+
+        if (site is null)
+        {
+            site = new CmsSite("client-public", "Wélé clients", CmsSiteSurface.PublicClient, coteDIvoire.Id, french.Id);
+            site.Activate();
+            site.SetHomePage("home");
+            db.CmsSites.Add(site);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        var requiredDefinitions = new[]
+        {
+            new ComponentDefinitionSeed("HeroStandard", "Hero standard", "Section d'ouverture avec titre, texte et appels à l'action."),
+            new ComponentDefinitionSeed("ServicesList", "Liste de services", "Présentation éditoriale du catalogue de services."),
+            new ComponentDefinitionSeed("StepsTimeline", "Parcours en étapes", "Explication du parcours client."),
+            new ComponentDefinitionSeed("TrustedLogos", "Bloc confiance", "Arguments de confiance et média associé."),
+            new ComponentDefinitionSeed("FaqAccordion", "Bloc de recommandation", "Contenu de commande récurrente."),
+            new ComponentDefinitionSeed("DashboardPreview", "Aperçu application", "Présentation de l'application mobile."),
+            new ComponentDefinitionSeed("ContactForm", "Passerelles Wélé", "Liens vers les parcours prestataire et entreprise."),
+            new ComponentDefinitionSeed("FooterLinks", "Liens footer", "Colonnes de liens de bas de page.")
+        };
+        var existingDefinitions = await db.CmsComponentDefinitions
+            .Where(component => requiredDefinitions.Select(seed => seed.Key).Contains(component.Key))
+            .ToDictionaryAsync(component => component.Key, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        foreach (var definition in requiredDefinitions.Where(definition => !existingDefinitions.ContainsKey(definition.Key)))
+        {
+            var component = new CmsComponentDefinition(definition.Key, definition.Name, 1, definition.Description);
+            db.CmsComponentDefinitions.Add(component);
+            existingDefinitions[definition.Key] = component;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var pageExists = await db.CmsPages.AnyAsync(
+            page => page.SiteId == site.Id && page.Code == "home",
+            cancellationToken);
+        if (!pageExists)
+        {
+            AddSeedPage(
+                db,
+                site,
+                french.Id,
+                "home",
+                "Accueil clients",
+                "landing",
+                "accueil",
+                "Wélé",
+                requiredDefinitions.Select(definition => existingDefinitions[definition.Key].Id).ToArray());
+        }
+
+        var menuExists = await db.CmsMenus.AnyAsync(
+            menu => menu.SiteId == site.Id && menu.Code == "main",
+            cancellationToken);
+        if (!menuExists)
+        {
+            db.CmsMenus.Add(new CmsMenu(site.Id, "main", "Menu principal", "header"));
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task SeedClientEditorialContentAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        var french = await db.Languages.FirstAsync(language => language.Code == "fr", cancellationToken);
+        var homePage = await db.CmsPages
+            .Include(page => page.Site)
+            .Include(page => page.Versions)
+                .ThenInclude(version => version.Sections)
+                    .ThenInclude(section => section.ComponentDefinition)
+            .Include(page => page.Versions)
+                .ThenInclude(version => version.Sections)
+                    .ThenInclude(section => section.ContentValues)
+            .Where(page => page.Site!.Code == "client-public" && page.Code == "home")
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var version = homePage?.Versions.OrderByDescending(item => item.VersionNumber).FirstOrDefault();
+        if (version is null)
+        {
+            return;
+        }
+
+        await EnsureCmsSectionsAsync(
+            db,
+            version,
+            "Accueil clients",
+            cancellationToken,
+            "HeroStandard",
+            "ServicesList",
+            "StepsTimeline",
+            "TrustedLogos",
+            "FaqAccordion",
+            "DashboardPreview",
+            "ContactForm",
+            "FooterLinks");
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        await db.Entry(version)
+            .Collection(item => item.Sections)
+            .Query()
+            .Include(section => section.ComponentDefinition)
+            .Include(section => section.ContentValues)
+            .LoadAsync(cancellationToken);
+
+        foreach (var section in version.Sections)
+        {
+            switch (section.ComponentDefinition?.Key)
+            {
+                case "HeroStandard":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Abidjan, Côte d’Ivoire", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Le bon service, au bon moment.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Des professionnels vérifiés pour votre maison, votre bien-être et votre quotidien.", french.Id);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Commander un service", french.Id);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "#commander", french.Id);
+                    AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Découvrir Wélé", french.Id);
+                    AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#services", french.Id);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/client/wele-client-hero.png", french.Id);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Une cliente accueille une professionnelle Wélé à Abidjan", french.Id);
+                    AddCmsJson(db, section, "proofItems", "[\"Professionnels vérifiés et notés\",\"Paiement sécurisé\",\"Service suivi en direct\",\"Assistance réactive\"]", french.Id);
+                    break;
+
+                case "ServicesList":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Des services pour chaque besoin", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Tout ce que Wélé peut faire pour vous.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Choisissez un univers, puis retrouvez les prestations réellement disponibles dans votre zone.", french.Id);
+                    break;
+
+                case "StepsTimeline":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Simple, clair, suivi", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Commandez en toute confiance.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Une demande claire, un professionnel compatible et un suivi jusqu’à la fin.", french.Id);
+                    AddCmsJson(db, section, "steps", """
+                    [
+                      {"number":"01","label":"Service","title":"Choisissez votre service","text":"Décrivez votre besoin, ajoutez l’adresse et choisissez maintenant ou sur rendez-vous.","image":""},
+                      {"number":"02","label":"Professionnel","title":"Un professionnel vérifié accepte","text":"Nous cherchons l’entreprise et le professionnel compatibles avec votre demande.","image":""},
+                      {"number":"03","label":"Suivi","title":"Suivez, payez et évaluez","text":"Recevez les étapes importantes, payez au bon moment et partagez votre avis.","image":""}
+                    ]
+                    """, french.Id);
+                    break;
+
+                case "TrustedLogos":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Pensé pour la confiance", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Votre quotidien mérite des professionnels fiables.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Chaque mission est encadrée : identité et compétences vérifiées, paiement au bon moment, suivi des étapes et avis après intervention.", french.Id);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Découvrir l’application", french.Id);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "#telecharger", french.Id);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/client/wele-trust-team.png", french.Id);
+                    AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Équipe de professionnels Wélé", french.Id);
+                    AddCmsJson(db, section, "items", "[\"Identité contrôlée\",\"Compétences validées\",\"Avis authentiques\"]", french.Id);
+                    break;
+
+                case "FaqAccordion":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Votre historique devient utile", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Un service vous a plu ?", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Retrouvez votre entreprise favorite et relancez une demande en quelques secondes. Si elle est indisponible, Wélé continue la recherche pour vous.", french.Id);
+                    AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Commander à nouveau", french.Id);
+                    AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "#telecharger", french.Id);
+                    AddCmsText(db, section, "profile.name", CmsContentValueType.ShortText, "Awa Kouamé", french.Id);
+                    AddCmsText(db, section, "profile.service", CmsContentValueType.ShortText, "Ménage & repassage", french.Id);
+                    AddCmsText(db, section, "profile.rating", CmsContentValueType.ShortText, "4,9 ★", french.Id);
+                    AddCmsText(db, section, "profile.badge", CmsContentValueType.ShortText, "Vérifiée", french.Id);
+                    AddCmsText(db, section, "profile.image.url", CmsContentValueType.Media, "images/awa-kouame-profile.webp", french.Id);
+                    AddCmsText(db, section, "profile.image.alt", CmsContentValueType.ShortText, "Portrait d’Awa Kouamé", french.Id);
+                    break;
+
+                case "DashboardPreview":
+                    AddCmsText(db, section, "label", CmsContentValueType.ShortText, "Tout Wélé dans votre téléphone", french.Id);
+                    AddCmsText(db, section, "headline", CmsContentValueType.ShortText, "Wélé vous accompagne partout.", french.Id);
+                    AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Finalisez votre demande, recevez les notifications importantes, suivez l’arrivée du professionnel et retrouvez vos factures.", french.Id);
+                    AddCmsJson(db, section, "items", "[\"Suivi de mission\",\"Notifications utiles\",\"Paiement sécurisé\",\"Messagerie encadrée\"]", french.Id);
+                    break;
+
+                case "ContactForm":
+                    AddCmsText(db, section, "provider.headline", CmsContentValueType.ShortText, "Vous êtes professionnel ?", french.Id);
+                    AddCmsText(db, section, "provider.subtitle", CmsContentValueType.LongText, "Recevez des missions adaptées à vos compétences.", french.Id);
+                    AddCmsText(db, section, "providerCta.label", CmsContentValueType.ShortText, "Devenir prestataire", french.Id);
+                    AddCmsText(db, section, "providerCta.url", CmsContentValueType.ExternalLink, "https://pro.wele.africa", french.Id);
+                    AddCmsText(db, section, "company.headline", CmsContentValueType.ShortText, "Vous êtes une entreprise ?", french.Id);
+                    AddCmsText(db, section, "company.subtitle", CmsContentValueType.LongText, "Développez et pilotez votre activité avec Wélé.", french.Id);
+                    AddCmsText(db, section, "companyCta.label", CmsContentValueType.ShortText, "Devenir partenaire", french.Id);
+                    AddCmsText(db, section, "companyCta.url", CmsContentValueType.ExternalLink, "https://entreprise.wele.africa", french.Id);
+                    break;
+
+                case "FooterLinks":
+                    AddCmsText(db, section, "brandText", CmsContentValueType.LongText, "Le bon service, au bon moment.", french.Id);
+                    AddCmsText(db, section, "copyright", CmsContentValueType.ShortText, "© 2026 Wélé. Tous droits réservés.", french.Id);
+                    AddCmsText(db, section, "baseline", CmsContentValueType.ShortText, "Abidjan · Côte d’Ivoire", french.Id);
+                    AddCmsJson(db, section, "columns", """
+                    [
+                      {"title":"Services","links":["Maison","Bien-être","Dépannage"]},
+                      {"title":"Rejoindre Wélé","links":["Prestataires","Entreprises"]},
+                      {"title":"Assistance","links":["contact@wele.africa","Confiance et sécurité"]}
+                    ]
+                    """, french.Id);
+                    break;
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
     private static async Task SeedCompanyEditorialContentAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         var french = await db.Languages.FirstAsync(language => language.Code == "fr", cancellationToken);
@@ -1489,11 +1698,8 @@ public static class DatabaseInitializer
         var existing = section.ContentValues.FirstOrDefault(item => item.FieldKey == fieldKey && item.LanguageId == languageId);
         if (existing is not null)
         {
-            if (replaceExisting)
-            {
-                existing.SetText(value);
-            }
-
+            // Seed values are defaults only. Content edited from the CMS must survive
+            // application restarts and future deployments.
             return;
         }
 
@@ -1513,11 +1719,8 @@ public static class DatabaseInitializer
         var existing = section.ContentValues.FirstOrDefault(item => item.FieldKey == fieldKey && item.LanguageId == languageId);
         if (existing is not null)
         {
-            if (replaceExisting)
-            {
-                existing.SetJson(value);
-            }
-
+            // Seed values are defaults only. Content edited from the CMS must survive
+            // application restarts and future deployments.
             return;
         }
 
@@ -1526,5 +1729,6 @@ public static class DatabaseInitializer
         db.CmsContentValues.Add(contentValue);
     }
 
+    private sealed record ComponentDefinitionSeed(string Key, string Name, string Description);
     private sealed record TranslationSeed(string Key, string Scope, string Description, string Value);
 }

@@ -1,11 +1,45 @@
 using System.Net.Http.Json;
 using HomeService.Contracts.Clients;
+using HomeService.Contracts.Cms;
 using HomeService.Contracts.Services;
 
 namespace HomeService.Client.Services;
 
 public sealed class PublicWebsiteApiClient(HttpClient httpClient, ILogger<PublicWebsiteApiClient> logger)
 {
+    public string ToApiUrl(string? relativeUrl)
+    {
+        if (string.IsNullOrWhiteSpace(relativeUrl))
+        {
+            return string.Empty;
+        }
+
+        if (Uri.TryCreate(relativeUrl, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        return new Uri(httpClient.BaseAddress!, relativeUrl.TrimStart('/')).ToString();
+    }
+
+    public async Task<ClientHomeCmsResponse?> GetClientHomeContentAsync(
+        string language = "fr",
+        string country = "CI",
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await httpClient.GetFromJsonAsync<ClientHomeCmsResponse>(
+                $"api/cms/client/home?language={Uri.EscapeDataString(language)}&country={Uri.EscapeDataString(country)}",
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            logger.LogWarning(exception, "The public client CMS content is temporarily unavailable.");
+            return null;
+        }
+    }
+
     public async Task<IReadOnlyList<ServiceSummaryResponse>> GetServicesAsync(
         CancellationToken cancellationToken = default)
     {

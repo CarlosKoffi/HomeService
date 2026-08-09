@@ -75,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<ProviderMissionChatService>();
         services.AddScoped<ProviderMissionNotificationService>();
         services.AddScoped<ProviderDepartureAutomationService>();
+        services.AddScoped<ClientHomeCmsQueryService>();
         services.AddScoped<CompanyHomeCmsQueryService>();
         services.AddScoped<ProviderHomeCmsQueryService>();
         services.AddScoped<ContactRequestService>();

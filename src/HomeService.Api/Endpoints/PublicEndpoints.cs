@@ -245,6 +245,21 @@ public static class PublicEndpoints
         .Produces<CompanyHomeCmsResponse>()
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapGet("/api/cms/client/home", async (
+            string? language,
+            string? country,
+            ClientHomeCmsQueryService queryService,
+            CancellationToken cancellationToken) =>
+        {
+            var response = await queryService.GetAsync(language, country, cancellationToken);
+            return response is null
+                ? Results.NotFound(new { message = "Contenu CMS client introuvable." })
+                : Results.Ok(response);
+        })
+        .WithName("GetClientHomeCmsContent")
+        .Produces<ClientHomeCmsResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapGet("/api/client/missions/{missionId:guid}/invoice", async (
             Guid missionId,
             HttpRequest httpRequest,

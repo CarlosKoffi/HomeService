@@ -57,6 +57,7 @@ public sealed class ClientEndpointContractTests
 
     [Theory]
     [InlineData("GET", "/api/services")]
+    [InlineData("GET", "/api/cms/client/home")]
     [InlineData("GET", "/api/cms/company/home")]
     [InlineData("GET", "/api/cms/provider/home")]
     [InlineData("GET", "/api/cms/media/{id:guid}")]

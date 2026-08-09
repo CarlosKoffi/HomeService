@@ -2,6 +2,7 @@
 @implements IDisposable
 @using HomeService.Client.Services
 @using HomeService.Contracts.Clients
+@using HomeService.Contracts.Cms
 @using HomeService.Contracts.Services
 @inject PublicWebsiteApiClient ApiClient
 @inject IConfiguration Configuration
@@ -36,16 +37,16 @@
 
     <section class="client-hero" id="accueil">
         <div class="client-hero-copy">
-            <span class="client-location">● Abidjan, Côte d’Ivoire</span>
-            <h1>Le bon service,<br />au bon moment.</h1>
-            <p>Des professionnels vérifiés pour votre maison, votre bien-être et votre quotidien.</p>
+            <span class="client-location">● @ClientContent.Hero.Label</span>
+            <h1>@ClientContent.Hero.Headline</h1>
+            <p>@ClientContent.Hero.Subtitle</p>
             <div class="client-hero-actions">
-                <a class="client-button client-button-blue" href="#commander">Commander un service</a>
-                <a class="client-text-link" href="#services">Découvrir Wélé <span>→</span></a>
+                <a class="client-button client-button-blue" href="@ClientContent.Hero.PrimaryCta.Url">@ClientContent.Hero.PrimaryCta.Label</a>
+                <a class="client-text-link" href="@ClientContent.Hero.SecondaryCta.Url">@ClientContent.Hero.SecondaryCta.Label <span>→</span></a>
             </div>
         </div>
         <div class="client-hero-media">
-            <img src="@HeroImageUrl" alt="Une cliente accueille une professionnelle Wélé à Abidjan" width="1672" height="941" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='images/wele-client-hero.png'" />
+            <img src="@ResolveContentUrl(ClientContent.Hero.ImageUrl, HeroImageUrl)" alt="@ClientContent.Hero.ImageAlt" width="1672" height="941" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='images/wele-client-hero.png'" />
         </div>
     </section>
 
@@ -147,28 +148,28 @@
         <div class="client-trust-strip" aria-label="Engagements Wélé">
             <span>
                 <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5.1-3.4 8.5-8 10-4.6-1.5-8-4.9-8-10V6l8-3Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></i>
-                <strong>Professionnels vérifiés et notés</strong>
+                <strong>@GetListItem(ClientContent.Hero.ProofItems, 0, "Professionnels vérifiés et notés")</strong>
             </span>
             <span>
                 <i aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="3"/><path d="M8 10V8a4 4 0 0 1 8 0v2"/><path d="M12 14v2"/></svg></i>
-                <strong>Paiement sécurisé</strong>
+                <strong>@GetListItem(ClientContent.Hero.ProofItems, 1, "Paiement sécurisé")</strong>
             </span>
             <span>
                 <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/><path d="M3 12H1m22 0h-2"/></svg></i>
-                <strong>Service suivi en direct</strong>
+                <strong>@GetListItem(ClientContent.Hero.ProofItems, 2, "Service suivi en direct")</strong>
             </span>
             <span>
                 <i aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14h3v5H5a2 2 0 0 1-2-2v-1a2 2 0 0 1 1-2Zm16 0h-3v5h2a2 2 0 0 0 2-2v-1a2 2 0 0 0-1-2Z"/><path d="M17 19c-.8 1.3-2.5 2-5 2"/></svg></i>
-                <strong>Assistance réactive</strong>
+                <strong>@GetListItem(ClientContent.Hero.ProofItems, 3, "Assistance réactive")</strong>
             </span>
         </div>
     </section>
 
     <section class="client-section client-services-section" id="services">
         <div class="client-section-heading">
-            <span>Les essentiels Wélé</span>
-            <h2>Tout ce que Wélé peut faire pour vous.</h2>
-            <p>Choisissez un univers, puis retrouvez les prestations réellement disponibles dans votre zone.</p>
+            <span>@ClientContent.Services.Label</span>
+            <h2>@ClientContent.Services.Headline</h2>
+            <p>@ClientContent.Services.Subtitle</p>
         </div>
 
         <div class="client-service-grid">
@@ -195,45 +196,47 @@
 
     <section class="client-section client-steps-section" id="fonctionnement">
         <div class="client-section-heading compact">
-            <span>Simple du début à la fin</span>
-            <h2>Commandez en toute confiance.</h2>
+            <span>@ClientContent.Steps.Label</span>
+            <h2>@ClientContent.Steps.Headline</h2>
+            <p>@ClientContent.Steps.Subtitle</p>
         </div>
         <div class="client-steps-grid">
-            <article><span>01</span><h3>Choisissez votre service</h3><p>Décrivez votre besoin, ajoutez l’adresse et choisissez maintenant ou sur rendez-vous.</p></article>
-            <article><span>02</span><h3>Un professionnel vérifié accepte</h3><p>Nous cherchons l’entreprise et le professionnel compatibles avec votre demande.</p></article>
-            <article><span>03</span><h3>Suivez, payez et évaluez</h3><p>Recevez les étapes importantes, payez au bon moment et partagez votre avis.</p></article>
+            @foreach (var step in ClientContent.Steps.Items)
+            {
+                <article><span>@step.Number</span><h3>@step.Title</h3><p>@step.Text</p></article>
+            }
         </div>
     </section>
 
     <section class="client-section client-confidence-section" id="a-propos">
         <div class="client-confidence-copy">
-            <span>La confiance n’est pas une option</span>
-            <h2>Votre quotidien mérite des professionnels fiables.</h2>
-            <p>Identités vérifiées, compétences validées, avis clients, paiement sécurisé et assistance réactive : Wélé encadre chaque étape utile.</p>
+            <span>@ClientContent.Confidence.Label</span>
+            <h2>@ClientContent.Confidence.Headline</h2>
+            <p>@ClientContent.Confidence.Subtitle</p>
             <ul>
                 <li><b>Professionnels contrôlés</b><small>Les profils et pièces nécessaires sont vérifiés.</small></li>
                 <li><b>Vos informations protégées</b><small>Les coordonnées utiles sont masquées après la mission.</small></li>
                 <li><b>Une équipe à vos côtés</b><small>Un litige ou un imprévu peut être analysé par Wélé.</small></li>
             </ul>
-            <a class="client-button client-button-blue" href="#telecharger">Découvrir l’application</a>
+            <a class="client-button client-button-blue" href="@ClientContent.Confidence.PrimaryCta.Url">@ClientContent.Confidence.PrimaryCta.Label</a>
         </div>
         <div class="client-confidence-media">
-            <img src="@TrustTeamImageUrl" alt="Une professionnelle et un professionnel Wélé" width="972" height="1619" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='images/wele-trust-team.png'" />
+            <img src="@ResolveContentUrl(ClientContent.Confidence.ImageUrl, TrustTeamImageUrl)" alt="@ClientContent.Confidence.ImageAlt" width="972" height="1619" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='images/wele-trust-team.png'" />
             <div class="client-rating-card"><strong>4,8/5</strong><span>★★★★★</span><small>Avis après intervention</small></div>
         </div>
     </section>
 
     <section class="client-section client-repeat-section">
         <div>
-            <span>Votre historique devient utile</span>
-            <h2>Un service vous a plu ?</h2>
-            <p>Retrouvez votre entreprise favorite et relancez une demande en quelques secondes. Si elle est indisponible, Wélé continue la recherche pour vous.</p>
-            <a class="client-button client-button-black" href="#telecharger">Commander à nouveau</a>
+            <span>@ClientContent.Repeat.Label</span>
+            <h2>@ClientContent.Repeat.Headline</h2>
+            <p>@ClientContent.Repeat.Subtitle</p>
+            <a class="client-button client-button-black" href="@ClientContent.Repeat.PrimaryCta.Url">@ClientContent.Repeat.PrimaryCta.Label</a>
         </div>
         <div class="client-repeat-card">
-            <img class="client-repeat-avatar" src="images/awa-kouame-profile.webp" alt="Portrait d’Awa Kouamé" width="384" height="384" loading="lazy" decoding="async" />
-            <div><strong>Awa Kouamé</strong><small>Ménage & repassage · 4,9 ★</small></div>
-            <span class="client-repeat-verified">Vérifiée</span>
+            <img class="client-repeat-avatar" src="@ResolveContentUrl(ClientContent.Repeat.ProfileImageUrl, "images/awa-kouame-profile.webp")" alt="@ClientContent.Repeat.ProfileImageAlt" width="384" height="384" loading="lazy" decoding="async" />
+            <div><strong>@ClientContent.Repeat.ProfileName</strong><small>@ClientContent.Repeat.ProfileService · @ClientContent.Repeat.ProfileRating</small></div>
+            <span class="client-repeat-verified">@ClientContent.Repeat.ProfileBadge</span>
         </div>
     </section>
 
@@ -286,11 +289,14 @@
             </div>
         </div>
         <div class="client-app-copy">
-            <span>Tout Wélé dans votre téléphone</span>
-            <h2>Wélé vous accompagne partout.</h2>
-            <p>Finalisez votre demande, recevez les notifications importantes, suivez l’arrivée du professionnel et retrouvez vos factures.</p>
+            <span>@ClientContent.App.Label</span>
+            <h2>@ClientContent.App.Headline</h2>
+            <p>@ClientContent.App.Subtitle</p>
             <div class="client-app-benefits">
-                <span>Suivi de mission</span><span>Notifications utiles</span><span>Paiement sécurisé</span><span>Messagerie encadrée</span>
+                @foreach (var benefit in ClientContent.App.Benefits)
+                {
+                    <span>@benefit</span>
+                }
             </div>
             <div class="client-store-actions">
                 <a class="client-store-button" href="/telecharger/android" aria-label="Télécharger Wélé sur Google Play">
@@ -325,23 +331,30 @@
 
     <section class="client-section client-pathways">
         <article>
-            <span>Vous êtes professionnel ?</span>
-            <h2>Recevez des missions adaptées à vos compétences.</h2>
-            <a href="https://pro.wele.africa">Rejoindre Wélé Pro <span>→</span></a>
+            <span>@ClientContent.Pathways.ProviderHeadline</span>
+            <h2>@ClientContent.Pathways.ProviderSubtitle</h2>
+            <a href="@ClientContent.Pathways.ProviderCta.Url">@ClientContent.Pathways.ProviderCta.Label <span>→</span></a>
         </article>
         <article>
-            <span>Vous représentez une entreprise ?</span>
-            <h2>Développez et pilotez votre activité avec Wélé.</h2>
-            <a href="https://entreprise.wele.africa">Découvrir Wélé Entreprise <span>→</span></a>
+            <span>@ClientContent.Pathways.CompanyHeadline</span>
+            <h2>@ClientContent.Pathways.CompanySubtitle</h2>
+            <a href="@ClientContent.Pathways.CompanyCta.Url">@ClientContent.Pathways.CompanyCta.Label <span>→</span></a>
         </article>
     </section>
 
     <footer class="client-footer" id="aide">
-        <div class="client-footer-brand"><img src="images/wele-logo-dark.png" alt="Wélé" width="710" height="288" /><p>Le bon service, au bon moment.</p></div>
-        <div><strong>Services</strong><a href="#services">Maison</a><a href="#services">Bien-être</a><a href="#services">Dépannage</a></div>
-        <div><strong>Rejoindre Wélé</strong><a href="https://pro.wele.africa">Prestataires</a><a href="https://entreprise.wele.africa">Entreprises</a></div>
-        <div><strong>Assistance</strong><a href="mailto:contact@wele.africa">contact@wele.africa</a><a href="#a-propos">Confiance et sécurité</a></div>
-        <div class="client-footer-bottom"><span>© @DateTime.UtcNow.Year Wélé. Tous droits réservés.</span><span>Abidjan · Côte d’Ivoire</span></div>
+        <div class="client-footer-brand"><img src="images/wele-logo-dark.png" alt="Wélé" width="710" height="288" /><p>@ClientContent.Footer.BrandText</p></div>
+        @foreach (var column in ClientContent.Footer.Columns)
+        {
+            <div>
+                <strong>@column.Title</strong>
+                @foreach (var link in column.Links)
+                {
+                    <a href="@GetFooterLinkUrl(column.Title, link)">@link</a>
+                }
+            </div>
+        }
+        <div class="client-footer-bottom"><span>@ClientContent.Footer.Copyright</span><span>@ClientContent.Footer.Baseline</span></div>
     </footer>
 </div>
 
@@ -358,6 +371,7 @@
     private IReadOnlyList<ServiceSummaryResponse> filteredServices = [];
     private IReadOnlyList<ClientAddressSuggestionResponse> addressSuggestions = [];
     private IReadOnlyList<LandingServiceCard> landingServiceCards = BuildFallbackCards();
+    private ClientHomeCmsResponse ClientContent { get; set; } = ClientHomeCmsDefaults.Create();
     private string selectedMode = "Instant";
     private string serviceQuery = string.Empty;
     private Guid? selectedServiceId;
@@ -379,6 +393,23 @@
         ?? "https://media.wele.africa").TrimEnd('/');
     private string HeroImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-client-hero.png";
     private string TrustTeamImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-trust-team.png";
+
+    private string ResolveContentUrl(string? value, string fallbackUrl)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return fallbackUrl;
+        }
+
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absoluteUri))
+        {
+            return absoluteUri.ToString();
+        }
+
+        return value.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
+            ? ApiClient.ToApiUrl(value)
+            : ResolvePublicMediaUrl(value);
+    }
 
     private string ResolvePublicMediaUrl(string? value)
     {
@@ -408,12 +439,37 @@
 
     protected override async Task OnInitializedAsync()
     {
-        services = (await ApiClient.GetServicesAsync())
+        var contentTask = ApiClient.GetClientHomeContentAsync();
+        var servicesTask = ApiClient.GetServicesAsync();
+        await Task.WhenAll(contentTask, servicesTask);
+
+        ClientContent = await contentTask ?? ClientHomeCmsDefaults.Create();
+        services = (await servicesTask)
             .Where(service => service.IsActive)
             .OrderBy(service => service.Name)
             .ToList();
         filteredServices = services.Take(8).ToList();
         landingServiceCards = BuildLandingCards(services);
+    }
+
+    private static string GetListItem(IReadOnlyList<string> items, int index, string fallback)
+        => index >= 0 && index < items.Count && !string.IsNullOrWhiteSpace(items[index]) ? items[index] : fallback;
+
+    private static string GetFooterLinkUrl(string columnTitle, string link)
+    {
+        if (link.Contains('@', StringComparison.Ordinal))
+        {
+            return $"mailto:{link}";
+        }
+
+        if (columnTitle.Contains("Rejoindre", StringComparison.OrdinalIgnoreCase))
+        {
+            return link.Contains("entreprise", StringComparison.OrdinalIgnoreCase)
+                ? "https://entreprise.wele.africa"
+                : "https://pro.wele.africa";
+        }
+
+        return columnTitle.Contains("Service", StringComparison.OrdinalIgnoreCase) ? "#services" : "#a-propos";
     }
 
     private void ToggleMenu() => mobileMenuOpen = !mobileMenuOpen;
