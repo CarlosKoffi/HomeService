@@ -345,9 +345,13 @@
             return string.Empty;
         }
 
-        return Uri.TryCreate(value, UriKind.Absolute, out var absolute)
-            ? absolute.ToString()
-            : $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absolute)
+            && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
+        {
+            return absolute.ToString();
+        }
+
+        return $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
     }
 
     protected override async Task OnInitializedAsync()
