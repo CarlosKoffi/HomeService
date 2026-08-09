@@ -1117,6 +1117,10 @@ img {
     margin-top: 19px;
 }
 
+.client-phone-wellbeing-heading {
+    margin-top: 17px;
+}
+
 .client-phone-missions {
     display: grid;
     gap: 8px;
@@ -1892,12 +1896,12 @@ img {
     }
 
     .client-phone-stage {
-        min-height: 690px;
+        min-height: 790px;
         border-radius: 25px;
     }
 
     .client-phone-shell {
-        min-height: 655px;
+        min-height: 750px;
     }
 
     .client-store-actions {
