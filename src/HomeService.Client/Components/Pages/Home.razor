@@ -247,9 +247,9 @@
                 <div class="client-phone-search">⌕ Rechercher un service</div>
                 <small>Pour ma maison</small>
                 <div class="client-phone-services">
-                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/menage.png")" alt="" /></b>Ménage</span>
-                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/climatisation.png")" alt="" /></b>Climatisation</span>
-                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/plomberie.png")" alt="" /></b>Plomberie</span>
+                    <span><b><img src="images/services/menage-balai.webp" alt="" /></b>Ménage</span>
+                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/blanchisserie.png")" alt="" /></b>Blanchisserie</span>
+                    <span><b><img src="images/services/climatisation-premium.webp" alt="" /></b>Climatisation</span>
                 </div>
                 <small>Prochaine intervention</small>
                 <div class="client-phone-mission"><b>Ménage de bureaux</b><span>Demain · 09:30</span><em>Confirmée</em></div>
@@ -343,6 +343,16 @@
         if (string.IsNullOrWhiteSpace(value))
         {
             return string.Empty;
+        }
+
+        if (value.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
+        {
+            return value;
+        }
+
+        if (value.StartsWith("images/", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"/{value}";
         }
 
         if (Uri.TryCreate(value, UriKind.Absolute, out var absolute)
@@ -525,10 +535,10 @@
         var used = new HashSet<Guid>();
         return new[]
         {
-            FindCard(catalog, used, "Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", "/assets/services/blanchisserie.png", "menage", "blanch", "repass"),
-            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/assets/services/climatisation.png", "clim"),
-            FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "/assets/services/coiffure.png", "coiff", "esthet", "beaute"),
-            FindCard(catalog, used, "Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", "/assets/services/depannage-auto.png", "depannage auto", "auto")
+            FindCard(catalog, used, "Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", "/images/services/menage-balai.webp", "menage"),
+            FindCard(catalog, used, "Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", "/assets/services/blanchisserie.png", "blanch", "repass", "linge"),
+            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/images/services/climatisation-premium.webp", "clim"),
+            FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "/assets/services/coiffure.png", "coiff", "esthet", "beaute")
         };
     }
 
@@ -556,15 +566,15 @@
             shortLabel,
             tone,
             match?.Id,
-            match?.ImageUrl ?? match?.IconUrl ?? fallbackImageUrl);
+            fallbackImageUrl);
     }
 
     private static IReadOnlyList<LandingServiceCard> BuildFallbackCards() =>
     [
-        new("Ménage & repassage", "Un intérieur impeccable, ponctuellement ou régulièrement.", "MR", "tone-home", null, "/assets/services/blanchisserie.png"),
-        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/assets/services/climatisation.png"),
-        new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png"),
-        new("Dépannage auto", "Une aide professionnelle quand votre véhicule vous immobilise.", "DA", "tone-auto", null, "/assets/services/depannage-auto.png")
+        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai.webp"),
+        new("Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", null, "/assets/services/blanchisserie.png"),
+        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/images/services/climatisation-premium.webp"),
+        new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png")
     ];
 
     private static string Normalize(string value) => string.Concat(value

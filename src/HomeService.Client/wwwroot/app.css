@@ -160,6 +160,16 @@ img {
     transition: transform .2s ease, opacity .2s ease;
 }
 
+.client-menu-button:focus {
+    outline: 0;
+}
+
+.client-menu-button:focus-visible {
+    outline: 2px solid var(--wele-blue);
+    outline-offset: 2px;
+    background: var(--wele-blue-soft);
+}
+
 .menu-is-open .client-menu-button span:nth-child(1) {
     transform: translateY(7px) rotate(45deg);
 }
@@ -688,7 +698,8 @@ img {
 .client-service-placeholder {
     width: 100%;
     aspect-ratio: 1.25;
-    object-fit: cover;
+    object-fit: contain;
+    background: #fbfaf7;
 }
 
 .client-service-placeholder {
@@ -1384,6 +1395,9 @@ img {
 
     .client-navigation.is-open {
         display: block;
+        height: calc(100dvh - 68px);
+        max-height: none;
+        box-shadow: none;
     }
 
     .client-nav-main,
@@ -1524,34 +1538,53 @@ img {
     }
 
     .client-hero-copy {
-        padding-top: 42px;
+        order: 2;
+        padding: 28px 20px 30px;
     }
 
     .client-hero h1 {
-        font-size: clamp(2.72rem, 14.5vw, 4.1rem);
-        line-height: .98;
-        letter-spacing: -.065em;
+        font-size: clamp(2.25rem, 10.8vw, 2.9rem);
+        line-height: 1;
+        letter-spacing: -.058em;
     }
 
     .client-hero-copy > p {
-        margin-top: 21px;
-        font-size: 1rem;
-        line-height: 1.58;
+        margin-top: 16px;
+        font-size: .92rem;
+        line-height: 1.52;
     }
 
     .client-hero-actions {
-        align-items: stretch;
-        flex-direction: column;
-        gap: 18px;
-        margin-top: 28px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, .9fr);
+        gap: 10px;
+        margin-top: 22px;
+    }
+
+    .client-hero-actions .client-button,
+    .client-hero-actions .client-text-link {
+        min-height: 48px;
+        padding: 0 12px;
+        border-radius: 14px;
+        font-size: .79rem;
     }
 
     .client-text-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--wele-line);
+        background: #fff;
         text-align: center;
     }
 
     .client-hero-media {
-        min-height: 390px;
+        order: 1;
+        min-height: clamp(250px, 72vw, 320px);
+    }
+
+    .client-hero-media > img {
+        object-position: 60% center;
     }
 
     .client-verified-chip {
@@ -1563,7 +1596,7 @@ img {
 
     .client-booking-wrap {
         width: calc(100% - 24px);
-        margin-top: -18px;
+        margin-top: 0;
     }
 
     .client-booking-card {
@@ -1635,7 +1668,7 @@ img {
     .client-repeat-section h2,
     .client-app-copy h2,
     .client-pathways h2 {
-        font-size: clamp(2rem, 10.5vw, 3rem);
+        font-size: clamp(1.9rem, 9vw, 2.4rem);
         line-height: 1.04;
         letter-spacing: -.052em;
         text-wrap: pretty;
