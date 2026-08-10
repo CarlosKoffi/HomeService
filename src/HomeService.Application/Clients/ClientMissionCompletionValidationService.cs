@@ -12,7 +12,8 @@ namespace HomeService.Application.Clients;
 public sealed class ClientMissionCompletionValidationService(
     IAppDbContext db,
     CompanyPortalNotificationWriter companyNotifications,
-    MobilePushNotificationQueueService mobilePushNotifications)
+    MobilePushNotificationQueueService mobilePushNotifications,
+    CompanyWalletService? companyWalletService = null)
 {
     public async Task<ClientMissionCompletionValidationResult> ValidateAsync(
         Guid missionId,
@@ -77,6 +78,10 @@ public sealed class ClientMissionCompletionValidationService(
         AddCustomerCompletionPhotos(mission, request);
 
         mission.ValidateCompletionByCustomer();
+        if (companyWalletService is not null)
+        {
+            await companyWalletService.CreditMissionAsync(mission, cancellationToken);
+        }
 
         var completionMilestone = await db.MissionPaymentMilestones
             .FirstOrDefaultAsync(item =>
@@ -148,6 +153,10 @@ public sealed class ClientMissionCompletionValidationService(
         foreach (var mission in dueMissions)
         {
             mission.ValidateCompletionByCustomer(now);
+            if (companyWalletService is not null)
+            {
+                await companyWalletService.CreditMissionAsync(mission, cancellationToken);
+            }
 
             var completionMilestone = await db.MissionPaymentMilestones
                 .FirstOrDefaultAsync(item =>

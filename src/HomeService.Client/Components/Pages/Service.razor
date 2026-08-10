@@ -202,7 +202,29 @@
                         <div class="seo-service-links">
                             @foreach (var otherService in OtherServices)
                             {
-                                <a href="@($"/services/{ServiceSeoCatalog.ToSlug(otherService.Name)}")"><span>@GetInitials(otherService.Name)</span><strong>@otherService.Name</strong><b aria-hidden="true">→</b></a>
+                                var otherServiceImageUrl = ResolveMediaUrl(
+                                    otherService.ImageUrl
+                                    ?? otherService.Prestations.FirstOrDefault(prestation => prestation.IsActive && !string.IsNullOrWhiteSpace(prestation.IllustrationUrl))?.IllustrationUrl
+                                    ?? otherService.IconUrl);
+
+                                <a href="@($"/services/{ServiceSeoCatalog.ToSlug(otherService.Name)}")" aria-label="Découvrir le service @otherService.Name">
+                                    <span class="seo-service-link-visual">
+                                        @if (!string.IsNullOrWhiteSpace(otherServiceImageUrl))
+                                        {
+                                            <img src="@otherServiceImageUrl" alt="" loading="lazy" decoding="async" />
+                                        }
+                                        else
+                                        {
+                                            <span class="seo-service-link-fallback" aria-hidden="true">@GetInitials(otherService.Name)</span>
+                                        }
+                                    </span>
+                                    <strong>@otherService.Name</strong>
+                                    <span class="seo-service-link-chevron" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" focusable="false">
+                                            <path d="m9 18 6-6-6-6" />
+                                        </svg>
+                                    </span>
+                                </a>
                             }
                         </div>
                     </div>

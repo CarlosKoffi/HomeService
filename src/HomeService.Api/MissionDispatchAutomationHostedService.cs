@@ -1,6 +1,7 @@
 using HomeService.Application.Missions;
 using HomeService.Application.Clients;
 using HomeService.Application.ProviderPortal;
+using HomeService.Application.CompanyPortal;
 
 namespace HomeService.Api;
 
@@ -41,6 +42,7 @@ public sealed class MissionDispatchAutomationHostedService(
             var clientConfirmationService = scope.ServiceProvider.GetRequiredService<ClientMissionConfirmationService>();
             var clientCompletionService = scope.ServiceProvider.GetRequiredService<ClientMissionCompletionValidationService>();
             var providerDepartureService = scope.ServiceProvider.GetRequiredService<ProviderDepartureAutomationService>();
+            var companyWalletService = scope.ServiceProvider.GetRequiredService<CompanyWalletService>();
             var now = DateTimeOffset.UtcNow;
             var recoveredRecentCount = 0;
             if (startupRecoveryPending)
@@ -77,6 +79,12 @@ public sealed class MissionDispatchAutomationHostedService(
                 now,
                 GetBatchSize(),
                 stoppingToken);
+            var releasedCompanyFundsCount = await companyWalletService.PromoteDueFundsAsync(
+                now,
+                GetBatchSize(),
+                stoppingToken);
+            var processedPayoutCount = await companyWalletService.ProcessApprovedPayoutsAsync(GetBatchSize(), stoppingToken);
+            var reconciledPayoutCount = await companyWalletService.ReconcileProcessingPayoutsAsync(GetBatchSize(), stoppingToken);
 
             if (recoveredRecentCount > 0
                 || recoveredMissionCount > 0
@@ -84,10 +92,13 @@ public sealed class MissionDispatchAutomationHostedService(
                 || assignmentResult.ExpiredAssignmentCount > 0
                 || autoConfirmedCount > 0
                 || autoValidatedCount > 0
-                || autoDepartedCount > 0)
+                || autoDepartedCount > 0
+                || releasedCompanyFundsCount > 0
+                || processedPayoutCount > 0
+                || reconciledPayoutCount > 0)
             {
                 logger.LogInformation(
-                    "Mission dispatch automation repaired {RecoveredRecentCount} recent stalled missions, recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers, expired {AssignmentCount} provider assignments, auto-confirmed {AutoConfirmedCount} client payments, auto-departed {AutoDepartedCount} providers and auto-validated {AutoValidatedCount} completed missions.",
+                    "Mission dispatch automation repaired {RecoveredRecentCount} recent stalled missions, recovered {RecoveredMissionCount} unrouted missions, processed {MissionCount} missions, expired {ExpiredCount} offers, created {CreatedCount} offers, expired {AssignmentCount} provider assignments, auto-confirmed {AutoConfirmedCount} client payments, auto-departed {AutoDepartedCount} providers, auto-validated {AutoValidatedCount} completed missions, released {ReleasedCompanyFundsCount} company wallet entries, submitted {ProcessedPayoutCount} payouts and reconciled {ReconciledPayoutCount} payouts.",
                     recoveredRecentCount,
                     recoveredMissionCount,
                     result.MissionCount,
@@ -96,7 +107,10 @@ public sealed class MissionDispatchAutomationHostedService(
                     assignmentResult.ExpiredAssignmentCount,
                     autoConfirmedCount,
                     autoDepartedCount,
-                    autoValidatedCount);
+                    autoValidatedCount,
+                    releasedCompanyFundsCount,
+                    processedPayoutCount,
+                    reconciledPayoutCount);
             }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

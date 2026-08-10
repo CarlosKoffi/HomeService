@@ -14,6 +14,10 @@ public interface IAppDbContext
     DbSet<CompanyApplicationDocument> CompanyApplicationDocuments { get; }
     DbSet<CompanyApplicationService> CompanyApplicationServices { get; }
     DbSet<CompanyApplicationStatusHistory> CompanyApplicationStatusHistories { get; }
+    DbSet<CompanyWallet> CompanyWallets { get; }
+    DbSet<CompanyWalletEntry> CompanyWalletEntries { get; }
+    DbSet<CompanyPayoutDestination> CompanyPayoutDestinations { get; }
+    DbSet<CompanyPayoutRequest> CompanyPayoutRequests { get; }
     DbSet<CompanyActivationToken> CompanyActivationTokens { get; }
     DbSet<Service> Services { get; }
     DbSet<ServicePrestation> ServicePrestations { get; }

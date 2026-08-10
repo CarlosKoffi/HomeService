@@ -569,28 +569,47 @@
 .seo-service-links a {
     display: grid;
     grid-template-columns: auto 1fr auto;
-    gap: 12px;
+    gap: 14px;
     align-items: center;
     min-width: 0;
-    padding: 16px;
+    min-height: 76px;
+    padding: 10px 12px 10px 10px;
     border: 1px solid #e1e7f0;
-    border-radius: 18px;
+    border-radius: 20px;
     background: #fff;
-    transition: transform .2s ease, border-color .2s ease;
+    box-shadow: 0 8px 24px rgb(15 23 42 / 4%);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 
 .seo-service-links a:hover {
     transform: translateY(-2px);
     border-color: #afc8f8;
+    box-shadow: 0 14px 32px rgb(32 107 255 / 10%);
 }
 
-.seo-service-links a > span {
-    display: inline-flex;
+.seo-service-link-visual {
+    display: block;
+    width: 54px;
+    height: 54px;
+    overflow: hidden;
+    border: 1px solid #e8edf5;
+    border-radius: 15px;
+    background: #fff;
+}
+
+.seo-service-link-visual img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.seo-service-link-fallback {
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    width: 100%;
+    height: 100%;
     color: var(--wele-blue);
     background: var(--wele-blue-soft);
     font-size: .72rem;
@@ -599,13 +618,37 @@
 
 .seo-service-links strong {
     overflow: hidden;
-    font-size: .82rem;
+    font-size: .88rem;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.seo-service-links b {
+.seo-service-link-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     color: var(--wele-blue);
+    background: #edf4ff;
+    transition: color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.seo-service-link-chevron svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.seo-service-links a:hover .seo-service-link-chevron {
+    color: #fff;
+    background: var(--wele-blue);
+    transform: translateX(2px);
 }
 
 .seo-final {

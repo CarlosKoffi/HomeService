@@ -60,6 +60,7 @@ public static class DependencyInjection
         services.AddScoped<NotificationTemplateService>();
         services.AddScoped<CompanyPortalProfileManagementService>();
         services.AddScoped<CompanyPortalQueryService>();
+        services.AddScoped<CompanyWalletService>();
         services.AddScoped<MissionDispatchScoringService>();
         services.AddScoped<MissionDispatchService>();
         services.AddScoped<MissionCancellationWorkflowService>();

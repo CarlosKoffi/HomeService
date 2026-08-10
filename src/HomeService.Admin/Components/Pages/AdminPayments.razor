@@ -92,6 +92,67 @@
     </section>
 }
 
+<section class="operator-list payout-operations">
+    <header>
+        <div>
+            <h2>Reversements entreprises</h2>
+            <p>Contrôle des bénéficiaires, validation et preuve de remise.</p>
+        </div>
+    </header>
+
+    @if (PayoutDestinations.Any(item => item.IsActive && !item.IsVerified))
+    {
+        <div class="payout-review-grid">
+            @foreach (var destination in PayoutDestinations.Where(item => item.IsActive && !item.IsVerified))
+            {
+                <article class="payout-review-card">
+                    <div>
+                        <strong>@destination.CompanyName</strong>
+                        <p>@destination.BeneficiaryName · @destination.ProviderCode · @destination.MaskedIdentifier</p>
+                        <small>@destination.Method · ajouté le @FormatDate(destination.CreatedAt)</small>
+                    </div>
+                    <button type="button" class="secondary-action" @onclick="() => VerifyDestinationAsync(destination.Id)">Vérifier</button>
+                </article>
+            }
+        </div>
+    }
+
+    @if (CompanyPayouts.Count == 0)
+    {
+        <article class="admin-empty-row"><strong>Aucun reversement</strong><p>Les demandes entreprises apparaîtront ici à leur échéance.</p></article>
+    }
+    else
+    {
+        @foreach (var payout in CompanyPayouts)
+        {
+            <article class="operator-row payout-admin-row">
+                <div>
+                    <strong>@payout.CompanyName</strong>
+                    <p>@payout.Reference · @TranslatePayoutMethod(payout.Method) · @payout.Destination</p>
+                    <small>Brut @Money(payout.GrossAmount) · frais @Money(payout.FeeAmount)</small>
+                </div>
+                <div class="operator-kpis">
+                    <span>Net entreprise</span>
+                    <strong>@Money(payout.NetAmount)</strong>
+                    <span class="@GetPayoutStatusClass(payout.Status)">@TranslatePayoutStatus(payout.Status)</span>
+                </div>
+                <div class="payment-admin-actions payout-actions">
+                    @if (payout.Status == "Submitted")
+                    {
+                        <button type="button" @onclick="() => ApprovePayoutAsync(payout.Id)">Approuver</button>
+                        <button type="button" @onclick="() => RejectPayoutAsync(payout.Id)">Rejeter</button>
+                    }
+                    @if (payout.Method == "Cash" && (payout.Status == "Submitted" || payout.Status == "Approved"))
+                    {
+                        <input @bind="CashProofReference" placeholder="Référence preuve / reçu" />
+                        <button type="button" @onclick="() => CompleteCashPayoutAsync(payout.Id)">Confirmer la remise</button>
+                    }
+                </div>
+            </article>
+        }
+    }
+</section>
+
 <section class="toolbar operator-toolbar">
     <label>
         Periode
@@ -210,8 +271,15 @@
     }
 </section>
 
+<style>
+    .payout-operations{margin-bottom:24px}.payout-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;padding:18px}.payout-review-card{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px;border:1px solid #e3eaf5;border-radius:16px;background:#f8faff}.payout-review-card p,.payout-review-card small{margin:4px 0;color:#667085}.payout-admin-row{grid-template-columns:minmax(260px,1.5fr) minmax(180px,.7fr) minmax(240px,1fr)}.payout-actions{display:flex;flex-wrap:wrap;gap:8px}.payout-actions input{min-height:38px;border:1px solid #d7dfec;border-radius:9px;padding:0 10px}.status-success,.status-danger,.status-warning{display:inline-flex;width:max-content;padding:5px 9px;border-radius:999px;font-weight:800;font-size:12px}.status-success{background:#ecfdf3;color:#067647}.status-danger{background:#fef3f2;color:#b42318}.status-warning{background:#fff7ed;color:#c2410c}
+    @@media(max-width:900px){.payout-admin-row{grid-template-columns:1fr}.payout-review-card{align-items:flex-start;flex-direction:column}}
+</style>
+
 @code {
     private AdminPaymentListResponse? Snapshot { get; set; }
+    private IReadOnlyList<AdminCompanyPayoutResponse> CompanyPayouts { get; set; } = [];
+    private IReadOnlyList<AdminCompanyPayoutDestinationResponse> PayoutDestinations { get; set; } = [];
     private string SelectedPeriod { get; set; } = "month";
     private string ActiveFinanceFocus { get; set; } = "all";
     private string? SelectedPaymentStatus { get; set; }
@@ -219,6 +287,7 @@
     private string? SearchTerm { get; set; }
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
+    private string CashProofReference { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -233,6 +302,8 @@
         try
         {
             Snapshot = await ApiClient.GetAdminPaymentsAsync(SelectedPeriod, SelectedPaymentStatus, SelectedPaymentMethod, SearchTerm);
+            CompanyPayouts = await ApiClient.GetAdminCompanyPayoutsAsync();
+            PayoutDestinations = await ApiClient.GetAdminCompanyPayoutDestinationsAsync();
         }
         catch (Exception exception)
         {
@@ -265,6 +336,67 @@
     private void OpenMission(Guid missionId) => Navigation.NavigateTo($"/missions/{missionId}");
     private void OpenCompany(Guid companyId) => Navigation.NavigateTo($"/companies/{companyId}");
     private void OpenProvider(Guid providerId) => Navigation.NavigateTo($"/providers/{providerId}");
+
+    private async Task VerifyDestinationAsync(Guid destinationId)
+    {
+        var result = await ApiClient.VerifyCompanyPayoutDestinationAsync(destinationId);
+        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
+        await LoadAsync();
+    }
+
+    private async Task ApprovePayoutAsync(Guid payoutId)
+    {
+        var result = await ApiClient.ApproveCompanyPayoutAsync(payoutId);
+        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
+        await LoadAsync();
+    }
+
+    private async Task RejectPayoutAsync(Guid payoutId)
+    {
+        var result = await ApiClient.RejectCompanyPayoutAsync(payoutId, "Rejet manuel après contrôle administratif.");
+        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
+        await LoadAsync();
+    }
+
+    private async Task CompleteCashPayoutAsync(Guid payoutId)
+    {
+        if (string.IsNullOrWhiteSpace(CashProofReference))
+        {
+            ErrorMessage = "La référence du reçu ou de la preuve est obligatoire pour un retrait cash.";
+            return;
+        }
+
+        var result = await ApiClient.CompleteCashCompanyPayoutAsync(payoutId, CashProofReference.Trim());
+        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
+        if (result.IsSuccess) CashProofReference = string.Empty;
+        await LoadAsync();
+    }
+
+    private static string TranslatePayoutMethod(string method) => method switch
+    {
+        "MobileMoney" => "Mobile Money",
+        "BankTransfer" => "Virement bancaire",
+        "Cash" => "Retrait agence",
+        _ => method
+    };
+
+    private static string TranslatePayoutStatus(string status) => status switch
+    {
+        "Submitted" => "À valider",
+        "Approved" => "Approuvé",
+        "Processing" => "En cours",
+        "Paid" => "Payé",
+        "Failed" => "Échec",
+        "Rejected" => "Rejeté",
+        _ => status
+    };
+
+    private static string GetPayoutStatusClass(string status) => status switch
+    {
+        "Paid" => "status-success",
+        "Failed" or "Rejected" => "status-danger",
+        _ => "status-warning"
+    };
 
     private async Task ApplyFinanceFocusAsync(string focus)
     {

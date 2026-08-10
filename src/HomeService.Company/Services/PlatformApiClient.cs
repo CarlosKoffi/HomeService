@@ -731,6 +731,95 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
+    public async Task<CompanyWalletResponse?> GetCompanyWalletAsync(
+        Guid companyId,
+        string sessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = CreateCompanySessionRequest(
+            HttpMethod.Get,
+            $"/api/company-portal/{companyId:D}/wallet",
+            sessionToken);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<CompanyWalletResponse>(JsonOptions, cancellationToken);
+    }
+
+    public async Task<CompanyWalletSaveResult> UpdateSettlementFrequencyAsync(
+        Guid companyId,
+        string sessionToken,
+        string frequency,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = CreateCompanySessionRequest(
+            HttpMethod.Put,
+            $"/api/company-portal/{companyId:D}/wallet/frequency",
+            sessionToken,
+            new UpdateCompanySettlementFrequencyRequest(frequency));
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        return await ReadWalletResultAsync(response, cancellationToken);
+    }
+
+    public async Task<CompanyWalletSaveResult> AddPayoutDestinationAsync(
+        Guid companyId,
+        string sessionToken,
+        CreateCompanyPayoutDestinationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        using var message = CreateCompanySessionRequest(
+            HttpMethod.Post,
+            $"/api/company-portal/{companyId:D}/wallet/destinations",
+            sessionToken,
+            request);
+        using var response = await httpClient.SendAsync(message, cancellationToken);
+        return await ReadWalletResultAsync(response, cancellationToken);
+    }
+
+    public async Task<CompanyWalletSaveResult> RequestPayoutAsync(
+        Guid companyId,
+        string sessionToken,
+        CreateCompanyPayoutRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        using var message = CreateCompanySessionRequest(
+            HttpMethod.Post,
+            $"/api/company-portal/{companyId:D}/wallet/payouts",
+            sessionToken,
+            request);
+        using var response = await httpClient.SendAsync(message, cancellationToken);
+        return await ReadWalletResultAsync(response, cancellationToken);
+    }
+
+    private static HttpRequestMessage CreateCompanySessionRequest(
+        HttpMethod method,
+        string path,
+        string sessionToken,
+        object? payload = null)
+    {
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sessionToken);
+        if (payload is not null)
+        {
+            request.Content = JsonContent.Create(payload, options: JsonOptions);
+        }
+
+        return request;
+    }
+
+    private static async Task<CompanyWalletSaveResult> ReadWalletResultAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return new CompanyWalletSaveResult(false, null, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Operation impossible.");
+        }
+
+        var wallet = JsonSerializer.Deserialize<CompanyWalletResponse>(body, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        return new CompanyWalletSaveResult(true, wallet, null);
+    }
+
     private void AddBasicAuthIfConfigured()
     {
         if (!IsAuthEnabled())
@@ -851,6 +940,8 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return Guid.TryParse(idText, out documentId);
     }
 }
+
+public sealed record CompanyWalletSaveResult(bool IsSuccess, CompanyWalletResponse? Wallet, string? Message);
 
 public sealed record RegisterCompanyResult(bool IsSuccess, string? ErrorMessage);
 

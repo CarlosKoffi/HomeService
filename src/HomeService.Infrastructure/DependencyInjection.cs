@@ -4,6 +4,8 @@ using HomeService.Application.Notifications;
 using HomeService.Infrastructure.Data;
 using HomeService.Infrastructure.Notifications;
 using HomeService.Infrastructure.Location;
+using HomeService.Infrastructure.Security;
+using HomeService.Infrastructure.Payments;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +46,8 @@ public static class DependencyInjection
         });
         services.AddScoped<IAddressAutocompleteService, GooglePlacesAddressAutocompleteService>();
         services.AddScoped<IMobilePushSender, FirebaseCloudMessagingSender>();
+        services.AddSingleton<IPayoutDataProtector, AesPayoutDataProtector>();
+        services.AddScoped<ICompanyPayoutGateway, JekoCompanyPayoutGateway>();
 
         return services;
     }

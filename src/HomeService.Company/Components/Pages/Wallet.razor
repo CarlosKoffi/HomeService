@@ -1,0 +1,291 @@
+@page "/wallet"
+@layout HomeService.Company.Components.Layout.EmptyLayout
+@using System.Text.Json
+@inject IJSRuntime Js
+@inject PlatformApiClient ApiClient
+@inject NavigationManager Navigation
+@inject IWebHostEnvironment Environment
+
+<PageTitle>Reversements</PageTitle>
+
+@if (IsLoading)
+{
+    <section class="wallet-state"><strong>Chargement du portefeuille...</strong></section>
+}
+else if (Session is null)
+{
+    <section class="wallet-state"><strong>Connexion requise</strong><a href="/">Se connecter</a></section>
+}
+else
+{
+    <CompanyPortalShell Active="wallet"
+                        Title="Reversements"
+                        Subtitle="Votre argent, avec un calendrier clair"
+                        CompanyId="@Session.CompanyId"
+                        CompanyName="@Session.CompanyName"
+                        Email="@Session.Email">
+        <ChildContent>
+            <section class="wallet-page">
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <div class="wallet-message @(IsError ? "error" : "success")">@Message</div>
+                }
+
+                @if (Snapshot is not null)
+                {
+                    <section class="wallet-hero">
+                        <div>
+                            <span>Disponible au retrait</span>
+                            <strong>@Money(Snapshot.AvailableBalance)</strong>
+                            <small>Prochaine mise à disposition : @Date(Snapshot.NextEligibilityDate)</small>
+                        </div>
+                        <div class="wallet-hero-mark">W</div>
+                    </section>
+
+                    <section class="wallet-balances">
+                        <article><span>En attente</span><strong>@Money(Snapshot.PendingBalance)</strong><small>Missions validées, pas encore à échéance</small></article>
+                        <article><span>Réservé</span><strong>@Money(Snapshot.ReservedBalance)</strong><small>Reversements en cours de traitement</small></article>
+                        <article><span>Déjà reversé</span><strong>@Money(Snapshot.WithdrawnBalance)</strong><small>Total versé à votre entreprise</small></article>
+                    </section>
+
+                    <section class="wallet-panel frequency-panel">
+                        <div>
+                            <span class="wallet-eyebrow">CALENDRIER</span>
+                            <h2>Quand souhaitez-vous être payé ?</h2>
+                            <p>Le choix s’applique aux prochaines missions. Aucun retrait anticipé n’est possible.</p>
+                        </div>
+                        <div class="frequency-options">
+                            <button class="@(Snapshot.SettlementFrequency == "Fortnightly" ? "active" : null)"
+                                    @onclick='() => ChangeFrequencyAsync("Fortnightly")'>
+                                <strong>Toutes les 2 semaines</strong>
+                                <small>Le 15 puis au début du mois suivant</small>
+                            </button>
+                            <button class="@(Snapshot.SettlementFrequency == "Monthly" ? "active" : null)"
+                                    @onclick='() => ChangeFrequencyAsync("Monthly")'>
+                                <strong>Une fois par mois</strong>
+                                <small>Un reversement groupé au début du mois</small>
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="wallet-grid">
+                        <article class="wallet-panel">
+                            <header>
+                                <div><span class="wallet-eyebrow">DESTINATIONS</span><h2>Où recevoir l’argent ?</h2></div>
+                                <button class="wallet-text-button" @onclick="ToggleDestinationForm">@(ShowDestinationForm ? "Fermer" : "+ Ajouter")</button>
+                            </header>
+
+                            @if (ShowDestinationForm)
+                            {
+                                <div class="destination-form">
+                                    <label>Mode<select @bind="DestinationMethod"><option>MobileMoney</option><option>BankTransfer</option><option>Cash</option></select></label>
+                                    <label>Nom court<input @bind="DestinationLabel" placeholder="Ex. Compte principal" /></label>
+                                    <label>Bénéficiaire<input @bind="BeneficiaryName" placeholder="Nom du bénéficiaire" /></label>
+                                    <label>Réseau ou banque<input @bind="ProviderCode" placeholder="orange_money, wave, NSIA..." /></label>
+                                    <label class="full">Numéro ou compte<input @bind="DestinationIdentifier" placeholder="La valeur sera chiffrée" /></label>
+                                    <button class="wallet-primary" @onclick="AddDestinationAsync" disabled="@IsSaving">Enregistrer le bénéficiaire</button>
+                                </div>
+                            }
+
+                            @if (Snapshot.Destinations.Count == 0)
+                            {
+                                <div class="wallet-empty">Ajoutez un bénéficiaire pour préparer votre premier reversement.</div>
+                            }
+                            else
+                            {
+                                <div class="destination-list">
+                                    @foreach (var destination in Snapshot.Destinations.Where(item => item.IsActive))
+                                    {
+                                        <label class="destination-card">
+                                            <input type="radio" name="destination" value="@destination.Id" @onchange='() => SelectedDestinationId = destination.Id' checked="@(SelectedDestinationId == destination.Id)" />
+                                            <span class="destination-icon">@DestinationInitial(destination)</span>
+                                            <span><strong>@destination.Label</strong><small>@destination.ProviderCode · @destination.MaskedIdentifier</small></span>
+                                            <em class="@(destination.IsVerified ? "verified" : "pending")">@(destination.IsVerified ? "Vérifié" : "À vérifier")</em>
+                                        </label>
+                                    }
+                                </div>
+                            }
+                        </article>
+
+                        <article class="wallet-panel payout-panel">
+                            <span class="wallet-eyebrow">PROCHAIN REVERSEMENT</span>
+                            <h2>Demander le versement</h2>
+                            <p>Seul le solde arrivé à échéance peut être demandé.</p>
+                            <div class="payout-total"><span>Montant disponible</span><strong>@Money(Snapshot.AvailableBalance)</strong></div>
+                            <div class="payout-fees">
+                                <span>Mobile Money <b>1,5 %</b></span>
+                                <span>Virement bancaire <b>1 000 F</b></span>
+                                <span>Retrait agence <b>Gratuit</b></span>
+                            </div>
+                            <button class="wallet-primary"
+                                    disabled="@(IsSaving || Snapshot.AvailableBalance < 5000 || !HasVerifiedSelectedDestination)"
+                                    @onclick="RequestPayoutAsync">
+                                Demander le reversement
+                            </button>
+                            @if (Snapshot.AvailableBalance < 5000)
+                            {
+                                <small class="payout-help">Minimum : 5 000 FCFA. Le solde reste conservé sans frais.</small>
+                            }
+                        </article>
+                    </section>
+
+                    <section class="wallet-panel history-panel">
+                        <header><div><span class="wallet-eyebrow">HISTORIQUE</span><h2>Reversements</h2></div></header>
+                        @if (Snapshot.Payouts.Count == 0)
+                        {
+                            <div class="wallet-empty">Aucun reversement pour le moment.</div>
+                        }
+                        else
+                        {
+                            @foreach (var payout in Snapshot.Payouts)
+                            {
+                                <div class="payout-row">
+                                    <span><strong>@payout.Reference</strong><small>@Date(payout.CreatedAt) · @MethodLabel(payout.Method)</small></span>
+                                    <span><strong>@Money(payout.NetAmount)</strong><small>Frais @Money(payout.FeeAmount)</small></span>
+                                    <em class="status-@payout.Status.ToLowerInvariant()">@StatusLabel(payout.Status)</em>
+                                </div>
+                            }
+                        }
+                    </section>
+                }
+            </section>
+        </ChildContent>
+    </CompanyPortalShell>
+}
+
+<style>
+    .wallet-page{display:grid;gap:24px;color:#101828}.wallet-state{min-height:70vh;display:grid;place-content:center;gap:14px;text-align:center}.wallet-message{padding:14px 18px;border-radius:14px;font-weight:700}.wallet-message.success{background:#ecfdf3;color:#067647}.wallet-message.error{background:#fef3f2;color:#b42318}.wallet-hero{display:flex;justify-content:space-between;align-items:center;padding:30px 34px;border-radius:24px;background:linear-gradient(135deg,#1264f5,#0a45c2);color:white;box-shadow:0 20px 44px rgba(18,100,245,.2)}.wallet-hero span,.wallet-hero small{display:block;opacity:.86}.wallet-hero strong{display:block;font-size:42px;margin:8px 0}.wallet-hero-mark{width:78px;height:78px;border-radius:24px;display:grid;place-content:center;background:rgba(255,255,255,.15);font-size:40px;font-weight:900}.wallet-balances{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.wallet-balances article,.wallet-panel{background:#fff;border:1px solid #e3eaf5;border-radius:20px;padding:22px;box-shadow:0 12px 32px rgba(16,24,40,.05)}.wallet-balances span,.wallet-balances small{display:block;color:#667085}.wallet-balances strong{display:block;font-size:24px;margin:7px 0}.wallet-panel header{display:flex;align-items:center;justify-content:space-between;gap:12px}.wallet-panel h2{margin:4px 0 8px}.wallet-panel p{color:#667085}.wallet-eyebrow{font-size:12px;font-weight:900;letter-spacing:.12em;color:#1264f5}.frequency-panel{display:flex;align-items:center;justify-content:space-between;gap:26px}.frequency-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:54%}.frequency-options button{padding:16px;text-align:left;border:1px solid #d7dfec;border-radius:16px;background:#fff;color:#101828}.frequency-options button.active{border:2px solid #1264f5;background:#f4f8ff}.frequency-options small,.frequency-options strong{display:block}.frequency-options small{margin-top:5px;color:#667085}.wallet-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:20px}.wallet-text-button{border:0;background:transparent;color:#1264f5;font-weight:800}.destination-form{margin-top:18px;padding-top:18px;border-top:1px solid #edf0f5;display:grid;grid-template-columns:1fr 1fr;gap:12px}.destination-form label{display:grid;gap:6px;font-size:13px;font-weight:700}.destination-form .full{grid-column:1/-1}.destination-form input,.destination-form select{height:44px;border:1px solid #d7dfec;border-radius:12px;padding:0 12px;background:#fff}.destination-list{display:grid;gap:10px;margin-top:18px}.destination-card{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:12px;padding:14px;border:1px solid #e3eaf5;border-radius:15px}.destination-card input{accent-color:#1264f5}.destination-icon{width:42px;height:42px;border-radius:13px;background:#eef4ff;color:#1264f5;display:grid;place-content:center;font-weight:900}.destination-card strong,.destination-card small{display:block}.destination-card small{color:#667085;margin-top:3px}.destination-card em{font-style:normal;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px}.destination-card em.verified{background:#ecfdf3;color:#067647}.destination-card em.pending{background:#fff7ed;color:#c2410c}.wallet-primary{border:0;border-radius:13px;background:#1264f5;color:white;min-height:46px;padding:0 18px;font-weight:800}.wallet-primary:disabled{background:#d0d5dd}.payout-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf0f5;border-bottom:1px solid #edf0f5;padding:18px 0;margin:18px 0}.payout-total strong{font-size:24px}.payout-fees{display:grid;gap:9px;margin-bottom:20px}.payout-fees span{display:flex;justify-content:space-between;color:#667085}.payout-panel .wallet-primary{width:100%}.payout-help{display:block;text-align:center;color:#667085;margin-top:10px}.wallet-empty{padding:24px 0;color:#667085}.payout-row{display:grid;grid-template-columns:1.5fr 1fr auto;align-items:center;gap:18px;padding:16px 0;border-top:1px solid #edf0f5}.payout-row strong,.payout-row small{display:block}.payout-row small{color:#667085;margin-top:4px}.payout-row em{font-style:normal;font-weight:800;font-size:12px;padding:7px 10px;border-radius:999px;background:#eef4ff;color:#1264f5}.payout-row em.status-paid{background:#ecfdf3;color:#067647}.payout-row em.status-failed,.payout-row em.status-rejected{background:#fef3f2;color:#b42318}
+    @@media(max-width:900px){.wallet-balances,.wallet-grid{grid-template-columns:1fr}.frequency-panel{display:grid}.frequency-options{min-width:0}.wallet-hero{padding:24px}.wallet-hero strong{font-size:34px}}
+    @@media(max-width:560px){.wallet-page{gap:14px}.wallet-balances{grid-template-columns:1fr 1fr}.wallet-balances article:last-child{grid-column:1/-1}.frequency-options,.destination-form{grid-template-columns:1fr}.destination-form .full{grid-column:auto}.wallet-hero-mark{display:none}.payout-row{grid-template-columns:1fr auto}.payout-row em{grid-column:1/-1;justify-self:start}}
+</style>
+
+@code {
+    private CompanyPortalSessionResponse? Session { get; set; }
+    private CompanyWalletResponse? Snapshot { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsSaving { get; set; }
+    private bool ShowDestinationForm { get; set; }
+    private string? Message { get; set; }
+    private bool IsError { get; set; }
+    private Guid? SelectedDestinationId { get; set; }
+    private string DestinationMethod { get; set; } = "MobileMoney";
+    private string DestinationLabel { get; set; } = "Compte principal";
+    private string BeneficiaryName { get; set; } = string.Empty;
+    private string ProviderCode { get; set; } = "wave";
+    private string DestinationIdentifier { get; set; } = string.Empty;
+
+    private bool HasVerifiedSelectedDestination => Snapshot?.Destinations.Any(item => item.Id == SelectedDestinationId && item.IsVerified && item.IsActive) == true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var sessionJson = await Js.InvokeAsync<string?>("localStorage.getItem", "homeservice.company.session");
+        if (!string.IsNullOrWhiteSpace(sessionJson))
+        {
+            Session = JsonSerializer.Deserialize<CompanyPortalSessionResponse>(sessionJson);
+            if (Session is not null) await LoadAsync();
+        }
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (Session is null) return;
+        try
+        {
+            Snapshot = await ApiClient.GetCompanyWalletAsync(Session.CompanyId, Session.Token);
+            SelectedDestinationId ??= Snapshot?.Destinations.FirstOrDefault(item => item.IsDefault && item.IsActive)?.Id
+                ?? Snapshot?.Destinations.FirstOrDefault(item => item.IsActive)?.Id;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            IsError = true;
+            Message = "Le portefeuille est momentanément indisponible ou votre session a expiré.";
+        }
+    }
+
+    private async Task ChangeFrequencyAsync(string frequency)
+    {
+        if (Session is null || IsSaving) return;
+        IsSaving = true;
+        try
+        {
+            var result = await ApiClient.UpdateSettlementFrequencyAsync(Session.CompanyId, Session.Token, frequency);
+            Apply(result, "Calendrier de reversement mis à jour.");
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            SetUnavailableMessage();
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task AddDestinationAsync()
+    {
+        if (Session is null || IsSaving) return;
+        IsSaving = true;
+        try
+        {
+            var result = await ApiClient.AddPayoutDestinationAsync(Session.CompanyId, Session.Token, new(
+                DestinationMethod, DestinationLabel, BeneficiaryName, ProviderCode, DestinationIdentifier, true));
+            Apply(result, "Bénéficiaire enregistré. Une vérification est nécessaire avant le premier versement.");
+            if (result.IsSuccess)
+            {
+                ShowDestinationForm = false;
+                DestinationIdentifier = string.Empty;
+                SelectedDestinationId = result.Wallet?.Destinations.FirstOrDefault(item => item.IsDefault)?.Id;
+            }
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            SetUnavailableMessage();
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private async Task RequestPayoutAsync()
+    {
+        if (Session is null || SelectedDestinationId is null || IsSaving) return;
+        IsSaving = true;
+        try
+        {
+            var result = await ApiClient.RequestPayoutAsync(Session.CompanyId, Session.Token, new(SelectedDestinationId.Value));
+            Apply(result, "Votre reversement a été enregistré et le montant est maintenant réservé.");
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            SetUnavailableMessage();
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+    private void Apply(CompanyWalletSaveResult result, string successMessage)
+    {
+        Snapshot = result.Wallet ?? Snapshot;
+        IsError = !result.IsSuccess;
+        Message = result.IsSuccess ? successMessage : result.Message;
+    }
+
+    private void SetUnavailableMessage()
+    {
+        IsError = true;
+        Message = "L'opération est momentanément indisponible. Vérifiez votre connexion puis réessayez.";
+    }
+
+    private void ToggleDestinationForm() => ShowDestinationForm = !ShowDestinationForm;
+    private static string Money(int amount) => $"{amount:N0} FCFA".Replace(',', ' ');
+    private static string Date(DateTimeOffset date) => date.ToLocalTime().ToString("dd MMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"));
+    private static string DestinationInitial(CompanyPayoutDestinationResponse destination) => destination.Method == "Cash" ? "C" : destination.ProviderCode[..1].ToUpperInvariant();
+    private static string MethodLabel(string method) => method switch { "MobileMoney" => "Mobile Money", "BankTransfer" => "Virement bancaire", "Cash" => "Retrait agence", _ => method };
+    private static string StatusLabel(string status) => status switch { "Submitted" => "À valider", "Approved" => "Approuvé", "Processing" => "En cours", "Paid" => "Payé", "Failed" => "Échec", "Rejected" => "Rejeté", _ => status };
+}

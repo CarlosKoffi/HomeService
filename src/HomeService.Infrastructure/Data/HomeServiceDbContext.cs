@@ -16,6 +16,10 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<CompanyApplicationDocument> CompanyApplicationDocuments => Set<CompanyApplicationDocument>();
     public DbSet<CompanyApplicationService> CompanyApplicationServices => Set<CompanyApplicationService>();
     public DbSet<CompanyApplicationStatusHistory> CompanyApplicationStatusHistories => Set<CompanyApplicationStatusHistory>();
+    public DbSet<CompanyWallet> CompanyWallets => Set<CompanyWallet>();
+    public DbSet<CompanyWalletEntry> CompanyWalletEntries => Set<CompanyWalletEntry>();
+    public DbSet<CompanyPayoutDestination> CompanyPayoutDestinations => Set<CompanyPayoutDestination>();
+    public DbSet<CompanyPayoutRequest> CompanyPayoutRequests => Set<CompanyPayoutRequest>();
     public DbSet<CompanyActivationToken> CompanyActivationTokens => Set<CompanyActivationToken>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ServicePrestation> ServicePrestations => Set<ServicePrestation>();

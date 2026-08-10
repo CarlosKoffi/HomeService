@@ -2,6 +2,8 @@ using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
 using HomeService.Application.Branding;
 using HomeService.Application.Companies;
+using HomeService.Application.Abstractions;
+using HomeService.Application.CompanyPortal;
 using HomeService.Application.Contact;
 using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
@@ -20,6 +22,7 @@ using HomeService.Contracts.Services;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Api.Endpoints;
@@ -856,6 +859,166 @@ public static class AdminEndpoints
         })
         .WithName("ListAdminPayments")
         .Produces<AdminPaymentListResponse>();
+
+        admin.MapGet("/company-payouts", async ([FromServices] IAppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var payouts = await (from payout in db.CompanyPayoutRequests.AsNoTracking()
+                                 join company in db.Companies.AsNoTracking() on payout.CompanyId equals company.Id
+                                 join destination in db.CompanyPayoutDestinations.AsNoTracking() on payout.DestinationId equals destination.Id
+                                 orderby payout.CreatedAt descending
+                                 select new AdminCompanyPayoutResponse(
+                                     payout.Id,
+                                     company.Id,
+                                     company.Name,
+                                     payout.Reference,
+                                     payout.Method.ToString(),
+                                     payout.Status.ToString(),
+                                     destination.MaskedIdentifier,
+                                     payout.GrossAmount,
+                                     payout.FeeAmount,
+                                     payout.NetAmount,
+                                     payout.Currency,
+                                     payout.CreatedAt,
+                                     payout.PaidAt,
+                                     payout.FailureReason))
+                .Take(200)
+                .ToListAsync(cancellationToken);
+            return Results.Ok(payouts);
+        })
+        .WithName("ListAdminCompanyPayouts")
+        .Produces<IReadOnlyList<AdminCompanyPayoutResponse>>();
+
+        admin.MapGet("/company-payout-destinations", async ([FromServices] IAppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var destinations = await (from destination in db.CompanyPayoutDestinations.AsNoTracking()
+                                      join company in db.Companies.AsNoTracking() on destination.CompanyId equals company.Id
+                                      orderby destination.IsVerified, destination.CreatedAt descending
+                                      select new AdminCompanyPayoutDestinationResponse(
+                                          destination.Id,
+                                          company.Id,
+                                          company.Name,
+                                          destination.Method.ToString(),
+                                          destination.Label,
+                                          destination.BeneficiaryName,
+                                          destination.ProviderCode,
+                                          destination.MaskedIdentifier,
+                                          destination.IsDefault,
+                                          destination.IsVerified,
+                                          destination.IsActive,
+                                          destination.CreatedAt))
+                .Take(200)
+                .ToListAsync(cancellationToken);
+            return Results.Ok(destinations);
+        })
+        .WithName("ListAdminCompanyPayoutDestinations")
+        .Produces<IReadOnlyList<AdminCompanyPayoutDestinationResponse>>();
+
+        admin.MapPost("/company-payout-destinations/{destinationId:guid}/verify", async (
+            Guid destinationId,
+            VerifyCompanyPayoutDestinationRequest request,
+            HttpRequest httpRequest,
+            [FromServices] IAppDbContext db,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!await walletService.VerifyDestinationAsync(destinationId, request.ExternalContactId, cancellationToken))
+            {
+                return Results.NotFound();
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                GetAdminAuditActor(httpRequest),
+                "CompanyPayoutDestinationVerified",
+                nameof(CompanyPayoutDestination),
+                destinationId,
+                "Compte beneficiaire de reversement verifie.",
+                GetAuditRequestContext(httpRequest),
+                after: new { request.ExternalContactId }));
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("VerifyCompanyPayoutDestination");
+
+        admin.MapPost("/company-payouts/{payoutId:guid}/approve", async (
+            Guid payoutId,
+            HttpRequest httpRequest,
+            [FromServices] IAppDbContext db,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!await walletService.ApprovePayoutAsync(payoutId, cancellationToken))
+            {
+                return Results.NotFound();
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                GetAdminAuditActor(httpRequest),
+                "CompanyPayoutApproved",
+                nameof(CompanyPayoutRequest),
+                payoutId,
+                "Reversement entreprise approuve.",
+                GetAuditRequestContext(httpRequest)));
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("ApproveCompanyPayout");
+
+        admin.MapPost("/company-payouts/{payoutId:guid}/reject", async (
+            Guid payoutId,
+            ReviewCompanyPayoutRequest request,
+            HttpRequest httpRequest,
+            [FromServices] IAppDbContext db,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            if (!await walletService.RejectPayoutAsync(payoutId, request.Reason, cancellationToken))
+            {
+                return Results.NotFound();
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                GetAdminAuditActor(httpRequest),
+                "CompanyPayoutRejected",
+                nameof(CompanyPayoutRequest),
+                payoutId,
+                "Reversement entreprise rejete.",
+                GetAuditRequestContext(httpRequest),
+                after: new { request.Reason }));
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("RejectCompanyPayout");
+
+        admin.MapPost("/company-payouts/{payoutId:guid}/complete-cash", async (
+            Guid payoutId,
+            ReviewCompanyPayoutRequest request,
+            HttpRequest httpRequest,
+            [FromServices] IAppDbContext db,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.ProofReference))
+            {
+                return Results.BadRequest(new { message = "Une reference de preuve ou de recu est obligatoire." });
+            }
+
+            if (!await walletService.CompleteCashPayoutAsync(payoutId, request.ProofReference, cancellationToken))
+            {
+                return Results.NotFound();
+            }
+
+            db.AuditLogEntries.Add(AuditLogFactory.Create(
+                GetAdminAuditActor(httpRequest),
+                "CompanyCashPayoutCompleted",
+                nameof(CompanyPayoutRequest),
+                payoutId,
+                "Retrait cash entreprise remis.",
+                GetAuditRequestContext(httpRequest),
+                after: new { request.ProofReference }));
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("CompleteCashCompanyPayout");
         
         admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {

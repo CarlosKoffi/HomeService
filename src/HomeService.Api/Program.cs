@@ -48,6 +48,7 @@ app.MapPublicEndpoints();
 app.MapProviderOnboardingEndpoints();
 app.MapCompanyActivationEndpoints();
 app.MapCompanyPortalEndpoints();
+app.MapJekoWebhookEndpoints();
 
 app.MapProviderPortalEndpoints();
 

@@ -445,6 +445,72 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminPaymentListResponse>($"/api/admin/payments{suffix}", cancellationToken);
     }
 
+    public async Task<IReadOnlyList<AdminCompanyPayoutResponse>> GetAdminCompanyPayoutsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<AdminCompanyPayoutResponse>>(
+            "/api/admin/company-payouts",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<AdminCompanyPayoutDestinationResponse>> GetAdminCompanyPayoutDestinationsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<IReadOnlyList<AdminCompanyPayoutDestinationResponse>>(
+            "/api/admin/company-payout-destinations",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<ApiActionResult> VerifyCompanyPayoutDestinationAsync(
+        Guid destinationId,
+        string? externalContactId = null,
+        CancellationToken cancellationToken = default) =>
+        await PostAdminPayoutActionAsync(
+            $"/api/admin/company-payout-destinations/{destinationId:D}/verify",
+            new VerifyCompanyPayoutDestinationRequest(externalContactId),
+            cancellationToken);
+
+    public async Task<ApiActionResult> ApproveCompanyPayoutAsync(
+        Guid payoutId,
+        CancellationToken cancellationToken = default) =>
+        await PostAdminPayoutActionAsync(
+            $"/api/admin/company-payouts/{payoutId:D}/approve",
+            new ReviewCompanyPayoutRequest(),
+            cancellationToken);
+
+    public async Task<ApiActionResult> RejectCompanyPayoutAsync(
+        Guid payoutId,
+        string? reason,
+        CancellationToken cancellationToken = default) =>
+        await PostAdminPayoutActionAsync(
+            $"/api/admin/company-payouts/{payoutId:D}/reject",
+            new ReviewCompanyPayoutRequest(reason),
+            cancellationToken);
+
+    public async Task<ApiActionResult> CompleteCashCompanyPayoutAsync(
+        Guid payoutId,
+        string proofReference,
+        CancellationToken cancellationToken = default) =>
+        await PostAdminPayoutActionAsync(
+            $"/api/admin/company-payouts/{payoutId:D}/complete-cash",
+            new ReviewCompanyPayoutRequest(ProofReference: proofReference),
+            cancellationToken);
+
+    private async Task<ApiActionResult> PostAdminPayoutActionAsync(
+        string path,
+        object payload,
+        CancellationToken cancellationToken)
+    {
+        AddBasicAuthIfConfigured();
+        using var response = await httpClient.PostAsJsonAsync(path, payload, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new ApiActionResult(true, null)
+            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action de reversement impossible.");
+    }
+
     public async Task<CompanyApplicationDetailResponse?> GetCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();

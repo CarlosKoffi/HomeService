@@ -9,6 +9,37 @@ namespace HomeService.Application.CompanyPortal;
 
 public sealed class CompanyPortalAuthService(IAppDbContext db)
 {
+    public async Task<Guid?> GetAuthenticatedCompanyIdAsync(
+        string? authorizationHeader,
+        CancellationToken cancellationToken)
+    {
+        const string bearerPrefix = "Bearer ";
+        if (string.IsNullOrWhiteSpace(authorizationHeader)
+            || !authorizationHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var token = authorizationHeader[bearerPrefix.Length..].Trim();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return null;
+        }
+
+        var tokenHash = PortalTokenService.HashToken(token);
+        return await db.CompanyPortalSessions
+            .AsNoTracking()
+            .Where(session => session.TokenHash == tokenHash
+                && session.RevokedAt == null
+                && session.ExpiresAt > DateTimeOffset.UtcNow
+                && session.CompanyPortalUser != null
+                && session.CompanyPortalUser.IsActive
+                && session.CompanyPortalUser.Company != null
+                && session.CompanyPortalUser.Company.Status != CompanyStatus.Suspended)
+            .Select(session => (Guid?)session.CompanyPortalUser!.CompanyId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<CompanyPortalLoginResult> LoginAsync(
         CompanyPortalLoginRequest request,
         CancellationToken cancellationToken)

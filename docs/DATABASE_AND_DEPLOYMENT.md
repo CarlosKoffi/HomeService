@@ -129,6 +129,39 @@ Lorsque R2 est active, un traitement en arriere-plan inventorie les repertoires 
 
 Un second traitement migre les anciens medias du volume persistant. Seul `storage/cms` rejoint le bucket public. Les repertoires `storage/client-profiles`, `storage/client-missions`, `storage/providers`, `storage/documents/company-applications` et `storage/documents/providers` rejoignent exclusivement le bucket prive. La migration est idempotente et ne supprime jamais les fichiers locaux; le volume peut etre conserve jusqu'a verification complete des objets R2.
 
+## Portefeuille et reversements entreprise
+
+La migration `AddCompanyWalletAndPayouts` cree un portefeuille comptable par entreprise, un journal idempotent des mouvements, importe les reversements historiques deja liberes et separe quatre soldes: en attente, disponible, reserve et retire.
+
+Le calendrier est strict:
+
+- `Fortnightly`: missions liberees du 1er au 14 disponibles le 15; missions liberees du 15 a la fin du mois disponibles le 1er du mois suivant;
+- `Monthly`: missions liberees pendant le mois disponibles le 1er du mois suivant;
+- aucun endpoint ne permet de rendre une somme disponible avant sa date d'eligibilite;
+- la demande de reversement reserve le montant afin d'interdire un double paiement.
+- les routes portefeuille exigent un jeton de session entreprise valide et refusent l'acces au portefeuille d'une autre entreprise.
+
+Variables API obligatoires avant l'ajout du premier beneficiaire:
+
+- `PAYOUT_DATA_PROTECTION_KEY=<32 octets aleatoires encodes en Base64>` (par exemple genere avec `openssl rand -base64 32`);
+- cette cle doit etre differente entre staging et production, sauvegardee dans le coffre de secrets et ne jamais etre changee sans procedure de rotation.
+
+Configuration Jeko a valider en sandbox avant activation:
+
+- `JEKO_PAYOUTS_ENABLED=false` tant que les tests sandbox ne sont pas signes;
+- `JEKO_API_BASE_URL=<URL officielle de l'environnement Jeko>`;
+- `JEKO_API_KEY=<cle API serveur>`;
+- `JEKO_API_KEY_HEADER=x-api-key` ou la valeur confirmee par Jeko;
+- `JEKO_STORE_ID=<identifiant du store>`;
+- `JEKO_TRANSFER_PATH=<route de creation de transfert confirmee par Jeko>`;
+- `JEKO_TRANSFER_STATUS_PATH=<route de statut avec le marqueur {id}>`;
+- `JEKO_WEBHOOK_SECRET=<secret HMAC dedie>`;
+- `JEKO_WEBHOOK_SIGNATURE_HEADER=Jeko-Signature` ou le nom d'en-tete confirme par Jeko.
+
+Le webhook de reversement a declarer chez Jeko est `https://api.wele.africa/api/webhooks/jeko/payouts`. Il exige la signature HMAC SHA-256 dans `Jeko-Signature`. Un succes de transfert deplace le montant reserve vers le total retire; un echec definitif restitue automatiquement le montant au solde disponible. Les appels utilisent la reference Wele comme cle d'idempotence.
+
+Les frais actuels sont calcules avant confirmation: 1,5 % pour Mobile Money, 1 000 XOF pour le virement bancaire et 0 XOF pour le retrait cash. Le retrait cash exige une validation admin et une reference de preuve.
+
 ## Regle de livraison
 
 Avant push/deploiement:

@@ -1278,6 +1278,116 @@ public static class CompanyPortalEndpoints
         })
         .WithName("GetCompanyPortalPayments");
 
+        group.MapGet("/{companyId:guid}/wallet", async (
+            Guid companyId,
+            HttpRequest httpRequest,
+            CompanyPortalAuthService authService,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            var authenticatedCompanyId = await authService.GetAuthenticatedCompanyIdAsync(
+                httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (authenticatedCompanyId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (authenticatedCompanyId != companyId)
+            {
+                return Results.Forbid();
+            }
+
+            var result = await walletService.GetAsync(companyId, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Response) : Results.NotFound(new { message = result.Message });
+        })
+        .WithName("GetCompanyWallet")
+        .Produces<CompanyWalletResponse>();
+
+        group.MapPut("/{companyId:guid}/wallet/frequency", async (
+            Guid companyId,
+            UpdateCompanySettlementFrequencyRequest request,
+            HttpRequest httpRequest,
+            CompanyPortalAuthService authService,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            var authenticatedCompanyId = await authService.GetAuthenticatedCompanyIdAsync(
+                httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (authenticatedCompanyId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (authenticatedCompanyId != companyId)
+            {
+                return Results.Forbid();
+            }
+
+            var result = await walletService.ChangeFrequencyAsync(companyId, request, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Response) : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("UpdateCompanySettlementFrequency")
+        .Produces<CompanyWalletResponse>();
+
+        group.MapPost("/{companyId:guid}/wallet/destinations", async (
+            Guid companyId,
+            CreateCompanyPayoutDestinationRequest request,
+            HttpRequest httpRequest,
+            CompanyPortalAuthService authService,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            var authenticatedCompanyId = await authService.GetAuthenticatedCompanyIdAsync(
+                httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (authenticatedCompanyId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (authenticatedCompanyId != companyId)
+            {
+                return Results.Forbid();
+            }
+
+            try
+            {
+                var result = await walletService.AddDestinationAsync(companyId, request, cancellationToken);
+                return result.IsSuccess ? Results.Ok(result.Response) : Results.BadRequest(new { message = result.Message });
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.Problem(exception.Message, statusCode: StatusCodes.Status503ServiceUnavailable);
+            }
+        })
+        .WithName("CreateCompanyPayoutDestination")
+        .Produces<CompanyWalletResponse>();
+
+        group.MapPost("/{companyId:guid}/wallet/payouts", async (
+            Guid companyId,
+            CreateCompanyPayoutRequest request,
+            HttpRequest httpRequest,
+            CompanyPortalAuthService authService,
+            CompanyWalletService walletService,
+            CancellationToken cancellationToken) =>
+        {
+            var authenticatedCompanyId = await authService.GetAuthenticatedCompanyIdAsync(
+                httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (authenticatedCompanyId is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (authenticatedCompanyId != companyId)
+            {
+                return Results.Forbid();
+            }
+
+            var result = await walletService.RequestPayoutAsync(companyId, request, cancellationToken);
+            return result.IsSuccess ? Results.Ok(result.Response) : Results.BadRequest(new { message = result.Message });
+        })
+        .WithName("CreateCompanyPayout")
+        .Produces<CompanyWalletResponse>();
+
         group.MapGet("/provider-documents/{id:guid}/preview", async (
             Guid id,
             IAppDbContext db,

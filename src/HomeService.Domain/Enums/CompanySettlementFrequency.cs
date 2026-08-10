@@ -1,0 +1,8 @@
+namespace HomeService.Domain.Enums;
+
+public enum CompanySettlementFrequency
+{
+    Unspecified = 0,
+    Fortnightly = 1,
+    Monthly = 2
+}
