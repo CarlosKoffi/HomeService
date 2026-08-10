@@ -103,8 +103,8 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.True(confirmation.IsSuccess);
         Assert.NotNull(confirmation.Response);
         Assert.Equal(12_000, confirmation.Response.ServiceAndPartsAmount);
-        Assert.Equal(480, confirmation.Response.CustomerServiceFeeAmount);
-        Assert.Equal(12_480, confirmation.Response.TotalAmount);
+        Assert.Equal(900, confirmation.Response.CustomerServiceFeeAmount);
+        Assert.Equal(12_900, confirmation.Response.TotalAmount);
         Assert.Equal(1800, assignment.Mission!.PlatformCommissionAmount);
         Assert.Equal(10200, assignment.Mission.CompanyPayoutAmount);
         Assert.True(confirmation.Response.ContactDetailsReleased);

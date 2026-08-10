@@ -60,10 +60,10 @@ public sealed class ClientMissionStatusServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.True(result.Response!.Actions.CanAcceptQuote);
-        Assert.Equal(20_680, result.Response.Actions.AmountToPayNow);
+        Assert.Equal(21_275, result.Response.Actions.AmountToPayNow);
         Assert.Equal(17_000, result.Response.ServiceAmount);
-        Assert.Equal(680, result.Response.CustomerServiceFeeAmount);
-        Assert.Equal(20_680, result.Response.CustomerTotalAmount);
+        Assert.Equal(1_275, result.Response.CustomerServiceFeeAmount);
+        Assert.Equal(21_275, result.Response.CustomerTotalAmount);
         Assert.Equal("AcceptQuote", result.Response.Actions.PrimaryAction);
     }
 

@@ -146,21 +146,26 @@ Variables API obligatoires avant l'ajout du premier beneficiaire:
 - `PAYOUT_DATA_PROTECTION_KEY=<32 octets aleatoires encodes en Base64>` (par exemple genere avec `openssl rand -base64 32`);
 - cette cle doit etre differente entre staging et production, sauvegardee dans le coffre de secrets et ne jamais etre changee sans procedure de rotation.
 
-Configuration Jeko a valider en sandbox avant activation:
+Jeko ne fournit pas d'environnement sandbox distinct. Les essais utilisent la production avec de petits montants reels (minimum 100 XOF pour une `payment_request`). Conserver la passerelle desactivee jusqu'a la fenetre d'essai controlee:
 
-- `JEKO_PAYOUTS_ENABLED=false` tant que les tests sandbox ne sont pas signes;
-- `JEKO_API_BASE_URL=<URL officielle de l'environnement Jeko>`;
+- `JEKO_PAYOUTS_ENABLED=false` tant que les essais reels et la reconciliation ne sont pas valides;
+- `JEKO_API_BASE_URL=<URL officielle de production Jeko>`;
 - `JEKO_API_KEY=<cle API serveur>`;
 - `JEKO_API_KEY_HEADER=x-api-key` ou la valeur confirmee par Jeko;
 - `JEKO_STORE_ID=<identifiant du store>`;
-- `JEKO_TRANSFER_PATH=<route de creation de transfert confirmee par Jeko>`;
-- `JEKO_TRANSFER_STATUS_PATH=<route de statut avec le marqueur {id}>`;
-- `JEKO_WEBHOOK_SECRET=<secret HMAC dedie>`;
-- `JEKO_WEBHOOK_SIGNATURE_HEADER=Jeko-Signature` ou le nom d'en-tete confirme par Jeko.
+- `JEKO_TRANSFER_PATH=/partner_api/transfers`;
+- `JEKO_TRANSFER_STATUS_PATH=<route de statut avec le marqueur {id}>` uniquement si Jeko confirme une route de consultation directe des transferts;
+- `JEKO_WEBHOOK_SECRET=<secret HMAC dedie>`.
 
-Le webhook de reversement a declarer chez Jeko est `https://api.wele.africa/api/webhooks/jeko/payouts`. Il exige la signature HMAC SHA-256 dans `Jeko-Signature`. Un succes de transfert deplace le montant reserve vers le total retire; un echec definitif restitue automatiquement le montant au solde disponible. Les appels utilisent la reference Wele comme cle d'idempotence.
+Le webhook unique a declarer chez Jeko est `https://api.wele.africa/api/webhooks/jeko/transactions`. Il exige la signature HMAC SHA-256 hexadecimale du corps brut dans `Jeko-Signature`. Le champ `transactionType` separe les encaissements (`payment`) des reversements (`transfer`), et `transactionDetails.reference` permet de retrouver l'operation Wele. Un succes de transfert deplace le montant reserve vers le total retire; un statut `error` restitue le montant au solde disponible. La reference Wele envoyee dans le corps est la cle d'idempotence: une reference deja utilisee provoque un `409 payment_request_exists_with_reference` et une nouvelle tentative apres erreur doit recevoir une nouvelle reference.
+
+Jeko ne fournit ni split payment ni escrow. Le store Wele recoit les encaissements nets de 1,5 %, puis notre journal interne repartit les droits des entreprises avant les Pay-out periodiques. Jeko ne verifie ni l'existence d'un compte Mobile Money ni le solde du payeur. Le client choisit donc explicitement son operateur et une verification reelle n'intervient qu'au paiement ou au transfert.
+
+Pour les encaissements mobiles, `wave`, `orange` et `djamo` peuvent utiliser `forceProviderDirect: true` avec `payerPhone` au format international (`+225...`). `mtn` et `moov` passent obligatoirement par le checkout redirect/USSD. Le mode redirect avec deep links est le parcours de reference pour Android et iOS. Une demande reste `pending` au maximum cinq minutes; les seuls statuts metier Jeko sont `pending`, `success` et `error`, et un succes est definitif.
 
 Les frais actuels sont calcules avant confirmation: 1,5 % pour Mobile Money, 1 000 XOF pour le virement bancaire et 0 XOF pour le retrait cash. Le retrait cash exige une validation admin et une reference de preuve.
+
+Un remboursement Jeko est un nouveau Pay-out via `/partner_api/transfers`, partiel ou total. Les frais de l'encaissement initial ne sont pas restitues automatiquement. La decision de remboursement et l'inclusion eventuelle des frais de mise en relation restent donc pilotees par l'admin Wele.
 
 ## Regle de livraison
 

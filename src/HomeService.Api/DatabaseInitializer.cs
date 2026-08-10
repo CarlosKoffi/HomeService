@@ -62,7 +62,8 @@ public static class DatabaseInitializer
             new PaymentProvider("mtn-momo", "MTN MoMo", PaymentMethod.MobileMoney, "Paiement depuis votre compte MTN MoMo.", "/media/payment-providers/mtn-momo.png", 20),
             new PaymentProvider("moov-money", "Moov Money", PaymentMethod.MobileMoney, "Paiement depuis votre compte Moov Money.", "/media/payment-providers/moov-money.png", 30),
             new PaymentProvider("wave", "Wave", PaymentMethod.MobileMoney, "Paiement depuis votre compte Wave.", "/media/payment-providers/wave.png", 40),
-            new PaymentProvider("bank-card", "Carte bancaire", PaymentMethod.Card, "Paiement securise par carte bancaire.", "/media/payment-providers/bank-card.png", 50)
+            new PaymentProvider("djamo", "Djamo", PaymentMethod.MobileMoney, "Paiement depuis votre compte Djamo.", null, 50),
+            new PaymentProvider("bank-card", "Carte bancaire", PaymentMethod.Card, "Paiement securise par carte bancaire.", "/media/payment-providers/bank-card.png", 60)
         };
 
         var existing = await db.PaymentProviders.ToDictionaryAsync(item => item.Code, cancellationToken);
@@ -354,6 +355,30 @@ public static class DatabaseInitializer
     private static async Task EnsureDefaultCommissionRulesAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         await db.Database.ExecuteSqlRawAsync("""
+            UPDATE "CommissionRules"
+            SET "RateBasisPoints" = 1000,
+                "UpdatedAt" = now()
+            WHERE "Target" = 'CompanyRepeatCustomerOrder'
+              AND "Name" = 'Commission entreprise - commande recurrente'
+              AND "RateBasisPoints" = 900
+              AND "FixedAmount" = 0
+              AND "ServiceId" IS NULL
+              AND "ServicePrestationId" IS NULL
+              AND "CompanyId" IS NULL
+              AND "AssignmentSource" IS NULL;
+
+            UPDATE "CommissionRules"
+            SET "RateBasisPoints" = 750,
+                "UpdatedAt" = now()
+            WHERE "Target" = 'CustomerServiceFee'
+              AND "Name" = 'Frais de service client'
+              AND "RateBasisPoints" = 400
+              AND "FixedAmount" = 0
+              AND "ServiceId" IS NULL
+              AND "ServicePrestationId" IS NULL
+              AND "CompanyId" IS NULL
+              AND "AssignmentSource" IS NULL;
+
             INSERT INTO "CommissionRules"
                 ("Id", "Name", "Target", "ServiceId", "ServicePrestationId", "CompanyId", "AssignmentSource",
                  "RateBasisPoints", "FixedAmount", "Currency", "EffectiveFrom", "EffectiveUntil", "IsActive",
@@ -375,7 +400,7 @@ public static class DatabaseInitializer
                  "RateBasisPoints", "FixedAmount", "Currency", "EffectiveFrom", "EffectiveUntil", "IsActive",
                  "CreatedAt", "UpdatedAt")
             SELECT gen_random_uuid(), 'Commission entreprise - commande recurrente', 'CompanyRepeatCustomerOrder',
-                   NULL, NULL, NULL, NULL, 900, 0, 'XOF', now(), NULL, true, now(), now()
+                   NULL, NULL, NULL, NULL, 1000, 0, 'XOF', now(), NULL, true, now(), now()
             WHERE NOT EXISTS (
                 SELECT 1
                 FROM "CommissionRules"
@@ -391,7 +416,7 @@ public static class DatabaseInitializer
                  "RateBasisPoints", "FixedAmount", "Currency", "EffectiveFrom", "EffectiveUntil", "IsActive",
                  "CreatedAt", "UpdatedAt")
             SELECT gen_random_uuid(), 'Frais de service client', 'CustomerServiceFee',
-                   NULL, NULL, NULL, NULL, 400, 0, 'XOF', now(), NULL, true, now(), now()
+                   NULL, NULL, NULL, NULL, 750, 0, 'XOF', now(), NULL, true, now(), now()
             WHERE NOT EXISTS (
                 SELECT 1
                 FROM "CommissionRules"

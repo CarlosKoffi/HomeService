@@ -163,10 +163,17 @@ public sealed class CompanyWalletService(
             return CompanyWalletOperationResult.Fail("Entreprise introuvable.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.Identifier))
+        if (method != CompanyPayoutMethod.Cash && string.IsNullOrWhiteSpace(request.Identifier))
         {
             return CompanyWalletOperationResult.Fail("Le numero ou compte beneficiaire est obligatoire.");
         }
+
+        var protectedIdentifier = method == CompanyPayoutMethod.Cash
+            ? "cash-pickup"
+            : request.Identifier.Trim();
+        var maskedIdentifier = method == CompanyPayoutMethod.Cash
+            ? "Piece d'identite requise"
+            : MaskIdentifier(request.Identifier);
 
         if (request.IsDefault)
         {
@@ -185,8 +192,8 @@ public sealed class CompanyWalletService(
             request.Label,
             request.BeneficiaryName,
             request.ProviderCode,
-            payoutDataProtector.Protect(request.Identifier.Trim()),
-            MaskIdentifier(request.Identifier),
+            payoutDataProtector.Protect(protectedIdentifier),
+            maskedIdentifier,
             request.IsDefault);
         db.CompanyPayoutDestinations.Add(destination);
         await db.SaveChangesAsync(cancellationToken);
@@ -470,16 +477,24 @@ public sealed class CompanyWalletService(
 
     public async Task<bool> ApplyExternalStatusAsync(
         string externalTransactionId,
+        string? reference,
         string status,
         string? message,
         CancellationToken cancellationToken)
     {
         var payout = await db.CompanyPayoutRequests.FirstOrDefaultAsync(
-            item => item.ExternalTransactionId == externalTransactionId || item.Reference == externalTransactionId,
+            item => item.ExternalTransactionId == externalTransactionId
+                || item.Reference == externalTransactionId
+                || (reference != null && item.Reference == reference),
             cancellationToken);
         if (payout is null)
         {
             return false;
+        }
+
+        if (payout.Status == CompanyPayoutStatus.Paid)
+        {
+            return true;
         }
 
         var normalized = status.Trim().ToLowerInvariant();
@@ -487,7 +502,7 @@ public sealed class CompanyWalletService(
         {
             await CompleteAndWithdrawAsync(payout, externalTransactionId, cancellationToken);
         }
-        else if (normalized is "failed" or "rejected" or "cancelled" or "canceled" or "error")
+        else if (normalized is "failed" or "rejected" or "error")
         {
             await FailAndReleaseAsync(payout, message ?? status, cancellationToken);
         }

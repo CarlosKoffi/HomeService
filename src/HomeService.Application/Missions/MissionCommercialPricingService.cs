@@ -8,8 +8,8 @@ namespace HomeService.Application.Missions;
 public sealed class MissionCommercialPricingService(IAppDbContext db)
 {
     public const int DefaultFirstOrderCommissionRateBasisPoints = 1200;
-    public const int DefaultRepeatOrderCommissionRateBasisPoints = 900;
-    public const int DefaultCustomerServiceFeeRateBasisPoints = 400;
+    public const int DefaultRepeatOrderCommissionRateBasisPoints = 1000;
+    public const int DefaultCustomerServiceFeeRateBasisPoints = 750;
 
     public async Task<MissionCommercialPricing> CalculateAsync(
         Mission mission,

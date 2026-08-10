@@ -26,7 +26,7 @@ public sealed class JekoCompanyPayoutGateway(
         }
 
         using var message = new HttpRequestMessage(HttpMethod.Post, BuildUri(TransferPath()));
-        AddAuthentication(message, request.Reference);
+        AddAuthentication(message);
         message.Content = JsonContent.Create(new
         {
             storeId = configuration["JEKO_STORE_ID"],
@@ -54,11 +54,22 @@ public sealed class JekoCompanyPayoutGateway(
             return CompanyPayoutGatewayResult.Disabled();
         }
 
-        var statusPath = configuration["JEKO_TRANSFER_STATUS_PATH"] ?? "/transfers/{id}";
+        var statusPath = configuration["JEKO_TRANSFER_STATUS_PATH"];
+        if (string.IsNullOrWhiteSpace(statusPath))
+        {
+            return new CompanyPayoutGatewayResult(
+                true,
+                false,
+                false,
+                "pending",
+                externalTransactionId,
+                "En attente du webhook transaction.completed de Jeko.");
+        }
+
         using var message = new HttpRequestMessage(
             HttpMethod.Get,
             BuildUri(statusPath.Replace("{id}", Uri.EscapeDataString(externalTransactionId), StringComparison.Ordinal)));
-        AddAuthentication(message, externalTransactionId);
+        AddAuthentication(message);
         return await SendAsync(message, cancellationToken);
     }
 
@@ -100,7 +111,7 @@ public sealed class JekoCompanyPayoutGateway(
             var message = ReadString(root, "message") ?? ReadString(payload, "message");
             var normalized = status.Trim().ToLowerInvariant();
             var success = normalized is "success" or "successful" or "paid" or "completed";
-            var failed = normalized is "failed" or "rejected" or "cancelled" or "canceled" or "error";
+            var failed = normalized is "failed" or "rejected" or "error";
             return new CompanyPayoutGatewayResult(httpSuccess || success, success || failed, success, status, id, message);
         }
         catch (JsonException)
@@ -109,14 +120,13 @@ public sealed class JekoCompanyPayoutGateway(
         }
     }
 
-    private void AddAuthentication(HttpRequestMessage message, string idempotencyKey)
+    private void AddAuthentication(HttpRequestMessage message)
     {
         var header = configuration["JEKO_API_KEY_HEADER"] ?? "x-api-key";
         message.Headers.TryAddWithoutValidation(header, configuration["JEKO_API_KEY"]);
-        message.Headers.TryAddWithoutValidation("Idempotency-Key", idempotencyKey);
     }
 
-    private string TransferPath() => configuration["JEKO_TRANSFER_PATH"] ?? "/transfers";
+    private string TransferPath() => configuration["JEKO_TRANSFER_PATH"] ?? "/partner_api/transfers";
 
     private Uri BuildUri(string path)
     {
