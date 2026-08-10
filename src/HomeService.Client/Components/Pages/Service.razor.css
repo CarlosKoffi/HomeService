@@ -85,6 +85,29 @@
     transition: transform .2s ease;
 }
 
+.seo-services-dropdown > summary .client-nav-chevron {
+    display: inline-grid;
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+    place-items: center;
+    align-self: center;
+    line-height: 0;
+    transform-origin: center;
+}
+
+.seo-services-dropdown > summary .client-nav-chevron svg {
+    display: block;
+    width: 13px;
+    height: 13px;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .seo-services-dropdown[open] > summary span {
     transform: rotate(180deg);
 }

@@ -29,19 +29,47 @@
 <section class="mission-settings-guide">
     <article>
         <span>Commission</span>
-        <strong>Premiere commande</strong>
-        <p>Commission entreprise appliquee lors de la premiere commande du couple client-entreprise.</p>
+        <strong>Paliers entreprise</strong>
+        <p>Le taux baisse avec le volume global de missions payees et terminees de l'entreprise.</p>
     </article>
     <article>
         <span>Fidelisation</span>
-        <strong>Commandes suivantes</strong>
-        <p>Taux reduit applique lorsque le meme client recommande a la meme entreprise.</p>
+        <strong>Qualite obligatoire</strong>
+        <p>La note, les annulations, les pieces et les litiges conditionnent le passage au palier suivant.</p>
     </article>
     <article>
         <span>Paiement client</span>
         <strong>Frais de service</strong>
         <p>Frais visibles ajoutes au prix de la mission lors du paiement.</p>
     </article>
+</section>
+
+<section class="operator-list mission-settings-list">
+    <header>
+        <div>
+            <h2>Paliers de commission entreprise</h2>
+            <p>@(Snapshot?.CompanyCommissionTiers?.Count ?? 0) palier(s) - seules les nouvelles missions utilisent les changements</p>
+        </div>
+    </header>
+
+    @if (!IsLoading && Snapshot?.CompanyCommissionTiers is { Count: > 0 } tiers)
+    {
+        @foreach (var tier in tiers)
+        {
+            var draft = GetTierDraft(tier);
+            <article class="mission-settings-row" @key="tier.Id">
+                <div>
+                    <span class="status-pill @(tier.IsActive ? "ok" : "danger")">@(tier.IsActive ? "Actif" : "Inactif")</span>
+                    <h3>@tier.Name</h3>
+                    <p>A partir de la mission numero @tier.MinimumMissionCount</p>
+                </div>
+                <label>Nom<input type="text" maxlength="120" @bind="draft.Name" /></label>
+                <label>Seuil missions<input type="number" min="1" step="1" @bind="draft.MinimumMissionCount" /></label>
+                <label>Commission %<input type="number" min="0" max="100" step="0.1" @bind="draft.RatePercent" /></label>
+                <button type="button" @onclick="() => SaveTierAsync(tier.Id)" disabled="@IsSaving">Enregistrer</button>
+            </article>
+        }
+    }
 </section>
 
 <section class="operator-list mission-settings-list">
@@ -167,6 +195,7 @@
 @code {
     private readonly Dictionary<Guid, CommissionRuleDraft> Drafts = [];
     private readonly Dictionary<Guid, WorkflowSettingDraft> WorkflowDrafts = [];
+    private readonly Dictionary<Guid, CompanyCommissionTierDraft> TierDrafts = [];
     private AdminMissionSettingsResponse? Snapshot { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSaving { get; set; }
@@ -189,6 +218,7 @@
             Snapshot = await ApiClient.GetAdminMissionSettingsAsync();
             Drafts.Clear();
             WorkflowDrafts.Clear();
+            TierDrafts.Clear();
         }
         catch (Exception exception)
         {
@@ -228,6 +258,50 @@
         }
 
         return draft;
+    }
+
+    private CompanyCommissionTierDraft GetTierDraft(AdminCompanyCommissionTierResponse tier)
+    {
+        if (!TierDrafts.TryGetValue(tier.Id, out var draft))
+        {
+            draft = new CompanyCommissionTierDraft
+            {
+                Name = tier.Name,
+                MinimumMissionCount = tier.MinimumMissionCount,
+                RatePercent = tier.RatePercent,
+                SortOrder = tier.SortOrder,
+                IsActive = tier.IsActive
+            };
+            TierDrafts[tier.Id] = draft;
+        }
+
+        return draft;
+    }
+
+    private async Task SaveTierAsync(Guid tierId)
+    {
+        if (!TierDrafts.TryGetValue(tierId, out var draft)) return;
+        IsSaving = true;
+        ErrorMessage = null;
+        try
+        {
+            var basisPoints = (int)Math.Round(Math.Clamp(draft.RatePercent, 0m, 100m) * 100m, MidpointRounding.AwayFromZero);
+            Snapshot = await ApiClient.UpdateAdminCompanyCommissionTierAsync(
+                tierId,
+                new UpdateAdminCompanyCommissionTierRequest(
+                    draft.Name,
+                    draft.MinimumMissionCount,
+                    basisPoints,
+                    draft.SortOrder,
+                    draft.IsActive));
+            TierDrafts.Clear();
+            Message = "Palier de commission mis a jour. Les missions deja payees restent inchangees.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Mise a jour impossible. Detail: {exception.Message}";
+        }
+        finally { IsSaving = false; }
     }
 
     private async Task SaveRuleAsync(Guid ruleId)
@@ -307,5 +381,14 @@
             get => Value == 1;
             set => Value = value ? 1 : 0;
         }
+    }
+
+    private sealed class CompanyCommissionTierDraft
+    {
+        public string Name { get; set; } = string.Empty;
+        public int MinimumMissionCount { get; set; }
+        public decimal RatePercent { get; set; }
+        public int SortOrder { get; set; }
+        public bool IsActive { get; set; }
     }
 }

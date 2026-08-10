@@ -25,6 +25,7 @@ public static class DatabaseInitializer
         await EnsureNotificationDeliveryRulesAsync(db, cancellationToken);
         await scope.ServiceProvider.GetRequiredService<NotificationCatalogSeeder>().EnsureDefaultsAsync(cancellationToken);
         await EnsureDefaultCommissionRulesAsync(db, cancellationToken);
+        await EnsureCompanyCommissionTiersAsync(db, cancellationToken);
         await EnsureMissionWorkflowSettingsAsync(db, cancellationToken);
         await NormalizeCatalogNamesAsync(db, cancellationToken);
         await SeedCountriesAsync(db, cancellationToken);
@@ -429,6 +430,48 @@ public static class DatabaseInitializer
             """, cancellationToken);
     }
 
+    private static async Task EnsureCompanyCommissionTiersAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE IF NOT EXISTS "CompanyCommissionTiers" (
+                "Id" uuid NOT NULL,
+                "Name" character varying(120) NOT NULL,
+                "MinimumMissionCount" integer NOT NULL,
+                "RateBasisPoints" integer NOT NULL,
+                "SortOrder" integer NOT NULL,
+                "IsActive" boolean NOT NULL DEFAULT true,
+                "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                "UpdatedAt" timestamp with time zone NULL,
+                CONSTRAINT "PK_CompanyCommissionTiers" PRIMARY KEY ("Id")
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS "IX_CompanyCommissionTiers_MinimumMissionCount"
+                ON "CompanyCommissionTiers" ("MinimumMissionCount");
+            CREATE INDEX IF NOT EXISTS "IX_CompanyCommissionTiers_IsActive_SortOrder"
+                ON "CompanyCommissionTiers" ("IsActive", "SortOrder");
+
+            ALTER TABLE "Companies"
+                ADD COLUMN IF NOT EXISTS "CurrentCommissionTierName" character varying(120) NOT NULL DEFAULT 'Lancement',
+                ADD COLUMN IF NOT EXISTS "CurrentCommissionTierMinimumMissionCount" integer NOT NULL DEFAULT 1,
+                ADD COLUMN IF NOT EXISTS "CurrentCommissionRateBasisPoints" integer NOT NULL DEFAULT 1500;
+
+            ALTER TABLE "Missions"
+                ADD COLUMN IF NOT EXISTS "CompanyCommissionTierName" character varying(120) NULL,
+                ADD COLUMN IF NOT EXISTS "CompanyCommissionMissionSequence" integer NOT NULL DEFAULT 0;
+
+            INSERT INTO "CompanyCommissionTiers"
+                ("Id", "Name", "MinimumMissionCount", "RateBasisPoints", "SortOrder", "IsActive", "CreatedAt", "UpdatedAt")
+            VALUES
+                ('9c5d9517-ec35-4e52-84a7-100000000001', 'Lancement', 1, 1500, 10, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000002', 'Essor', 50, 1400, 20, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000003', 'Croissance', 150, 1300, 30, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000004', 'Performance', 300, 1200, 40, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000005', 'Excellence', 600, 1100, 50, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000006', 'Elite', 1000, 1000, 60, true, now(), now())
+            ON CONFLICT ("MinimumMissionCount") DO NOTHING;
+            """, cancellationToken);
+    }
+
     private static async Task EnsureMissionWorkflowSettingsAsync(HomeServiceDbContext db, CancellationToken cancellationToken)
     {
         await db.Database.ExecuteSqlRawAsync("""
@@ -487,6 +530,10 @@ public static class DatabaseInitializer
                 ('4b41a1fd-6e27-4d0a-a824-8d5d91470007', 'mission_start_grace_minutes', 'Marge debut mission', 'Retard tolerable apres l heure prevue avant signalement dans le suivi operationnel.', 'minutes', 15, 0, 120, 80, true, now(), now()),
                 ('4b41a1fd-6e27-4d0a-a824-8d5d91470009', 'urgent_missions_enabled', 'Demandes urgentes', 'Autorise le client a demander une intervention urgente. Des frais supplementaires peuvent etre appliques.', 'boolean', 0, 0, 1, 90, true, now(), now()),
                 ('4b41a1fd-6e27-4d0a-a824-8d5d91470010', 'provider_reeligibility_rounds', 'Retour des prestataires', 'Nombre de tours avant de rendre de nouveau eligibles les prestataires ayant refuse ou laisse expirer cette mission.', 'tours', 4, 1, 20, 100, true, now(), now())
+                ,('4b41a1fd-6e27-4d0a-a824-8d5d91470012', 'company_commission_minimum_rating_hundredths', 'Note minimale palier commission', 'Note moyenne minimale sur les 50 derniers avis pour acceder a un meilleur palier.', 'centiemes sur 5', 450, 0, 500, 110, true, now(), now())
+                ,('4b41a1fd-6e27-4d0a-a824-8d5d91470013', 'company_commission_minimum_rating_count', 'Nombre minimum d avis', 'Nombre minimum d avis clients necessaire avant le premier changement de palier.', 'avis', 10, 0, 1000, 120, true, now(), now())
+                ,('4b41a1fd-6e27-4d0a-a824-8d5d91470014', 'company_commission_maximum_cancellation_basis_points', 'Annulations maximales entreprise', 'Taux maximum d annulations imputables a l entreprise ou au prestataire pour progresser.', 'points de base', 500, 0, 10000, 130, true, now(), now())
+                ,('4b41a1fd-6e27-4d0a-a824-8d5d91470015', 'company_commission_cancellation_lookback', 'Fenetre annulations commission', 'Nombre de missions recentes analysees pour calculer le taux d annulation qualite.', 'missions', 100, 10, 1000, 140, true, now(), now())
             ON CONFLICT ("Key") DO UPDATE
             SET "Label" = EXCLUDED."Label",
                 "Description" = EXCLUDED."Description",

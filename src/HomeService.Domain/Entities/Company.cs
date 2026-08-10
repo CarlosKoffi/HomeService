@@ -39,8 +39,25 @@ public sealed class Company : AuditableEntity
     public bool AcceptsInterimApplications { get; private set; }
     public int MissionDispatchPriority { get; private set; } = 100;
     public bool AcceptsUrgentMissions { get; private set; }
+    public string CurrentCommissionTierName { get; private set; } = "Lancement";
+    public int CurrentCommissionTierMinimumMissionCount { get; private set; } = 1;
+    public int CurrentCommissionRateBasisPoints { get; private set; } = 1500;
     public IReadOnlyCollection<ProviderProfile> Providers => _providers;
     public IReadOnlyCollection<CompanyApplication> Applications => _applications;
+
+    public void PromoteCommissionTier(string tierName, int minimumMissionCount, int rateBasisPoints)
+    {
+        var normalizedMinimum = Math.Max(1, minimumMissionCount);
+        if (normalizedMinimum < CurrentCommissionTierMinimumMissionCount)
+        {
+            return;
+        }
+
+        CurrentCommissionTierName = string.IsNullOrWhiteSpace(tierName) ? "Palier" : tierName.Trim();
+        CurrentCommissionTierMinimumMissionCount = normalizedMinimum;
+        CurrentCommissionRateBasisPoints = Math.Clamp(rateBasisPoints, 0, 10000);
+        Touch();
+    }
 
     public void Approve()
     {

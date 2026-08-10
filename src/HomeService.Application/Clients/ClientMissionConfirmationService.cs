@@ -231,7 +231,9 @@ public sealed class ClientMissionConfirmationService(
             pricing.CustomerServiceFeeRateBasisPoints,
             pricing.CustomerTotalAmount,
             pricing.CommissionableAmount,
-            pricing.IsFirstCustomerCompanyOrder);
+            pricing.IsFirstCustomerCompanyOrder,
+            pricing.CompanyCommissionTierName,
+            pricing.CompanyCommissionMissionSequence);
 
         var milestone = new MissionPaymentMilestone(
             mission.Id,

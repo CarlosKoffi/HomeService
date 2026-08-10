@@ -75,6 +75,8 @@ public sealed class Mission : AuditableEntity
     public int CustomerTotalAmount { get; private set; }
     public int CommissionableAmount { get; private set; }
     public bool IsFirstCustomerCompanyOrder { get; private set; }
+    public string? CompanyCommissionTierName { get; private set; }
+    public int CompanyCommissionMissionSequence { get; private set; }
     public int KazaAssignmentCommissionRateBasisPoints { get; private set; }
     public int CompanyPayoutAmount { get; private set; }
     public int TransportFeeAmount { get; private set; }
@@ -382,7 +384,9 @@ public sealed class Mission : AuditableEntity
         int customerServiceFeeRateBasisPoints = 0,
         int? customerTotalAmount = null,
         int? commissionableAmount = null,
-        bool isFirstCustomerCompanyOrder = false)
+        bool isFirstCustomerCompanyOrder = false,
+        string? companyCommissionTierName = null,
+        int companyCommissionMissionSequence = 0)
     {
         if (Status != MissionStatus.Accepted)
         {
@@ -397,6 +401,8 @@ public sealed class Mission : AuditableEntity
         CustomerTotalAmount = Math.Max(0, customerTotalAmount ?? quotedAmount + CustomerServiceFeeAmount);
         CommissionableAmount = Math.Max(0, commissionableAmount ?? quotedAmount - PartsEstimateAmount.GetValueOrDefault());
         IsFirstCustomerCompanyOrder = isFirstCustomerCompanyOrder;
+        CompanyCommissionTierName = Clean(companyCommissionTierName);
+        CompanyCommissionMissionSequence = Math.Max(0, companyCommissionMissionSequence);
         KazaAssignmentCommissionRateBasisPoints = Math.Clamp(kazaAssignmentCommissionRateBasisPoints, 0, 10000);
         TransportFeeAmount = Math.Max(0, transportFeeAmount);
         CompanyPayoutAmount = Math.Max(0, quotedAmount - PlatformCommissionAmount);

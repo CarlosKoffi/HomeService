@@ -158,9 +158,22 @@ else
                             <p>Chaque mission ci-dessous affiche le montant brut, le taux réellement appliqué et la somme exacte créditée à votre portefeuille.</p>
                         </div>
                         <div class="payments-rate-rules">
-                            <span><strong>12 %</strong> première mission avec un client</span>
-                            <span><strong>10 %</strong> missions suivantes avec ce même client</span>
-                            <small>Règles standard. Si une règle personnalisée s'applique, le taux affiché sur la mission fait foi. Les frais client restent séparés et ne réduisent pas votre net.</small>
+                            @if (Summary.CommissionProgress is { } progress)
+                            {
+                                <span><strong>@FormatRate(progress.CurrentRateBasisPoints)</strong> palier @progress.CurrentTierName</span>
+                                <span><strong>@progress.CompletedMissionCount</strong> mission(s) payée(s) et terminée(s)</span>
+                                @if (progress.NextTierMinimumMissionCount.HasValue)
+                                {
+                                    <small>
+                                        Encore @progress.MissionsUntilNextTier mission(s) pour viser le palier @progress.NextTierName.
+                                        Passage conditionné à une note d'au moins 4,5/5, 10 avis, moins de 5 % d'annulations imputables, des pièces conformes et aucun litige ouvert.
+                                    </small>
+                                }
+                                else
+                                {
+                                    <small>Vous avez atteint le meilleur palier. Chaque mission conserve définitivement le taux affiché lors de son paiement.</small>
+                                }
+                            }
                         </div>
                     </section>
 
@@ -284,7 +297,11 @@ else
                                         }
                                         else if (transaction.CommissionRateBasisPoints > 0)
                                         {
-                                            <em>@(transaction.IsFirstCustomerCompanyOrder ? "Première mise en relation" : "Client déjà connu de votre entreprise")</em>
+                                            <em>
+                                                @(string.IsNullOrWhiteSpace(transaction.CompanyCommissionTierName)
+                                                    ? "Taux historique figé"
+                                                    : $"Palier {transaction.CompanyCommissionTierName} · mission n° {transaction.CompanyCommissionMissionSequence}")
+                                            </em>
                                         }
                                     </div>
                                 </article>
@@ -739,7 +756,7 @@ else
     {
         var grossAmount = GetGrossAmount(mission);
         var isFirstOrder = index is 0 or 2 or 4;
-        var rateBasisPoints = isFirstOrder ? 1200 : 1000;
+        var rateBasisPoints = 1500;
         var commissionAmount = (int)Math.Round(grossAmount * rateBasisPoints / 10_000m, MidpointRounding.AwayFromZero);
 
         return new CompanyPortalPaymentBreakdownResponse(
@@ -750,7 +767,9 @@ else
             Math.Max(0, grossAmount - commissionAmount),
             grossAmount,
             isFirstOrder,
-            0);
+            0,
+            "Lancement",
+            index + 1);
     }
 
     private sealed record PaymentTransactionViewModel(
@@ -765,6 +784,8 @@ else
         int NetAmount,
         int CommissionableAmount,
         bool IsFirstCustomerCompanyOrder,
+        string? CompanyCommissionTierName,
+        int CompanyCommissionMissionSequence,
         string PaymentMethod,
         string PaymentStatus,
         string Reference)
@@ -792,6 +813,8 @@ else
                 netAmount,
                 financialBreakdown?.CommissionableAmount > 0 ? financialBreakdown.CommissionableAmount : grossAmount,
                 financialBreakdown?.IsFirstCustomerCompanyOrder ?? false,
+                financialBreakdown?.CompanyCommissionTierName,
+                financialBreakdown?.CompanyCommissionMissionSequence ?? 0,
                 mission.PaymentMethod,
                 mission.PaymentStatus,
                 mission.MissionNumber);

@@ -14,7 +14,22 @@ public sealed record CompanyPortalPaymentSummaryResponse(
     int GrossServiceAmount = 0,
     int CompanyCommissionAmount = 0,
     int CompanyNetAmount = 0,
-    IReadOnlyList<CompanyPortalPaymentBreakdownResponse>? FinancialBreakdowns = null);
+    IReadOnlyList<CompanyPortalPaymentBreakdownResponse>? FinancialBreakdowns = null,
+    CompanyPortalCommissionProgressResponse? CommissionProgress = null);
+
+public sealed record CompanyPortalCommissionProgressResponse(
+    string CurrentTierName,
+    int CurrentRateBasisPoints,
+    int CompletedMissionCount,
+    int? NextTierMinimumMissionCount,
+    string? NextTierName,
+    int MissionsUntilNextTier,
+    int RatingCount,
+    decimal AverageRating,
+    int CompanyCancellationRateBasisPoints,
+    bool DocumentsCompliant,
+    bool HasOpenDispute,
+    bool IsQualityEligible);
 
 public sealed record CompanyPortalPaymentBreakdownResponse(
     Guid MissionId,
@@ -24,4 +39,6 @@ public sealed record CompanyPortalPaymentBreakdownResponse(
     int CompanyNetAmount,
     int CommissionableAmount,
     bool IsFirstCustomerCompanyOrder,
-    int PartsEstimateAmount);
+    int PartsEstimateAmount,
+    string? CompanyCommissionTierName = null,
+    int CompanyCommissionMissionSequence = 0);

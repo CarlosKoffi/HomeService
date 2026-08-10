@@ -2,7 +2,24 @@ namespace HomeService.Contracts.Admin;
 
 public sealed record AdminMissionSettingsResponse(
     IReadOnlyList<AdminCommissionRuleResponse> CommissionRules,
-    IReadOnlyList<AdminMissionWorkflowSettingResponse> WorkflowSettings);
+    IReadOnlyList<AdminMissionWorkflowSettingResponse> WorkflowSettings,
+    IReadOnlyList<AdminCompanyCommissionTierResponse>? CompanyCommissionTiers = null);
+
+public sealed record AdminCompanyCommissionTierResponse(
+    Guid Id,
+    string Name,
+    int MinimumMissionCount,
+    int RateBasisPoints,
+    decimal RatePercent,
+    int SortOrder,
+    bool IsActive);
+
+public sealed record UpdateAdminCompanyCommissionTierRequest(
+    string Name,
+    int MinimumMissionCount,
+    int RateBasisPoints,
+    int SortOrder,
+    bool IsActive);
 
 public sealed record AdminCommissionRuleResponse(
     Guid Id,

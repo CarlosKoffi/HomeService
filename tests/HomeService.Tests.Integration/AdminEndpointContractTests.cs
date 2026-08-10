@@ -142,6 +142,7 @@ public sealed class AdminEndpointContractTests
     [Theory]
     [InlineData("GET", "/api/admin/mission-settings")]
     [InlineData("PUT", "/api/admin/mission-settings/commission-rules/{ruleId:guid}")]
+    [InlineData("PUT", "/api/admin/mission-settings/company-commission-tiers/{tierId:guid}")]
     [InlineData("PUT", "/api/admin/mission-settings/workflow-settings/{settingId:guid}")]
     public void AdminMissionSettingsRoutes_AreMapped(string httpMethod, string routePattern)
     {

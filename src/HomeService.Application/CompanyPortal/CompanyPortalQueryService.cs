@@ -520,21 +520,74 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   null))
             .ToListAsync(cancellationToken);
 
-        var financialBreakdowns = await db.Missions
+        var financialRows = await db.Missions
             .AsNoTracking()
             .Where(mission => mission.CompanyId == companyId
                 && mission.Status == MissionStatus.Completed
                 && (mission.ScheduledFor == null || mission.ScheduledFor >= start))
-            .Select(mission => new CompanyPortalPaymentBreakdownResponse(
+            .Select(mission => new
+            {
                 mission.Id,
-                mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0,
-                mission.PlatformCommissionRateBasisPoints,
-                mission.PlatformCommissionAmount,
-                mission.CompanyPayoutAmount,
+                mission.CustomerId,
+                GrossServiceAmount = mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0,
+                CommissionRateBasisPoints = mission.PlatformCommissionRateBasisPoints,
+                CommissionAmount = mission.PlatformCommissionAmount,
+                CompanyNetAmount = mission.CompanyPayoutAmount,
                 mission.CommissionableAmount,
                 mission.IsFirstCustomerCompanyOrder,
-                mission.PartsEstimateAmount ?? 0))
+                PartsAmount = mission.PartsEstimateAmount ?? 0,
+                mission.CompanyCommissionTierName,
+                mission.CompanyCommissionMissionSequence
+            })
             .ToListAsync(cancellationToken);
+
+        // Les missions creees avant l'ajout de l'indicateur commercial ont recu
+        // `false` par defaut. On reconstitue uniquement leur libelle historique
+        // a partir de la premiere relation confirmee, sans modifier les montants.
+        var displayedCustomerIds = financialRows
+            .Select(item => item.CustomerId)
+            .Distinct()
+            .ToArray();
+        var relationshipHistory = await db.Missions
+            .AsNoTracking()
+            .Where(mission => mission.CompanyId == companyId
+                && displayedCustomerIds.Contains(mission.CustomerId)
+                && (mission.CustomerConfirmedAt != null
+                    || mission.PaymentStatus == PaymentStatus.Paid
+                    || mission.Status == MissionStatus.Completed))
+            .Select(mission => new
+            {
+                mission.Id,
+                mission.CustomerId,
+                mission.CustomerConfirmedAt,
+                mission.CustomerQuoteAcceptedAt,
+                mission.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+        var firstRelationshipMissionIds = relationshipHistory
+            .GroupBy(item => item.CustomerId)
+            .Select(group => group
+                .OrderBy(item => item.CustomerConfirmedAt
+                    ?? item.CustomerQuoteAcceptedAt
+                    ?? item.CreatedAt)
+                .ThenBy(item => item.CreatedAt)
+                .ThenBy(item => item.Id)
+                .First()
+                .Id)
+            .ToHashSet();
+        var financialBreakdowns = financialRows
+            .Select(item => new CompanyPortalPaymentBreakdownResponse(
+                item.Id,
+                item.GrossServiceAmount,
+                item.CommissionRateBasisPoints,
+                item.CommissionAmount,
+                item.CompanyNetAmount,
+                item.CommissionableAmount,
+                item.IsFirstCustomerCompanyOrder || firstRelationshipMissionIds.Contains(item.Id),
+                item.PartsAmount,
+                item.CompanyCommissionTierName,
+                item.CompanyCommissionMissionSequence))
+            .ToList();
 
         var paidMissions = missions
             .Where(mission => mission.PaymentStatus == PaymentStatus.Paid.ToString())
@@ -546,6 +599,8 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
         var paidFinancialBreakdowns = financialBreakdowns
             .Where(item => paidMissionIds.Contains(item.MissionId))
             .ToList();
+        var commissionProgress = await new MissionCommercialPricingService(db)
+            .GetCompanyCommissionProgressAsync(companyId, cancellationToken);
 
         return CompanyPortalPaymentsResult.Ok(new CompanyPortalPaymentSummaryResponse(
             normalizedPeriod,
@@ -563,7 +618,20 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             paidFinancialBreakdowns.Sum(item => item.CompanyNetAmount > 0
                 ? item.CompanyNetAmount
                 : Math.Max(0, item.GrossServiceAmount - item.CommissionAmount)),
-            financialBreakdowns));
+            financialBreakdowns,
+            new CompanyPortalCommissionProgressResponse(
+                commissionProgress.CurrentTierName,
+                commissionProgress.CurrentRateBasisPoints,
+                commissionProgress.CompletedMissionCount,
+                commissionProgress.NextTierMinimumMissionCount,
+                commissionProgress.NextTierName,
+                commissionProgress.MissionsUntilNextTier,
+                commissionProgress.RatingCount,
+                commissionProgress.AverageRating,
+                commissionProgress.CompanyCancellationRateBasisPoints,
+                commissionProgress.DocumentsCompliant,
+                commissionProgress.HasOpenDispute,
+                commissionProgress.IsQualityEligible)));
     }
 
     private async Task<bool> CompanyExistsAsync(Guid companyId, CancellationToken cancellationToken)

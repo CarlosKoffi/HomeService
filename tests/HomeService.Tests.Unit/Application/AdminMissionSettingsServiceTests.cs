@@ -51,6 +51,27 @@ public sealed class AdminMissionSettingsServiceTests
     }
 
     [Fact]
+    public async Task UpdateCompanyCommissionTierAsync_UpdatesThresholdAndRate()
+    {
+        await using var db = CreateDbContext();
+        var tier = new CompanyCommissionTier("Essor", 50, 1400, 20);
+        db.CompanyCommissionTiers.Add(tier);
+        await db.SaveChangesAsync();
+        var sut = new AdminMissionSettingsService(db);
+
+        var result = await sut.UpdateCompanyCommissionTierAsync(
+            tier.Id,
+            new UpdateAdminCompanyCommissionTierRequest("Essor plus", 60, 1350, 25, true),
+            CancellationToken.None);
+
+        Assert.Equal(AdminMissionSettingsOperationStatus.Ok, result.Status);
+        var stored = await db.CompanyCommissionTiers.SingleAsync();
+        Assert.Equal("Essor plus", stored.Name);
+        Assert.Equal(60, stored.MinimumMissionCount);
+        Assert.Equal(1350, stored.RateBasisPoints);
+    }
+
+    [Fact]
     public async Task UpdateCommissionRuleAsync_UpdatesExistingRule()
     {
         await using var db = CreateDbContext();

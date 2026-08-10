@@ -708,6 +708,25 @@ public static class AdminEndpoints
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
+        admin.MapPut("/mission-settings/company-commission-tiers/{tierId:guid}", async (
+            Guid tierId,
+            UpdateAdminCompanyCommissionTierRequest request,
+            AdminMissionSettingsService settingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await settingsService.UpdateCompanyCommissionTierAsync(tierId, request, cancellationToken);
+            return result.Status switch
+            {
+                AdminMissionSettingsOperationStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                AdminMissionSettingsOperationStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
+                _ => Results.Ok(await settingsService.GetAsync(cancellationToken))
+            };
+        })
+        .WithName("UpdateAdminCompanyCommissionTier")
+        .Produces<AdminMissionSettingsResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status404NotFound);
+
         admin.MapPut("/mission-settings/workflow-settings/{settingId:guid}", async (
             Guid settingId,
             UpdateAdminMissionWorkflowSettingRequest request,

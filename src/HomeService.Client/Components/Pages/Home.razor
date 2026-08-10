@@ -39,7 +39,12 @@
         <nav class="client-navigation @(mobileMenuOpen ? "is-open" : string.Empty)" aria-label="Navigation principale">
             <div class="client-nav-main">
                 <details class="client-services-dropdown">
-                    <summary>Nos services <span aria-hidden="true">⌄</span></summary>
+                    <summary>
+                        Nos services
+                        <span class="client-nav-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 16 16" focusable="false"><path d="m3.5 6 4.5 4 4.5-4" /></svg>
+                        </span>
+                    </summary>
                     <div class="client-services-menu">
                         <strong>Services les plus demandés</strong>
                         @foreach (var service in PopularServices)

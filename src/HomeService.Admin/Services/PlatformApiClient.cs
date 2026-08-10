@@ -354,6 +354,18 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
+    public async Task<AdminMissionSettingsResponse?> UpdateAdminCompanyCommissionTierAsync(
+        Guid tierId,
+        UpdateAdminCompanyCommissionTierRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminMissionSettingsResponse>(
+            $"/api/admin/mission-settings/company-commission-tiers/{tierId:D}",
+            request,
+            cancellationToken);
+    }
+
     public async Task<AdminProviderListResponse?> GetAdminProvidersAsync(
         string? status,
         string? employmentType,

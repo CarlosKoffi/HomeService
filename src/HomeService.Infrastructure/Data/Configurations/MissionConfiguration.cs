@@ -27,6 +27,8 @@ public sealed class MissionConfiguration : IEntityTypeConfiguration<Mission>
         builder.Property(mission => mission.ServiceLatitude).HasPrecision(9, 6);
         builder.Property(mission => mission.ServiceLongitude).HasPrecision(9, 6);
         builder.Property(mission => mission.DispatchRound).HasDefaultValue(0);
+        builder.Property(mission => mission.CompanyCommissionTierName).HasMaxLength(120);
+        builder.Property(mission => mission.CompanyCommissionMissionSequence).HasDefaultValue(0);
         builder.Ignore(mission => mission.CanRevealContactDetails);
         builder.Ignore(mission => mission.CustomerChargedAmount);
         builder.HasOne(mission => mission.ServicePrestation)

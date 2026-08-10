@@ -31,6 +31,9 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(company => company.AcceptsInterimApplications).HasDefaultValue(false);
         builder.Property(company => company.MissionDispatchPriority).HasDefaultValue(100);
         builder.Property(company => company.AcceptsUrgentMissions).HasDefaultValue(false);
+        builder.Property(company => company.CurrentCommissionTierName).HasMaxLength(120).HasDefaultValue("Lancement");
+        builder.Property(company => company.CurrentCommissionTierMinimumMissionCount).HasDefaultValue(1);
+        builder.Property(company => company.CurrentCommissionRateBasisPoints).HasDefaultValue(1500);
         builder.HasIndex(company => new { company.Status, company.MissionDispatchPriority });
     }
 }

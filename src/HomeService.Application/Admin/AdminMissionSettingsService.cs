@@ -11,6 +11,8 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
     {
         var rules = await db.CommissionRules
             .AsNoTracking()
+            .Where(rule => rule.Target != CommissionRuleTarget.CompanyFirstCustomerOrder
+                && rule.Target != CommissionRuleTarget.CompanyRepeatCustomerOrder)
             .OrderBy(rule => rule.Target)
             .ThenBy(rule => rule.CompanyId == null ? 0 : 1)
             .ThenBy(rule => rule.ServiceId == null ? 0 : 1)
@@ -49,6 +51,20 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
                 setting.IsActive))
             .ToListAsync(cancellationToken);
 
+        var companyCommissionTiers = await db.CompanyCommissionTiers
+            .AsNoTracking()
+            .OrderBy(item => item.MinimumMissionCount)
+            .ThenBy(item => item.SortOrder)
+            .Select(item => new AdminCompanyCommissionTierResponse(
+                item.Id,
+                item.Name,
+                item.MinimumMissionCount,
+                item.RateBasisPoints,
+                item.RateBasisPoints / 100m,
+                item.SortOrder,
+                item.IsActive))
+            .ToListAsync(cancellationToken);
+
         return new AdminMissionSettingsResponse(
             rules
                 .Select(rule => new AdminCommissionRuleResponse(
@@ -65,7 +81,8 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
                     rule.EffectiveFrom,
                     rule.EffectiveUntil))
                 .ToList(),
-            workflowSettings);
+            workflowSettings,
+            companyCommissionTiers);
     }
 
     public async Task<AdminMissionSettingsOperationResult> UpdateCommissionRuleAsync(
@@ -114,6 +131,37 @@ public sealed class AdminMissionSettingsService(IAppDbContext db)
         setting.UpdateValue(request.Value);
         await db.SaveChangesAsync(cancellationToken);
 
+        return AdminMissionSettingsOperationResult.Ok();
+    }
+
+    public async Task<AdminMissionSettingsOperationResult> UpdateCompanyCommissionTierAsync(
+        Guid tierId,
+        UpdateAdminCompanyCommissionTierRequest request,
+        CancellationToken cancellationToken)
+    {
+        var tier = await db.CompanyCommissionTiers.FirstOrDefaultAsync(item => item.Id == tierId, cancellationToken);
+        if (tier is null)
+        {
+            return AdminMissionSettingsOperationResult.NotFound("Palier de commission introuvable.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Name)
+            || request.MinimumMissionCount < 1
+            || request.RateBasisPoints is < 0 or > 10000)
+        {
+            return AdminMissionSettingsOperationResult.ValidationFailed("Le nom, le seuil et le taux du palier sont invalides.");
+        }
+
+        var thresholdAlreadyUsed = await db.CompanyCommissionTiers.AnyAsync(item => item.Id != tierId
+            && item.MinimumMissionCount == request.MinimumMissionCount,
+            cancellationToken);
+        if (thresholdAlreadyUsed)
+        {
+            return AdminMissionSettingsOperationResult.ValidationFailed("Un autre palier utilise deja ce nombre de missions.");
+        }
+
+        tier.Update(request.Name, request.MinimumMissionCount, request.RateBasisPoints, request.SortOrder, request.IsActive);
+        await db.SaveChangesAsync(cancellationToken);
         return AdminMissionSettingsOperationResult.Ok();
     }
 
