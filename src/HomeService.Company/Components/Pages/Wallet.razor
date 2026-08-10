@@ -71,8 +71,10 @@ else
                     <section class="wallet-grid">
                         <article class="wallet-panel">
                             <header>
-                                <div><span class="wallet-eyebrow">DESTINATIONS</span><h2>Où recevoir l’argent ?</h2></div>
-                                <button class="wallet-text-button" @onclick="ToggleDestinationForm">@(ShowDestinationForm ? "Fermer" : "+ Ajouter")</button>
+                                <div><span class="wallet-eyebrow">MODE DE REVERSEMENT</span><h2>Où recevoir l’argent ?</h2></div>
+                                <button class="wallet-text-button" @onclick="ToggleDestinationForm">
+                                    @(ShowDestinationForm ? "Fermer" : CurrentDestination is null ? "Configurer" : "Modifier")
+                                </button>
                             </header>
 
                             @if (ShowDestinationForm)
@@ -140,28 +142,24 @@ else
                                         </label>
                                     }
 
-                                    <button class="wallet-primary full" @onclick="AddDestinationAsync" disabled="@(IsSaving || !CanSaveDestination)">
+                                    <button class="wallet-primary full" @onclick="SaveDestinationAsync" disabled="@(IsSaving || !CanSaveDestination)">
                                         @DestinationSubmitLabel
                                     </button>
                                 </div>
                             }
 
-                            @if (Snapshot.Destinations.Count == 0)
+                            @if (CurrentDestination is null)
                             {
-                                <div class="wallet-empty">Ajoutez un bénéficiaire pour préparer votre premier reversement.</div>
+                                <div class="wallet-empty">Configurez le mode que votre entreprise utilisera pour ses reversements.</div>
                             }
-                            else
+                            else if (!ShowDestinationForm)
                             {
                                 <div class="destination-list">
-                                    @foreach (var destination in Snapshot.Destinations.Where(item => item.IsActive))
-                                    {
-                                        <label class="destination-card">
-                                            <input type="radio" name="destination" value="@destination.Id" @onchange='() => SelectedDestinationId = destination.Id' checked="@(SelectedDestinationId == destination.Id)" />
-                                            <span class="destination-icon">@DestinationInitial(destination)</span>
-                                            <span><strong>@destination.Label</strong><small>@DestinationSubtitle(destination)</small></span>
-                                            <em class="@(destination.IsVerified ? "verified" : "pending")">@DestinationStatus(destination)</em>
-                                        </label>
-                                    }
+                                    <div class="destination-card single">
+                                        <span class="destination-icon">@DestinationInitial(CurrentDestination)</span>
+                                        <span><strong>@CurrentDestination.Label</strong><small>@DestinationSubtitle(CurrentDestination)</small></span>
+                                        <em class="@(CurrentDestination.IsVerified ? "verified" : "pending")">@DestinationStatus(CurrentDestination)</em>
+                                    </div>
                                 </div>
                             }
                         </article>
@@ -213,7 +211,7 @@ else
 }
 
 <style>
-    .wallet-page{display:grid;gap:24px;color:#101828}.wallet-state{min-height:70vh;display:grid;place-content:center;gap:14px;text-align:center}.wallet-message{padding:14px 18px;border-radius:14px;font-weight:700}.wallet-message.success{background:#ecfdf3;color:#067647}.wallet-message.error{background:#fef3f2;color:#b42318}.wallet-hero{display:flex;justify-content:space-between;align-items:center;padding:30px 34px;border-radius:24px;background:linear-gradient(135deg,#1264f5,#0a45c2);color:white;box-shadow:0 20px 44px rgba(18,100,245,.2)}.wallet-hero span,.wallet-hero small{display:block;opacity:.86}.wallet-hero strong{display:block;font-size:42px;margin:8px 0}.wallet-hero-mark{width:78px;height:78px;border-radius:24px;display:grid;place-content:center;background:rgba(255,255,255,.15);font-size:40px;font-weight:900}.wallet-balances{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.wallet-balances article,.wallet-panel{background:#fff;border:1px solid #e3eaf5;border-radius:20px;padding:22px;box-shadow:0 12px 32px rgba(16,24,40,.05)}.wallet-balances span,.wallet-balances small{display:block;color:#667085}.wallet-balances strong{display:block;font-size:24px;margin:7px 0}.wallet-panel header{display:flex;align-items:center;justify-content:space-between;gap:12px}.wallet-panel h2{margin:4px 0 8px}.wallet-panel p{color:#667085}.wallet-eyebrow{font-size:12px;font-weight:900;letter-spacing:.12em;color:#1264f5}.frequency-panel{display:flex;align-items:center;justify-content:space-between;gap:26px}.frequency-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:54%}.frequency-options button{padding:16px;text-align:left;border:1px solid #d7dfec;border-radius:16px;background:#fff;color:#101828}.frequency-options button.active{border:2px solid #1264f5;background:#f4f8ff}.frequency-options small,.frequency-options strong{display:block}.frequency-options small{margin-top:5px;color:#667085}.wallet-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:20px}.wallet-text-button{border:0;background:transparent;color:#1264f5;font-weight:800}.destination-form{margin-top:18px;padding-top:18px;border-top:1px solid #edf0f5;display:grid;grid-template-columns:1fr 1fr;gap:14px}.destination-form label{display:grid;gap:7px;font-size:13px;font-weight:700}.destination-form label>small{color:#667085;font-size:12px;font-weight:500;line-height:1.45}.destination-form .full{grid-column:1/-1}.destination-form input,.destination-form select{height:46px;border:1px solid #d7dfec;border-radius:12px;padding:0 13px;background:#fff;color:#101828;outline:none}.destination-form input:focus,.destination-form select:focus{border-color:#1264f5;box-shadow:0 0 0 3px rgba(18,100,245,.1)}.destination-guidance{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:14px;border:1px solid #b9d2ff;background:#f5f8ff;color:#193b73}.destination-guidance .guidance-icon{flex:0 0 38px;height:38px;border-radius:12px;display:grid;place-content:center;background:#1264f5;color:#fff;font-size:12px;font-weight:900}.destination-guidance strong,.destination-guidance small{display:block}.destination-guidance small{margin-top:3px;line-height:1.45;color:#48658f}.destination-list{display:grid;gap:10px;margin-top:18px}.destination-card{display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:12px;padding:14px;border:1px solid #e3eaf5;border-radius:15px}.destination-card input{accent-color:#1264f5}.destination-icon{width:42px;height:42px;border-radius:13px;background:#eef4ff;color:#1264f5;display:grid;place-content:center;font-weight:900}.destination-card strong,.destination-card small{display:block}.destination-card small{color:#667085;margin-top:3px}.destination-card em{font-style:normal;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px}.destination-card em.verified{background:#ecfdf3;color:#067647}.destination-card em.pending{background:#fff7ed;color:#c2410c}.wallet-primary{border:0;border-radius:13px;background:#1264f5;color:white;min-height:46px;padding:0 18px;font-weight:800}.wallet-primary:disabled{background:#d0d5dd}.payout-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf0f5;border-bottom:1px solid #edf0f5;padding:18px 0;margin:18px 0}.payout-total strong{font-size:24px}.payout-fees{display:grid;gap:9px;margin-bottom:20px}.payout-fees span{display:flex;justify-content:space-between;color:#667085}.payout-panel .wallet-primary{width:100%}.payout-help{display:block;text-align:center;color:#667085;margin-top:10px}.wallet-empty{padding:24px 0;color:#667085}.payout-row{display:grid;grid-template-columns:1.5fr 1fr auto;align-items:center;gap:18px;padding:16px 0;border-top:1px solid #edf0f5}.payout-row strong,.payout-row small{display:block}.payout-row small{color:#667085;margin-top:4px}.payout-row em{font-style:normal;font-weight:800;font-size:12px;padding:7px 10px;border-radius:999px;background:#eef4ff;color:#1264f5}.payout-row em.status-paid{background:#ecfdf3;color:#067647}.payout-row em.status-failed,.payout-row em.status-rejected{background:#fef3f2;color:#b42318}
+    .wallet-page{display:grid;gap:24px;color:#101828}.wallet-state{min-height:70vh;display:grid;place-content:center;gap:14px;text-align:center}.wallet-message{padding:14px 18px;border-radius:14px;font-weight:700}.wallet-message.success{background:#ecfdf3;color:#067647}.wallet-message.error{background:#fef3f2;color:#b42318}.wallet-hero{display:flex;justify-content:space-between;align-items:center;padding:30px 34px;border-radius:24px;background:linear-gradient(135deg,#1264f5,#0a45c2);color:white;box-shadow:0 20px 44px rgba(18,100,245,.2)}.wallet-hero span,.wallet-hero small{display:block;opacity:.86}.wallet-hero strong{display:block;font-size:42px;margin:8px 0}.wallet-hero-mark{width:78px;height:78px;border-radius:24px;display:grid;place-content:center;background:rgba(255,255,255,.15);font-size:40px;font-weight:900}.wallet-balances{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.wallet-balances article,.wallet-panel{background:#fff;border:1px solid #e3eaf5;border-radius:20px;padding:22px;box-shadow:0 12px 32px rgba(16,24,40,.05)}.wallet-balances span,.wallet-balances small{display:block;color:#667085}.wallet-balances strong{display:block;font-size:24px;margin:7px 0}.wallet-panel header{display:flex;align-items:center;justify-content:space-between;gap:12px}.wallet-panel h2{margin:4px 0 8px}.wallet-panel p{color:#667085}.wallet-eyebrow{font-size:12px;font-weight:900;letter-spacing:.12em;color:#1264f5}.frequency-panel{display:flex;align-items:center;justify-content:space-between;gap:26px}.frequency-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:54%}.frequency-options button{padding:16px;text-align:left;border:1px solid #d7dfec;border-radius:16px;background:#fff;color:#101828}.frequency-options button.active{border:2px solid #1264f5;background:#f4f8ff}.frequency-options small,.frequency-options strong{display:block}.frequency-options small{margin-top:5px;color:#667085}.wallet-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:20px}.wallet-text-button{border:0;background:transparent;color:#1264f5;font-weight:800}.destination-form{margin-top:18px;padding-top:18px;border-top:1px solid #edf0f5;display:grid;grid-template-columns:1fr 1fr;gap:14px}.destination-form label{display:grid;gap:7px;font-size:13px;font-weight:700}.destination-form label>small{color:#667085;font-size:12px;font-weight:500;line-height:1.45}.destination-form .full{grid-column:1/-1}.destination-form input,.destination-form select{height:46px;border:1px solid #d7dfec;border-radius:12px;padding:0 13px;background:#fff;color:#101828;outline:none}.destination-form input:focus,.destination-form select:focus{border-color:#1264f5;box-shadow:0 0 0 3px rgba(18,100,245,.1)}.destination-guidance{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:14px;border:1px solid #b9d2ff;background:#f5f8ff;color:#193b73}.destination-guidance .guidance-icon{flex:0 0 38px;height:38px;border-radius:12px;display:grid;place-content:center;background:#1264f5;color:#fff;font-size:12px;font-weight:900}.destination-guidance strong,.destination-guidance small{display:block}.destination-guidance small{margin-top:3px;line-height:1.45;color:#48658f}.destination-list{display:grid;gap:10px;margin-top:18px}.destination-card{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:14px;border:1px solid #e3eaf5;border-radius:15px}.destination-icon{width:42px;height:42px;border-radius:13px;background:#eef4ff;color:#1264f5;display:grid;place-content:center;font-weight:900}.destination-card strong,.destination-card small{display:block}.destination-card small{color:#667085;margin-top:3px}.destination-card em{font-style:normal;font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px}.destination-card em.verified{background:#ecfdf3;color:#067647}.destination-card em.pending{background:#fff7ed;color:#c2410c}.wallet-primary{border:0;border-radius:13px;background:#1264f5;color:white;min-height:46px;padding:0 18px;font-weight:800}.wallet-primary:disabled{background:#d0d5dd}.payout-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #edf0f5;border-bottom:1px solid #edf0f5;padding:18px 0;margin:18px 0}.payout-total strong{font-size:24px}.payout-fees{display:grid;gap:9px;margin-bottom:20px}.payout-fees span{display:flex;justify-content:space-between;color:#667085}.payout-panel .wallet-primary{width:100%}.payout-help{display:block;text-align:center;color:#667085;margin-top:10px}.wallet-empty{padding:24px 0;color:#667085}.payout-row{display:grid;grid-template-columns:1.5fr 1fr auto;align-items:center;gap:18px;padding:16px 0;border-top:1px solid #edf0f5}.payout-row strong,.payout-row small{display:block}.payout-row small{color:#667085;margin-top:4px}.payout-row em{font-style:normal;font-weight:800;font-size:12px;padding:7px 10px;border-radius:999px;background:#eef4ff;color:#1264f5}.payout-row em.status-paid{background:#ecfdf3;color:#067647}.payout-row em.status-failed,.payout-row em.status-rejected{background:#fef3f2;color:#b42318}
     @@media(max-width:900px){.wallet-balances,.wallet-grid{grid-template-columns:1fr}.frequency-panel{display:grid}.frequency-options{min-width:0}.wallet-hero{padding:24px}.wallet-hero strong{font-size:34px}}
     @@media(max-width:560px){.wallet-page{gap:14px}.wallet-balances{grid-template-columns:1fr 1fr}.wallet-balances article:last-child{grid-column:1/-1}.frequency-options,.destination-form{grid-template-columns:1fr}.destination-form .full{grid-column:auto}.wallet-hero-mark{display:none}.payout-row{grid-template-columns:1fr auto}.payout-row em{grid-column:1/-1;justify-self:start}}
 </style>
@@ -234,14 +232,17 @@ else
 
     private bool IsCashDestination => DestinationMethod == "Cash";
     private bool IsBankDestination => DestinationMethod == "BankTransfer";
+    private CompanyPayoutDestinationResponse? CurrentDestination => Snapshot?.Destinations.FirstOrDefault(item => item.IsActive);
     private bool CanSaveDestination => BeneficiaryName.Trim().Length >= 3
         && (IsCashDestination
             || (!string.IsNullOrWhiteSpace(ProviderCode) && DestinationIdentifier.Trim().Length >= 5));
-    private string DestinationSubmitLabel => IsCashDestination
-        ? "Enregistrer la personne autorisée"
-        : IsBankDestination
-            ? "Enregistrer le compte bancaire"
-            : "Enregistrer le compte Mobile Money";
+    private string DestinationSubmitLabel => CurrentDestination is not null
+        ? "Enregistrer les modifications"
+        : IsCashDestination
+            ? "Enregistrer la personne autorisée"
+            : IsBankDestination
+                ? "Enregistrer le compte bancaire"
+                : "Enregistrer le compte Mobile Money";
     private bool HasVerifiedSelectedDestination => Snapshot?.Destinations.Any(item => item.Id == SelectedDestinationId && item.IsVerified && item.IsActive) == true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -263,8 +264,11 @@ else
         try
         {
             Snapshot = await ApiClient.GetCompanyWalletAsync(Session.CompanyId, Session.Token);
-            SelectedDestinationId ??= Snapshot?.Destinations.FirstOrDefault(item => item.IsDefault && item.IsActive)?.Id
-                ?? Snapshot?.Destinations.FirstOrDefault(item => item.IsActive)?.Id;
+            SelectedDestinationId = CurrentDestination?.Id;
+            if (CurrentDestination is null)
+            {
+                ShowDestinationForm = true;
+            }
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
         {
@@ -292,7 +296,7 @@ else
         }
     }
 
-    private async Task AddDestinationAsync()
+    private async Task SaveDestinationAsync()
     {
         if (Session is null || IsSaving || !CanSaveDestination) return;
         IsSaving = true;
@@ -308,8 +312,8 @@ else
             var identifier = IsCashDestination
                 ? string.Empty
                 : DestinationIdentifier.Trim();
-            var result = await ApiClient.AddPayoutDestinationAsync(Session.CompanyId, Session.Token, new(
-                DestinationMethod, label, BeneficiaryName.Trim(), provider, identifier, true));
+            var result = await ApiClient.SavePayoutDestinationAsync(Session.CompanyId, Session.Token, new(
+                DestinationMethod, label, BeneficiaryName.Trim(), provider, identifier));
             var successMessage = IsCashDestination
                 ? "Personne autorisée enregistrée. Une pièce d’identité originale et valide sera exigée au retrait."
                 : "Coordonnées enregistrées. Une vérification est nécessaire avant le premier versement.";
@@ -320,7 +324,7 @@ else
                 BeneficiaryName = string.Empty;
                 DestinationIdentifier = string.Empty;
                 ProviderCode = DestinationMethod == "MobileMoney" ? "wave" : string.Empty;
-                SelectedDestinationId = result.Wallet?.Destinations.FirstOrDefault(item => item.IsDefault)?.Id;
+                SelectedDestinationId = result.Wallet?.Destinations.FirstOrDefault(item => item.IsActive)?.Id;
             }
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or InvalidOperationException)
@@ -383,7 +387,22 @@ else
         Message = null;
     }
 
-    private void ToggleDestinationForm() => ShowDestinationForm = !ShowDestinationForm;
+    private void ToggleDestinationForm()
+    {
+        ShowDestinationForm = !ShowDestinationForm;
+        if (!ShowDestinationForm || CurrentDestination is null)
+        {
+            return;
+        }
+
+        DestinationMethod = CurrentDestination.Method;
+        BeneficiaryName = CurrentDestination.BeneficiaryName;
+        ProviderCode = CurrentDestination.ProviderCode;
+        // Les coordonnées complètes ne sont jamais renvoyées au navigateur.
+        // L'entreprise les ressaisit pour confirmer toute modification.
+        DestinationIdentifier = string.Empty;
+        Message = null;
+    }
     private static string Money(int amount) => $"{amount:N0} FCFA".Replace(',', ' ');
     private static string Date(DateTimeOffset date) => date.ToLocalTime().ToString("dd MMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"));
     private static string DestinationInitial(CompanyPayoutDestinationResponse destination) => destination.Method switch

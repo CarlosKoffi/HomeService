@@ -100,21 +100,32 @@
         </div>
     </header>
 
-    @if (PayoutDestinations.Any(item => item.IsActive && !item.IsVerified))
+    @if (PayoutDestinations.Any(item => item.IsActive))
     {
         <div class="payout-review-grid">
-            @foreach (var destination in PayoutDestinations.Where(item => item.IsActive && !item.IsVerified))
+            @foreach (var destination in PayoutDestinations.Where(item => item.IsActive).OrderBy(item => item.IsVerified))
             {
-                <article class="payout-review-card">
+                <article class="payout-review-card @(destination.IsVerified ? "verified" : "pending")">
                     <div>
                         <strong>@destination.CompanyName</strong>
                         <p>@destination.BeneficiaryName · @destination.ProviderCode · @destination.MaskedIdentifier</p>
                         <small>@destination.Method · ajouté le @FormatDate(destination.CreatedAt)</small>
                     </div>
-                    <button type="button" class="secondary-action" @onclick="() => VerifyDestinationAsync(destination.Id)">Vérifier</button>
+                    @if (destination.IsVerified)
+                    {
+                        <span class="destination-verification-status verified">✓ Vérifié</span>
+                    }
+                    else
+                    {
+                        <button type="button" class="secondary-action" @onclick="() => VerifyDestinationAsync(destination.Id)">Vérifier</button>
+                    }
                 </article>
             }
         </div>
+    }
+    else
+    {
+        <article class="admin-empty-row"><strong>Aucun mode de reversement configuré</strong><p>Le choix actif de chaque entreprise apparaîtra ici.</p></article>
     }
 
     @if (CompanyPayouts.Count == 0)
@@ -129,7 +140,15 @@
                 <div>
                     <strong>@payout.CompanyName</strong>
                     <p>@payout.Reference · @TranslatePayoutMethod(payout.Method) · @payout.Destination</p>
+                    @if (payout.Method == "Cash")
+                    {
+                        <small>Personne autorisée : <b>@payout.BeneficiaryName</b> · pièce d’identité originale obligatoire</small>
+                    }
                     <small>Brut @Money(payout.GrossAmount) · frais @Money(payout.FeeAmount)</small>
+                    @if (payout.Status == "Paid" && !string.IsNullOrWhiteSpace(payout.ProofReference))
+                    {
+                        <small class="cash-proof">Remis le @FormatOptionalDate(payout.PaidAt) · preuve @payout.ProofReference</small>
+                    }
                 </div>
                 <div class="operator-kpis">
                     <span>Net entreprise</span>
@@ -144,8 +163,10 @@
                     }
                     @if (payout.Method == "Cash" && (payout.Status == "Submitted" || payout.Status == "Approved"))
                     {
-                        <input @bind="CashProofReference" placeholder="Référence preuve / reçu" />
-                        <button type="button" @onclick="() => CompleteCashPayoutAsync(payout.Id)">Confirmer la remise</button>
+                        <input value="@GetCashProofReference(payout.Id)"
+                               @oninput="args => SetCashProofReference(payout.Id, args.Value?.ToString())"
+                               placeholder="N° reçu ou preuve signée" />
+                        <button type="button" @onclick="() => CompleteCashPayoutAsync(payout.Id)">Confirmer la remise et débiter</button>
                     }
                 </div>
             </article>
@@ -272,7 +293,7 @@
 </section>
 
 <style>
-    .payout-operations{margin-bottom:24px}.payout-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;padding:18px}.payout-review-card{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px;border:1px solid #e3eaf5;border-radius:16px;background:#f8faff}.payout-review-card p,.payout-review-card small{margin:4px 0;color:#667085}.payout-admin-row{grid-template-columns:minmax(260px,1.5fr) minmax(180px,.7fr) minmax(240px,1fr)}.payout-actions{display:flex;flex-wrap:wrap;gap:8px}.payout-actions input{min-height:38px;border:1px solid #d7dfec;border-radius:9px;padding:0 10px}.status-success,.status-danger,.status-warning{display:inline-flex;width:max-content;padding:5px 9px;border-radius:999px;font-weight:800;font-size:12px}.status-success{background:#ecfdf3;color:#067647}.status-danger{background:#fef3f2;color:#b42318}.status-warning{background:#fff7ed;color:#c2410c}
+    .payout-operations{margin-bottom:24px}.payout-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;padding:18px}.payout-review-card{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px;border:1px solid #e3eaf5;border-radius:16px;background:#f8faff}.payout-review-card.verified{border-color:#abefc6;background:#f6fef9}.payout-review-card p,.payout-review-card small{margin:4px 0;color:#667085}.destination-verification-status{display:inline-flex;flex:0 0 auto;width:max-content;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900}.destination-verification-status.verified{background:#dcfae6;color:#067647}.payout-admin-row{grid-template-columns:minmax(260px,1.5fr) minmax(180px,.7fr) minmax(240px,1fr)}.payout-actions{display:flex;flex-wrap:wrap;gap:8px}.payout-actions input{min-height:38px;border:1px solid #d7dfec;border-radius:9px;padding:0 10px}.cash-proof{margin-top:7px!important;color:#067647!important;font-weight:800}.status-success,.status-danger,.status-warning{display:inline-flex;width:max-content;padding:5px 9px;border-radius:999px;font-weight:800;font-size:12px}.status-success{background:#ecfdf3;color:#067647}.status-danger{background:#fef3f2;color:#b42318}.status-warning{background:#fff7ed;color:#c2410c}
     @@media(max-width:900px){.payout-admin-row{grid-template-columns:1fr}.payout-review-card{align-items:flex-start;flex-direction:column}}
 </style>
 
@@ -287,7 +308,7 @@
     private string? SearchTerm { get; set; }
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
-    private string CashProofReference { get; set; } = string.Empty;
+    private Dictionary<Guid, string> CashProofReferences { get; } = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -322,6 +343,9 @@
             ? payment.ServiceName
             : $"{payment.ServiceName} - {payment.PrestationName}";
     private static string FormatDate(DateTimeOffset value) => value.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    private static string FormatOptionalDate(DateTimeOffset? value) => value is null ? "date inconnue" : FormatDate(value.Value);
+    private string GetCashProofReference(Guid payoutId) => CashProofReferences.GetValueOrDefault(payoutId, string.Empty);
+    private void SetCashProofReference(Guid payoutId, string? value) => CashProofReferences[payoutId] = value?.TrimStart() ?? string.Empty;
     private string ShareOfPaid(int amount)
     {
         var paidAmount = Snapshot?.Stats.PaidAmount ?? 0;
@@ -360,15 +384,16 @@
 
     private async Task CompleteCashPayoutAsync(Guid payoutId)
     {
-        if (string.IsNullOrWhiteSpace(CashProofReference))
+        var proofReference = GetCashProofReference(payoutId);
+        if (string.IsNullOrWhiteSpace(proofReference))
         {
             ErrorMessage = "La référence du reçu ou de la preuve est obligatoire pour un retrait cash.";
             return;
         }
 
-        var result = await ApiClient.CompleteCashCompanyPayoutAsync(payoutId, CashProofReference.Trim());
+        var result = await ApiClient.CompleteCashCompanyPayoutAsync(payoutId, proofReference.Trim());
         ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
-        if (result.IsSuccess) CashProofReference = string.Empty;
+        if (result.IsSuccess) CashProofReferences.Remove(payoutId);
         await LoadAsync();
     }
 

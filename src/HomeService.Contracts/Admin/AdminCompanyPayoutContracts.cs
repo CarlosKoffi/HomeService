@@ -8,12 +8,14 @@ public sealed record AdminCompanyPayoutResponse(
     string Method,
     string Status,
     string Destination,
+    string BeneficiaryName,
     int GrossAmount,
     int FeeAmount,
     int NetAmount,
     string Currency,
     DateTimeOffset CreatedAt,
     DateTimeOffset? PaidAt,
+    string? ProofReference,
     string? FailureReason);
 
 public sealed record ReviewCompanyPayoutRequest(string? Reason = null, string? ProofReference = null);

@@ -48,6 +48,7 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<MissionAdditionalQuote> MissionAdditionalQuotes => Set<MissionAdditionalQuote>();
     public DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns => Set<MissionFinancialBreakdown>();
     public DbSet<MissionPaymentMilestone> MissionPaymentMilestones => Set<MissionPaymentMilestone>();
+    public DbSet<MissionPaymentRequest> MissionPaymentRequests => Set<MissionPaymentRequest>();
     public DbSet<MissionReview> MissionReviews => Set<MissionReview>();
     public DbSet<MissionQualityControl> MissionQualityControls => Set<MissionQualityControl>();
     public DbSet<MissionQualityItem> MissionQualityItems => Set<MissionQualityItem>();
@@ -88,6 +89,25 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<CmsMenuItem> CmsMenuItems => Set<CmsMenuItem>();
     public DbSet<CmsMediaAsset> CmsMediaAssets => Set<CmsMediaAsset>();
     public DbSet<CmsMediaVariant> CmsMediaVariants => Set<CmsMediaVariant>();
+
+    public async Task ExecuteInTransactionAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Database.IsRelational() || Database.CurrentTransaction is not null)
+        {
+            await operation(cancellationToken);
+            return;
+        }
+
+        var executionStrategy = Database.CreateExecutionStrategy();
+        await executionStrategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await Database.BeginTransactionAsync(cancellationToken);
+            await operation(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        });
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

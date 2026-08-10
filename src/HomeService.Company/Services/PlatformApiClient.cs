@@ -760,15 +760,15 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await ReadWalletResultAsync(response, cancellationToken);
     }
 
-    public async Task<CompanyWalletSaveResult> AddPayoutDestinationAsync(
+    public async Task<CompanyWalletSaveResult> SavePayoutDestinationAsync(
         Guid companyId,
         string sessionToken,
-        CreateCompanyPayoutDestinationRequest request,
+        SaveCompanyPayoutDestinationRequest request,
         CancellationToken cancellationToken = default)
     {
         using var message = CreateCompanySessionRequest(
-            HttpMethod.Post,
-            $"/api/company-portal/{companyId:D}/wallet/destinations",
+            HttpMethod.Put,
+            $"/api/company-portal/{companyId:D}/wallet/destination",
             sessionToken,
             request);
         using var response = await httpClient.SendAsync(message, cancellationToken);

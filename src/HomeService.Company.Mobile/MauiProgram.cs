@@ -6,7 +6,7 @@ namespace HomeService.Company.Mobile;
 
 public static class MauiProgram
 {
-    private const string DefaultApiBaseUrl = "http://x295g8jkokv8bax1mijpzhpf.167.233.194.252.sslip.io/";
+    private const string DefaultApiBaseUrl = "https://api.wele.africa/";
 
     public static MauiApp CreateMauiApp()
     {

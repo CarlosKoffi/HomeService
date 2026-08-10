@@ -22,5 +22,9 @@ public sealed class CompanyPayoutDestinationConfiguration : IEntityTypeConfigura
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasIndex(destination => new { destination.CompanyId, destination.IsActive });
         builder.HasIndex(destination => new { destination.CompanyId, destination.IsDefault });
+        builder.HasIndex(destination => destination.CompanyId)
+            .HasDatabaseName("UX_CompanyPayoutDestinations_CompanyId_Active")
+            .IsUnique()
+            .HasFilter("\"IsActive\" = TRUE");
     }
 }

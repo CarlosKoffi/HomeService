@@ -55,40 +55,58 @@ else
                     <section class="payments-kpi-grid">
                         <article class="payments-kpi-hero">
                             <div>
-                                <span>CA encaisse</span>
-                                <strong>@Fmt(TotalPaid)</strong>
-                                <small>@PaidTransactions.Count transaction(s) confirmees</small>
+                                <span>Net crédité à votre entreprise</span>
+                                <strong>@Fmt(TotalNetPaid)</strong>
+                                <small>@PaidTransactions.Count mission(s) payée(s), après commission Wélé</small>
                             </div>
                             <i>@Icon("card-large")</i>
                         </article>
 
                         <article class="payments-kpi-card blue">
                             <header>
-                                <span>Carte bancaire</span>
+                                <span>Montant des prestations</span>
+                                <i class="blue">@Icon("briefcase")</i>
+                            </header>
+                            <strong>@Fmt(TotalGrossPaid)</strong>
+                            <small>Prix facturé pour les missions, avant commission</small>
+                        </article>
+
+                        <article class="payments-kpi-card commission">
+                            <header>
+                                <span>Commission Wélé</span>
+                                <i>@Icon("percent")</i>
+                            </header>
+                            <strong>- @Fmt(TotalCommissionPaid)</strong>
+                            <small>Déduite des prestations encaissées</small>
+                        </article>
+
+                        <article class="payments-kpi-card blue">
+                            <header>
+                                <span>Net via carte bancaire</span>
                                 <i class="blue">@Icon("card")</i>
                             </header>
                             <strong>@Fmt(TotalCard)</strong>
-                            <small>@Percent(TotalCard, TotalPaid)% du total encaisse</small>
+                            <small>@Percent(TotalCard, TotalNetPaid)% du net crédité</small>
                         </article>
 
                         <article class="payments-kpi-card">
                             <header>
-                                <span>Mobile Money</span>
+                                <span>Net via Mobile Money</span>
                                 <i class="blue">@Icon("phone")</i>
                             </header>
                             <strong>@Fmt(TotalMobileMoney)</strong>
-                            <small>@Percent(TotalMobileMoney, TotalPaid)% du total encaisse</small>
+                            <small>@Percent(TotalMobileMoney, TotalNetPaid)% du net crédité</small>
                         </article>
 
                         @if (TotalCashPaid > 0)
                         {
                             <article class="payments-kpi-card">
                                 <header>
-                                    <span>Cash recupere</span>
+                                <span>Net cash récupéré</span>
                                     <i class="violet">@Icon("cash")</i>
                                 </header>
                                 <strong>@Fmt(TotalCashPaid)</strong>
-                                <small>@Percent(TotalCashPaid, TotalPaid)% du total encaisse</small>
+                                <small>@Percent(TotalCashPaid, TotalNetPaid)% du net crédité</small>
                             </article>
                         }
 
@@ -132,10 +150,24 @@ else
                         </article>
                     </section>
 
+                    <section class="payments-commission-explainer">
+                        <div class="payments-explainer-icon">@Icon("percent")</div>
+                        <div>
+                            <span class="payments-explainer-eyebrow">CALCUL TRANSPARENT</span>
+                            <h2>Prix de la prestation − commission Wélé = net entreprise</h2>
+                            <p>Chaque mission ci-dessous affiche le montant brut, le taux réellement appliqué et la somme exacte créditée à votre portefeuille.</p>
+                        </div>
+                        <div class="payments-rate-rules">
+                            <span><strong>12 %</strong> première mission avec un client</span>
+                            <span><strong>10 %</strong> missions suivantes avec ce même client</span>
+                            <small>Règles standard. Si une règle personnalisée s'applique, le taux affiché sur la mission fait foi. Les frais client restent séparés et ne réduisent pas votre net.</small>
+                        </div>
+                    </section>
+
                     <section class="payments-analytics-grid">
                         <article class="payments-chart-card">
                             <header>
-                                <h2>Evolution des encaissements</h2>
+                                <h2>Évolution du net entreprise</h2>
                                 <div>
                                     <span><i class="blue"></i> Mobile Money</span>
                                     <span><i class="card-blue"></i> Carte</span>
@@ -162,7 +194,7 @@ else
                         </article>
 
                         <article class="payments-service-card">
-                            <h2>Repartition par service</h2>
+                            <h2>Net crédité par service</h2>
                             @if (ServiceBreakdown.Count == 0)
                             {
                                 <p class="payments-muted">Aucun encaissement confirme pour cette periode.</p>
@@ -177,7 +209,7 @@ else
                                             <strong>@Fmt(service.Amount)</strong>
                                         </div>
                                         <div class="payments-progress">
-                                            <span style="width: @Percent(service.Amount, TotalPaid)%"></span>
+                                            <span style="width: @Percent(service.Amount, TotalNetPaid)%"></span>
                                         </div>
                                     </div>
                                 }
@@ -215,7 +247,7 @@ else
                             <span>Date</span>
                             <span>Mode</span>
                             <span>Statut</span>
-                            <span>Montant</span>
+                            <span>Détail financier</span>
                         </div>
 
                         @if (FilteredTransactions.Count == 0)
@@ -239,7 +271,22 @@ else
                                     <span class="payments-date">@FormatDate(transaction.Date)</span>
                                     <span class="payments-mode @GetPaymentModeClass(transaction.PaymentMethod)">@Icon(GetPaymentModeIcon(transaction.PaymentMethod)) @GetPaymentModeLabel(transaction.PaymentMethod)</span>
                                     <span class="payments-status @GetPaymentStatusClass(transaction.PaymentStatus)">@Icon(GetPaymentStatusIcon(transaction.PaymentStatus)) @GetPaymentStatusLabel(transaction.PaymentStatus)</span>
-                                    <strong class="payments-amount @GetPaymentAmountClass(transaction.PaymentStatus)">@Fmt(transaction.Amount)</strong>
+                                    <div class="payments-financial-breakdown @GetPaymentAmountClass(transaction.PaymentStatus)">
+                                        <span><small>Prix prestation</small><strong>@Fmt(transaction.GrossAmount)</strong></span>
+                                        <span class="commission-line">
+                                            <small>Commission Wélé (@FormatRate(transaction.CommissionRateBasisPoints))</small>
+                                            <strong>- @Fmt(transaction.CommissionAmount)</strong>
+                                        </span>
+                                        <span class="net-line"><small>Net entreprise</small><strong>@Fmt(transaction.NetAmount)</strong></span>
+                                        @if (transaction.CommissionableAmount > 0 && transaction.CommissionableAmount < transaction.GrossAmount)
+                                        {
+                                            <em>Commission calculée sur @Fmt(transaction.CommissionableAmount), hors pièces.</em>
+                                        }
+                                        else if (transaction.CommissionRateBasisPoints > 0)
+                                        {
+                                            <em>@(transaction.IsFirstCustomerCompanyOrder ? "Première mise en relation" : "Client déjà connu de votre entreprise")</em>
+                                        }
+                                    </div>
                                 </article>
                             }
                         }
@@ -253,7 +300,7 @@ else
                                 }
                                 @if (FilteredPaidTotal > 0)
                                 {
-                                    <strong>Total encaisse @Fmt(FilteredPaidTotal)</strong>
+                                    <strong>Net entreprise @Fmt(FilteredPaidTotal)</strong>
                                 }
                             </div>
                         </footer>
@@ -274,8 +321,11 @@ else
     private bool IsSessionLoading { get; set; } = true;
 
     private IReadOnlyList<PaymentTransactionViewModel> Transactions => Summary?.Missions
-        .Select((mission, index) => PaymentTransactionViewModel.FromMission(mission, index))
+        .Select((mission, index) => PaymentTransactionViewModel.FromMission(mission, index, FindFinancialBreakdown(mission.Id)))
         .ToList() ?? [];
+
+    private CompanyPortalPaymentBreakdownResponse? FindFinancialBreakdown(Guid missionId) =>
+        Summary?.FinancialBreakdowns?.FirstOrDefault(item => item.MissionId == missionId);
 
     private IReadOnlyList<PaymentTransactionViewModel> PaidTransactions => Transactions
         .Where(transaction => IsPaid(transaction.PaymentStatus))
@@ -297,17 +347,25 @@ else
         .Where(transaction => !IsDisputed(transaction.PaymentStatus))
         .ToList();
 
-    private int TotalPaid => PaidTransactions.Sum(transaction => transaction.Amount);
-    private int TotalMobileMoney => PaidTransactions.Where(transaction => transaction.PaymentMethod == "MobileMoney").Sum(transaction => transaction.Amount);
-    private int TotalCard => Summary?.CardAmount ?? PaidTransactions.Where(transaction => transaction.PaymentMethod == "Card").Sum(transaction => transaction.Amount);
-    private int TotalCashPaid => PaidTransactions.Where(transaction => transaction.PaymentMethod == "Cash").Sum(transaction => transaction.Amount);
-    private int TotalPlatformRevenue => Summary?.PlatformRevenueAmount ?? PaidTransactions.Sum(transaction => transaction.PlatformCommissionAmount);
-    private int TotalPending => PendingTransactions.Sum(transaction => transaction.Amount);
-    private int TotalCashToCollect => CashToCollectTransactions.Sum(transaction => transaction.Amount);
-    private int TotalDisputed => DisputedTransactions.Sum(transaction => transaction.Amount);
+    private int TotalGrossPaid => Summary?.GrossServiceAmount > 0
+        ? Summary.GrossServiceAmount
+        : PaidTransactions.Sum(transaction => transaction.GrossAmount);
+    private int TotalCommissionPaid => Summary?.CompanyCommissionAmount > 0
+        ? Summary.CompanyCommissionAmount
+        : PaidTransactions.Sum(transaction => transaction.CommissionAmount);
+    private int TotalNetPaid => Summary?.CompanyNetAmount > 0
+        ? Summary.CompanyNetAmount
+        : PaidTransactions.Sum(transaction => transaction.NetAmount);
+    private int TotalMobileMoney => PaidTransactions.Where(transaction => transaction.PaymentMethod == "MobileMoney").Sum(transaction => transaction.NetAmount);
+    private int TotalCard => PaidTransactions.Where(transaction => transaction.PaymentMethod == "Card").Sum(transaction => transaction.NetAmount);
+    private int TotalCashPaid => PaidTransactions.Where(transaction => transaction.PaymentMethod == "Cash").Sum(transaction => transaction.NetAmount);
+    private int TotalPlatformRevenue => TotalCommissionPaid;
+    private int TotalPending => PendingTransactions.Sum(transaction => transaction.NetAmount);
+    private int TotalCashToCollect => CashToCollectTransactions.Sum(transaction => transaction.GrossAmount);
+    private int TotalDisputed => DisputedTransactions.Sum(transaction => transaction.GrossAmount);
     private int CollectionRate => NonDisputedTransactions.Count == 0 ? 0 : (int)Math.Round(PaidTransactions.Count * 100m / NonDisputedTransactions.Count);
-    private int FilteredPaidTotal => FilteredTransactions.Where(transaction => IsPaid(transaction.PaymentStatus)).Sum(transaction => transaction.Amount);
-    private int FilteredPendingTotal => FilteredTransactions.Where(transaction => IsPending(transaction.PaymentStatus)).Sum(transaction => transaction.Amount);
+    private int FilteredPaidTotal => FilteredTransactions.Where(transaction => IsPaid(transaction.PaymentStatus)).Sum(transaction => transaction.NetAmount);
+    private int FilteredPendingTotal => FilteredTransactions.Where(transaction => IsPending(transaction.PaymentStatus)).Sum(transaction => transaction.NetAmount);
 
     private string PeriodLabel => ActivePeriod switch
     {
@@ -320,7 +378,7 @@ else
 
     private IReadOnlyList<PaymentServiceBreakdown> ServiceBreakdown => PaidTransactions
         .GroupBy(transaction => transaction.ServiceName)
-        .Select(group => new PaymentServiceBreakdown(group.Key, group.Sum(transaction => transaction.Amount)))
+        .Select(group => new PaymentServiceBreakdown(group.Key, group.Sum(transaction => transaction.NetAmount)))
         .OrderByDescending(item => item.Amount)
         .ToList();
 
@@ -420,7 +478,14 @@ else
 
     private string PortalLink(string path) => IsPreviewMode() ? $"{path}?preview=1" : path;
 
-    private static string Fmt(int amount) => $"{amount:N0} F".Replace(",", " ");
+    private static string Fmt(int amount) =>
+        $"{amount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ")} F";
+
+    private static string FormatRate(int basisPoints)
+    {
+        var percentage = Math.Clamp(basisPoints, 0, 10_000) / 100m;
+        return percentage % 1 == 0 ? $"{percentage:0} %" : $"{percentage:0.##} %";
+    }
 
     private static int Percent(int amount, int total) => total <= 0 ? 0 : (int)Math.Round(amount * 100m / total);
 
@@ -546,6 +611,7 @@ else
             "cash" => "<svg viewBox=\"0 0 24 24\"><rect x=\"2\" y=\"6\" width=\"20\" height=\"12\" rx=\"2\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M6 12h.01M18 12h.01\"/></svg>",
             "alert" => "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M12 8v4\"/><path d=\"M12 16h.01\"/></svg>",
             "trend" => "<svg viewBox=\"0 0 24 24\"><path d=\"m23 6-9.5 9.5-5-5L1 18\"/><path d=\"M17 6h6v6\"/></svg>",
+            "percent" => "<svg viewBox=\"0 0 24 24\"><path d=\"M19 5 5 19\"/><circle cx=\"6.5\" cy=\"6.5\" r=\"2.5\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"2.5\"/></svg>",
             "check" => "<svg viewBox=\"0 0 24 24\"><path d=\"M20 6 9 17l-5-5\"/></svg>",
             "search" => "<svg viewBox=\"0 0 24 24\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg>",
             _ => "<svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/></svg>"
@@ -613,6 +679,17 @@ else
     private static CompanyPortalPaymentSummaryResponse GetPreviewSummary(string period)
     {
         var missions = GetPreviewPaidMissions(period);
+        var financialBreakdowns = missions
+            .Select((mission, index) => BuildPreviewFinancialBreakdown(mission, index))
+            .ToList();
+        var paidMissionIds = missions
+            .Where(mission => IsPaid(mission.PaymentStatus))
+            .Select(mission => mission.Id)
+            .ToHashSet();
+        var paidFinancialBreakdowns = financialBreakdowns
+            .Where(item => paidMissionIds.Contains(item.MissionId))
+            .ToList();
+
         return new CompanyPortalPaymentSummaryResponse(
             period,
             missions.Where(mission => IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
@@ -620,10 +697,14 @@ else
             missions.Where(mission => mission.PaymentMethod == "Card" && IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
             missions.Where(mission => mission.PaymentMethod == "Cash" && IsPaid(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
             missions.Where(mission => mission.PaymentMethod == "Cash" && IsPending(mission.PaymentStatus)).Sum(mission => mission.FinalTotalAmount ?? 0),
-            missions.Where(mission => IsPaid(mission.PaymentStatus)).Sum(GetPlatformRevenue),
+            paidFinancialBreakdowns.Sum(item => item.CommissionAmount),
             missions.Count,
             "XOF",
-            missions);
+            missions,
+            paidFinancialBreakdowns.Sum(item => item.GrossServiceAmount),
+            paidFinancialBreakdowns.Sum(item => item.CommissionAmount),
+            paidFinancialBreakdowns.Sum(item => item.CompanyNetAmount),
+            financialBreakdowns);
     }
 
     private static IReadOnlyList<CompanyPortalMissionResponse> GetPreviewPaidMissions(string period)
@@ -654,51 +735,79 @@ else
         return missions;
     }
 
+    private static CompanyPortalPaymentBreakdownResponse BuildPreviewFinancialBreakdown(CompanyPortalMissionResponse mission, int index)
+    {
+        var grossAmount = GetGrossAmount(mission);
+        var isFirstOrder = index is 0 or 2 or 4;
+        var rateBasisPoints = isFirstOrder ? 1200 : 1000;
+        var commissionAmount = (int)Math.Round(grossAmount * rateBasisPoints / 10_000m, MidpointRounding.AwayFromZero);
+
+        return new CompanyPortalPaymentBreakdownResponse(
+            mission.Id,
+            grossAmount,
+            rateBasisPoints,
+            commissionAmount,
+            Math.Max(0, grossAmount - commissionAmount),
+            grossAmount,
+            isFirstOrder,
+            0);
+    }
+
     private sealed record PaymentTransactionViewModel(
         Guid Id,
         string CustomerName,
         string ProviderName,
         string ServiceName,
         DateTimeOffset? Date,
-        int Amount,
+        int GrossAmount,
+        int CommissionRateBasisPoints,
+        int CommissionAmount,
+        int NetAmount,
+        int CommissionableAmount,
+        bool IsFirstCustomerCompanyOrder,
         string PaymentMethod,
         string PaymentStatus,
-        string Reference,
-        int PlatformCommissionAmount)
+        string Reference)
     {
-        public static PaymentTransactionViewModel FromMission(CompanyPortalMissionResponse mission, int index)
+        public static PaymentTransactionViewModel FromMission(
+            CompanyPortalMissionResponse mission,
+            int index,
+            CompanyPortalPaymentBreakdownResponse? financialBreakdown)
         {
+            var grossAmount = financialBreakdown?.GrossServiceAmount ?? GetGrossAmount(mission);
+            var commissionAmount = financialBreakdown?.CommissionAmount ?? 0;
+            var netAmount = financialBreakdown?.CompanyNetAmount > 0
+                ? financialBreakdown.CompanyNetAmount
+                : Math.Max(0, grossAmount - commissionAmount);
+
             return new PaymentTransactionViewModel(
                 mission.Id,
                 mission.CustomerName,
                 mission.ProviderName ?? "Prestataire",
                 mission.ServiceName,
                 mission.ScheduledFor,
-                mission.FinalTotalAmount ?? 0,
+                grossAmount,
+                financialBreakdown?.CommissionRateBasisPoints ?? 0,
+                commissionAmount,
+                netAmount,
+                financialBreakdown?.CommissionableAmount > 0 ? financialBreakdown.CommissionableAmount : grossAmount,
+                financialBreakdown?.IsFirstCustomerCompanyOrder ?? false,
                 mission.PaymentMethod,
                 mission.PaymentStatus,
-                mission.MissionNumber,
-                GetPlatformRevenue(mission));
+                mission.MissionNumber);
         }
     }
 
-    private static int GetPlatformRevenue(CompanyPortalMissionResponse mission)
-    {
-        if (mission.PlatformCommissionAmount > 0)
-        {
-            return mission.PlatformCommissionAmount;
-        }
-
-        return (int)Math.Round((mission.FinalTotalAmount ?? 0) * 0.15m);
-    }
+    private static int GetGrossAmount(CompanyPortalMissionResponse mission) =>
+        mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? 0;
 
     private sealed record PaymentChartPoint(string Label, int Total, int MobileMoney, int Card, int Cash)
     {
         public static PaymentChartPoint FromRows(string label, IReadOnlyList<PaymentTransactionViewModel> rows)
         {
-            var mobileMoney = rows.Where(row => row.PaymentMethod == "MobileMoney").Sum(row => row.Amount);
-            var card = rows.Where(row => row.PaymentMethod == "Card").Sum(row => row.Amount);
-            var cash = rows.Where(row => row.PaymentMethod == "Cash").Sum(row => row.Amount);
+            var mobileMoney = rows.Where(row => row.PaymentMethod == "MobileMoney").Sum(row => row.NetAmount);
+            var card = rows.Where(row => row.PaymentMethod == "Card").Sum(row => row.NetAmount);
+            var cash = rows.Where(row => row.PaymentMethod == "Cash").Sum(row => row.NetAmount);
             return new PaymentChartPoint(label, mobileMoney + card + cash, mobileMoney, card, cash);
         }
     }

@@ -3,6 +3,7 @@ using System;
 using HomeService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HomeService.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(HomeServiceDbContext))]
-    partial class HomeServiceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260810192438_AddJekoMissionPayments")]
+    partial class AddJekoMissionPayments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1437,11 +1440,6 @@ namespace HomeService.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("CompanyId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_CompanyPayoutDestinations_CompanyId_Active")
-                        .HasFilter("\"IsActive\" = TRUE");
 
                     b.HasIndex("CompanyId", "IsActive");
 

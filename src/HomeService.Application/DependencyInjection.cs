@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<ClientMissionStatusService>();
         services.AddScoped<ClientMissionInvoiceService>();
         services.AddScoped<ClientMissionPaymentMethodService>();
+        services.AddScoped<ClientMissionPaymentService>();
         services.AddScoped<ClientAuthService>();
         services.AddScoped<ClientProfileService>();
         services.AddScoped<ClientCatalogSearchService>();

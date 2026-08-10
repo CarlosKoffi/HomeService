@@ -110,6 +110,10 @@ public sealed class CompanyPortalEndpointContractTests
 
     [Theory]
     [InlineData("GET", "/api/company-portal/{companyId:guid}/payments")]
+    [InlineData("GET", "/api/company-portal/{companyId:guid}/wallet")]
+    [InlineData("PUT", "/api/company-portal/{companyId:guid}/wallet/frequency")]
+    [InlineData("PUT", "/api/company-portal/{companyId:guid}/wallet/destination")]
+    [InlineData("POST", "/api/company-portal/{companyId:guid}/wallet/payouts")]
     public void CompanyPortalPaymentRoutes_AreMapped(string httpMethod, string routePattern)
     {
         var endpoints = BuildCompanyPortalEndpoints();

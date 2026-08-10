@@ -520,11 +520,31 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   null))
             .ToListAsync(cancellationToken);
 
+        var financialBreakdowns = await db.Missions
+            .AsNoTracking()
+            .Where(mission => mission.CompanyId == companyId
+                && mission.Status == MissionStatus.Completed
+                && (mission.ScheduledFor == null || mission.ScheduledFor >= start))
+            .Select(mission => new CompanyPortalPaymentBreakdownResponse(
+                mission.Id,
+                mission.CompanyQuotedAmount ?? mission.FinalTotalAmount ?? mission.EstimatedTotalAmount ?? 0,
+                mission.PlatformCommissionRateBasisPoints,
+                mission.PlatformCommissionAmount,
+                mission.CompanyPayoutAmount,
+                mission.CommissionableAmount,
+                mission.IsFirstCustomerCompanyOrder,
+                mission.PartsEstimateAmount ?? 0))
+            .ToListAsync(cancellationToken);
+
         var paidMissions = missions
             .Where(mission => mission.PaymentStatus == PaymentStatus.Paid.ToString())
             .ToList();
         var pendingMissions = missions
             .Where(mission => mission.PaymentStatus is nameof(PaymentStatus.Pending) or nameof(PaymentStatus.Authorized))
+            .ToList();
+        var paidMissionIds = paidMissions.Select(mission => mission.Id).ToHashSet();
+        var paidFinancialBreakdowns = financialBreakdowns
+            .Where(item => paidMissionIds.Contains(item.MissionId))
             .ToList();
 
         return CompanyPortalPaymentsResult.Ok(new CompanyPortalPaymentSummaryResponse(
@@ -537,7 +557,13 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
             paidMissions.Sum(mission => mission.PlatformCommissionAmount),
             missions.Count,
             "XOF",
-            missions));
+            missions,
+            paidFinancialBreakdowns.Sum(item => item.GrossServiceAmount),
+            paidFinancialBreakdowns.Sum(item => item.CommissionAmount),
+            paidFinancialBreakdowns.Sum(item => item.CompanyNetAmount > 0
+                ? item.CompanyNetAmount
+                : Math.Max(0, item.GrossServiceAmount - item.CommissionAmount)),
+            financialBreakdowns));
     }
 
     private async Task<bool> CompanyExistsAsync(Guid companyId, CancellationToken cancellationToken)

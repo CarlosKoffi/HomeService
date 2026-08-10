@@ -16,6 +16,11 @@ namespace HomeService.Client.Mobile;
         | ConfigChanges.ScreenLayout
         | ConfigChanges.SmallestScreenSize
         | ConfigChanges.Density)]
+[IntentFilter(
+    [Intent.ActionView],
+    Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "wele",
+    DataHost = "payment")]
 public class MainActivity : MauiAppCompatActivity
 {
     protected override void OnCreate(Bundle? savedInstanceState)
@@ -23,6 +28,7 @@ public class MainActivity : MauiAppCompatActivity
         AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightNo;
         base.OnCreate(savedInstanceState);
         CaptureNotificationIntent(Intent);
+        CapturePaymentReturn(Intent);
         WeleNotificationChannel.EnsureCreated(this);
 
         if (OperatingSystem.IsAndroidVersionAtLeast(33)
@@ -37,6 +43,7 @@ public class MainActivity : MauiAppCompatActivity
         base.OnNewIntent(intent);
         Intent = intent;
         CaptureNotificationIntent(intent);
+        CapturePaymentReturn(intent);
         _ = ClientNotificationNavigationService.TryNavigateAsync();
     }
 
@@ -50,5 +57,28 @@ public class MainActivity : MauiAppCompatActivity
             .Where(item => !string.IsNullOrWhiteSpace(item.value))
             .ToDictionary(item => item.key, item => item.value!);
         ClientNotificationNavigationService.Store(data);
+    }
+
+    private static void CapturePaymentReturn(Intent? intent)
+    {
+        var uri = intent?.Data;
+        if (uri is null
+            || !string.Equals(uri.Scheme, "wele", StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(uri.Host, "payment", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var missionId = uri.GetQueryParameter("missionId");
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            return;
+        }
+
+        ClientNotificationNavigationService.Store(new Dictionary<string, string>
+        {
+            ["type"] = "payment_return",
+            ["missionId"] = missionId
+        });
     }
 }

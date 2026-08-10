@@ -30,6 +30,10 @@
                             <Label x:Name="ServiceFeeLabel" Text="Frais de service Wélé" FontSize="12" TextColor="{StaticResource ListSecondary}" />
                             <Label Grid.Column="1" x:Name="ServiceFeeAmountLabel" FontSize="12" FontAttributes="Bold" />
                         </Grid>
+                        <Grid x:Name="PaymentProviderFeeRow" ColumnDefinitions="*,Auto">
+                            <Label x:Name="PaymentProviderFeeLabel" Text="Frais de paiement Mobile Money" FontSize="12" TextColor="{StaticResource ListSecondary}" />
+                            <Label Grid.Column="1" x:Name="PaymentProviderFeeAmountLabel" FontSize="12" FontAttributes="Bold" />
+                        </Grid>
                         <BoxView HeightRequest="1" Color="{StaticResource PremiumLine}" />
                         <Grid ColumnDefinitions="*,Auto">
                             <Label Text="Total à payer" FontSize="15" FontAttributes="Bold" />

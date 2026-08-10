@@ -14,6 +14,7 @@ public sealed class JekoCompanyPayoutGateway(
 {
     public bool IsEnabled => string.Equals(configuration["JEKO_PAYOUTS_ENABLED"], "true", StringComparison.OrdinalIgnoreCase)
         && !string.IsNullOrWhiteSpace(configuration["JEKO_API_KEY"])
+        && !string.IsNullOrWhiteSpace(configuration["JEKO_API_KEY_ID"])
         && !string.IsNullOrWhiteSpace(configuration["JEKO_STORE_ID"]);
 
     public async Task<CompanyPayoutGatewayResult> CreateAsync(
@@ -122,8 +123,8 @@ public sealed class JekoCompanyPayoutGateway(
 
     private void AddAuthentication(HttpRequestMessage message)
     {
-        var header = configuration["JEKO_API_KEY_HEADER"] ?? "x-api-key";
-        message.Headers.TryAddWithoutValidation(header, configuration["JEKO_API_KEY"]);
+        message.Headers.TryAddWithoutValidation("X-API-KEY", configuration["JEKO_API_KEY"]);
+        message.Headers.TryAddWithoutValidation("X-API-KEY-ID", configuration["JEKO_API_KEY_ID"]);
     }
 
     private string TransferPath() => configuration["JEKO_TRANSFER_PATH"] ?? "/partner_api/transfers";

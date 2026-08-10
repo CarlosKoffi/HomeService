@@ -29,18 +29,25 @@ public sealed class ClientMissionInvoiceService(IAppDbContext db)
             ? await db.ServiceOptions.AsNoTracking().Where(x => x.Id == mission.ServiceOptionId.Value).Select(x => x.Name).FirstOrDefaultAsync(cancellationToken)
             : null;
         var serviceAndPartsAmount = mission.FinalTotalAmount ?? mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? 0;
-        var amount = mission.CustomerChargedAmount;
+        var jekoPayment = await db.MissionPaymentRequests
+            .AsNoTracking()
+            .Where(x => x.MissionId == mission.Id && x.Status == MissionPaymentRequestStatus.Success)
+            .OrderByDescending(x => x.CompletedAt)
+            .Select(x => new { x.ProviderFeeAmount, x.RequestedAmount })
+            .FirstOrDefaultAsync(cancellationToken);
+        var paymentProviderFeeAmount = jekoPayment?.ProviderFeeAmount ?? 0;
+        var amount = jekoPayment?.RequestedAmount ?? mission.CustomerChargedAmount;
         var invoiceDate = mission.CustomerConfirmedAt ?? DateTimeOffset.UtcNow;
         var bytes = BasicPdfInvoice.Create(new InvoiceData(
             mission.MissionNumber, invoiceDate, customer.FirstName + " " + customer.LastName, address,
             service, prestation, option, mission.Description, serviceAndPartsAmount,
-            mission.CustomerServiceFeeAmount, amount, mission.Currency));
+            mission.CustomerServiceFeeAmount, paymentProviderFeeAmount, amount, mission.Currency));
         return ClientMissionInvoiceResult.Ok(bytes, $"facture-wele-{mission.MissionNumber}.pdf");
     }
 
     private sealed record InvoiceData(string Number, DateTimeOffset Date, string CustomerName, string Address,
         string Service, string? Prestation, string? Option, string? Description, int ServiceAndPartsAmount,
-        int CustomerServiceFeeAmount, int Amount, string Currency);
+        int CustomerServiceFeeAmount, int PaymentProviderFeeAmount, int Amount, string Currency);
 
     private static class BasicPdfInvoice
     {
@@ -66,6 +73,7 @@ public sealed class ClientMissionInvoiceService(IAppDbContext db)
             if (!string.IsNullOrWhiteSpace(data.Description)) { Text(42, y, 11, "Description"); Text(240, y, 10, Trim(data.Description!, 52)); y -= 30; }
             Text(42, y, 11, "Intervention"); Text(430, y, 11, $"{data.ServiceAndPartsAmount:N0} {data.Currency}", true); y -= 24;
             if (data.CustomerServiceFeeAmount > 0) { Text(42, y, 11, "Frais de service Wele"); Text(430, y, 11, $"{data.CustomerServiceFeeAmount:N0} {data.Currency}", true); y -= 30; }
+            if (data.PaymentProviderFeeAmount > 0) { Text(42, y, 11, "Frais de paiement Jeko"); Text(430, y, 11, $"{data.PaymentProviderFeeAmount:N0} {data.Currency}", true); y -= 30; }
             content.AppendLine($"0.12 0.38 0.92 rg 330 {y - 22} 223 48 re f");
             Text(348, y - 5, 12, "TOTAL PAYE", true);
             Text(455, y - 5, 14, $"{data.Amount:N0} {data.Currency}", true);

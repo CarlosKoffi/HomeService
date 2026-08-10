@@ -14,7 +14,8 @@ public sealed class ClientMissionConfirmationService(
     IAppDbContext db,
     CompanyPortalNotificationWriter companyNotifications,
     MobilePushNotificationQueueService mobilePushNotifications,
-    MissionCommercialPricingService? commercialPricing = null)
+    MissionCommercialPricingService? commercialPricing = null,
+    IClientPaymentGateway? clientPaymentGateway = null)
 {
     public async Task<ClientMissionConfirmationResult> ConfirmAsync(
         Guid missionId,
@@ -95,11 +96,72 @@ public sealed class ClientMissionConfirmationService(
         return ClientMissionConfirmationResult.Ok(ToResponse(mission, company, provider));
     }
 
+    public async Task<ClientMissionConfirmationResult> ConfirmVerifiedPaymentAsync(
+        Guid missionId,
+        string paymentReference,
+        CancellationToken cancellationToken)
+    {
+        var mission = await db.Missions
+            .FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
+        if (mission is null)
+        {
+            return ClientMissionConfirmationResult.NotFound("Mission introuvable.");
+        }
+
+        if (mission.CustomerConfirmedAt is not null)
+        {
+            var existingCompany = mission.CompanyId.HasValue
+                ? await db.Companies.AsNoTracking().FirstOrDefaultAsync(item => item.Id == mission.CompanyId.Value, cancellationToken)
+                : null;
+            var existingProvider = mission.ProviderId.HasValue
+                ? await db.Providers.AsNoTracking().FirstOrDefaultAsync(item => item.Id == mission.ProviderId.Value, cancellationToken)
+                : null;
+            return existingCompany is not null && existingProvider is not null
+                ? ClientMissionConfirmationResult.Ok(ToResponse(mission, existingCompany, existingProvider))
+                : ClientMissionConfirmationResult.Invalid("L'affectation de la mission est incomplete.");
+        }
+
+        if (mission.Status != MissionStatus.Accepted || mission.CompanyId is null || mission.ProviderId is null)
+        {
+            return ClientMissionConfirmationResult.Invalid(
+                "La mission n'est plus dans un etat permettant de confirmer le paiement.");
+        }
+
+        var company = await db.Companies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == mission.CompanyId.Value, cancellationToken);
+        var provider = await db.Providers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == mission.ProviderId.Value, cancellationToken);
+        var totalAmount = mission.CompanyQuotedAmount ?? mission.EstimatedTotalAmount ?? mission.FinalTotalAmount;
+        if (company is null || provider is null || totalAmount is null or <= 0)
+        {
+            return ClientMissionConfirmationResult.Invalid("Les donnees de paiement de la mission sont incompletes.");
+        }
+
+        await ConfirmMissionAsync(
+            mission,
+            company,
+            totalAmount.Value,
+            paymentReference,
+            automatic: false,
+            cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+        return ClientMissionConfirmationResult.Ok(ToResponse(mission, company, provider));
+    }
+
     public async Task<int> AutoConfirmExpiredAsync(
         DateTimeOffset now,
         int batchSize,
         CancellationToken cancellationToken)
     {
+        // Jeko ne fournit ni debit automatique mandate ni verification du solde du payeur.
+        // En production, seule une transaction Jeko signee "success" peut confirmer la mission.
+        if (clientPaymentGateway?.IsEnabled == true)
+        {
+            return 0;
+        }
+
         var dueMissions = await db.Missions
             .Where(mission =>
                 mission.Status == MissionStatus.Accepted

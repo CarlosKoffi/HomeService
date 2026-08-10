@@ -88,6 +88,8 @@ Variables minimales par app:
 - `ASPNETCORE_ENVIRONMENT=Production`
 - `ASPNETCORE_URLS=http://+:8080`
 - `ApiBaseUrl` pour les frontaux
+
+L'API de production est publiee exclusivement en HTTPS sur `https://api.wele.africa`. Configurer `API_BASE_URL=https://api.wele.africa` sur les portails Admin, Entreprise, Prestataire et Client. Les applications MAUI utilisent cette URL par defaut; une preference locale `ApiBaseUrl` reste disponible uniquement pour les diagnostics et les environnements de developpement.
 - `ConnectionStrings__DefaultConnection` pour l'API, ou une URL PostgreSQL via `DATABASE_URL` / `POSTGRES_URL`
 - variables d'auth temporaire si activees
 - variables de stockage et notification quand branchees
@@ -149,17 +151,20 @@ Variables API obligatoires avant l'ajout du premier beneficiaire:
 Jeko ne fournit pas d'environnement sandbox distinct. Les essais utilisent la production avec de petits montants reels (minimum 100 XOF pour une `payment_request`). Conserver la passerelle desactivee jusqu'a la fenetre d'essai controlee:
 
 - `JEKO_PAYOUTS_ENABLED=false` tant que les essais reels et la reconciliation ne sont pas valides;
+- `JEKO_PAYMENTS_ENABLED=false` tant que le premier paiement reel de 100 XOF, son webhook et sa reconciliation ne sont pas valides;
 - `JEKO_API_BASE_URL=<URL officielle de production Jeko>`;
 - `JEKO_API_KEY=<cle API serveur>`;
-- `JEKO_API_KEY_HEADER=x-api-key` ou la valeur confirmee par Jeko;
+- `JEKO_API_KEY_ID=<identifiant de la cle API>`;
 - `JEKO_STORE_ID=<identifiant du store>`;
+- `JEKO_PAYMENT_RETURN_BASE_URL=https://api.wele.africa` (URL HTTPS publique utilisee par le checkout avant le retour dans l'application);
+- `JEKO_PAYMENT_FEE_RATE_BASIS_POINTS=150`;
 - `JEKO_TRANSFER_PATH=/partner_api/transfers`;
 - `JEKO_TRANSFER_STATUS_PATH=<route de statut avec le marqueur {id}>` uniquement si Jeko confirme une route de consultation directe des transferts;
 - `JEKO_WEBHOOK_SECRET=<secret HMAC dedie>`.
 
-Le webhook unique a declarer chez Jeko est `https://api.wele.africa/api/webhooks/jeko/transactions`. Il exige la signature HMAC SHA-256 hexadecimale du corps brut dans `Jeko-Signature`. Le champ `transactionType` separe les encaissements (`payment`) des reversements (`transfer`), et `transactionDetails.reference` permet de retrouver l'operation Wele. Un succes de transfert deplace le montant reserve vers le total retire; un statut `error` restitue le montant au solde disponible. La reference Wele envoyee dans le corps est la cle d'idempotence: une reference deja utilisee provoque un `409 payment_request_exists_with_reference` et une nouvelle tentative apres erreur doit recevoir une nouvelle reference.
+Le webhook unique a declarer chez Jeko est `https://api.wele.africa/api/webhooks/jeko/transactions`. Il exige la signature HMAC SHA-256 hexadecimale du corps brut dans `Jeko-Signature`. Le champ `transactionType` separe les encaissements (`payment`) des reversements (`transfer`), et `transactionDetails.reference` permet de retrouver l'operation Wele. Une mission client n'est confirmee et ses contacts ne sont liberes qu'apres un statut Jeko signe `success`; la redirection navigateur n'est jamais une preuve de paiement. Un succes de transfert deplace le montant reserve vers le total retire; un statut `error` restitue le montant au solde disponible. La reference Wele envoyee dans le corps est la cle d'idempotence: une reference deja utilisee provoque un `409 payment_request_exists_with_reference` et une nouvelle tentative apres erreur doit recevoir une nouvelle reference.
 
-Jeko ne fournit ni split payment ni escrow. Le store Wele recoit les encaissements nets de 1,5 %, puis notre journal interne repartit les droits des entreprises avant les Pay-out periodiques. Jeko ne verifie ni l'existence d'un compte Mobile Money ni le solde du payeur. Le client choisit donc explicitement son operateur et une verification reelle n'intervient qu'au paiement ou au transfert.
+Jeko ne fournit ni split payment ni escrow. Le store Wele recoit les encaissements nets de 1,5 %, puis notre journal interne repartit les droits des entreprises avant les Pay-out periodiques. Le montant demande a Jeko est donc majore avec la formule `plafond(montant commercial / 0,985)`: le client voit le frais Jeko et le total avant de quitter l'application, tandis que Wele recoit le montant commercial attendu apres deduction. Jeko ne verifie ni l'existence d'un compte Mobile Money ni le solde du payeur. Le client choisit donc explicitement son operateur et une verification reelle n'intervient qu'au paiement ou au transfert.
 
 Pour les encaissements mobiles, `wave`, `orange` et `djamo` peuvent utiliser `forceProviderDirect: true` avec `payerPhone` au format international (`+225...`). `mtn` et `moov` passent obligatoirement par le checkout redirect/USSD. Le mode redirect avec deep links est le parcours de reference pour Android et iOS. Une demande reste `pending` au maximum cinq minutes; les seuls statuts metier Jeko sont `pending`, `success` et `error`, et un succes est definitif.
 

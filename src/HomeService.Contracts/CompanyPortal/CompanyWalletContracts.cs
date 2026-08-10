@@ -51,12 +51,11 @@ public sealed record CompanyWalletEntryResponse(
 
 public sealed record UpdateCompanySettlementFrequencyRequest(string Frequency);
 
-public sealed record CreateCompanyPayoutDestinationRequest(
+public sealed record SaveCompanyPayoutDestinationRequest(
     string Method,
     string Label,
     string BeneficiaryName,
     string ProviderCode,
-    string Identifier,
-    bool IsDefault);
+    string Identifier);
 
 public sealed record CreateCompanyPayoutRequest(Guid DestinationId, int? Amount = null);

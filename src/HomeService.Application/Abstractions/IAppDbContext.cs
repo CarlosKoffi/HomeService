@@ -46,6 +46,7 @@ public interface IAppDbContext
     DbSet<MissionAdditionalQuote> MissionAdditionalQuotes { get; }
     DbSet<MissionFinancialBreakdown> MissionFinancialBreakdowns { get; }
     DbSet<MissionPaymentMilestone> MissionPaymentMilestones { get; }
+    DbSet<MissionPaymentRequest> MissionPaymentRequests { get; }
     DbSet<MissionReview> MissionReviews { get; }
     DbSet<MissionQualityControl> MissionQualityControls { get; }
     DbSet<MissionQualityItem> MissionQualityItems { get; }
@@ -88,4 +89,7 @@ public interface IAppDbContext
     DbSet<CmsMediaVariant> CmsMediaVariants { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task ExecuteInTransactionAsync(
+        Func<CancellationToken, Task> operation,
+        CancellationToken cancellationToken = default);
 }

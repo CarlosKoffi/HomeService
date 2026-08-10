@@ -29,6 +29,9 @@ public sealed class ClientEndpointContractTests
     [InlineData("GET", "/api/client/missions/{missionId:guid}")]
     [InlineData("GET", "/api/client/missions/{missionId:guid}/messages")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/messages")]
+    [InlineData("GET", "/api/client/missions/{missionId:guid}/payment-preview")]
+    [InlineData("POST", "/api/client/missions/{missionId:guid}/payments")]
+    [InlineData("GET", "/api/client/missions/{missionId:guid}/payments/{paymentRequestId:guid}")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/confirm")]
     [InlineData("PUT", "/api/client/missions/{missionId:guid}/payment-method")]
     [InlineData("POST", "/api/client/missions/{missionId:guid}/cancel")]
@@ -94,6 +97,7 @@ public sealed class ClientEndpointContractTests
             options.UseInMemoryDatabase($"client-endpoint-contract-{Guid.NewGuid():N}"));
         builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<HomeServiceDbContext>());
         builder.Services.AddScoped<IAddressAutocompleteService, StubAddressAutocompleteService>();
+        builder.Services.AddSingleton<IClientPaymentGateway, StubClientPaymentGateway>();
 
         var app = builder.Build();
         app.MapPublicEndpoints();
@@ -117,5 +121,21 @@ public sealed class ClientEndpointContractTests
             string? sessionToken,
             CancellationToken cancellationToken)
             => Task.FromResult<ClientPlaceDetailsResponse?>(null);
+    }
+
+    private sealed class StubClientPaymentGateway : IClientPaymentGateway
+    {
+        public bool IsEnabled => false;
+        public int FeeRateBasisPoints => 150;
+
+        public Task<ClientPaymentGatewayResult> CreateAsync(
+            ClientPaymentGatewayRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(ClientPaymentGatewayResult.Disabled());
+
+        public Task<ClientPaymentGatewayResult> GetStatusAsync(
+            string externalPaymentRequestId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(ClientPaymentGatewayResult.Disabled());
     }
 }

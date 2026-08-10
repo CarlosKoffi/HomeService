@@ -1200,14 +1200,148 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        client.MapGet("/missions/{missionId:guid}/payment-preview", async (
+            Guid missionId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionPaymentService paymentService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await paymentService.PreviewAsync(customer.Id, missionId, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionPaymentResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionPaymentResultStatus.Forbidden => Results.Problem(
+                    title: "Paiement interdit.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("PreviewClientMissionPayment")
+        .Produces<ClientMissionPaymentPreviewResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapPost("/missions/{missionId:guid}/payments", async (
+            Guid missionId,
+            StartClientMissionPaymentRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionPaymentService paymentService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await paymentService.StartAsync(customer.Id, missionId, request, cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionPaymentResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionPaymentResultStatus.Forbidden => Results.Problem(
+                    title: "Paiement interdit.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                ClientMissionPaymentResultStatus.Unavailable => Results.Problem(
+                    title: "Paiement indisponible.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status503ServiceUnavailable),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("StartClientMissionPayment")
+        .Produces<ClientMissionPaymentResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound)
+        .Produces(StatusCodes.Status503ServiceUnavailable);
+
+        client.MapGet("/missions/{missionId:guid}/payments/{paymentRequestId:guid}", async (
+            Guid missionId,
+            Guid paymentRequestId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientMissionPaymentService paymentService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await paymentService.GetAsync(
+                customer.Id,
+                missionId,
+                paymentRequestId,
+                cancellationToken);
+            if (result.IsSuccess)
+            {
+                return Results.Ok(result.Response);
+            }
+
+            return result.Status switch
+            {
+                ClientMissionPaymentResultStatus.NotFound => Results.NotFound(new { message = result.Message }),
+                ClientMissionPaymentResultStatus.Forbidden => Results.Problem(
+                    title: "Paiement interdit.",
+                    detail: result.Message,
+                    statusCode: StatusCodes.Status403Forbidden),
+                _ => Results.BadRequest(new { message = result.Message })
+            };
+        })
+        .WithName("GetClientMissionPayment")
+        .Produces<ClientMissionPaymentResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status403Forbidden)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapPost("/api/client/missions/{missionId:guid}/confirm", async (
             Guid missionId,
             ConfirmClientMissionRequest request,
             HttpRequest httpRequest,
             ClientAuthService authService,
+            IClientPaymentGateway paymentGateway,
             ClientMissionConfirmationService confirmationService,
             CancellationToken cancellationToken) =>
         {
+            if (paymentGateway.IsEnabled)
+            {
+                return Results.Problem(
+                    title: "Confirmation directe desactivee.",
+                    detail: "La mission est confirmee uniquement apres un paiement Jeko valide.",
+                    statusCode: StatusCodes.Status409Conflict);
+            }
+
             var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
             if (customer is not null && string.IsNullOrWhiteSpace(request.PhoneNumber))
             {

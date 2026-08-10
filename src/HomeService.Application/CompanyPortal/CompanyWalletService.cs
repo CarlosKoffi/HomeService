@@ -98,9 +98,9 @@ public sealed class CompanyWalletService(
         await db.SaveChangesAsync(cancellationToken);
 
         var destinations = await db.CompanyPayoutDestinations.AsNoTracking()
-            .Where(item => item.CompanyId == companyId)
-            .OrderByDescending(item => item.IsDefault)
-            .ThenBy(item => item.CreatedAt)
+            .Where(item => item.CompanyId == companyId && item.IsActive)
+            .OrderByDescending(item => item.CreatedAt)
+            .Take(1)
             .ToListAsync(cancellationToken);
         var payouts = await db.CompanyPayoutRequests.AsNoTracking()
             .Where(item => item.CompanyId == companyId)
@@ -148,9 +148,9 @@ public sealed class CompanyWalletService(
         return await GetAsync(companyId, cancellationToken);
     }
 
-    public async Task<CompanyWalletOperationResult> AddDestinationAsync(
+    public async Task<CompanyWalletOperationResult> SaveDestinationAsync(
         Guid companyId,
-        CreateCompanyPayoutDestinationRequest request,
+        SaveCompanyPayoutDestinationRequest request,
         CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<CompanyPayoutMethod>(request.Method, true, out var method))
@@ -175,28 +175,35 @@ public sealed class CompanyWalletService(
             ? "Piece d'identite requise"
             : MaskIdentifier(request.Identifier);
 
-        if (request.IsDefault)
+        var encryptedIdentifier = payoutDataProtector.Protect(protectedIdentifier);
+        await db.ExecuteInTransactionAsync(async transactionCancellationToken =>
         {
-            var currentDefaults = await db.CompanyPayoutDestinations
-                .Where(item => item.CompanyId == companyId && item.IsDefault)
-                .ToListAsync(cancellationToken);
-            foreach (var current in currentDefaults)
+            var activeDestinations = await db.CompanyPayoutDestinations
+                .Where(item => item.CompanyId == companyId && item.IsActive)
+                .ToListAsync(transactionCancellationToken);
+            foreach (var current in activeDestinations)
             {
-                current.MarkDefault(false);
+                current.Disable();
             }
-        }
 
-        var destination = new CompanyPayoutDestination(
-            companyId,
-            method,
-            request.Label,
-            request.BeneficiaryName,
-            request.ProviderCode,
-            payoutDataProtector.Protect(protectedIdentifier),
-            maskedIdentifier,
-            request.IsDefault);
-        db.CompanyPayoutDestinations.Add(destination);
-        await db.SaveChangesAsync(cancellationToken);
+            // The old version remains available to historical payout requests,
+            // while only the replacement can be selected for a new payout.
+            if (activeDestinations.Count > 0)
+            {
+                await db.SaveChangesAsync(transactionCancellationToken);
+            }
+
+            db.CompanyPayoutDestinations.Add(new CompanyPayoutDestination(
+                companyId,
+                method,
+                request.Label,
+                request.BeneficiaryName,
+                request.ProviderCode,
+                encryptedIdentifier,
+                maskedIdentifier,
+                isDefault: true));
+            await db.SaveChangesAsync(transactionCancellationToken);
+        }, cancellationToken);
         return await GetAsync(companyId, cancellationToken);
     }
 

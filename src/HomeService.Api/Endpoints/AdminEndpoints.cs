@@ -874,12 +874,14 @@ public static class AdminEndpoints
                                      payout.Method.ToString(),
                                      payout.Status.ToString(),
                                      destination.MaskedIdentifier,
+                                     destination.BeneficiaryName,
                                      payout.GrossAmount,
                                      payout.FeeAmount,
                                      payout.NetAmount,
                                      payout.Currency,
                                      payout.CreatedAt,
                                      payout.PaidAt,
+                                     payout.ProofReference,
                                      payout.FailureReason))
                 .Take(200)
                 .ToListAsync(cancellationToken);
@@ -1002,20 +1004,42 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = "Une reference de preuve ou de recu est obligatoire." });
             }
 
-            if (!await walletService.CompleteCashPayoutAsync(payoutId, request.ProofReference, cancellationToken))
+            var completed = false;
+            await db.ExecuteInTransactionAsync(async transactionCancellationToken =>
+            {
+                completed = await walletService.CompleteCashPayoutAsync(
+                    payoutId,
+                    request.ProofReference,
+                    transactionCancellationToken);
+                if (!completed)
+                {
+                    return;
+                }
+
+                var auditExists = await db.AuditLogEntries.AnyAsync(
+                    item => item.Action == "CompanyCashPayoutCompleted"
+                        && item.EntityType == nameof(CompanyPayoutRequest)
+                        && item.EntityId == payoutId,
+                    transactionCancellationToken);
+                if (!auditExists)
+                {
+                    db.AuditLogEntries.Add(AuditLogFactory.Create(
+                        GetAdminAuditActor(httpRequest),
+                        "CompanyCashPayoutCompleted",
+                        nameof(CompanyPayoutRequest),
+                        payoutId,
+                        "Retrait cash entreprise remis et solde debite.",
+                        GetAuditRequestContext(httpRequest),
+                        after: new { request.ProofReference }));
+                    await db.SaveChangesAsync(transactionCancellationToken);
+                }
+            }, cancellationToken);
+
+            if (!completed)
             {
                 return Results.NotFound();
             }
 
-            db.AuditLogEntries.Add(AuditLogFactory.Create(
-                GetAdminAuditActor(httpRequest),
-                "CompanyCashPayoutCompleted",
-                nameof(CompanyPayoutRequest),
-                payoutId,
-                "Retrait cash entreprise remis.",
-                GetAuditRequestContext(httpRequest),
-                after: new { request.ProofReference }));
-            await db.SaveChangesAsync(cancellationToken);
             return Results.NoContent();
         })
         .WithName("CompleteCashCompanyPayout");

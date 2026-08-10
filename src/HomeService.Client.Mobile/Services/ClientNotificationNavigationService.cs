@@ -77,6 +77,15 @@ public static class ClientNotificationNavigationService
             return detailRoute;
         }
 
+        if (string.Equals(notificationType, "payment_return", StringComparison.OrdinalIgnoreCase))
+        {
+            return mission.CustomerConfirmedAt is not null
+                && (mission.PaymentStatus.Equals("Authorized", StringComparison.OrdinalIgnoreCase)
+                    || mission.PaymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase))
+                    ? $"{nameof(PaymentSuccessPage)}?missionId={missionId:D}"
+                    : $"{nameof(PaymentCheckoutPage)}?missionId={missionId:D}";
+        }
+
         if (string.Equals(notificationType, "mission_payment_required", StringComparison.OrdinalIgnoreCase))
         {
             return mission.Actions.CanAcceptQuote

@@ -16,7 +16,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpClient<ProviderApiClient>(client =>
 {
-    var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080";
+    var apiBaseUrl = builder.Configuration["API_BASE_URL"]
+        ?? builder.Configuration["ApiBaseUrl"]
+        ?? "http://localhost:5080";
     client.BaseAddress = new Uri(apiBaseUrl.TrimEnd('/'));
 });
 

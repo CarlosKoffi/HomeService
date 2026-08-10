@@ -158,6 +158,24 @@ public sealed class ClientMissionWorkflowIntegrationTests
         Assert.Equal(PaymentStatus.Paid, mission.PaymentStatus);
         Assert.NotNull(mission.CompanyPayoutReleasedAt);
 
+        var companyPayments = await new CompanyPortalQueryService(db).GetPaymentsAsync(
+            seed.Company.Id,
+            "month",
+            CancellationToken.None);
+        Assert.True(companyPayments.IsSuccess);
+        Assert.NotNull(companyPayments.Summary);
+        Assert.Equal(12_000, companyPayments.Summary.GrossServiceAmount);
+        Assert.Equal(1_800, companyPayments.Summary.CompanyCommissionAmount);
+        Assert.Equal(10_200, companyPayments.Summary.CompanyNetAmount);
+        var paidCompanyMission = Assert.Single(companyPayments.Summary.Missions);
+        var paidCompanyBreakdown = Assert.Single(companyPayments.Summary.FinancialBreakdowns!);
+        Assert.Equal(paidCompanyMission.Id, paidCompanyBreakdown.MissionId);
+        Assert.Equal(1_500, paidCompanyBreakdown.CommissionRateBasisPoints);
+        Assert.Equal(1_800, paidCompanyBreakdown.CommissionAmount);
+        Assert.Equal(10_200, paidCompanyBreakdown.CompanyNetAmount);
+        Assert.Equal(12_000, paidCompanyBreakdown.CommissionableAmount);
+        Assert.True(paidCompanyBreakdown.IsFirstCustomerCompanyOrder);
+
         var completedPortalMission = Assert.Single((await new CompanyPortalQueryService(db).ListMissionsAsync(
             seed.Company.Id,
             "past",

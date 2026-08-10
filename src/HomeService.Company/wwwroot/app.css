@@ -980,6 +980,16 @@
     border-left: 4px solid var(--payments-blue);
 }
 
+.payments-kpi-card.commission {
+    border-left: 4px solid #7c3aed;
+}
+
+.payments-kpi-card.commission header span,
+.payments-kpi-card.commission > strong,
+.payments-kpi-card.commission i {
+    color: #7c3aed;
+}
+
 .payments-kpi-card.orange {
     border-left: 4px solid #fb923c;
 }
@@ -1011,6 +1021,71 @@
 
 .payments-kpi-card.danger header span {
     color: #ef4444;
+}
+
+.payments-commission-explainer {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(280px, .8fr);
+    align-items: center;
+    gap: 20px;
+    padding: 22px 24px;
+    border: 1px solid #cfe0ff;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 100%);
+    box-shadow: 0 12px 30px rgba(18, 100, 245, .07);
+}
+
+.payments-explainer-icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 15px;
+    background: var(--payments-blue);
+    color: #fff;
+}
+
+.payments-explainer-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.payments-explainer-eyebrow {
+    color: var(--payments-blue);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .1em;
+}
+
+.payments-commission-explainer h2 {
+    margin: 5px 0 6px;
+    color: var(--payments-text);
+    font-size: 18px;
+}
+
+.payments-commission-explainer p,
+.payments-rate-rules small {
+    margin: 0;
+    color: var(--payments-muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.payments-rate-rules {
+    display: grid;
+    gap: 8px;
+    padding-left: 20px;
+    border-left: 1px solid #dce8fb;
+}
+
+.payments-rate-rules span {
+    color: #344054;
+    font-size: 12px;
+}
+
+.payments-rate-rules strong {
+    color: var(--payments-blue);
+    font-size: 14px;
 }
 
 .payments-kpi-card i {
@@ -1259,7 +1334,7 @@
 .payments-table-columns,
 .payments-transaction-row {
     display: grid;
-    grid-template-columns: 36px minmax(190px, 1fr) 100px 64px 140px 110px 96px;
+    grid-template-columns: 36px minmax(190px, 1fr) 110px 64px 140px 110px minmax(240px, 280px);
     align-items: center;
     gap: 0;
 }
@@ -1386,18 +1461,63 @@
     color: #ef4444;
 }
 
-.payments-amount {
-    justify-self: end;
-    text-align: right;
+.payments-financial-breakdown {
+    display: grid;
+    gap: 4px;
+    padding: 10px 12px;
+    border: 1px solid #e5eaf2;
+    border-radius: 12px;
+    background: #fff;
 }
 
-.payments-amount.pending {
-    color: var(--payments-muted);
+.payments-financial-breakdown > span {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-.payments-amount.disputed {
-    color: #f87171;
-    text-decoration: line-through;
+.payments-financial-breakdown > span small {
+    margin: 0;
+    font-size: 10px;
+}
+
+.payments-financial-breakdown > span strong {
+    white-space: nowrap;
+    font-size: 11px;
+}
+
+.payments-financial-breakdown .commission-line strong {
+    color: #7c3aed;
+}
+
+.payments-financial-breakdown .net-line {
+    margin-top: 2px;
+    padding-top: 5px;
+    border-top: 1px solid #edf0f5;
+}
+
+.payments-financial-breakdown .net-line small,
+.payments-financial-breakdown .net-line strong {
+    color: #057a55;
+    font-weight: 800;
+}
+
+.payments-financial-breakdown em {
+    color: var(--payments-blue);
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.payments-financial-breakdown.pending {
+    opacity: .7;
+}
+
+.payments-financial-breakdown.disputed {
+    border-color: #fecaca;
+    background: #fffafa;
 }
 
 .payments-table-footer {
@@ -1508,13 +1628,25 @@
         grid-template-columns: 1fr;
     }
 
+    .payments-commission-explainer {
+        grid-template-columns: auto 1fr;
+    }
+
+    .payments-rate-rules {
+        grid-column: 1 / -1;
+        padding-top: 14px;
+        padding-left: 0;
+        border-top: 1px solid #dce8fb;
+        border-left: 0;
+    }
+
     .payments-table-card {
         overflow-x: auto;
     }
 
     .payments-table-columns,
     .payments-transaction-row {
-        min-width: 900px;
+        min-width: 1120px;
     }
 }
 
@@ -1543,6 +1675,20 @@
 
     .payments-kpi-hero {
         grid-column: span 1;
+    }
+
+    .payments-commission-explainer {
+        grid-template-columns: 1fr;
+        padding: 18px;
+    }
+
+    .payments-explainer-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .payments-rate-rules {
+        grid-column: auto;
     }
 }
 

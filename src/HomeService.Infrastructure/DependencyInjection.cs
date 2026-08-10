@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IMobilePushSender, FirebaseCloudMessagingSender>();
         services.AddSingleton<IPayoutDataProtector, AesPayoutDataProtector>();
         services.AddScoped<ICompanyPayoutGateway, JekoCompanyPayoutGateway>();
+        services.AddScoped<IClientPaymentGateway, JekoClientPaymentGateway>();
 
         return services;
     }

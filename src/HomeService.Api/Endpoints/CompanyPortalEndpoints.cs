@@ -1329,12 +1329,13 @@ public static class CompanyPortalEndpoints
         .WithName("UpdateCompanySettlementFrequency")
         .Produces<CompanyWalletResponse>();
 
-        group.MapPost("/{companyId:guid}/wallet/destinations", async (
+        group.MapPut("/{companyId:guid}/wallet/destination", async (
             Guid companyId,
-            CreateCompanyPayoutDestinationRequest request,
+            SaveCompanyPayoutDestinationRequest request,
             HttpRequest httpRequest,
             CompanyPortalAuthService authService,
             CompanyWalletService walletService,
+            ILoggerFactory loggerFactory,
             CancellationToken cancellationToken) =>
         {
             var authenticatedCompanyId = await authService.GetAuthenticatedCompanyIdAsync(
@@ -1351,15 +1352,19 @@ public static class CompanyPortalEndpoints
 
             try
             {
-                var result = await walletService.AddDestinationAsync(companyId, request, cancellationToken);
+                var result = await walletService.SaveDestinationAsync(companyId, request, cancellationToken);
                 return result.IsSuccess ? Results.Ok(result.Response) : Results.BadRequest(new { message = result.Message });
             }
             catch (InvalidOperationException exception)
             {
-                return Results.Problem(exception.Message, statusCode: StatusCodes.Status503ServiceUnavailable);
+                loggerFactory.CreateLogger("CompanyPayoutDestination")
+                    .LogError(exception, "Impossible de proteger la configuration de reversement de l'entreprise {CompanyId}.", companyId);
+                return Results.Problem(
+                    "L'enregistrement securise du mode de reversement est temporairement indisponible.",
+                    statusCode: StatusCodes.Status503ServiceUnavailable);
             }
         })
-        .WithName("CreateCompanyPayoutDestination")
+        .WithName("SaveCompanyPayoutDestination")
         .Produces<CompanyWalletResponse>();
 
         group.MapPost("/{companyId:guid}/wallet/payouts", async (

@@ -435,14 +435,34 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         }
     }
 
-    public async Task<ApiCallResult<ConfirmClientMissionResponse>> ConfirmMissionAsync(
+    public async Task<ApiCallResult<ClientMissionPaymentPreviewResponse>> GetMissionPaymentPreviewAsync(
         Guid missionId,
-        string? paymentReference,
-        CancellationToken cancellationToken = default)
-    {
-        var request = new ConfirmClientMissionRequest(sessionStore.GetPhoneNumber() ?? string.Empty, paymentReference);
-        return await SendAsync<ConfirmClientMissionResponse>(HttpMethod.Post, $"api/client/missions/{missionId:D}/confirm", bearerToken: null, request, cancellationToken);
-    }
+        CancellationToken cancellationToken = default) =>
+        await SendWithSessionAsync<ClientMissionPaymentPreviewResponse>(
+            HttpMethod.Get,
+            $"api/client/missions/{missionId:D}/payment-preview",
+            body: null,
+            cancellationToken);
+
+    public async Task<ApiCallResult<ClientMissionPaymentResponse>> StartMissionPaymentAsync(
+        Guid missionId,
+        Guid paymentMethodId,
+        CancellationToken cancellationToken = default) =>
+        await SendWithSessionAsync<ClientMissionPaymentResponse>(
+            HttpMethod.Post,
+            $"api/client/missions/{missionId:D}/payments",
+            new StartClientMissionPaymentRequest(paymentMethodId),
+            cancellationToken);
+
+    public async Task<ApiCallResult<ClientMissionPaymentResponse>> GetMissionPaymentAsync(
+        Guid missionId,
+        Guid paymentRequestId,
+        CancellationToken cancellationToken = default) =>
+        await SendWithSessionAsync<ClientMissionPaymentResponse>(
+            HttpMethod.Get,
+            $"api/client/missions/{missionId:D}/payments/{paymentRequestId:D}",
+            body: null,
+            cancellationToken);
 
     public async Task<ApiCallResult<CancelClientMissionResponse>> CancelMissionAsync(
         Guid missionId,

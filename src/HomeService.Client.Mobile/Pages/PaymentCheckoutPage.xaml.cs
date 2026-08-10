@@ -11,6 +11,7 @@ public partial class PaymentCheckoutPage : ContentPage
     private readonly ObservableCollection<PaymentAccountRow> accounts = [];
     private Guid missionId;
     private Guid? currentMethodId;
+    private Guid? pendingPaymentRequestId;
     private PaymentNetworkRow? selected;
 
     public PaymentCheckoutPage()
@@ -47,6 +48,15 @@ public partial class PaymentCheckoutPage : ContentPage
         }
 
         var mission = missionResult.Response;
+        if (mission.CustomerConfirmedAt is not null
+            && (mission.PaymentStatus.Equals("Authorized", StringComparison.OrdinalIgnoreCase)
+                || mission.PaymentStatus.Equals("Paid", StringComparison.OrdinalIgnoreCase)))
+        {
+            ClearPendingPayment();
+            await Shell.Current.GoToAsync($"{nameof(PaymentSuccessPage)}?missionId={missionId:D}");
+            return;
+        }
+
         var paymentWindowIsOpen = mission.Status.Equals("Accepted", StringComparison.OrdinalIgnoreCase)
             && mission.QuoteStatus.Equals("Submitted", StringComparison.OrdinalIgnoreCase)
             && mission.PaymentStatus.Equals("Pending", StringComparison.OrdinalIgnoreCase)
@@ -66,14 +76,17 @@ public partial class PaymentCheckoutPage : ContentPage
             return;
         }
 
+        var previewResult = await api.GetMissionPaymentPreviewAsync(missionId);
+        if (!previewResult.IsSuccess || previewResult.Response is null)
+        {
+            ShowError(previewResult.ErrorMessage);
+            PayButton.IsEnabled = false;
+            return;
+        }
+
         currentMethodId = mission.CustomerPaymentMethodId;
-        var amount = mission.CustomerTotalAmount > 0
-            ? mission.CustomerTotalAmount
-            : mission.Actions.AmountToPayNow
-                ?? mission.CompanyQuotedAmount
-                ?? mission.FinalTotalAmount
-                ?? mission.EstimatedTotalAmount
-                ?? 0;
+        var preview = previewResult.Response;
+        var amount = preview.TotalAmount;
         ServiceLabel.Text = string.Join(
             " · ",
             new[] { mission.ServiceName, mission.PrestationName, mission.OptionName }
@@ -82,9 +95,11 @@ public partial class PaymentCheckoutPage : ContentPage
         PartsRow.IsVisible = mission.PartsEstimateAmount is > 0;
         PartsAmountLabel.Text = $"{mission.PartsEstimateAmount.GetValueOrDefault():N0} {mission.Currency}";
         ServiceFeeLabel.Text = $"Frais de mise en relation Wélé ({mission.CustomerServiceFeeRateBasisPoints / 100m:0.##} %)";
-        ServiceFeeAmountLabel.Text = $"{mission.CustomerServiceFeeAmount:N0} {mission.Currency}";
-        TotalLabel.Text = $"{amount:N0} {mission.Currency}";
-        PayButton.Text = $"Payer {amount:N0} {mission.Currency}";
+        ServiceFeeAmountLabel.Text = $"{preview.CustomerServiceFeeAmount:N0} {preview.Currency}";
+        PaymentProviderFeeLabel.Text = $"Frais Jeko Mobile Money ({preview.PaymentProviderFeeRateBasisPoints / 100m:0.##} %)";
+        PaymentProviderFeeAmountLabel.Text = $"{preview.PaymentProviderFeeAmount:N0} {preview.Currency}";
+        TotalLabel.Text = $"{amount:N0} {preview.Currency}";
+        PayButton.Text = $"Payer {amount:N0} {preview.Currency}";
 
         var decoratedMethods = await Task.WhenAll(paymentResult.Response.Select(async method =>
             new DecoratedPaymentMethod(
@@ -120,6 +135,13 @@ public partial class PaymentCheckoutPage : ContentPage
         if (selected is null)
         {
             await Shell.Current.GoToAsync($"{nameof(AddPaymentMethodPage)}?missionId={missionId:D}");
+            return;
+        }
+
+        pendingPaymentRequestId = ReadPendingPayment();
+        if (pendingPaymentRequestId.HasValue)
+        {
+            await RefreshPendingPaymentAsync(pollBriefly: true);
         }
     }
 
@@ -166,6 +188,12 @@ public partial class PaymentCheckoutPage : ContentPage
         PayButton.IsEnabled = false;
         ErrorLabel.IsVisible = false;
 
+        if (pendingPaymentRequestId.HasValue)
+        {
+            await RefreshPendingPaymentAsync(pollBriefly: false, reopenRedirect: true);
+            return;
+        }
+
         if (currentMethodId != selected.Id)
         {
             var selectionResult = await api.SelectMissionPaymentMethodAsync(missionId, selected.Id);
@@ -177,7 +205,7 @@ public partial class PaymentCheckoutPage : ContentPage
             }
         }
 
-        var result = await api.ConfirmMissionAsync(missionId, $"MOBILE-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}");
+        var result = await api.StartMissionPaymentAsync(missionId, selected.Id);
         if (!result.IsSuccess)
         {
             ShowError(result.ErrorMessage);
@@ -185,8 +213,134 @@ public partial class PaymentCheckoutPage : ContentPage
             return;
         }
 
-        await Shell.Current.GoToAsync($"{nameof(PaymentSuccessPage)}?missionId={missionId:D}");
+        var payment = result.Response!;
+        pendingPaymentRequestId = payment.Id;
+        Preferences.Default.Set(PendingPaymentKey(), payment.Id.ToString("D"));
+        UpdatePaymentAmounts(payment);
+
+        if (IsSuccess(payment.Status))
+        {
+            ClearPendingPayment();
+            await Shell.Current.GoToAsync($"{nameof(PaymentSuccessPage)}?missionId={missionId:D}");
+            return;
+        }
+
+        if (IsError(payment.Status))
+        {
+            ClearPendingPayment();
+            ShowError(payment.Message ?? "Le paiement Jeko n'a pas abouti.");
+            PayButton.IsEnabled = true;
+            return;
+        }
+
+        await OpenJekoAsync(payment.RedirectUrl);
     }
+
+    private async Task RefreshPendingPaymentAsync(bool pollBriefly, bool reopenRedirect = false)
+    {
+        if (!pendingPaymentRequestId.HasValue)
+        {
+            return;
+        }
+
+        ClientMissionPaymentResponse? payment = null;
+        var attempts = pollBriefly ? 5 : 1;
+        for (var attempt = 0; attempt < attempts; attempt++)
+        {
+            var result = await api.GetMissionPaymentAsync(missionId, pendingPaymentRequestId.Value);
+            if (!result.IsSuccess || result.Response is null)
+            {
+                if (result.StatusCode == 404)
+                {
+                    ClearPendingPayment();
+                }
+
+                ShowError(result.ErrorMessage);
+                PayButton.IsEnabled = true;
+                return;
+            }
+
+            payment = result.Response;
+            UpdatePaymentAmounts(payment);
+            if (!payment.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+            {
+                break;
+            }
+
+            if (attempt + 1 < attempts)
+            {
+                PayButton.Text = "Vérification du paiement...";
+                await Task.Delay(TimeSpan.FromSeconds(2));
+            }
+        }
+
+        if (payment is null)
+        {
+            PayButton.IsEnabled = true;
+            return;
+        }
+
+        if (IsSuccess(payment.Status))
+        {
+            ClearPendingPayment();
+            await Shell.Current.GoToAsync($"{nameof(PaymentSuccessPage)}?missionId={missionId:D}");
+            return;
+        }
+
+        if (IsError(payment.Status))
+        {
+            ClearPendingPayment();
+            ShowError(payment.Message ?? "Le paiement Jeko n'a pas abouti.");
+            PayButton.Text = $"Réessayer · {payment.TotalAmount:N0} {payment.Currency}";
+            PayButton.IsEnabled = true;
+            return;
+        }
+
+        PayButton.Text = "Vérifier le paiement";
+        PayButton.IsEnabled = true;
+        if (reopenRedirect)
+        {
+            await OpenJekoAsync(payment.RedirectUrl);
+        }
+    }
+
+    private async Task OpenJekoAsync(string? redirectUrl)
+    {
+        if (!Uri.TryCreate(redirectUrl, UriKind.Absolute, out var uri))
+        {
+            ShowError("Jeko prépare le paiement. Touchez Vérifier dans quelques secondes.");
+            PayButton.Text = "Vérifier le paiement";
+            PayButton.IsEnabled = true;
+            return;
+        }
+
+        var opened = await Launcher.Default.OpenAsync(uri);
+        if (!opened)
+        {
+            ShowError("Impossible d'ouvrir la page de paiement Jeko.");
+            PayButton.IsEnabled = true;
+        }
+    }
+
+    private void UpdatePaymentAmounts(ClientMissionPaymentResponse payment)
+    {
+        PaymentProviderFeeAmountLabel.Text = $"{payment.PaymentProviderFeeAmount:N0} {payment.Currency}";
+        TotalLabel.Text = $"{payment.TotalAmount:N0} {payment.Currency}";
+    }
+
+    private string PendingPaymentKey() => $"PendingJekoPayment:{missionId:N}";
+
+    private Guid? ReadPendingPayment() =>
+        Guid.TryParse(Preferences.Default.Get(PendingPaymentKey(), string.Empty), out var value) ? value : null;
+
+    private void ClearPendingPayment()
+    {
+        Preferences.Default.Remove(PendingPaymentKey());
+        pendingPaymentRequestId = null;
+    }
+
+    private static bool IsSuccess(string status) => status.Equals("Success", StringComparison.OrdinalIgnoreCase);
+    private static bool IsError(string status) => status.Equals("Error", StringComparison.OrdinalIgnoreCase);
 
     private async void OnBackClicked(object sender, EventArgs e) => await Shell.Current.GoToAsync("..");
 
