@@ -103,7 +103,7 @@ public sealed class Mission : AuditableEntity
     public DateTimeOffset? CompanyAssignmentExpiresAt { get; private set; }
     public int DispatchRound { get; private set; }
     public bool CanRevealContactDetails => ContactDetailsReleasedAt is not null
-        && Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started or MissionStatus.Completed
+        && Status is MissionStatus.Accepted or MissionStatus.OnTheWay or MissionStatus.Started
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;
     public bool IsInitialPaymentConfirmed => CustomerConfirmedAt is not null
         && PaymentStatus is PaymentStatus.Authorized or PaymentStatus.Paid;

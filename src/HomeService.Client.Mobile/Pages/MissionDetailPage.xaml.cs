@@ -23,6 +23,13 @@ public partial class MissionDetailPage : ContentPage
     private CancellationTokenSource? actionCountdownCancellation;
     private string? loadedProviderPhotoPath;
     private bool isOpeningChat;
+    private bool canOpenProviderDetails;
+    private Guid reorderServiceId;
+    private Guid? reorderPrestationId;
+    private Guid? reorderOptionId;
+    private Guid? reorderCompanyId;
+    private string? reorderCompanyName;
+    private string reorderServiceName = "Service";
 
     public MissionDetailPage()
     {
@@ -153,6 +160,17 @@ public partial class MissionDetailPage : ContentPage
             && (mission.ProviderAcceptedAt.HasValue
                 || mission.Status is "Accepted" or "OnTheWay" or "Started" or "Completed");
         var conversationIsActive = IsConversationActive(mission.Status);
+        canOpenProviderDetails = conversationIsActive;
+        if (!conversationIsActive)
+        {
+            ProviderDetailPanel.IsVisible = false;
+        }
+        reorderServiceId = mission.ServiceId;
+        reorderPrestationId = mission.ServicePrestationId;
+        reorderOptionId = mission.ServiceOptionId;
+        reorderCompanyId = mission.CompanyId;
+        reorderCompanyName = mission.CompanyName;
+        reorderServiceName = mission.OptionName ?? mission.PrestationName ?? mission.ServiceName ?? "Service";
         TitleLabel.Text = mission.MissionNumber;
         StatusLabel.Text = ResolveCustomerStatusLabel(mission);
         ServiceLabel.Text = mission.ServiceName ?? "Service";
@@ -176,22 +194,24 @@ public partial class MissionDetailPage : ContentPage
         MessageLabel.Text = mission.Message;
         TrackingLabel.Text = BuildTrackingMessage(mission);
         ProviderCard.IsVisible = providerHasAccepted;
+        ProviderContactActions.IsVisible = conversationIsActive;
         ProviderChatButton.IsVisible = conversationIsActive;
         ProviderDetailChatButton.IsVisible = conversationIsActive;
         WaitingLabel.IsVisible = !providerHasAccepted;
-        RoutePanel.IsVisible = providerHasAccepted;
+        RoutePanel.IsVisible = providerHasAccepted && conversationIsActive;
         currentProviderPhoneNumber = null;
         currentTrackingProvider = null;
         if (mission.AssignedProvider is not null)
         {
-            currentTrackingProvider = mission.AssignedProvider;
+            currentTrackingProvider = conversationIsActive ? mission.AssignedProvider : null;
             var experienceLabel = mission.AssignedProvider.CompletedMissionCount < 10
                 ? "D\u00e9bute"
                 : $"{mission.AssignedProvider.CompletedMissionCount} interventions";
             ProviderLabel.Text = $"{mission.AssignedProvider.FullName} - {experienceLabel}";
-            ProviderPhoneLabel.Text = mission.ContactDetailsReleased
+            ProviderPhoneLabel.IsVisible = conversationIsActive && mission.ContactDetailsReleased;
+            ProviderPhoneLabel.Text = ProviderPhoneLabel.IsVisible
                 ? mission.AssignedProvider.PhoneNumber ?? "Téléphone indisponible"
-                : "Téléphone visible après confirmation.";
+                : string.Empty;
             ProviderRatingLabel.Text = mission.AssignedProvider.AverageRating.HasValue
                 ? $"★ {mission.AssignedProvider.AverageRating:0.0}"
                 : "Nouveau";
@@ -206,8 +226,11 @@ public partial class MissionDetailPage : ContentPage
                 ? $"{mission.AssignedProvider.DistanceKm:0.0} km · arrivée dans {mission.AssignedProvider.EstimatedArrivalMinutes} min environ"
                 : "Position en cours de mise à jour";
             RoutePanel.Opacity = mission.AssignedProvider.CanTrackLocation ? 1 : 0.65;
-            currentProviderPhoneNumber = mission.ContactDetailsReleased ? mission.AssignedProvider.PhoneNumber : null;
-            CallButton.IsEnabled = !string.IsNullOrWhiteSpace(currentProviderPhoneNumber);
+            currentProviderPhoneNumber = conversationIsActive && mission.Actions.CanCallProvider
+                ? mission.AssignedProvider.PhoneNumber
+                : null;
+            CallButton.IsVisible = conversationIsActive && mission.Actions.CanCallProvider;
+            CallButton.IsEnabled = CallButton.IsVisible && !string.IsNullOrWhiteSpace(currentProviderPhoneNumber);
             CallButton.Opacity = CallButton.IsEnabled ? 1 : 0.55;
             if (includeMedia || !string.Equals(loadedProviderPhotoPath, mission.AssignedProvider.PhotoStoragePath, StringComparison.Ordinal))
             {
@@ -233,6 +256,7 @@ public partial class MissionDetailPage : ContentPage
             ? $"Accepter et payer {mission.Actions.AmountToPayNow:N0} {mission.Currency}"
             : "Accepter et payer";
         CompleteButton.IsVisible = mission.Actions.CanValidateCompletion;
+        ReorderButton.IsVisible = mission.CanReorder;
         CancelButton.IsVisible = mission.Actions.CanCancel;
         BindOverviewAction(mission);
 
@@ -472,6 +496,12 @@ public partial class MissionDetailPage : ContentPage
 
     private void OnProviderTapped(object sender, TappedEventArgs e)
     {
+        if (!canOpenProviderDetails)
+        {
+            ProviderDetailPanel.IsVisible = false;
+            return;
+        }
+
         ProviderDetailPanel.IsVisible = !ProviderDetailPanel.IsVisible;
     }
 
@@ -581,6 +611,27 @@ public partial class MissionDetailPage : ContentPage
         {
             await Shell.Current.GoToAsync($"{nameof(MissionCompletionPage)}?missionId={currentMissionId:D}");
         }
+    }
+
+    private async void OnReorderClicked(object sender, EventArgs e)
+    {
+        if (reorderServiceId == Guid.Empty)
+        {
+            ShowError("Ce service n'est plus disponible pour le moment.");
+            return;
+        }
+
+        var path = $"{nameof(CreateRequestPage)}?serviceId={reorderServiceId:D}"
+            + $"&prestationId={reorderPrestationId?.ToString("D") ?? string.Empty}"
+            + $"&optionId={reorderOptionId?.ToString("D") ?? string.Empty}"
+            + $"&name={Uri.EscapeDataString(reorderServiceName)}";
+        if (reorderCompanyId.HasValue)
+        {
+            path += $"&preferredCompanyId={reorderCompanyId.Value:D}"
+                + $"&preferredCompanyName={Uri.EscapeDataString(reorderCompanyName ?? "Entreprise choisie")}";
+        }
+
+        await Shell.Current.GoToAsync(path);
     }
 
     private async void OnOpenChatClicked(object sender, EventArgs e)

@@ -226,7 +226,13 @@ public sealed class ClientMissionStatusService(
             additionalQuotes,
             photos,
             BuildActions(mission, pricing.CustomerTotalAmount),
-            BuildMessage(mission));
+            BuildMessage(mission),
+            mission.ServiceId,
+            mission.ServicePrestationId,
+            mission.ServiceOptionId,
+            mission.CompanyId,
+            assignedCompany?.Name,
+            CanReorder(mission));
 
         return ClientMissionStatusResult.Ok(response);
     }
@@ -265,7 +271,8 @@ public sealed class ClientMissionStatusService(
         var canAcceptQuote = paymentActionIsAvailable
             && mission.CustomerPaymentMethodId.HasValue;
         var canCancel = mission.Status is not (MissionStatus.Started or MissionStatus.Cancelled or MissionStatus.Completed or MissionStatus.Disputed or MissionStatus.Resolved);
-        var canCall = mission.CanRevealContactDetails;
+        var canCall = mission.CanRevealContactDetails
+            && MissionConversationAccessPolicy.CanAccess(mission.Status);
         var canValidateCompletion = mission.Status == MissionStatus.Completed
             && mission.CustomerCompletionValidatedAt is null;
         var canOpenDispute = mission.Status is MissionStatus.Started or MissionStatus.Completed
@@ -285,6 +292,12 @@ public sealed class ClientMissionStatusService(
             canAcceptQuote ? customerTotalAmount : null,
             BuildPrimaryAction(canAcceptQuote, canValidateCompletion, canCall, canCancel));
     }
+
+    private static bool CanReorder(Domain.Entities.Mission mission)
+        => mission.Status == MissionStatus.Resolved
+            || mission.Status == MissionStatus.Cancelled
+            || (mission.Status == MissionStatus.Completed
+                && mission.CustomerCompletionValidatedAt is not null);
 
     private static string? BuildPrimaryAction(
         bool canAcceptQuote,

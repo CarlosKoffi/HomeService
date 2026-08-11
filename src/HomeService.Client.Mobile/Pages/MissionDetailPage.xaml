@@ -127,7 +127,7 @@
                                 <Label x:Name="ProviderEtaLabel" FontSize="12" TextColor="{StaticResource MutedInk}" />
                             </VerticalStackLayout>
                         </Grid>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Grid x:Name="ProviderContactActions" ColumnDefinitions="*,*" ColumnSpacing="10">
                             <Button x:Name="ProviderChatButton" Text="Message" BackgroundColor="White" TextColor="{StaticResource WeleBlue}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnOpenChatClicked" />
                             <Button Grid.Column="1" x:Name="CallButton" Text="Appeler" BackgroundColor="#EFF6FF" TextColor="{StaticResource WeleBlue}" Clicked="OnCallClicked" />
                         </Grid>
@@ -151,6 +151,7 @@
                 <VerticalStackLayout Spacing="10">
                     <Button x:Name="ConfirmButton" Text="Accepter et payer" IsVisible="False" Clicked="OnConfirmClicked" />
                     <Button x:Name="CompleteButton" Text="Valider la fin de mission" IsVisible="False" Clicked="OnCompleteClicked" />
+                    <Button x:Name="ReorderButton" Text="Recommander ce service" IsVisible="False" Clicked="OnReorderClicked" />
                     <Button x:Name="CancelButton" Text="Annuler la mission" IsVisible="False" BackgroundColor="White" TextColor="{StaticResource Danger}" BorderColor="{StaticResource Line}" BorderWidth="1" Clicked="OnCancelClicked" />
                 </VerticalStackLayout>
 

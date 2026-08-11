@@ -218,7 +218,42 @@ public sealed class ClientMissionStatusServiceTests
         Assert.True(result.Response!.Actions.CanValidateCompletion);
         Assert.True(result.Response.Actions.CanRateMission);
         Assert.True(result.Response.Actions.CanOpenDispute);
+        Assert.False(result.Response.ContactDetailsReleased);
+        Assert.Null(result.Response.AssignedCompany!.PhoneNumber);
+        Assert.Null(result.Response.AssignedCompany.Email);
+        Assert.Null(result.Response.AssignedProvider!.PhoneNumber);
+        Assert.False(result.Response.Actions.CanCallCompany);
+        Assert.False(result.Response.Actions.CanCallProvider);
+        Assert.False(result.Response.CanReorder);
         Assert.Equal("ValidateCompletion", result.Response.Actions.PrimaryAction);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenMissionCompletionIsValidated_OnlyAllowsReorder()
+    {
+        await using var db = CreateDbContext();
+        var scenario = await SeedMissionAsync(db);
+        scenario.Mission.ConfirmByCustomer(3_000, 0, 1_500, 0);
+        scenario.Mission.Start(scenario.Provider.Id, scenario.Company.Id);
+        scenario.Mission.Complete(75);
+        scenario.Mission.ValidateCompletionByCustomer();
+        await db.SaveChangesAsync();
+
+        var result = await new ClientMissionStatusService(db)
+            .GetAsync(scenario.Mission.Id, scenario.Customer.PhoneNumber, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Response!.CanReorder);
+        Assert.Equal(scenario.Mission.ServiceId, result.Response.ServiceId);
+        Assert.Equal(scenario.Mission.ServicePrestationId, result.Response.ServicePrestationId);
+        Assert.Equal(scenario.Mission.ServiceOptionId, result.Response.ServiceOptionId);
+        Assert.Equal(scenario.Company.Id, result.Response.CompanyId);
+        Assert.False(result.Response.ContactDetailsReleased);
+        Assert.False(result.Response.Actions.CanCallCompany);
+        Assert.False(result.Response.Actions.CanCallProvider);
+        Assert.False(result.Response.Actions.CanValidateCompletion);
+        Assert.False(result.Response.Actions.CanCancel);
+        Assert.Null(result.Response.Actions.PrimaryAction);
     }
 
     private static async Task<ClientMissionStatusScenario> SeedMissionAsync(

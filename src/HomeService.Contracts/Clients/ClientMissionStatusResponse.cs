@@ -45,7 +45,13 @@ public sealed record ClientMissionStatusResponse(
     IReadOnlyList<ClientMissionAdditionalQuoteResponse> AdditionalQuotes,
     IReadOnlyList<ClientMissionAttachmentResponse> Photos,
     ClientMissionAvailableActionsResponse Actions,
-    string Message);
+    string Message,
+    Guid ServiceId = default,
+    Guid? ServicePrestationId = null,
+    Guid? ServiceOptionId = null,
+    Guid? CompanyId = null,
+    string? CompanyName = null,
+    bool CanReorder = false);
 
 public sealed record ClientMissionAvailableActionsResponse(
     bool CanAcceptQuote,
