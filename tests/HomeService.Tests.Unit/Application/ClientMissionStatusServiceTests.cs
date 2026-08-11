@@ -26,7 +26,9 @@ public sealed class ClientMissionStatusServiceTests
         Assert.False(result.Response.ContactDetailsReleased);
         Assert.Null(result.Response.AssignedCompany!.PhoneNumber);
         Assert.Null(result.Response.AssignedProvider!.PhoneNumber);
-        Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
+        Assert.Equal(
+            $"/api/client/missions/{scenario.Mission.Id:D}/provider-photo",
+            result.Response.AssignedProvider.PhotoStoragePath);
         Assert.Equal(4, result.Response.AssignedProvider.AverageRating);
         Assert.Equal(1, result.Response.AssignedProvider.CompletedMissionCount);
         Assert.False(result.Response.AssignedProvider.CanTrackLocation);
@@ -185,7 +187,9 @@ public sealed class ClientMissionStatusServiceTests
         Assert.Equal(scenario.Company.PhoneNumber, result.Response.AssignedCompany!.PhoneNumber);
         Assert.Equal(scenario.Company.Email, result.Response.AssignedCompany.Email);
         Assert.Equal(scenario.Provider.PhoneNumber, result.Response.AssignedProvider!.PhoneNumber);
-        Assert.Equal("provider-photo.jpg", result.Response.AssignedProvider.PhotoStoragePath);
+        Assert.Equal(
+            $"/api/client/missions/{scenario.Mission.Id:D}/provider-photo",
+            result.Response.AssignedProvider.PhotoStoragePath);
         Assert.Equal(4, result.Response.AssignedProvider.AverageRating);
         Assert.Equal(1, result.Response.AssignedProvider.CompletedMissionCount);
         Assert.True(result.Response.AssignedProvider.CanTrackLocation);

@@ -73,7 +73,7 @@ public partial class MessagesPage : ContentPage
                          .Where(item => IsConversationActive(item.Status))
                          .OrderByDescending(item => item.CreatedAt))
             {
-                var providerPhoto = apiClient.ToRemoteImageSource(item.AssignedProviderPhotoUrl);
+                var providerPhoto = await apiClient.DownloadProfilePhotoAsync(item.AssignedProviderPhotoUrl);
                 rows.Add(ClientConversationRow.From(item, providerPhoto));
             }
 

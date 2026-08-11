@@ -72,9 +72,9 @@ public sealed class ClientMissionStatusService(
             : await db.ProviderDocuments
                 .AsNoTracking()
                 .Where(document => document.ProviderId == assignedProvider.Id && document.DocumentType == ProviderDocumentType.Photo)
-                .OrderByDescending(document => document.UpdatedAt ?? document.CreatedAt)
-                .Select(document => document.StoragePath)
-                .FirstOrDefaultAsync(cancellationToken);
+                .AnyAsync(cancellationToken)
+                    ? $"/api/client/missions/{mission.Id:D}/provider-photo"
+                    : null;
         var providerRating = assignedProvider is null
             ? null
             : await db.MissionReviews

@@ -76,12 +76,10 @@ public sealed class ClientMissionListService(IAppDbContext db)
             .AsNoTracking()
             .Where(document => providerIds.Contains(document.ProviderId)
                 && document.DocumentType == ProviderDocumentType.Photo)
-            .OrderByDescending(document => document.UpdatedAt ?? document.CreatedAt)
-            .Select(document => new { document.ProviderId, document.StoragePath })
+            .Select(document => document.ProviderId)
+            .Distinct()
             .ToListAsync(cancellationToken);
-        var providerPhotos = providerPhotoRows
-            .GroupBy(document => document.ProviderId)
-            .ToDictionary(group => group.Key, group => group.First().StoragePath);
+        var providersWithPhoto = providerPhotoRows.ToHashSet();
         var companyIds = missions
             .Where(mission => mission.CompanyId.HasValue)
             .Select(mission => mission.CompanyId!.Value)
@@ -100,8 +98,8 @@ public sealed class ClientMissionListService(IAppDbContext db)
                     ? assignedProvider
                     : null;
             var providerPhoto = mission.ProviderId is { } photoProviderId
-                && providerPhotos.TryGetValue(photoProviderId, out var photoPath)
-                    ? photoPath
+                && providersWithPhoto.Contains(photoProviderId)
+                    ? $"/api/client/missions/{mission.Id:D}/provider-photo"
                     : null;
             var company = mission.CompanyId is { } companyId
                 && companies.TryGetValue(companyId, out var assignedCompany)

@@ -211,7 +211,7 @@ public partial class MissionDetailPage : ContentPage
             CallButton.Opacity = CallButton.IsEnabled ? 1 : 0.55;
             if (includeMedia || !string.Equals(loadedProviderPhotoPath, mission.AssignedProvider.PhotoStoragePath, StringComparison.Ordinal))
             {
-                ProviderPhoto.Source = await apiClient.DownloadMediaImageSourceAsync(
+                ProviderPhoto.Source = await apiClient.DownloadProfilePhotoAsync(
                     mission.AssignedProvider.PhotoStoragePath,
                     cancellationToken);
                 ProviderPhoto.IsVisible = ProviderPhoto.Source is not null;

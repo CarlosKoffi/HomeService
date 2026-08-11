@@ -5,7 +5,9 @@ public sealed record ClientMissionChatResponse(
     string MissionNumber,
     string MissionLabel,
     Guid ConversationId,
-    IReadOnlyList<ClientMissionMessageResponse> Messages);
+    IReadOnlyList<ClientMissionMessageResponse> Messages,
+    string? ProviderName = null,
+    string? ProviderPhotoUrl = null);
 
 public sealed record ClientMissionMessageResponse(
     Guid MessageId,

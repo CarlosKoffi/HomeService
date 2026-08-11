@@ -1096,6 +1096,65 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status403Forbidden)
         .Produces(StatusCodes.Status404NotFound);
 
+        app.MapGet("/api/client/missions/{missionId:guid}/provider-photo", async (
+            Guid missionId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var mission = await db.Missions
+                .AsNoTracking()
+                .Where(item => item.Id == missionId && item.CustomerId == customer.Id)
+                .Select(item => new { item.ProviderId })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (mission?.ProviderId is null)
+            {
+                return Results.NotFound(new { message = "Aucun prestataire n'est affecte a cette mission." });
+            }
+
+            var document = await db.ProviderDocuments
+                .AsNoTracking()
+                .Where(item => item.ProviderId == mission.ProviderId.Value
+                    && item.DocumentType == ProviderDocumentType.Photo)
+                .OrderByDescending(item => item.UpdatedAt ?? item.CreatedAt)
+                .Select(item => new { item.StoragePath, item.ContentType })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound(new { message = "La photo du prestataire est introuvable." });
+            }
+
+            Stream? stream;
+            try
+            {
+                stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.NotFound(new { message = "La photo du prestataire n'existe plus dans le stockage." });
+            }
+
+            return stream is null
+                ? Results.NotFound(new { message = "La photo du prestataire n'existe plus dans le stockage." })
+                : Results.Stream(
+                    stream,
+                    string.IsNullOrWhiteSpace(document.ContentType) ? "image/jpeg" : document.ContentType);
+        })
+        .WithName("PreviewClientMissionProviderPhoto")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         app.MapGet("/api/client/missions/{missionId:guid}/attachments/{attachmentId:guid}/preview", async (
             Guid missionId,
             Guid attachmentId,

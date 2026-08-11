@@ -35,12 +35,33 @@ public sealed class ClientMissionChatService(
             conversation.Id,
             cancellationToken);
         var messages = await ListMessagesAsync(conversation.Id, cancellationToken);
+        var provider = mission.ProviderId is null
+            ? null
+            : await db.Providers
+                .AsNoTracking()
+                .Where(item => item.Id == mission.ProviderId.Value)
+                .Select(item => new
+                {
+                    item.FirstName,
+                    item.LastName,
+                    HasPhoto = db.ProviderDocuments.Any(document =>
+                        document.ProviderId == item.Id
+                        && document.DocumentType == ProviderDocumentType.Photo)
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+        var providerName = provider is null
+            ? null
+            : $"{provider.FirstName} {provider.LastName}".Trim();
         return ClientMissionChatResult.Ok(new ClientMissionChatResponse(
             mission.Id,
             mission.MissionNumber,
             await GetMissionLabelAsync(mission, cancellationToken),
             conversation.Id,
-            messages));
+            messages,
+            providerName,
+            provider?.HasPhoto == true
+                ? $"/api/client/missions/{mission.Id:D}/provider-photo"
+                : null));
     }
 
     public async Task<ClientMissionChatResult> SendAsync(Guid missionId, SendClientMissionMessageRequest request, CancellationToken cancellationToken)

@@ -13,6 +13,9 @@ public partial class MissionChatPage : ContentPage
     private readonly SemaphoreSlim loadGate = new(1, 1);
     private CancellationTokenSource? refreshCancellation;
     private string? lastMessageSignature;
+    private string? loadedProviderPhotoUrl;
+    private string? loadedProviderName;
+    private ImageSource? providerPhoto;
     private Guid? missionId;
     private bool isSending;
     private bool isNavigating;
@@ -70,11 +73,22 @@ public partial class MissionChatPage : ContentPage
         {
             if (sessionStore.IsPreviewMode())
             {
+                await LoadProviderIdentityAsync("Mohamed Kouyaté", null);
                 await MainThread.InvokeOnMainThreadAsync(() =>
                     MissionContextLabel.Text = "WL-000145 · Déboucher un évier");
                 await ReplaceMessagesAsync([
-                    new ClientMessageRow(Guid.NewGuid(), "Mohamed Kouyaté", "Bonjour, j'arrive dans 13 min.", "10:45"),
-                    new ClientMessageRow(Guid.NewGuid(), "Vous", "Parfait, je suis là.", "10:50")]);
+                    new ClientMessageRow(
+                        Guid.NewGuid(),
+                        "Mohamed Kouyaté",
+                        "Bonjour, j'arrive dans 13 min.",
+                        "10:45",
+                        "Provider"),
+                    new ClientMessageRow(
+                        Guid.NewGuid(),
+                        "Vous",
+                        "Parfait, je suis là.",
+                        "10:50",
+                        "Customer")]);
                 return;
             }
 
@@ -91,13 +105,22 @@ public partial class MissionChatPage : ContentPage
                 return;
             }
 
+            await LoadProviderIdentityAsync(
+                result.Response.ProviderName,
+                result.Response.ProviderPhotoUrl);
             var rows = (result.Response.Messages ?? [])
-                .Select(ClientMessageRow.From)
+                .Select(message => ClientMessageRow.From(
+                    message,
+                    result.Response.ProviderName,
+                    providerPhoto))
                 .ToArray();
             await MainThread.InvokeOnMainThreadAsync(() =>
                 MissionContextLabel.Text = $"{result.Response.MissionNumber} · {result.Response.MissionLabel}");
             await ReplaceMessagesAsync(rows);
-            if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
+            if (Shell.Current is AppShell shell)
+            {
+                _ = shell.RefreshNavigationBadgesAsync();
+            }
         }
         catch
         {
@@ -128,7 +151,12 @@ public partial class MissionChatPage : ContentPage
         {
             if (sessionStore.IsPreviewMode())
             {
-                messages.Add(new ClientMessageRow(Guid.NewGuid(), "Vous", body, DateTime.Now.ToString("HH:mm")));
+                messages.Add(new ClientMessageRow(
+                    Guid.NewGuid(),
+                    "Vous",
+                    body,
+                    DateTime.Now.ToString("HH:mm"),
+                    "Customer"));
                 MessageEntry.Text = string.Empty;
                 return;
             }
@@ -187,7 +215,11 @@ public partial class MissionChatPage : ContentPage
 
     private async Task CloseConversationAsync()
     {
-        if (isNavigating) return;
+        if (isNavigating)
+        {
+            return;
+        }
+
         isNavigating = true;
         refreshCancellation?.Cancel();
         MessageEntry.IsEnabled = false;
@@ -208,14 +240,19 @@ public partial class MissionChatPage : ContentPage
         return MainThread.InvokeOnMainThreadAsync(() =>
         {
             var next = rows.ToArray();
-            var signature = string.Join('|', next.Select(item => item.MessageId));
-            if (signature == lastMessageSignature) return;
+            var signature = $"{loadedProviderName}|{loadedProviderPhotoUrl}|{string.Join('|', next.Select(item => item.MessageId))}";
+            if (signature == lastMessageSignature)
+            {
+                return;
+            }
+
             lastMessageSignature = signature;
             messages.Clear();
             foreach (var row in next)
             {
                 messages.Add(row);
             }
+
             if (messages.Count > 0)
             {
                 MessagesView.ScrollTo(messages[^1], position: ScrollToPosition.End, animate: false);
@@ -223,9 +260,31 @@ public partial class MissionChatPage : ContentPage
         });
     }
 
+    private async Task LoadProviderIdentityAsync(string? providerName, string? providerPhotoUrl)
+    {
+        if (!string.Equals(loadedProviderPhotoUrl, providerPhotoUrl, StringComparison.Ordinal))
+        {
+            providerPhoto = await apiClient.DownloadProfilePhotoAsync(providerPhotoUrl);
+            loadedProviderPhotoUrl = providerPhotoUrl;
+        }
+
+        loadedProviderName = string.IsNullOrWhiteSpace(providerName) ? null : providerName.Trim();
+        await MainThread.InvokeOnMainThreadAsync(() =>
+        {
+            ConversationTitleLabel.Text = loadedProviderName ?? "Conversation";
+            ProviderAvatarPhoto.Source = providerPhoto;
+            ProviderAvatarPhotoBorder.IsVisible = providerPhoto is not null;
+            ProviderAvatarFallback.IsVisible = providerPhoto is null;
+        });
+    }
+
     private void StartRefresh()
     {
-        if (sessionStore.IsPreviewMode()) return;
+        if (sessionStore.IsPreviewMode())
+        {
+            return;
+        }
+
         refreshCancellation?.Cancel();
         refreshCancellation?.Dispose();
         refreshCancellation = new CancellationTokenSource();
@@ -242,23 +301,45 @@ public partial class MissionChatPage : ContentPage
                 await LoadMessagesSafelyAsync();
             }
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
     }
 }
 
-public sealed record ClientMessageRow(Guid MessageId, string Sender, string Body, string SentAt)
+public sealed record ClientMessageRow(
+    Guid MessageId,
+    string Sender,
+    string Body,
+    string SentAt,
+    string SenderType = "",
+    ImageSource? ProviderPhoto = null)
 {
     public bool IsMine => Sender.Equals("Vous", StringComparison.OrdinalIgnoreCase);
+    public bool IsProviderMessage => SenderType.Equals("Provider", StringComparison.OrdinalIgnoreCase);
+    public bool ShowProviderIdentity => IsProviderMessage;
+    public bool ShowProviderPhoto => IsProviderMessage && ProviderPhoto is not null;
+    public bool ShowProviderFallback => IsProviderMessage && ProviderPhoto is null;
+    public bool ShowSender => !IsMine;
 
-    public static ClientMessageRow From(ClientMissionMessageResponse response)
+    public static ClientMessageRow From(
+        ClientMissionMessageResponse response,
+        string? providerName,
+        ImageSource? providerPhoto)
     {
         var sender = response.SenderType switch
         {
             "Customer" => "Vous",
-            "Provider" => "Prestataire",
+            "Provider" => string.IsNullOrWhiteSpace(providerName) ? "Prestataire" : providerName.Trim(),
             "Company" => "Entreprise",
             _ => "Wélé"
         };
-        return new ClientMessageRow(response.MessageId, sender, response.Body, response.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm"));
+        return new ClientMessageRow(
+            response.MessageId,
+            sender,
+            response.Body,
+            response.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm"),
+            response.SenderType,
+            response.SenderType.Equals("Provider", StringComparison.OrdinalIgnoreCase) ? providerPhoto : null);
     }
 }
