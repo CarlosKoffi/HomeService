@@ -462,12 +462,17 @@ public static class DatabaseInitializer
             INSERT INTO "CompanyCommissionTiers"
                 ("Id", "Name", "MinimumMissionCount", "RateBasisPoints", "SortOrder", "IsActive", "CreatedAt", "UpdatedAt")
             VALUES
-                ('9c5d9517-ec35-4e52-84a7-100000000001', 'Lancement', 1, 1500, 10, true, now(), now()),
-                ('9c5d9517-ec35-4e52-84a7-100000000002', 'Essor', 50, 1400, 20, true, now(), now()),
-                ('9c5d9517-ec35-4e52-84a7-100000000003', 'Croissance', 150, 1300, 30, true, now(), now()),
-                ('9c5d9517-ec35-4e52-84a7-100000000004', 'Performance', 300, 1200, 40, true, now(), now()),
-                ('9c5d9517-ec35-4e52-84a7-100000000005', 'Excellence', 600, 1100, 50, true, now(), now()),
-                ('9c5d9517-ec35-4e52-84a7-100000000006', 'Elite', 1000, 1000, 60, true, now(), now())
+                ('9c5d9517-ec35-4e52-84a7-100000000101', 'Lancement', 1, 1500, 10, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000102', 'Palier 50', 50, 1450, 20, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000103', 'Palier 100', 100, 1400, 30, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000104', 'Palier 150', 150, 1350, 40, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000105', 'Palier 200', 200, 1300, 50, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000106', 'Palier 250', 250, 1250, 60, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000107', 'Palier 300', 300, 1200, 70, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000108', 'Palier 350', 350, 1150, 80, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000109', 'Palier 400', 400, 1100, 90, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000110', 'Palier 450', 450, 1050, 100, true, now(), now()),
+                ('9c5d9517-ec35-4e52-84a7-100000000111', 'Elite', 500, 1000, 110, true, now(), now())
             ON CONFLICT ("MinimumMissionCount") DO NOTHING;
             """, cancellationToken);
     }

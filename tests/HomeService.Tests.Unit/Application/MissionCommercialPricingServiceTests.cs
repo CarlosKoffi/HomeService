@@ -43,13 +43,13 @@ public sealed class MissionCommercialPricingServiceTests
     }
 
     [Fact]
-    public async Task CalculateAsync_FiftiethPaidMission_WithRequiredQuality_PromotesToFourteenPercent()
+    public async Task CalculateAsync_FiftiethPaidMission_WithRequiredQuality_PromotesToFourteenPointFivePercent()
     {
         await using var db = CreateDbContext();
         var scenario = await SeedScenarioAsync(db, includePreviousPaidOrder: false);
         db.CompanyCommissionTiers.AddRange(
             new CompanyCommissionTier("Lancement", 1, 1500, 10),
-            new CompanyCommissionTier("Essor", 50, 1400, 20));
+            new CompanyCommissionTier("Palier 50", 50, 1450, 20));
 
         var companyId = scenario.Mission.CompanyId!.Value;
         var customerId = scenario.Mission.CustomerId;
@@ -80,10 +80,10 @@ public sealed class MissionCommercialPricingServiceTests
         var pricing = await new MissionCommercialPricingService(db)
             .CalculateAsync(scenario.Mission, 30_000, CancellationToken.None);
 
-        Assert.Equal(1400, pricing.CompanyCommissionRateBasisPoints);
-        Assert.Equal("Essor", pricing.CompanyCommissionTierName);
+        Assert.Equal(1450, pricing.CompanyCommissionRateBasisPoints);
+        Assert.Equal("Palier 50", pricing.CompanyCommissionTierName);
         Assert.Equal(50, pricing.CompanyCommissionMissionSequence);
-        Assert.Equal(3_500, pricing.CompanyCommissionAmount);
+        Assert.Equal(3_625, pricing.CompanyCommissionAmount);
     }
 
     private static async Task<PricingScenario> SeedScenarioAsync(
