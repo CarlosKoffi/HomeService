@@ -7,9 +7,11 @@
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
         <ScrollView>
             <VerticalStackLayout Padding="18,16,18,30" Spacing="15">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="7">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
                     <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
                     <Label Grid.Column="1" Text="Notifications" Style="{StaticResource ScreenTitleLabel}" VerticalTextAlignment="Center" />
+                    <Button x:Name="MarkAllReadButton" Grid.Column="2" Text="Tout lire" Style="{StaticResource SecondaryButton}"
+                            FontSize="11" Padding="10,5" IsVisible="False" Clicked="OnMarkAllReadClicked" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">

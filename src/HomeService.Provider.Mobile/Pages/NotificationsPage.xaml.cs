@@ -56,7 +56,29 @@ public partial class NotificationsPage : ContentPage
         UnreadSummaryLabel.Text = result.Response.UnreadCount == 0
             ? "Vous êtes à jour."
             : result.Response.UnreadCount == 1 ? "1 notification non lue" : $"{result.Response.UnreadCount} notifications non lues";
+        MarkAllReadButton.IsVisible = result.Response.UnreadCount > 0;
         Render(result.Response.Items);
+    }
+
+    private async void OnMarkAllReadClicked(object? sender, EventArgs e)
+    {
+        if (apiClient is null || string.IsNullOrWhiteSpace(accessToken)) return;
+        MarkAllReadButton.IsEnabled = false;
+        try
+        {
+            var result = await apiClient.MarkAllNotificationsReadAsync(accessToken);
+            if (!result.IsSuccess)
+            {
+                ShowMessage(result.ErrorMessage ?? "Impossible de marquer les notifications comme lues.");
+                return;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            MarkAllReadButton.IsEnabled = true;
+        }
     }
 
     private void Render(IReadOnlyList<ProviderMobileNotificationResponse> notifications)

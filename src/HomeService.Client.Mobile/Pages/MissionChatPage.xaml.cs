@@ -240,7 +240,7 @@ public partial class MissionChatPage : ContentPage
         return MainThread.InvokeOnMainThreadAsync(() =>
         {
             var next = rows.ToArray();
-            var signature = $"{loadedProviderName}|{loadedProviderPhotoUrl}|{string.Join('|', next.Select(item => item.MessageId))}";
+            var signature = $"{loadedProviderName}|{loadedProviderPhotoUrl}|{string.Join('|', next.Select(item => $"{item.MessageId:D}:{item.SentAt}"))}";
             if (signature == lastMessageSignature)
             {
                 return;
@@ -338,7 +338,10 @@ public sealed record ClientMessageRow(
             response.MessageId,
             sender,
             response.Body,
-            response.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm"),
+            response.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")
+                + (response.SenderType.Equals("Customer", StringComparison.OrdinalIgnoreCase)
+                    ? response.ReadAt is null ? " · Envoyé" : " · Lu"
+                    : string.Empty),
             response.SenderType,
             response.SenderType.Equals("Provider", StringComparison.OrdinalIgnoreCase) ? providerPhoto : null);
     }

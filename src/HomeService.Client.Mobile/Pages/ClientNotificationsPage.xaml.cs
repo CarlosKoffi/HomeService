@@ -34,6 +34,7 @@ public partial class ClientNotificationsPage : ContentPage
             UnreadLabel.Text = result.Response.UnreadCount == 0
                 ? string.Empty
                 : $"{result.Response.UnreadCount} nouvelle(s)";
+            MarkAllReadButton.IsVisible = result.Response.UnreadCount > 0;
 
             var rows = result.Response.Notifications.Select(NotificationRow.From).ToList();
             var today = rows.Where(row => row.LocalDate.Date == DateTime.Today).ToList();
@@ -50,6 +51,24 @@ public partial class ClientNotificationsPage : ContentPage
         }
 
         EmptyState.IsVisible = groups.Count == 0;
+    }
+
+    private async void OnMarkAllReadClicked(object sender, EventArgs e)
+    {
+        MarkAllReadButton.IsEnabled = false;
+        try
+        {
+            var result = await apiClient.MarkAllNotificationsReadAsync();
+            if (result.IsSuccess)
+            {
+                notificationState.SetUnreadCount(0);
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            MarkAllReadButton.IsEnabled = true;
+        }
     }
 
     private async void OnSelected(object sender, SelectionChangedEventArgs e)

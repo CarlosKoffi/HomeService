@@ -23,4 +23,5 @@ public sealed record ClientMissionListItemResponse(
     bool CanReorder,
     string? IconUrl = null,
     string? AssignedProviderName = null,
-    string? AssignedProviderPhotoUrl = null);
+    string? AssignedProviderPhotoUrl = null,
+    int UnreadMessageCount = 0);

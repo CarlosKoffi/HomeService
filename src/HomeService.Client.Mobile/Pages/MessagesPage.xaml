@@ -47,6 +47,10 @@
                                     </VerticalStackLayout>
                                     <VerticalStackLayout Grid.Column="2" Spacing="5" VerticalOptions="Center">
                                         <Label Text="{Binding DateLabel}" FontSize="10" TextColor="{StaticResource ListSecondary}" HorizontalTextAlignment="End" />
+                                        <Border IsVisible="{Binding HasUnread}" BackgroundColor="{StaticResource WeleBlue}"
+                                                StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="7,3" HorizontalOptions="End">
+                                            <Label Text="{Binding UnreadMessageCount}" FontSize="9" FontAttributes="Bold" TextColor="White" />
+                                        </Border>
                                         <Label Text="›" FontSize="20" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="End" />
                                     </VerticalStackLayout>
                                 </Grid>

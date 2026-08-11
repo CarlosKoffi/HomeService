@@ -51,6 +51,28 @@ public sealed class ClientNotificationInboxServiceTests
         Assert.All(await db.NotificationOutboxMessages.ToListAsync(), item => Assert.NotNull(item.ReadAt));
     }
 
+    [Fact]
+    public async Task MarkAllReadAsync_MarksOnlyCurrentCustomerNotifications()
+    {
+        await using var db = CreateDbContext();
+        var customerId = Guid.NewGuid();
+        var otherCustomerId = Guid.NewGuid();
+        var missionId = Guid.NewGuid();
+        db.NotificationOutboxMessages.AddRange(
+            CreateNotification(customerId, missionId, "token-phone", "{\"type\":\"MissionStarted\"}"),
+            CreateNotification(customerId, missionId, "token-tablet", "{\"type\":\"MissionStarted\"}"),
+            CreateNotification(otherCustomerId, missionId, "token-other", "{\"type\":\"MissionStarted\"}"));
+        await db.SaveChangesAsync();
+        var sut = new ClientNotificationInboxService(db);
+
+        var result = await sut.MarkAllReadAsync(customerId, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var notifications = await db.NotificationOutboxMessages.ToListAsync();
+        Assert.All(notifications.Where(item => item.OwnerId == customerId), item => Assert.NotNull(item.ReadAt));
+        Assert.All(notifications.Where(item => item.OwnerId == otherCustomerId), item => Assert.Null(item.ReadAt));
+    }
+
     private static NotificationOutboxMessage CreateNotification(
         Guid customerId,
         Guid missionId,

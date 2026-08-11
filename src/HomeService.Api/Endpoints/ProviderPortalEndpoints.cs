@@ -327,6 +327,7 @@ public static class ProviderPortalEndpoints
             string? status,
             HttpRequest httpRequest,
             IAppDbContext db,
+            MobileNavigationBadgeService badgeService,
             CancellationToken cancellationToken) =>
         {
             var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -374,9 +375,17 @@ public static class ProviderPortalEndpoints
             var customersById = await db.Customers.AsNoTracking()
                 .Where(item => customerIds.Contains(item.Id))
                 .ToDictionaryAsync(item => item.Id, cancellationToken);
+            var unreadMessageCounts = await badgeService.GetUnreadMessageCountsByMissionAsync(
+                MobileDeviceOwnerType.Provider,
+                session.ProviderId,
+                cancellationToken);
 
             var items = assignments
-                .Select(assignment => ToProviderMobileMissionSummary(assignment, servicesById, customersById))
+                .Select(assignment => ToProviderMobileMissionSummary(
+                    assignment,
+                    servicesById,
+                    customersById,
+                    unreadMessageCounts.GetValueOrDefault(assignment.MissionId)))
                 .Where(item => item is not null)
                 .Cast<ProviderMobileMissionSummaryResponse>()
                 .ToList();
@@ -414,7 +423,7 @@ public static class ProviderPortalEndpoints
                 .Take(100)
                 .ToListAsync(cancellationToken);
             var items = rows
-                .GroupBy(item => new { item.Subject, item.Body, item.RelatedEntityType, item.RelatedEntityId })
+                .GroupBy(item => new { item.Subject, item.Body, item.RelatedEntityType, item.RelatedEntityId, item.MetadataJson })
                 .Select(group => group.OrderByDescending(item => item.CreatedAt).First())
                 .OrderByDescending(item => item.CreatedAt)
                 .Take(50)
@@ -430,7 +439,7 @@ public static class ProviderPortalEndpoints
                 .ToList();
             var unreadCount = rows
                 .Where(item => item.ReadAt == null)
-                .Select(item => new { item.Subject, item.Body, item.RelatedEntityType, item.RelatedEntityId })
+                .Select(item => new { item.Subject, item.Body, item.RelatedEntityType, item.RelatedEntityId, item.MetadataJson })
                 .Distinct()
                 .Count();
             return Results.Ok(new ProviderMobileNotificationListResponse(unreadCount, items));
@@ -476,7 +485,21 @@ public static class ProviderPortalEndpoints
                 return Results.NotFound(new { message = "Notification introuvable." });
             }
 
-            notification.MarkRead(DateTimeOffset.UtcNow);
+            var relatedNotifications = await db.NotificationOutboxMessages
+                .Where(item => item.OwnerType == MobileDeviceOwnerType.Provider
+                    && item.OwnerId == session.ProviderId
+                    && item.Subject == notification.Subject
+                    && item.Body == notification.Body
+                    && item.RelatedEntityType == notification.RelatedEntityType
+                    && item.RelatedEntityId == notification.RelatedEntityId
+                    && item.MetadataJson == notification.MetadataJson
+                    && item.ReadAt == null)
+                .ToListAsync(cancellationToken);
+            var readAt = DateTimeOffset.UtcNow;
+            foreach (var relatedNotification in relatedNotifications)
+            {
+                relatedNotification.MarkRead(readAt);
+            }
             await db.SaveChangesAsync(cancellationToken);
             return Results.NoContent();
         })
@@ -484,6 +507,36 @@ public static class ProviderPortalEndpoints
         .Produces(StatusCodes.Status204NoContent)
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
+
+        group.MapPost("/mobile/notifications/read-all", async (
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var notifications = await db.NotificationOutboxMessages
+                .Where(item => item.OwnerType == MobileDeviceOwnerType.Provider
+                    && item.OwnerId == session.ProviderId
+                    && item.ReadAt == null
+                    && (item.Channel == NotificationChannel.MobilePush || item.Channel == NotificationChannel.InApp))
+                .ToListAsync(cancellationToken);
+            var readAt = DateTimeOffset.UtcNow;
+            foreach (var notification in notifications)
+            {
+                notification.MarkRead(readAt);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.Ok(new { updatedCount = notifications.Count });
+        })
+        .WithName("MarkAllProviderMobileNotificationsRead")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
 
         group.MapGet("/mobile/profile", async (
             HttpRequest httpRequest,
@@ -2129,7 +2182,8 @@ public static class ProviderPortalEndpoints
     private static ProviderMobileMissionSummaryResponse? ToProviderMobileMissionSummary(
         ProviderMissionAssignment assignment,
         IReadOnlyDictionary<Guid, Service> servicesById,
-        IReadOnlyDictionary<Guid, CustomerProfile> customersById)
+        IReadOnlyDictionary<Guid, CustomerProfile> customersById,
+        int unreadMessageCount = 0)
     {
         if (assignment.Mission is null)
         {
@@ -2168,7 +2222,8 @@ public static class ProviderPortalEndpoints
             assignment.Mission.ScheduledFor,
             effectiveStatus,
             canCallCustomer,
-            canCallCustomer ? customer!.PhoneNumber : null);
+            canCallCustomer ? customer!.PhoneNumber : null,
+            unreadMessageCount);
     }
 
     private static ProviderMobileMissionOfferResponse? ToProviderMobileMissionOffer(

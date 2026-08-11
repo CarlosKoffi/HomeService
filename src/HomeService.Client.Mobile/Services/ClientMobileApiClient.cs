@@ -579,6 +579,11 @@ public sealed class ClientMobileApiClient(HttpClient httpClient, ClientSessionSt
         return await SendWithSessionAsync<object>(HttpMethod.Post, $"api/client/notifications/{notificationId:D}/mark-read", body: null, cancellationToken);
     }
 
+    public async Task<ApiCallResult<object>> MarkAllNotificationsReadAsync(CancellationToken cancellationToken = default)
+    {
+        return await SendWithSessionAsync<object>(HttpMethod.Post, "api/client/notifications/mark-all-read", body: null, cancellationToken);
+    }
+
     public async Task<ApiCallResult<IReadOnlyList<ClientPaymentMethodResponse>>> GetPaymentMethodsAsync(CancellationToken cancellationToken = default)
     {
         return await SendWithSessionAsync<IReadOnlyList<ClientPaymentMethodResponse>>(HttpMethod.Get, "api/client/payment-methods", body: null, cancellationToken);

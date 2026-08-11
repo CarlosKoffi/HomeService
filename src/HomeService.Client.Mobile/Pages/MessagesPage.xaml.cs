@@ -138,10 +138,12 @@ public sealed record ClientConversationRow(
     string MissionNumber,
     string Hint,
     string DateLabel,
-    ImageSource? ProviderPhoto = null)
+    ImageSource? ProviderPhoto = null,
+    int UnreadMessageCount = 0)
 {
     public bool HasProviderPhoto => ProviderPhoto is not null;
     public bool ShowFallback => ProviderPhoto is null;
+    public bool HasUnread => UnreadMessageCount > 0;
 
     public static ClientConversationRow From(ClientMissionListItemResponse response, ImageSource? providerPhoto)
     {
@@ -153,6 +155,13 @@ public sealed record ClientConversationRow(
         var hint = response.AssignedProviderName is null
             ? "Ouvrir la conversation"
             : serviceTitle;
-        return new ClientConversationRow(response.MissionId, title, response.MissionNumber, hint, date, providerPhoto);
+        return new ClientConversationRow(
+            response.MissionId,
+            title,
+            response.MissionNumber,
+            hint,
+            date,
+            providerPhoto,
+            response.UnreadMessageCount);
     }
 }

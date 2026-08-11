@@ -30,4 +30,5 @@ public sealed record CompanyPortalMissionResponse(
     decimal? ServiceLatitude = null,
     decimal? ServiceLongitude = null,
     string? CancellationActor = null,
-    string? CancellationComment = null);
+    string? CancellationComment = null,
+    int UnreadMessageCount = 0);

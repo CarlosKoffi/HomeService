@@ -32,7 +32,8 @@ public sealed record ProviderMobileMissionSummaryResponse(
     DateTimeOffset? ScheduledFor,
     string Status,
     bool CanCallCustomer,
-    string? CustomerPhoneNumber);
+    string? CustomerPhoneNumber,
+    int UnreadMessageCount = 0);
 
 public sealed record ProviderMobileMissionOfferResponse(
     Guid AssignmentId,

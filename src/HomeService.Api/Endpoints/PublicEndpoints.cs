@@ -995,6 +995,25 @@ public static class PublicEndpoints
         .Produces(StatusCodes.Status401Unauthorized)
         .Produces(StatusCodes.Status404NotFound);
 
+        client.MapPost("/notifications/mark-all-read", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            ClientNotificationInboxService notificationInboxService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(httpRequest.Headers.Authorization.ToString(), cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var result = await notificationInboxService.MarkAllReadAsync(customer.Id, cancellationToken);
+            return Results.Ok(new { message = result.Message });
+        })
+        .WithName("MarkAllClientNotificationsRead")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized);
+
         app.MapPost("/api/client/mission-photos", async (
             HttpRequest httpRequest,
             ClientAuthService authService,

@@ -5,20 +5,24 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Shell.NavBarIsVisible="False">
     <Grid RowDefinitions="Auto,*" Padding="20,20,20,0" RowSpacing="16">
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
             <VerticalStackLayout Spacing="3">
                 <Label Text="CENTRE D’ACTIONS" Style="{StaticResource Eyebrow}" />
                 <Label Text="Alertes" Style="{StaticResource ScreenTitle}" />
                 <Label x:Name="UnreadLabel" Style="{StaticResource Muted}" />
             </VerticalStackLayout>
-            <Image Source="app_bell.svg" WidthRequest="30" HeightRequest="30" />
+            <VerticalStackLayout Grid.Column="1" Spacing="5" HorizontalOptions="End">
+                <Image Source="app_bell.svg" WidthRequest="28" HeightRequest="28" HorizontalOptions="End" />
+                <Button x:Name="MarkAllReadButton" Text="Tout lire" FontSize="10" Padding="9,4"
+                        HeightRequest="30" MinimumHeightRequest="30" IsVisible="False" Clicked="OnMarkAllReadClicked" />
+            </VerticalStackLayout>
         </Grid>
         <RefreshView x:Name="RefreshHost" Grid.Row="1" Refreshing="OnRefreshing">
             <CollectionView x:Name="NotificationsView" SelectionMode="Single" SelectionChanged="OnNotificationSelected" EmptyView="Aucune alerte pour le moment.">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Border Style="{StaticResource PremiumCard}" Margin="0,0,0,10" Stroke="{Binding StrokeColor}">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                 <Border WidthRequest="42" HeightRequest="42" BackgroundColor="{Binding IconBackground}" StrokeThickness="0" StrokeShape="RoundRectangle 21">
                                     <Image Source="{Binding Icon}" WidthRequest="22" HeightRequest="22" />
                                 </Border>
@@ -27,6 +31,10 @@
                                     <Label Text="{Binding Message}" Style="{StaticResource Muted}" />
                                     <Label Text="{Binding TimeLabel}" FontSize="11" TextColor="{StaticResource MutedInk}" />
                                 </VerticalStackLayout>
+                                <Border Grid.Column="2" IsVisible="{Binding IsUnread}" BackgroundColor="{StaticResource WeleBlue}"
+                                        StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="7,4" VerticalOptions="Start">
+                                    <Label Text="Nouveau" FontSize="8" FontAttributes="Bold" TextColor="White" />
+                                </Border>
                             </Grid>
                         </Border>
                     </DataTemplate>

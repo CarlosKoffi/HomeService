@@ -230,6 +230,18 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
+    public Task<ApiCallResult<bool>> MarkAllNotificationsReadAsync(
+        string bearerToken,
+        CancellationToken cancellationToken = default)
+    {
+        return SendWithoutResponseAsync(
+            HttpMethod.Post,
+            "api/provider-portal/mobile/notifications/read-all",
+            bearerToken,
+            body: null,
+            cancellationToken);
+    }
+
     public Task<ApiCallResult<ProviderMobileMissionDetailResponse>> GetMissionDetailAsync(
         string bearerToken,
         Guid assignmentId,

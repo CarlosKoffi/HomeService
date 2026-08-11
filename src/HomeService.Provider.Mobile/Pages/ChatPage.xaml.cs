@@ -109,7 +109,7 @@ public partial class ChatPage : ContentPage
         foreach (var mission in items)
         {
             var title = string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName;
-            var grid = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Auto), ColumnSpacing = 8 };
+            var grid = new Grid { ColumnDefinitions = Columns(GridLength.Auto, GridLength.Star, GridLength.Auto), ColumnSpacing = 8 };
             var serviceImage = new Image { Source = ProviderIconResolver.ForService(mission.ServiceIconName, mission.ServiceName), WidthRequest = 30, HeightRequest = 30, Aspect = Aspect.AspectFit };
             if (catalogMedia is not null)
             {
@@ -128,6 +128,25 @@ public partial class ChatPage : ContentPage
                     new Label { Text = mission.MissionNumber, FontFamily = "PlusJakartaSans", FontSize = 9, TextColor = Color.FromArgb("#667085") }
                 }
             }, 1);
+            if (mission.UnreadMessageCount > 0)
+            {
+                grid.Add(new Border
+                {
+                    BackgroundColor = Color.FromArgb("#155EEF"),
+                    StrokeThickness = 0,
+                    StrokeShape = new RoundRectangle { CornerRadius = 10 },
+                    Padding = new Thickness(7, 3),
+                    VerticalOptions = LayoutOptions.Center,
+                    Content = new Label
+                    {
+                        Text = mission.UnreadMessageCount.ToString(),
+                        FontFamily = "PlusJakartaSans",
+                        FontSize = 9,
+                        FontAttributes = FontAttributes.Bold,
+                        TextColor = Colors.White
+                    }
+                }, 2);
+            }
             var card = new Border
             {
                 BackgroundColor = Colors.White,
@@ -184,7 +203,7 @@ public partial class ChatPage : ContentPage
         RecipientSubtitleLabel.Text = $"Mission {mission.MissionNumber} · {(string.IsNullOrWhiteSpace(mission.PrestationName) ? mission.ServiceName : mission.PrestationName)}";
         MessageEntry.Placeholder = string.IsNullOrWhiteSpace(customer) ? "Écrire au client…" : $"Écrire à {FirstName(customer)}…";
         MessageBanner.IsVisible = false;
-        lastMessageSignature = string.Join('|', chatResult.Response.Messages.Select(item => item.MessageId));
+        lastMessageSignature = BuildMessageSignature(chatResult.Response.Messages);
         RenderMessages(chatResult.Response.Messages);
         if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
         SetComposerEnabled(IsConversationActive(mission.Status));
@@ -228,7 +247,7 @@ public partial class ChatPage : ContentPage
                 }
                 return;
             }
-            var signature = string.Join('|', result.Response.Messages.Select(item => item.MessageId));
+            var signature = BuildMessageSignature(result.Response.Messages);
             if (signature == lastMessageSignature) return;
             lastMessageSignature = signature;
             if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
@@ -270,6 +289,27 @@ public partial class ChatPage : ContentPage
         foreach (var message in items.OrderBy(item => item.CreatedAt))
         {
             var mine = message.SenderType.Equals("Provider", StringComparison.OrdinalIgnoreCase);
+            var bubbleContent = new VerticalStackLayout
+            {
+                Spacing = 4,
+                Children =
+                {
+                    new Label { Text = SenderLabel(message), FontFamily = "PlusJakartaSans", FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(mine ? "#DDE8FF" : "#667085") },
+                    new Label { Text = message.Body, FontFamily = "PlusJakartaSans", FontSize = 14, TextColor = Color.FromArgb(mine ? "#FFFFFF" : "#0F172A"), LineHeight = 1.2 }
+                }
+            };
+            if (mine)
+            {
+                bubbleContent.Children.Add(new Label
+                {
+                    Text = message.ReadAt is null ? "Envoyé" : "Lu",
+                    FontFamily = "PlusJakartaSans",
+                    FontSize = 9,
+                    TextColor = Color.FromArgb("#DDE8FF"),
+                    HorizontalTextAlignment = TextAlignment.End
+                });
+            }
+
             var bubble = new Border
             {
                 BackgroundColor = Color.FromArgb(mine ? "#155EEF" : "#F8FAFC"),
@@ -278,15 +318,7 @@ public partial class ChatPage : ContentPage
                 Padding = new Thickness(13, 10),
                 HorizontalOptions = mine ? LayoutOptions.End : LayoutOptions.Start,
                 MaximumWidthRequest = 310,
-                Content = new VerticalStackLayout
-                {
-                    Spacing = 4,
-                    Children =
-                    {
-                        new Label { Text = SenderLabel(message), FontFamily = "PlusJakartaSans", FontSize = 10, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb(mine ? "#DDE8FF" : "#667085") },
-                        new Label { Text = message.Body, FontFamily = "PlusJakartaSans", FontSize = 14, TextColor = Color.FromArgb(mine ? "#FFFFFF" : "#0F172A"), LineHeight = 1.2 }
-                    }
-                }
+                Content = bubbleContent
             };
             MessagesStack.Add(bubble);
         }
@@ -348,6 +380,8 @@ public partial class ChatPage : ContentPage
         "Company" => $"Entreprise · {message.CreatedAt.LocalDateTime:HH:mm}",
         _ => $"{message.SenderType} · {message.CreatedAt.LocalDateTime:HH:mm}"
     };
+    private static string BuildMessageSignature(IEnumerable<ProviderMobileMissionMessageResponse> messages)
+        => string.Join('|', messages.Select(item => $"{item.MessageId:D}:{item.ReadAt?.ToUnixTimeMilliseconds() ?? 0}"));
 
     private static int StatusOrder(string status) => status switch { "Started" => 0, "OnTheWay" => 1, "Accepted" => 2, _ => 3 };
     private static bool IsConversationActive(string status)

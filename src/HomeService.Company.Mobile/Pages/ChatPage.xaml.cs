@@ -69,7 +69,9 @@ public partial class ChatPage : ContentPage
             .Select(item => new CompanyChatMissionRow(
                 item.Id,
                 item.Status,
-                $"{item.ServiceName} · {item.CustomerName} · {item.MissionNumber}"))
+                $"{item.ServiceName} · {item.CustomerName} · {item.MissionNumber}"
+                    + (item.UnreadMessageCount > 0 ? $" · {item.UnreadMessageCount} non lu(s)" : string.Empty),
+                item.UnreadMessageCount))
             .ToList();
         MissionPicker.ItemsSource = missions.ToList();
 
@@ -119,7 +121,7 @@ public partial class ChatPage : ContentPage
             RecipientLabel.Text = response.ProviderName is null
                 ? $"Avec {response.CustomerName}"
                 : $"Avec {response.CustomerName} et {response.ProviderName}";
-            var signature = string.Join('|', response.Messages.Select(item => item.MessageId));
+            var signature = string.Join('|', response.Messages.Select(item => $"{item.MessageId:D}:{item.ReadAt?.ToUnixTimeMilliseconds() ?? 0}"));
             if (force || signature != lastMessageSignature)
             {
                 lastMessageSignature = signature;
@@ -274,7 +276,7 @@ public partial class ChatPage : ContentPage
             || status.Equals("Started", StringComparison.OrdinalIgnoreCase);
 }
 
-public sealed record CompanyChatMissionRow(Guid MissionId, string Status, string Label);
+public sealed record CompanyChatMissionRow(Guid MissionId, string Status, string Label, int UnreadMessageCount);
 
 public sealed record CompanyChatMessageRow(
     Guid MessageId,
@@ -298,7 +300,8 @@ public sealed record CompanyChatMessageRow(
         };
         return new CompanyChatMessageRow(
             response.MessageId,
-            $"{sender} · {response.CreatedAt.LocalDateTime:HH:mm}",
+            $"{sender} · {response.CreatedAt.LocalDateTime:HH:mm}"
+                + (mine ? response.ReadAt is null ? " · Envoyé" : " · Lu" : string.Empty),
             response.Body,
             Color.FromArgb(mine ? "#155EEF" : "#F8FAFC"),
             Color.FromArgb(mine ? "#155EEF" : "#E6E9EF"),

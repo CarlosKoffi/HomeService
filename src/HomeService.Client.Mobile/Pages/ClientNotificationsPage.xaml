@@ -12,7 +12,11 @@
             <Grid ColumnDefinitions="32,*,Auto" ColumnSpacing="8">
                 <Button Style="{StaticResource BackIconButton}" Clicked="OnBackClicked" />
                 <Label Grid.Column="1" Text="Notifications" Style="{StaticResource SubpageTitleLabel}" />
-                <Label Grid.Column="2" x:Name="UnreadLabel" FontSize="11" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                <HorizontalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
+                    <Label x:Name="UnreadLabel" FontSize="11" TextColor="{StaticResource WeleBlue}" FontAttributes="Bold" VerticalTextAlignment="Center" />
+                    <Button x:Name="MarkAllReadButton" Text="Tout lire" FontSize="10" Padding="9,4" HeightRequest="30"
+                            MinimumHeightRequest="30" CornerRadius="12" IsVisible="False" Clicked="OnMarkAllReadClicked" />
+                </HorizontalStackLayout>
             </Grid>
 
             <Border Grid.Row="1" BackgroundColor="{StaticResource BlueWash}" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="4">

@@ -313,6 +313,17 @@ public sealed class CompanyMobileApiClient(HttpClient httpClient)
             null,
             cancellationToken);
 
+    public Task<ApiCallResult<bool>> MarkAllNotificationsReadAsync(
+        string token,
+        Guid companyId,
+        CancellationToken cancellationToken = default)
+        => SendWithoutBodyAsync(
+            HttpMethod.Post,
+            $"api/company-portal/{companyId:D}/notifications/mark-read",
+            token,
+            null,
+            cancellationToken);
+
     public Task<ApiCallResult<MobileDeviceTokenResponse>> RegisterDeviceTokenAsync(
         string token,
         Guid companyId,

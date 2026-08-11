@@ -1,12 +1,15 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Missions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.CompanyPortal;
 
-public sealed class CompanyPortalQueryService(IAppDbContext db)
+public sealed class CompanyPortalQueryService(
+    IAppDbContext db,
+    MobileNavigationBadgeService? navigationBadges = null)
 {
     public async Task<CompanyPortalProfileResult> GetProfileAsync(Guid companyId, CancellationToken cancellationToken)
     {
@@ -145,8 +148,21 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                 row.mission.ServiceLatitude,
                 row.mission.ServiceLongitude,
                 row.mission.CancelledBy == null ? null : row.mission.CancelledBy.ToString(),
-                row.mission.CancellationComment))
+                row.mission.CancellationComment,
+                0))
             .ToListAsync(cancellationToken);
+
+        var unreadMessageCounts = await (navigationBadges ?? new MobileNavigationBadgeService(db))
+            .GetUnreadMessageCountsByMissionAsync(
+                MobileDeviceOwnerType.Company,
+                companyId,
+                cancellationToken);
+        missions = missions
+            .Select(mission => mission with
+            {
+                UnreadMessageCount = unreadMessageCounts.GetValueOrDefault(mission.Id)
+            })
+            .ToList();
 
         return CompanyPortalMissionsResult.Ok(missions.Select(HideClosedMissionCustomerContact).ToList());
     }
@@ -517,7 +533,8 @@ public sealed class CompanyPortalQueryService(IAppDbContext db)
                                   null,
                                   null,
                                   null,
-                                  null))
+                                  null,
+                                  0))
             .ToListAsync(cancellationToken);
 
         var financialRows = await db.Missions

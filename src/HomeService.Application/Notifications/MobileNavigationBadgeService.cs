@@ -91,7 +91,22 @@ public sealed class MobileNavigationBadgeService(IAppDbContext db)
                 && item.ReadAt == null)
             .ToListAsync(cancellationToken);
 
-        if (notifications.Count == 0)
+        var readerSenderType = ownerType switch
+        {
+            MobileDeviceOwnerType.Customer => MissionMessageSenderType.Customer,
+            MobileDeviceOwnerType.Provider => MissionMessageSenderType.Provider,
+            MobileDeviceOwnerType.Company => MissionMessageSenderType.Company,
+            _ => (MissionMessageSenderType?)null
+        };
+        var messages = readerSenderType is null
+            ? []
+            : await db.MissionMessages
+                .Where(message => message.ConversationId == conversationId
+                    && message.ReadAt == null
+                    && message.SenderType != readerSenderType.Value)
+                .ToListAsync(cancellationToken);
+
+        if (notifications.Count == 0 && messages.Count == 0)
         {
             return;
         }
@@ -102,7 +117,64 @@ public sealed class MobileNavigationBadgeService(IAppDbContext db)
             notification.MarkRead(readAt);
         }
 
+        foreach (var message in messages)
+        {
+            message.MarkRead();
+        }
+
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, int>> GetUnreadMessageCountsByMissionAsync(
+        MobileDeviceOwnerType ownerType,
+        Guid ownerId,
+        CancellationToken cancellationToken)
+    {
+        var rows = await db.NotificationOutboxMessages
+            .AsNoTracking()
+            .Where(item => item.OwnerType == ownerType
+                && item.OwnerId == ownerId
+                && item.RelatedEntityType == nameof(MissionConversation)
+                && item.RelatedEntityId != null
+                && item.ReadAt == null
+                && (item.Channel == NotificationChannel.MobilePush || item.Channel == NotificationChannel.InApp))
+            .OrderByDescending(item => item.CreatedAt)
+            .Take(500)
+            .Select(item => new
+            {
+                ConversationId = item.RelatedEntityId!.Value,
+                item.Subject,
+                item.Body,
+                item.MetadataJson,
+                item.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        if (rows.Count == 0)
+        {
+            return new Dictionary<Guid, int>();
+        }
+
+        var conversationIds = rows.Select(item => item.ConversationId).Distinct().ToList();
+        var missionsByConversation = await db.MissionConversations
+            .AsNoTracking()
+            .Where(conversation => conversationIds.Contains(conversation.Id))
+            .ToDictionaryAsync(conversation => conversation.Id, conversation => conversation.MissionId, cancellationToken);
+
+        return rows
+            .Where(item => missionsByConversation.ContainsKey(item.ConversationId))
+            .GroupBy(item => missionsByConversation[item.ConversationId])
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .Select(item => ExtractMessageKey(
+                        item.Subject,
+                        item.Body,
+                        item.ConversationId,
+                        item.MetadataJson,
+                        item.CreatedAt))
+                    .Distinct(StringComparer.Ordinal)
+                    .Count());
     }
 
     private async Task<int> CountUnreadMessagesAsync(

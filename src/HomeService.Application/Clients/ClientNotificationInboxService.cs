@@ -89,6 +89,29 @@ public sealed class ClientNotificationInboxService(IAppDbContext db)
         return ClientNotificationActionResult.Ok("Notification marquee comme lue.");
     }
 
+    public async Task<ClientNotificationActionResult> MarkAllReadAsync(
+        Guid customerId,
+        CancellationToken cancellationToken)
+    {
+        var notifications = await BuildCustomerNotificationQuery(customerId)
+            .Where(notification => notification.ReadAt == null)
+            .ToListAsync(cancellationToken);
+
+        if (notifications.Count == 0)
+        {
+            return ClientNotificationActionResult.Ok("Toutes les notifications sont deja lues.");
+        }
+
+        var readAt = DateTimeOffset.UtcNow;
+        foreach (var notification in notifications)
+        {
+            notification.MarkRead(readAt);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return ClientNotificationActionResult.Ok("Toutes les notifications ont ete marquees comme lues.");
+    }
+
     private IQueryable<Domain.Entities.NotificationOutboxMessage> BuildCustomerNotificationQuery(Guid customerId)
     {
         return db.NotificationOutboxMessages

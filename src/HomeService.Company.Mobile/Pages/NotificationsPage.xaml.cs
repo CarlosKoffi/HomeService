@@ -32,12 +32,30 @@ public partial class NotificationsPage : ContentPage
         var result = await apiClient.GetNotificationsAsync(token, companyId.Value);
         if (!result.IsSuccess || result.Response is null) return;
         UnreadLabel.Text = result.Response.UnreadCount == 0 ? "Tout est à jour" : $"{result.Response.UnreadCount} action(s) non lue(s)";
+        MarkAllReadButton.IsVisible = result.Response.UnreadCount > 0;
         notifications.Clear();
         foreach (var notification in result.Response.Notifications.OrderByDescending(item => item.OccurredAt))
         {
             notifications.Add(NotificationRow.From(notification));
         }
         if (Shell.Current is AppShell shell) _ = shell.RefreshNavigationBadgesAsync();
+    }
+
+    private async void OnMarkAllReadClicked(object? sender, EventArgs e)
+    {
+        var token = await sessionStore.GetTokenAsync();
+        var companyId = await sessionStore.GetCompanyIdAsync();
+        if (string.IsNullOrWhiteSpace(token) || !companyId.HasValue) return;
+        MarkAllReadButton.IsEnabled = false;
+        try
+        {
+            var result = await apiClient.MarkAllNotificationsReadAsync(token, companyId.Value);
+            if (result.IsSuccess) await LoadAsync();
+        }
+        finally
+        {
+            MarkAllReadButton.IsEnabled = true;
+        }
     }
 
     private async void OnRefreshing(object? sender, EventArgs e)
@@ -90,7 +108,8 @@ public partial class NotificationsPage : ContentPage
         string TimeLabel,
         string Icon,
         Color IconBackground,
-        Color StrokeColor)
+        Color StrokeColor,
+        bool IsUnread)
     {
         public static NotificationRow From(CompanyPortalNotificationResponse item)
         {
@@ -102,7 +121,8 @@ public partial class NotificationsPage : ContentPage
                 item.OccurredAt.ToLocalTime().ToString("dd/MM/yyyy · HH:mm"),
                 item.Type.Contains("Provider", StringComparison.OrdinalIgnoreCase) ? "icon_user.svg" : "icon_mission.svg",
                 urgent ? Color.FromArgb("#EEF4FF") : Colors.White,
-                urgent ? Color.FromArgb("#B8CCFF") : Color.FromArgb("#DCE8FF"));
+                urgent ? Color.FromArgb("#B8CCFF") : Color.FromArgb("#DCE8FF"),
+                !item.IsRead);
         }
     }
 }

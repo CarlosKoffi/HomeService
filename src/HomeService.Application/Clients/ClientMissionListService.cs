@@ -1,11 +1,14 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Notifications;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Clients;
 
-public sealed class ClientMissionListService(IAppDbContext db)
+public sealed class ClientMissionListService(
+    IAppDbContext db,
+    MobileNavigationBadgeService? navigationBadges = null)
 {
     public async Task<ClientMissionListResult> ListAsync(
         Guid? customerId,
@@ -89,6 +92,11 @@ public sealed class ClientMissionListService(IAppDbContext db)
             .AsNoTracking()
             .Where(company => companyIds.Contains(company.Id))
             .ToDictionaryAsync(company => company.Id, cancellationToken);
+        var unreadMessageCounts = await (navigationBadges ?? new MobileNavigationBadgeService(db))
+            .GetUnreadMessageCountsByMissionAsync(
+                MobileDeviceOwnerType.Customer,
+                customer.Id,
+                cancellationToken);
 
         var rows = missions.Select(mission =>
         {
@@ -132,7 +140,8 @@ public sealed class ClientMissionListService(IAppDbContext db)
                     ?? service?.IconUrl
                     ?? service?.ImageUrl,
                 provider?.FullName,
-                providerPhoto);
+                providerPhoto,
+                unreadMessageCounts.GetValueOrDefault(mission.Id));
         }).ToList();
 
         return ClientMissionListResult.Ok(rows);
