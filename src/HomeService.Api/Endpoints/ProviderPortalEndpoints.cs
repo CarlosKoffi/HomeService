@@ -1101,6 +1101,58 @@ public static class ProviderPortalEndpoints
             return result.IsSuccess ? Results.Ok(result.Checklist) : result.IsNotFound ? Results.NotFound(new { message = result.Message }) : Results.BadRequest(new { message = result.Message });
         }).WithName("UpdateProviderMissionQualityItem");
 
+        group.MapGet("/mobile/mission-assignments/{assignmentId:guid}/quality/items/{itemId:guid}/photo", async (
+            Guid assignmentId,
+            Guid itemId,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
+            if (session?.Provider is null) return Results.Unauthorized();
+
+            var assignment = await db.ProviderMissionAssignments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == assignmentId && item.ProviderId == session.ProviderId, cancellationToken);
+            if (assignment is null) return Results.NotFound(new { message = "Mission introuvable." });
+
+            var evidence = await (from qualityItem in db.MissionQualityItems.AsNoTracking()
+                                  join control in db.MissionQualityControls.AsNoTracking()
+                                      on qualityItem.ControlId equals control.Id
+                                  join attachment in db.MissionAttachments.AsNoTracking()
+                                      on qualityItem.EvidenceAttachmentId equals attachment.Id
+                                  where qualityItem.Id == itemId
+                                      && control.MissionId == assignment.MissionId
+                                      && !attachment.IsDeleted
+                                  select new
+                                  {
+                                      attachment.StoragePath,
+                                      attachment.ContentType
+                                  }).FirstOrDefaultAsync(cancellationToken);
+            if (evidence is null) return Results.NotFound(new { message = "Aucune photo n'est associee a ce controle." });
+
+            Stream? stream;
+            try
+            {
+                stream = await uploadService.OpenReadAsync(evidence.StoragePath, cancellationToken);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.NotFound(new { message = "Le chemin de la photo est invalide." });
+            }
+
+            return stream is null
+                ? Results.NotFound(new { message = "La photo n'existe plus dans le stockage." })
+                : Results.Stream(
+                    stream,
+                    string.IsNullOrWhiteSpace(evidence.ContentType) ? "application/octet-stream" : evidence.ContentType);
+        })
+        .WithName("PreviewProviderMissionQualityPhoto")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
         group.MapPost("/mobile/mission-assignments/{assignmentId:guid}/quality/items/{itemId:guid}/photo", async (
             Guid assignmentId,
             Guid itemId,
@@ -2054,9 +2106,42 @@ public static class ProviderPortalEndpoints
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
 
-        var qualityGate = await qualityService.ValidateCanCompleteAsync(session.ProviderId, assignmentId, cancellationToken);
+        var qualityGate = await qualityService.ValidateCanCompleteAsync(
+            session.ProviderId,
+            assignmentId,
+            request.QualityExceptionReason,
+            cancellationToken);
         if (!qualityGate.IsAllowed)
-            return Results.BadRequest(new { message = qualityGate.Message, missingItems = qualityGate.MissingItems });
+            return Results.BadRequest(new
+            {
+                message = qualityGate.Message,
+                missingItems = qualityGate.MissingItems,
+                qualityGate.CompletedRequiredItemCount,
+                qualityGate.RequiredItemCount,
+                qualityGate.CompletionPercentage,
+                minimumCompletionPercentage = MissionQualityChecklistService.MinimumCompletionPercentage
+            });
+
+        var normalizedExceptionReason = string.IsNullOrWhiteSpace(request.QualityExceptionReason)
+            ? null
+            : request.QualityExceptionReason.Trim();
+        if (normalizedExceptionReason is { Length: > 1200 })
+        {
+            normalizedExceptionReason = normalizedExceptionReason[..1200];
+        }
+
+        var completionRequest = qualityGate.UsedException
+            ? request with
+            {
+                Note = string.Join(
+                    Environment.NewLine,
+                    new[]
+                    {
+                        request.Note?.Trim(),
+                        $"Motif exceptionnel checklist ({qualityGate.CompletionPercentage} %) : {normalizedExceptionReason}"
+                    }.Where(value => !string.IsNullOrWhiteSpace(value)))
+            }
+            : request;
 
         var previousStatus = assignment.Status;
         var customerValidationWindow = await MissionWorkflowSettingsResolver.ResolveMinutesAsync(
@@ -2072,7 +2157,7 @@ public static class ProviderPortalEndpoints
         var result = workflow.CompleteMission(
             session.Provider,
             assignment,
-            request,
+            completionRequest,
             DateTimeOffset.UtcNow.Add(customerValidationWindow),
             hasBlockingAdditionalQuote);
         if (result.Status != ProviderMissionOperationStatus.Ok)
@@ -2095,7 +2180,10 @@ public static class ProviderPortalEndpoints
                 AssignmentStatus = assignment.Status,
                 MissionStatus = assignment.Mission.Status,
                 request.ActualDurationMinutes,
-                assignment.CompletedAt
+                assignment.CompletedAt,
+                ChecklistCompletionPercentage = qualityGate.CompletionPercentage,
+                ChecklistExceptionUsed = qualityGate.UsedException,
+                ChecklistExceptionReason = qualityGate.UsedException ? normalizedExceptionReason : null
             });
 
         await milestoneService.EnsureMissionCompletedMilestoneAsync(assignment.Mission, cancellationToken);

@@ -13,6 +13,7 @@ namespace HomeService.Provider.Mobile.Pages;
 public partial class MissionDetailPage : ContentPage
 {
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(15);
+    private const int MinimumQualityExceptionReasonLength = 20;
     private readonly ProviderMobileApiClient? apiClient;
     private readonly ProviderSessionService? sessionService;
     private readonly CatalogMediaResolver? catalogMedia;
@@ -28,6 +29,7 @@ public partial class MissionDetailPage : ContentPage
     private CancellationTokenSource? departureCountdownCancellation;
     private bool loading;
     private bool offerActionInProgress;
+    private readonly HashSet<Guid> qualityUpdatesInProgress = [];
 
     public string AssignmentId
     {
@@ -185,93 +187,376 @@ public partial class MissionDetailPage : ContentPage
         StartButton.IsVisible = mission.Actions.CanStart;
         AdditionalQuoteButton.IsVisible = !isClosed && mission.MissionStatus == "Started" && blockingQuote is null;
         CompleteButton.IsVisible = mission.Actions.CanComplete;
-        RenderQualityChecklist(isClosed);
+        await RenderQualityChecklistAsync(isClosed);
         RestartLocationUpdates(mission);
     }
 
-    private void RenderQualityChecklist(bool isClosed)
+    private async Task RenderQualityChecklistAsync(bool isClosed)
     {
         QualityStagesHost.Children.Clear();
         QualityCard.IsVisible = !isClosed && qualityChecklist is { RequiredItemCount: > 0 };
         if (!QualityCard.IsVisible || qualityChecklist is null) return;
-        QualityProgressLabel.Text = $"{qualityChecklist.CompletedRequiredItemCount} / {qualityChecklist.RequiredItemCount}";
+        QualityProgressLabel.Text = $"{qualityChecklist.CompletionPercentage} %";
         QualityProgressBar.Progress = qualityChecklist.RequiredItemCount == 0 ? 1 : qualityChecklist.CompletedRequiredItemCount / (double)qualityChecklist.RequiredItemCount;
+        QualityRequirementLabel.Text = $"{qualityChecklist.CompletedRequiredItemCount} contrôle(s) sur {qualityChecklist.RequiredItemCount} · minimum {qualityChecklist.MinimumCompletionPercentage} % pour terminer";
+        QualityExceptionPanel.IsVisible = !qualityChecklist.CanComplete;
+        QualityBlockingLabel.Text = qualityChecklist.CanComplete
+            ? qualityChecklist.CompletionPercentage == 100
+                ? "Checklist complète. Merci pour la qualité du suivi."
+                : $"Vous pouvez terminer la mission. Continuez si possible jusqu'à 100 % : la qualité du suivi compte pour la réputation de l'entreprise."
+            : $"Encore {Math.Max(0, qualityChecklist.MinimumCompletionPercentage - qualityChecklist.CompletionPercentage)} point(s) pour atteindre le minimum. Sinon, renseignez un motif exceptionnel detaille ci-dessous.";
+        QualityBlockingLabel.TextColor = qualityChecklist.CanComplete
+            ? Color.FromArgb("#067647")
+            : Color.FromArgb("#B54708");
+
+        var previewTasks = new List<Task>();
 
         foreach (var stage in qualityChecklist.Stages)
         {
-            var stageTitle = new Label { Text = stage.Label, FontSize = 14, FontAttributes = FontAttributes.Bold, TextColor = Color.FromArgb("#101828") };
-            QualityStagesHost.Children.Add(stageTitle);
+            var stageHeader = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition(GridLength.Star),
+                    new ColumnDefinition(GridLength.Auto)
+                },
+                Margin = new Thickness(0, 5, 0, 0)
+            };
+            stageHeader.Children.Add(new Label
+            {
+                Text = stage.Label,
+                FontSize = 14,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Color.FromArgb("#101828"),
+                VerticalTextAlignment = TextAlignment.Center
+            });
+            var stageProgress = new Label
+            {
+                Text = $"{stage.CompletedRequiredItemCount}/{stage.RequiredItemCount}",
+                FontSize = 11,
+                FontAttributes = FontAttributes.Bold,
+                TextColor = Color.FromArgb("#667085"),
+                VerticalTextAlignment = TextAlignment.Center
+            };
+            Grid.SetColumn(stageProgress, 1);
+            stageHeader.Children.Add(stageProgress);
+            QualityStagesHost.Children.Add(stageHeader);
+
             foreach (var item in stage.Items)
             {
-                var row = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) }, ColumnSpacing = 8, Padding = new Thickness(0, 5) };
-                var copy = new VerticalStackLayout { Spacing = 1 };
-                copy.Children.Add(new Label { Text = item.Label, FontSize = 13, FontAttributes = item.IsRequired ? FontAttributes.Bold : FontAttributes.None, TextColor = Color.FromArgb("#101828") });
-                if (!string.IsNullOrWhiteSpace(item.Guidance)) copy.Children.Add(new Label { Text = item.Guidance, FontSize = 11, TextColor = Color.FromArgb("#667085") });
-                row.Children.Add(copy);
+                var itemLayout = new VerticalStackLayout { Spacing = 8 };
+                var header = new Grid
+                {
+                    ColumnDefinitions =
+                    {
+                        new ColumnDefinition(GridLength.Star),
+                        new ColumnDefinition(GridLength.Auto)
+                    },
+                    ColumnSpacing = 8
+                };
+                var copy = new VerticalStackLayout { Spacing = 2 };
+                copy.Children.Add(new Label
+                {
+                    Text = item.IsRequired ? item.Label : $"{item.Label} · optionnel",
+                    FontSize = 13,
+                    FontAttributes = item.IsRequired ? FontAttributes.Bold : FontAttributes.None,
+                    TextColor = Color.FromArgb("#101828")
+                });
+                if (!string.IsNullOrWhiteSpace(item.Guidance))
+                {
+                    copy.Children.Add(new Label
+                    {
+                        Text = item.Guidance,
+                        FontSize = 11,
+                        TextColor = Color.FromArgb("#667085"),
+                        LineBreakMode = LineBreakMode.WordWrap
+                    });
+                }
+
+                header.Children.Add(copy);
                 if (item.ResponseType == "Automatic")
                 {
-                    var state = new Label { Text = item.IsCompleted ? "OK" : "Auto", FontSize = 11, FontAttributes = FontAttributes.Bold, TextColor = item.IsCompleted ? Color.FromArgb("#079455") : Color.FromArgb("#667085"), VerticalTextAlignment = TextAlignment.Center };
-                    Grid.SetColumn(state, 1); row.Children.Add(state);
+                    var state = CreateQualityStateLabel(item.IsCompleted ? "✓ Auto" : "En attente", item.IsCompleted);
+                    Grid.SetColumn(state, 1);
+                    header.Children.Add(state);
                 }
-                else
+                else if (!item.IsAvailable)
                 {
-                    var action = new Button { Text = item.IsCompleted ? "Fait" : item.ResponseType == "Photo" ? "Photo" : "Valider", FontSize = 11, Padding = new Thickness(12, 5), HeightRequest = 34, IsEnabled = !item.IsCompleted };
-                    action.Clicked += async (_, _) => await RespondQualityItemAsync(item);
-                    Grid.SetColumn(action, 1); row.Children.Add(action);
+                    var state = CreateQualityStateLabel("Apres demarrage", false);
+                    Grid.SetColumn(state, 1);
+                    header.Children.Add(state);
                 }
-                QualityStagesHost.Children.Add(new Border { Stroke = Color.FromArgb("#E4EAF3"), StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 }, Padding = new Thickness(10), Content = row });
+
+                itemLayout.Children.Add(header);
+
+                if (item.ResponseType == "Confirmation" && item.IsAvailable)
+                {
+                    var confirmationRow = new Grid
+                    {
+                        ColumnDefinitions =
+                        {
+                            new ColumnDefinition(GridLength.Auto),
+                            new ColumnDefinition(GridLength.Star)
+                        },
+                        ColumnSpacing = 8
+                    };
+                    var checkbox = new CheckBox
+                    {
+                        IsChecked = item.BooleanValue == true,
+                        Color = Color.FromArgb("#155EEF"),
+                        IsEnabled = !qualityUpdatesInProgress.Contains(item.ItemId)
+                    };
+                    var confirmationLabel = new Label
+                    {
+                        Text = item.IsCompleted ? "Fait" : "Touchez pour confirmer",
+                        FontSize = 12,
+                        FontAttributes = FontAttributes.Bold,
+                        TextColor = item.IsCompleted ? Color.FromArgb("#067647") : Color.FromArgb("#475467"),
+                        VerticalTextAlignment = TextAlignment.Center
+                    };
+                    checkbox.CheckedChanged += async (_, args) =>
+                        await SaveQualityItemAsync(item, args.Value, null, null);
+                    confirmationRow.Children.Add(checkbox);
+                    Grid.SetColumn(confirmationLabel, 1);
+                    confirmationRow.Children.Add(confirmationLabel);
+                    itemLayout.Children.Add(confirmationRow);
+                }
+                else if (item.ResponseType == "YesNo" && item.IsAvailable)
+                {
+                    var choices = new Grid
+                    {
+                        ColumnDefinitions =
+                        {
+                            new ColumnDefinition(GridLength.Star),
+                            new ColumnDefinition(GridLength.Star)
+                        },
+                        ColumnSpacing = 8
+                    };
+                    var yes = CreateQualityChoiceButton("Oui", item.BooleanValue == true);
+                    yes.Clicked += async (_, _) => await SaveQualityItemAsync(item, true, null, null);
+                    var no = CreateQualityChoiceButton("Non", item.BooleanValue == false);
+                    no.Clicked += async (_, _) => await SaveQualityItemAsync(item, false, null, null);
+                    choices.Children.Add(yes);
+                    Grid.SetColumn(no, 1);
+                    choices.Children.Add(no);
+                    itemLayout.Children.Add(choices);
+                }
+                else if (item.ResponseType == "Photo" && item.IsAvailable)
+                {
+                    var photoRow = new Grid
+                    {
+                        ColumnDefinitions =
+                        {
+                            new ColumnDefinition(new GridLength(84)),
+                            new ColumnDefinition(GridLength.Star)
+                        },
+                        ColumnSpacing = 10
+                    };
+                    var preview = new Image
+                    {
+                        HeightRequest = 68,
+                        WidthRequest = 84,
+                        Aspect = Aspect.AspectFill,
+                        IsVisible = !string.IsNullOrWhiteSpace(item.EvidencePhotoUrl),
+                        BackgroundColor = Color.FromArgb("#F2F4F7")
+                    };
+                    photoRow.Children.Add(preview);
+                    var photoActions = new VerticalStackLayout { Spacing = 4, VerticalOptions = LayoutOptions.Center };
+                    photoActions.Children.Add(new Label
+                    {
+                        Text = item.IsCompleted ? "Photo enregistrée" : "Ajoutez une preuve visible",
+                        FontSize = 11,
+                        TextColor = item.IsCompleted ? Color.FromArgb("#067647") : Color.FromArgb("#667085")
+                    });
+                    var photoButton = new Button
+                    {
+                        Text = item.IsCompleted ? "Remplacer la photo" : "Ajouter une photo",
+                        FontSize = 11,
+                        HeightRequest = 36,
+                        Padding = new Thickness(10, 4),
+                        IsEnabled = !qualityUpdatesInProgress.Contains(item.ItemId)
+                    };
+                    photoButton.Clicked += async (_, _) => await CaptureQualityPhotoAsync(item);
+                    photoActions.Children.Add(photoButton);
+                    Grid.SetColumn(photoActions, 1);
+                    photoRow.Children.Add(photoActions);
+                    itemLayout.Children.Add(photoRow);
+                    if (!string.IsNullOrWhiteSpace(item.EvidencePhotoUrl))
+                    {
+                        previewTasks.Add(LoadQualityPhotoPreviewAsync(preview, item.EvidencePhotoUrl));
+                    }
+                }
+                else if ((item.ResponseType is "ShortText" or "Choice" or "Number") && item.IsAvailable)
+                {
+                    var responseRow = new Grid
+                    {
+                        ColumnDefinitions =
+                        {
+                            new ColumnDefinition(GridLength.Star),
+                            new ColumnDefinition(GridLength.Auto)
+                        },
+                        ColumnSpacing = 8
+                    };
+                    var entry = new Entry
+                    {
+                        Text = item.ResponseType == "Number"
+                            ? item.NumberValue?.ToString(CultureInfo.CurrentCulture)
+                            : item.TextValue,
+                        Placeholder = item.ResponseType == "Number" ? "Valeur" : "Votre reponse",
+                        Keyboard = item.ResponseType == "Number" ? Keyboard.Numeric : Keyboard.Text,
+                        FontSize = 12
+                    };
+                    var save = new Button
+                    {
+                        Text = "Enregistrer",
+                        FontSize = 11,
+                        HeightRequest = 36,
+                        Padding = new Thickness(10, 4),
+                        IsEnabled = !qualityUpdatesInProgress.Contains(item.ItemId)
+                    };
+                    save.Clicked += async (_, _) =>
+                    {
+                        if (item.ResponseType == "Number")
+                        {
+                            if (!decimal.TryParse(entry.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var number))
+                            {
+                                ShowMessage("Saisissez une valeur numérique valide.");
+                                return;
+                            }
+
+                            await SaveQualityItemAsync(item, null, number, null);
+                        }
+                        else
+                        {
+                            await SaveQualityItemAsync(item, null, null, entry.Text);
+                        }
+                    };
+                    responseRow.Children.Add(entry);
+                    Grid.SetColumn(save, 1);
+                    responseRow.Children.Add(save);
+                    itemLayout.Children.Add(responseRow);
+                }
+
+                QualityStagesHost.Children.Add(new Border
+                {
+                    BackgroundColor = item.IsCompleted ? Color.FromArgb("#F0FDF4") : Colors.White,
+                    Stroke = item.IsCompleted ? Color.FromArgb("#BBF7D0") : Color.FromArgb("#E4EAF3"),
+                    StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 12 },
+                    Padding = new Thickness(11),
+                    Content = itemLayout
+                });
             }
         }
 
         StartButton.IsEnabled = StartButton.IsEnabled && qualityChecklist.CanStart;
-        CompleteButton.IsEnabled = CompleteButton.IsEnabled && qualityChecklist.CanComplete;
+        await Task.WhenAll(previewTasks);
     }
 
-    private async Task RespondQualityItemAsync(ProviderMissionQualityItemResponse item)
+    private static Label CreateQualityStateLabel(string text, bool completed) => new()
     {
-        if (!CanAct()) return;
-        if (item.ResponseType == "Photo")
+        Text = text,
+        FontSize = 10,
+        FontAttributes = FontAttributes.Bold,
+        TextColor = completed ? Color.FromArgb("#067647") : Color.FromArgb("#667085"),
+        VerticalTextAlignment = TextAlignment.Center
+    };
+
+    private static Button CreateQualityChoiceButton(string text, bool selected) => new()
+    {
+        Text = text,
+        FontSize = 11,
+        HeightRequest = 36,
+        Padding = new Thickness(10, 4),
+        BackgroundColor = selected ? Color.FromArgb("#155EEF") : Color.FromArgb("#F2F4F7"),
+        TextColor = selected ? Colors.White : Color.FromArgb("#344054")
+    };
+
+    private async Task SaveQualityItemAsync(
+        ProviderMissionQualityItemResponse item,
+        bool? booleanValue,
+        decimal? numberValue,
+        string? textValue)
+    {
+        if (!CanAct() || qualityUpdatesInProgress.Contains(item.ItemId)) return;
+        if ((item.ResponseType is "ShortText" or "Choice") && string.IsNullOrWhiteSpace(textValue))
         {
-            var source = await DisplayActionSheet("Preuve photo", "Annuler", null, "Prendre une photo", "Choisir dans la galerie");
-            FileResult? file = null;
-            try
+            ShowMessage("Saisissez une réponse avant d'enregistrer.");
+            return;
+        }
+
+        qualityUpdatesInProgress.Add(item.ItemId);
+        var result = await apiClient!.UpdateMissionQualityItemAsync(
+            accessToken!,
+            assignmentId!.Value,
+            item.ItemId,
+            new UpdateProviderMissionQualityItemRequest(booleanValue, numberValue, textValue, null));
+        qualityUpdatesInProgress.Remove(item.ItemId);
+        if (!result.IsSuccess || result.Response is null)
+        {
+            ShowMessage(result.ErrorMessage ?? "Contrôle non enregistré.");
+            await RenderQualityChecklistAsync(detail is not null && IsClosed(detail));
+            return;
+        }
+
+        qualityChecklist = result.Response;
+        await RenderQualityChecklistAsync(detail is not null && IsClosed(detail));
+        QualityStatusLabel.Text = "Enregistré automatiquement";
+        QualityStatusLabel.IsVisible = true;
+    }
+
+    private async Task CaptureQualityPhotoAsync(ProviderMissionQualityItemResponse item)
+    {
+        if (!CanAct() || qualityUpdatesInProgress.Contains(item.ItemId)) return;
+        var source = await DisplayActionSheet("Preuve photo", "Annuler", null, "Prendre une photo", "Choisir dans la galerie");
+        FileResult? file = null;
+        try
+        {
+            if (source == "Prendre une photo" && MediaPicker.Default.IsCaptureSupported)
             {
-                if (source == "Prendre une photo" && MediaPicker.Default.IsCaptureSupported) file = await MediaPicker.Default.CapturePhotoAsync();
-                else if (source == "Choisir dans la galerie") file = await MediaPicker.Default.PickPhotoAsync();
+                file = await MediaPicker.Default.CapturePhotoAsync();
             }
-            catch { ShowMessage("Impossible d'ouvrir la photo."); }
-            if (file is null) return;
-            var upload = await apiClient!.UploadMissionQualityPhotoAsync(accessToken!, assignmentId!.Value, item.ItemId, file);
-            if (!upload.IsSuccess) { ShowMessage(upload.ErrorMessage ?? "Upload impossible."); return; }
+            else if (source == "Choisir dans la galerie")
+            {
+                file = await MediaPicker.Default.PickPhotoAsync();
+            }
+        }
+        catch
+        {
+            ShowMessage("Impossible d'ouvrir la photo.");
+        }
+
+        if (file is null) return;
+        qualityUpdatesInProgress.Add(item.ItemId);
+        var upload = await apiClient!.UploadMissionQualityPhotoAsync(accessToken!, assignmentId!.Value, item.ItemId, file);
+        qualityUpdatesInProgress.Remove(item.ItemId);
+        if (!upload.IsSuccess)
+        {
+            ShowMessage(upload.ErrorMessage ?? "La photo n'a pas pu être envoyée.");
+            return;
+        }
+
+        var refreshed = await apiClient.GetMissionQualityAsync(accessToken!, assignmentId.Value);
+        if (refreshed.IsSuccess && refreshed.Response is not null)
+        {
+            qualityChecklist = refreshed.Response;
+            await RenderQualityChecklistAsync(detail is not null && IsClosed(detail));
+            QualityStatusLabel.Text = "Photo enregistrée et visible dans la checklist";
+            QualityStatusLabel.IsVisible = true;
         }
         else
         {
-            bool? booleanValue = true;
-            decimal? numberValue = null;
-            string? textValue = null;
-            if (item.ResponseType == "YesNo")
-            {
-                var answer = await DisplayActionSheet(item.Label, "Annuler", null, "Oui", "Non");
-                if (answer is not ("Oui" or "Non")) return;
-                booleanValue = answer == "Oui";
-            }
-            else if (item.ResponseType is "ShortText" or "Choice")
-            {
-                textValue = await DisplayPromptAsync("Controle qualite", item.Label, "Valider", "Annuler", keyboard: Keyboard.Text);
-                if (string.IsNullOrWhiteSpace(textValue)) return;
-                booleanValue = null;
-            }
-            else if (item.ResponseType == "Number")
-            {
-                var raw = await DisplayPromptAsync("Controle qualite", item.Label, "Valider", "Annuler", keyboard: Keyboard.Numeric);
-                if (!decimal.TryParse(raw, NumberStyles.Number, CultureInfo.CurrentCulture, out var parsed)) return;
-                numberValue = parsed; booleanValue = null;
-            }
-            var result = await apiClient!.UpdateMissionQualityItemAsync(accessToken!, assignmentId!.Value, item.ItemId, new UpdateProviderMissionQualityItemRequest(booleanValue, numberValue, textValue, null));
-            if (!result.IsSuccess) { ShowMessage(result.ErrorMessage ?? "Controle non enregistre."); return; }
+            ShowMessage("Photo enregistrée. Actualisez l'écran pour afficher l'aperçu.");
         }
-        ShowMessage("Controle qualite enregistre.");
-        await LoadAsync(false);
+    }
+
+    private async Task LoadQualityPhotoPreviewAsync(Image target, string photoUrl)
+    {
+        if (apiClient is null || string.IsNullOrWhiteSpace(accessToken)) return;
+        var result = await apiClient.DownloadAsync(accessToken, photoUrl);
+        if (!result.IsSuccess || result.Response is null || result.Response.Length == 0) return;
+        var bytes = result.Response;
+        target.Source = ImageSource.FromStream(() => new MemoryStream(bytes));
+        target.IsVisible = true;
     }
 
     private void RenderMap(ProviderMobileMissionDetailResponse mission)
@@ -338,9 +623,42 @@ public partial class MissionDetailPage : ContentPage
 
     private async void OnCompleteClicked(object? sender, EventArgs e)
     {
-        if (!CanAct() || detail?.Actions.CanComplete != true) return;
+        if (!CanAct()) return;
+        if (detail?.Actions.CanComplete != true)
+        {
+            ShowMessage("La mission ne peut pas encore être terminée. Vérifiez son statut et les actions en attente.");
+            return;
+        }
+
+        string? qualityExceptionReason = null;
+        if (qualityChecklist is { CanComplete: false })
+        {
+            qualityExceptionReason = QualityExceptionEditor.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(qualityExceptionReason)
+                || qualityExceptionReason.Length < MinimumQualityExceptionReasonLength)
+            {
+                ShowMessage($"Checklist à {qualityChecklist.CompletionPercentage} %. Complétez au moins {qualityChecklist.MinimumCompletionPercentage} %, ou expliquez la situation en {MinimumQualityExceptionReasonLength} caractères minimum.");
+                QualityExceptionEditor.Focus();
+                return;
+            }
+
+            var confirmException = await DisplayAlert(
+                "Clôture exceptionnelle",
+                $"La checklist est remplie à {qualityChecklist.CompletionPercentage} %. Votre motif sera conservé et pourra être contrôlé. Confirmer la fin de mission ?",
+                "Confirmer",
+                "Revenir a la checklist");
+            if (!confirmException) return;
+        }
+
         SetActionsEnabled(false);
-        var result = await apiClient!.CompleteMissionAsync(accessToken!, assignmentId!.Value, new ProviderCompleteMissionRequest(60, "Prestation terminée depuis l’application mobile.", null));
+        var result = await apiClient!.CompleteMissionAsync(
+            accessToken!,
+            assignmentId!.Value,
+            new ProviderCompleteMissionRequest(
+                60,
+                "Prestation terminée depuis l'application mobile.",
+                null,
+                qualityExceptionReason));
         if (result.IsSuccess)
         {
             ApplyClosedVisualState();

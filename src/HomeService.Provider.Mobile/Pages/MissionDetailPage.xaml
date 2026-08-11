@@ -115,7 +115,7 @@
                         <VerticalStackLayout Spacing="12">
                             <Grid ColumnDefinitions="*,Auto">
                                 <VerticalStackLayout Spacing="2">
-                                    <Label Text="QUALITE WELE" Style="{StaticResource EyebrowLabel}" />
+                                    <Label Text="QUALITÉ WÉLÉ" Style="{StaticResource EyebrowLabel}" />
                                     <Label Text="Checklist de l'intervention" Style="{StaticResource CardTitleLabel}" />
                                 </VerticalStackLayout>
                                 <Border Grid.Column="1" BackgroundColor="{StaticResource BlueWash}" Stroke="Transparent" StrokeShape="RoundRectangle 12" Padding="9,5">
@@ -123,8 +123,23 @@
                                 </Border>
                             </Grid>
                             <ProgressBar x:Name="QualityProgressBar" Progress="0" ProgressColor="{StaticResource WeleBlue}" />
-                            <Label Text="Les controles obligatoires protegent votre travail et la satisfaction du client." Style="{StaticResource MutedLabel}" />
-                            <VerticalStackLayout x:Name="QualityStagesHost" Spacing="10" />
+                            <Label x:Name="QualityRequirementLabel" Text="Minimum 50 % pour terminer la mission." FontSize="12" FontAttributes="Bold" TextColor="#344054" />
+                            <Border BackgroundColor="#EFF6FF" Stroke="#BFDBFE" StrokeShape="RoundRectangle 12" Padding="11">
+                                <VerticalStackLayout Spacing="4">
+                                    <Label Text="CONTRÔLE QUALITÉ" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
+                                    <Label Text="Des contrôles peuvent être effectués. Une checklist remplie avec soin protège votre travail et contribue directement à la réputation de votre entreprise sur Wélé." FontSize="11" TextColor="#344054" LineBreakMode="WordWrap" />
+                                </VerticalStackLayout>
+                            </Border>
+                            <Label x:Name="QualityStatusLabel" FontSize="11" FontAttributes="Bold" TextColor="#079455" IsVisible="False" />
+                            <VerticalStackLayout x:Name="QualityStagesHost" Spacing="8" />
+                            <Border x:Name="QualityExceptionPanel" IsVisible="False" BackgroundColor="#FFF7ED" Stroke="#FED7AA" StrokeShape="RoundRectangle 12" Padding="11">
+                                <VerticalStackLayout Spacing="7">
+                                    <Label Text="Vous n'avez pas encore atteint 50 %." FontSize="12" FontAttributes="Bold" TextColor="#B54708" />
+                                    <Label Text="Si une situation particulière vous empêche de compléter la checklist, expliquez-la soigneusement. Ce motif sera transmis au contrôle qualité." FontSize="11" TextColor="#7A2E0E" LineBreakMode="WordWrap" />
+                                    <Editor x:Name="QualityExceptionEditor" Placeholder="Expliquez la situation particulière (20 caractères minimum)..." AutoSize="TextChanges" MaxLength="1200" MinimumHeightRequest="82" BackgroundColor="White" TextColor="#101828" />
+                                </VerticalStackLayout>
+                            </Border>
+                            <Label x:Name="QualityBlockingLabel" FontSize="11" FontAttributes="Bold" TextColor="#B54708" LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
                     </Border>
 

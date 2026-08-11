@@ -1,4 +1,5 @@
 using HomeService.Application.Missions;
+using HomeService.Application.Quality;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 
@@ -55,6 +56,49 @@ public sealed class QualityControlTests
         var result = scoring.SelectTopCompanies(request, [lowerQuality, higherQuality]);
 
         Assert.Equal(higherQuality.CompanyId, result[0].CompanyId);
+    }
+
+    [Fact]
+    public void Mission_can_be_completed_when_half_of_required_controls_are_done()
+    {
+        var result = MissionQualityChecklistService.EvaluateCompletionGate(
+            completedRequiredItemCount: 4,
+            requiredItemCount: 8,
+            exceptionReason: null,
+            missingItems: ["Photo finale"]);
+
+        Assert.True(result.IsAllowed);
+        Assert.False(result.UsedException);
+        Assert.Equal(50, result.CompletionPercentage);
+    }
+
+    [Fact]
+    public void Mission_is_blocked_below_half_without_a_detailed_reason()
+    {
+        var result = MissionQualityChecklistService.EvaluateCompletionGate(
+            completedRequiredItemCount: 3,
+            requiredItemCount: 8,
+            exceptionReason: "Pas possible",
+            missingItems: ["Photo finale", "Zone nettoyee"]);
+
+        Assert.False(result.IsAllowed);
+        Assert.Equal(37, result.CompletionPercentage);
+        Assert.Contains("50 %", result.Message);
+        Assert.Equal(2, result.MissingItems.Count);
+    }
+
+    [Fact]
+    public void Detailed_exception_allows_completion_below_half_and_is_flagged()
+    {
+        var result = MissionQualityChecklistService.EvaluateCompletionGate(
+            completedRequiredItemCount: 2,
+            requiredItemCount: 8,
+            exceptionReason: "Le client a refuse les photos dans son logement.",
+            missingItems: ["Photo initiale", "Photo finale"]);
+
+        Assert.True(result.IsAllowed);
+        Assert.True(result.UsedException);
+        Assert.Equal(25, result.CompletionPercentage);
     }
 
     private static MissionDispatchCandidate Candidate(string name, int qualityScore) => new(

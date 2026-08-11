@@ -8,6 +8,9 @@ namespace HomeService.Application.Quality;
 
 public sealed class MissionQualityChecklistService(IAppDbContext db)
 {
+    public const int MinimumCompletionPercentage = 50;
+    public const int MinimumExceptionReasonLength = 20;
+
     public async Task<ProviderMissionQualityChecklistResponse?> GetForProviderAsync(
         Guid providerId,
         Guid assignmentId,
@@ -25,7 +28,7 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         }
 
         await ApplyAutomaticResponsesAsync(control, assignment, cancellationToken);
-        return Map(control);
+        return Map(control, assignment);
     }
 
     public async Task<QualityChecklistOperationResult> RespondAsync(
@@ -89,7 +92,7 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         item.Respond(request.BooleanValue, request.NumberValue, request.TextValue, request.EvidenceAttachmentId);
         control.MarkInProgress();
         await db.SaveChangesAsync(cancellationToken);
-        return QualityChecklistOperationResult.Ok(Map(control));
+        return QualityChecklistOperationResult.Ok(Map(control, assignment));
     }
 
     public async Task<QualityGateResult> ValidateCanStartAsync(
@@ -97,15 +100,21 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
-        return await ValidateGateAsync(providerId, assignmentId, beforeCompletion: false, cancellationToken);
+        return await ValidateGateAsync(
+            providerId,
+            assignmentId,
+            beforeCompletion: false,
+            exceptionReason: null,
+            cancellationToken);
     }
 
     public async Task<QualityGateResult> ValidateCanCompleteAsync(
         Guid providerId,
         Guid assignmentId,
+        string? exceptionReason,
         CancellationToken cancellationToken)
     {
-        return await ValidateGateAsync(providerId, assignmentId, beforeCompletion: true, cancellationToken);
+        return await ValidateGateAsync(providerId, assignmentId, beforeCompletion: true, exceptionReason, cancellationToken);
     }
 
     public async Task LockAfterCompletionAsync(Guid missionId, CancellationToken cancellationToken)
@@ -165,6 +174,7 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         Guid providerId,
         Guid assignmentId,
         bool beforeCompletion,
+        string? exceptionReason,
         CancellationToken cancellationToken)
     {
         var assignment = await db.ProviderMissionAssignments
@@ -179,6 +189,9 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         if (control is null) return QualityGateResult.Allowed();
 
         await ApplyAutomaticResponsesAsync(control, assignment, cancellationToken);
+        var required = control.Items.Where(item => item.IsRequired).ToList();
+        var completedRequiredCount = required.Count(item => item.IsCompleted);
+        var completionPercentage = CalculateCompletionPercentage(completedRequiredCount, required.Count);
         var missing = control.Items
             .Where(item => item.IsRequired
                 && !item.IsCompleted
@@ -188,13 +201,23 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
             .Select(item => item.Label)
             .ToList();
 
-        return missing.Count == 0
-            ? QualityGateResult.Allowed()
-            : QualityGateResult.Blocked(
-                beforeCompletion
-                    ? "Terminez les controles qualite obligatoires avant de cloturer la mission."
-                    : "Terminez les controles de debut avant de demarrer la mission.",
-                missing);
+        if (!beforeCompletion)
+        {
+            return missing.Count == 0
+                ? QualityGateResult.Allowed(completedRequiredCount, required.Count, completionPercentage)
+                : QualityGateResult.Blocked(
+                    "Terminez les controles de debut avant de demarrer la mission.",
+                    missing,
+                    completedRequiredCount,
+                    required.Count,
+                    completionPercentage);
+        }
+
+        return EvaluateCompletionGate(
+            completedRequiredCount,
+            required.Count,
+            exceptionReason,
+            missing);
     }
 
     private async Task ApplyAutomaticResponsesAsync(
@@ -224,7 +247,9 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         }
     }
 
-    private static ProviderMissionQualityChecklistResponse Map(MissionQualityControl control)
+    private static ProviderMissionQualityChecklistResponse Map(
+        MissionQualityControl control,
+        ProviderMissionAssignment assignment)
     {
         var items = control.Items.OrderBy(item => item.Stage).ThenBy(item => item.SortOrder).ToList();
         var stages = Enum.GetValues<QualityChecklistStage>()
@@ -249,23 +274,70 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
                         item.BooleanValue,
                         item.NumberValue,
                         item.TextValue,
-                        item.EvidenceAttachmentId)).ToList());
+                        item.EvidenceAttachmentId,
+                        item.EvidenceAttachmentId.HasValue
+                            ? $"api/provider-portal/mobile/mission-assignments/{assignment.Id:D}/quality/items/{item.Id:D}/photo"
+                            : null,
+                        item.ResponseType != QualityChecklistResponseType.Automatic
+                            && (item.Stage == QualityChecklistStage.BeforeStart
+                                || assignment.Mission?.Status == MissionStatus.Started))).ToList());
             })
             .Where(stage => stage.Items.Count > 0)
             .ToList();
         var required = items.Where(item => item.IsRequired).ToList();
+        var completedRequired = required.Count(item => item.IsCompleted);
+        var completionPercentage = CalculateCompletionPercentage(completedRequired, required.Count);
         return new ProviderMissionQualityChecklistResponse(
             control.Id,
             control.Status.ToString(),
             required.Count,
-            required.Count(item => item.IsCompleted),
+            completedRequired,
             items.Where(item => item.IsRequired && item.Stage == QualityChecklistStage.BeforeStart).All(item => item.IsCompleted),
-            required.All(item => item.IsCompleted),
-            stages);
+            completionPercentage >= MinimumCompletionPercentage,
+            stages,
+            completionPercentage,
+            MinimumCompletionPercentage,
+            true,
+            $"Minimum {MinimumCompletionPercentage} % pour terminer. Sous ce seuil, un motif exceptionnel détaillé est obligatoire.");
     }
 
     private static ProviderMissionQualityChecklistResponse EmptyChecklist() =>
-        new(null, "NotConfigured", 0, 0, true, true, []);
+        new(null, "NotConfigured", 0, 0, true, true, [], 100, MinimumCompletionPercentage, true, null);
+
+    private static int CalculateCompletionPercentage(int completed, int required)
+        => required == 0 ? 100 : (int)Math.Floor(completed * 100m / required);
+
+    public static QualityGateResult EvaluateCompletionGate(
+        int completedRequiredItemCount,
+        int requiredItemCount,
+        string? exceptionReason,
+        IReadOnlyList<string>? missingItems = null)
+    {
+        var safeRequiredCount = Math.Max(0, requiredItemCount);
+        var safeCompletedCount = Math.Clamp(completedRequiredItemCount, 0, safeRequiredCount);
+        var completionPercentage = CalculateCompletionPercentage(safeCompletedCount, safeRequiredCount);
+        if (completionPercentage >= MinimumCompletionPercentage)
+        {
+            return QualityGateResult.Allowed(safeCompletedCount, safeRequiredCount, completionPercentage);
+        }
+
+        var normalizedReason = string.IsNullOrWhiteSpace(exceptionReason) ? null : exceptionReason.Trim();
+        if (normalizedReason is { Length: >= MinimumExceptionReasonLength })
+        {
+            return QualityGateResult.Allowed(
+                safeCompletedCount,
+                safeRequiredCount,
+                completionPercentage,
+                usedException: true);
+        }
+
+        return QualityGateResult.Blocked(
+            $"Checklist remplie à {completionPercentage} %. Complétez au moins {MinimumCompletionPercentage} % des contrôles, ou indiquez un motif exceptionnel détaillé ({MinimumExceptionReasonLength} caractères minimum).",
+            missingItems ?? [],
+            safeCompletedCount,
+            safeRequiredCount,
+            completionPercentage);
+    }
 
     private static string StageLabel(QualityChecklistStage stage) => stage switch
     {
@@ -276,10 +348,29 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
     };
 }
 
-public sealed record QualityGateResult(bool IsAllowed, string? Message, IReadOnlyList<string> MissingItems)
+public sealed record QualityGateResult(
+    bool IsAllowed,
+    string? Message,
+    IReadOnlyList<string> MissingItems,
+    int CompletedRequiredItemCount = 0,
+    int RequiredItemCount = 0,
+    int CompletionPercentage = 100,
+    bool UsedException = false)
 {
-    public static QualityGateResult Allowed() => new(true, null, []);
-    public static QualityGateResult Blocked(string message, IReadOnlyList<string> missingItems) => new(false, message, missingItems);
+    public static QualityGateResult Allowed(
+        int completedRequiredItemCount = 0,
+        int requiredItemCount = 0,
+        int completionPercentage = 100,
+        bool usedException = false) =>
+        new(true, null, [], completedRequiredItemCount, requiredItemCount, completionPercentage, usedException);
+
+    public static QualityGateResult Blocked(
+        string message,
+        IReadOnlyList<string> missingItems,
+        int completedRequiredItemCount = 0,
+        int requiredItemCount = 0,
+        int completionPercentage = 0) =>
+        new(false, message, missingItems, completedRequiredItemCount, requiredItemCount, completionPercentage);
 }
 
 public sealed record QualityChecklistOperationResult(

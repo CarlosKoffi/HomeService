@@ -7,7 +7,11 @@ public sealed record ProviderMissionQualityChecklistResponse(
     int CompletedRequiredItemCount,
     bool CanStart,
     bool CanComplete,
-    IReadOnlyList<ProviderMissionQualityStageResponse> Stages);
+    IReadOnlyList<ProviderMissionQualityStageResponse> Stages,
+    int CompletionPercentage = 100,
+    int MinimumCompletionPercentage = 50,
+    bool CanCompleteWithException = true,
+    string? CompletionRequirementMessage = null);
 
 public sealed record ProviderMissionQualityStageResponse(
     string Stage,
@@ -29,7 +33,9 @@ public sealed record ProviderMissionQualityItemResponse(
     bool? BooleanValue,
     decimal? NumberValue,
     string? TextValue,
-    Guid? EvidenceAttachmentId);
+    Guid? EvidenceAttachmentId,
+    string? EvidencePhotoUrl = null,
+    bool IsAvailable = true);
 
 public sealed record UpdateProviderMissionQualityItemRequest(
     bool? BooleanValue,
