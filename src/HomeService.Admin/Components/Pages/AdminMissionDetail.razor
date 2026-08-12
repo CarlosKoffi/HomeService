@@ -3,6 +3,7 @@
 @using HomeService.Contracts.Admin
 @inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
+@inject AdminSessionState SessionState
 
 <PageTitle>Dossier mission</PageTitle>
 
@@ -210,6 +211,14 @@ else
                                 Remboursement prepare : @FormatMoney(CancellationRefundPreviewAmount, Mission.Currency).
                                 La decision est propre a ce dossier.
                             </p>
+                            <label>
+                                Code Authenticator
+                                <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" @bind="FinancialMfaCode" placeholder="Code à 6 chiffres" />
+                            </label>
+                            @if (SessionState.CurrentUser?.MfaEnabled != true)
+                            {
+                                <p class="mission-dispute-hint">Activez d'abord Authenticator depuis la page Sécurité du compte.</p>
+                            }
                             <button type="button" class="danger-action" @onclick="CancelMissionAsync" disabled="@IsActionBusy">Annuler la mission</button>
                         </div>
                     }
@@ -283,6 +292,14 @@ else
                             Note de resolution
                             <textarea @bind="ResolutionNote" placeholder="Expliquez la decision prise avant de cloturer le litige."></textarea>
                         </label>
+                        <label>
+                            Code Authenticator
+                            <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" @bind="FinancialMfaCode" placeholder="Code à 6 chiffres" />
+                        </label>
+                        @if (SessionState.CurrentUser?.MfaEnabled != true)
+                        {
+                            <p class="mission-dispute-hint">Activez d'abord Authenticator depuis la page Sécurité du compte.</p>
+                        }
                         <button type="button" @onclick="ResolveDisputeAsync" disabled="@IsActionBusy">Cloturer le litige</button>
                     </div>
                 }
@@ -487,6 +504,7 @@ else
     private int? RefundPercent { get; set; }
     private int? RefundAmount { get; set; }
     private bool IncludeCustomerServiceFeeInDisputeRefund { get; set; }
+    private string FinancialMfaCode { get; set; } = string.Empty;
     private string SelectedTab { get; set; } = "summary";
     private bool DispatchAsUrgent { get; set; }
     private bool RequiresRefundInput => ResolutionType is "PartialRefund" or "RefundCustomer";
@@ -617,6 +635,12 @@ else
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(FinancialMfaCode))
+        {
+            ErrorMessage = "Saisissez le code de votre application Authenticator.";
+            return;
+        }
+
         var refundValidationMessage = ValidateRefundDecision();
         if (refundValidationMessage is not null)
         {
@@ -630,18 +654,32 @@ else
 
         try
         {
-            Mission = await ApiClient.ResolveAdminMissionDisputeAsync(
+            var result = await ApiClient.ResolveAdminMissionDisputeAsync(
                 Mission.Id,
                 ResolutionType,
                 ResolutionNote ?? string.Empty,
                 RefundPercent,
                 RefundAmount,
-                IncludeCustomerServiceFeeInDisputeRefund);
-            Message = "Litige cloture.";
+                IncludeCustomerServiceFeeInDisputeRefund,
+                FinancialMfaCode);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            Message = result.Response?.Message ?? "Confirmation enregistrée.";
+            if (result.Response?.Completed != true)
+            {
+                FinancialMfaCode = string.Empty;
+                return;
+            }
+
             ResolutionNote = null;
             RefundPercent = null;
             RefundAmount = null;
             IncludeCustomerServiceFeeInDisputeRefund = false;
+            FinancialMfaCode = string.Empty;
             await LoadAsync();
         }
         catch (Exception exception)
@@ -673,25 +711,45 @@ else
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(FinancialMfaCode))
+        {
+            ErrorMessage = "Saisissez le code de votre application Authenticator.";
+            return;
+        }
+
         IsActionBusy = true;
         ErrorMessage = null;
         Message = null;
 
         try
         {
-            Mission = await ApiClient.CancelAdminMissionAsync(
+            var result = await ApiClient.CancelAdminMissionAsync(
                 Mission.Id,
                 CancellationReason,
                 CancellationNote,
                 CancellationFeeAmount,
                 CancellationRefundPercent,
-                IncludeCustomerServiceFeeInCancellationRefund);
-            Message = "Mission annulee par l'administration.";
+                IncludeCustomerServiceFeeInCancellationRefund,
+                FinancialMfaCode);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            Message = result.Response?.Message ?? "Confirmation enregistrée.";
+            if (result.Response?.Completed != true)
+            {
+                FinancialMfaCode = string.Empty;
+                return;
+            }
+
             CancellationReason = "Other";
             CancellationNote = null;
             CancellationFeeAmount = null;
             CancellationRefundPercent = 100;
             IncludeCustomerServiceFeeInCancellationRefund = false;
+            FinancialMfaCode = string.Empty;
             await LoadAsync();
         }
         catch (Exception exception)

@@ -18,9 +18,14 @@ public sealed record AdminCompanyPayoutResponse(
     string? ProofReference,
     string? FailureReason);
 
-public sealed record ReviewCompanyPayoutRequest(string? Reason = null, string? ProofReference = null);
+public sealed record ReviewCompanyPayoutRequest(
+    string? Reason = null,
+    string? ProofReference = null,
+    string? MfaCode = null);
 
-public sealed record VerifyCompanyPayoutDestinationRequest(string? ExternalContactId = null);
+public sealed record VerifyCompanyPayoutDestinationRequest(
+    string? ExternalContactId = null,
+    string? MfaCode = null);
 
 public sealed record AdminCompanyPayoutDestinationResponse(
     Guid Id,

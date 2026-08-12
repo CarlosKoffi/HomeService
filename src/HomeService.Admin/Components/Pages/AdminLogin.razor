@@ -32,6 +32,11 @@
                 Mot de passe
                 <input type="password" @bind="Password" placeholder="Votre mot de passe" autocomplete="current-password" @onkeydown="HandleKeyDownAsync" />
             </label>
+            <label>
+                Code Authenticator
+                <input type="text" inputmode="numeric" maxlength="9" @bind="MfaCode" placeholder="Requis après activation" autocomplete="one-time-code" @onkeydown="HandleKeyDownAsync" />
+                <small>Laissez vide si vous n’avez pas encore activé Authenticator.</small>
+            </label>
             <button type="button" class="primary-action" @onclick="SignInAsync" disabled="@IsBusy">Se connecter</button>
         </div>
     </section>
@@ -43,6 +48,7 @@
 
     private string Email { get; set; } = string.Empty;
     private string Password { get; set; } = string.Empty;
+    private string MfaCode { get; set; } = string.Empty;
     private string? ErrorMessage { get; set; }
     private bool IsBusy { get; set; }
 
@@ -75,10 +81,10 @@
 
         try
         {
-            var signedIn = await SessionState.SignInAsync(Email, Password);
+            var signedIn = await SessionState.SignInAsync(Email, Password, MfaCode);
             if (!signedIn)
             {
-                ErrorMessage = "Email ou mot de passe incorrect.";
+                ErrorMessage = SessionState.LastSignInError ?? "Email, mot de passe ou code incorrect.";
                 return;
             }
 

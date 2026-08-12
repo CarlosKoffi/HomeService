@@ -6,6 +6,7 @@ using HomeService.Infrastructure.Notifications;
 using HomeService.Infrastructure.Location;
 using HomeService.Infrastructure.Security;
 using HomeService.Infrastructure.Payments;
+using HomeService.Application.Admin;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,9 +48,22 @@ public static class DependencyInjection
         services.AddScoped<IAddressAutocompleteService, GooglePlacesAddressAutocompleteService>();
         services.AddScoped<IMobilePushSender, FirebaseCloudMessagingSender>();
         services.AddSingleton<IPayoutDataProtector, AesPayoutDataProtector>();
+        services.AddSingleton<IAdminMfaDataProtector, AesAdminMfaDataProtector>();
+        services.AddSingleton(new AdminFinancialSecurityOptions
+        {
+            DualApprovalThresholdAmount = ParsePositiveInt(
+                configuration["ADMIN_FINANCIAL_DUAL_APPROVAL_THRESHOLD"],
+                100_000),
+            ApprovalValidityMinutes = ParsePositiveInt(
+                configuration["ADMIN_FINANCIAL_APPROVAL_VALIDITY_MINUTES"],
+                15)
+        });
         services.AddScoped<ICompanyPayoutGateway, JekoCompanyPayoutGateway>();
         services.AddScoped<IClientPaymentGateway, JekoClientPaymentGateway>();
 
         return services;
     }
+
+    private static int ParsePositiveInt(string? value, int fallback) =>
+        int.TryParse(value, out var parsed) && parsed > 0 ? parsed : fallback;
 }

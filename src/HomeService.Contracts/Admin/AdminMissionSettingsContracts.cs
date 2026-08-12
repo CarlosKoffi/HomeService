@@ -19,7 +19,8 @@ public sealed record UpdateAdminCompanyCommissionTierRequest(
     int MinimumMissionCount,
     int RateBasisPoints,
     int SortOrder,
-    bool IsActive);
+    bool IsActive,
+    string? MfaCode = null);
 
 public sealed record AdminCommissionRuleResponse(
     Guid Id,
@@ -38,7 +39,8 @@ public sealed record AdminCommissionRuleResponse(
 public sealed record UpdateAdminCommissionRuleRequest(
     int RateBasisPoints,
     int FixedAmount,
-    string Currency);
+    string Currency,
+    string? MfaCode = null);
 
 public sealed record AdminMissionWorkflowSettingResponse(
     Guid Id,

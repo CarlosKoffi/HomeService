@@ -386,6 +386,9 @@
             </div>
             <span>@GetAdminRoleLabel(admin)</span>
             <span class="@GetAdminStatusClass(admin)">@GetAdminStatusLabel(admin)</span>
+            <span class="status-pill @(admin.MfaEnabled ? "ok" : "danger")">
+                @(admin.MfaEnabled ? "Authenticator actif" : "Authenticator requis")
+            </span>
             <div class="role-checkboxes compact-role-editor" aria-label="Roles de @admin.FullName">
                 @foreach (var role in Roles)
                 {

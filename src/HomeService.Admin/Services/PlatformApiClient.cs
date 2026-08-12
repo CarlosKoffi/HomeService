@@ -44,6 +44,29 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         }
     }
 
+    public async Task<AdminMfaStatusResponse?> GetAdminMfaStatusAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminMfaStatusResponse>("/api/admin/auth/mfa", cancellationToken);
+    }
+
+    public async Task<AdminMfaEnrollmentResponse?> BeginAdminMfaEnrollmentAsync(CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminMfaEnrollmentResponse>("/api/admin/auth/mfa/setup", new { }, cancellationToken);
+    }
+
+    public async Task<AdminMfaActivationResponse?> ActivateAdminMfaAsync(
+        string code,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminMfaActivationResponse>(
+            "/api/admin/auth/mfa/activate",
+            new AdminMfaCodeRequest(code),
+            cancellationToken);
+    }
+
     public async Task<AdminDashboardResponse?> GetAdminDashboardAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -282,45 +305,49 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
-    public async Task<AdminMissionDetailResponse?> ResolveAdminMissionDisputeAsync(
+    public async Task<AdminFinancialApiResult> ResolveAdminMissionDisputeAsync(
         Guid missionId,
         string resolution,
         string note,
         int? refundPercent,
         int? refundAmount,
         bool includeCustomerServiceFeeInRefund = false,
+        string mfaCode = "",
         CancellationToken cancellationToken = default)
     {
-        AddBasicAuthIfConfigured();
-        return await PostJsonAsync<AdminMissionDetailResponse>(
+        return await SendAdminFinancialActionAsync(
+            HttpMethod.Post,
             $"/api/admin/missions/{missionId}/resolve-dispute",
             new ResolveMissionDisputeRequest(
                 resolution,
                 note,
                 refundPercent,
                 refundAmount,
-                includeCustomerServiceFeeInRefund),
+                includeCustomerServiceFeeInRefund,
+                mfaCode),
             cancellationToken);
     }
 
-    public async Task<AdminMissionDetailResponse?> CancelAdminMissionAsync(
+    public async Task<AdminFinancialApiResult> CancelAdminMissionAsync(
         Guid missionId,
         string reason,
         string note,
         int? cancellationFeeAmount,
         int? refundPercent = null,
         bool includeCustomerServiceFeeInRefund = false,
+        string mfaCode = "",
         CancellationToken cancellationToken = default)
     {
-        AddBasicAuthIfConfigured();
-        return await PostJsonAsync<AdminMissionDetailResponse>(
+        return await SendAdminFinancialActionAsync(
+            HttpMethod.Post,
             $"/api/admin/missions/{missionId}/cancel",
             new CancelMissionRequest(
                 reason,
                 note,
                 cancellationFeeAmount,
                 refundPercent,
-                includeCustomerServiceFeeInRefund),
+                includeCustomerServiceFeeInRefund,
+                mfaCode),
             cancellationToken);
     }
 
@@ -330,13 +357,13 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await GetJsonAsync<AdminMissionSettingsResponse>("/api/admin/mission-settings", cancellationToken);
     }
 
-    public async Task<AdminMissionSettingsResponse?> UpdateAdminCommissionRuleAsync(
+    public async Task<AdminFinancialApiResult> UpdateAdminCommissionRuleAsync(
         Guid ruleId,
         UpdateAdminCommissionRuleRequest request,
         CancellationToken cancellationToken = default)
     {
-        AddBasicAuthIfConfigured();
-        return await PutJsonAsync<AdminMissionSettingsResponse>(
+        return await SendAdminFinancialActionAsync(
+            HttpMethod.Put,
             $"/api/admin/mission-settings/commission-rules/{ruleId:D}",
             request,
             cancellationToken);
@@ -354,13 +381,13 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken);
     }
 
-    public async Task<AdminMissionSettingsResponse?> UpdateAdminCompanyCommissionTierAsync(
+    public async Task<AdminFinancialApiResult> UpdateAdminCompanyCommissionTierAsync(
         Guid tierId,
         UpdateAdminCompanyCommissionTierRequest request,
         CancellationToken cancellationToken = default)
     {
-        AddBasicAuthIfConfigured();
-        return await PutJsonAsync<AdminMissionSettingsResponse>(
+        return await SendAdminFinancialActionAsync(
+            HttpMethod.Put,
             $"/api/admin/mission-settings/company-commission-tiers/{tierId:D}",
             request,
             cancellationToken);
@@ -475,52 +502,76 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             cancellationToken) ?? [];
     }
 
-    public async Task<ApiActionResult> VerifyCompanyPayoutDestinationAsync(
+    public async Task<AdminFinancialApiResult> VerifyCompanyPayoutDestinationAsync(
         Guid destinationId,
+        string mfaCode,
         string? externalContactId = null,
         CancellationToken cancellationToken = default) =>
-        await PostAdminPayoutActionAsync(
+        await SendAdminFinancialActionAsync(
+            HttpMethod.Post,
             $"/api/admin/company-payout-destinations/{destinationId:D}/verify",
-            new VerifyCompanyPayoutDestinationRequest(externalContactId),
+            new VerifyCompanyPayoutDestinationRequest(externalContactId, mfaCode),
             cancellationToken);
 
-    public async Task<ApiActionResult> ApproveCompanyPayoutAsync(
+    public async Task<AdminFinancialApiResult> ApproveCompanyPayoutAsync(
         Guid payoutId,
+        string mfaCode,
         CancellationToken cancellationToken = default) =>
-        await PostAdminPayoutActionAsync(
+        await SendAdminFinancialActionAsync(
+            HttpMethod.Post,
             $"/api/admin/company-payouts/{payoutId:D}/approve",
-            new ReviewCompanyPayoutRequest(),
+            new AdminFinancialActionRequest(mfaCode),
             cancellationToken);
 
-    public async Task<ApiActionResult> RejectCompanyPayoutAsync(
+    public async Task<AdminFinancialApiResult> RejectCompanyPayoutAsync(
         Guid payoutId,
         string? reason,
+        string mfaCode,
         CancellationToken cancellationToken = default) =>
-        await PostAdminPayoutActionAsync(
+        await SendAdminFinancialActionAsync(
+            HttpMethod.Post,
             $"/api/admin/company-payouts/{payoutId:D}/reject",
-            new ReviewCompanyPayoutRequest(reason),
+            new ReviewCompanyPayoutRequest(reason, MfaCode: mfaCode),
             cancellationToken);
 
-    public async Task<ApiActionResult> CompleteCashCompanyPayoutAsync(
+    public async Task<AdminFinancialApiResult> CompleteCashCompanyPayoutAsync(
         Guid payoutId,
         string proofReference,
+        string mfaCode,
         CancellationToken cancellationToken = default) =>
-        await PostAdminPayoutActionAsync(
+        await SendAdminFinancialActionAsync(
+            HttpMethod.Post,
             $"/api/admin/company-payouts/{payoutId:D}/complete-cash",
-            new ReviewCompanyPayoutRequest(ProofReference: proofReference),
+            new ReviewCompanyPayoutRequest(ProofReference: proofReference, MfaCode: mfaCode),
             cancellationToken);
 
-    private async Task<ApiActionResult> PostAdminPayoutActionAsync(
+    private async Task<AdminFinancialApiResult> SendAdminFinancialActionAsync(
+        HttpMethod method,
         string path,
         object payload,
         CancellationToken cancellationToken)
     {
         AddBasicAuthIfConfigured();
-        using var response = await httpClient.PostAsJsonAsync(path, payload, cancellationToken);
+        using var request = new HttpRequestMessage(method, path)
+        {
+            Content = JsonContent.Create(payload)
+        };
+        using var response = await httpClient.SendAsync(request, cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        return response.IsSuccessStatusCode
-            ? new ApiActionResult(true, null)
-            : new ApiActionResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action de reversement impossible.");
+        if (!response.IsSuccessStatusCode)
+        {
+            return new AdminFinancialApiResult(
+                false,
+                null,
+                ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Action de reversement impossible.");
+        }
+
+        var result = string.IsNullOrWhiteSpace(body)
+            ? null
+            : System.Text.Json.JsonSerializer.Deserialize<AdminFinancialActionResponse>(
+                body,
+                new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        return new AdminFinancialApiResult(true, result, null);
     }
 
     public async Task<CompanyApplicationDetailResponse?> GetCompanyApplicationAsync(Guid id, CancellationToken cancellationToken = default)
@@ -1602,5 +1653,9 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
 public sealed class PlatformApiException(string message) : Exception(message);
 
 public sealed record ApiActionResult(bool IsSuccess, string? ErrorMessage);
+public sealed record AdminFinancialApiResult(
+    bool IsSuccess,
+    AdminFinancialActionResponse? Response,
+    string? ErrorMessage);
 
 public sealed record CompanyApplicationDocumentFile(byte[] Content, string ContentType, string FileName);

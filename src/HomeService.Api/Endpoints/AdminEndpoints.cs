@@ -44,7 +44,9 @@ public static class AdminEndpoints
             var result = await authService.LoginAsync(request, cancellationToken);
             return result.IsSuccess && result.Response is not null
                 ? Results.Ok(result.Response)
-                : Results.Unauthorized();
+                : Results.Json(
+                    new { message = result.Message ?? "Connexion refusée." },
+                    statusCode: StatusCodes.Status401Unauthorized);
         })
         .WithName("LoginAdmin")
         .AllowAnonymous()
@@ -76,6 +78,79 @@ public static class AdminEndpoints
         .WithName("LogoutAdmin")
         .AllowAnonymous()
         .Produces(StatusCodes.Status204NoContent);
+
+        admin.MapGet("/auth/mfa", async (
+            HttpRequest request,
+            AdminAuthService authService,
+            AdminMfaService mfaService,
+            CancellationToken cancellationToken) =>
+        {
+            var currentUser = await authService.GetCurrentUserAsync(GetAdminSessionToken(request), cancellationToken);
+            if (currentUser is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var status = await mfaService.GetStatusAsync(currentUser.Id, cancellationToken);
+            return status is null ? Results.NotFound() : Results.Ok(status);
+        })
+        .WithName("GetAdminMfaStatus")
+        .AllowAnonymous()
+        .Produces<AdminMfaStatusResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        admin.MapPost("/auth/mfa/setup", async (
+            HttpRequest request,
+            AdminAuthService authService,
+            AdminMfaService mfaService,
+            CancellationToken cancellationToken) =>
+        {
+            var currentUser = await authService.GetCurrentUserAsync(GetAdminSessionToken(request), cancellationToken);
+            if (currentUser is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            try
+            {
+                return Results.Ok(await mfaService.BeginEnrollmentAsync(currentUser.Id, cancellationToken));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("BeginAdminMfaEnrollment")
+        .AllowAnonymous()
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName)
+        .Produces<AdminMfaEnrollmentResponse>();
+
+        admin.MapPost("/auth/mfa/activate", async (
+            AdminMfaCodeRequest mfaRequest,
+            HttpRequest request,
+            AdminAuthService authService,
+            AdminMfaService mfaService,
+            CancellationToken cancellationToken) =>
+        {
+            var currentUser = await authService.GetCurrentUserAsync(GetAdminSessionToken(request), cancellationToken);
+            if (currentUser is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            try
+            {
+                return Results.Ok(await mfaService.ActivateAsync(currentUser.Id, mfaRequest.Code, cancellationToken));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("ActivateAdminMfa")
+        .AllowAnonymous()
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName)
+        .Produces<AdminMfaActivationResponse>();
 
         admin.MapGet("/dashboard", async (
             AdminQueryService queryService,
@@ -619,10 +694,50 @@ public static class AdminEndpoints
             Guid missionId,
             ResolveMissionDisputeRequest request,
             HttpRequest httpRequest,
+            [FromServices] IAppDbContext db,
             AdminQueryService queryService,
             AdminMissionDisputeService disputeService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
+            var mission = await db.Missions.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
+            if (mission is null)
+            {
+                return Results.NotFound(new { message = "Mission introuvable." });
+            }
+
+            var refundAmount = request.RefundAmount
+                ?? (request.RefundPercent is { } refundPercent
+                    ? (int)Math.Round(mission.CustomerChargedAmount * Math.Clamp(refundPercent, 0, 100) / 100m, MidpointRounding.AwayFromZero)
+                    : 0);
+            var trustedPayload = string.Join('|',
+                "ResolveMissionDispute",
+                mission.Id,
+                mission.Status,
+                mission.PaymentStatus,
+                mission.CustomerChargedAmount,
+                request.Resolution.Trim(),
+                request.Note.Trim(),
+                request.RefundPercent,
+                request.RefundAmount,
+                request.IncludeCustomerServiceFeeInRefund);
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                GetCurrentAdminUserId(httpRequest),
+                "MissionDisputeResolve",
+                missionId,
+                trustedPayload,
+                request.MfaCode ?? string.Empty,
+                refundAmount,
+                false,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
+            }
+
             var result = await disputeService.ResolveAsync(
                 missionId,
                 request.Resolution,
@@ -643,7 +758,12 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = result.Message });
             }
 
-            return Results.Ok(await queryService.GetMissionAsync(missionId, cancellationToken));
+            await financialAuthorization.MarkCompletedAsync(
+                "MissionDisputeResolve",
+                missionId,
+                authorization.PayloadHash!,
+                cancellationToken);
+            return Results.Ok(ToFinancialActionResponse(authorization, "Litige clôturé et décision financière enregistrée."));
         })
         .WithName("ResolveAdminMissionDispute");
 
@@ -651,10 +771,46 @@ public static class AdminEndpoints
             Guid missionId,
             CancelMissionRequest request,
             HttpRequest httpRequest,
+            [FromServices] IAppDbContext db,
             AdminQueryService queryService,
             AdminMissionOperationsService missionOperationsService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
+            var mission = await db.Missions.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == missionId, cancellationToken);
+            if (mission is null)
+            {
+                return Results.NotFound(new { message = "Mission introuvable." });
+            }
+
+            var trustedPayload = string.Join('|',
+                "CancelMission",
+                mission.Id,
+                mission.Status,
+                mission.PaymentStatus,
+                mission.CustomerChargedAmount,
+                request.Reason.Trim(),
+                request.Comment?.Trim() ?? string.Empty,
+                request.CancellationFeeAmount,
+                request.RefundPercent,
+                request.IncludeCustomerServiceFeeInRefund);
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                GetCurrentAdminUserId(httpRequest),
+                "MissionCancelFinancial",
+                missionId,
+                trustedPayload,
+                request.MfaCode ?? string.Empty,
+                mission.CustomerChargedAmount,
+                false,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
+            }
+
             var result = await missionOperationsService.CancelAsync(
                 missionId,
                 request.Reason,
@@ -675,7 +831,12 @@ public static class AdminEndpoints
                 return Results.BadRequest(new { message = result.Message });
             }
 
-            return Results.Ok(await queryService.GetMissionAsync(missionId, cancellationToken));
+            await financialAuthorization.MarkCompletedAsync(
+                "MissionCancelFinancial",
+                missionId,
+                authorization.PayloadHash!,
+                cancellationToken);
+            return Results.Ok(ToFinancialActionResponse(authorization, "Mission annulée et décision financière enregistrée."));
         })
         .WithName("CancelAdminMission");
 
@@ -691,39 +852,92 @@ public static class AdminEndpoints
         admin.MapPut("/mission-settings/commission-rules/{ruleId:guid}", async (
             Guid ruleId,
             UpdateAdminCommissionRuleRequest request,
+            HttpRequest httpRequest,
             AdminMissionSettingsService settingsService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
-            var result = await settingsService.UpdateCommissionRuleAsync(ruleId, request, cancellationToken);
+            var trustedPayload = string.Join('|', "UpdateCommissionRule", ruleId, request.RateBasisPoints, request.FixedAmount, request.Currency.Trim());
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                GetCurrentAdminUserId(httpRequest),
+                "CommissionRuleUpdate",
+                ruleId,
+                trustedPayload,
+                request.MfaCode ?? string.Empty,
+                0,
+                true,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
+            }
 
-            return result.Status switch
+            var result = await settingsService.UpdateCommissionRuleAsync(ruleId, request, cancellationToken);
+            var response = result.Status switch
             {
                 AdminMissionSettingsOperationStatus.NotFound => Results.NotFound(new { message = result.Message }),
                 AdminMissionSettingsOperationStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
-                _ => Results.Ok(await settingsService.GetAsync(cancellationToken))
+                _ => Results.Ok(ToFinancialActionResponse(authorization, "Règle de commission mise à jour."))
             };
+            if (result.Status == AdminMissionSettingsOperationStatus.Ok)
+            {
+                await financialAuthorization.MarkCompletedAsync("CommissionRuleUpdate", ruleId, authorization.PayloadHash!, cancellationToken);
+            }
+
+            return response;
         })
         .WithName("UpdateAdminCommissionRule")
-        .Produces<AdminMissionSettingsResponse>()
+        .Produces<AdminFinancialActionResponse>()
+        .Produces<AdminFinancialActionResponse>(StatusCodes.Status202Accepted)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
         admin.MapPut("/mission-settings/company-commission-tiers/{tierId:guid}", async (
             Guid tierId,
             UpdateAdminCompanyCommissionTierRequest request,
+            HttpRequest httpRequest,
             AdminMissionSettingsService settingsService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
+            var trustedPayload = string.Join('|',
+                "UpdateCompanyCommissionTier", tierId, request.Name.Trim(), request.MinimumMissionCount,
+                request.RateBasisPoints, request.SortOrder, request.IsActive);
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                GetCurrentAdminUserId(httpRequest),
+                "CompanyCommissionTierUpdate",
+                tierId,
+                trustedPayload,
+                request.MfaCode ?? string.Empty,
+                0,
+                true,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
+            }
+
             var result = await settingsService.UpdateCompanyCommissionTierAsync(tierId, request, cancellationToken);
-            return result.Status switch
+            var response = result.Status switch
             {
                 AdminMissionSettingsOperationStatus.NotFound => Results.NotFound(new { message = result.Message }),
                 AdminMissionSettingsOperationStatus.ValidationFailed => Results.BadRequest(new { message = result.Message }),
-                _ => Results.Ok(await settingsService.GetAsync(cancellationToken))
+                _ => Results.Ok(ToFinancialActionResponse(authorization, "Palier de commission mis à jour."))
             };
+            if (result.Status == AdminMissionSettingsOperationStatus.Ok)
+            {
+                await financialAuthorization.MarkCompletedAsync("CompanyCommissionTierUpdate", tierId, authorization.PayloadHash!, cancellationToken);
+            }
+
+            return response;
         })
         .WithName("UpdateAdminCompanyCommissionTier")
-        .Produces<AdminMissionSettingsResponse>()
+        .Produces<AdminFinancialActionResponse>()
+        .Produces<AdminFinancialActionResponse>(StatusCodes.Status202Accepted)
         .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status404NotFound);
 
@@ -940,8 +1154,41 @@ public static class AdminEndpoints
             HttpRequest httpRequest,
             [FromServices] IAppDbContext db,
             CompanyWalletService walletService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
+            var destination = await db.CompanyPayoutDestinations.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == destinationId, cancellationToken);
+            if (destination is null)
+            {
+                return Results.NotFound();
+            }
+
+            var adminUserId = GetCurrentAdminUserId(httpRequest);
+            var trustedPayload = string.Join('|',
+                "VerifyDestination",
+                destination.Id,
+                destination.CompanyId,
+                destination.Method,
+                destination.ProviderCode,
+                destination.MaskedIdentifier,
+                request.ExternalContactId?.Trim() ?? string.Empty);
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                adminUserId,
+                "CompanyPayoutDestinationVerify",
+                destinationId,
+                trustedPayload,
+                request.MfaCode ?? string.Empty,
+                0,
+                false,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
+            }
+
             if (!await walletService.VerifyDestinationAsync(destinationId, request.ExternalContactId, cancellationToken))
             {
                 return Results.NotFound();
@@ -956,17 +1203,57 @@ public static class AdminEndpoints
                 GetAuditRequestContext(httpRequest),
                 after: new { request.ExternalContactId }));
             await db.SaveChangesAsync(cancellationToken);
-            return Results.NoContent();
+            await financialAuthorization.MarkCompletedAsync(
+                "CompanyPayoutDestinationVerify",
+                destinationId,
+                authorization.PayloadHash!,
+                cancellationToken);
+            return Results.Ok(ToFinancialActionResponse(authorization, "Compte de reversement vérifié."));
         })
         .WithName("VerifyCompanyPayoutDestination");
 
         admin.MapPost("/company-payouts/{payoutId:guid}/approve", async (
             Guid payoutId,
+            AdminFinancialActionRequest request,
             HttpRequest httpRequest,
             [FromServices] IAppDbContext db,
             CompanyWalletService walletService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
+            var payout = await db.CompanyPayoutRequests.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == payoutId, cancellationToken);
+            if (payout is null)
+            {
+                return Results.NotFound();
+            }
+
+            var trustedPayload = string.Join('|',
+                "ApprovePayout",
+                payout.Id,
+                payout.CompanyId,
+                payout.Reference,
+                payout.Status,
+                payout.GrossAmount,
+                payout.FeeAmount,
+                payout.NetAmount,
+                payout.Currency);
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                GetCurrentAdminUserId(httpRequest),
+                "CompanyPayoutApprove",
+                payoutId,
+                trustedPayload,
+                request.MfaCode,
+                payout.NetAmount,
+                false,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
+            }
+
             if (!await walletService.ApprovePayoutAsync(payoutId, cancellationToken))
             {
                 return Results.NotFound();
@@ -980,7 +1267,12 @@ public static class AdminEndpoints
                 "Reversement entreprise approuve.",
                 GetAuditRequestContext(httpRequest)));
             await db.SaveChangesAsync(cancellationToken);
-            return Results.NoContent();
+            await financialAuthorization.MarkCompletedAsync(
+                "CompanyPayoutApprove",
+                payoutId,
+                authorization.PayloadHash!,
+                cancellationToken);
+            return Results.Ok(ToFinancialActionResponse(authorization, "Reversement approuvé."));
         })
         .WithName("ApproveCompanyPayout");
 
@@ -990,8 +1282,40 @@ public static class AdminEndpoints
             HttpRequest httpRequest,
             [FromServices] IAppDbContext db,
             CompanyWalletService walletService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
+            var payout = await db.CompanyPayoutRequests.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == payoutId, cancellationToken);
+            if (payout is null)
+            {
+                return Results.NotFound();
+            }
+
+            var trustedPayload = string.Join('|',
+                "RejectPayout",
+                payout.Id,
+                payout.CompanyId,
+                payout.Reference,
+                payout.Status,
+                payout.GrossAmount,
+                request.Reason?.Trim() ?? string.Empty);
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                GetCurrentAdminUserId(httpRequest),
+                "CompanyPayoutReject",
+                payoutId,
+                trustedPayload,
+                request.MfaCode ?? string.Empty,
+                payout.GrossAmount,
+                false,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
+            }
+
             if (!await walletService.RejectPayoutAsync(payoutId, request.Reason, cancellationToken))
             {
                 return Results.NotFound();
@@ -1006,7 +1330,12 @@ public static class AdminEndpoints
                 GetAuditRequestContext(httpRequest),
                 after: new { request.Reason }));
             await db.SaveChangesAsync(cancellationToken);
-            return Results.NoContent();
+            await financialAuthorization.MarkCompletedAsync(
+                "CompanyPayoutReject",
+                payoutId,
+                authorization.PayloadHash!,
+                cancellationToken);
+            return Results.Ok(ToFinancialActionResponse(authorization, "Reversement rejeté et réservation libérée."));
         })
         .WithName("RejectCompanyPayout");
 
@@ -1016,11 +1345,45 @@ public static class AdminEndpoints
             HttpRequest httpRequest,
             [FromServices] IAppDbContext db,
             CompanyWalletService walletService,
+            AdminFinancialAuthorizationService financialAuthorization,
             CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(request.ProofReference))
             {
                 return Results.BadRequest(new { message = "Une reference de preuve ou de recu est obligatoire." });
+            }
+
+            var payout = await db.CompanyPayoutRequests.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == payoutId, cancellationToken);
+            if (payout is null)
+            {
+                return Results.NotFound();
+            }
+
+            var trustedPayload = string.Join('|',
+                "CompleteCashPayout",
+                payout.Id,
+                payout.CompanyId,
+                payout.Reference,
+                payout.Status,
+                payout.GrossAmount,
+                payout.NetAmount,
+                payout.Currency,
+                request.ProofReference.Trim());
+            var authorization = await financialAuthorization.AuthorizeAsync(
+                GetCurrentAdminUserId(httpRequest),
+                "CompanyCashPayoutComplete",
+                payoutId,
+                trustedPayload,
+                request.MfaCode ?? string.Empty,
+                payout.NetAmount,
+                true,
+                cancellationToken);
+            if (!authorization.IsAuthorized)
+            {
+                return authorization.AwaitingSecondApproval
+                    ? Results.Accepted(value: ToFinancialActionResponse(authorization))
+                    : Results.BadRequest(new { message = authorization.Message });
             }
 
             var completed = false;
@@ -1059,7 +1422,12 @@ public static class AdminEndpoints
                 return Results.NotFound();
             }
 
-            return Results.NoContent();
+            await financialAuthorization.MarkCompletedAsync(
+                "CompanyCashPayoutComplete",
+                payoutId,
+                authorization.PayloadHash!,
+                cancellationToken);
+            return Results.Ok(ToFinancialActionResponse(authorization, "Retrait cash confirmé et solde débité."));
         })
         .WithName("CompleteCashCompanyPayout");
         
@@ -2549,6 +2917,18 @@ public static class AdminEndpoints
             application.Status.ToString(),
             application.ReviewedAt,
             application.ReviewNote);
+    }
+
+    static AdminFinancialActionResponse ToFinancialActionResponse(
+        AdminFinancialAuthorizationResult authorization,
+        string? completedMessage = null)
+    {
+        return new AdminFinancialActionResponse(
+            authorization.IsAuthorized,
+            authorization.AwaitingSecondApproval,
+            authorization.ApprovalsReceived,
+            authorization.ApprovalsRequired,
+            completedMessage ?? authorization.Message ?? "Confirmation enregistrée.");
     }
 
     static async ValueTask<object?> AdminSessionEndpointFilterAsync(

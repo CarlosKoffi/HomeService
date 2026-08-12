@@ -15,6 +15,7 @@ public sealed class AdminSessionState(
     public AdminCurrentUserResponse? CurrentUser { get; private set; }
     public string? Token => sessionAccessor.Token;
     public bool IsAuthenticated => CurrentUser is not null && !string.IsNullOrWhiteSpace(sessionAccessor.Token);
+    public string? LastSignInError { get; private set; }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -49,20 +50,27 @@ public sealed class AdminSessionState(
         }
     }
 
-    public async Task<bool> SignInAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<bool> SignInAsync(
+        string email,
+        string password,
+        string? mfaCode = null,
+        CancellationToken cancellationToken = default)
     {
+        LastSignInError = null;
         AdminLoginResponse? response;
         try
         {
-            response = await apiClient.LoginAdminAsync(new AdminLoginRequest(email, password), cancellationToken);
+            response = await apiClient.LoginAdminAsync(new AdminLoginRequest(email, password, mfaCode), cancellationToken);
         }
-        catch (PlatformApiException)
+        catch (PlatformApiException exception)
         {
+            LastSignInError = exception.Message;
             return false;
         }
 
         if (response is null)
         {
+            LastSignInError = "Connexion refusée.";
             return false;
         }
 
@@ -83,6 +91,17 @@ public sealed class AdminSessionState(
         {
             await ClearAsync(cancellationToken);
         }
+    }
+
+    public async Task RefreshAsync(CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionAccessor.Token))
+        {
+            CurrentUser = null;
+            return;
+        }
+
+        CurrentUser = await apiClient.GetCurrentAdminAsync(cancellationToken);
     }
 
     private async Task ClearAsync(CancellationToken cancellationToken)

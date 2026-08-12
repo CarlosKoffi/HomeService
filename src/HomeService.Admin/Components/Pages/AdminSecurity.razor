@@ -1,0 +1,186 @@
+@page "/admin-security"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.Admin
+@using QRCoder
+@inject PlatformApiClient ApiClient
+@inject AdminSessionState SessionState
+
+<PageTitle>Sécurité du compte</PageTitle>
+
+<div class="admin-page-heading security-heading">
+    <div>
+        <p class="eyebrow">Sécurité</p>
+        <h1>Authenticator</h1>
+        <p class="lead">Une confirmation personnelle protège les reversements, remboursements et réglages financiers.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="admin-message @(IsError ? "error-message" : "success-message")">@Message</p>
+}
+
+@if (IsLoading)
+{
+    <section class="security-card"><p>Chargement de la sécurité du compte…</p></section>
+}
+else if (Activation is not null)
+{
+    <section class="security-card recovery-card">
+        <span class="security-state enabled">Activation réussie</span>
+        <h2>Conservez ces codes de secours</h2>
+        <p>Chaque code ne fonctionne qu’une fois. Copiez-les dans un gestionnaire de mots de passe ou imprimez-les, puis quittez cet écran.</p>
+        <div class="recovery-grid">
+            @foreach (var recoveryCode in Activation.RecoveryCodes)
+            {
+                <code>@recoveryCode</code>
+            }
+        </div>
+        <button type="button" class="primary-action" @onclick="FinishActivation">J’ai sauvegardé mes codes</button>
+    </section>
+}
+else if (Enrollment is not null)
+{
+    <section class="security-card enrollment-card">
+        <div class="security-instructions">
+            <span class="security-step">1</span>
+            <div>
+                <h2>Scannez le QR code</h2>
+                <p>Ouvrez Google Authenticator ou Microsoft Authenticator, touchez <strong>+</strong>, puis scannez ce code.</p>
+            </div>
+        </div>
+        <div class="qr-panel">
+            <img src="@QrCodeDataUrl" alt="QR code Authenticator Wélé" />
+            <div>
+                <small>Clé manuelle</small>
+                <code>@FormatManualKey(Enrollment.ManualKey)</code>
+                <p>Valable jusqu’à @Enrollment.ExpiresAt.ToLocalTime().ToString("HH:mm").</p>
+            </div>
+        </div>
+        <div class="security-instructions">
+            <span class="security-step">2</span>
+            <div>
+                <h2>Confirmez le premier code</h2>
+                <p>Saisissez les 6 chiffres affichés dans Authenticator.</p>
+            </div>
+        </div>
+        <div class="activation-form">
+            <input inputmode="numeric" autocomplete="one-time-code" maxlength="6" @bind="ActivationCode" placeholder="000 000" />
+            <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsSubmitting">Activer Authenticator</button>
+            <button type="button" class="secondary-action" @onclick="CancelEnrollment" disabled="@IsSubmitting">Annuler</button>
+        </div>
+    </section>
+}
+else
+{
+    <section class="security-card security-summary">
+        <div>
+            <span class="security-state @(Status?.IsEnabled == true ? "enabled" : "required")">
+                @(Status?.IsEnabled == true ? "Protection active" : "Activation requise")
+            </span>
+            <h2>@(Status?.IsEnabled == true ? "Votre compte est protégé" : "Protégez les actions sensibles")</h2>
+            @if (Status?.IsEnabled == true)
+            {
+                <p>Les opérations financières exigent désormais un code personnel. Il reste <strong>@Status.RemainingRecoveryCodes code(s) de secours</strong>.</p>
+            }
+            else
+            {
+                <p>L’installation prend moins de deux minutes. Chaque administrateur financier doit activer son propre téléphone.</p>
+            }
+        </div>
+        @if (Status?.IsEnabled != true)
+        {
+            <button type="button" class="primary-action" @onclick="BeginEnrollmentAsync" disabled="@IsSubmitting">Configurer Authenticator</button>
+        }
+    </section>
+}
+
+<style>
+    .security-heading{max-width:980px}.security-card{max-width:900px;padding:28px;border:1px solid #dbe5f4;border-radius:24px;background:#fff;box-shadow:0 18px 50px rgba(15,31,60,.08)}.security-card h2{margin:10px 0 8px;font-size:25px}.security-card p{color:#667085;line-height:1.65}.security-state{display:inline-flex;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.security-state.enabled{background:#dcfae6;color:#067647}.security-state.required{background:#fff1e8;color:#c2410c}.security-summary{display:flex;align-items:center;justify-content:space-between;gap:30px}.security-instructions{display:flex;gap:14px;align-items:flex-start;margin:8px 0 18px}.security-step{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:50%;background:#1769ff;color:#fff;font-weight:900}.security-instructions h2{margin:2px 0}.security-instructions p{margin:0}.qr-panel{display:flex;align-items:center;gap:28px;margin:18px 0 28px;padding:20px;border-radius:20px;background:#f7faff}.qr-panel img{width:220px;height:220px;padding:10px;border-radius:14px;background:#fff}.qr-panel code{display:block;margin:8px 0;font-size:16px;letter-spacing:.12em;word-break:break-all}.activation-form{display:flex;gap:10px;flex-wrap:wrap}.activation-form input{width:190px;min-height:48px;border:1px solid #cfd9e8;border-radius:12px;padding:0 16px;font-size:20px;letter-spacing:.2em}.recovery-grid{display:grid;grid-template-columns:repeat(2,minmax(150px,1fr));gap:10px;margin:20px 0}.recovery-grid code{padding:13px;border:1px dashed #9cb4d8;border-radius:10px;background:#f7faff;text-align:center;font-size:17px}.primary-action{min-height:44px;padding:0 20px;border:0;border-radius:12px;background:#1769ff;color:#fff;font-weight:900}.secondary-action{min-height:44px;padding:0 18px;border:1px solid #ccd8e8;border-radius:12px;background:#fff;font-weight:800}
+    @@media(max-width:720px){.security-summary,.qr-panel{align-items:flex-start;flex-direction:column}.qr-panel img{width:min(220px,100%);height:auto}.recovery-grid{grid-template-columns:1fr}.security-card{padding:20px}}
+</style>
+
+@code {
+    private AdminMfaStatusResponse? Status { get; set; }
+    private AdminMfaEnrollmentResponse? Enrollment { get; set; }
+    private AdminMfaActivationResponse? Activation { get; set; }
+    private string? QrCodeDataUrl { get; set; }
+    private string ActivationCode { get; set; } = string.Empty;
+    private string? Message { get; set; }
+    private bool IsError { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool IsSubmitting { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Status = await ApiClient.GetAdminMfaStatusAsync();
+        }
+        catch (Exception exception)
+        {
+            SetMessage(exception.Message, true);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task BeginEnrollmentAsync()
+    {
+        IsSubmitting = true;
+        try
+        {
+            Enrollment = await ApiClient.BeginAdminMfaEnrollmentAsync();
+            if (Enrollment is not null)
+            {
+                using var generator = new QRCodeGenerator();
+                using var data = generator.CreateQrCode(Enrollment.ProvisioningUri, QRCodeGenerator.ECCLevel.Q);
+                var svg = new SvgQRCode(data).GetGraphic(7);
+                QrCodeDataUrl = $"data:image/svg+xml;base64,{Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(svg))}";
+            }
+        }
+        catch (Exception exception)
+        {
+            SetMessage(exception.Message, true);
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private async Task ActivateAsync()
+    {
+        if (ActivationCode.Trim().Length != 6)
+        {
+            SetMessage("Saisissez le code à 6 chiffres affiché dans Authenticator.", true);
+            return;
+        }
+
+        IsSubmitting = true;
+        try
+        {
+            Activation = await ApiClient.ActivateAdminMfaAsync(ActivationCode.Trim());
+            Status = Activation?.Status;
+            await SessionState.RefreshAsync();
+            Enrollment = null;
+            QrCodeDataUrl = null;
+            SetMessage(Activation?.Message ?? "Authenticator activé.", false);
+        }
+        catch (Exception exception)
+        {
+            SetMessage(exception.Message, true);
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private void FinishActivation() => Activation = null;
+    private void CancelEnrollment() { Enrollment = null; QrCodeDataUrl = null; ActivationCode = string.Empty; }
+    private void SetMessage(string message, bool error) { Message = message; IsError = error; }
+    private static string FormatManualKey(string value) => string.Join(' ', Enumerable.Range(0, (value.Length + 3) / 4).Select(index => value.Substring(index * 4, Math.Min(4, value.Length - index * 4))));
+}

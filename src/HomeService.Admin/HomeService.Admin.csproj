@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HomeService.Contracts\HomeService.Contracts.csproj" />
     <ProjectReference Include="..\HomeService.Domain\HomeService.Domain.csproj" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
 
   <PropertyGroup>

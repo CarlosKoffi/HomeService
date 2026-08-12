@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @using HomeService.Contracts.Admin
 @inject PlatformApiClient ApiClient
+@inject AdminSessionState SessionState
 
 <PageTitle>Parametres missions</PageTitle>
 
@@ -25,6 +26,22 @@
 {
     <p class="admin-message error-message">@ErrorMessage</p>
 }
+
+<section class="info-panel">
+    <div>
+        <p class="eyebrow">Validation renforcée</p>
+        <h2>Confirmation Authenticator</h2>
+        <p>Une modification de commission nécessite deux administrateurs distincts. Chaque administrateur confirme avec son propre code.</p>
+    </div>
+    <label>
+        Code Authenticator
+        <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" @bind="FinancialMfaCode" placeholder="Code à 6 chiffres" />
+    </label>
+    @if (SessionState.CurrentUser?.MfaEnabled != true)
+    {
+        <a href="/admin-security" class="secondary-action">Configurer Authenticator</a>
+    }
+</section>
 
 <section class="mission-settings-guide">
     <article>
@@ -201,6 +218,7 @@
     private bool IsSaving { get; set; }
     private string? Message { get; set; }
     private string? ErrorMessage { get; set; }
+    private string FinancialMfaCode { get; set; } = string.Empty;
 
     protected override Task OnInitializedAsync()
     {
@@ -281,21 +299,34 @@
     private async Task SaveTierAsync(Guid tierId)
     {
         if (!TierDrafts.TryGetValue(tierId, out var draft)) return;
+        if (!ValidateMfaCode()) return;
         IsSaving = true;
         ErrorMessage = null;
         try
         {
             var basisPoints = (int)Math.Round(Math.Clamp(draft.RatePercent, 0m, 100m) * 100m, MidpointRounding.AwayFromZero);
-            Snapshot = await ApiClient.UpdateAdminCompanyCommissionTierAsync(
+            var result = await ApiClient.UpdateAdminCompanyCommissionTierAsync(
                 tierId,
                 new UpdateAdminCompanyCommissionTierRequest(
                     draft.Name,
                     draft.MinimumMissionCount,
                     basisPoints,
                     draft.SortOrder,
-                    draft.IsActive));
-            TierDrafts.Clear();
-            Message = "Palier de commission mis a jour. Les missions deja payees restent inchangees.";
+                    draft.IsActive,
+                    FinancialMfaCode));
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            Message = result.Response?.Message ?? "Confirmation enregistrée.";
+            FinancialMfaCode = string.Empty;
+            if (result.Response?.Completed == true)
+            {
+                await LoadAsync();
+                Message = "Palier de commission mis à jour. Les missions déjà payées restent inchangées.";
+            }
         }
         catch (Exception exception)
         {
@@ -310,6 +341,7 @@
         {
             return;
         }
+        if (!ValidateMfaCode()) return;
 
         IsSaving = true;
         ErrorMessage = null;
@@ -318,12 +350,22 @@
         try
         {
             var basisPoints = (int)Math.Round(Math.Clamp(draft.RatePercent, 0m, 100m) * 100m, MidpointRounding.AwayFromZero);
-            Snapshot = await ApiClient.UpdateAdminCommissionRuleAsync(
+            var result = await ApiClient.UpdateAdminCommissionRuleAsync(
                 ruleId,
-                new UpdateAdminCommissionRuleRequest(basisPoints, draft.FixedAmount, draft.Currency));
-            Drafts.Clear();
-            WorkflowDrafts.Clear();
-            Message = "Regle de commission mise a jour.";
+                new UpdateAdminCommissionRuleRequest(basisPoints, draft.FixedAmount, draft.Currency, FinancialMfaCode));
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            Message = result.Response?.Message ?? "Confirmation enregistrée.";
+            FinancialMfaCode = string.Empty;
+            if (result.Response?.Completed == true)
+            {
+                await LoadAsync();
+                Message = "Règle de commission mise à jour.";
+            }
         }
         catch (Exception exception)
         {
@@ -363,6 +405,19 @@
         {
             IsSaving = false;
         }
+    }
+
+    private bool ValidateMfaCode()
+    {
+        ErrorMessage = null;
+        Message = null;
+        if (!string.IsNullOrWhiteSpace(FinancialMfaCode))
+        {
+            return true;
+        }
+
+        ErrorMessage = "Saisissez le code de votre application Authenticator avant cette modification financière.";
+        return false;
     }
 
     private sealed class CommissionRuleDraft

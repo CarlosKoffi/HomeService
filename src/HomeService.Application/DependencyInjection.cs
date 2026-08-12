@@ -84,6 +84,8 @@ public static class DependencyInjection
         services.AddScoped<ContactRequestService>();
         services.AddScoped<AdminConfigurationService>();
         services.AddScoped<AdminAuthService>();
+        services.AddScoped<AdminMfaService>();
+        services.AddScoped<AdminFinancialAuthorizationService>();
         services.AddScoped<AdminQueryService>();
         services.AddScoped<AdminClientQueryService>();
         services.AddScoped<AdminAccessControlService>();

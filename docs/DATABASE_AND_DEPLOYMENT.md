@@ -170,6 +170,20 @@ Pour les encaissements mobiles, `wave`, `orange` et `djamo` peuvent utiliser `fo
 
 Les frais actuels sont calcules avant confirmation: 1,5 % pour Mobile Money, 1 000 XOF pour le virement bancaire et 0 XOF pour le retrait cash. Le retrait cash exige une validation admin et une reference de preuve.
 
+### Authenticator et validations financières admin
+
+Les administrateurs qui gèrent les paiements doivent activer Authenticator depuis **Console admin > Sécurité**. Chaque personne scanne son propre QR code; aucun téléphone ni secret MFA ne doit être partagé. Huit codes de secours à usage unique sont remis une seule fois lors de l'activation.
+
+Variables API obligatoires avant la première activation:
+
+- `ADMIN_MFA_DATA_PROTECTION_KEY=<32 octets aleatoires encodes en Base64>` chiffre les secrets TOTP en base. Génération PowerShell compatible: `$bytes = New-Object byte[] 32; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes); [Convert]::ToBase64String($bytes)`;
+- `ADMIN_FINANCIAL_DUAL_APPROVAL_THRESHOLD=100000` fixe le montant XOF à partir duquel deux administrateurs distincts doivent approuver;
+- `ADMIN_FINANCIAL_APPROVAL_VALIDITY_MINUTES=15` limite la durée de validité d'une première approbation;
+- utiliser des clés différentes en staging et en production, stockées uniquement dans les secrets Coolify;
+- ne jamais changer la clé MFA en production sans procédure de rotation: les comptes activés ne pourraient plus déchiffrer leur secret.
+
+La vérification d'une destination, l'approbation ou le rejet d'un reversement et la remise cash demandent un code Authenticator. Une remise cash exige toujours deux administrateurs distincts et n'est possible qu'après approbation du reversement. Le rôle système **Administration financière** est créé au démarrage avec les permissions nécessaires; son attribution à un compte reste une action explicite du super administrateur.
+
 Un remboursement Jeko est un nouveau Pay-out via `/partner_api/transfers`, partiel ou total. Les frais de l'encaissement initial ne sont pas restitues automatiquement. La decision de remboursement et l'inclusion eventuelle des frais de mise en relation restent donc pilotees par l'admin Wele.
 
 ## Regle de livraison

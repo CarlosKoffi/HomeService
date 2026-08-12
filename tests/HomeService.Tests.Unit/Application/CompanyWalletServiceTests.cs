@@ -54,6 +54,7 @@ public sealed class CompanyWalletServiceTests
             new(destinationId, 6_000),
             CancellationToken.None);
         var payoutId = Assert.Single(requestResult.Response!.Payouts).Id;
+        Assert.True(await service.ApprovePayoutAsync(payoutId, CancellationToken.None));
         Assert.True(await service.CompleteCashPayoutAsync(payoutId, "RECU-2026-0001", CancellationToken.None));
 
         var updatedWallet = await db.CompanyWallets.SingleAsync(item => item.CompanyId == company.Id);

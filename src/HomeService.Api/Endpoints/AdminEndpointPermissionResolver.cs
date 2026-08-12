@@ -123,7 +123,9 @@ public static class AdminEndpointPermissionResolver
         }
 
         if (path.Contains("/payments", StringComparison.OrdinalIgnoreCase)
-            || path.Contains("/payment-providers", StringComparison.OrdinalIgnoreCase))
+            || path.Contains("/payment-providers", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/company-payouts", StringComparison.OrdinalIgnoreCase)
+            || path.Contains("/company-payout-destinations", StringComparison.OrdinalIgnoreCase))
         {
             return AdminModuleKey.Payments;
         }

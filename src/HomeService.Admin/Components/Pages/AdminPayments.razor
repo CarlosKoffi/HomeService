@@ -3,6 +3,7 @@
 @using HomeService.Contracts.Admin
 @inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
+@inject AdminSessionState SessionState
 
 <PageTitle>Encaissements</PageTitle>
 
@@ -117,7 +118,7 @@
                     }
                     else
                     {
-                        <button type="button" class="secondary-action" @onclick="() => VerifyDestinationAsync(destination.Id)">Vérifier</button>
+                        <button type="button" class="secondary-action" @onclick="() => OpenDestinationVerification(destination)">Vérifier</button>
                     }
                 </article>
             }
@@ -158,15 +159,15 @@
                 <div class="payment-admin-actions payout-actions">
                     @if (payout.Status == "Submitted")
                     {
-                        <button type="button" @onclick="() => ApprovePayoutAsync(payout.Id)">Approuver</button>
-                        <button type="button" @onclick="() => RejectPayoutAsync(payout.Id)">Rejeter</button>
+                        <button type="button" @onclick="() => OpenPayoutConfirmation(payout, FinancialActionKind.Approve)">Approuver</button>
+                        <button type="button" @onclick="() => OpenPayoutConfirmation(payout, FinancialActionKind.Reject)">Rejeter</button>
                     }
-                    @if (payout.Method == "Cash" && (payout.Status == "Submitted" || payout.Status == "Approved"))
+                    @if (payout.Method == "Cash" && payout.Status == "Approved")
                     {
                         <input value="@GetCashProofReference(payout.Id)"
                                @oninput="args => SetCashProofReference(payout.Id, args.Value?.ToString())"
                                placeholder="N° reçu ou preuve signée" />
-                        <button type="button" @onclick="() => CompleteCashPayoutAsync(payout.Id)">Confirmer la remise et débiter</button>
+                        <button type="button" @onclick="() => OpenPayoutConfirmation(payout, FinancialActionKind.CompleteCash)">Confirmer la remise et débiter</button>
                     }
                 </div>
             </article>
@@ -215,6 +216,52 @@
 @if (!string.IsNullOrWhiteSpace(ErrorMessage))
 {
     <p class="admin-message error-message">@ErrorMessage</p>
+}
+
+@if (PendingAction is not null)
+{
+    <div class="financial-confirmation-backdrop" role="presentation" @onclick="CloseFinancialConfirmation">
+        <section class="financial-confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="financial-confirmation-title" @onclick:stopPropagation="true">
+            <button type="button" class="financial-modal-close" aria-label="Fermer" @onclick="CloseFinancialConfirmation">×</button>
+            <span class="financial-confirmation-badge">Action financière protégée</span>
+            <h2 id="financial-confirmation-title">@GetPendingActionTitle()</h2>
+            <p>@GetPendingActionExplanation()</p>
+            <dl>
+                <div><dt>Entreprise</dt><dd>@PendingAction.CompanyName</dd></div>
+                @if (PendingAction.Amount > 0)
+                {
+                    <div><dt>Montant concerné</dt><dd>@Money(PendingAction.Amount)</dd></div>
+                }
+                <div><dt>Référence</dt><dd>@PendingAction.Reference</dd></div>
+            </dl>
+            @if (!string.IsNullOrWhiteSpace(FinancialConfirmationMessage))
+            {
+                <p class="financial-confirmation-message @(FinancialConfirmationError ? "error" : "success")">@FinancialConfirmationMessage</p>
+            }
+            @if (SessionState.CurrentUser?.MfaEnabled != true)
+            {
+                <div class="mfa-required-panel">
+                    <strong>Authenticator doit d’abord être activé.</strong>
+                    <p>Chaque administrateur utilise son propre téléphone.</p>
+                    <button type="button" class="primary-action" @onclick='() => Navigation.NavigateTo("/admin-security")'>Configurer maintenant</button>
+                </div>
+            }
+            else
+            {
+                <label class="mfa-code-field">
+                    Code Authenticator
+                    <input inputmode="numeric" autocomplete="one-time-code" maxlength="9" @bind="FinancialMfaCode" placeholder="000 000" />
+                </label>
+                <small>Vous pouvez aussi utiliser un code de secours. Le code saisi ne sera jamais enregistré.</small>
+                <div class="financial-modal-actions">
+                    <button type="button" class="secondary-action" @onclick="CloseFinancialConfirmation" disabled="@IsFinancialActionSubmitting">Annuler</button>
+                    <button type="button" class="primary-action" @onclick="ConfirmFinancialActionAsync" disabled="@IsFinancialActionSubmitting">
+                        @(IsFinancialActionSubmitting ? "Vérification…" : "Confirmer l’action")
+                    </button>
+                </div>
+            }
+        </section>
+    </div>
 }
 
 <section class="operator-list">
@@ -294,6 +341,7 @@
 
 <style>
     .payout-operations{margin-bottom:24px}.payout-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;padding:18px}.payout-review-card{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px;border:1px solid #e3eaf5;border-radius:16px;background:#f8faff}.payout-review-card.verified{border-color:#abefc6;background:#f6fef9}.payout-review-card p,.payout-review-card small{margin:4px 0;color:#667085}.destination-verification-status{display:inline-flex;flex:0 0 auto;width:max-content;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900}.destination-verification-status.verified{background:#dcfae6;color:#067647}.payout-admin-row{grid-template-columns:minmax(260px,1.5fr) minmax(180px,.7fr) minmax(240px,1fr)}.payout-actions{display:flex;flex-wrap:wrap;gap:8px}.payout-actions input{min-height:38px;border:1px solid #d7dfec;border-radius:9px;padding:0 10px}.cash-proof{margin-top:7px!important;color:#067647!important;font-weight:800}.status-success,.status-danger,.status-warning{display:inline-flex;width:max-content;padding:5px 9px;border-radius:999px;font-weight:800;font-size:12px}.status-success{background:#ecfdf3;color:#067647}.status-danger{background:#fef3f2;color:#b42318}.status-warning{background:#fff7ed;color:#c2410c}
+    .financial-confirmation-backdrop{position:fixed;inset:0;z-index:1100;display:grid;place-items:center;padding:20px;background:rgba(10,22,45,.62);backdrop-filter:blur(5px)}.financial-confirmation-modal{position:relative;width:min(520px,100%);padding:30px;border-radius:24px;background:#fff;box-shadow:0 30px 90px rgba(0,0,0,.28)}.financial-modal-close{position:absolute;top:14px;right:16px;width:36px;height:36px;border:0;border-radius:50%;background:#f0f4fa;font-size:25px}.financial-confirmation-badge{display:inline-flex;padding:7px 10px;border-radius:999px;background:#edf4ff;color:#155eef;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}.financial-confirmation-modal h2{margin:14px 0 8px;font-size:26px}.financial-confirmation-modal>p,.financial-confirmation-modal>small{color:#667085;line-height:1.55}.financial-confirmation-modal dl{margin:20px 0;border-top:1px solid #e7edf6}.financial-confirmation-modal dl div{display:flex;justify-content:space-between;gap:20px;padding:12px 0;border-bottom:1px solid #e7edf6}.financial-confirmation-modal dt{color:#667085}.financial-confirmation-modal dd{margin:0;font-weight:900;text-align:right}.mfa-code-field{display:grid;gap:7px;margin:20px 0 7px;font-weight:900}.mfa-code-field input{min-height:52px;border:1px solid #b9c8de;border-radius:13px;padding:0 16px;font-size:21px;letter-spacing:.18em}.financial-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.mfa-required-panel{margin-top:18px;padding:18px;border-radius:16px;background:#fff7ed;color:#9a3412}.mfa-required-panel p{margin:5px 0 14px}.financial-confirmation-message{padding:11px 13px;border-radius:12px;font-weight:800}.financial-confirmation-message.error{background:#fef3f2;color:#b42318}.financial-confirmation-message.success{background:#ecfdf3;color:#067647}.primary-action{min-height:42px;padding:0 18px;border:0;border-radius:11px;background:#1769ff;color:#fff;font-weight:900}
     @@media(max-width:900px){.payout-admin-row{grid-template-columns:1fr}.payout-review-card{align-items:flex-start;flex-direction:column}}
 </style>
 
@@ -309,6 +357,11 @@
     private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
     private Dictionary<Guid, string> CashProofReferences { get; } = [];
+    private PendingFinancialAction? PendingAction { get; set; }
+    private string FinancialMfaCode { get; set; } = string.Empty;
+    private string? FinancialConfirmationMessage { get; set; }
+    private bool FinancialConfirmationError { get; set; }
+    private bool IsFinancialActionSubmitting { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -361,41 +414,101 @@
     private void OpenCompany(Guid companyId) => Navigation.NavigateTo($"/companies/{companyId}");
     private void OpenProvider(Guid providerId) => Navigation.NavigateTo($"/providers/{providerId}");
 
-    private async Task VerifyDestinationAsync(Guid destinationId)
+    private void OpenDestinationVerification(AdminCompanyPayoutDestinationResponse destination)
     {
-        var result = await ApiClient.VerifyCompanyPayoutDestinationAsync(destinationId);
-        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
-        await LoadAsync();
+        PendingAction = new PendingFinancialAction(
+            FinancialActionKind.VerifyDestination,
+            destination.Id,
+            destination.CompanyName,
+            destination.MaskedIdentifier,
+            0,
+            null);
+        ResetFinancialConfirmation();
     }
 
-    private async Task ApprovePayoutAsync(Guid payoutId)
+    private void OpenPayoutConfirmation(AdminCompanyPayoutResponse payout, FinancialActionKind kind)
     {
-        var result = await ApiClient.ApproveCompanyPayoutAsync(payoutId);
-        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
-        await LoadAsync();
-    }
-
-    private async Task RejectPayoutAsync(Guid payoutId)
-    {
-        var result = await ApiClient.RejectCompanyPayoutAsync(payoutId, "Rejet manuel après contrôle administratif.");
-        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
-        await LoadAsync();
-    }
-
-    private async Task CompleteCashPayoutAsync(Guid payoutId)
-    {
-        var proofReference = GetCashProofReference(payoutId);
-        if (string.IsNullOrWhiteSpace(proofReference))
+        var proofReference = kind == FinancialActionKind.CompleteCash
+            ? GetCashProofReference(payout.Id).Trim()
+            : null;
+        if (kind == FinancialActionKind.CompleteCash && string.IsNullOrWhiteSpace(proofReference))
         {
             ErrorMessage = "La référence du reçu ou de la preuve est obligatoire pour un retrait cash.";
             return;
         }
 
-        var result = await ApiClient.CompleteCashCompanyPayoutAsync(payoutId, proofReference.Trim());
-        ErrorMessage = result.IsSuccess ? null : result.ErrorMessage;
-        if (result.IsSuccess) CashProofReferences.Remove(payoutId);
-        await LoadAsync();
+        PendingAction = new PendingFinancialAction(
+            kind,
+            payout.Id,
+            payout.CompanyName,
+            payout.Reference,
+            payout.NetAmount,
+            proofReference);
+        ResetFinancialConfirmation();
     }
+
+    private async Task ConfirmFinancialActionAsync()
+    {
+        if (PendingAction is null || string.IsNullOrWhiteSpace(FinancialMfaCode))
+        {
+            FinancialConfirmationMessage = "Saisissez le code affiché dans Authenticator.";
+            FinancialConfirmationError = true;
+            return;
+        }
+
+        IsFinancialActionSubmitting = true;
+        try
+        {
+            var code = FinancialMfaCode.Trim();
+            var result = PendingAction.Kind switch
+            {
+                FinancialActionKind.VerifyDestination => await ApiClient.VerifyCompanyPayoutDestinationAsync(PendingAction.ResourceId, code),
+                FinancialActionKind.Approve => await ApiClient.ApproveCompanyPayoutAsync(PendingAction.ResourceId, code),
+                FinancialActionKind.Reject => await ApiClient.RejectCompanyPayoutAsync(
+                    PendingAction.ResourceId,
+                    "Rejet manuel après contrôle administratif.",
+                    code),
+                FinancialActionKind.CompleteCash => await ApiClient.CompleteCashCompanyPayoutAsync(
+                    PendingAction.ResourceId,
+                    PendingAction.ProofReference!,
+                    code),
+                _ => new AdminFinancialApiResult(false, null, "Action inconnue.")
+            };
+
+            if (!result.IsSuccess)
+            {
+                FinancialConfirmationMessage = result.ErrorMessage;
+                FinancialConfirmationError = true;
+                return;
+            }
+
+            FinancialConfirmationMessage = result.Response?.Message ?? "Confirmation enregistrée.";
+            FinancialConfirmationError = false;
+            if (result.Response?.Completed == true)
+            {
+                if (PendingAction.Kind == FinancialActionKind.CompleteCash)
+                {
+                    CashProofReferences.Remove(PendingAction.ResourceId);
+                }
+
+                PendingAction = null;
+            }
+
+            await LoadAsync();
+        }
+        finally
+        {
+            IsFinancialActionSubmitting = false;
+        }
+    }
+
+    private void CloseFinancialConfirmation() => PendingAction = null;
+    private void ResetFinancialConfirmation() { FinancialMfaCode = string.Empty; FinancialConfirmationMessage = null; FinancialConfirmationError = false; }
+    private string GetPendingActionTitle() => PendingAction?.Kind switch { FinancialActionKind.VerifyDestination => "Vérifier le compte bénéficiaire", FinancialActionKind.Approve => "Approuver le reversement", FinancialActionKind.Reject => "Rejeter le reversement", FinancialActionKind.CompleteCash => "Confirmer la remise d’espèces", _ => "Confirmer l’action" };
+    private string GetPendingActionExplanation() => PendingAction?.Kind switch { FinancialActionKind.VerifyDestination => "Contrôlez l’identité du bénéficiaire et la destination avant de la valider.", FinancialActionKind.Approve => "Cette validation autorise le traitement du reversement.", FinancialActionKind.Reject => "Le montant réservé sera rendu au solde de l’entreprise.", FinancialActionKind.CompleteCash => "Deux administrateurs distincts doivent confirmer la remise avant le débit définitif.", _ => string.Empty };
+
+    private enum FinancialActionKind { VerifyDestination, Approve, Reject, CompleteCash }
+    private sealed record PendingFinancialAction(FinancialActionKind Kind, Guid ResourceId, string CompanyName, string Reference, int Amount, string? ProofReference);
 
     private static string TranslatePayoutMethod(string method) => method switch
     {

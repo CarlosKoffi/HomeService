@@ -1662,7 +1662,8 @@ public sealed class AdminQueryService(IAppDbContext db)
                 admin.Roles
                     .OrderBy(userRole => userRole.Role!.Name)
                     .Select(userRole => userRole.Role!.Name)
-                    .ToList()))
+                    .ToList(),
+                admin.MfaEnabledAt != null && admin.MfaSecretProtected != null))
             .ToListAsync(cancellationToken);
 
         return new AdminAccessSnapshotResponse(roles, modules, admins);

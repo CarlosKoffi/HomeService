@@ -5,7 +5,8 @@ public sealed record CancelMissionRequest(
     string? Comment,
     int? CancellationFeeAmount = null,
     int? RefundPercent = null,
-    bool IncludeCustomerServiceFeeInRefund = false);
+    bool IncludeCustomerServiceFeeInRefund = false,
+    string? MfaCode = null);
 
 public sealed record CancelMissionResponse(
     Guid MissionId,

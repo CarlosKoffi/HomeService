@@ -21,7 +21,8 @@ public sealed record AdminInvitationDetailResponse(
 
 public sealed record AdminLoginRequest(
     string Email,
-    string Password);
+    string Password,
+    string? MfaCode = null);
 
 public sealed record AdminLoginResponse(
     string Token,
@@ -34,7 +35,8 @@ public sealed record AdminCurrentUserResponse(
     string Email,
     bool IsSuperAdmin,
     DateTimeOffset ExpiresAt,
-    IReadOnlyList<AdminPermissionSummaryResponse> Permissions);
+    IReadOnlyList<AdminPermissionSummaryResponse> Permissions,
+    bool MfaEnabled = false);
 
 public sealed record AdminRoleSummaryResponse(
     Guid Id,
@@ -67,7 +69,8 @@ public sealed record AdminUserSummaryResponse(
     bool HasActivatedAccess,
     DateTimeOffset? InvitationExpiresAt,
     DateTimeOffset? LastLoginAt,
-    IReadOnlyList<string> Roles);
+    IReadOnlyList<string> Roles,
+    bool MfaEnabled = false);
 
 public sealed record CreateAdminRoleRequest(
     string Name,

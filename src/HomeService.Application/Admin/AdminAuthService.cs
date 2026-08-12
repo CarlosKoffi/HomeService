@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Admin;
 
-public sealed class AdminAuthService(IAppDbContext db)
+public sealed class AdminAuthService(IAppDbContext db, AdminMfaService? mfaService = null)
 {
     private const int SessionHours = 8;
 
@@ -37,6 +37,25 @@ public sealed class AdminAuthService(IAppDbContext db)
         if (Sha256PasswordHasher.NeedsRehash(admin.PasswordHash))
         {
             admin.SetPasswordHash(Sha256PasswordHasher.Hash(request.Password));
+        }
+
+        if (admin.IsMfaEnabled)
+        {
+            if (mfaService is null)
+            {
+                return AdminAuthResult.Unauthorized("Le service Authenticator est indisponible.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.MfaCode))
+            {
+                return AdminAuthResult.Unauthorized("Saisissez le code affiché dans Authenticator.");
+            }
+
+            var mfaVerification = await mfaService.VerifyAsync(admin.Id, request.MfaCode, cancellationToken);
+            if (!mfaVerification.IsSuccess)
+            {
+                return AdminAuthResult.Unauthorized(mfaVerification.Message ?? "Code Authenticator incorrect.");
+            }
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -146,7 +165,9 @@ public sealed class AdminAuthService(IAppDbContext db)
                 user.Id,
                 user.FullName,
                 user.Email,
-                user.IsSuperAdmin
+                user.IsSuperAdmin,
+                user.MfaEnabledAt,
+                user.MfaSecretProtected
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -165,7 +186,8 @@ public sealed class AdminAuthService(IAppDbContext db)
             admin.Email,
             admin.IsSuperAdmin,
             expiresAt,
-            permissions);
+            permissions,
+            admin.MfaEnabledAt.HasValue && !string.IsNullOrWhiteSpace(admin.MfaSecretProtected));
     }
 
     private async Task<IReadOnlyList<AdminPermissionSummaryResponse>> GetAllPermissionsAsync(CancellationToken cancellationToken)

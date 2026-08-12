@@ -155,6 +155,7 @@
                         {
                             <input type="text" @bind="CancellationNote" placeholder="Note annulation obligatoire" />
                             <input type="number" min="0" step="100" @bind="CancellationFeeAmount" placeholder="Frais retenus" />
+                            <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="12" @bind="FinancialMfaCode" placeholder="Code Authenticator" />
                             <button type="button" class="danger-action" @onclick="() => ConfirmCancelAsync(mission.Id)" disabled="@IsActionBusy">Confirmer</button>
                         }
                         else
@@ -202,6 +203,7 @@
     private string? DisputeNote { get; set; }
     private string? CancellationNote { get; set; }
     private int? CancellationFeeAmount { get; set; }
+    private string FinancialMfaCode { get; set; } = string.Empty;
     private bool IsLoading { get; set; } = true;
     private bool IsActionBusy { get; set; }
     private string? Message { get; set; }
@@ -358,6 +360,11 @@
             ErrorMessage = "Ajoutez une note avant d'annuler la mission. Elle servira au journal de suivi.";
             return;
         }
+        if (string.IsNullOrWhiteSpace(FinancialMfaCode))
+        {
+            ErrorMessage = "Saisissez le code de votre application Authenticator.";
+            return;
+        }
 
         IsActionBusy = true;
         ErrorMessage = null;
@@ -365,13 +372,31 @@
 
         try
         {
-            await ApiClient.CancelAdminMissionAsync(missionId, "Other", CancellationNote, CancellationFeeAmount);
+            var result = await ApiClient.CancelAdminMissionAsync(
+                missionId,
+                "Other",
+                CancellationNote,
+                CancellationFeeAmount,
+                mfaCode: FinancialMfaCode);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            Message = result.Response?.Message ?? "Confirmation enregistrée.";
+            FinancialMfaCode = string.Empty;
+            if (result.Response?.Completed != true)
+            {
+                return;
+            }
+
             SelectedStatus = "Cancelled";
             SelectedMissionId = null;
             SelectedAction = null;
             CancellationNote = null;
             CancellationFeeAmount = null;
-            Message = "Mission annulee par l'administration.";
+            Message = "Mission annulée par l'administration.";
             await LoadAsync();
         }
         catch (Exception exception)

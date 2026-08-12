@@ -359,14 +359,9 @@ public sealed class CompanyWalletService(
             return true;
         }
 
-        if (payout.Status is not (CompanyPayoutStatus.Submitted or CompanyPayoutStatus.Approved))
+        if (payout.Status != CompanyPayoutStatus.Approved)
         {
             return false;
-        }
-
-        if (payout.Status == CompanyPayoutStatus.Submitted)
-        {
-            payout.Approve();
         }
 
         var wallet = await db.CompanyWallets.FirstAsync(item => item.CompanyId == payout.CompanyId, cancellationToken);

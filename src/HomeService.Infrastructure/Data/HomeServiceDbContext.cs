@@ -73,6 +73,8 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<AdminRolePermission> AdminRolePermissions => Set<AdminRolePermission>();
     public DbSet<AdminUserRole> AdminUserRoles => Set<AdminUserRole>();
     public DbSet<AdminSession> AdminSessions => Set<AdminSession>();
+    public DbSet<AdminMfaRecoveryCode> AdminMfaRecoveryCodes => Set<AdminMfaRecoveryCode>();
+    public DbSet<AdminFinancialApproval> AdminFinancialApprovals => Set<AdminFinancialApproval>();
     public DbSet<NotificationOutboxMessage> NotificationOutboxMessages => Set<NotificationOutboxMessage>();
     public DbSet<NotificationDeliveryRule> NotificationDeliveryRules => Set<NotificationDeliveryRule>();
     public DbSet<NotificationTemplate> NotificationTemplates => Set<NotificationTemplate>();

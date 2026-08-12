@@ -13,6 +13,8 @@ public sealed class AdminUserConfiguration : IEntityTypeConfiguration<AdminUser>
         builder.Property(user => user.Email).HasMaxLength(256).IsRequired();
         builder.Property(user => user.PasswordHash).HasMaxLength(256);
         builder.Property(user => user.InvitationTokenHash).HasMaxLength(128);
+        builder.Property(user => user.MfaSecretProtected).HasMaxLength(1024);
+        builder.Property(user => user.PendingMfaSecretProtected).HasMaxLength(1024);
         builder.HasIndex(user => user.Email).IsUnique();
         builder.HasIndex(user => user.InvitationTokenHash);
         builder.HasMany(user => user.Roles)

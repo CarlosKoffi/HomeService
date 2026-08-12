@@ -71,6 +71,8 @@ public interface IAppDbContext
     DbSet<AdminRolePermission> AdminRolePermissions { get; }
     DbSet<AdminUserRole> AdminUserRoles { get; }
     DbSet<AdminSession> AdminSessions { get; }
+    DbSet<AdminMfaRecoveryCode> AdminMfaRecoveryCodes { get; }
+    DbSet<AdminFinancialApproval> AdminFinancialApprovals { get; }
     DbSet<NotificationOutboxMessage> NotificationOutboxMessages { get; }
     DbSet<NotificationDeliveryRule> NotificationDeliveryRules { get; }
     DbSet<NotificationTemplate> NotificationTemplates { get; }

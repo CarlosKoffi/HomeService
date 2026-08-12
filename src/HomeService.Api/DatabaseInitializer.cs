@@ -1118,6 +1118,7 @@ public static class DatabaseInitializer
         }
 
         await EnsureSuperAdminRolePermissionsAsync(db, cancellationToken);
+        await EnsureFinancialAdminRolePermissionsAsync(db, cancellationToken);
 
         await EnsureBootstrapSuperAdminAsync(db, configuration, cancellationToken);
     }
@@ -1151,6 +1152,80 @@ public static class DatabaseInitializer
                 if (existingKeys.Add((moduleId, action)))
                 {
                     db.AdminRolePermissions.Add(new AdminRolePermission(superAdminRole.Id, moduleId, action));
+                }
+            }
+        }
+
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private static async Task EnsureFinancialAdminRolePermissionsAsync(
+        HomeServiceDbContext db,
+        CancellationToken cancellationToken)
+    {
+        const string roleName = "Administration financière";
+        var role = await db.AdminRoles.FirstOrDefaultAsync(item => item.Name == roleName, cancellationToken);
+        if (role is null)
+        {
+            role = new AdminRole(
+                roleName,
+                "Contrôle des encaissements, remboursements, commissions et reversements entreprises.");
+            db.AdminRoles.Add(role);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        var allowed = new Dictionary<AdminModuleKey, AdminPermissionAction[]>
+        {
+            [AdminModuleKey.Dashboard] = [AdminPermissionAction.View],
+            [AdminModuleKey.Payments] =
+            [
+                AdminPermissionAction.View,
+                AdminPermissionAction.Create,
+                AdminPermissionAction.Edit,
+                AdminPermissionAction.Approve,
+                AdminPermissionAction.Reject,
+                AdminPermissionAction.Export
+            ],
+            [AdminModuleKey.Missions] =
+            [
+                AdminPermissionAction.View,
+                AdminPermissionAction.Edit,
+                AdminPermissionAction.Approve,
+                AdminPermissionAction.Reject
+            ],
+            [AdminModuleKey.MissionSettings] =
+            [
+                AdminPermissionAction.View,
+                AdminPermissionAction.Edit,
+                AdminPermissionAction.Approve
+            ],
+            [AdminModuleKey.Audit] = [AdminPermissionAction.View]
+        };
+
+        var modules = await db.AdminModules
+            .Where(item => allowed.Keys.Contains(item.Key))
+            .ToDictionaryAsync(item => item.Key, item => item.Id, cancellationToken);
+        var existing = await db.AdminRolePermissions
+            .Where(item => item.RoleId == role.Id)
+            .Select(item => new { item.ModuleId, item.Action })
+            .ToListAsync(cancellationToken);
+        var existingKeys = existing.Select(item => (item.ModuleId, item.Action)).ToHashSet();
+
+        foreach (var (moduleKey, actions) in allowed)
+        {
+            if (!modules.TryGetValue(moduleKey, out var moduleId))
+            {
+                continue;
+            }
+
+            foreach (var action in actions)
+            {
+                if (existingKeys.Add((moduleId, action)))
+                {
+                    db.AdminRolePermissions.Add(new AdminRolePermission(role.Id, moduleId, action));
                 }
             }
         }

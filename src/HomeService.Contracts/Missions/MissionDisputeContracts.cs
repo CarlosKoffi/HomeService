@@ -24,4 +24,5 @@ public sealed record ResolveMissionDisputeRequest(
     string Note,
     int? RefundPercent = null,
     int? RefundAmount = null,
-    bool IncludeCustomerServiceFeeInRefund = false);
+    bool IncludeCustomerServiceFeeInRefund = false,
+    string? MfaCode = null);

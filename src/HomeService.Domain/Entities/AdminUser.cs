@@ -26,6 +26,12 @@ public sealed class AdminUser : AuditableEntity
     public DateTimeOffset? InvitationExpiresAt { get; private set; }
     public DateTimeOffset? InvitationAcceptedAt { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
+    public string? MfaSecretProtected { get; private set; }
+    public string? PendingMfaSecretProtected { get; private set; }
+    public DateTimeOffset? PendingMfaExpiresAt { get; private set; }
+    public DateTimeOffset? MfaEnabledAt { get; private set; }
+    public long? LastAcceptedMfaTimeStep { get; private set; }
+    public bool IsMfaEnabled => MfaEnabledAt.HasValue && !string.IsNullOrWhiteSpace(MfaSecretProtected);
     public IReadOnlyCollection<AdminUserRole> Roles => _roles;
 
     public void SetInvitation(string tokenHash, DateTimeOffset expiresAt)
@@ -81,6 +87,44 @@ public sealed class AdminUser : AuditableEntity
     public void RecordLogin(DateTimeOffset loginAt)
     {
         LastLoginAt = loginAt;
+        Touch();
+    }
+
+    public void BeginMfaEnrollment(string protectedSecret, DateTimeOffset expiresAt)
+    {
+        PendingMfaSecretProtected = protectedSecret;
+        PendingMfaExpiresAt = expiresAt;
+        Touch();
+    }
+
+    public void EnableMfa(DateTimeOffset enabledAt)
+    {
+        if (string.IsNullOrWhiteSpace(PendingMfaSecretProtected) || PendingMfaExpiresAt <= enabledAt)
+        {
+            throw new InvalidOperationException("La configuration Authenticator a expire.");
+        }
+
+        MfaSecretProtected = PendingMfaSecretProtected;
+        PendingMfaSecretProtected = null;
+        PendingMfaExpiresAt = null;
+        MfaEnabledAt = enabledAt;
+        LastAcceptedMfaTimeStep = null;
+        Touch();
+    }
+
+    public void RecordMfaVerification(long timeStep)
+    {
+        LastAcceptedMfaTimeStep = timeStep;
+        Touch();
+    }
+
+    public void ResetMfa()
+    {
+        MfaSecretProtected = null;
+        PendingMfaSecretProtected = null;
+        PendingMfaExpiresAt = null;
+        MfaEnabledAt = null;
+        LastAcceptedMfaTimeStep = null;
         Touch();
     }
 }
