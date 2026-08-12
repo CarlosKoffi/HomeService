@@ -1205,9 +1205,16 @@ public static class DatabaseInitializer
             [AdminModuleKey.Audit] = [AdminPermissionAction.View]
         };
 
-        var modules = await db.AdminModules
-            .Where(item => allowed.Keys.Contains(item.Key))
-            .ToDictionaryAsync(item => item.Key, item => item.Id, cancellationToken);
+        // Keep this bootstrap query provider-neutral. Translating Contains over a
+        // Dictionary.KeyCollection currently makes Npgsql try to construct an
+        // unsupported enum array mapping during application startup.
+        var allowedModuleKeys = allowed.Keys.ToHashSet();
+        var modules = (await db.AdminModules
+                .AsNoTracking()
+                .Select(item => new { item.Key, item.Id })
+                .ToListAsync(cancellationToken))
+            .Where(item => allowedModuleKeys.Contains(item.Key))
+            .ToDictionary(item => item.Key, item => item.Id);
         var existing = await db.AdminRolePermissions
             .Where(item => item.RoleId == role.Id)
             .Select(item => new { item.ModuleId, item.Action })
