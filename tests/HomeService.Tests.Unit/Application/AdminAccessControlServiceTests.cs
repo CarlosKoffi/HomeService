@@ -169,6 +169,7 @@ public sealed class AdminAccessControlServiceTests
         Assert.Null(admin.InvitationTokenHash);
         Assert.Null(admin.InvitationExpiresAt);
         Assert.NotNull(admin.InvitationAcceptedAt);
+        Assert.True(admin.MfaEnrollmentRequired);
         Assert.True(Sha256PasswordHasher.Verify("Password123", admin.PasswordHash!));
     }
 

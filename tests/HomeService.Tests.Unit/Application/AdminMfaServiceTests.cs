@@ -28,6 +28,7 @@ public sealed class AdminMfaServiceTests
             CancellationToken.None);
 
         Assert.True(activation.Status.IsEnabled);
+        Assert.False(admin.MfaEnrollmentRequired);
         Assert.Equal(8, activation.RecoveryCodes.Count);
         var recoveryCode = activation.RecoveryCodes[0];
 
@@ -99,6 +100,17 @@ public sealed class AdminMfaServiceTests
         Assert.Contains("Authenticator", withoutCode.Message);
         Assert.True(withRecoveryCode.IsSuccess);
         Assert.False(replayedRecoveryCode.IsSuccess);
+    }
+
+    [Fact]
+    public void ResetMfa_RequiresANewEnrollment()
+    {
+        var admin = new AdminUser("Finance", "finance-reset@wele.africa");
+
+        admin.ResetMfa();
+
+        Assert.True(admin.MfaEnrollmentRequired);
+        Assert.False(admin.IsMfaEnabled);
     }
 
     private static async Task<HomeService.Contracts.Admin.AdminMfaActivationResponse> EnrollAsync(

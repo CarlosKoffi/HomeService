@@ -49,7 +49,26 @@ public sealed class AdminAuthServiceTests
         Assert.NotNull(result.Response);
         Assert.False(string.IsNullOrWhiteSpace(result.Response.Token));
         Assert.True(result.Response.User.IsSuperAdmin);
+        Assert.False(result.Response.User.MfaEnrollmentRequired);
         Assert.True(await db.AdminSessions.AnyAsync(session => session.AdminUserId == admin.Id));
+    }
+
+    [Fact]
+    public async Task LoginAsync_WhenFirstConnectionRequiresMfa_ReturnsOnboardingFlag()
+    {
+        await using var db = CreateDbContext();
+        var admin = new AdminUser("Nouvel Admin", "new-admin@wele.ci");
+        admin.AcceptInvitation(Sha256PasswordHasher.Hash("Password123"), DateTimeOffset.UtcNow);
+        admin.RequireMfaEnrollment();
+        db.AdminUsers.Add(admin);
+        await db.SaveChangesAsync();
+
+        var result = await new AdminAuthService(db).LoginAsync(
+            new AdminLoginRequest(admin.Email, "Password123"),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Response!.User.MfaEnrollmentRequired);
     }
 
     [Fact]

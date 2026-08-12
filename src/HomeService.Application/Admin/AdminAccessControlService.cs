@@ -196,6 +196,7 @@ public sealed class AdminAccessControlService(IAppDbContext db, AdminQueryServic
         }
 
         admin.AcceptInvitation(Sha256PasswordHasher.Hash(request.Password), DateTimeOffset.UtcNow);
+        admin.RequireMfaEnrollment();
         AddAuditLog(
             actor,
             auditContext,

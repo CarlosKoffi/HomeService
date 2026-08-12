@@ -31,6 +31,7 @@ public sealed class AdminUser : AuditableEntity
     public DateTimeOffset? PendingMfaExpiresAt { get; private set; }
     public DateTimeOffset? MfaEnabledAt { get; private set; }
     public long? LastAcceptedMfaTimeStep { get; private set; }
+    public bool MfaEnrollmentRequired { get; private set; }
     public bool IsMfaEnabled => MfaEnabledAt.HasValue && !string.IsNullOrWhiteSpace(MfaSecretProtected);
     public IReadOnlyCollection<AdminUserRole> Roles => _roles;
 
@@ -90,6 +91,12 @@ public sealed class AdminUser : AuditableEntity
         Touch();
     }
 
+    public void RequireMfaEnrollment()
+    {
+        MfaEnrollmentRequired = true;
+        Touch();
+    }
+
     public void BeginMfaEnrollment(string protectedSecret, DateTimeOffset expiresAt)
     {
         PendingMfaSecretProtected = protectedSecret;
@@ -109,6 +116,7 @@ public sealed class AdminUser : AuditableEntity
         PendingMfaExpiresAt = null;
         MfaEnabledAt = enabledAt;
         LastAcceptedMfaTimeStep = null;
+        MfaEnrollmentRequired = false;
         Touch();
     }
 
@@ -125,6 +133,7 @@ public sealed class AdminUser : AuditableEntity
         PendingMfaExpiresAt = null;
         MfaEnabledAt = null;
         LastAcceptedMfaTimeStep = null;
+        MfaEnrollmentRequired = true;
         Touch();
     }
 }

@@ -62,7 +62,9 @@
         await SessionState.InitializeAsync();
         if (SessionState.IsAuthenticated)
         {
-            Navigation.NavigateTo(SafeReturnUrl());
+            Navigation.NavigateTo(
+                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl(),
+                forceLoad: true);
         }
     }
 
@@ -88,7 +90,9 @@
                 return;
             }
 
-            Navigation.NavigateTo(SafeReturnUrl(), forceLoad: true);
+            Navigation.NavigateTo(
+                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl(),
+                forceLoad: true);
         }
         finally
         {

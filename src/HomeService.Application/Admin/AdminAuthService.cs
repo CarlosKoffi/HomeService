@@ -167,7 +167,8 @@ public sealed class AdminAuthService(IAppDbContext db, AdminMfaService? mfaServi
                 user.Email,
                 user.IsSuperAdmin,
                 user.MfaEnabledAt,
-                user.MfaSecretProtected
+                user.MfaSecretProtected,
+                user.MfaEnrollmentRequired
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -187,7 +188,8 @@ public sealed class AdminAuthService(IAppDbContext db, AdminMfaService? mfaServi
             admin.IsSuperAdmin,
             expiresAt,
             permissions,
-            admin.MfaEnabledAt.HasValue && !string.IsNullOrWhiteSpace(admin.MfaSecretProtected));
+            admin.MfaEnabledAt.HasValue && !string.IsNullOrWhiteSpace(admin.MfaSecretProtected),
+            admin.MfaEnrollmentRequired);
     }
 
     private async Task<IReadOnlyList<AdminPermissionSummaryResponse>> GetAllPermissionsAsync(CancellationToken cancellationToken)

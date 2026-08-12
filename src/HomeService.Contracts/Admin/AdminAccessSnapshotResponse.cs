@@ -36,7 +36,20 @@ public sealed record AdminCurrentUserResponse(
     bool IsSuperAdmin,
     DateTimeOffset ExpiresAt,
     IReadOnlyList<AdminPermissionSummaryResponse> Permissions,
-    bool MfaEnabled = false);
+    bool MfaEnabled = false,
+    bool MfaEnrollmentRequired = false)
+{
+    public AdminCurrentUserResponse(
+        Guid id,
+        string fullName,
+        string email,
+        bool isSuperAdmin,
+        DateTimeOffset expiresAt,
+        IReadOnlyList<AdminPermissionSummaryResponse> permissions)
+        : this(id, fullName, email, isSuperAdmin, expiresAt, permissions, false, false)
+    {
+    }
+}
 
 public sealed record AdminRoleSummaryResponse(
     Guid Id,
@@ -70,7 +83,34 @@ public sealed record AdminUserSummaryResponse(
     DateTimeOffset? InvitationExpiresAt,
     DateTimeOffset? LastLoginAt,
     IReadOnlyList<string> Roles,
-    bool MfaEnabled = false);
+    bool MfaEnabled = false,
+    bool MfaEnrollmentRequired = false)
+{
+    public AdminUserSummaryResponse(
+        Guid id,
+        string fullName,
+        string email,
+        bool isSuperAdmin,
+        bool isActive,
+        bool hasActivatedAccess,
+        DateTimeOffset? invitationExpiresAt,
+        DateTimeOffset? lastLoginAt,
+        IReadOnlyList<string> roles)
+        : this(
+            id,
+            fullName,
+            email,
+            isSuperAdmin,
+            isActive,
+            hasActivatedAccess,
+            invitationExpiresAt,
+            lastLoginAt,
+            roles,
+            false,
+            false)
+    {
+    }
+}
 
 public sealed record CreateAdminRoleRequest(
     string Name,

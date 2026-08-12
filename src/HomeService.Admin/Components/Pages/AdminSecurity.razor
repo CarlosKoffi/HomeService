@@ -4,6 +4,7 @@
 @using QRCoder
 @inject PlatformApiClient ApiClient
 @inject AdminSessionState SessionState
+@inject NavigationManager Navigation
 
 <PageTitle>Sécurité du compte</PageTitle>
 
@@ -14,6 +15,21 @@
         <p class="lead">Une confirmation personnelle protège les reversements, remboursements et réglages financiers.</p>
     </div>
 </div>
+
+@if (IsRequiredOnboarding)
+{
+    <section class="onboarding-welcome">
+        <span>Première connexion</span>
+        <h2>Protégeons votre compte avant de commencer</h2>
+        <p>Cette installation personnelle prend environ deux minutes. Vous aurez besoin de votre téléphone.</p>
+        <ol>
+            <li class="@(GetOnboardingStep() >= 1 ? "active" : null)"><b>1</b><span>Installer ou ouvrir<br /><strong>Authenticator</strong></span></li>
+            <li class="@(GetOnboardingStep() >= 2 ? "active" : null)"><b>2</b><span>Scanner<br /><strong>le QR code</strong></span></li>
+            <li class="@(GetOnboardingStep() >= 3 ? "active" : null)"><b>3</b><span>Saisir<br /><strong>les 6 chiffres</strong></span></li>
+            <li class="@(GetOnboardingStep() >= 4 ? "active" : null)"><b>4</b><span>Sauvegarder<br /><strong>les codes de secours</strong></span></li>
+        </ol>
+    </section>
+}
 
 @if (!string.IsNullOrWhiteSpace(Message))
 {
@@ -36,7 +52,7 @@ else if (Activation is not null)
                 <code>@recoveryCode</code>
             }
         </div>
-        <button type="button" class="primary-action" @onclick="FinishActivation">J’ai sauvegardé mes codes</button>
+        <button type="button" class="primary-action" @onclick="FinishActivation">J’ai sauvegardé mes codes et j’accède à l’admin</button>
     </section>
 }
 else if (Enrollment is not null)
@@ -46,7 +62,7 @@ else if (Enrollment is not null)
             <span class="security-step">1</span>
             <div>
                 <h2>Scannez le QR code</h2>
-                <p>Ouvrez Google Authenticator ou Microsoft Authenticator, touchez <strong>+</strong>, puis scannez ce code.</p>
+                <p>Ouvrez Google Authenticator ou Microsoft Authenticator sur votre téléphone, touchez <strong>+</strong>, puis choisissez <strong>Scanner un QR code</strong>.</p>
             </div>
         </div>
         <div class="qr-panel">
@@ -85,19 +101,20 @@ else
             }
             else
             {
-                <p>L’installation prend moins de deux minutes. Chaque administrateur financier doit activer son propre téléphone.</p>
+                <p>Installez si nécessaire <strong>Google Authenticator</strong> ou <strong>Microsoft Authenticator</strong> sur votre téléphone. Chaque administrateur doit utiliser son propre appareil.</p>
             }
         </div>
         @if (Status?.IsEnabled != true)
         {
-            <button type="button" class="primary-action" @onclick="BeginEnrollmentAsync" disabled="@IsSubmitting">Configurer Authenticator</button>
+            <button type="button" class="primary-action" @onclick="BeginEnrollmentAsync" disabled="@IsSubmitting">Commencer la configuration</button>
         }
     </section>
 }
 
 <style>
+    .onboarding-welcome{max-width:900px;margin-bottom:20px;padding:24px 28px;border-radius:24px;background:linear-gradient(135deg,#0d2b5b,#1769ff);color:#fff;box-shadow:0 18px 50px rgba(23,105,255,.2)}.onboarding-welcome>span{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}.onboarding-welcome h2{margin:12px 0 6px;font-size:26px}.onboarding-welcome>p{margin:0;color:#dce9ff}.onboarding-welcome ol{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:24px 0 0;padding:0;list-style:none}.onboarding-welcome li{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid rgba(255,255,255,.18);border-radius:14px;color:#c5d8fa}.onboarding-welcome li.active{border-color:rgba(255,255,255,.65);background:rgba(255,255,255,.13);color:#fff}.onboarding-welcome li b{display:grid;place-items:center;flex:0 0 28px;height:28px;border-radius:50%;background:#fff;color:#1769ff}.onboarding-welcome li span{font-size:12px;line-height:1.35}
     .security-heading{max-width:980px}.security-card{max-width:900px;padding:28px;border:1px solid #dbe5f4;border-radius:24px;background:#fff;box-shadow:0 18px 50px rgba(15,31,60,.08)}.security-card h2{margin:10px 0 8px;font-size:25px}.security-card p{color:#667085;line-height:1.65}.security-state{display:inline-flex;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.05em}.security-state.enabled{background:#dcfae6;color:#067647}.security-state.required{background:#fff1e8;color:#c2410c}.security-summary{display:flex;align-items:center;justify-content:space-between;gap:30px}.security-instructions{display:flex;gap:14px;align-items:flex-start;margin:8px 0 18px}.security-step{display:grid;place-items:center;flex:0 0 34px;height:34px;border-radius:50%;background:#1769ff;color:#fff;font-weight:900}.security-instructions h2{margin:2px 0}.security-instructions p{margin:0}.qr-panel{display:flex;align-items:center;gap:28px;margin:18px 0 28px;padding:20px;border-radius:20px;background:#f7faff}.qr-panel img{width:220px;height:220px;padding:10px;border-radius:14px;background:#fff}.qr-panel code{display:block;margin:8px 0;font-size:16px;letter-spacing:.12em;word-break:break-all}.activation-form{display:flex;gap:10px;flex-wrap:wrap}.activation-form input{width:190px;min-height:48px;border:1px solid #cfd9e8;border-radius:12px;padding:0 16px;font-size:20px;letter-spacing:.2em}.recovery-grid{display:grid;grid-template-columns:repeat(2,minmax(150px,1fr));gap:10px;margin:20px 0}.recovery-grid code{padding:13px;border:1px dashed #9cb4d8;border-radius:10px;background:#f7faff;text-align:center;font-size:17px}.primary-action{min-height:44px;padding:0 20px;border:0;border-radius:12px;background:#1769ff;color:#fff;font-weight:900}.secondary-action{min-height:44px;padding:0 18px;border:1px solid #ccd8e8;border-radius:12px;background:#fff;font-weight:800}
-    @@media(max-width:720px){.security-summary,.qr-panel{align-items:flex-start;flex-direction:column}.qr-panel img{width:min(220px,100%);height:auto}.recovery-grid{grid-template-columns:1fr}.security-card{padding:20px}}
+    @@media(max-width:720px){.security-summary,.qr-panel{align-items:flex-start;flex-direction:column}.onboarding-welcome ol{grid-template-columns:1fr 1fr}.qr-panel img{width:min(220px,100%);height:auto}.recovery-grid{grid-template-columns:1fr}.security-card,.onboarding-welcome{padding:20px}}
 </style>
 
 @code {
@@ -110,6 +127,7 @@ else
     private bool IsError { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsSubmitting { get; set; }
+    private bool IsRequiredOnboarding => SessionState.CurrentUser?.MfaEnrollmentRequired == true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -179,8 +197,13 @@ else
         }
     }
 
-    private void FinishActivation() => Activation = null;
+    private void FinishActivation()
+    {
+        Activation = null;
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
     private void CancelEnrollment() { Enrollment = null; QrCodeDataUrl = null; ActivationCode = string.Empty; }
     private void SetMessage(string message, bool error) { Message = message; IsError = error; }
+    private int GetOnboardingStep() => Activation is not null ? 4 : Enrollment is not null ? 2 : Status?.IsEnabled == true ? 4 : 1;
     private static string FormatManualKey(string value) => string.Join(' ', Enumerable.Range(0, (value.Length + 3) / 4).Select(index => value.Substring(index * 4, Math.Min(4, value.Length - index * 4))));
 }

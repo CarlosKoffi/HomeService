@@ -2949,6 +2949,19 @@ public static class AdminEndpoints
 
         var permission = AdminEndpointPermissionResolver.Resolve(request.Method, request.Path.Value ?? string.Empty);
         var authService = context.HttpContext.RequestServices.GetRequiredService<AdminAuthService>();
+        var currentUser = await authService.GetCurrentUserAsync(token, context.HttpContext.RequestAborted);
+        if (currentUser is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        if (currentUser.MfaEnrollmentRequired)
+        {
+            return Results.Json(
+                new { message = "Activez Authenticator pour terminer votre premiere connexion." },
+                statusCode: StatusCodes.Status428PreconditionRequired);
+        }
+
         var canAccess = await authService.CanAccessAsync(
             token,
             permission.ModuleKey,
@@ -2960,11 +2973,7 @@ public static class AdminEndpoints
             return Results.Forbid();
         }
 
-        var currentUser = await authService.GetCurrentUserAsync(token, context.HttpContext.RequestAborted);
-        if (currentUser is not null)
-        {
-            context.HttpContext.Items[CurrentAdminUserItemKey] = currentUser;
-        }
+        context.HttpContext.Items[CurrentAdminUserItemKey] = currentUser;
 
         return await next(context);
     }
