@@ -137,16 +137,60 @@ Dans Coolify, l'ideal est d'attacher un domaine ou sous-domaine par interface:
 
 ## Points restants avant production publique
 
-- Ajouter une authentification reelle pour l'admin.
-- Finaliser le durcissement de l'authentification admin.
-- Decider le stockage des documents uploades: volume Docker, S3 compatible ou MinIO.
-- Creer un premier compte super admin.
+- Conserver Cloudflare Access devant `admin.wele.africa` et limiter les adresses autorisees.
+- Conserver le MFA TOTP obligatoire pour les administrateurs financiers et les operations sensibles.
+- Creer les comptes administrateurs nominatifs; ne jamais partager un meme compte.
+- Verifier la retention et la restauration des sauvegardes PostgreSQL et des medias R2 prives.
 
 ## Verification automatique apres deploiement
 
 La CI compile la solution, lance les tests unitaires puis les tests d'integration workflow. Les workflows critiques
 mockent le paiement et les vrais envois de notifications, mais verifient les etats mission, paiements, outbox et
 notifications portail.
+
+La CI principale s'execute sur `main` et `develop`. Elle execute toute la suite serveur puis publie trois artefacts
+Android installables (client, prestataire et entreprise). Les APK sont conserves 14 jours dans l'execution GitHub
+Actions avec un manifeste SHA-256.
+
+### Secrets optionnels pour signer les APK Android
+
+Sans ces secrets, GitHub produit des APK installables signes avec la cle de test du runner. Ils conviennent aux
+tests fonctionnels mais pas a une publication Play Store. Pour produire les APK avec une cle stable, renseigner les
+cinq secrets GitHub suivants:
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+- `GOOGLE_MAPS_ANDROID_API_KEY`
+
+La cle Google Maps doit autoriser les trois packages Android (`ci.wele.client`, `ci.wele.provider`,
+`ci.wele.enterprise`) avec l'empreinte SHA-1 du certificat contenu dans le keystore CI. Les fichiers
+`google-services.json` restent verifies automatiquement contre ces trois identifiants d'application.
+
+### Validation des services externes
+
+Le workflow GitHub **External services validation** separe volontairement les controles sans danger des integrations
+sensibles:
+
+- chaque lundi: API publique, catalogue, image Cloudflare R2/CDN et parcours Google Places autocomplete + details;
+- a la demande: Firebase OAuth puis FCM `validate_only`, sans livrer de notification;
+- a la demande: lecture seule du statut d'une demande de paiement JEKO existante, sans creer de paiement ni de retrait.
+
+Variables GitHub recommandees:
+
+- `EXTERNAL_API_BASE_URL=https://api.wele.africa` (valeur par defaut si absente)
+- `EXTERNAL_R2_PUBLIC_OBJECT_URL=https://media.wele.africa/...` (facultative si le catalogue expose deja une image R2)
+- `EXTERNAL_GOOGLE_PLACES_QUERY=Plateau Abidjan` (facultative)
+
+Creer un environnement GitHub protege nomme `external-production`, puis y ajouter seulement les secrets necessaires:
+
+- Firebase: `FIREBASE_PROJECT_ID`, `FIREBASE_CREDENTIALS_BASE64`, `FIREBASE_VALIDATION_DEVICE_TOKEN`
+- JEKO: `JEKO_API_KEY`, `JEKO_API_KEY_ID`, `JEKO_VALIDATION_PAYMENT_REQUEST_ID`
+
+`FIREBASE_VALIDATION_DEVICE_TOKEN` doit appartenir a une installation dediee aux tests. Le mode `validate_only`
+demande a Firebase de verifier les droits, le projet, le token et le payload sans afficher de notification. La
+reference JEKO doit correspondre a une ancienne demande connue: le workflow n'utilise que `GET`.
 
 Pour verifier l'API deployee apres Coolify, renseigner dans GitHub:
 

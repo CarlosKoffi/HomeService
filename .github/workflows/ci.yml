@@ -4,15 +4,24 @@ on:
   push:
     branches:
       - main
+      - develop
   pull_request:
     branches:
       - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
     name: Compile, unit tests and integration workflows
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -34,17 +43,11 @@ jobs:
           FIREBASE_NOTIFICATIONS_ENABLED: "false"
         run: dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build --logger "trx;LogFileName=unit-tests.trx"
 
-      - name: Order workflow integration test with mocked payments and notifications
+      - name: Full integration test suite with mocked payments and notifications
         env:
           FIREBASE_NOTIFICATIONS_ENABLED: "false"
           PAYMENT_PROVIDER_MODE: "Mock"
-        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --filter "FullyQualifiedName~ClientMissionWorkflowIntegrationTests" --logger "trx;LogFileName=order-workflow-tests.trx"
-
-      - name: Admin critical endpoint contract tests
-        env:
-          FIREBASE_NOTIFICATIONS_ENABLED: "false"
-          PAYMENT_PROVIDER_MODE: "Mock"
-        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --filter "FullyQualifiedName~AdminEndpointContractTests" --logger "trx;LogFileName=admin-contract-tests.trx"
+        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --logger "trx;LogFileName=integration-tests.trx"
 
       - name: Upload test reports
         if: always()
@@ -65,9 +68,15 @@ jobs:
         run: pwsh ./deploy/smoke-test.ps1
 
   mobile:
-    name: Compile MAUI mobile applications
+    name: Build installable Android APKs
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
+    env:
+      GOOGLE_MAPS_ANDROID_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_API_KEY }}
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -78,14 +87,34 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Install MAUI Windows workload
-        run: dotnet workload install maui-windows
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
 
-      - name: Build client mobile application
-        run: dotnet build src/HomeService.Client.Mobile/HomeService.Client.Mobile.csproj --configuration Release --framework net9.0-windows10.0.19041.0
+      - name: Validate Android production secrets on protected branches
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $required = @(
+            'GOOGLE_MAPS_ANDROID_API_KEY',
+            'ANDROID_KEYSTORE_BASE64',
+            'ANDROID_KEYSTORE_PASSWORD',
+            'ANDROID_KEY_ALIAS',
+            'ANDROID_KEY_PASSWORD')
+          $missing = @($required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) })
+          if ($missing.Count -gt 0) {
+            throw "Android production secrets missing: $($missing -join ', ')"
+          }
 
-      - name: Build provider mobile application
-        run: dotnet build src/HomeService.Provider.Mobile/HomeService.Provider.Mobile.csproj --configuration Release --framework net9.0-windows10.0.19041.0
+      - name: Build client, provider and company APKs
+        shell: pwsh
+        run: ./deploy/build-android-apks.ps1
 
-      - name: Build company mobile application
-        run: dotnet build src/HomeService.Company.Mobile/HomeService.Company.Mobile.csproj --configuration Release --framework net9.0-windows10.0.19041.0
+      - name: Upload installable Android APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: wele-android-apks-${{ github.sha }}
+          path: |
+            artifacts/android/*.apk
+            artifacts/android/build-manifest.json
+          if-no-files-found: error
+          retention-days: 14

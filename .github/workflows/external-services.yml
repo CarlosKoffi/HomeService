@@ -1,0 +1,81 @@
+name: External services validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_firebase:
+        description: Validate Firebase with FCM validate_only (no notification is delivered)
+        required: true
+        type: boolean
+        default: false
+      include_jeko_readonly:
+        description: Validate JEKO with a read-only payment status request
+        required: true
+        type: boolean
+        default: false
+  schedule:
+    - cron: "23 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: external-services-production
+  cancel-in-progress: false
+
+jobs:
+  public-services:
+    name: API, R2 CDN and Google Places
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      EXTERNAL_API_BASE_URL: ${{ vars.EXTERNAL_API_BASE_URL || 'https://api.wele.africa' }}
+      EXTERNAL_R2_PUBLIC_OBJECT_URL: ${{ vars.EXTERNAL_R2_PUBLIC_OBJECT_URL }}
+      EXTERNAL_GOOGLE_PLACES_QUERY: ${{ vars.EXTERNAL_GOOGLE_PLACES_QUERY || 'Plateau Abidjan' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate public external services
+        shell: pwsh
+        run: ./deploy/external-services-smoke.ps1 -CheckPublic
+
+  firebase-validation:
+    name: Firebase validate-only
+    if: github.event_name == 'workflow_dispatch' && inputs.include_firebase
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: external-production
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CREDENTIALS_BASE64: ${{ secrets.FIREBASE_CREDENTIALS_BASE64 }}
+      FIREBASE_VALIDATION_DEVICE_TOKEN: ${{ secrets.FIREBASE_VALIDATION_DEVICE_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Firebase without delivering a push
+        shell: pwsh
+        run: ./deploy/external-services-smoke.ps1 -CheckFirebase
+
+  jeko-readonly-validation:
+    name: JEKO read-only status
+    if: github.event_name == 'workflow_dispatch' && inputs.include_jeko_readonly
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: external-production
+    env:
+      JEKO_API_BASE_URL: ${{ vars.JEKO_API_BASE_URL || 'https://api.jeko.africa' }}
+      JEKO_API_KEY: ${{ secrets.JEKO_API_KEY }}
+      JEKO_API_KEY_ID: ${{ secrets.JEKO_API_KEY_ID }}
+      JEKO_VALIDATION_PAYMENT_REQUEST_ID: ${{ secrets.JEKO_VALIDATION_PAYMENT_REQUEST_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate JEKO with a read-only request
+        shell: pwsh
+        run: ./deploy/external-services-smoke.ps1 -CheckJekoReadOnly
