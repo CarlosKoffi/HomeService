@@ -13,7 +13,9 @@ public static class PublicMediaResponseMapper
         }
 
         var objectKey = value.Trim();
-        if (Uri.TryCreate(objectKey, UriKind.Absolute, out var absoluteUri))
+        if (Uri.TryCreate(objectKey, UriKind.Absolute, out var absoluteUri)
+            && (string.Equals(absoluteUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(absoluteUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
         {
             if (string.Equals(absoluteUri.Host, "media.wele.africa", StringComparison.OrdinalIgnoreCase))
             {
