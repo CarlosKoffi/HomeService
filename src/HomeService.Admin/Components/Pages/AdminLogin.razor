@@ -2,6 +2,7 @@
 @using HomeService.Admin.Services
 @inject AdminSessionState SessionState
 @inject NavigationManager Navigation
+@inject ILogger<AdminLogin> Logger
 
 <PageTitle>Connexion admin</PageTitle>
 
@@ -63,7 +64,8 @@
         if (SessionState.IsAuthenticated)
         {
             Navigation.NavigateTo(
-                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl());
+                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl(),
+                forceLoad: true);
         }
     }
 
@@ -85,26 +87,34 @@
         IsBusy = true;
         ErrorMessage = null;
 
+        bool signedIn;
         try
         {
-            var signedIn = await SessionState.SignInAsync(Email, Password, MfaCode);
-            if (!signedIn)
-            {
-                ErrorMessage = SessionState.LastSignInError ?? "Email, mot de passe ou code incorrect.";
-                return;
-            }
-
-            Navigation.NavigateTo(
-                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl());
+            signedIn = await SessionState.SignInAsync(Email, Password, MfaCode);
         }
         catch (Exception exception)
         {
+            Logger.LogError(exception, "Admin sign-in could not be finalized for {AdminEmail}.", Email);
             ErrorMessage = $"La connexion n'a pas pu etre finalisee ({GetDiagnosticCode(exception)}). Actualisez la page puis reessayez.";
+            return;
         }
         finally
         {
             IsBusy = false;
         }
+
+        if (!signedIn)
+        {
+            ErrorMessage = SessionState.LastSignInError ?? "Email, mot de passe ou code incorrect.";
+            return;
+        }
+
+        // Keep the navigation outside the catch block. During server-side rendering,
+        // Blazor can use a NavigationException as control flow to complete redirects.
+        // A full reload also lets the protected layout restore the freshly persisted session.
+        Navigation.NavigateTo(
+            SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl(),
+            forceLoad: true);
     }
 
     private string SafeReturnUrl()
