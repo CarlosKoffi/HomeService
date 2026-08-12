@@ -37,19 +37,7 @@ public sealed record AdminCurrentUserResponse(
     DateTimeOffset ExpiresAt,
     IReadOnlyList<AdminPermissionSummaryResponse> Permissions,
     bool MfaEnabled = false,
-    bool MfaEnrollmentRequired = false)
-{
-    public AdminCurrentUserResponse(
-        Guid id,
-        string fullName,
-        string email,
-        bool isSuperAdmin,
-        DateTimeOffset expiresAt,
-        IReadOnlyList<AdminPermissionSummaryResponse> permissions)
-        : this(id, fullName, email, isSuperAdmin, expiresAt, permissions, false, false)
-    {
-    }
-}
+    bool MfaEnrollmentRequired = false);
 
 public sealed record AdminRoleSummaryResponse(
     Guid Id,
