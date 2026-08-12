@@ -96,7 +96,7 @@ public sealed class AdminSessionState(
             await jsRuntime.InvokeVoidAsync("localStorage.setItem", cancellationToken, StorageKey, response.Token);
             await SetSessionCookieAsync(response.Token, cancellationToken);
         }
-        catch (JSException)
+        catch (Exception exception) when (IsBrowserSessionException(exception))
         {
             sessionAccessor.Token = null;
             CurrentUser = null;
@@ -147,4 +147,9 @@ public sealed class AdminSessionState(
             token,
             28800);
     }
+
+    private static bool IsBrowserSessionException(Exception exception) =>
+        exception is JSException
+        || exception.GetType().Name == "JSDisconnectedException"
+        || exception is InvalidOperationException;
 }

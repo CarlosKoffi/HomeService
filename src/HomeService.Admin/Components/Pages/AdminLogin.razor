@@ -63,8 +63,7 @@
         if (SessionState.IsAuthenticated)
         {
             Navigation.NavigateTo(
-                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl(),
-                forceLoad: true);
+                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl());
         }
     }
 
@@ -96,12 +95,11 @@
             }
 
             Navigation.NavigateTo(
-                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl(),
-                forceLoad: true);
+                SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl());
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            ErrorMessage = "La connexion n'a pas pu etre finalisee. Actualisez la page puis reessayez.";
+            ErrorMessage = $"La connexion n'a pas pu etre finalisee ({GetDiagnosticCode(exception)}). Actualisez la page puis reessayez.";
         }
         finally
         {
@@ -114,5 +112,17 @@
         return string.IsNullOrWhiteSpace(ReturnUrl) || ReturnUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)
             ? "/"
             : ReturnUrl;
+    }
+
+    private static string GetDiagnosticCode(Exception exception)
+    {
+        var typeName = exception.GetType().Name;
+        return typeName switch
+        {
+            "JSException" => "session navigateur",
+            "JSDisconnectedException" => "connexion navigateur interrompue",
+            "InvalidOperationException" => "session non disponible",
+            _ => "erreur inattendue"
+        };
     }
 }
