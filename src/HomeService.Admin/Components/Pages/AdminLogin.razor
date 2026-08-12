@@ -78,6 +78,11 @@
 
     private async Task SignInAsync()
     {
+        if (IsBusy)
+        {
+            return;
+        }
+
         IsBusy = true;
         ErrorMessage = null;
 
@@ -93,6 +98,10 @@
             Navigation.NavigateTo(
                 SessionState.CurrentUser?.MfaEnrollmentRequired == true ? "/admin-security" : SafeReturnUrl(),
                 forceLoad: true);
+        }
+        catch (Exception)
+        {
+            ErrorMessage = "La connexion n'a pas pu etre finalisee. Actualisez la page puis reessayez.";
         }
         finally
         {

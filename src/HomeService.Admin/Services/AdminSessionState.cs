@@ -67,6 +67,21 @@ public sealed class AdminSessionState(
             LastSignInError = exception.Message;
             return false;
         }
+        catch (HttpRequestException)
+        {
+            LastSignInError = "Le service de connexion est temporairement indisponible. Reessayez dans un instant.";
+            return false;
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            LastSignInError = "Le service de connexion met trop de temps a repondre. Reessayez.";
+            return false;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            LastSignInError = "La reponse du service de connexion est invalide. Actualisez la page puis reessayez.";
+            return false;
+        }
 
         if (response is null)
         {
@@ -76,8 +91,19 @@ public sealed class AdminSessionState(
 
         sessionAccessor.Token = response.Token;
         CurrentUser = response.User;
-        await jsRuntime.InvokeVoidAsync("localStorage.setItem", cancellationToken, StorageKey, response.Token);
-        await SetSessionCookieAsync(response.Token, cancellationToken);
+        try
+        {
+            await jsRuntime.InvokeVoidAsync("localStorage.setItem", cancellationToken, StorageKey, response.Token);
+            await SetSessionCookieAsync(response.Token, cancellationToken);
+        }
+        catch (JSException)
+        {
+            sessionAccessor.Token = null;
+            CurrentUser = null;
+            LastSignInError = "Votre navigateur a bloque l'enregistrement de la session. Actualisez la page puis reessayez.";
+            return false;
+        }
+
         return true;
     }
 
@@ -109,14 +135,16 @@ public sealed class AdminSessionState(
         sessionAccessor.Token = null;
         CurrentUser = null;
         await jsRuntime.InvokeVoidAsync("localStorage.removeItem", cancellationToken, StorageKey);
-        await jsRuntime.InvokeVoidAsync("eval", cancellationToken, $"document.cookie = '{CookieName}=; path=/; max-age=0; samesite=lax'");
+        await jsRuntime.InvokeVoidAsync("weleAdminSession.clearCookie", cancellationToken, CookieName);
     }
 
     private async Task SetSessionCookieAsync(string token, CancellationToken cancellationToken)
     {
         await jsRuntime.InvokeVoidAsync(
-            "eval",
+            "weleAdminSession.setCookie",
             cancellationToken,
-            $"document.cookie = '{CookieName}=' + encodeURIComponent('{token}') + '; path=/; max-age=28800; samesite=lax'");
+            CookieName,
+            token,
+            28800);
     }
 }
