@@ -10,6 +10,7 @@ public sealed class AdminSessionState(
 {
     private const string StorageKey = "wele-admin-session";
     private const string CookieName = "wele-admin-session";
+    private readonly SemaphoreSlim sessionGate = new(1, 1);
     private bool isInitialized;
 
     public AdminCurrentUserResponse? CurrentUser { get; private set; }
@@ -19,34 +20,42 @@ public sealed class AdminSessionState(
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        if (isInitialized)
-        {
-            return;
-        }
-
-        isInitialized = true;
-        var token = await jsRuntime.InvokeAsync<string?>("localStorage.getItem", cancellationToken, StorageKey);
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return;
-        }
-
-        sessionAccessor.Token = token;
+        await sessionGate.WaitAsync(cancellationToken);
         try
         {
-            CurrentUser = await apiClient.GetCurrentAdminAsync(cancellationToken);
-            if (CurrentUser is null)
+            if (isInitialized)
+            {
+                return;
+            }
+
+            var token = await jsRuntime.InvokeAsync<string?>("localStorage.getItem", cancellationToken, StorageKey);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            sessionAccessor.Token = token;
+            try
+            {
+                CurrentUser = await apiClient.GetCurrentAdminAsync(cancellationToken);
+                if (CurrentUser is null)
+                {
+                    await ClearAsync(cancellationToken);
+                }
+                else
+                {
+                    await SetSessionCookieAsync(token, cancellationToken);
+                }
+            }
+            catch
             {
                 await ClearAsync(cancellationToken);
             }
-            else
-            {
-                await SetSessionCookieAsync(token, cancellationToken);
-            }
         }
-        catch
+        finally
         {
-            await ClearAsync(cancellationToken);
+            isInitialized = true;
+            sessionGate.Release();
         }
     }
 
@@ -55,6 +64,27 @@ public sealed class AdminSessionState(
         string password,
         string? mfaCode = null,
         CancellationToken cancellationToken = default)
+    {
+        // A user can submit the form while the first-render session restoration is
+        // still checking an old token. Let that restoration finish before creating
+        // a new session, otherwise it can clear the freshly persisted login.
+        await InitializeAsync(cancellationToken);
+        await sessionGate.WaitAsync(cancellationToken);
+        try
+        {
+            return await SignInCoreAsync(email, password, mfaCode, cancellationToken);
+        }
+        finally
+        {
+            sessionGate.Release();
+        }
+    }
+
+    private async Task<bool> SignInCoreAsync(
+        string email,
+        string password,
+        string? mfaCode,
+        CancellationToken cancellationToken)
     {
         LastSignInError = null;
         AdminLoginResponse? response;

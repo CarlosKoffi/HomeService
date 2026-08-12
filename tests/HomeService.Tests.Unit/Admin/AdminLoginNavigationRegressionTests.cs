@@ -25,6 +25,28 @@ public sealed class AdminLoginNavigationRegressionTests
         Assert.Contains("forceLoad: true", source, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Session_restoration_finishes_before_a_new_login_is_created()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var sessionStatePath = Path.Combine(
+            repositoryRoot,
+            "src",
+            "HomeService.Admin",
+            "Services",
+            "AdminSessionState.cs");
+        var source = File.ReadAllText(sessionStatePath);
+
+        var signInPosition = source.IndexOf("public async Task<bool> SignInAsync", StringComparison.Ordinal);
+        var initializePosition = source.IndexOf("await InitializeAsync(cancellationToken);", signInPosition, StringComparison.Ordinal);
+        var loginPosition = source.IndexOf("LoginAdminAsync", signInPosition, StringComparison.Ordinal);
+
+        Assert.True(signInPosition >= 0, "The admin sign-in method was not found.");
+        Assert.True(initializePosition > signInPosition, "Sign-in must wait for initial session restoration.");
+        Assert.True(loginPosition > initializePosition, "The API login must run only after session restoration has finished.");
+        Assert.Contains("SemaphoreSlim sessionGate", source, StringComparison.Ordinal);
+    }
+
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
