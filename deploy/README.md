@@ -152,11 +152,12 @@ La CI principale s'execute sur `main` et `develop`. Elle execute toute la suite 
 Android installables (client, prestataire et entreprise). Les APK sont conserves 14 jours dans l'execution GitHub
 Actions avec un manifeste SHA-256.
 
-### Secrets optionnels pour signer les APK Android
+### Secrets requis pour publier les APK Android de production
 
-Sans ces secrets, GitHub produit des APK installables signes avec la cle de test du runner. Ils conviennent aux
-tests fonctionnels mais pas a une publication Play Store. Pour produire les APK avec une cle stable, renseigner les
-cinq secrets GitHub suivants:
+Sur une pull request, GitHub peut produire des APK de validation signes avec la cle de test du runner. Sur un push
+`main` ou `develop`, la CI ne publie aucun APK tant que la cle Google Maps et la signature stable ne sont pas
+configurees. Cela empeche de distribuer par erreur un APK de production signe en mode debug ou prive de carte.
+Renseigner les cinq secrets GitHub suivants:
 
 - `ANDROID_KEYSTORE_BASE64`
 - `ANDROID_KEYSTORE_PASSWORD`

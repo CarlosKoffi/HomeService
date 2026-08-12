@@ -41,13 +41,13 @@ jobs:
       - name: Unit tests
         env:
           FIREBASE_NOTIFICATIONS_ENABLED: "false"
-        run: dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build --logger "trx;LogFileName=unit-tests.trx"
+        run: dotnet test tests/HomeService.Tests.Unit/HomeService.Tests.Unit.csproj --configuration Release --no-build --logger "trx;LogFileName=unit-tests.trx" --blame-crash --blame-hang-timeout 5m
 
       - name: Full integration test suite with mocked payments and notifications
         env:
           FIREBASE_NOTIFICATIONS_ENABLED: "false"
           PAYMENT_PROVIDER_MODE: "Mock"
-        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --logger "trx;LogFileName=integration-tests.trx"
+        run: dotnet test tests/HomeService.Tests.Integration/HomeService.Tests.Integration.csproj --configuration Release --no-build --logger "trx;LogFileName=integration-tests.trx" --blame-crash --blame-hang-timeout 5m
 
       - name: Upload test reports
         if: always()
@@ -92,6 +92,7 @@ jobs:
 
       - name: Validate Android production secrets on protected branches
         if: github.event_name == 'push'
+        id: android-secrets
         shell: pwsh
         run: |
           $required = @(
@@ -102,14 +103,19 @@ jobs:
             'ANDROID_KEY_PASSWORD')
           $missing = @($required | Where-Object { [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($_)) })
           if ($missing.Count -gt 0) {
-            throw "Android production secrets missing: $($missing -join ', ')"
+            Write-Warning "Signed production APKs are skipped until these GitHub secrets are configured: $($missing -join ', ')"
+            "ready=false" >> $env:GITHUB_OUTPUT
+            exit 0
           }
+          "ready=true" >> $env:GITHUB_OUTPUT
 
       - name: Build client, provider and company APKs
+        if: github.event_name == 'pull_request' || steps.android-secrets.outputs.ready == 'true'
         shell: pwsh
         run: ./deploy/build-android-apks.ps1
 
       - name: Upload installable Android APKs
+        if: github.event_name == 'pull_request' || steps.android-secrets.outputs.ready == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: wele-android-apks-${{ github.sha }}
