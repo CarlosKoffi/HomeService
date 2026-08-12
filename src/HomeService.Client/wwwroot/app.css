@@ -2242,3 +2242,94 @@ img {
         transition-duration: .01ms !important;
     }
 }
+
+.wele-consent {
+    position: fixed;
+    z-index: 10000;
+    right: 24px;
+    bottom: 24px;
+    left: 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 28px;
+    width: min(920px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 20px 22px;
+    color: #111827;
+    background: #fff;
+    border: 1px solid #dbe5f5;
+    border-radius: 22px;
+    box-shadow: 0 18px 60px rgba(15, 35, 65, .18);
+    font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.wele-consent__copy {
+    display: grid;
+    gap: 6px;
+}
+
+.wele-consent__copy strong {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.wele-consent__copy span {
+    color: #53627a;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.wele-consent__actions {
+    display: flex;
+    gap: 10px;
+}
+
+.wele-consent__actions button {
+    min-height: 44px;
+    padding: 0 20px;
+    border-radius: 14px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.wele-consent__refuse {
+    color: #111827;
+    background: #fff;
+    border: 1px solid #cdd8e8;
+}
+
+.wele-consent__accept {
+    color: #fff;
+    background: #1a73e8;
+    border: 1px solid #1a73e8;
+}
+
+.wele-consent__actions button:focus-visible {
+    outline: 3px solid rgba(26, 115, 232, .28);
+    outline-offset: 2px;
+}
+
+@media (max-width: 680px) {
+    .wele-consent {
+        right: 14px;
+        bottom: 14px;
+        left: 14px;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        width: auto;
+        padding: 18px;
+        border-radius: 20px;
+    }
+
+    .wele-consent__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .wele-consent__actions button {
+        width: 100%;
+    }
+}
