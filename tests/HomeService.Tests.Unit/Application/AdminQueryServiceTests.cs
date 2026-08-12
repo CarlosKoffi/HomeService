@@ -231,7 +231,7 @@ public sealed class AdminQueryServiceTests
             && line.Amount == 5000);
         Assert.Contains(missionDetail.FinancialLines, line =>
             line.LineType == MissionFinancialLineType.PlatformCommission.ToString()
-            && line.Label == "Commission wélé");
+            && line.Label == "Commission w\u00E9l\u00E9");
         Assert.Contains(missionDetail.FinancialLines, line =>
             line.Label == "Avoir commercial"
             && line.Amount == -500);
