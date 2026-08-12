@@ -87,9 +87,6 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Install MAUI Android workload
-        run: dotnet workload install maui-android
-
       - name: Validate Android production secrets on protected branches
         if: github.event_name == 'push'
         id: android-secrets
@@ -108,6 +105,10 @@ jobs:
             exit 0
           }
           "ready=true" >> $env:GITHUB_OUTPUT
+
+      - name: Install MAUI Android workload
+        if: github.event_name == 'pull_request' || steps.android-secrets.outputs.ready == 'true'
+        run: dotnet workload install maui-android --skip-manifest-update
 
       - name: Build client, provider and company APKs
         if: github.event_name == 'pull_request' || steps.android-secrets.outputs.ready == 'true'
