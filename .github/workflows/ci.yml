@@ -1,6 +1,7 @@
 name: Build and tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -88,7 +89,7 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Validate Android production secrets on protected branches
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         id: android-secrets
         shell: pwsh
         run: |
