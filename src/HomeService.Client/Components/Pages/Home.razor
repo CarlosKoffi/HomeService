@@ -287,7 +287,7 @@
             <a class="client-button client-button-black" href="@ClientContent.Repeat.PrimaryCta.Url">@ClientContent.Repeat.PrimaryCta.Label</a>
         </div>
         <div class="client-repeat-card">
-            <img class="client-repeat-avatar" src="@ResolveContentUrl(ClientContent.Repeat.ProfileImageUrl, "images/awa-kouame-profile.webp")" alt="@ClientContent.Repeat.ProfileImageAlt" width="384" height="384" loading="lazy" decoding="async" />
+            <img class="client-repeat-avatar" src="@WithAssetVersion(ResolveContentUrl(ClientContent.Repeat.ProfileImageUrl, "images/awa-kouame-profile.webp"), "awa-teal-20260814")" alt="@ClientContent.Repeat.ProfileImageAlt" width="384" height="384" loading="lazy" decoding="async" />
             <div><strong>@ClientContent.Repeat.ProfileName</strong><small>@ClientContent.Repeat.ProfileService · @ClientContent.Repeat.ProfileRating</small></div>
             <span class="client-repeat-verified">@ClientContent.Repeat.ProfileBadge</span>
         </div>
@@ -515,6 +515,9 @@
 
         return $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
     }
+
+    private static string WithAssetVersion(string url, string version) =>
+        $"{url}{(url.Contains('?', StringComparison.Ordinal) ? '&' : '?')}v={Uri.EscapeDataString(version)}";
 
     protected override async Task OnInitializedAsync()
     {
