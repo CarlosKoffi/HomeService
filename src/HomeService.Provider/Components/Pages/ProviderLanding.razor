@@ -161,7 +161,7 @@
     <footer class="premium-footer">
         <div class="premium-footer-brand">
             <a class="premium-footer-logo" href="#home" aria-label="Retour accueil wélé">
-                <img src="images/wele-logo.png" alt="wélé" />
+                <img src="images/wele-logo-final.svg" alt="Wélé prestataire" />
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
@@ -260,6 +260,11 @@
             return absoluteUri.ToString();
         }
 
+        if (url.StartsWith("website/", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"https://media.wele.africa/{url.TrimStart('/')}";
+        }
+
         return url.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
             ? ApiClient.ToApiUrl(url)
             : NormalizeLegacyMediaUrl(url.TrimStart('/'));
@@ -296,7 +301,7 @@
                 "Recevez des demandes de clients et développez votre activité.",
                 new CmsLinkResponse("Créer un compte", "/onboarding?mode=register"),
                 new CmsLinkResponse("Voir le fonctionnement", "#benefits"),
-                "images/wele-provider-hero.png",
+                "website/provider/wele-provider-hero.png",
                 "Prestataires de services à domicile wélé",
                 ["Clients à Abidjan", "Paiement sécurisé", "Planning libre"]),
             new CompanyHomeStepsCmsResponse(

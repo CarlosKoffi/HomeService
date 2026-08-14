@@ -1437,7 +1437,7 @@ textarea {
 
 .provider-public-topbar nav a:hover {
     background: #f5f7fb;
-    color: #1A6AFF;
+    color: #0C5A66;
 }
 
 .provider-public-topbar .provider-login-link {
@@ -1445,21 +1445,21 @@ textarea {
 }
 
 .provider-public-topbar .provider-join-link {
-    background: #1A6AFF;
+    background: #0C5A66;
     color: #ffffff;
     padding-left: 1rem;
     padding-right: 1rem;
 }
 
 .provider-public-topbar .provider-join-link:hover {
-    background: #155ee5;
+    background: #084A53;
     color: #ffffff;
 }
 
 .provider-landing.premium-b2b {
-    --premium-blue: #1A6AFF;
-    --premium-blue-hover: #155ee5;
-    --premium-blue-soft: #EFF4FF;
+    --premium-blue: #0C5A66;
+    --premium-blue-hover: #084A53;
+    --premium-blue-soft: #EAF7F1;
     --premium-black: #111111;
     --premium-muted: #5f6673;
     --premium-soft: #f7f8fb;
@@ -2347,9 +2347,10 @@ textarea {
 }
 
 .provider-landing.premium-b2b {
-    --premium-blue: #1A6AFF;
-    --premium-blue-hover: #155ee5;
-    --premium-blue-soft: #EFF4FF;
+    --premium-blue: #0C5A66;
+    --premium-blue-hover: #084A53;
+    --premium-blue-soft: #EAF7F1;
+    --premium-mint: #9EDFBF;
     --premium-black: #111111;
     --premium-muted: #666666;
     --premium-soft: #FAFAFA;
@@ -2390,7 +2391,7 @@ textarea {
 }
 
 .provider-landing .premium-hero-overlay {
-    background: linear-gradient(90deg, rgba(255, 255, 255, .95) 0%, rgba(255, 255, 255, .82) 40%, rgba(255, 255, 255, .2) 100%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, .97) 0%, rgba(243, 245, 247, .86) 40%, rgba(158, 223, 191, .12) 100%);
     z-index: 1;
 }
 
@@ -3069,7 +3070,7 @@ textarea {
 .provider-submission-banner {
     align-items: center;
     background: #ffffff;
-    border: 1px solid rgba(26, 106, 255, .22);
+    border: 1px solid rgba(12, 90, 102, .22);
     border-radius: 20px;
     box-shadow: 0 24px 70px rgba(15, 23, 42, .08);
     color: #111111;
@@ -3337,7 +3338,7 @@ textarea {
 }
 
 .provider-onboarding-page .registration-header .eyebrow {
-    color: #1A6AFF;
+    color: #0C5A66;
     font-size: .68rem;
     font-weight: 700;
     letter-spacing: .15em;
@@ -3389,7 +3390,7 @@ textarea {
 }
 
 .provider-onboarding-page .registration-steps button.active {
-    background: #1A6AFF;
+    background: #0C5A66;
     color: #ffffff;
 }
 
@@ -3439,9 +3440,9 @@ textarea {
 
 .provider-onboarding-page .onboarding-icon,
 .provider-onboarding-page .onboarding-icon.orange {
-    background: #EFF4FF;
+    background: #EAF7F1;
     border-radius: 16px;
-    color: #1A6AFF;
+    color: #0C5A66;
     height: 48px;
     width: 48px;
 }
@@ -3538,8 +3539,8 @@ textarea {
 
 .provider-onboarding-page input:focus,
 .provider-onboarding-page select:focus {
-    border-color: #1A6AFF;
-    box-shadow: 0 0 0 4px rgba(26, 106, 255, .12);
+    border-color: #0C5A66;
+    box-shadow: 0 0 0 4px rgba(12, 90, 102, .12);
     outline: none;
 }
 
@@ -3556,7 +3557,7 @@ textarea {
 }
 
 .provider-onboarding-page .remember-row input {
-    accent-color: #1A6AFF;
+    accent-color: #0C5A66;
     min-height: auto;
     width: auto;
 }
@@ -3591,15 +3592,15 @@ textarea {
 
 .provider-onboarding-page .primary-action,
 .provider-onboarding-page .orange-action {
-    background: #1A6AFF !important;
-    border: 1px solid #1A6AFF !important;
+    background: #0C5A66 !important;
+    border: 1px solid #0C5A66 !important;
     color: #ffffff !important;
 }
 
 .provider-onboarding-page .primary-action:hover,
 .provider-onboarding-page .orange-action:hover {
-    background: #155ee5 !important;
-    border-color: #155ee5 !important;
+    background: #084A53 !important;
+    border-color: #084A53 !important;
 }
 
 .provider-onboarding-page .ghost-action {
@@ -3646,13 +3647,13 @@ textarea {
 
 .provider-onboarding-page .opportunity-card:hover,
 .provider-onboarding-page .opportunity-card.selected {
-    border-color: #1A6AFF;
-    box-shadow: 0 14px 36px rgba(26, 106, 255, .12);
+    border-color: #0C5A66;
+    box-shadow: 0 14px 36px rgba(12, 90, 102, .12);
     transform: translateY(-1px);
 }
 
 .provider-onboarding-page .opportunity-card input {
-    accent-color: #1A6AFF;
+    accent-color: #0C5A66;
     height: 18px;
     margin: 0;
     width: 18px;
@@ -3693,8 +3694,8 @@ textarea {
 
 .provider-onboarding-page .service-autocomplete-preview,
 .provider-onboarding-page .invitation-preview {
-    background: #EFF4FF;
-    border: 1px solid rgba(26, 106, 255, .2);
+    background: #EAF7F1;
+    border: 1px solid rgba(12, 90, 102, .2);
     border-radius: 16px;
     display: grid;
     gap: .2rem;
@@ -3710,7 +3711,7 @@ textarea {
 
 .provider-onboarding-page .service-autocomplete-preview strong,
 .provider-onboarding-page .invitation-preview strong {
-    color: #1A6AFF;
+    color: #0C5A66;
     font-weight: 650;
 }
 
