@@ -50,7 +50,7 @@
                         @foreach (var service in PopularServices)
                         {
                             <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu">
-                                <span>@GetInitials(service.Name)</span>@service.Name
+                                <span><img src="@ResolvePublicMediaUrl(ServiceVisualCatalog.ServiceIllustration(service))" alt="" loading="lazy" decoding="async" /></span>@service.Name
                             </a>
                         }
                         <a class="client-services-menu-all" href="/services" @onclick="CloseMenu">Voir tous les services <b aria-hidden="true">→</b></a>
@@ -109,7 +109,7 @@
                             @foreach (var service in filteredServices)
                             {
                                 <button type="button" role="option" @onclick="() => SelectService(service)">
-                                    <span class="client-suggestion-mark">@GetInitials(service.Name)</span>
+                                    <span class="client-suggestion-mark"><img src="@ResolvePublicMediaUrl(ServiceVisualCatalog.ServiceIllustration(service))" alt="" loading="lazy" decoding="async" /></span>
                                     <span><strong>@service.Name</strong><small>@GetServiceDetail(service)</small></span>
                                 </button>
                             }
@@ -309,9 +309,9 @@
                 </div>
                 <div class="client-phone-section-heading"><small>Pour ma maison</small><em>Voir plus&nbsp; →</em></div>
                 <div class="client-phone-services">
-                    <span><b><img src="images/services/menage-balai-v2.webp" alt="" /></b>Ménage</span>
+                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/menage.png")" alt="" /></b>Ménage</span>
                     <span><b><img src="@ResolvePublicMediaUrl("/assets/services/blanchisserie.png")" alt="" /></b>Blanchisserie</span>
-                    <span><b><img src="images/services/climatisation-premium-v2.webp" alt="" /></b>Climatisation</span>
+                    <span><b><img src="@ResolvePublicMediaUrl("/assets/services/climatisation.png")" alt="" /></b>Climatisation</span>
                 </div>
                 <div class="client-phone-section-heading client-phone-wellbeing-heading"><small>Pour mon bien-être</small><em>Voir plus&nbsp; →</em></div>
                 <div class="client-phone-services client-phone-wellbeing-services">
@@ -715,9 +715,9 @@
         var used = new HashSet<Guid>();
         return new[]
         {
-            FindCard(catalog, used, "Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", "/images/services/menage-balai-v2.webp", "menage"),
+            FindCard(catalog, used, "Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", "/assets/services/menage.png", "menage"),
             FindCard(catalog, used, "Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", "/assets/services/blanchisserie.png", "blanch", "repass", "linge"),
-            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/images/services/climatisation-premium-v2.webp", "clim"),
+            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/assets/services/climatisation.png", "clim"),
             FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "/assets/services/coiffure.png", "coiff", "esthet", "beaute")
         };
     }
@@ -752,9 +752,9 @@
 
     private static IReadOnlyList<LandingServiceCard> BuildFallbackCards() =>
     [
-        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai-v2.webp", null),
+        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/assets/services/menage.png", null),
         new("Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", null, "/assets/services/blanchisserie.png", null),
-        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/images/services/climatisation-premium-v2.webp", null),
+        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/assets/services/climatisation.png", null),
         new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png", null)
     ];
 

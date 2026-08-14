@@ -48,7 +48,7 @@
                     <div class="seo-services-menu">
                         @foreach (var service in PopularNavigationServices)
                         {
-                            <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu">@service.Name</a>
+                            <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu"><span class="seo-menu-service-visual"><img src="@ResolveMediaUrl(ServiceVisualCatalog.ServiceIllustration(service))" alt="" loading="lazy" decoding="async" /></span>@service.Name</a>
                         }
                         <a class="seo-services-menu-all" href="/services" @onclick="CloseMenu">Voir tous les services <b aria-hidden="true">→</b></a>
                     </div>
@@ -115,7 +115,7 @@
                         <div class="seo-prestations">
                             @foreach (var prestation in ActivePrestations)
                             {
-                                var imageUrl = ResolveMediaUrl(prestation.IllustrationUrl ?? CurrentService.ImageUrl ?? CurrentService.IconUrl);
+                                var imageUrl = ResolveMediaUrl(ServiceVisualCatalog.PrestationPhoto(prestation));
                                 var options = prestation.Options?.Where(option => option.IsActive).OrderBy(option => option.SortOrder).ToList() ?? [];
                                 <article class="seo-prestation-card">
                                     @if (!string.IsNullOrWhiteSpace(imageUrl))
@@ -207,10 +207,7 @@
                         <div class="seo-service-links">
                             @foreach (var otherService in OtherServices)
                             {
-                                var otherServiceImageUrl = ResolveMediaUrl(
-                                    otherService.ImageUrl
-                                    ?? otherService.Prestations.FirstOrDefault(prestation => prestation.IsActive && !string.IsNullOrWhiteSpace(prestation.IllustrationUrl))?.IllustrationUrl
-                                    ?? otherService.IconUrl);
+                                var otherServiceImageUrl = ResolveMediaUrl(ServiceVisualCatalog.ServiceIllustration(otherService));
 
                                 <a href="@($"/services/{ServiceSeoCatalog.ToSlug(otherService.Name)}")" aria-label="Découvrir le service @otherService.Name">
                                     <span class="seo-service-link-visual">
@@ -268,8 +265,8 @@
     private string CanonicalUrl => CurrentService is null ? $"{SiteBaseUrl}/services/{Slug}" : $"{SiteBaseUrl}/services/{ServiceSeoCatalog.ToSlug(CurrentService.Name)}";
     private string PageTitleText => CurrentService is null ? "Service introuvable — Wélé" : Seo.Title;
     private string MetaDescription => CurrentService is null ? "Découvrez les services à domicile disponibles à Abidjan avec Wélé." : Seo.MetaDescription;
-    private string SocialImageUrl => CurrentService is null ? $"{PublicMediaBaseUrl}/website/client/wele-client-hero-v2.webp" : ResolveMediaUrl(CurrentService.ImageUrl ?? ActivePrestations.FirstOrDefault()?.IllustrationUrl ?? CurrentService.IconUrl);
-    private string ZoneImageUrl => CurrentService is null ? string.Empty : ResolveMediaUrl(ActivePrestations.FirstOrDefault(prestation => !string.IsNullOrWhiteSpace(prestation.IllustrationUrl))?.IllustrationUrl ?? CurrentService.ImageUrl ?? CurrentService.IconUrl);
+    private string SocialImageUrl => CurrentService is null ? $"{PublicMediaBaseUrl}/website/client/wele-client-hero-v2.webp" : ResolveMediaUrl(ServiceVisualCatalog.ServiceIllustration(CurrentService));
+    private string ZoneImageUrl => CurrentService is null ? string.Empty : ResolveMediaUrl(ServiceVisualCatalog.ServiceIllustration(CurrentService));
     private string PrestationHeading => CurrentService is null ? "Les prestations disponibles." : $"Toutes les prestations de {CurrentService.Name.ToLowerInvariant()}.";
     private string StructuredData => CurrentService is null ? string.Empty : BuildStructuredData();
     private IReadOnlyList<ServiceSummaryResponse> PopularNavigationServices => ServiceSeoCatalog.PopularServices(NavigationServices);

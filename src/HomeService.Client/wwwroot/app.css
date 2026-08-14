@@ -247,6 +247,18 @@ img {
     font-weight: 900;
 }
 
+.client-services-menu a > span img,
+.client-suggestion-mark img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.client-services-menu a > span img {
+    padding: 3px;
+}
+
 .client-services-menu-all {
     display: flex;
     justify-content: space-between;
@@ -609,6 +621,15 @@ img {
     color: var(--wele-blue);
     font-size: .69rem;
     font-weight: 900;
+}
+
+.client-suggestion-mark {
+    overflow: hidden;
+    background: #fff;
+}
+
+.client-suggestion-mark img {
+    padding: 2px;
 }
 
 .client-pin-mark {

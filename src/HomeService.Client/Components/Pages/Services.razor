@@ -45,7 +45,7 @@
                         <strong>Services les plus demandés</strong>
                         @foreach (var service in PopularServices)
                         {
-                            <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu"><span>@GetInitials(service.Name)</span>@service.Name</a>
+                            <a href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" @onclick="CloseMenu"><span><img src="@ResolveMediaUrl(ServiceVisualCatalog.ServiceIllustration(service))" alt="" loading="lazy" decoding="async" /></span>@service.Name</a>
                         }
                         <a class="client-services-menu-all" href="/services" @onclick="CloseMenu">Voir tous les services <b aria-hidden="true">→</b></a>
                     </div>
@@ -98,7 +98,7 @@
                     <div class="services-hub-grid">
                         @foreach (var service in group.Services)
                         {
-                            var imageUrl = ResolveMediaUrl(service.ImageUrl ?? service.Prestations.FirstOrDefault(prestation => prestation.IsActive && !string.IsNullOrWhiteSpace(prestation.IllustrationUrl))?.IllustrationUrl ?? service.IconUrl);
+                            var imageUrl = ResolveMediaUrl(ServiceVisualCatalog.ServiceIllustration(service));
                             var prestationCount = service.Prestations.Count(prestation => prestation.IsActive);
                             <article class="services-hub-card">
                                 <a class="services-hub-card-media" href="@($"/services/{ServiceSeoCatalog.ToSlug(service.Name)}")" aria-label="Découvrir @service.Name">
