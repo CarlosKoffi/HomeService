@@ -2349,8 +2349,8 @@ textarea {
 .provider-landing.premium-b2b {
     --premium-blue: #0C5A66;
     --premium-blue-hover: #084A53;
-    --premium-blue-soft: #EAF7F1;
-    --premium-mint: #9EDFBF;
+    --premium-blue-soft: #E5F7EE;
+    --premium-mint: #91DBB6;
     --premium-black: #111111;
     --premium-muted: #666666;
     --premium-soft: #FAFAFA;
@@ -2386,12 +2386,12 @@ textarea {
     height: 100%;
     object-fit: cover;
     object-position: center 34%;
-    opacity: .64;
+    opacity: .94;
     width: 100%;
 }
 
 .provider-landing .premium-hero-overlay {
-    background: linear-gradient(90deg, rgba(255, 255, 255, .97) 0%, rgba(243, 245, 247, .86) 40%, rgba(158, 223, 191, .12) 100%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .76) 34%, rgba(229, 247, 238, .34) 54%, rgba(145, 219, 182, .04) 100%);
     z-index: 1;
 }
 
@@ -2662,7 +2662,7 @@ textarea {
 
 .provider-mobile-showcase {
     align-items: center;
-    background: linear-gradient(145deg, #f7f9ff 0%, #ffffff 54%, #f4f7fb 100%);
+    background: linear-gradient(145deg, #E5F7EE 0%, #ffffff 54%, #F3F7F7 100%);
     border: 1px solid var(--premium-border);
     border-radius: 36px;
     box-shadow: 0 30px 90px rgba(17, 17, 17, .08);
@@ -2994,8 +2994,8 @@ textarea {
 }
 
 .provider-landing .premium-footer {
-    background: #ffffff;
-    border-top: 1px solid var(--premium-border);
+    background: linear-gradient(135deg, #F3F7F7 0%, #E5F7EE 100%);
+    border-top: 1px solid rgba(12, 90, 102, .12);
     color: var(--premium-black);
     display: grid;
     gap: 3rem 4rem;
@@ -3017,13 +3017,13 @@ textarea {
 
 .provider-landing .premium-footer-logo img {
     display: block;
-    height: 34px;
+    height: 48px;
     object-fit: contain;
-    width: 112px;
+    width: 166px;
 }
 
 .provider-landing .premium-footer p {
-    color: #9CA3AF;
+    color: #52696D;
     font-size: .92rem;
     font-weight: 350;
     line-height: 1.55;
@@ -3045,7 +3045,7 @@ textarea {
 }
 
 .provider-landing .premium-footer a {
-    color: #9CA3AF;
+    color: #52696D;
     font-size: .92rem;
     font-weight: 350;
     text-decoration: none;
@@ -3057,8 +3057,8 @@ textarea {
 }
 
 .provider-landing .premium-footer-bottom {
-    border-top: 1px solid var(--premium-border);
-    color: #CBD5E1;
+    border-top: 1px solid rgba(12, 90, 102, .12);
+    color: #6F8588;
     display: flex;
     font-size: .78rem;
     gap: 1rem;
@@ -3131,12 +3131,12 @@ textarea {
     }
 
     .provider-landing .premium-hero-overlay {
-        background: linear-gradient(180deg, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .86) 42%, rgba(255, 255, 255, .5) 64%, rgba(255, 255, 255, .12) 100%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .90) 0%, rgba(255, 255, 255, .68) 38%, rgba(229, 247, 238, .24) 62%, rgba(145, 219, 182, .04) 100%);
     }
 
     .provider-landing .premium-hero-image {
         object-position: 60% center;
-        opacity: .88;
+        opacity: .96;
     }
 
     .provider-landing .premium-how-grid,

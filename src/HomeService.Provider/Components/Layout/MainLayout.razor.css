@@ -28,9 +28,9 @@
 
 .brand-logo img {
     display: block;
-    height: 42px;
+    height: 44px;
     object-fit: contain;
-    width: 132px;
+    width: 154px;
 }
 
 .site-nav {
@@ -324,8 +324,8 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 }
 
 .site-header.theme-premium .brand-logo img {
-    height: 38px;
-    width: 124px;
+    height: 42px;
+    width: 148px;
 }
 
 .site-header.theme-premium .site-nav a,
@@ -395,8 +395,8 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
     }
 
     .site-header.theme-premium .brand-logo img {
-        height: 34px;
-        width: 112px;
+        height: 36px;
+        width: 128px;
     }
 
     .site-header.theme-premium .site-nav a,
