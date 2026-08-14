@@ -73,7 +73,7 @@
             @foreach (var step in HomeContent.Steps.Items)
             {
                 <article>
-                    <figure><img src="@ResolveContentUrl(step.Image)" alt="@step.Title" loading="lazy" /></figure>
+                    <figure><img src="@ResolveStepImageUrl(step.Image)" alt="@step.Title" loading="lazy" /></figure>
                     <div class="premium-step-meta"><span>@step.Number</span><strong>@step.Label</strong></div>
                     <h3>@step.Title</h3>
                     <p>@step.Text</p>
@@ -268,6 +268,20 @@
         return url.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
             ? ApiClient.ToApiUrl(url)
             : NormalizeLegacyMediaUrl(url.TrimStart('/'));
+    }
+
+    private string ResolveStepImageUrl(string? url)
+    {
+        var resolvedUrl = ResolveContentUrl(url);
+        if (string.IsNullOrWhiteSpace(resolvedUrl))
+        {
+            return resolvedUrl;
+        }
+
+        // The step illustrations keep stable CMS paths, so the version query
+        // prevents browsers and edge caches from serving the former blue set.
+        var separator = resolvedUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+        return $"{resolvedUrl}{separator}v=20260814-mint";
     }
 
     private static string NormalizeLegacyMediaUrl(string url)
