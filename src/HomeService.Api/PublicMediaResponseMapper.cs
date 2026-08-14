@@ -5,6 +5,8 @@ namespace HomeService.Api;
 
 public static class PublicMediaResponseMapper
 {
+    private const string BrandAssetVersion = "20260814";
+
     public static string? Resolve(IApiObjectStorage storage, string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -19,13 +21,30 @@ public static class PublicMediaResponseMapper
         {
             if (string.Equals(absoluteUri.Host, "media.wele.africa", StringComparison.OrdinalIgnoreCase))
             {
-                return storage.GetPublicUrl(absoluteUri.AbsolutePath.TrimStart('/')) ?? value;
+                return AppendBrandVersion(
+                    storage.GetPublicUrl(absoluteUri.AbsolutePath.TrimStart('/')) ?? value,
+                    absoluteUri.AbsolutePath.TrimStart('/'));
             }
 
             return value;
         }
 
-        return storage.GetPublicUrl(objectKey.TrimStart('/')) ?? value;
+        var normalizedKey = objectKey.TrimStart('/');
+        return AppendBrandVersion(storage.GetPublicUrl(normalizedKey) ?? value, normalizedKey);
+    }
+
+    private static string AppendBrandVersion(string url, string objectKey)
+    {
+        var isBrandAsset = objectKey.StartsWith("assets/services/", StringComparison.OrdinalIgnoreCase)
+            || objectKey.StartsWith("catalog/prestations/", StringComparison.OrdinalIgnoreCase)
+            || objectKey.StartsWith("website/client/", StringComparison.OrdinalIgnoreCase);
+
+        if (!isBrandAsset || url.Contains("brand=", StringComparison.OrdinalIgnoreCase))
+        {
+            return url;
+        }
+
+        return $"{url}{(url.Contains('?') ? '&' : '?')}brand={BrandAssetVersion}";
     }
 
     public static ServiceSummaryResponse Map(IApiObjectStorage storage, ServiceSummaryResponse service)

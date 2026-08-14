@@ -18,18 +18,18 @@
     <meta property="og:title" content="Wélé — Le bon service, au bon moment" />
     <meta property="og:description" content="Des services fiables à Abidjan auprès de professionnels vérifiés." />
     <meta property="og:url" content="https://wele.africa/" />
-    <meta property="og:image" content="https://media.wele.africa/website/client/wele-client-hero.png" />
+    <meta property="og:image" content="https://media.wele.africa/website/client/wele-client-hero-v2.webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Wélé — Le bon service, au bon moment" />
     <meta name="twitter:description" content="Des services fiables à Abidjan auprès de professionnels vérifiés." />
-    <meta name="twitter:image" content="https://media.wele.africa/website/client/wele-client-hero.png" />
-    @((MarkupString)"<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Wélé\",\"url\":\"https://wele.africa/\",\"logo\":\"https://wele.africa/images/wele-logo-final.svg\",\"areaServed\":{\"@type\":\"City\",\"name\":\"Abidjan\"}}</script>")
+    <meta name="twitter:image" content="https://media.wele.africa/website/client/wele-client-hero-v2.webp" />
+    @((MarkupString)"<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Wélé\",\"url\":\"https://wele.africa/\",\"logo\":\"https://wele.africa/images/wele-logo-a.svg\",\"areaServed\":{\"@type\":\"City\",\"name\":\"Abidjan\"}}</script>")
 </HeadContent>
 
 <div class="client-site @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
     <header class="client-header">
         <a class="client-brand" href="#accueil" aria-label="Accueil Wélé" @onclick="CloseMenu">
-            <img src="images/wele-logo-final.svg" alt="Wélé" width="720" height="271" />
+            <img src="images/wele-logo-a.svg" alt="Wélé" width="900" height="260" />
         </a>
 
         <button class="client-menu-button" type="button" aria-label="Ouvrir le menu" aria-expanded="@mobileMenuOpen" @onclick="ToggleMenu">
@@ -80,7 +80,7 @@
             </div>
         </div>
         <div class="client-hero-media">
-            <img src="@ResolveContentUrl(ClientContent.Hero.ImageUrl, HeroImageUrl)" alt="@ClientContent.Hero.ImageAlt" width="1672" height="941" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='images/wele-client-hero.png'" />
+            <img src="@ResolveContentUrl(ClientContent.Hero.ImageUrl, HeroImageUrl)" alt="@ClientContent.Hero.ImageAlt" width="1672" height="941" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='images/wele-client-hero-v2.webp'" />
         </div>
     </section>
 
@@ -274,7 +274,7 @@
             <a class="client-button client-button-blue" href="@ClientContent.Confidence.PrimaryCta.Url">@ClientContent.Confidence.PrimaryCta.Label</a>
         </div>
         <div class="client-confidence-media">
-            <img src="@ResolveContentUrl(ClientContent.Confidence.ImageUrl, TrustTeamImageUrl)" alt="@ClientContent.Confidence.ImageAlt" width="972" height="1619" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='images/wele-trust-team.png'" />
+            <img src="@ResolveContentUrl(ClientContent.Confidence.ImageUrl, TrustTeamImageUrl)" alt="@ClientContent.Confidence.ImageAlt" width="972" height="1619" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='images/wele-trust-team-v2.webp'" />
             <div class="client-rating-card"><strong>4,8/5</strong><span>★★★★★</span><small>Avis après intervention</small></div>
         </div>
     </section>
@@ -309,9 +309,9 @@
                 </div>
                 <div class="client-phone-section-heading"><small>Pour ma maison</small><em>Voir plus&nbsp; →</em></div>
                 <div class="client-phone-services">
-                    <span><b><img src="images/services/menage-balai.webp?v=2" alt="" /></b>Ménage</span>
+                    <span><b><img src="images/services/menage-balai-v2.webp" alt="" /></b>Ménage</span>
                     <span><b><img src="@ResolvePublicMediaUrl("/assets/services/blanchisserie.png")" alt="" /></b>Blanchisserie</span>
-                    <span><b><img src="images/services/climatisation-premium.webp" alt="" /></b>Climatisation</span>
+                    <span><b><img src="images/services/climatisation-premium-v2.webp" alt="" /></b>Climatisation</span>
                 </div>
                 <div class="client-phone-section-heading client-phone-wellbeing-heading"><small>Pour mon bien-être</small><em>Voir plus&nbsp; →</em></div>
                 <div class="client-phone-services client-phone-wellbeing-services">
@@ -396,7 +396,7 @@
     </section>
 
     <footer class="client-footer" id="aide">
-        <div class="client-footer-brand"><img src="images/wele-logo-final.svg" alt="Wélé" width="720" height="271" /><p>@ClientContent.Footer.BrandText</p></div>
+        <div class="client-footer-brand"><img src="images/wele-logo-a.svg" alt="Wélé" width="900" height="260" /><p>@ClientContent.Footer.BrandText</p></div>
         @foreach (var column in ClientContent.Footer.Columns)
         {
             <div>
@@ -458,14 +458,26 @@
     private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"]
         ?? Configuration["Media:PublicBaseUrl"]
         ?? "https://media.wele.africa").TrimEnd('/');
-    private string HeroImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-client-hero.png";
-    private string TrustTeamImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-trust-team.png";
+    private string HeroImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-client-hero-v2.webp";
+    private string TrustTeamImageUrl => $"{PublicMediaBaseUrl}/website/client/wele-trust-team-v2.webp";
 
     private string ResolveContentUrl(string? value, string fallbackUrl)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
             return fallbackUrl;
+        }
+
+        // Les contenus CMS historiques pointent encore vers les premières clés R2.
+        // Les normaliser ici évite que Cloudflare resserve l'ancienne identité bleue.
+        if (value.Contains("website/client/wele-client-hero", StringComparison.OrdinalIgnoreCase))
+        {
+            return HeroImageUrl;
+        }
+
+        if (value.Contains("website/client/wele-trust-team", StringComparison.OrdinalIgnoreCase))
+        {
+            return TrustTeamImageUrl;
         }
 
         if (Uri.TryCreate(value, UriKind.Absolute, out var absoluteUri))
@@ -700,9 +712,9 @@
         var used = new HashSet<Guid>();
         return new[]
         {
-            FindCard(catalog, used, "Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", "/images/services/menage-balai.webp?v=2", "menage"),
+            FindCard(catalog, used, "Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", "/images/services/menage-balai-v2.webp", "menage"),
             FindCard(catalog, used, "Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", "/assets/services/blanchisserie.png", "blanch", "repass", "linge"),
-            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/images/services/climatisation-premium.webp", "clim"),
+            FindCard(catalog, used, "Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", "/images/services/climatisation-premium-v2.webp", "clim"),
             FindCard(catalog, used, "Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", "/assets/services/coiffure.png", "coiff", "esthet", "beaute")
         };
     }
@@ -737,9 +749,9 @@
 
     private static IReadOnlyList<LandingServiceCard> BuildFallbackCards() =>
     [
-        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai.webp?v=2", null),
+        new("Ménage", "Un intérieur propre et soigné, ponctuellement ou régulièrement.", "MN", "tone-home", null, "/images/services/menage-balai-v2.webp", null),
         new("Blanchisserie", "Lavage, séchage et soin de votre linge, sans contrainte.", "BL", "tone-home", null, "/assets/services/blanchisserie.png", null),
-        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/images/services/climatisation-premium.webp", null),
+        new("Climatisation", "Entretien, diagnostic et remise en service de votre climatisation.", "CL", "tone-cold", null, "/images/services/climatisation-premium-v2.webp", null),
         new("Beauté à domicile", "Coiffure et soins réalisés chez vous, sur rendez-vous.", "BT", "tone-beauty", null, "/assets/services/coiffure.png", null)
     ];
 

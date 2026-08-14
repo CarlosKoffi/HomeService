@@ -38,7 +38,7 @@ public static class PublicSeoEndpoints
             xml.AppendLine("""<?xml version="1.0" encoding="UTF-8"?>""");
             xml.AppendLine("""<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">""");
             AppendUrl(xml, $"{siteBaseUrl}/", "1.0", "daily",
-                [new SeoImage($"{GetPublicMediaBaseUrl(configuration)}/website/client/wele-client-hero.png", "Wélé — services à domicile à Abidjan")]);
+                [new SeoImage($"{GetPublicMediaBaseUrl(configuration)}/website/client/wele-client-hero-v2.webp", "Wélé — services à domicile à Abidjan")]);
             AppendUrl(xml, $"{siteBaseUrl}/services", "0.9", "daily", []);
 
             foreach (var service in services)

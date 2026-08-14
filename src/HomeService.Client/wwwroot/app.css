@@ -95,7 +95,7 @@ img {
 
 .client-brand img,
 .client-footer-brand img {
-    width: 88px;
+    width: 112px;
     height: auto;
 }
 
@@ -800,7 +800,7 @@ img {
     position: relative;
     place-items: center;
     overflow: hidden;
-    background: linear-gradient(140deg, #EAF7F1, #d5e4ff);
+    background: linear-gradient(140deg, #FFFFFF, #EAF7F1);
 }
 
 .client-service-placeholder::before,
@@ -918,7 +918,7 @@ img {
 
 .client-service-directory a:hover {
     color: var(--wele-blue);
-    border-color: #afc8f8;
+    border-color: #9EDFBF;
 }
 
 .client-steps-section {
@@ -930,7 +930,7 @@ img {
 }
 
 .client-steps-section .client-section-heading > span {
-    color: #81adff;
+    color: #9EDFBF;
 }
 
 .client-steps-grid {
@@ -1085,7 +1085,7 @@ img {
     object-position: center 32%;
     border: 3px solid #fff;
     border-radius: 50%;
-    box-shadow: 0 0 0 1px #d9e5fb, 0 10px 22px rgba(16, 24, 40, .16);
+    box-shadow: 0 0 0 1px #D6EAE1, 0 10px 22px rgba(12, 90, 102, .14);
 }
 
 .client-repeat-card div {
@@ -1122,7 +1122,7 @@ img {
     place-items: end center;
     overflow: hidden;
     border-radius: 34px;
-    background: radial-gradient(circle at 50% 20%, #fff 0 12%, transparent 36%), linear-gradient(150deg, #e7f0ff, #c8dcff);
+    background: radial-gradient(circle at 50% 20%, #fff 0 12%, transparent 36%), linear-gradient(150deg, #FFFFFF, #F3F5F7 58%, #EAF7F1);
 }
 
 .client-phone-shell {
@@ -1261,7 +1261,7 @@ img {
     aspect-ratio: 1;
     place-items: center;
     overflow: hidden;
-    border: 1px solid #d9e5fb;
+    border: 1px solid #D6EAE1;
     border-radius: 13px;
     background: #fff;
     color: var(--wele-blue);
@@ -1308,7 +1308,7 @@ img {
     align-items: center;
     gap: 9px;
     padding: 10px;
-    border: 1px solid #dbe6f8;
+    border: 1px solid #D9E8E2;
     border-radius: 14px;
     background: #fff;
     box-shadow: 0 6px 16px rgba(16, 24, 40, .055);
@@ -1764,7 +1764,7 @@ img {
     }
 
     .client-brand img {
-        width: 80px;
+        width: 104px;
     }
 
     .client-menu-button {
@@ -2305,12 +2305,12 @@ img {
 
 .wele-consent__accept {
     color: #fff;
-    background: #1a73e8;
-    border: 1px solid #1a73e8;
+    background: #0C5A66;
+    border: 1px solid #0C5A66;
 }
 
 .wele-consent__actions button:focus-visible {
-    outline: 3px solid rgba(26, 115, 232, .28);
+    outline: 3px solid rgba(12, 90, 102, .28);
     outline-offset: 2px;
 }
 

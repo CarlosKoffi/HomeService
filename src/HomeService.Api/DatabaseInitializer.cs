@@ -1522,7 +1522,7 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "#commander", french.Id);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Découvrir Wélé", french.Id);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#services", french.Id);
-                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/client/wele-client-hero.png", french.Id);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/client/wele-client-hero-v2.webp", french.Id);
                     AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Une cliente accueille une professionnelle Wélé à Abidjan", french.Id);
                     AddCmsJson(db, section, "proofItems", "[\"Professionnels vérifiés et notés\",\"Paiement sécurisé\",\"Service suivi en direct\",\"Assistance réactive\"]", french.Id);
                     break;
@@ -1552,7 +1552,7 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Chaque mission est encadrée : identité et compétences vérifiées, paiement au bon moment, suivi des étapes et avis après intervention.", french.Id);
                     AddCmsText(db, section, "primaryCta.label", CmsContentValueType.ShortText, "Découvrir l’application", french.Id);
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "#telecharger", french.Id);
-                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/client/wele-trust-team.png", french.Id);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/client/wele-trust-team-v2.webp", french.Id);
                     AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Équipe de professionnels Wélé", french.Id);
                     AddCmsJson(db, section, "items", "[\"Identité contrôlée\",\"Compétences validées\",\"Avis authentiques\"]", french.Id);
                     break;

@@ -59,7 +59,7 @@ public static class ClientHomeCmsDefaults
             "Des professionnels vérifiés pour votre maison, votre bien-être et votre quotidien.",
             new CmsLinkResponse("Commander un service", "#commander"),
             new CmsLinkResponse("Découvrir Wélé", "#services"),
-            "website/client/wele-client-hero.png",
+            "website/client/wele-client-hero-v2.webp",
             "Une cliente accueille une professionnelle Wélé à Abidjan",
             ["Professionnels vérifiés et notés", "Paiement sécurisé", "Service suivi en direct", "Assistance réactive"]),
         new ClientHomeServicesCmsResponse(
@@ -80,7 +80,7 @@ public static class ClientHomeCmsDefaults
             "Votre quotidien mérite des professionnels fiables.",
             "Chaque mission est encadrée : identité et compétences vérifiées, paiement au bon moment, suivi des étapes et avis après intervention.",
             new CmsLinkResponse("Découvrir l’application", "#telecharger"),
-            "website/client/wele-trust-team.png",
+            "website/client/wele-trust-team-v2.webp",
             "Équipe de professionnels Wélé",
             ["Identité contrôlée", "Compétences validées", "Avis authentiques"]),
         new ClientHomeRepeatCmsResponse(

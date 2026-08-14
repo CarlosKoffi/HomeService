@@ -31,7 +31,7 @@
 
 .seo-brand img,
 .seo-footer-brand img {
-    width: 88px;
+    width: 112px;
     height: auto;
 }
 
@@ -606,8 +606,8 @@
 
 .seo-service-links a:hover {
     transform: translateY(-2px);
-    border-color: #afc8f8;
-    box-shadow: 0 14px 32px rgb(32 107 255 / 10%);
+    border-color: #9EDFBF;
+    box-shadow: 0 14px 32px rgb(12 90 102 / 12%);
 }
 
 .seo-service-link-visual {
@@ -841,7 +841,7 @@
     }
 
     .seo-brand img {
-        width: 82px;
+        width: 104px;
     }
 
     .seo-breadcrumb {

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 810 260" role="img" aria-label="Wélé">
+  <g transform="translate(18 10)">
+    <rect x="0" y="0" width="240" height="240" rx="62" fill="#FFFFFF"/>
+    <path d="M54 68 87 174" fill="none" stroke="#0C5A66" stroke-width="30" stroke-linecap="round"/>
+    <path d="M87 174 120 119 153 174" fill="none" stroke="#9EDFBF" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M153 174 186 68" fill="none" stroke="#0C5A66" stroke-width="30" stroke-linecap="round"/>
+    <circle cx="120" cy="56" r="12" fill="#9EDFBF"/>
+  </g>
+  <text x="278" y="174" fill="#0C5A66" font-family="Plus Jakarta Sans, Arial, sans-serif" font-size="150" font-weight="700" letter-spacing="-8">wélé</text>
+  <circle cx="785" cy="167" r="15" fill="#9EDFBF"/>
+</svg>
