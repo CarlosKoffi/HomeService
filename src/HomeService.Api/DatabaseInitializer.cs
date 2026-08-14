@@ -1639,7 +1639,7 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "register", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#how", french.Id, replaceExisting: true);
-                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/wele-premium-hero.png", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/company/wele-premium-hero.png", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Equipe wélé en intervention chez un client", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "proofItems", "[\"Inscription gratuite\",\"Validation sous 48h\",\"Support partenaire 24/7\"]", french.Id, replaceExisting: true);
                     break;
@@ -1770,7 +1770,7 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "primaryCta.url", CmsContentValueType.InternalLink, "/onboarding?mode=register", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "secondaryCta.label", CmsContentValueType.ShortText, "Voir le fonctionnement", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "secondaryCta.url", CmsContentValueType.InternalLink, "#benefits", french.Id, replaceExisting: true);
-                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "images/wele-provider-hero.png", french.Id, replaceExisting: true);
+                    AddCmsText(db, section, "image.url", CmsContentValueType.Media, "website/provider/wele-provider-hero.png", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "image.alt", CmsContentValueType.ShortText, "Prestataires de services à domicile wélé", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "proofItems", "[\"Clients à Abidjan\",\"Paiement sécurisé\",\"Planning libre\"]", french.Id, replaceExisting: true);
                     break;

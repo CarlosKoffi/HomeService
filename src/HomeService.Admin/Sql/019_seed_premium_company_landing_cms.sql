@@ -132,7 +132,7 @@ BEGIN
             ('Hero premium entreprises', 'primaryCtaUrl', 'InternalLink', 'register', NULL::jsonb),
             ('Hero premium entreprises', 'secondaryCtaLabel', 'ShortText', 'Voir le fonctionnement', NULL::jsonb),
             ('Hero premium entreprises', 'secondaryCtaUrl', 'InternalLink', '#how', NULL::jsonb),
-            ('Hero premium entreprises', 'imagePath', 'Media', 'images/wele-premium-hero.png', NULL::jsonb),
+            ('Hero premium entreprises', 'imagePath', 'Media', 'website/company/wele-premium-hero.png', NULL::jsonb),
             ('Hero premium entreprises', 'proofItems', 'Json', NULL, '["Inscription gratuite","Validation dossier","Portail entreprise"]'::jsonb),
 
             ('Fonctionnement entreprises', 'label', 'ShortText', 'Comment ca marche', NULL::jsonb),

@@ -67,7 +67,7 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                 new CmsLinkResponse(
                     GetText(hero, "secondaryCta.label", "Voir le fonctionnement"),
                     GetText(hero, "secondaryCta.url", "#how")),
-                GetText(hero, "image.url", "images/wele-premium-hero.png"),
+                GetText(hero, "image.url", "website/company/wele-premium-hero.png"),
                 GetText(hero, "image.alt", "Equipe wélé en intervention chez un client"),
                 GetJsonList(hero, "proofItems", ["Inscription gratuite", "Validation sous 48h", "Support partenaire 24/7"])),
             new CompanyHomeStepsCmsResponse(

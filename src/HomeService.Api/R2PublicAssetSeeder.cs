@@ -13,7 +13,9 @@ public sealed class R2PublicAssetSeeder(
         "assets/services",
         "catalog/prestations",
         "media/payment-providers",
-        "website/client"
+        "website/client",
+        "website/provider",
+        "website/company"
     ];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -153,7 +155,9 @@ public static class R2PublicAssetDeliveryExtensions
         "/assets/services/",
         "/catalog/prestations/",
         "/media/payment-providers/",
-        "/website/client/"
+        "/website/client/",
+        "/website/provider/",
+        "/website/company/"
     ];
 
     public static IApplicationBuilder UseR2PublicAssetDelivery(this IApplicationBuilder app)

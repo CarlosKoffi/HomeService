@@ -32,7 +32,7 @@ text_seed AS (
             ('HeroStandard', 'primaryCta.url', 'InternalLink', 'register'),
             ('HeroStandard', 'secondaryCta.label', 'ShortText', 'Voir le fonctionnement'),
             ('HeroStandard', 'secondaryCta.url', 'InternalLink', '#how'),
-            ('HeroStandard', 'image.url', 'Media', 'images/wele-premium-hero.png'),
+            ('HeroStandard', 'image.url', 'Media', 'website/company/wele-premium-hero.png'),
             ('HeroStandard', 'image.alt', 'ShortText', 'Equipe wélé en intervention chez un client'),
             ('StepsTimeline', 'label', 'ShortText', 'Comment ca marche'),
             ('StepsTimeline', 'headline', 'ShortText', 'Trois etapes, puis votre portail est pret.'),

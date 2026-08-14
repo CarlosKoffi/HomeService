@@ -67,7 +67,7 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 new CmsLinkResponse(
                     GetText(hero, "secondaryCta.label", "Voir le fonctionnement"),
                     GetText(hero, "secondaryCta.url", "#benefits")),
-                GetText(hero, "image.url", "images/wele-provider-hero.png"),
+                GetText(hero, "image.url", "website/provider/wele-provider-hero.png"),
                 GetText(hero, "image.alt", "Prestataires de services à domicile wélé"),
                 GetJsonList(hero, "proofItems", ["Clients à Abidjan", "Paiement sécurisé", "Planning libre"])),
             new CompanyHomeStepsCmsResponse(
