@@ -23,13 +23,13 @@
     <meta name="twitter:title" content="Wélé — Le bon service, au bon moment" />
     <meta name="twitter:description" content="Des services fiables à Abidjan auprès de professionnels vérifiés." />
     <meta name="twitter:image" content="https://media.wele.africa/website/client/wele-client-hero.png" />
-    @((MarkupString)"<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Wélé\",\"url\":\"https://wele.africa/\",\"logo\":\"https://wele.africa/images/wele-logo-dark.png\",\"areaServed\":{\"@type\":\"City\",\"name\":\"Abidjan\"}}</script>")
+    @((MarkupString)"<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Wélé\",\"url\":\"https://wele.africa/\",\"logo\":\"https://wele.africa/images/wele-logo-final.svg\",\"areaServed\":{\"@type\":\"City\",\"name\":\"Abidjan\"}}</script>")
 </HeadContent>
 
 <div class="client-site @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
     <header class="client-header">
         <a class="client-brand" href="#accueil" aria-label="Accueil Wélé" @onclick="CloseMenu">
-            <img src="images/wele-logo-dark.png" alt="Wélé" width="710" height="288" />
+            <img src="images/wele-logo-final.svg" alt="Wélé" width="720" height="271" />
         </a>
 
         <button class="client-menu-button" type="button" aria-label="Ouvrir le menu" aria-expanded="@mobileMenuOpen" @onclick="ToggleMenu">
@@ -396,7 +396,7 @@
     </section>
 
     <footer class="client-footer" id="aide">
-        <div class="client-footer-brand"><img src="images/wele-logo-dark.png" alt="Wélé" width="710" height="288" /><p>@ClientContent.Footer.BrandText</p></div>
+        <div class="client-footer-brand"><img src="images/wele-logo-final.svg" alt="Wélé" width="720" height="271" /><p>@ClientContent.Footer.BrandText</p></div>
         @foreach (var column in ClientContent.Footer.Columns)
         {
             <div>
