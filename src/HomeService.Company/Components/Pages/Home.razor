@@ -51,7 +51,7 @@
             @foreach (var step in HomeContent.Steps.Items)
             {
                 <article>
-                    <figure><img src="@ResolveContentUrl(step.Image)" alt="@step.Title" loading="lazy" /></figure>
+                    <figure><img src="@ResolveStepImageUrl(step.Number, step.Image)" alt="@step.Title" loading="lazy" /></figure>
                     <div class="premium-step-meta"><span>@step.Number</span><strong>@step.Label</strong></div>
                     <h3>@step.Title</h3>
                     <p>@step.Text</p>
@@ -100,7 +100,7 @@
             <figure class="company-phone-frame">
                 <span class="company-phone-speaker" aria-hidden="true"></span>
                 <img
-                    src="images/wele-enterprise-app-showcase.png"
+                    src="images/wele-enterprise-app-showcase.png?v=20260814-company"
                     alt="Application mobile wélé Entreprise affichant des missions d'entretien, d'installation et de dépannage de climatiseurs à Abidjan"
                     loading="lazy" />
             </figure>
@@ -170,7 +170,7 @@
     <footer class="premium-footer">
         <div class="premium-footer-brand">
             <a class="premium-footer-logo" href="#home" aria-label="Retour accueil wélé">
-                <img src="images/wele-logo-final.svg" alt="Wélé entreprise" />
+                <img src="images/wele-company-logo-final.png?v=20260814" alt="Wélé entreprise" />
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
@@ -250,6 +250,18 @@
     private string ResolveContentUrl(string? url)
     {
         return ResolveContentUrl(url, string.Empty);
+    }
+
+    private string ResolveStepImageUrl(string? number, string? configuredUrl)
+    {
+        var normalizedNumber = number?.Trim().TrimStart('0');
+        return normalizedNumber switch
+        {
+            "1" => "images/wele-how-step-1.png?v=20260814-company",
+            "2" => "images/wele-how-step-2.png?v=20260814-company",
+            "3" => "images/wele-how-step-3.png?v=20260814-company",
+            _ => ResolveContentUrl(configuredUrl)
+        };
     }
 
     private string ResolveContentUrl(string? url, string fallbackUrl)

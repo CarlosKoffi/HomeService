@@ -2821,10 +2821,10 @@
 
 /* Premium B2B landing mapped from the Figma HTML specification. */
 .premium-b2b {
-    --premium-blue: #0C5A66;
-    --premium-blue-hover: #084A53;
+    --premium-blue: #065D70;
+    --premium-blue-hover: #044B59;
     --premium-blue-soft: #EAF7F1;
-    --premium-mint: #9EDFBF;
+    --premium-mint: #92DCB7;
     --premium-black: #111111;
     --premium-muted: #666666;
     --premium-soft: #FAFAFA;
@@ -2861,12 +2861,12 @@
     height: 100%;
     object-fit: cover;
     object-position: center;
-    opacity: .6;
+    opacity: .84;
     width: 100%;
 }
 
 .premium-hero-overlay {
-    background: linear-gradient(90deg, rgba(255, 255, 255, .97) 0%, rgba(243, 245, 247, .88) 38%, rgba(158, 223, 191, .1) 100%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .84) 40%, rgba(234, 247, 241, .34) 67%, rgba(6, 93, 112, .06) 100%);
     z-index: 1;
 }
 
@@ -3141,7 +3141,7 @@
 
 .company-mobile-showcase {
     align-items: center;
-    background: linear-gradient(145deg, #f4f7ff 0%, #ffffff 52%, #f7fbff 100%);
+    background: linear-gradient(145deg, #eaf7f1 0%, #ffffff 52%, #f3fbf7 100%);
     border: 1px solid var(--premium-border);
     border-radius: 36px;
     box-shadow: 0 30px 90px rgba(15, 23, 42, .09);
@@ -3192,7 +3192,7 @@
 
 .company-mobile-features span {
     background: #ffffff;
-    border: 1px solid #dce7ff;
+    border: 1px solid rgba(146, 220, 183, .58);
     border-radius: 999px;
     color: var(--premium-black);
     font-size: .8rem;
@@ -3201,7 +3201,7 @@
 }
 
 .company-phone-frame {
-    background: #10182c;
+    background: var(--premium-blue);
     border-radius: 46px;
     box-shadow: 0 30px 70px rgba(15, 23, 42, .25);
     margin: 0 auto;
@@ -3220,7 +3220,7 @@
 }
 
 .company-phone-speaker {
-    background: #10182c;
+    background: var(--premium-blue);
     border-radius: 0 0 16px 16px;
     height: 22px;
     left: 50%;
@@ -3477,7 +3477,7 @@
 }
 
 .premium-footer {
-    background: #ffffff;
+    background: linear-gradient(145deg, #ffffff 0%, #f4fbf7 62%, #eaf7f1 100%);
     border-top: 1px solid var(--premium-border);
     color: var(--premium-black);
     display: grid;
@@ -3500,13 +3500,13 @@
 
 .premium-footer-logo img {
     display: block;
-    height: 34px;
+    height: 48px;
     object-fit: contain;
-    width: 112px;
+    width: 164px;
 }
 
 .premium-footer p {
-    color: #9CA3AF;
+    color: #66777b;
     font-size: .92rem;
     font-weight: 350;
     line-height: 1.55;
@@ -3528,7 +3528,7 @@
 }
 
 .premium-footer a {
-    color: #9CA3AF;
+    color: #66777b;
     font-size: .92rem;
     font-weight: 350;
     text-decoration: none;
@@ -3541,7 +3541,7 @@
 
 .premium-footer-bottom {
     border-top: 1px solid var(--premium-border);
-    color: #CBD5E1;
+    color: #7d8d91;
     display: flex;
     font-size: .78rem;
     gap: 1rem;
@@ -3559,12 +3559,12 @@
     }
 
     .premium-hero-overlay {
-        background: linear-gradient(180deg, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .86) 42%, rgba(255, 255, 255, .5) 64%, rgba(255, 255, 255, .12) 100%);
+        background: linear-gradient(180deg, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .8) 42%, rgba(234, 247, 241, .4) 66%, rgba(6, 93, 112, .08) 100%);
     }
 
     .premium-hero-image {
         object-position: 62% center;
-        opacity: .86;
+        opacity: .96;
     }
 
     .premium-how-grid,
