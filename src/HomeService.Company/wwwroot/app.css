@@ -22,6 +22,8 @@
     --company-body-weight: 400;
     --portal-blue: #0C5A66;
     --portal-blue-bg: #EAF7F1;
+    --blue: #0C5A66;
+    --blue-soft: #EAF7F1;
     --portal-bg: #FAFAFA;
     --portal-border: #ECECEC;
     --portal-muted: #AAAAAA;
@@ -32,14 +34,14 @@
 }
 
 /* Connected company portal color discipline:
-   blue is the only brand accent; green/orange/red are reserved for statuses. */
+   petroleum and mint are the only brand accents; green/orange/red are statuses. */
 :root {
     --teal: #0C5A66;
     --teal-dark: #084A53;
     --ci-orange: #0C5A66;
     --country-primary: #0C5A66;
     --country-accent: #0C5A66;
-    --wash: #f7faff;
+    --wash: #F3F5F7;
 }
 
 .portal-subnav {
@@ -1029,10 +1031,10 @@
     align-items: center;
     gap: 20px;
     padding: 22px 24px;
-    border: 1px solid #cfe0ff;
+    border: 1px solid #CDEBDD;
     border-radius: 18px;
-    background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 100%);
-    box-shadow: 0 12px 30px rgba(18, 100, 245, .07);
+    background: linear-gradient(135deg, #ffffff 0%, #EAF7F1 100%);
+    box-shadow: 0 12px 30px rgba(12, 90, 102, .07);
 }
 
 .payments-explainer-icon {
@@ -7449,7 +7451,7 @@ h3 {
 
 .tag-entry input[list]:focus {
     border-color: var(--blue);
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, .12);
+    box-shadow: 0 0 0 4px rgba(12, 90, 102, .12);
 }
 
 .tag-entry small,
@@ -7491,7 +7493,7 @@ h3 {
 
 .selected-service-tags span {
     background: #EAF7F1;
-    border: 1px solid rgba(37, 99, 235, .2);
+    border: 1px solid rgba(12, 90, 102, .2);
     color: var(--blue);
     padding: .45rem .45rem .45rem .85rem;
 }
@@ -7587,9 +7589,10 @@ h3 {
 
 .portal-sidebar-logo img {
     display: block;
-    height: 34px;
+    height: 40px;
     object-fit: contain;
-    width: 112px;
+    object-position: left center;
+    width: 140px;
 }
 
 .portal-sidebar-nav {
@@ -7621,7 +7624,7 @@ h3 {
 
 .portal-sidebar-nav a.active {
     background: var(--portal-blue);
-    box-shadow: 0 10px 24px rgba(37, 99, 235, .2);
+    box-shadow: 0 10px 24px rgba(12, 90, 102, .2);
     color: #ffffff;
 }
 
@@ -7821,11 +7824,15 @@ h3 {
     background: #f5f5f5;
 }
 
-.portal-bell::before {
-    content: "â€¢";
-    color: #111111;
-    font-size: 24px;
-    line-height: 1;
+.portal-bell svg {
+    display: block;
+    fill: none;
+    height: 20px;
+    stroke: #0C5A66;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 20px;
 }
 
 .portal-bell span {
@@ -8947,7 +8954,7 @@ h3 {
 
 .info-company-mark {
     align-items: center;
-    background: linear-gradient(135deg, var(--portal-blue), #0040cc);
+    background: linear-gradient(135deg, var(--portal-blue), #084A53);
     border-radius: 16px;
     color: #ffffff;
     display: inline-flex;
@@ -11504,7 +11511,7 @@ h3 {
 
 .interim-competency-check {
     align-items: flex-start;
-    background: #f5f8ff;
+    background: #EAF7F1;
     border: 1px solid rgba(12, 90, 102, .22);
     border-radius: 16px;
     color: #111111;
@@ -12396,9 +12403,9 @@ h3 {
 
 .mission-offers-panel {
     padding: 22px;
-    border: 1px solid #dbe5f5;
+    border: 1px solid #CDEBDD;
     border-radius: 16px;
-    background: #f5f8ff;
+    background: #EAF7F1;
 }
 
 .mission-offers-panel > header {
@@ -12443,8 +12450,8 @@ h3 {
 }
 
 .mission-offers-list article.actionable {
-    border-color: #9bc2ff;
-    box-shadow: inset 3px 0 0 #2563eb;
+    border-color: #9EDFBF;
+    box-shadow: inset 3px 0 0 #0C5A66;
 }
 
 .mission-offer-identity,
@@ -12475,7 +12482,7 @@ h3 {
     min-height: 38px;
     border: 0;
     border-radius: 9px;
-    background: #2563eb;
+    background: #0C5A66;
     color: #fff;
     font-weight: 700;
     cursor: pointer;
@@ -12509,7 +12516,7 @@ h3 {
     border: 1px solid #bfd0e8;
     border-radius: 8px;
     background: #fff;
-    color: #1d4ed8;
+    color: #0C5A66;
     font-weight: 700;
     cursor: pointer;
 }

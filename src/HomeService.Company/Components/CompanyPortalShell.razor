@@ -9,7 +9,7 @@
 
     <aside class="portal-sidebar" aria-label="Navigation portail entreprise">
         <a class="portal-sidebar-logo" href="@PortalLink("dashboard")">
-            <img src="images/wele-logo-final.svg" alt="Wélé entreprise" />
+            <img src="images/wele-company-logo-final.png?v=20260814c" alt="Wélé entreprise" />
         </a>
 
         <nav id="company-portal-navigation" class="portal-sidebar-nav">
@@ -87,6 +87,10 @@
                 @if (TopbarActions is null)
                 {
                     <a class="portal-bell" href="@PortalLink("notifications")" title="Notifications" aria-label="Ouvrir les notifications">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M18 8a6 6 0 0 0-12 0c0 6.5-3 7-3 9h18c0-2-3-2.5-3-9"></path>
+                            <path d="M10 21h4"></path>
+                        </svg>
                         <span></span>
                         @if (EffectiveUnreadNotificationCount > 0)
                         {
