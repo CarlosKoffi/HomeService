@@ -20,8 +20,8 @@
     --company-title-weight: 650;
     --company-heading-weight: 650;
     --company-body-weight: 400;
-    --portal-blue: #1A6AFF;
-    --portal-blue-bg: #EEF4FF;
+    --portal-blue: #0C5A66;
+    --portal-blue-bg: #EAF7F1;
     --portal-bg: #FAFAFA;
     --portal-border: #ECECEC;
     --portal-muted: #AAAAAA;
@@ -34,11 +34,11 @@
 /* Connected company portal color discipline:
    blue is the only brand accent; green/orange/red are reserved for statuses. */
 :root {
-    --teal: #1A6AFF;
-    --teal-dark: #155ee5;
-    --ci-orange: #1A6AFF;
-    --country-primary: #1A6AFF;
-    --country-accent: #1A6AFF;
+    --teal: #0C5A66;
+    --teal-dark: #084A53;
+    --ci-orange: #0C5A66;
+    --country-primary: #0C5A66;
+    --country-accent: #0C5A66;
     --wash: #f7faff;
 }
 
@@ -61,9 +61,9 @@
 .compliance-banner a,
 .company-dashboard-hero .secondary-action,
 .candidate-actions .primary-action {
-    background: #1A6AFF !important;
-    border-color: #1A6AFF !important;
-    box-shadow: 0 12px 24px rgba(26, 106, 255, .16) !important;
+    background: #0C5A66 !important;
+    border-color: #0C5A66 !important;
+    box-shadow: 0 12px 24px rgba(12, 90, 102, .16) !important;
     color: #ffffff !important;
 }
 
@@ -73,8 +73,8 @@
 .compliance-banner a:hover,
 .company-dashboard-hero .secondary-action:hover,
 .candidate-actions .primary-action:hover {
-    background: #155ee5 !important;
-    border-color: #155ee5 !important;
+    background: #084A53 !important;
+    border-color: #084A53 !important;
 }
 
 .company-dashboard-actions a,
@@ -83,7 +83,7 @@
 .workspace-header a,
 .directory-row button,
 .document-actions a {
-    color: #1A6AFF !important;
+    color: #0C5A66 !important;
 }
 
 .employee-avatar,
@@ -91,13 +91,13 @@
 .platform-icon-orange,
 .upload-card-icon,
 .upload-mini-icon {
-    background: #EFF4FF !important;
-    border-color: rgba(26, 106, 255, .24) !important;
-    color: #1A6AFF !important;
+    background: #EAF7F1 !important;
+    border-color: rgba(12, 90, 102, .24) !important;
+    color: #0C5A66 !important;
 }
 
 .employee-avatar {
-    background: linear-gradient(135deg, #1A6AFF, #155ee5) !important;
+    background: linear-gradient(135deg, #0C5A66, #084A53) !important;
     color: #ffffff !important;
 }
 
@@ -105,9 +105,9 @@
 .service-chip.selected,
 .login-options button.active,
 .portal-tabs button.active {
-    background: #EFF4FF !important;
-    border-color: rgba(26, 106, 255, .34) !important;
-    color: #1A6AFF !important;
+    background: #EAF7F1 !important;
+    border-color: rgba(12, 90, 102, .34) !important;
+    color: #0C5A66 !important;
 }
 
 .status-pill.approved,
@@ -175,8 +175,8 @@
 }
 
 .employee-upsert-modal .service-check.selected {
-    background: #EEF4FF !important;
-    border-color: rgba(26, 106, 255, .3) !important;
+    background: #EAF7F1 !important;
+    border-color: rgba(12, 90, 102, .3) !important;
 }
 
 .employee-upsert-modal .service-check-toggle {
@@ -209,7 +209,7 @@
 }
 
 .employee-upsert-modal .service-check.selected .service-check-main strong {
-    color: #1A6AFF !important;
+    color: #0C5A66 !important;
 }
 
 .employee-upsert-modal .service-check-main small {
@@ -240,13 +240,13 @@
 }
 
 .employee-upsert-modal .service-check.selected .service-check-box {
-    background: #1A6AFF !important;
-    border-color: #1A6AFF !important;
+    background: #0C5A66 !important;
+    border-color: #0C5A66 !important;
 }
 
 .employee-upsert-modal .figma-service-details {
     background: #ffffff !important;
-    border-top: 1px solid rgba(26, 106, 255, .16) !important;
+    border-top: 1px solid rgba(12, 90, 102, .16) !important;
     grid-template-columns: minmax(0, 1fr) minmax(90px, .75fr) minmax(120px, .85fr) !important;
     margin: 0 .85rem .85rem !important;
     padding-top: .8rem !important;
@@ -327,8 +327,8 @@
 
 .employee-form-modern .service-check.selected {
     background: #FAFCFF !important;
-    border-color: rgba(26, 106, 255, .32) !important;
-    box-shadow: 0 16px 36px rgba(26, 106, 255, .08) !important;
+    border-color: rgba(12, 90, 102, .32) !important;
+    box-shadow: 0 16px 36px rgba(12, 90, 102, .08) !important;
 }
 
 .service-check-toggle {
@@ -342,7 +342,7 @@
 .service-check-toggle input,
 .service-prestation-choice input,
 .service-premium-toggle input {
-    accent-color: #1A6AFF !important;
+    accent-color: #0C5A66 !important;
 }
 
 .service-check-main {
@@ -449,8 +449,8 @@
 }
 
 .service-prestation-picker button {
-    background: #1A6AFF;
-    border: 1px solid #1A6AFF;
+    background: #0C5A66;
+    border: 1px solid #0C5A66;
     border-radius: 12px;
     color: #ffffff;
     cursor: pointer;
@@ -469,7 +469,7 @@
 .selected-prestation-list span {
     align-items: center;
     background: #F4F7FF;
-    border: 1px solid rgba(26, 106, 255, .18);
+    border: 1px solid rgba(12, 90, 102, .18);
     border-radius: 999px;
     color: #111111;
     display: inline-flex;
@@ -483,9 +483,9 @@
 .selected-prestation-list button {
     align-items: center;
     background: #ffffff;
-    border: 1px solid rgba(26, 106, 255, .2);
+    border: 1px solid rgba(12, 90, 102, .2);
     border-radius: 999px;
-    color: #1A6AFF;
+    color: #0C5A66;
     display: inline-flex;
     font-size: 1rem;
     height: 22px;
@@ -497,7 +497,7 @@
 
 .service-price-readonly strong,
 .service-price-readonly.premium strong {
-    color: #1A6AFF !important;
+    color: #0C5A66 !important;
 }
 
 @media (max-width: 720px) {
@@ -623,7 +623,7 @@
     width: 16px;
     height: 16px;
     margin: 0;
-    accent-color: #246BFE;
+    accent-color: #0C5A66;
 }
 
 .employee-upsert-modal .employee-price-inline {
@@ -647,7 +647,7 @@
 }
 
 .employee-upsert-modal .employee-price-inline strong {
-    color: #246BFE;
+    color: #0C5A66;
     font-size: 13px;
     font-weight: 800;
     line-height: 1.1;
@@ -666,7 +666,7 @@
     padding: 0 18px;
     border: 0;
     border-radius: 999px;
-    background: #246BFE;
+    background: #0C5A66;
     color: #fff;
     font-family: inherit;
     font-size: 13px;
@@ -695,7 +695,7 @@
     min-height: 32px;
     padding: 0 10px;
     border-radius: 999px;
-    background: #eef4ff;
+    background: #EAF7F1;
     color: #111;
     font-size: 12px;
     font-weight: 700;
@@ -710,7 +710,7 @@
     border: 0;
     border-radius: 999px;
     background: #dbe7ff;
-    color: #246BFE;
+    color: #0C5A66;
     font-size: 11px;
     font-weight: 900;
     line-height: 1;
@@ -738,8 +738,8 @@
     --payments-border: #ececec;
     --payments-text: #111111;
     --payments-muted: #aaaaaa;
-    --payments-blue: #1a6aff;
-    --payments-blue-soft: #eef4ff;
+    --payments-blue: #0C5A66;
+    --payments-blue-soft: #EAF7F1;
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr);
     min-height: 100vh;
@@ -1782,7 +1782,7 @@
 
 .employee-upsert-icon {
     align-items: center;
-    background: #1A6AFF;
+    background: #0C5A66;
     border-radius: 16px;
     color: #ffffff;
     display: inline-flex;
@@ -1905,8 +1905,8 @@
 }
 
 .employee-section-icon.blue {
-    background: #EEF4FF;
-    color: #1A6AFF;
+    background: #EAF7F1;
+    color: #0C5A66;
 }
 
 .employee-section-icon.green {
@@ -1941,7 +1941,7 @@
 .employee-type-toggle button.active {
     background: #ffffff;
     box-shadow: 0 2px 8px rgba(17, 17, 17, .08);
-    color: #1A6AFF;
+    color: #0C5A66;
 }
 
 .employee-type-toggle button.active.interim {
@@ -2021,12 +2021,12 @@
 }
 
 .employee-age-box.ready {
-    background: #EEF4FF;
-    border-color: rgba(26, 106, 255, .2);
+    background: #EAF7F1;
+    border-color: rgba(12, 90, 102, .2);
 }
 
 .employee-age-box.ready strong {
-    color: #1A6AFF;
+    color: #0C5A66;
 }
 
 .employee-photo-drop {
@@ -2048,9 +2048,9 @@
 
 .employee-photo-drop:hover,
 .employee-photo-drop.ready {
-    background: #EEF4FF;
-    border-color: rgba(26, 106, 255, .4);
-    color: #1A6AFF;
+    background: #EAF7F1;
+    border-color: rgba(12, 90, 102, .4);
+    color: #0C5A66;
 }
 
 .employee-photo-drop svg {
@@ -2116,7 +2116,7 @@
 }
 
 .employee-access-card a {
-    color: #1A6AFF;
+    color: #0C5A66;
     display: inline-flex;
     font-weight: 800;
     margin-top: .6rem;
@@ -2157,8 +2157,8 @@
 }
 
 .employee-upsert-modal .service-check.selected {
-    background: #EEF4FF !important;
-    border-color: rgba(26, 106, 255, .3) !important;
+    background: #EAF7F1 !important;
+    border-color: rgba(12, 90, 102, .3) !important;
     box-shadow: none !important;
 }
 
@@ -2192,7 +2192,7 @@
 }
 
 .employee-upsert-modal .service-check.selected .service-check-main strong {
-    color: #1A6AFF !important;
+    color: #0C5A66 !important;
 }
 
 .employee-upsert-modal .service-check-main small {
@@ -2223,13 +2223,13 @@
 }
 
 .employee-upsert-modal .service-check.selected .service-check-box {
-    background: #1A6AFF;
-    border-color: #1A6AFF;
+    background: #0C5A66;
+    border-color: #0C5A66;
 }
 
 .employee-upsert-modal .figma-service-details {
     background: #ffffff;
-    border-top: 1px solid rgba(26, 106, 255, .16);
+    border-top: 1px solid rgba(12, 90, 102, .16);
     grid-template-columns: minmax(0, 1fr) minmax(90px, .75fr) minmax(120px, .85fr);
     margin: 0 .85rem .85rem;
     padding-top: .8rem;
@@ -2349,8 +2349,8 @@
 .employee-upsert-modal .clean-service-toolbar button,
 .employee-upsert-modal .clean-prestation-row > button {
     align-items: center;
-    background: #1A6AFF;
-    border: 1px solid #1A6AFF;
+    background: #0C5A66;
+    border: 1px solid #0C5A66;
     border-radius: 13px;
     color: #ffffff;
     cursor: pointer;
@@ -2742,10 +2742,10 @@
 }
 
 .service-prestation-list span {
-    background: #EFF4FF;
-    border: 1px solid rgba(26, 106, 255, .2);
+    background: #EAF7F1;
+    border: 1px solid rgba(12, 90, 102, .2);
     border-radius: 999px;
-    color: #1A6AFF;
+    color: #0C5A66;
     font-size: .72rem;
     font-weight: 650;
     line-height: 1;
@@ -2769,12 +2769,12 @@
 }
 
 .service-prestation-choice:hover {
-    border-color: rgba(26, 106, 255, .45);
-    box-shadow: 0 10px 24px rgba(26, 106, 255, .08);
+    border-color: rgba(12, 90, 102, .45);
+    box-shadow: 0 10px 24px rgba(12, 90, 102, .08);
 }
 
 .service-prestation-choice input {
-    accent-color: #1A6AFF;
+    accent-color: #0C5A66;
     margin-top: .15rem;
 }
 
@@ -2812,7 +2812,7 @@
     background: #f8fbff;
     border: 1px solid #dbe8ff;
     border-radius: 999px;
-    color: #1A6AFF;
+    color: #0C5A66;
     font-size: .7rem;
     font-style: normal;
     font-weight: 750;
@@ -2821,9 +2821,10 @@
 
 /* Premium B2B landing mapped from the Figma HTML specification. */
 .premium-b2b {
-    --premium-blue: #1A6AFF;
-    --premium-blue-hover: #155ee5;
-    --premium-blue-soft: #EFF4FF;
+    --premium-blue: #0C5A66;
+    --premium-blue-hover: #084A53;
+    --premium-blue-soft: #EAF7F1;
+    --premium-mint: #9EDFBF;
     --premium-black: #111111;
     --premium-muted: #666666;
     --premium-soft: #FAFAFA;
@@ -2865,7 +2866,7 @@
 }
 
 .premium-hero-overlay {
-    background: linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .84) 38%, rgba(255, 255, 255, .2) 100%);
+    background: linear-gradient(90deg, rgba(255, 255, 255, .97) 0%, rgba(243, 245, 247, .88) 38%, rgba(158, 223, 191, .1) 100%);
     z-index: 1;
 }
 
@@ -4075,7 +4076,7 @@
 
 .employee-table tr.is-selected {
     background: #eff5ff;
-    box-shadow: inset 4px 0 0 #1A6AFF;
+    box-shadow: inset 4px 0 0 #0C5A66;
 }
 
 .employee-table tr.is-suspended {
@@ -4594,7 +4595,7 @@
 }
 
 .document-preview-file span {
-    background: #1A6AFF !important;
+    background: #0C5A66 !important;
     border: 0 !important;
     border-radius: 8px !important;
     color: #ffffff !important;
@@ -5232,9 +5233,9 @@ h3 {
 }
 
 .platform-icon-blue {
-    background: #eef4ff;
+    background: #EAF7F1;
     border-color: #d9e6ff;
-    color: var(--portal-blue, #1a6aff);
+    color: var(--portal-blue, #0C5A66);
 }
 
 .platform-icon-dark {
@@ -7489,7 +7490,7 @@ h3 {
 }
 
 .selected-service-tags span {
-    background: #eef4ff;
+    background: #EAF7F1;
     border: 1px solid rgba(37, 99, 235, .2);
     color: var(--blue);
     padding: .45rem .45rem .45rem .85rem;
@@ -7821,7 +7822,7 @@ h3 {
 }
 
 .portal-bell::before {
-    content: "•";
+    content: "â€¢";
     color: #111111;
     font-size: 24px;
     line-height: 1;
@@ -7883,8 +7884,8 @@ h3 {
     --mission-border: #ececec;
     --mission-text: #111111;
     --mission-muted: #aaaaaa;
-    --mission-blue: #1a6aff;
-    --mission-blue-soft: #eef4ff;
+    --mission-blue: #0C5A66;
+    --mission-blue-soft: #EAF7F1;
     --mission-green: #059669;
     --mission-green-soft: #ecfdf5;
     --mission-orange: #d97706;
@@ -7899,8 +7900,8 @@ h3 {
     --payments-border: #ececec;
     --payments-text: #111111;
     --payments-muted: #aaaaaa;
-    --payments-blue: #1a6aff;
-    --payments-blue-soft: #eef4ff;
+    --payments-blue: #0C5A66;
+    --payments-blue-soft: #EAF7F1;
 }
 
 .portal-shell-missions .portal-topbar,
@@ -7957,7 +7958,7 @@ h3 {
 }
 
 .portal-notification-strip .portal-panel-heading strong {
-    background: #eef4ff;
+    background: #EAF7F1;
     border-radius: 999px;
     color: var(--portal-blue);
     font-size: 11px;
@@ -7987,7 +7988,7 @@ h3 {
 }
 
 .portal-notification-row:hover {
-    border-color: rgba(26, 106, 255, .25);
+    border-color: rgba(12, 90, 102, .25);
     transform: translateY(-1px);
 }
 
@@ -8059,7 +8060,7 @@ h3 {
 }
 
 .notifications-hero::after {
-    background: radial-gradient(circle, rgba(26, 106, 255, .48), transparent 62%);
+    background: radial-gradient(circle, rgba(12, 90, 102, .48), transparent 62%);
     content: "";
     height: 240px;
     position: absolute;
@@ -8117,8 +8118,8 @@ h3 {
 }
 
 .notifications-message {
-    background: #eef4ff;
-    border: 1px solid rgba(26, 106, 255, .18);
+    background: #EAF7F1;
+    border: 1px solid rgba(12, 90, 102, .18);
     border-radius: 18px;
     color: var(--portal-blue);
     font-size: 13px;
@@ -8154,7 +8155,7 @@ h3 {
 }
 
 .notifications-section-menu button.active {
-    background: #1a6aff;
+    background: #0C5A66;
     color: #ffffff;
 }
 
@@ -8216,8 +8217,8 @@ h3 {
 }
 
 .notifications-toolbar input:focus {
-    border-color: rgba(26, 106, 255, .32);
-    box-shadow: 0 0 0 4px rgba(26, 106, 255, .1);
+    border-color: rgba(12, 90, 102, .32);
+    box-shadow: 0 0 0 4px rgba(12, 90, 102, .1);
 }
 
 .notifications-filter {
@@ -8296,7 +8297,7 @@ h3 {
 
 .notifications-icon {
     align-items: center;
-    background: #eef4ff;
+    background: #EAF7F1;
     border-radius: 16px;
     display: inline-flex;
     height: 42px;
@@ -8356,7 +8357,7 @@ h3 {
 }
 
 .notifications-copy em {
-    background: #eef4ff;
+    background: #EAF7F1;
     border-radius: 999px;
     color: var(--portal-blue);
     font-size: 10px;
@@ -8476,7 +8477,7 @@ h3 {
 }
 
 .portal-mission-banner::after {
-    background: radial-gradient(circle, rgba(26, 106, 255, .42), transparent 62%);
+    background: radial-gradient(circle, rgba(12, 90, 102, .42), transparent 62%);
     content: "";
     height: 220px;
     position: absolute;
@@ -8552,7 +8553,7 @@ h3 {
 }
 
 .figma-dashboard-icon-blue {
-    background: #eef4ff;
+    background: #EAF7F1;
     color: var(--portal-blue);
     height: 38px;
     width: 38px;
@@ -9154,7 +9155,7 @@ h3 {
 
 .info-inline-message {
     background: var(--portal-blue-bg);
-    border: 1px solid rgba(26, 106, 255, .18);
+    border: 1px solid rgba(12, 90, 102, .18);
     border-radius: 16px;
     color: #111111;
     font-size: 13px;
@@ -9222,7 +9223,7 @@ h3 {
 .info-edit-stack input:focus,
 .info-edit-field textarea:focus {
     border-color: var(--portal-blue);
-    box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
+    box-shadow: 0 0 0 3px rgba(12, 90, 102, .12);
 }
 
 .info-card-actions {
@@ -9735,7 +9736,7 @@ h3 {
 
 .employee-search input:focus {
     border-color: var(--portal-blue);
-    box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
+    box-shadow: 0 0 0 3px rgba(12, 90, 102, .12);
 }
 
 .employee-filter-tabs {
@@ -9836,7 +9837,7 @@ h3 {
 .employee-live-dot {
     background: var(--portal-blue);
     border-radius: 50%;
-    box-shadow: 0 0 0 0 rgba(26, 106, 255, .45);
+    box-shadow: 0 0 0 0 rgba(12, 90, 102, .45);
     height: 8px;
     width: 8px;
     animation: employee-ping 1.5s cubic-bezier(0, 0, .2, 1) infinite;
@@ -9844,7 +9845,7 @@ h3 {
 
 @keyframes employee-ping {
     75%, 100% {
-        box-shadow: 0 0 0 12px rgba(26, 106, 255, 0);
+        box-shadow: 0 0 0 12px rgba(12, 90, 102, 0);
     }
 }
 
@@ -9869,7 +9870,7 @@ h3 {
 
 .employee-live-item:hover {
     background: #f8fbff;
-    border-color: rgba(26, 106, 255, .28);
+    border-color: rgba(12, 90, 102, .28);
 }
 
 .employee-live-item > span:last-child {
@@ -10264,7 +10265,7 @@ h3 {
 
 .employee-action-menu button:hover {
     background: #F7FAFF;
-    color: #1A6AFF;
+    color: #0C5A66;
 }
 
 .employee-action-menu button.danger {
@@ -10284,14 +10285,14 @@ h3 {
 
 .employee-row-menu button:hover,
 .employee-modern-table footer button:hover {
-    border-color: rgba(26, 106, 255, .28);
+    border-color: rgba(12, 90, 102, .28);
     color: var(--portal-blue);
 }
 
 .employee-row-menu .employee-action-menu button:hover {
     background: #F7FAFF;
     border-color: transparent;
-    color: #1A6AFF;
+    color: #0C5A66;
 }
 
 .employee-row-menu .employee-action-menu button.danger,
@@ -11059,8 +11060,8 @@ h3 {
 
 .interim-hero-stats button.active,
 .interim-hero-stats button:hover {
-    background: #1A6AFF;
-    border-color: #1A6AFF;
+    background: #0C5A66;
+    border-color: #0C5A66;
 }
 
 .interim-hero-stats button strong {
@@ -11190,8 +11191,8 @@ h3 {
 }
 
 .interim-action-primary {
-    background: #1A6AFF;
-    border: 1px solid #1A6AFF;
+    background: #0C5A66;
+    border: 1px solid #0C5A66;
     color: #ffffff;
 }
 
@@ -11253,8 +11254,8 @@ h3 {
 }
 
 .interim-detail-row textarea:focus {
-    border-color: #1A6AFF;
-    box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
+    border-color: #0C5A66;
+    box-shadow: 0 0 0 3px rgba(12, 90, 102, .12);
 }
 
 .interim-detail-actions {
@@ -11346,7 +11347,7 @@ h3 {
 }
 
 .interim-profile-title em {
-    color: #1A6AFF;
+    color: #0C5A66;
     font-size: 12px;
     font-style: normal;
     font-weight: 750;
@@ -11426,7 +11427,7 @@ h3 {
 }
 
 .interim-info-grid a {
-    color: #1A6AFF;
+    color: #0C5A66;
     text-decoration: none;
 }
 
@@ -11497,14 +11498,14 @@ h3 {
 }
 
 .interim-review-field textarea:focus {
-    border-color: #1A6AFF;
-    box-shadow: 0 0 0 3px rgba(26, 106, 255, .12);
+    border-color: #0C5A66;
+    box-shadow: 0 0 0 3px rgba(12, 90, 102, .12);
 }
 
 .interim-competency-check {
     align-items: flex-start;
     background: #f5f8ff;
-    border: 1px solid rgba(26, 106, 255, .22);
+    border: 1px solid rgba(12, 90, 102, .22);
     border-radius: 16px;
     color: #111111;
     cursor: pointer;
@@ -11515,7 +11516,7 @@ h3 {
 }
 
 .interim-competency-check input {
-    accent-color: #1A6AFF;
+    accent-color: #0C5A66;
     flex: 0 0 auto;
     height: 18px;
     margin-top: 2px;
@@ -11564,7 +11565,7 @@ h3 {
 }
 
 .portal-error-card > span {
-    color: #1A6AFF;
+    color: #0C5A66;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: .12em;
@@ -11622,7 +11623,7 @@ h3 {
 }
 
 .interim-toggle-panel.enabled {
-    border-color: rgba(26, 106, 255, .28);
+    border-color: rgba(12, 90, 102, .28);
 }
 
 .interim-toggle-panel > span {
@@ -11664,7 +11665,7 @@ h3 {
 }
 
 .interim-switch.on {
-    background: #1A6AFF;
+    background: #0C5A66;
 }
 
 .interim-switch.off {
@@ -11691,8 +11692,8 @@ h3 {
 }
 
 .interim-affiliation-list div.current {
-    background: rgba(26, 106, 255, .07);
-    border-color: rgba(26, 106, 255, .22);
+    background: rgba(12, 90, 102, .07);
+    border-color: rgba(12, 90, 102, .22);
 }
 
 .interim-affiliation-list span {
@@ -11834,7 +11835,7 @@ h3 {
 .registration-header .eyebrow,
 .portal-copy .eyebrow,
 .company-dashboard-hero .eyebrow {
-    color: #1A6AFF;
+    color: #0C5A66;
     font-size: .68rem;
     font-weight: 700;
     letter-spacing: .15em;
@@ -11900,7 +11901,7 @@ h3 {
 
 .registration-steps span.active,
 .registration-steps span.done {
-    background: #1A6AFF;
+    background: #0C5A66;
     color: #ffffff;
 }
 
@@ -11937,16 +11938,16 @@ h3 {
 .portal-login input:focus,
 .portal-login select:focus,
 .portal-login textarea:focus {
-    border-color: #1A6AFF;
-    box-shadow: 0 0 0 4px rgba(26, 106, 255, .12);
+    border-color: #0C5A66;
+    box-shadow: 0 0 0 4px rgba(12, 90, 102, .12);
 }
 
 .registration-form .primary-action,
 .portal-login .primary-action,
 .compliance-banner a,
 .company-dashboard-hero .secondary-action {
-    background: #1A6AFF !important;
-    border: 1px solid #1A6AFF !important;
+    background: #0C5A66 !important;
+    border: 1px solid #0C5A66 !important;
     border-radius: 16px !important;
     color: #ffffff !important;
     font-weight: 650 !important;
@@ -11956,8 +11957,8 @@ h3 {
 .portal-login .primary-action:hover,
 .compliance-banner a:hover,
 .company-dashboard-hero .secondary-action:hover {
-    background: #155ee5 !important;
-    border-color: #155ee5 !important;
+    background: #084A53 !important;
+    border-color: #084A53 !important;
 }
 
 .registration-form .secondary-action,
@@ -11980,9 +11981,9 @@ h3 {
 
 .suggested-tags .service-tag.selected,
 .selected-service-tags span:not(.proposed) {
-    background: #EFF4FF;
-    border-color: rgba(26, 106, 255, .26);
-    color: #1A6AFF;
+    background: #EAF7F1;
+    border-color: rgba(12, 90, 102, .26);
+    color: #0C5A66;
 }
 
 .portal-entry {
@@ -12017,7 +12018,7 @@ h3 {
 .create-account-link,
 .login-options a,
 .company-dashboard-actions a {
-    color: #1A6AFF;
+    color: #0C5A66;
 }
 
 .portal-login {
@@ -12038,7 +12039,7 @@ h3 {
 }
 
 .remember-option input {
-    accent-color: #1A6AFF;
+    accent-color: #0C5A66;
 }
 
 .company-dashboard-hero {
@@ -12088,8 +12089,8 @@ h3 {
 }
 
 .compliance-banner {
-    background: #EFF4FF;
-    border-color: rgba(26, 106, 255, .18);
+    background: #EAF7F1;
+    border-color: rgba(12, 90, 102, .18);
     color: #111111;
 }
 
@@ -12149,9 +12150,9 @@ h3 {
 .compliance-banner a,
 .company-dashboard-hero .secondary-action,
 .candidate-actions .primary-action {
-    background: #1A6AFF !important;
-    border-color: #1A6AFF !important;
-    box-shadow: 0 12px 24px rgba(26, 106, 255, .16) !important;
+    background: #0C5A66 !important;
+    border-color: #0C5A66 !important;
+    box-shadow: 0 12px 24px rgba(12, 90, 102, .16) !important;
     color: #ffffff !important;
 }
 
@@ -12161,8 +12162,8 @@ h3 {
 .compliance-banner a:hover,
 .company-dashboard-hero .secondary-action:hover,
 .candidate-actions .primary-action:hover {
-    background: #155ee5 !important;
-    border-color: #155ee5 !important;
+    background: #084A53 !important;
+    border-color: #084A53 !important;
 }
 
 .company-dashboard-actions a,
@@ -12174,20 +12175,20 @@ h3 {
 .company-dashboard-hero .eyebrow,
 .registration-header .eyebrow,
 .portal-copy .eyebrow {
-    color: #1A6AFF !important;
+    color: #0C5A66 !important;
 }
 
 .platform-icon-green,
 .platform-icon-orange,
 .upload-card-icon,
 .upload-mini-icon {
-    background: #EFF4FF !important;
-    border-color: rgba(26, 106, 255, .24) !important;
-    color: #1A6AFF !important;
+    background: #EAF7F1 !important;
+    border-color: rgba(12, 90, 102, .24) !important;
+    color: #0C5A66 !important;
 }
 
 .employee-avatar {
-    background: linear-gradient(135deg, #1A6AFF, #155ee5) !important;
+    background: linear-gradient(135deg, #0C5A66, #084A53) !important;
     color: #ffffff !important;
 }
 
@@ -12195,9 +12196,9 @@ h3 {
 .service-chip.selected,
 .login-options button.active,
 .portal-tabs button.active {
-    background: #EFF4FF !important;
-    border-color: rgba(26, 106, 255, .34) !important;
-    color: #1A6AFF !important;
+    background: #EAF7F1 !important;
+    border-color: rgba(12, 90, 102, .34) !important;
+    color: #0C5A66 !important;
 }
 
 .status-pill.approved,
@@ -12269,7 +12270,7 @@ h3 {
     width: 28px;
     height: 28px;
     border-radius: 9px;
-    background: #1a6aff;
+    background: #0C5A66;
     color: #ffffff;
     font-size: 13px;
     font-weight: 700;
@@ -12307,8 +12308,8 @@ h3 {
 }
 
 .missions-sidebar-nav a.active {
-    background: #eef4ff;
-    color: #1a6aff;
+    background: #EAF7F1;
+    color: #0C5A66;
 }
 
 .missions-logout {
@@ -12366,8 +12367,8 @@ h3 {
     --mission-text: #111111;
     --mission-muted: #aaaaaa;
     --mission-soft: #f9fafb;
-    --mission-blue: #1a6aff;
-    --mission-blue-soft: #eef4ff;
+    --mission-blue: #0C5A66;
+    --mission-blue-soft: #EAF7F1;
     --mission-green: #059669;
     --mission-green-soft: #ecfdf5;
     --mission-orange: #d97706;
@@ -12997,7 +12998,7 @@ h3 {
 
 .missions-card:hover,
 .missions-card.selected {
-    border-color: rgba(26,106,255,.45);
+    border-color: rgba(12, 90, 102, .45);
     box-shadow: 0 18px 45px rgba(17,17,17,.08);
     transform: translateY(-1px);
 }
@@ -13041,7 +13042,7 @@ h3 {
 
 .mission-number,
 .mission-number-line {
-    color: #1a6aff;
+    color: #0C5A66;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .02em;
@@ -13571,7 +13572,7 @@ h3 {
 }
 
 .employee-upsert-modal .service-picker.employee-skill-picker .employee-price-inline strong {
-    color: #246BFE !important;
+    color: #0C5A66 !important;
     font-size: 12px !important;
     font-weight: 800 !important;
     line-height: 1.1 !important;
@@ -13700,7 +13701,7 @@ h3 {
 }
 
 .employee-upsert-modal .clean-skill-picker .employee-price-inline strong {
-    color: #246BFE !important;
+    color: #0C5A66 !important;
     display: block !important;
     font-size: 11px !important;
     font-weight: 800 !important;

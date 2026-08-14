@@ -15,7 +15,7 @@
 
 <div class="company-landing premium-b2b">
     <section id="home" class="premium-hero">
-        <img class="premium-hero-image" src="@ResolveContentUrl(HomeContent.Hero.ImageUrl, "images/wele-premium-hero.png")" alt="@HomeContent.Hero.ImageAlt" />
+        <img class="premium-hero-image" src="@ResolveContentUrl(HomeContent.Hero.ImageUrl, "website/company/wele-premium-hero.png")" alt="@HomeContent.Hero.ImageAlt" />
         <div class="premium-hero-overlay"></div>
         <div class="premium-hero-content">
             <p class="premium-label">@HomeContent.Hero.Label</p>
@@ -170,7 +170,7 @@
     <footer class="premium-footer">
         <div class="premium-footer-brand">
             <a class="premium-footer-logo" href="#home" aria-label="Retour accueil wélé">
-                <img src="images/wele-logo.png" alt="wélé" />
+                <img src="images/wele-logo-final.svg" alt="Wélé entreprise" />
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
@@ -264,6 +264,11 @@
             return absoluteUri.ToString();
         }
 
+        if (url.StartsWith("website/", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"https://media.wele.africa/{url.TrimStart('/')}";
+        }
+
         return url.StartsWith("/api/", StringComparison.OrdinalIgnoreCase)
             ? ApiClient.ToApiUrl(url)
             : NormalizeLegacyMediaUrl(url.TrimStart('/'));
@@ -292,7 +297,7 @@
                 "wélé connecte votre entreprise à des clients et vous donne les outils pour gérer vos techniciens, vos missions et vos revenus. Le tout depuis une interface unique.",
                 new CmsLinkResponse("Devenir partenaire", "register"),
                 new CmsLinkResponse("Voir le fonctionnement", "#how"),
-                "images/wele-premium-hero.png",
+                "website/company/wele-premium-hero.png",
                 "Equipe wélé en intervention chez un client",
                 ["Inscription gratuite", "Validation sous 48h", "Support partenaire 24/7"]),
             new CompanyHomeStepsCmsResponse(
