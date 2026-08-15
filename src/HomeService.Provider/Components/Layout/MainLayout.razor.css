@@ -285,7 +285,7 @@
     border-bottom-color: rgba(236, 236, 236, .7);
     border-top-color: transparent;
     box-shadow: none;
-    min-height: 68px;
+    min-height: 78px;
     padding-left: max(1.5rem, calc((100vw - 1180px) / 2));
     padding-right: max(1.5rem, calc((100vw - 1180px) / 2));
     transition: background .22s ease, border-color .22s ease, box-shadow .22s ease, backdrop-filter .22s ease;
@@ -324,8 +324,8 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 }
 
 .site-header.theme-premium .brand-logo img {
-    height: 42px;
-    width: 148px;
+    height: auto;
+    width: 156px;
 }
 
 .site-header.theme-premium .site-nav a,
@@ -390,13 +390,13 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 
 @media (max-width: 620px) {
     .site-header.theme-premium {
-        min-height: 64px;
-        padding: .6rem 1rem;
+        min-height: 68px;
+        padding: 0 20px;
     }
 
     .site-header.theme-premium .brand-logo img {
-        height: 36px;
-        width: 128px;
+        height: auto;
+        width: 144px;
     }
 
     .site-header.theme-premium .site-nav a,
