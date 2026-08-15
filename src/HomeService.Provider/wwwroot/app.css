@@ -2390,6 +2390,12 @@ textarea {
     width: 100%;
 }
 
+@media (min-width: 901px) {
+    .provider-landing .provider-hero-image {
+        object-position: center top;
+    }
+}
+
 .provider-landing .premium-hero-overlay {
     background: linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .76) 34%, rgba(229, 247, 238, .34) 54%, rgba(145, 219, 182, .04) 100%);
     z-index: 1;
