@@ -5,7 +5,7 @@ namespace HomeService.Api;
 
 public static class PublicMediaResponseMapper
 {
-    private const string BrandAssetVersion = "20260814";
+    private const string BrandAssetVersion = "20260815";
 
     public static string? Resolve(IApiObjectStorage storage, string? value)
     {

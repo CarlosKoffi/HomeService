@@ -299,6 +299,8 @@
         isLoading = false;
     }
 
+    private const string ServiceAssetVersion = "20260815";
+
     private string ResolveMediaUrl(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -314,11 +316,17 @@
         if (Uri.TryCreate(value, UriKind.Absolute, out var absolute)
             && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
         {
-            return absolute.ToString();
+            return WithServiceAssetVersion(absolute.ToString());
         }
 
-        return $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
+        return WithServiceAssetVersion($"{PublicMediaBaseUrl}/{value.TrimStart('/')}");
     }
+
+    private static string WithServiceAssetVersion(string url) =>
+        url.Contains("/assets/services/", StringComparison.OrdinalIgnoreCase)
+        && !url.Contains("brand=", StringComparison.OrdinalIgnoreCase)
+            ? $"{url}{(url.Contains('?', StringComparison.Ordinal) ? '&' : '?')}brand={ServiceAssetVersion}"
+            : url;
 
     private string BuildStructuredData()
     {

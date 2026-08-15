@@ -30,7 +30,7 @@
     display: block;
     height: 44px;
     object-fit: contain;
-    width: 146px;
+    width: 44px;
 }
 
 .site-nav {
@@ -269,7 +269,7 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 
 .site-header.theme-premium .brand-logo img {
     height: 42px;
-    width: 150px;
+    width: 42px;
 }
 
 .site-header.theme-premium .site-nav a,
@@ -314,7 +314,7 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
 
     .site-header.theme-premium .brand-logo img {
         height: 38px;
-        width: 136px;
+        width: 38px;
     }
 
     .site-header.theme-premium .site-nav a,

@@ -146,6 +146,7 @@
     private IReadOnlyList<ServiceGroup> ServiceGroups { get; set; } = [];
     private bool isLoading = true;
     private bool mobileMenuOpen;
+    private const string ServiceAssetVersion = "20260815";
 
     private string SiteBaseUrl => (Configuration["Site:BaseUrl"] ?? "https://wele.africa").TrimEnd('/');
     private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"] ?? Configuration["Media:PublicBaseUrl"] ?? "https://media.wele.africa").TrimEnd('/');
@@ -175,9 +176,15 @@
         if (value.StartsWith("/images/", StringComparison.OrdinalIgnoreCase) || value.StartsWith("images/", StringComparison.OrdinalIgnoreCase))
             return value.StartsWith('/') ? value : $"/{value}";
         if (Uri.TryCreate(value, UriKind.Absolute, out var absolute) && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps))
-            return absolute.ToString();
-        return $"{PublicMediaBaseUrl}/{value.TrimStart('/')}";
+            return WithServiceAssetVersion(absolute.ToString());
+        return WithServiceAssetVersion($"{PublicMediaBaseUrl}/{value.TrimStart('/')}");
     }
+
+    private static string WithServiceAssetVersion(string url) =>
+        url.Contains("/assets/services/", StringComparison.OrdinalIgnoreCase)
+        && !url.Contains("brand=", StringComparison.OrdinalIgnoreCase)
+            ? $"{url}{(url.Contains('?', StringComparison.Ordinal) ? '&' : '?')}brand={ServiceAssetVersion}"
+            : url;
 
     private string ServiceDescription(ServiceSummaryResponse service)
     {
