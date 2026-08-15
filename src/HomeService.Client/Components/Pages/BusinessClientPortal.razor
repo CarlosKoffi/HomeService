@@ -1,0 +1,417 @@
+@page "/entreprises/espace"
+@using System.Text.Json
+@using HomeService.Client.Services
+@using HomeService.Contracts.BusinessClients
+@using HomeService.Contracts.Clients
+@using Microsoft.AspNetCore.Components.Forms
+@inject BusinessClientApiClient ApiClient
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Espace client entreprise — Wélé</PageTitle>
+
+<div class="business-portal">
+    <header class="business-portal-header">
+        <a href="/" class="business-portal-brand" aria-label="Retour à Wélé">
+            <img src="https://media.wele.africa/website/client/wele-logo-horizontal.png" alt="Wélé" />
+        </a>
+        @if (Session is not null)
+        {
+            <div class="business-portal-account">
+                <span>@Session.FirstName @Session.LastName</span>
+                <button type="button" class="link-button" @onclick="LogoutAsync">Se déconnecter</button>
+            </div>
+        }
+        else
+        {
+            <a class="back-home" href="/">Retour au site</a>
+        }
+    </header>
+
+    @if (!IsReady)
+    {
+        <main class="business-auth-shell"><div class="loading-card">Chargement de votre espace…</div></main>
+    }
+    else if (Session is null)
+    {
+        <main class="business-auth-shell">
+            <section class="business-auth-intro">
+                <span class="eyebrow">WÉLÉ POUR LES PROFESSIONNELS</span>
+                <h1>Centralisez vos interventions récurrentes.</h1>
+                <p>Un espace pour les gestionnaires d’immeubles, bureaux, résidences et locations courte durée.</p>
+                <ul>
+                    <li>Un compte entreprise vérifié</li>
+                    <li>Des passages suivis individuellement</li>
+                    <li>Un paiement sécurisé à chaque intervention</li>
+                </ul>
+            </section>
+            <section class="business-auth-card">
+                <div class="auth-tabs" role="tablist" aria-label="Accès à l’espace entreprise">
+                    <button type="button" class="@(AuthMode == "register" ? "active" : null)" @onclick="ShowRegister">Créer un compte</button>
+                    <button type="button" class="@(AuthMode == "login" ? "active" : null)" @onclick="ShowLogin">Se connecter</button>
+                </div>
+
+                @if (AuthMode == "register")
+                {
+                    <h2>Votre compte responsable</h2>
+                    <p>Ces accès permettront ensuite de retrouver et suivre le dossier de votre société.</p>
+                    <div class="form-grid two-columns">
+                        <label><span>Prénom *</span><input @bind="RegisterFirstName" autocomplete="given-name" /></label>
+                        <label><span>Nom *</span><input @bind="RegisterLastName" autocomplete="family-name" /></label>
+                        <label><span>Téléphone *</span><input @bind="RegisterPhone" inputmode="tel" autocomplete="tel" placeholder="07 00 00 00 00" /></label>
+                        <label><span>Email professionnel *</span><input @bind="RegisterEmail" type="email" autocomplete="email" /></label>
+                        <label class="full-row"><span>Mot de passe *</span><input @bind="RegisterPassword" type="password" autocomplete="new-password" /></label>
+                    </div>
+                    <button type="button" class="primary-button full-button" disabled="@IsBusy" @onclick="RegisterAsync">Créer mon espace</button>
+                }
+                else
+                {
+                    <h2>Heureux de vous revoir</h2>
+                    <p>Utilisez le numéro de téléphone choisi lors de la création du compte.</p>
+                    <div class="form-grid">
+                        <label><span>Téléphone *</span><input @bind="LoginPhone" inputmode="tel" autocomplete="tel" /></label>
+                        <label><span>Mot de passe *</span><input @bind="LoginPassword" type="password" autocomplete="current-password" /></label>
+                    </div>
+                    <button type="button" class="primary-button full-button" disabled="@IsBusy" @onclick="LoginAsync">Se connecter</button>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <p class="form-message error">@Message</p>
+                }
+            </section>
+        </main>
+    }
+    else
+    {
+        <div class="business-workspace">
+            <aside class="business-sidebar">
+                <div>
+                    <span class="sidebar-caption">ESPACE ENTREPRISE</span>
+                    <strong>@(Profile?.TradeName ?? Profile?.LegalName ?? "Votre société")</strong>
+                </div>
+                <nav aria-label="Étapes du dossier">
+                    <button type="button" class="active"><span>1</span> Dossier société</button>
+                    <button type="button"><span>2</span> Justificatifs</button>
+                    <button type="button"><span>3</span> Validation</button>
+                </nav>
+                <div class="sidebar-help">
+                    <strong>Besoin d’aide ?</strong>
+                    <p>Notre équipe vous accompagne pour constituer le dossier.</p>
+                    <a href="mailto:contact@wele.africa">contact@wele.africa</a>
+                </div>
+            </aside>
+
+            <main class="business-main">
+                <section class="business-heading">
+                    <div>
+                        <span class="eyebrow">COMPTE CLIENT ENTREPRISE</span>
+                        <h1>@GetPageTitle()</h1>
+                        <p>@GetPageSubtitle()</p>
+                    </div>
+                    @if (Profile is not null)
+                    {
+                        <span class="status-pill @GetStatusClass(Profile.Status)">@GetStatusLabel(Profile.Status)</span>
+                    }
+                </section>
+
+                @if (!string.IsNullOrWhiteSpace(Message))
+                {
+                    <p class="form-message @(MessageIsSuccess ? "success" : "error")">@Message</p>
+                }
+
+                @if (Profile is not null && !string.IsNullOrWhiteSpace(Profile.ReviewNote))
+                {
+                    <section class="review-note">
+                        <strong>Message de l’équipe Wélé</strong>
+                        <p>@Profile.ReviewNote</p>
+                    </section>
+                }
+
+                @if (Profile is null || Profile.CanEdit)
+                {
+                    <section class="portal-card">
+                        <div class="card-title">
+                            <span>01</span>
+                            <div><h2>Informations de la société</h2><p>Renseignez les informations figurant sur vos documents officiels.</p></div>
+                        </div>
+                        <div class="form-grid two-columns">
+                            <label><span>Raison sociale *</span><input @bind="LegalName" /></label>
+                            <label><span>Nom commercial</span><input @bind="TradeName" /></label>
+                            <label><span>Forme juridique</span><select @bind="LegalForm"><option value="">Choisir</option><option>SARL</option><option>SA</option><option>SAS</option><option>Entreprise individuelle</option><option>Association</option><option>Autre</option></select></label>
+                            <label><span>N° RCCM / registre</span><input @bind="RegistrationNumber" /></label>
+                            <label><span>N° contribuable / CC</span><input @bind="TaxIdentificationNumber" /></label>
+                            <label><span>Ville *</span><input @bind="City" placeholder="Abidjan" /></label>
+                            <label class="full-row"><span>Adresse du siège *</span><input @bind="Address" /></label>
+                        </div>
+                    </section>
+
+                    <section class="portal-card">
+                        <div class="card-title">
+                            <span>02</span>
+                            <div><h2>Responsable du compte</h2><p>La personne habilitée à suivre les interventions et les paiements.</p></div>
+                        </div>
+                        <div class="form-grid two-columns">
+                            <label><span>Nom complet *</span><input @bind="RepresentativeName" /></label>
+                            <label><span>Fonction *</span><input @bind="RepresentativeRole" placeholder="Gérant, responsable exploitation…" /></label>
+                            <label><span>Email professionnel *</span><input @bind="ContactEmail" type="email" /></label>
+                            <label><span>Téléphone *</span><input @bind="ContactPhone" inputmode="tel" /></label>
+                        </div>
+                        <div class="card-actions"><button type="button" class="primary-button" disabled="@IsBusy" @onclick="SaveProfileAsync">Enregistrer et continuer</button></div>
+                    </section>
+                }
+                else if (Profile is not null)
+                {
+                    <section class="portal-card company-summary">
+                        <div><span>Société</span><strong>@Profile.LegalName</strong><small>@Profile.LegalForm · @Profile.City</small></div>
+                        <div><span>Responsable</span><strong>@Profile.RepresentativeName</strong><small>@Profile.ContactEmail</small></div>
+                    </section>
+                }
+
+                @if (Profile is not null)
+                {
+                    <section class="portal-card">
+                        <div class="card-title">
+                            <span>03</span>
+                            <div><h2>Justificatifs de la société</h2><p>PDF, JPG, PNG ou WebP. 10 Mo maximum par fichier.</p></div>
+                        </div>
+                        <div class="document-grid">
+                            @foreach (var requirement in DocumentRequirements)
+                            {
+                                var document = FindDocument(requirement.Type);
+                                <article class="document-card @(document is not null ? "uploaded" : null)">
+                                    <div class="document-icon">@requirement.ShortLabel</div>
+                                    <div class="document-copy">
+                                        <strong>@requirement.Label @(requirement.Required ? "*" : null)</strong>
+                                        @if (document is null)
+                                        {
+                                            <small>@requirement.Description</small>
+                                        }
+                                        else
+                                        {
+                                            <small>@document.OriginalFileName · @FormatFileSize(document.Size)</small>
+                                            <span class="document-state @document.ReviewStatus.ToLowerInvariant()">@GetDocumentStatusLabel(document.ReviewStatus)</span>
+                                            @if (!string.IsNullOrWhiteSpace(document.ReviewNote))
+                                            {
+                                                <em>@document.ReviewNote</em>
+                                            }
+                                        }
+                                    </div>
+                                    @if (Profile.CanEdit)
+                                    {
+                                        <label class="upload-button">
+                                            @(document is null ? "Ajouter" : "Remplacer")
+                                            <InputFile OnChange="@(file => UploadDocumentAsync(requirement.Type, file))" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" />
+                                        </label>
+                                        @if (document is not null)
+                                        {
+                                            <button type="button" class="delete-button" title="Supprimer" @onclick="() => DeleteDocumentAsync(document.Id)">×</button>
+                                        }
+                                    }
+                                </article>
+                            }
+                        </div>
+                    </section>
+
+                    <section class="submit-card">
+                        <div>
+                            <span class="eyebrow">DERNIÈRE ÉTAPE</span>
+                            <h2>@(Profile.CanEdit ? "Envoyer le dossier pour validation" : "Votre dossier est bien enregistré")</h2>
+                            <p>@GetSubmitHelp()</p>
+                        </div>
+                        @if (Profile.CanEdit)
+                        {
+                            <button type="button" class="primary-button" disabled="@(IsBusy || Profile.MissingRequiredDocuments.Count > 0)" @onclick="SubmitAsync">Soumettre le dossier</button>
+                        }
+                    </section>
+                }
+            </main>
+        </div>
+    }
+</div>
+
+@code {
+    private const string SessionKey = "homeservice.business-client.session";
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly DocumentRequirement[] DocumentRequirements =
+    [
+        new("BusinessRegistration", "RCCM", "Registre de commerce", "Extrait RCCM ou document d’immatriculation.", true),
+        new("TaxCertificate", "DFE", "Attestation fiscale", "DFE, attestation fiscale ou fiche contribuable.", true),
+        new("RepresentativeIdentity", "ID", "Pièce d’identité du responsable", "CNI, passeport ou titre de séjour en cours de validité.", true),
+        new("ProofOfAddress", "AD", "Justificatif d’adresse", "Facture ou attestation de domiciliation récente.", false)
+    ];
+
+    private ClientAuthResponse? Session;
+    private BusinessClientProfileResponse? Profile;
+    private bool IsReady;
+    private bool IsBusy;
+    private string AuthMode = "register";
+    private string? Message;
+    private bool MessageIsSuccess;
+
+    private string RegisterFirstName = string.Empty;
+    private string RegisterLastName = string.Empty;
+    private string RegisterPhone = string.Empty;
+    private string RegisterEmail = string.Empty;
+    private string RegisterPassword = string.Empty;
+    private string LoginPhone = string.Empty;
+    private string LoginPassword = string.Empty;
+
+    private string LegalName = string.Empty;
+    private string? TradeName;
+    private string? LegalForm;
+    private string? RegistrationNumber;
+    private string? TaxIdentificationNumber;
+    private string Address = string.Empty;
+    private string City = "Abidjan";
+    private string RepresentativeName = string.Empty;
+    private string RepresentativeRole = string.Empty;
+    private string ContactEmail = string.Empty;
+    private string ContactPhone = string.Empty;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var json = await JsRuntime.InvokeAsync<string?>("localStorage.getItem", SessionKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                Session = JsonSerializer.Deserialize<ClientAuthResponse>(json, JsonOptions);
+                if (Session is not null && Session.ExpiresAt > DateTimeOffset.UtcNow)
+                {
+                    await LoadProfileAsync();
+                }
+                else
+                {
+                    Session = null;
+                    await JsRuntime.InvokeVoidAsync("localStorage.removeItem", SessionKey);
+                }
+            }
+        }
+        catch
+        {
+            Session = null;
+        }
+        finally
+        {
+            IsReady = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RegisterAsync()
+    {
+        if (string.IsNullOrWhiteSpace(RegisterFirstName) || string.IsNullOrWhiteSpace(RegisterLastName) || string.IsNullOrWhiteSpace(RegisterPhone) || string.IsNullOrWhiteSpace(RegisterEmail) || RegisterPassword.Length < 8)
+        {
+            ShowError("Complétez tous les champs. Le mot de passe doit contenir au moins 8 caractères.");
+            return;
+        }
+        await RunAuthAsync(() => ApiClient.RegisterAsync(new RegisterClientRequest(RegisterFirstName, RegisterLastName, RegisterPhone, RegisterEmail, RegisterPassword)));
+    }
+
+    private async Task LoginAsync()
+    {
+        if (string.IsNullOrWhiteSpace(LoginPhone) || string.IsNullOrWhiteSpace(LoginPassword))
+        {
+            ShowError("Saisissez votre téléphone et votre mot de passe.");
+            return;
+        }
+        await RunAuthAsync(() => ApiClient.LoginAsync(new LoginClientRequest(LoginPhone, LoginPassword)));
+    }
+
+    private async Task RunAuthAsync(Func<Task<BusinessClientApiResult<ClientAuthResponse>>> action)
+    {
+        IsBusy = true; Message = null;
+        var result = await action();
+        IsBusy = false;
+        if (!result.IsSuccess || result.Value is null) { ShowError(result.ErrorMessage); return; }
+        Session = result.Value;
+        await JsRuntime.InvokeVoidAsync("localStorage.setItem", SessionKey, JsonSerializer.Serialize(Session, JsonOptions));
+        RepresentativeName = $"{Session.FirstName} {Session.LastName}";
+        ContactEmail = Session.Email ?? string.Empty;
+        ContactPhone = Session.PhoneNumber;
+        await LoadProfileAsync();
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        if (Session is null) return;
+        var result = await ApiClient.GetProfileAsync(Session.Token);
+        if (result.IsUnauthorized) { await LogoutAsync(); return; }
+        if (result.IsNotFound) { Profile = null; return; }
+        if (!result.IsSuccess || result.Value is null) { ShowError(result.ErrorMessage); return; }
+        ApplyProfile(result.Value);
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        if (Session is null) return;
+        if (new[] { LegalName, Address, City, RepresentativeName, RepresentativeRole, ContactEmail, ContactPhone }.Any(string.IsNullOrWhiteSpace))
+        {
+            ShowError("Complétez tous les champs marqués d’un astérisque."); return;
+        }
+        IsBusy = true; Message = null;
+        var result = await ApiClient.SaveProfileAsync(Session.Token, new UpsertBusinessClientProfileRequest(LegalName, TradeName, LegalForm, RegistrationNumber, TaxIdentificationNumber, Address, City, "CI", RepresentativeName, RepresentativeRole, ContactEmail, ContactPhone));
+        IsBusy = false;
+        if (!result.IsSuccess || result.Value is null) { ShowError(result.ErrorMessage); return; }
+        ApplyProfile(result.Value); ShowSuccess("Informations enregistrées. Vous pouvez maintenant ajouter les justificatifs.");
+    }
+
+    private async Task UploadDocumentAsync(string documentType, InputFileChangeEventArgs args)
+    {
+        if (Session is null || Profile is null) return;
+        IsBusy = true; Message = null;
+        var result = await ApiClient.UploadDocumentAsync(Session.Token, documentType, args.File);
+        IsBusy = false;
+        if (!result.IsSuccess) { ShowError(result.ErrorMessage); return; }
+        await LoadProfileAsync(); ShowSuccess("Document ajouté au dossier.");
+    }
+
+    private async Task DeleteDocumentAsync(Guid documentId)
+    {
+        if (Session is null) return;
+        IsBusy = true;
+        var result = await ApiClient.DeleteDocumentAsync(Session.Token, documentId);
+        IsBusy = false;
+        if (!result.IsSuccess) { ShowError(result.ErrorMessage); return; }
+        await LoadProfileAsync(); ShowSuccess("Document supprimé.");
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (Session is null) return;
+        IsBusy = true; Message = null;
+        var result = await ApiClient.SubmitAsync(Session.Token);
+        IsBusy = false;
+        if (!result.IsSuccess || result.Value is null) { ShowError(result.ErrorMessage); return; }
+        ApplyProfile(result.Value); ShowSuccess("Votre dossier a été envoyé. Nous vous informerons après vérification.");
+    }
+
+    private async Task LogoutAsync()
+    {
+        Session = null; Profile = null; Message = null;
+        await JsRuntime.InvokeVoidAsync("localStorage.removeItem", SessionKey);
+    }
+
+    private void ApplyProfile(BusinessClientProfileResponse value)
+    {
+        Profile = value; LegalName = value.LegalName; TradeName = value.TradeName; LegalForm = value.LegalForm;
+        RegistrationNumber = value.RegistrationNumber; TaxIdentificationNumber = value.TaxIdentificationNumber;
+        Address = value.Address; City = value.City; RepresentativeName = value.RepresentativeName; RepresentativeRole = value.RepresentativeRole;
+        ContactEmail = value.ContactEmail; ContactPhone = value.ContactPhone;
+    }
+
+    private BusinessClientDocumentResponse? FindDocument(string type) => Profile?.Documents.FirstOrDefault(item => item.DocumentType == type);
+    private void ShowError(string? message) { MessageIsSuccess = false; Message = message ?? "Une erreur est survenue."; }
+    private void ShowSuccess(string message) { MessageIsSuccess = true; Message = message; }
+    private void ShowRegister() => AuthMode = "register";
+    private void ShowLogin() => AuthMode = "login";
+    private string GetPageTitle() => Profile is null ? "Créons votre dossier société" : Profile.Status is "Approved" ? "Votre compte est validé" : "Votre dossier entreprise";
+    private string GetPageSubtitle() => Profile?.Status switch { "Approved" => "Votre société est vérifiée. Les services professionnels seront activés dans cet espace.", "Submitted" or "UnderReview" => "Le dossier est en cours de vérification par notre équipe.", "MoreInformationRequested" => "Quelques éléments doivent être complétés avant validation.", "Rejected" => "Le dossier n’a pas pu être validé. Contactez notre équipe si nécessaire.", _ => "Complétez les informations et justificatifs avant de demander la validation." };
+    private static string GetStatusLabel(string status) => status switch { "Draft" => "Brouillon", "Submitted" => "Dossier envoyé", "UnderReview" => "En vérification", "MoreInformationRequested" => "À compléter", "Approved" => "Compte validé", "Rejected" => "Non validé", _ => status };
+    private static string GetStatusClass(string status) => status.ToLowerInvariant();
+    private string GetSubmitHelp() => Profile?.Status switch { "Submitted" or "UnderReview" => "Aucune action n’est nécessaire pour le moment.", "Approved" => "Vous pouvez désormais préparer vos futures interventions professionnelles.", "Rejected" => "Le dossier est conservé. Notre équipe peut vous renseigner sur la décision.", _ when Profile?.MissingRequiredDocuments.Count > 0 => $"Il manque {Profile.MissingRequiredDocuments.Count} justificatif(s) obligatoire(s).", _ => "Vérifiez les informations : après envoi, elles seront verrouillées pendant l’examen." };
+    private static string GetDocumentStatusLabel(string status) => status switch { "Pending" => "À vérifier", "Approved" => "Validé", "NeedsReplacement" => "À remplacer", _ => status };
+    private static string FormatFileSize(long size) => size >= 1024 * 1024 ? $"{size / 1024d / 1024d:0.0} Mo" : $"{Math.Max(1, size / 1024)} Ko";
+    private sealed record DocumentRequirement(string Type, string ShortLabel, string Label, string Description, bool Required);
+}

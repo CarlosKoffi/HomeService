@@ -37,6 +37,8 @@ public interface IAppDbContext
     DbSet<QualityChecklistTemplate> QualityChecklistTemplates { get; }
     DbSet<QualityChecklistItem> QualityChecklistItems { get; }
     DbSet<CustomerProfile> Customers { get; }
+    DbSet<BusinessClientProfile> BusinessClientProfiles { get; }
+    DbSet<BusinessClientDocument> BusinessClientDocuments { get; }
     DbSet<CustomerSession> CustomerSessions { get; }
     DbSet<CustomerAddress> CustomerAddresses { get; }
     DbSet<CustomerPaymentMethod> CustomerPaymentMethods { get; }

@@ -1,0 +1,287 @@
+@page "/business-clients"
+@using HomeService.Admin.Services
+@using HomeService.Contracts.BusinessClients
+@inject PlatformApiClient ApiClient
+@inject IJSRuntime JsRuntime
+
+<PageTitle>Clients entreprises</PageTitle>
+
+<header class="business-heading">
+    <div>
+        <span class="eyebrow">Clients professionnels</span>
+        <h1>Dossiers clients entreprises</h1>
+        <p>Vérifiez l’identité de la société et de son responsable avant d’ouvrir l’accès aux services récurrents.</p>
+    </div>
+    <button type="button" class="refresh-button" @onclick="LoadAsync" disabled="@IsLoading">Actualiser</button>
+</header>
+
+<section class="business-metrics" aria-label="Résumé des dossiers">
+    <article><span>À vérifier</span><strong>@PendingCount</strong></article>
+    <article><span>Complément attendu</span><strong>@MoreInformationCount</strong></article>
+    <article><span>Validés</span><strong>@ApprovedCount</strong></article>
+</section>
+
+<section class="business-toolbar">
+    <label>
+        <span>Statut</span>
+        <select @bind="SelectedStatus">
+            <option value="">Tous les dossiers</option>
+            <option value="Submitted">Soumis</option>
+            <option value="UnderReview">En vérification</option>
+            <option value="MoreInformationRequested">Complément demandé</option>
+            <option value="Approved">Validé</option>
+            <option value="Rejected">Refusé</option>
+            <option value="Draft">Brouillon</option>
+        </select>
+    </label>
+    <label>
+        <span>Recherche</span>
+        <input type="search" @bind="Search" @bind:event="oninput" placeholder="Société, responsable, email…" />
+    </label>
+</section>
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <p class="business-message @MessageClass">@Message</p>
+}
+
+<div class="business-workspace">
+    <section class="business-list" aria-label="Liste des dossiers">
+        @if (IsLoading)
+        {
+            <p class="empty-state">Chargement des dossiers…</p>
+        }
+        else if (FilteredItems.Count == 0)
+        {
+            <p class="empty-state">Aucun dossier ne correspond à ces critères.</p>
+        }
+        else
+        {
+            @foreach (var item in FilteredItems)
+            {
+                <button type="button"
+                        class="business-row @(SelectedId == item.Id ? "selected" : null)"
+                        @onclick="() => SelectAsync(item.Id)">
+                    <span class="company-avatar">@Initials(item.LegalName)</span>
+                    <span class="company-copy">
+                        <strong>@item.LegalName</strong>
+                        <small>@item.CustomerName · @item.ContactEmail</small>
+                        <small>@item.DocumentCount pièce(s) · @FormatDate(item.SubmittedAt ?? item.UpdatedAt)</small>
+                    </span>
+                    <span class="status-pill @StatusClass(item.Status)">@StatusLabel(item.Status)</span>
+                </button>
+            }
+        }
+    </section>
+
+    <section class="business-detail" aria-live="polite">
+        @if (IsDetailLoading)
+        {
+            <p class="empty-state">Ouverture du dossier…</p>
+        }
+        else if (Selected is null)
+        {
+            <div class="empty-detail">
+                <span aria-hidden="true">✓</span>
+                <h2>Sélectionnez un dossier</h2>
+                <p>Les informations de la société et ses justificatifs apparaîtront ici.</p>
+            </div>
+        }
+        else
+        {
+            var profile = Selected.Profile;
+            <div class="detail-heading">
+                <div>
+                    <span class="eyebrow">Dossier @profile.Id.ToString()[..8]</span>
+                    <h2>@profile.LegalName</h2>
+                    @if (!string.IsNullOrWhiteSpace(profile.TradeName))
+                    {
+                        <p>Enseigne : @profile.TradeName</p>
+                    }
+                </div>
+                <span class="status-pill @StatusClass(profile.Status)">@StatusLabel(profile.Status)</span>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(profile.ReviewNote))
+            {
+                <aside class="review-note"><strong>Dernière note</strong><span>@profile.ReviewNote</span></aside>
+            }
+
+            <div class="detail-grid">
+                <article>
+                    <span>Société</span>
+                    <strong>@profile.LegalForm @profile.LegalName</strong>
+                    <p>RCCM : @(profile.RegistrationNumber ?? "Non renseigné")</p>
+                    <p>Identifiant fiscal : @(profile.TaxIdentificationNumber ?? "Non renseigné")</p>
+                </article>
+                <article>
+                    <span>Adresse</span>
+                    <strong>@profile.City, @profile.CountryCode</strong>
+                    <p>@profile.Address</p>
+                </article>
+                <article>
+                    <span>Responsable</span>
+                    <strong>@profile.RepresentativeName</strong>
+                    <p>@profile.RepresentativeRole</p>
+                    <p>@profile.ContactEmail · @profile.ContactPhone</p>
+                </article>
+                <article>
+                    <span>Compte rattaché</span>
+                    <strong>@Selected.CustomerName</strong>
+                    <p>@Selected.CustomerEmail · @Selected.CustomerPhone</p>
+                </article>
+            </div>
+
+            <div class="documents-block">
+                <div class="section-title">
+                    <div><span class="eyebrow">Justificatifs</span><h3>Pièces transmises</h3></div>
+                    <strong>@profile.Documents.Count</strong>
+                </div>
+                @if (profile.Documents.Count == 0)
+                {
+                    <p class="empty-state">Aucun justificatif transmis.</p>
+                }
+                else
+                {
+                    <div class="document-list">
+                        @foreach (var document in profile.Documents)
+                        {
+                            <a class="document-row"
+                               href="@ApiClient.GetBusinessClientDocumentPreviewUrl(profile.Id, document.Id)"
+                               target="_blank" rel="noopener">
+                                <span class="document-icon">@DocumentIcon(document.ContentType)</span>
+                                <span><strong>@DocumentLabel(document.DocumentType)</strong><small>@document.OriginalFileName · @FormatSize(document.Size)</small></span>
+                                <span class="open-document">Ouvrir ↗</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="review-checklist">
+                <strong>Avant validation</strong>
+                <span>✓ Société et numéro d’enregistrement cohérents</span>
+                <span>✓ Identité du responsable lisible</span>
+                <span>✓ Coordonnées et justificatifs concordants</span>
+            </div>
+
+            <div class="review-actions">
+                @if (profile.Status == "Submitted")
+                {
+                    <button type="button" class="secondary" @onclick="MarkUnderReviewAsync" disabled="@IsBusy">Commencer la vérification</button>
+                }
+                <button type="button" class="secondary" @onclick="RequestInformationAsync" disabled="@IsBusy">Demander un complément</button>
+                <button type="button" class="danger" @onclick="RejectAsync" disabled="@IsBusy">Refuser</button>
+                <button type="button" class="primary" @onclick="ApproveAsync" disabled="@(IsBusy || profile.Status == "Approved")">Valider le client</button>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private List<AdminBusinessClientListItemResponse> Items { get; set; } = [];
+    private AdminBusinessClientDetailResponse? Selected { get; set; }
+    private Guid? SelectedId { get; set; }
+    private string SelectedStatus { get; set; } = string.Empty;
+    private string Search { get; set; } = string.Empty;
+    private string? Message { get; set; }
+    private string MessageClass { get; set; } = string.Empty;
+    private bool IsLoading { get; set; } = true;
+    private bool IsDetailLoading { get; set; }
+    private bool IsBusy { get; set; }
+
+    private List<AdminBusinessClientListItemResponse> FilteredItems => Items
+        .Where(item => string.IsNullOrWhiteSpace(SelectedStatus) || item.Status == SelectedStatus)
+        .Where(item => string.IsNullOrWhiteSpace(Search)
+            || item.LegalName.Contains(Search, StringComparison.OrdinalIgnoreCase)
+            || item.CustomerName.Contains(Search, StringComparison.OrdinalIgnoreCase)
+            || item.ContactEmail.Contains(Search, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private int PendingCount => Items.Count(item => item.Status is "Submitted" or "UnderReview");
+    private int MoreInformationCount => Items.Count(item => item.Status == "MoreInformationRequested");
+    private int ApprovedCount => Items.Count(item => item.Status == "Approved");
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            Items = (await ApiClient.GetBusinessClientsAsync()).ToList();
+            if (SelectedId is Guid selectedId && Items.Any(item => item.Id == selectedId))
+            {
+                await SelectAsync(selectedId);
+            }
+        }
+        catch (Exception exception)
+        {
+            SetMessage($"Impossible de charger les dossiers : {exception.Message}", true);
+        }
+        finally { IsLoading = false; }
+    }
+
+    private async Task SelectAsync(Guid id)
+    {
+        SelectedId = id;
+        IsDetailLoading = true;
+        try { Selected = await ApiClient.GetBusinessClientAsync(id); }
+        catch (Exception exception) { SetMessage($"Impossible d’ouvrir le dossier : {exception.Message}", true); }
+        finally { IsDetailLoading = false; }
+    }
+
+    private Task MarkUnderReviewAsync() => RunActionAsync(
+        () => ApiClient.MarkBusinessClientUnderReviewAsync(SelectedId!.Value),
+        "Dossier passé en vérification.");
+
+    private async Task RequestInformationAsync()
+    {
+        var note = await JsRuntime.InvokeAsync<string?>("prompt", "Indiquez précisément les éléments à corriger ou compléter :");
+        if (!string.IsNullOrWhiteSpace(note))
+        {
+            await RunActionAsync(() => ApiClient.RequestBusinessClientInformationAsync(SelectedId!.Value, note), "Demande de complément enregistrée.");
+        }
+    }
+
+    private async Task RejectAsync()
+    {
+        var note = await JsRuntime.InvokeAsync<string?>("prompt", "Motif obligatoire du refus :");
+        if (!string.IsNullOrWhiteSpace(note))
+        {
+            await RunActionAsync(() => ApiClient.RejectBusinessClientAsync(SelectedId!.Value, note), "Dossier refusé.");
+        }
+    }
+
+    private async Task ApproveAsync()
+    {
+        var confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Confirmer la validation de cette société cliente ?");
+        if (confirmed)
+        {
+            await RunActionAsync(() => ApiClient.ApproveBusinessClientAsync(SelectedId!.Value), "Client entreprise validé.");
+        }
+    }
+
+    private async Task RunActionAsync(Func<Task<BusinessClientProfileResponse?>> action, string success)
+    {
+        IsBusy = true;
+        try
+        {
+            await action();
+            SetMessage(success, false);
+            await LoadAsync();
+        }
+        catch (Exception exception) { SetMessage($"Action impossible : {exception.Message}", true); }
+        finally { IsBusy = false; }
+    }
+
+    private void SetMessage(string message, bool error) { Message = message; MessageClass = error ? "error" : "success"; }
+    private static string Initials(string value) => string.Concat(value.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(part => char.ToUpperInvariant(part[0])));
+    private static string StatusLabel(string status) => status switch { "Draft" => "Brouillon", "Submitted" => "Soumis", "UnderReview" => "En vérification", "MoreInformationRequested" => "Complément attendu", "Approved" => "Validé", "Rejected" => "Refusé", _ => status };
+    private static string StatusClass(string status) => status.ToLowerInvariant();
+    private static string FormatDate(DateTimeOffset value) => value.LocalDateTime.ToString("dd/MM/yyyy HH:mm");
+    private static string FormatDate(DateTimeOffset? value) => value is null ? "Non soumis" : FormatDate(value.Value);
+    private static string FormatSize(long bytes) => bytes >= 1_048_576 ? $"{bytes / 1_048_576d:0.0} Mo" : $"{Math.Max(1, bytes / 1024)} Ko";
+    private static string DocumentIcon(string contentType) => contentType.Contains("pdf", StringComparison.OrdinalIgnoreCase) ? "PDF" : "IMG";
+    private static string DocumentLabel(string type) => type switch { "BusinessRegistration" => "Registre de commerce", "TaxCertificate" => "Déclaration fiscale", "RepresentativeIdentity" => "Identité du responsable", "ProofOfAddress" => "Justificatif d’adresse", _ => "Autre justificatif" };
+}

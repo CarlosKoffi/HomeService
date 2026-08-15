@@ -1,6 +1,7 @@
 using HomeService.Api.Auditing;
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
+using HomeService.Application.BusinessClients;
 using HomeService.Application.Clients;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
@@ -8,6 +9,7 @@ using HomeService.Application.Contact;
 using HomeService.Application.Missions;
 using HomeService.Application.Notifications;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.BusinessClients;
 using HomeService.Contracts.Clients;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
@@ -398,6 +400,227 @@ public static class PublicEndpoints
         })
         .WithName("GetClientMe")
         .Produces<ClientMeResponse>()
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapGet("/business/profile", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            BusinessClientOnboardingService onboardingService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var profile = await onboardingService.GetAsync(customer.Id, cancellationToken);
+            return profile is null ? Results.NotFound() : Results.Ok(profile);
+        })
+        .WithName("GetClientBusinessProfile")
+        .Produces<BusinessClientProfileResponse>()
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapPut("/business/profile", async (
+            UpsertBusinessClientProfileRequest request,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            BusinessClientOnboardingService onboardingService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            try
+            {
+                return Results.Ok(await onboardingService.UpsertAsync(customer.Id, request, cancellationToken));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("UpsertClientBusinessProfile")
+        .Produces<BusinessClientProfileResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapPost("/business/documents", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            BusinessClientOnboardingService onboardingService,
+            BusinessClientDocumentUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (!httpRequest.HasFormContentType)
+            {
+                return Results.BadRequest(new { message = "Selectionnez une piece a envoyer." });
+            }
+
+            string? uploadedStoragePath = null;
+            try
+            {
+                var profile = await onboardingService.GetAsync(customer.Id, cancellationToken)
+                    ?? throw new InvalidOperationException("Enregistrez d'abord les informations de la societe.");
+                var form = await httpRequest.ReadFormAsync(cancellationToken);
+                var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault()
+                    ?? throw new InvalidOperationException("La piece est manquante.");
+                var rawDocumentType = form["documentType"].ToString();
+                if (!Enum.TryParse<BusinessClientDocumentType>(rawDocumentType, true, out var documentType))
+                {
+                    return Results.BadRequest(new { message = "Le type de piece est invalide." });
+                }
+
+                var stored = await uploadService.SaveAsync(profile.Id, documentType, file, cancellationToken);
+                uploadedStoragePath = stored.StoragePath;
+                var (document, replacedStoragePath) = await onboardingService.AddDocumentAsync(
+                    customer.Id,
+                    documentType,
+                    stored.OriginalFileName,
+                    stored.StoragePath,
+                    stored.ContentType,
+                    stored.Size,
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(replacedStoragePath))
+                {
+                    await uploadService.DeleteIfExistsAsync(replacedStoragePath, cancellationToken);
+                }
+
+                return Results.Ok(document);
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or InvalidDataException or BadHttpRequestException)
+            {
+                if (!string.IsNullOrWhiteSpace(uploadedStoragePath))
+                {
+                    await uploadService.DeleteIfExistsAsync(uploadedStoragePath, cancellationToken);
+                }
+
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .DisableAntiforgery()
+        .WithName("UploadClientBusinessDocument")
+        .Produces<BusinessClientDocumentResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized);
+
+        client.MapDelete("/business/documents/{documentId:guid}", async (
+            Guid documentId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            BusinessClientOnboardingService onboardingService,
+            BusinessClientDocumentUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            try
+            {
+                var storagePath = await onboardingService.RemoveDocumentAsync(customer.Id, documentId, cancellationToken);
+                await uploadService.DeleteIfExistsAsync(storagePath, cancellationToken);
+                return Results.NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("DeleteClientBusinessDocument")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapGet("/business/documents/{documentId:guid}/download", async (
+            Guid documentId,
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            IAppDbContext db,
+            BusinessClientDocumentUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var document = await db.BusinessClientDocuments
+                .AsNoTracking()
+                .Include(item => item.BusinessClientProfile)
+                .FirstOrDefaultAsync(
+                    item => item.Id == documentId
+                        && item.BusinessClientProfile != null
+                        && item.BusinessClientProfile.CustomerProfileId == customer.Id,
+                    cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound();
+            }
+
+            var stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
+            return stream is null
+                ? Results.NotFound()
+                : Results.File(stream, document.ContentType, document.OriginalFileName);
+        })
+        .WithName("DownloadClientBusinessDocument")
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces(StatusCodes.Status404NotFound);
+
+        client.MapPost("/business/submit", async (
+            HttpRequest httpRequest,
+            ClientAuthService authService,
+            BusinessClientOnboardingService onboardingService,
+            CancellationToken cancellationToken) =>
+        {
+            var customer = await authService.GetSessionCustomerAsync(
+                httpRequest.Headers.Authorization.ToString(),
+                cancellationToken);
+            if (customer is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            try
+            {
+                return Results.Ok(await onboardingService.SubmitAsync(customer.Id, cancellationToken));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("SubmitClientBusinessProfile")
+        .Produces<BusinessClientProfileResponse>()
+        .Produces(StatusCodes.Status400BadRequest)
         .Produces(StatusCodes.Status401Unauthorized);
 
         client.MapPost("/me/photo", async (

@@ -39,6 +39,8 @@ public sealed class HomeServiceDbContext(DbContextOptions<HomeServiceDbContext> 
     public DbSet<QualityChecklistTemplate> QualityChecklistTemplates => Set<QualityChecklistTemplate>();
     public DbSet<QualityChecklistItem> QualityChecklistItems => Set<QualityChecklistItem>();
     public DbSet<CustomerProfile> Customers => Set<CustomerProfile>();
+    public DbSet<BusinessClientProfile> BusinessClientProfiles => Set<BusinessClientProfile>();
+    public DbSet<BusinessClientDocument> BusinessClientDocuments => Set<BusinessClientDocument>();
     public DbSet<CustomerSession> CustomerSessions => Set<CustomerSession>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<CustomerPaymentMethod> CustomerPaymentMethods => Set<CustomerPaymentMethod>();

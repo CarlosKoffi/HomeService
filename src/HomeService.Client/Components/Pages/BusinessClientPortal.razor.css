@@ -1,0 +1,635 @@
+.business-portal {
+    min-height: 100vh;
+    color: #102a33;
+    background: #f4f7f7;
+}
+
+.business-portal-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 78px;
+    padding: 12px clamp(20px, 5vw, 76px);
+    border-bottom: 1px solid #dfe9e7;
+    background: rgba(255, 255, 255, .96);
+    backdrop-filter: blur(14px);
+}
+
+.business-portal-brand img {
+    display: block;
+    width: 152px;
+    height: auto;
+}
+
+.business-portal-account {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-weight: 700;
+}
+
+.link-button,
+.back-home {
+    border: 0;
+    color: #0c5a66;
+    background: none;
+    font: inherit;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.business-auth-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(400px, 540px);
+    align-items: center;
+    gap: clamp(36px, 7vw, 108px);
+    width: min(1180px, calc(100% - 40px));
+    min-height: calc(100vh - 78px);
+    margin: 0 auto;
+    padding: 54px 0;
+}
+
+.business-auth-intro {
+    padding: clamp(24px, 4vw, 56px);
+}
+
+.eyebrow,
+.sidebar-caption {
+    color: #0c5a66;
+    font-size: .76rem;
+    font-weight: 900;
+    letter-spacing: .14em;
+}
+
+.business-auth-intro h1,
+.business-heading h1 {
+    margin: 14px 0 18px;
+    color: #10202c;
+    font-size: clamp(2.5rem, 5vw, 5rem);
+    line-height: .96;
+    letter-spacing: -.055em;
+}
+
+.business-auth-intro p,
+.business-heading p,
+.card-title p {
+    color: #607078;
+    line-height: 1.65;
+}
+
+.business-auth-intro ul {
+    display: grid;
+    gap: 12px;
+    margin: 26px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.business-auth-intro li::before {
+    content: "✓";
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+    border-radius: 50%;
+    color: #0c5a66;
+    background: #dff6ed;
+    font-weight: 900;
+}
+
+.business-auth-card,
+.loading-card,
+.portal-card,
+.submit-card,
+.review-note {
+    border: 1px solid #dce8e6;
+    border-radius: 28px;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(12, 90, 102, .08);
+}
+
+.business-auth-card {
+    padding: clamp(24px, 4vw, 42px);
+}
+
+.business-auth-card h2 {
+    margin: 28px 0 8px;
+    font-size: 1.7rem;
+}
+
+.business-auth-card > p {
+    margin: 0 0 24px;
+    color: #64737a;
+}
+
+.loading-card {
+    grid-column: 1 / -1;
+    padding: 42px;
+    text-align: center;
+    font-weight: 800;
+}
+
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 16px;
+    background: #eef4f3;
+}
+
+.auth-tabs button {
+    padding: 13px 16px;
+    border: 0;
+    border-radius: 12px;
+    color: #617076;
+    background: transparent;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.auth-tabs button.active {
+    color: #0c5a66;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(12, 90, 102, .09);
+}
+
+.form-grid {
+    display: grid;
+    gap: 18px;
+}
+
+.form-grid.two-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-grid label {
+    display: grid;
+    gap: 8px;
+}
+
+.form-grid label > span {
+    color: #253a42;
+    font-size: .86rem;
+    font-weight: 800;
+}
+
+.form-grid input,
+.form-grid select {
+    width: 100%;
+    min-height: 50px;
+    padding: 0 15px;
+    border: 1px solid #ccdcd9;
+    border-radius: 13px;
+    color: #14252c;
+    background: #fff;
+    font: inherit;
+    outline: none;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+    border-color: #0c5a66;
+    box-shadow: 0 0 0 4px rgba(158, 223, 207, .28);
+}
+
+.full-row {
+    grid-column: 1 / -1;
+}
+
+.primary-button {
+    min-height: 50px;
+    padding: 0 24px;
+    border: 0;
+    border-radius: 14px;
+    color: #fff;
+    background: #0c5a66;
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.primary-button:hover:not(:disabled) {
+    background: #084b55;
+}
+
+.primary-button:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+}
+
+.full-button {
+    width: 100%;
+    margin-top: 22px;
+}
+
+.form-message {
+    margin: 18px 0 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+.form-message.error {
+    color: #8c2d27;
+    background: #fff0ed;
+}
+
+.form-message.success {
+    color: #176242;
+    background: #e9f9f1;
+}
+
+.business-workspace {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    min-height: calc(100vh - 78px);
+}
+
+.business-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 34px;
+    padding: 42px 28px;
+    border-right: 1px solid #dfe9e7;
+    background: #fff;
+}
+
+.business-sidebar strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 1.2rem;
+}
+
+.business-sidebar nav {
+    display: grid;
+    gap: 8px;
+}
+
+.business-sidebar nav button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px;
+    border: 0;
+    border-radius: 13px;
+    color: #65757b;
+    background: transparent;
+    font: inherit;
+    font-weight: 800;
+    text-align: left;
+}
+
+.business-sidebar nav button span {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: #edf4f3;
+}
+
+.business-sidebar nav button.active {
+    color: #0c5a66;
+    background: #e7f5f1;
+}
+
+.sidebar-help {
+    margin-top: auto;
+    padding: 18px;
+    border-radius: 18px;
+    background: #f0f7f5;
+}
+
+.sidebar-help p {
+    margin: 8px 0;
+    color: #617176;
+    font-size: .9rem;
+}
+
+.sidebar-help a {
+    color: #0c5a66;
+    font-size: .88rem;
+    font-weight: 800;
+}
+
+.business-main {
+    width: min(1040px, calc(100% - 48px));
+    margin: 0 auto;
+    padding: 46px 0 80px;
+}
+
+.business-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.business-heading h1 {
+    margin: 10px 0 8px;
+    font-size: clamp(2.3rem, 4vw, 4rem);
+}
+
+.business-heading p {
+    max-width: 690px;
+    margin: 0;
+}
+
+.status-pill,
+.document-state {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: #6b5414;
+    background: #fff2c7;
+    font-size: .77rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.status-pill.approved,
+.document-state.approved {
+    color: #146442;
+    background: #dcf8e9;
+}
+
+.status-pill.moreinformationrequested,
+.document-state.needsreplacement,
+.status-pill.rejected {
+    color: #91342d;
+    background: #ffebe7;
+}
+
+.review-note {
+    margin-bottom: 22px;
+    padding: 20px 24px;
+    border-left: 5px solid #9edfcf;
+}
+
+.review-note p {
+    margin: 7px 0 0;
+    color: #5d6e74;
+}
+
+.portal-card {
+    margin-bottom: 22px;
+    padding: clamp(22px, 3vw, 34px);
+    border-radius: 22px;
+    box-shadow: 0 14px 40px rgba(12, 90, 102, .05);
+}
+
+.card-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 26px;
+}
+
+.card-title > span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 42px;
+    height: 42px;
+    border-radius: 13px;
+    color: #0c5a66;
+    background: #dff5ee;
+    font-weight: 900;
+}
+
+.card-title h2 {
+    margin: 0 0 4px;
+    font-size: 1.35rem;
+}
+
+.card-title p {
+    margin: 0;
+    font-size: .92rem;
+}
+
+.card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.company-summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.company-summary > div {
+    display: grid;
+    gap: 5px;
+    padding: 18px;
+    border-radius: 15px;
+    background: #f3f8f7;
+}
+
+.company-summary span,
+.company-summary small {
+    color: #6a797e;
+}
+
+.document-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.document-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+    min-height: 108px;
+    padding: 16px;
+    border: 1px dashed #bfd3cf;
+    border-radius: 17px;
+    background: #fbfdfd;
+}
+
+.document-card.uploaded {
+    border-style: solid;
+    border-color: #a9daca;
+    background: #f3fbf8;
+}
+
+.document-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    color: #0c5a66;
+    background: #dff5ee;
+    font-size: .8rem;
+    font-weight: 900;
+}
+
+.document-copy {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+}
+
+.document-copy small,
+.document-copy em {
+    overflow: hidden;
+    color: #6b797e;
+    font-size: .78rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.document-copy em {
+    color: #91342d;
+    white-space: normal;
+}
+
+.upload-button {
+    padding: 9px 12px;
+    border-radius: 10px;
+    color: #0c5a66;
+    background: #e2f5ef;
+    font-size: .8rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.upload-button input {
+    display: none;
+}
+
+.delete-button {
+    position: absolute;
+    top: 6px;
+    right: 7px;
+    border: 0;
+    color: #9b3f38;
+    background: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.submit-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    padding: clamp(24px, 3vw, 34px);
+    color: #fff;
+    border-color: #0c5a66;
+    background: #0c5a66;
+    box-shadow: none;
+}
+
+.submit-card .eyebrow {
+    color: #9edfcf;
+}
+
+.submit-card h2 {
+    margin: 8px 0;
+}
+
+.submit-card p {
+    margin: 0;
+    color: rgba(255, 255, 255, .78);
+}
+
+.submit-card .primary-button {
+    flex: 0 0 auto;
+    color: #0c5a66;
+    background: #fff;
+}
+
+@media (max-width: 900px) {
+    .business-auth-shell {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 26px 0 48px;
+    }
+
+    .business-auth-intro {
+        padding: 12px 6px 24px;
+    }
+
+    .business-auth-intro h1 {
+        font-size: clamp(2.55rem, 12vw, 4rem);
+    }
+
+    .business-workspace {
+        grid-template-columns: 1fr;
+    }
+
+    .business-sidebar {
+        display: none;
+    }
+
+    .business-main {
+        width: min(100% - 28px, 720px);
+        padding-top: 28px;
+    }
+}
+
+@media (max-width: 640px) {
+    .business-portal-header {
+        min-height: 68px;
+        padding: 10px 16px;
+    }
+
+    .business-portal-brand img {
+        width: 126px;
+    }
+
+    .business-portal-account span {
+        display: none;
+    }
+
+    .form-grid.two-columns,
+    .company-summary,
+    .document-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .business-heading {
+        display: grid;
+    }
+
+    .business-heading h1 {
+        font-size: 2.45rem;
+    }
+
+    .portal-card,
+    .business-auth-card {
+        border-radius: 20px;
+    }
+
+    .document-card {
+        grid-template-columns: 46px minmax(0, 1fr);
+    }
+
+    .upload-button {
+        grid-column: 1 / -1;
+        text-align: center;
+    }
+
+    .submit-card {
+        display: grid;
+    }
+
+    .submit-card .primary-button {
+        width: 100%;
+    }
+}

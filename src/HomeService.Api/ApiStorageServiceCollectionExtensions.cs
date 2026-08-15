@@ -19,6 +19,7 @@ public static class ApiStorageServiceCollectionExtensions
         services.AddSingleton<CmsMediaUploadService>();
         services.AddSingleton<ClientMissionPhotoUploadService>();
         services.AddSingleton<ClientProfilePhotoUploadService>();
+        services.AddSingleton<BusinessClientDocumentUploadService>();
 
         return services;
     }

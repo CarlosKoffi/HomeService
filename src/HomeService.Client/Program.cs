@@ -22,6 +22,14 @@ builder.Services.AddHttpClient<PublicWebsiteApiClient>(client =>
         ?? "http://localhost:5080");
     client.Timeout = TimeSpan.FromSeconds(8);
 });
+builder.Services.AddHttpClient<BusinessClientApiClient>(client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["API_BASE_URL"]
+        ?? builder.Configuration["ApiBaseUrl"]
+        ?? "http://localhost:5080");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 var app = builder.Build();
 

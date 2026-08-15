@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.BusinessClients;
 using HomeService.Contracts.Cms;
 using PaymentProviderResponse = HomeService.Contracts.Clients.PaymentProviderResponse;
 using UpsertPaymentProviderRequest = HomeService.Contracts.Clients.UpsertPaymentProviderRequest;
@@ -141,6 +142,67 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await GetJsonAsync<IReadOnlyList<CompanyApplicationSummaryResponse>>("/api/admin/company-applications", cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<AdminBusinessClientListItemResponse>> GetBusinessClientsAsync(
+        string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var suffix = string.IsNullOrWhiteSpace(status)
+            ? string.Empty
+            : $"?status={Uri.EscapeDataString(status)}";
+        return await GetJsonAsync<IReadOnlyList<AdminBusinessClientListItemResponse>>(
+            $"/api/admin/business-clients{suffix}", cancellationToken) ?? [];
+    }
+
+    public async Task<AdminBusinessClientDetailResponse?> GetBusinessClientAsync(
+        Guid profileId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await GetJsonAsync<AdminBusinessClientDetailResponse>(
+            $"/api/admin/business-clients/{profileId:D}", cancellationToken);
+    }
+
+    public async Task<BusinessClientProfileResponse?> MarkBusinessClientUnderReviewAsync(
+        Guid profileId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<BusinessClientProfileResponse>(
+            $"/api/admin/business-clients/{profileId:D}/under-review", new { }, cancellationToken);
+    }
+
+    public async Task<BusinessClientProfileResponse?> ApproveBusinessClientAsync(
+        Guid profileId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<BusinessClientProfileResponse>(
+            $"/api/admin/business-clients/{profileId:D}/approve", new ReviewBusinessClientRequest(null), cancellationToken);
+    }
+
+    public async Task<BusinessClientProfileResponse?> RequestBusinessClientInformationAsync(
+        Guid profileId,
+        string note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<BusinessClientProfileResponse>(
+            $"/api/admin/business-clients/{profileId:D}/request-more-information",
+            new ReviewBusinessClientRequest(note), cancellationToken);
+    }
+
+    public async Task<BusinessClientProfileResponse?> RejectBusinessClientAsync(
+        Guid profileId,
+        string note,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<BusinessClientProfileResponse>(
+            $"/api/admin/business-clients/{profileId:D}/reject",
+            new ReviewBusinessClientRequest(note), cancellationToken);
     }
 
     public async Task<AdminCompanyListResponse?> GetCompaniesAsync(
@@ -1498,10 +1560,39 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return $"/admin-provider-documents/{documentId}/preview";
     }
 
+    public string GetBusinessClientDocumentPreviewUrl(Guid profileId, Guid documentId)
+    {
+        return $"/admin-business-client-documents/{profileId:D}/{documentId:D}/preview";
+    }
+
     public async Task<CompanyApplicationDocumentFile> GetCompanyApplicationDocumentFileAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
         var path = $"/api/admin/company-application-documents/{documentId}/download";
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw CreateApiException(response, path, body);
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName
+            ?? "document";
+
+        return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
+    }
+
+    public async Task<CompanyApplicationDocumentFile> GetBusinessClientDocumentFileAsync(
+        Guid profileId,
+        Guid documentId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/admin/business-clients/{profileId:D}/documents/{documentId:D}";
         using var response = await httpClient.GetAsync(path, cancellationToken);
 
         if (!response.IsSuccessStatusCode)

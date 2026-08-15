@@ -1,4 +1,5 @@
 using HomeService.Application.Admin;
+using HomeService.Application.BusinessClients;
 using HomeService.Application.Clients;
 using HomeService.Application.Cms;
 using HomeService.Application.Companies;
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<ClientMissionScreenService>();
         services.AddScoped<ClientNotificationInboxService>();
         services.AddScoped<ClientHomeService>();
+        services.AddScoped<BusinessClientOnboardingService>();
         services.AddScoped<CompanyApplicationRegistrationService>();
         services.AddScoped<CompanyPortalAuthService>();
         services.AddScoped<CompanyActivationPreviewService>();
@@ -92,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<AdminCmsQueryService>();
         services.AddScoped<AdminCmsContentManagementService>();
         services.AddScoped<AdminCompanyApplicationReviewService>();
+        services.AddScoped<AdminBusinessClientReviewService>();
         services.AddScoped<AdminCompanyApplicationDocumentReviewService>();
         services.AddScoped<AdminCompanyNotificationService>();
         services.AddScoped<AdminCompanyOperationsService>();

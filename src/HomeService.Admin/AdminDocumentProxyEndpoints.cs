@@ -32,6 +32,20 @@ public static class AdminDocumentProxyEndpoints
                 context);
         });
 
+        app.MapGet("/admin-business-client-documents/{profileId:guid}/{documentId:guid}/preview", async (
+            Guid profileId,
+            Guid documentId,
+            PlatformApiClient apiClient,
+            AdminApiSessionAccessor sessionAccessor,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            ApplyAdminSessionCookie(context, sessionAccessor);
+            return await RenderDocumentAsync(
+                () => apiClient.GetBusinessClientDocumentFileAsync(profileId, documentId, cancellationToken),
+                context);
+        });
+
         app.MapGet("/admin-client-attachments/{documentId:guid}/preview", async (
             Guid documentId,
             PlatformApiClient apiClient,

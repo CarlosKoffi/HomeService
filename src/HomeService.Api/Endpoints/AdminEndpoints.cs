@@ -1,6 +1,7 @@
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
 using HomeService.Application.Branding;
+using HomeService.Application.BusinessClients;
 using HomeService.Application.Companies;
 using HomeService.Application.Abstractions;
 using HomeService.Application.CompanyPortal;
@@ -11,6 +12,7 @@ using HomeService.Application.Quality;
 using HomeService.Api.Auditing;
 using HomeService.Contracts.Admin;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.BusinessClients;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.Contact;
@@ -1430,6 +1432,144 @@ public static class AdminEndpoints
             return Results.Ok(ToFinancialActionResponse(authorization, "Retrait cash confirmé et solde débité."));
         })
         .WithName("CompleteCashCompanyPayout");
+
+        admin.MapGet("/business-clients", async (
+            string? status,
+            AdminBusinessClientReviewService reviewService,
+            CancellationToken cancellationToken) =>
+        {
+            BusinessClientStatus? parsedStatus = null;
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<BusinessClientStatus>(status, true, out var value))
+                {
+                    return Results.BadRequest(new { message = "Le statut demande est invalide." });
+                }
+
+                parsedStatus = value;
+            }
+
+            return Results.Ok(await reviewService.ListAsync(parsedStatus, cancellationToken));
+        })
+        .WithName("ListAdminBusinessClients")
+        .Produces<IReadOnlyList<AdminBusinessClientListItemResponse>>()
+        .Produces(StatusCodes.Status400BadRequest);
+
+        admin.MapGet("/business-clients/{profileId:guid}", async (
+            Guid profileId,
+            AdminBusinessClientReviewService reviewService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await reviewService.GetAsync(profileId, cancellationToken);
+            return profile is null ? Results.NotFound() : Results.Ok(profile);
+        })
+        .WithName("GetAdminBusinessClient")
+        .Produces<AdminBusinessClientDetailResponse>()
+        .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapGet("/business-clients/{profileId:guid}/documents/{documentId:guid}", async (
+            Guid profileId,
+            Guid documentId,
+            AdminBusinessClientReviewService reviewService,
+            BusinessClientDocumentUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var document = await reviewService.GetDocumentAsync(profileId, documentId, cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound();
+            }
+
+            var stream = await uploadService.OpenReadAsync(document.Value.StoragePath, cancellationToken);
+            return stream is null
+                ? Results.NotFound()
+                : Results.File(stream, document.Value.ContentType, document.Value.FileName);
+        })
+        .WithName("DownloadAdminBusinessClientDocument")
+        .Produces(StatusCodes.Status404NotFound);
+
+        admin.MapPost("/business-clients/{profileId:guid}/under-review", async (
+            Guid profileId,
+            AdminBusinessClientReviewService reviewService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await reviewService.MarkUnderReviewAsync(profileId, cancellationToken));
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("MarkBusinessClientUnderReview");
+
+        admin.MapPost("/business-clients/{profileId:guid}/request-more-information", async (
+            Guid profileId,
+            ReviewBusinessClientRequest request,
+            AdminBusinessClientReviewService reviewService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await reviewService.RequestMoreInformationAsync(profileId, request.Note, cancellationToken));
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("RequestBusinessClientMoreInformation");
+
+        admin.MapPost("/business-clients/{profileId:guid}/approve", async (
+            Guid profileId,
+            ReviewBusinessClientRequest request,
+            AdminBusinessClientReviewService reviewService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await reviewService.ApproveAsync(profileId, request.Note, cancellationToken));
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("ApproveBusinessClient");
+
+        admin.MapPost("/business-clients/{profileId:guid}/reject", async (
+            Guid profileId,
+            ReviewBusinessClientRequest request,
+            AdminBusinessClientReviewService reviewService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                return Results.Ok(await reviewService.RejectAsync(profileId, request.Note, cancellationToken));
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Results.BadRequest(new { message = exception.Message });
+            }
+        })
+        .WithName("RejectBusinessClient");
         
         admin.MapGet("/company-applications", async (AdminQueryService queryService, ILogger<Program> logger, CancellationToken cancellationToken) =>
         {
