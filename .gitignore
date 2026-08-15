@@ -483,3 +483,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local Codex audits, previews, APKs and diagnostic exports
+.codex-asset-audit-*/
+outputs/
