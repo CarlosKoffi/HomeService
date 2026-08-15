@@ -8056,7 +8056,7 @@ h3 {
 
 .notifications-hero {
     align-items: center;
-    background: #111111;
+    background: linear-gradient(135deg, #0c5a66 0%, #084a53 100%);
     border-radius: 28px;
     color: #ffffff;
     display: flex;
@@ -8254,8 +8254,8 @@ h3 {
 }
 
 .notifications-filter button.active {
-    background: #111111;
-    border-color: #111111;
+    background: #0c5a66;
+    border-color: #0c5a66;
     color: #ffffff;
 }
 
@@ -8409,8 +8409,8 @@ h3 {
 }
 
 .notifications-item > button:hover {
-    background: #111111;
-    border-color: #111111;
+    background: #0c5a66;
+    border-color: #0c5a66;
     color: #ffffff;
 }
 
@@ -8833,7 +8833,7 @@ h3 {
 }
 
 .portal-menu-button span {
-    background: #111111;
+    background: #0c5a66;
     display: block;
     height: 2px;
     margin: 4px 0;
@@ -8966,7 +8966,7 @@ h3 {
 
 .info-hero-card {
     align-items: center;
-    background: #111111;
+    background: linear-gradient(135deg, #0c5a66 0%, #084a53 100%);
     border-radius: 24px;
     color: #ffffff;
     display: grid;
@@ -9638,7 +9638,7 @@ h3 {
 
 .employee-hero-panel {
     align-items: center;
-    background: #111111;
+    background: linear-gradient(135deg, #0c5a66 0%, #084a53 100%);
     border-radius: 24px;
     color: #ffffff;
     display: flex;
@@ -9793,7 +9793,7 @@ h3 {
 }
 
 .employee-filter-tabs button.active {
-    background: #111111;
+    background: #0c5a66;
     color: #ffffff;
 }
 
@@ -11031,7 +11031,7 @@ h3 {
 
 .interim-hero-panel {
     align-items: stretch;
-    background: #111111;
+    background: linear-gradient(135deg, #0c5a66 0%, #084a53 100%);
     border-radius: 22px;
     color: #ffffff;
     display: grid;
@@ -12986,7 +12986,7 @@ h3 {
 }
 
 .missions-tabs button.active {
-    background: #000000;
+    background: #0c5a66;
     color: #fff;
 }
 
