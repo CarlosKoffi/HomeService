@@ -53,7 +53,7 @@
 .company-profile-hero {
     background:
         linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .82) 56%, rgba(255, 255, 255, .42) 100%),
-        url("images/wele-premium-hero.png") center / cover !important;
+        url("https://media.wele.africa/website/company/wele-premium-hero.png") center / cover !important;
     border-color: #ECECEC !important;
 }
 
@@ -2845,7 +2845,7 @@
 
 .premium-hero {
     align-items: center;
-    background: url("images/wele-premium-hero.png") center / cover;
+    background: url("https://media.wele.africa/website/company/wele-premium-hero.png") center / cover;
     display: flex;
     min-height: 560px;
     overflow: hidden;
@@ -3479,9 +3479,9 @@
 }
 
 .premium-footer {
-    background: linear-gradient(145deg, #ffffff 0%, #f4fbf7 62%, #eaf7f1 100%);
+    background: #0C5A66;
     border-top: 1px solid var(--premium-border);
-    color: var(--premium-black);
+    color: #ffffff;
     display: grid;
     gap: 3rem 4rem;
     grid-template-columns: 1.45fr repeat(4, minmax(0, 1fr));
@@ -3504,11 +3504,11 @@
     display: block;
     height: 48px;
     object-fit: contain;
-    width: 164px;
+    width: 166px;
 }
 
 .premium-footer p {
-    color: #66777b;
+    color: rgba(255, 255, 255, .78);
     font-size: .92rem;
     font-weight: 350;
     line-height: 1.55;
@@ -3521,7 +3521,7 @@
 }
 
 .premium-footer h2 {
-    color: var(--premium-black);
+    color: #ffffff;
     font-size: .68rem;
     font-weight: 700;
     letter-spacing: .16em;
@@ -3530,7 +3530,7 @@
 }
 
 .premium-footer a {
-    color: #66777b;
+    color: rgba(255, 255, 255, .82);
     font-size: .92rem;
     font-weight: 350;
     text-decoration: none;
@@ -3538,12 +3538,12 @@
 }
 
 .premium-footer a:hover {
-    color: var(--premium-blue);
+    color: #9EDFBF;
 }
 
 .premium-footer-bottom {
     border-top: 1px solid var(--premium-border);
-    color: #7d8d91;
+    color: rgba(255, 255, 255, .68);
     display: flex;
     font-size: .78rem;
     gap: 1rem;
@@ -5241,8 +5241,8 @@ h3 {
 }
 
 .platform-icon-dark {
-    background: #111111;
-    border-color: #333333;
+    background: #0C5A66;
+    border-color: #9EDFBF;
     color: #ffffff;
 }
 
@@ -6393,7 +6393,7 @@ h3 {
 
 .concept-step-number {
     align-items: center;
-    background: #000000;
+    background: #0C5A66;
     border-radius: 999px;
     color: #ffffff;
     display: inline-flex;
@@ -7002,7 +7002,7 @@ h3 {
 }
 
 .replace-document-action:hover {
-    background: #000000;
+    background: #0C5A66;
     box-shadow: 0 12px 24px rgba(15, 23, 42, .14);
     transform: translateY(-1px);
 }
@@ -7589,7 +7589,7 @@ h3 {
 
 .portal-sidebar-logo img {
     display: block;
-    filter: brightness(0) invert(1);
+    filter: none;
     height: auto;
     max-height: 48px;
     object-fit: contain;
@@ -9338,83 +9338,246 @@ h3 {
     font-weight: 800;
 }
 
-.info-payment-list {
+.info-payment-editor {
     display: grid;
-    gap: 8px;
+    gap: 16px;
 }
 
-.info-payment-row {
-    align-items: center;
-    background: #fafafa;
-    border: 1px solid var(--portal-border);
-    border-radius: 16px;
+.info-payment-number-field {
     display: grid;
-    gap: 12px;
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    padding: 12px 14px;
+    gap: 7px;
 }
 
-.info-payment-empty {
-    background: #ffffff;
-    border-style: dashed;
-}
-
-.info-payment-icon {
-    align-items: center;
-    background: #f5f5f5;
-    border-radius: 12px;
-    color: #cccccc;
-    display: inline-flex;
-    font-size: 9px;
+.info-payment-number-field > span,
+.info-payment-network-title strong {
+    color: #111111;
+    font-size: 12px;
     font-weight: 800;
-    height: 32px;
-    justify-content: center;
-    width: 32px;
-    overflow: hidden;
 }
 
-.info-payment-icon img {
-    display: block;
-    height: 100%;
-    object-fit: contain;
-    padding: 3px;
+.info-payment-number-field input {
+    background: #ffffff;
+    border: 1px solid var(--portal-border);
+    border-radius: 14px;
+    color: var(--portal-ink);
+    font: inherit;
+    min-height: 46px;
+    padding: 0 14px;
     width: 100%;
 }
 
-.info-payment-row strong,
-.info-payment-row small {
+.info-payment-number-field input:focus {
+    border-color: var(--portal-blue);
+    box-shadow: 0 0 0 3px rgba(12, 90, 102, .08);
+    outline: 0;
+}
+
+.info-payment-network-title {
+    display: grid;
+    gap: 2px;
+}
+
+.info-payment-network-title small,
+.info-payment-help {
+    color: var(--portal-muted);
+    font-size: 11px;
+}
+
+.info-payment-choice-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.info-payment-choice {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid var(--portal-border);
+    border-radius: 16px;
+    cursor: pointer;
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 52px minmax(0, 1fr) 24px;
+    min-height: 62px;
+    padding: 8px 10px;
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+
+.info-payment-choice:hover {
+    border-color: rgba(12, 90, 102, .35);
+    transform: translateY(-1px);
+}
+
+.info-payment-choice.selected {
+    background: rgba(12, 90, 102, .035);
+    border-color: var(--portal-blue);
+    box-shadow: 0 0 0 2px rgba(12, 90, 102, .07);
+}
+
+.info-payment-choice input {
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+}
+
+.info-payment-choice-logo {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #edf0f2;
+    border-radius: 12px;
+    display: inline-flex;
+    height: 40px;
+    justify-content: center;
+    padding: 5px;
+    width: 52px;
+}
+
+.info-payment-choice-logo img,
+.info-payment-network-logos img {
+    display: block;
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+}
+
+.info-payment-choice strong {
+    color: #111111;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.info-payment-choice-check {
+    align-items: center;
+    border: 1px solid #d8dde3;
+    border-radius: 50%;
+    color: transparent;
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 900;
+    height: 22px;
+    justify-content: center;
+    width: 22px;
+}
+
+.info-payment-choice.selected .info-payment-choice-check {
+    background: var(--portal-blue);
+    border-color: var(--portal-blue);
+    color: #ffffff;
+}
+
+.info-payment-help {
+    margin: -6px 0 0;
+}
+
+.info-payment-empty-state,
+.info-payment-account {
+    align-items: center;
+    border: 1px dashed var(--portal-border);
+    border-radius: 16px;
+    display: flex;
+    gap: 12px;
+    padding: 14px;
+}
+
+.info-payment-empty-state > span,
+.info-payment-account-icon {
+    align-items: center;
+    background: rgba(12, 90, 102, .08);
+    border-radius: 12px;
+    color: var(--portal-blue);
+    display: inline-flex;
+    flex: 0 0 42px;
+    font-size: 10px;
+    font-weight: 900;
+    height: 42px;
+    justify-content: center;
+}
+
+.info-payment-empty-state strong,
+.info-payment-empty-state small,
+.info-payment-account strong,
+.info-payment-account small {
     display: block;
 }
 
-.info-payment-row strong {
+.info-payment-empty-state strong,
+.info-payment-account strong {
     color: #111111;
-    font-size: 12px;
-    font-weight: 750;
+    font-size: 13px;
+    font-weight: 800;
 }
 
-.info-payment-row small {
+.info-payment-empty-state small,
+.info-payment-account small,
+.info-payment-networks > span {
     color: var(--portal-muted);
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
     font-size: 11px;
-    margin-top: 2px;
 }
 
-.info-payment-row em {
-    background: #f0fdf4;
+.info-payment-account {
+    border-style: solid;
+    justify-content: space-between;
+}
+
+.info-payment-account-copy {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    min-width: 0;
+}
+
+.info-payment-account-icon svg {
+    fill: none;
+    height: 22px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 22px;
+}
+
+.info-payment-account em {
+    background: #ecfdf3;
     border-radius: 999px;
-    color: #16a34a;
+    color: #15803d;
     font-size: 10px;
     font-style: normal;
     font-weight: 800;
-    padding: 4px 10px;
+    padding: 5px 10px;
 }
 
-.info-payment-row button {
-    background: transparent;
-    border: 0;
-    color: var(--portal-blue);
-    font-size: 10px;
-    font-weight: 800;
+.info-payment-networks {
+    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.info-payment-network-logos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.info-payment-network-logos > span {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid var(--portal-border);
+    border-radius: 13px;
+    display: inline-flex;
+    height: 44px;
+    justify-content: center;
+    padding: 6px 9px;
+    width: 74px;
+}
+
+@media (max-width: 640px) {
+    .info-payment-choice-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .info-payment-account {
+        align-items: flex-start;
+    }
 }
 
 .info-documents-card {
@@ -12026,7 +12189,7 @@ h3 {
 .portal-copy {
     background:
         linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .78) 58%, rgba(255, 255, 255, .32) 100%),
-        url("images/wele-premium-hero.png") center / cover;
+        url("https://media.wele.africa/website/company/wele-premium-hero.png") center / cover;
     border: 1px solid #ECECEC;
     border-radius: 28px;
     box-shadow: 0 24px 70px rgba(17, 17, 17, .06);
@@ -12076,7 +12239,7 @@ h3 {
     align-items: center;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .78) 55%, rgba(255, 255, 255, .32) 100%),
-        url("images/wele-premium-hero.png") center / cover;
+        url("https://media.wele.africa/website/company/wele-premium-hero.png") center / cover;
     border: 1px solid #ECECEC;
     border-radius: 28px;
     box-shadow: 0 24px 70px rgba(17, 17, 17, .06);
@@ -12170,7 +12333,7 @@ h3 {
 .company-profile-hero {
     background:
         linear-gradient(90deg, rgba(255, 255, 255, .94) 0%, rgba(255, 255, 255, .82) 56%, rgba(255, 255, 255, .42) 100%),
-        url("images/wele-premium-hero.png") center / cover !important;
+        url("https://media.wele.africa/website/company/wele-premium-hero.png") center / cover !important;
     border-color: #ECECEC !important;
 }
 

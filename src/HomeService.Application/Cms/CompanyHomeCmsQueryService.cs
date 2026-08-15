@@ -75,9 +75,9 @@ public sealed class CompanyHomeCmsQueryService(IAppDbContext db)
                 GetText(steps, "headline", "De l'inscription à votre première mission"),
                 GetText(steps, "subtitle", "Un parcours clair en trois étapes."),
                 GetJsonList(steps, "steps", [
-                    new CmsStepResponse("01", "Compte", "Créez votre compte entreprise", "Renseignez les informations et les pièces légales et administratives de votre entreprise.", "images/wele-how-step-1.png"),
-                    new CmsStepResponse("02", "Validation", "Validation par nos équipes", "Nous vérifions et approuvons votre dossier sous 48h.", "images/wele-how-step-2.png"),
-                    new CmsStepResponse("03", "Demandes", "Recevez des demandes", "Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.", "images/wele-how-step-3.png")
+                    new CmsStepResponse("01", "Compte", "Créez votre compte entreprise", "Renseignez les informations et les pièces légales et administratives de votre entreprise.", "website/company/wele-how-step-1.png"),
+                    new CmsStepResponse("02", "Validation", "Validation par nos équipes", "Nous vérifions et approuvons votre dossier sous 48h.", "website/company/wele-how-step-2.png"),
+                    new CmsStepResponse("03", "Demandes", "Recevez des demandes", "Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.", "website/company/wele-how-step-3.png")
                 ])),
             new CompanyHomeTrustedCmsResponse(
                 GetText(trusted, "headline", "Tout ce qu'il faut pour développer votre activité"),

@@ -95,6 +95,33 @@ public sealed class CompanyPortalProfileManagementService(IAppDbContext db)
         UpdateCompanyPortalPaymentRequest request,
         CancellationToken cancellationToken)
     {
+        var paymentNumbers = new[]
+        {
+            request.WavePaymentNumber,
+            request.OrangeMoneyPaymentNumber,
+            request.MtnMoneyPaymentNumber,
+            request.MoovMoneyPaymentNumber
+        }
+            .Where(number => !string.IsNullOrWhiteSpace(number))
+            .Select(number => number!.Trim())
+            .ToList();
+
+        if (paymentNumbers.Count == 0)
+        {
+            return CompanyPortalProfileUpdateResult.Invalid("Renseignez un numero Mobile Money et selectionnez au moins un reseau.");
+        }
+
+        var normalizedNumbers = paymentNumbers.Select(NormalizePaymentNumber).ToList();
+        if (normalizedNumbers.Any(number => number.Length is < 8 or > 15))
+        {
+            return CompanyPortalProfileUpdateResult.Invalid("Le numero Mobile Money est invalide.");
+        }
+
+        if (normalizedNumbers.Distinct(StringComparer.Ordinal).Count() != 1)
+        {
+            return CompanyPortalProfileUpdateResult.Invalid("Utilisez un seul numero Mobile Money pour tous les reseaux selectionnes.");
+        }
+
         var aggregate = await LoadAggregateAsync(companyId, cancellationToken);
         if (aggregate.Company is null)
         {
@@ -136,6 +163,11 @@ public sealed class CompanyPortalProfileManagementService(IAppDbContext db)
     private static bool IsBlank(string? value)
     {
         return string.IsNullOrWhiteSpace(value);
+    }
+
+    private static string NormalizePaymentNumber(string value)
+    {
+        return new string(value.Where(char.IsDigit).ToArray());
     }
 
     private sealed record CompanyPortalProfileAggregate(Company? Company, CompanyApplication? Application);

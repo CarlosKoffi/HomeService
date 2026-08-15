@@ -238,7 +238,7 @@ else
                         </div>
                     </article>
 
-                    <article class="info-card">
+                    <article class="info-card" data-testid="payment-profile-card">
                         <header>
                             <div>
                                 <span class="info-card-icon info-amber"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
@@ -248,11 +248,42 @@ else
                         </header>
                         @if (IsEditing("payment"))
                         {
-                            <div class="info-edit-stack">
-                                <label><span>Numero Wave</span><input @bind="WavePaymentNumberDraft" placeholder="+225..." /></label>
-                                <label><span>Numero Orange Money</span><input @bind="OrangeMoneyPaymentNumberDraft" placeholder="+225..." /></label>
-                                <label><span>Numero MTN MoMo</span><input @bind="MtnMoneyPaymentNumberDraft" placeholder="+225..." /></label>
-                                <label><span>Numero Moov Money</span><input @bind="MoovMoneyPaymentNumberDraft" placeholder="+225..." /></label>
+                            <div class="info-payment-editor">
+                                <label class="info-payment-number-field">
+                                    <span>Numero Mobile Money</span>
+                                    <input @bind="MobileMoneyNumberDraft" inputmode="tel" autocomplete="tel" placeholder="Ex. 07 01 02 03 04" />
+                                </label>
+                                <div class="info-payment-network-title">
+                                    <strong>Reseaux disponibles sur ce numero</strong>
+                                    <small>Selectionnez-en un ou plusieurs.</small>
+                                </div>
+                                <div class="info-payment-choice-grid">
+                                    <label class="info-payment-choice @(UseWaveDraft ? "selected" : string.Empty)">
+                                        <input type="checkbox" @bind="UseWaveDraft" />
+                                        <span class="info-payment-choice-logo"><img src="@PaymentLogoUrl("wave")" alt="Logo Wave" /></span>
+                                        <strong>Wave</strong>
+                                        <span class="info-payment-choice-check" aria-hidden="true">✓</span>
+                                    </label>
+                                    <label class="info-payment-choice @(UseOrangeMoneyDraft ? "selected" : string.Empty)">
+                                        <input type="checkbox" @bind="UseOrangeMoneyDraft" />
+                                        <span class="info-payment-choice-logo"><img src="@PaymentLogoUrl("orange-money")" alt="Logo Orange Money" /></span>
+                                        <strong>Orange Money</strong>
+                                        <span class="info-payment-choice-check" aria-hidden="true">✓</span>
+                                    </label>
+                                    <label class="info-payment-choice @(UseMtnMoneyDraft ? "selected" : string.Empty)">
+                                        <input type="checkbox" @bind="UseMtnMoneyDraft" />
+                                        <span class="info-payment-choice-logo"><img src="@PaymentLogoUrl("mtn-momo")" alt="Logo MTN MoMo" /></span>
+                                        <strong>MTN MoMo</strong>
+                                        <span class="info-payment-choice-check" aria-hidden="true">✓</span>
+                                    </label>
+                                    <label class="info-payment-choice @(UseMoovMoneyDraft ? "selected" : string.Empty)">
+                                        <input type="checkbox" @bind="UseMoovMoneyDraft" />
+                                        <span class="info-payment-choice-logo"><img src="@PaymentLogoUrl("moov-money")" alt="Logo Moov Money" /></span>
+                                        <strong>Moov Money</strong>
+                                        <span class="info-payment-choice-check" aria-hidden="true">✓</span>
+                                    </label>
+                                </div>
+                                <p class="info-payment-help">Le meme numero sera utilise pour chaque reseau selectionne.</p>
                             </div>
                             <div class="info-card-actions">
                                 <button type="button" class="info-save-button" disabled="@IsSaving" @onclick="SavePaymentAsync">Enregistrer</button>
@@ -261,40 +292,50 @@ else
                         }
                         else
                         {
-                            <div class="info-payment-list">
-                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber) ? "info-payment-empty" : string.Empty)">
-                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/wave.png")" alt="Logo Wave" /></span>
+                            @if (!HasMobileMoneyAccount())
+                            {
+                                <div class="info-payment-empty-state">
+                                    <span>MM</span>
                                     <div>
-                                        <strong>Wave</strong>
-                                        <small>@Display(Profile?.WavePaymentNumber, "A completer")</small>
+                                        <strong>Aucun numero enregistre</strong>
+                                        <small>Ajoutez votre numero puis choisissez les reseaux disponibles.</small>
                                     </div>
-                                    <em>@(string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber) ? "Manquant" : "Actif")</em>
                                 </div>
-                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber) ? "info-payment-empty" : string.Empty)">
-                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/orange-money.png")" alt="Logo Orange Money" /></span>
-                                    <div>
-                                        <strong>Orange Money</strong>
-                                        <small>@Display(Profile?.OrangeMoneyPaymentNumber, "A completer")</small>
+                            }
+                            else
+                            {
+                                <div class="info-payment-account">
+                                    <div class="info-payment-account-copy">
+                                        <span class="info-payment-account-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+                                        <div>
+                                            <small>Numero Mobile Money</small>
+                                            <strong>@GetMobileMoneyNumber()</strong>
+                                        </div>
                                     </div>
-                                    <em>@(string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber) ? "Manquant" : "Actif")</em>
+                                    <em>Actif</em>
                                 </div>
-                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.MtnMoneyPaymentNumber) ? "info-payment-empty" : string.Empty)">
-                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/mtn-momo.png")" alt="Logo MTN MoMo" /></span>
-                                    <div>
-                                        <strong>MTN MoMo</strong>
-                                        <small>@Display(Profile?.MtnMoneyPaymentNumber, "A completer")</small>
+                                <div class="info-payment-networks">
+                                    <span>Reseaux disponibles</span>
+                                    <div class="info-payment-network-logos">
+                                        @if (!string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber))
+                                        {
+                                            <span title="Wave"><img src="@PaymentLogoUrl("wave")" alt="Wave" /></span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber))
+                                        {
+                                            <span title="Orange Money"><img src="@PaymentLogoUrl("orange-money")" alt="Orange Money" /></span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(Profile?.MtnMoneyPaymentNumber))
+                                        {
+                                            <span title="MTN MoMo"><img src="@PaymentLogoUrl("mtn-momo")" alt="MTN MoMo" /></span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(Profile?.MoovMoneyPaymentNumber))
+                                        {
+                                            <span title="Moov Money"><img src="@PaymentLogoUrl("moov-money")" alt="Moov Money" /></span>
+                                        }
                                     </div>
-                                    <em>@(string.IsNullOrWhiteSpace(Profile?.MtnMoneyPaymentNumber) ? "Manquant" : "Actif")</em>
                                 </div>
-                                <div class="info-payment-row @(string.IsNullOrWhiteSpace(Profile?.MoovMoneyPaymentNumber) ? "info-payment-empty" : string.Empty)">
-                                    <span class="info-payment-icon"><img src="@ApiClient.ToApiUrl("/media/payment-providers/moov-money.png")" alt="Logo Moov Money" /></span>
-                                    <div>
-                                        <strong>Moov Money</strong>
-                                        <small>@Display(Profile?.MoovMoneyPaymentNumber, "A completer")</small>
-                                    </div>
-                                    <em>@(string.IsNullOrWhiteSpace(Profile?.MoovMoneyPaymentNumber) ? "Manquant" : "Actif")</em>
-                                </div>
-                            </div>
+                            }
                         }
                     </article>
                 </section>
@@ -385,10 +426,11 @@ else
     private string PhoneNumberDraft { get; set; } = string.Empty;
     private string? InterventionZonesDraft { get; set; }
     private string? PlannedServicesDraft { get; set; }
-    private string? WavePaymentNumberDraft { get; set; }
-    private string? OrangeMoneyPaymentNumberDraft { get; set; }
-    private string? MtnMoneyPaymentNumberDraft { get; set; }
-    private string? MoovMoneyPaymentNumberDraft { get; set; }
+    private string? MobileMoneyNumberDraft { get; set; }
+    private bool UseWaveDraft { get; set; }
+    private bool UseOrangeMoneyDraft { get; set; }
+    private bool UseMtnMoneyDraft { get; set; }
+    private bool UseMoovMoneyDraft { get; set; }
     private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -481,10 +523,11 @@ else
         PhoneNumberDraft = Display(Profile?.PhoneNumber, string.Empty);
         InterventionZonesDraft = Profile?.InterventionZones ?? string.Join(", ", GetInterventionZones().Where(zone => zone != "A completer"));
         PlannedServicesDraft = Profile?.PlannedServices ?? string.Join(", ", GetPlannedServices().Where(service => service != "A completer"));
-        WavePaymentNumberDraft = Profile?.WavePaymentNumber;
-        OrangeMoneyPaymentNumberDraft = Profile?.OrangeMoneyPaymentNumber;
-        MtnMoneyPaymentNumberDraft = Profile?.MtnMoneyPaymentNumber;
-        MoovMoneyPaymentNumberDraft = Profile?.MoovMoneyPaymentNumber;
+        MobileMoneyNumberDraft = GetMobileMoneyNumberOrNull();
+        UseWaveDraft = !string.IsNullOrWhiteSpace(Profile?.WavePaymentNumber);
+        UseOrangeMoneyDraft = !string.IsNullOrWhiteSpace(Profile?.OrangeMoneyPaymentNumber);
+        UseMtnMoneyDraft = !string.IsNullOrWhiteSpace(Profile?.MtnMoneyPaymentNumber);
+        UseMoovMoneyDraft = !string.IsNullOrWhiteSpace(Profile?.MoovMoneyPaymentNumber);
     }
 
     private async Task SaveCompanyInfoAsync()
@@ -536,13 +579,30 @@ else
             return;
         }
 
+        var paymentNumber = MobileMoneyNumberDraft?.Trim();
+        var digits = string.IsNullOrWhiteSpace(paymentNumber)
+            ? string.Empty
+            : new string(paymentNumber.Where(char.IsDigit).ToArray());
+
+        if (digits.Length is < 8 or > 15)
+        {
+            Message = "Saisissez un numero Mobile Money valide.";
+            return;
+        }
+
+        if (!UseWaveDraft && !UseOrangeMoneyDraft && !UseMtnMoneyDraft && !UseMoovMoneyDraft)
+        {
+            Message = "Selectionnez au moins un reseau Mobile Money.";
+            return;
+        }
+
         await SaveProfileSectionAsync(ApiClient.UpdateCompanyPaymentAsync(
             Session.CompanyId,
             new UpdateCompanyPortalPaymentRequest(
-                WavePaymentNumberDraft,
-                OrangeMoneyPaymentNumberDraft,
-                MtnMoneyPaymentNumberDraft,
-                MoovMoneyPaymentNumberDraft)));
+                UseWaveDraft ? paymentNumber : null,
+                UseOrangeMoneyDraft ? paymentNumber : null,
+                UseMtnMoneyDraft ? paymentNumber : null,
+                UseMoovMoneyDraft ? paymentNumber : null)));
     }
 
     private async Task SaveProfileSectionAsync(Task<EmployeeSaveResult> operation)
@@ -652,6 +712,24 @@ else
             ? $"{path}?preview=1"
             : path;
     }
+
+    private bool HasMobileMoneyAccount() => GetMobileMoneyNumberOrNull() is not null;
+
+    private string GetMobileMoneyNumber() => GetMobileMoneyNumberOrNull() ?? "A completer";
+
+    private string? GetMobileMoneyNumberOrNull()
+    {
+        return new[]
+        {
+            Profile?.WavePaymentNumber,
+            Profile?.OrangeMoneyPaymentNumber,
+            Profile?.MtnMoneyPaymentNumber,
+            Profile?.MoovMoneyPaymentNumber
+        }.FirstOrDefault(number => !string.IsNullOrWhiteSpace(number));
+    }
+
+    private static string PaymentLogoUrl(string code) =>
+        $"https://media.wele.africa/media/payment-providers/{code}.svg";
 
     private IReadOnlyList<string> GetPlannedServices()
     {

@@ -110,7 +110,7 @@ public sealed class ClientHomeCmsQueryService(IAppDbContext db)
                 GetText(repeat, "profile.service", "Ménage & repassage"),
                 GetText(repeat, "profile.rating", "4,9 ★"),
                 GetText(repeat, "profile.badge", "Vérifiée"),
-                GetText(repeat, "profile.image.url", "images/awa-kouame-profile.webp"),
+                GetText(repeat, "profile.image.url", "website/client/awa-kouame-profile.webp"),
                 GetText(repeat, "profile.image.alt", "Portrait d’Awa Kouamé")),
             new ClientHomeAppCmsResponse(
                 GetText(app, "label", "Tout Wélé dans votre téléphone"),

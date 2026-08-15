@@ -72,33 +72,7 @@ public sealed record AdminUserSummaryResponse(
     DateTimeOffset? LastLoginAt,
     IReadOnlyList<string> Roles,
     bool MfaEnabled = false,
-    bool MfaEnrollmentRequired = false)
-{
-    public AdminUserSummaryResponse(
-        Guid id,
-        string fullName,
-        string email,
-        bool isSuperAdmin,
-        bool isActive,
-        bool hasActivatedAccess,
-        DateTimeOffset? invitationExpiresAt,
-        DateTimeOffset? lastLoginAt,
-        IReadOnlyList<string> roles)
-        : this(
-            id,
-            fullName,
-            email,
-            isSuperAdmin,
-            isActive,
-            hasActivatedAccess,
-            invitationExpiresAt,
-            lastLoginAt,
-            roles,
-            false,
-            false)
-    {
-    }
-}
+    bool MfaEnrollmentRequired = false);
 
 public sealed record CreateAdminRoleRequest(
     string Name,

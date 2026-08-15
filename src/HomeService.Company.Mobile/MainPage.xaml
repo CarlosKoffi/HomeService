@@ -6,7 +6,11 @@
     NavigationPage.HasNavigationBar="False">
     <ScrollView>
         <VerticalStackLayout Padding="28,54,28,34" Spacing="22">
-            <Image Source="wele_logo.png" HeightRequest="62" HorizontalOptions="Center" Aspect="AspectFit" />
+            <Image Source="https://media.wele.africa/website/company/wele-logo-horizontal.png"
+                   WidthRequest="180"
+                   HeightRequest="68"
+                   HorizontalOptions="Center"
+                   Aspect="AspectFit" />
             <VerticalStackLayout Spacing="6" Margin="0,16,0,6">
                 <Label Text="Espace entreprise" Style="{StaticResource ScreenTitle}" HorizontalTextAlignment="Center" />
                 <Label Text="Pilotez vos missions et vos équipes, même loin du bureau." Style="{StaticResource Muted}" HorizontalTextAlignment="Center" />

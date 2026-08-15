@@ -8,10 +8,11 @@
         <ScrollView>
             <VerticalStackLayout Padding="18,16,18,30" Spacing="15">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <HorizontalStackLayout Spacing="6">
-                        <Image Source="wele_logo.png" HeightRequest="34" WidthRequest="128" Aspect="AspectFit" HorizontalOptions="Start" />
-                        <Label Text="pro" FontSize="15" VerticalTextAlignment="Center" Margin="-12,1,0,0" />
-                    </HorizontalStackLayout>
+                    <Image Source="https://media.wele.africa/website/provider/wele-logo-horizontal.png"
+                           HeightRequest="48"
+                           WidthRequest="128"
+                           Aspect="AspectFit"
+                           HorizontalOptions="Start" />
                     <Grid Grid.Column="1" WidthRequest="48" HeightRequest="48">
                         <ImageButton Source="app_bell.svg" WidthRequest="46" HeightRequest="46" Clicked="OnNotificationsClicked" />
                         <Border x:Name="NotificationBadge" IsVisible="False" BackgroundColor="{StaticResource WeleBlue}" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 10" Padding="4,1" HorizontalOptions="End" VerticalOptions="Start" MinimumWidthRequest="20" HeightRequest="20">

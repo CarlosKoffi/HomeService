@@ -54,7 +54,7 @@ public sealed record UpdateAdminQualityChecklistTemplateRequest(
     bool IsActive);
 
 public sealed record CreateAdminQualityChecklistItemRequest(
-    string Code,
+    string? Code,
     string Label,
     string? Guidance,
     string Stage,
@@ -72,7 +72,14 @@ public sealed record UpdateAdminQualityChecklistItemRequest(
     bool IsRequired,
     bool RequiresEvidenceOnIssue,
     int SortOrder,
-    bool IsActive);
+    bool IsActive,
+    Guid? ServiceOptionId = null);
+
+public sealed record AdminQualityChecklistDeleteResponse(
+    Guid Id,
+    bool Deleted,
+    bool Archived,
+    string Message);
 
 public sealed record AdminProviderQualificationResponse(
     Guid Id,

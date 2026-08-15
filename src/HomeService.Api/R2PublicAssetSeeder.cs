@@ -4,7 +4,6 @@ namespace HomeService.Api;
 
 public sealed class R2PublicAssetSeeder(
     IWebHostEnvironment environment,
-    IConfiguration configuration,
     IApiObjectStorage objectStorage,
     ILogger<R2PublicAssetSeeder> logger) : BackgroundService
 {
@@ -20,20 +19,16 @@ public sealed class R2PublicAssetSeeder(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var seedEnabled = IsEnabled(configuration);
         logger.LogWarning(
-            "[STORAGE-DIAGNOSTIC] Public asset seed starting. UsesR2={UsesR2}; SeedEnabled={SeedEnabled}; WebRootPath={WebRootPath}; WebRootExists={WebRootExists}.",
+            "[STORAGE-DIAGNOSTIC] Public asset synchronization starting. UsesR2={UsesR2}; WebRootPath={WebRootPath}; WebRootExists={WebRootExists}.",
             objectStorage.UsesR2,
-            seedEnabled,
             environment.WebRootPath ?? "<missing>",
             !string.IsNullOrWhiteSpace(environment.WebRootPath) && Directory.Exists(environment.WebRootPath));
 
-        if (!objectStorage.UsesR2 || !seedEnabled)
+        if (!objectStorage.UsesR2)
         {
             logger.LogWarning(
-                "[STORAGE-DIAGNOSTIC] Public asset seed skipped. UsesR2={UsesR2}; SeedEnabled={SeedEnabled}.",
-                objectStorage.UsesR2,
-                seedEnabled);
+                "[STORAGE-DIAGNOSTIC] Public asset synchronization skipped because R2 is disabled.");
             return;
         }
 
@@ -64,9 +59,7 @@ public sealed class R2PublicAssetSeeder(
         }
 
         var contentTypeProvider = new FileExtensionContentTypeProvider();
-        var synchronizeExistingAssets = ShouldSynchronizeExistingAssets(configuration);
         var uploaded = 0;
-        var alreadyPresent = 0;
         var discovered = 0;
 
         foreach (var relativeFolder in PublicAssetFolders)
@@ -92,16 +85,6 @@ public sealed class R2PublicAssetSeeder(
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var objectKey = Path.GetRelativePath(webRoot, filePath).Replace('\\', '/');
-                if (!synchronizeExistingAssets && await objectStorage.ExistsAsync(
-                    ApiStorageVisibility.Public,
-                    webRoot,
-                    objectKey,
-                    cancellationToken))
-                {
-                    alreadyPresent++;
-                    continue;
-                }
-
                 await using var stream = new FileStream(
                     filePath,
                     FileMode.Open,
@@ -125,26 +108,9 @@ public sealed class R2PublicAssetSeeder(
         }
 
         logger.LogWarning(
-            "[STORAGE-DIAGNOSTIC] R2 public asset seed completed. DiscoveredCount={DiscoveredCount}; UploadedCount={UploadedCount}; ExistingCount={ExistingCount}.",
+            "[STORAGE-DIAGNOSTIC] R2 public asset synchronization completed. DiscoveredCount={DiscoveredCount}; UploadedCount={UploadedCount}.",
             discovered,
-            uploaded,
-            alreadyPresent);
-    }
-
-    private static bool IsEnabled(IConfiguration configuration)
-    {
-        var configured = configuration["R2_SEED_PUBLIC_ASSETS_ON_STARTUP"]
-            ?? configuration["R2:SeedPublicAssetsOnStartup"]
-            ?? configuration["Storage:R2:SeedPublicAssetsOnStartup"];
-        return !bool.TryParse(configured, out var enabled) || enabled;
-    }
-
-    private static bool ShouldSynchronizeExistingAssets(IConfiguration configuration)
-    {
-        var configured = configuration["R2_SYNC_PUBLIC_ASSETS_ON_STARTUP"]
-            ?? configuration["R2:SyncPublicAssetsOnStartup"]
-            ?? configuration["Storage:R2:SyncPublicAssetsOnStartup"];
-        return !bool.TryParse(configured, out var enabled) || enabled;
+            uploaded);
     }
 }
 

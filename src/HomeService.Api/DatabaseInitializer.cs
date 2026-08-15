@@ -1567,7 +1567,7 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "profile.service", CmsContentValueType.ShortText, "Ménage & repassage", french.Id);
                     AddCmsText(db, section, "profile.rating", CmsContentValueType.ShortText, "4,9 ★", french.Id);
                     AddCmsText(db, section, "profile.badge", CmsContentValueType.ShortText, "Vérifiée", french.Id);
-                    AddCmsText(db, section, "profile.image.url", CmsContentValueType.Media, "images/awa-kouame-profile.webp", french.Id);
+                    AddCmsText(db, section, "profile.image.url", CmsContentValueType.Media, "website/client/awa-kouame-profile.webp", french.Id, replaceExisting: true);
                     AddCmsText(db, section, "profile.image.alt", CmsContentValueType.ShortText, "Portrait d’Awa Kouamé", french.Id);
                     break;
 
@@ -1650,9 +1650,9 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours clair en trois étapes.", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "steps", """
                     [
-                      {"number":"01","label":"Compte","title":"Créez votre compte entreprise","text":"Renseignez les informations et les pièces légales et administratives de votre entreprise.","image":"images/wele-how-step-1.png"},
-                      {"number":"02","label":"Validation","title":"Validation par nos équipes","text":"Nous vérifions et approuvons votre dossier sous 48h.","image":"images/wele-how-step-2.png"},
-                      {"number":"03","label":"Demandes","title":"Recevez des demandes","text":"Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.","image":"images/wele-how-step-3.png"}
+                      {"number":"01","label":"Compte","title":"Créez votre compte entreprise","text":"Renseignez les informations et les pièces légales et administratives de votre entreprise.","image":"website/company/wele-how-step-1.png"},
+                      {"number":"02","label":"Validation","title":"Validation par nos équipes","text":"Nous vérifions et approuvons votre dossier sous 48h.","image":"website/company/wele-how-step-2.png"},
+                      {"number":"03","label":"Demandes","title":"Recevez des demandes","text":"Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.","image":"website/company/wele-how-step-3.png"}
                     ]
                     """, french.Id, replaceExisting: true);
                     break;
@@ -1781,9 +1781,9 @@ public static class DatabaseInitializer
                     AddCmsText(db, section, "subtitle", CmsContentValueType.LongText, "Un parcours simple pour proposer votre profil en intérim à une entreprise partenaire.", french.Id, replaceExisting: true);
                     AddCmsJson(db, section, "steps", """
                     [
-                      {"number":"01","label":"Formulaire","title":"Créez votre compte en ligne","text":"Renseignez vos informations, votre service principal et votre zone.","image":"images/wele-provider-step-1.svg"},
-                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.","image":"images/wele-provider-step-2.svg"},
-                      {"number":"03","label":"Validation","title":"L'entreprise étudie votre demande","text":"Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.","image":"images/wele-provider-step-3.svg"}
+                      {"number":"01","label":"Formulaire","title":"Créez votre compte en ligne","text":"Renseignez vos informations, votre service principal et votre zone.","image":"website/provider/wele-provider-step-1.svg"},
+                      {"number":"02","label":"Entreprise","title":"Choisissez une entreprise","text":"wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.","image":"website/provider/wele-provider-step-2.svg"},
+                      {"number":"03","label":"Validation","title":"L'entreprise étudie votre demande","text":"Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.","image":"website/provider/wele-provider-step-3.svg"}
                     ]
                     """, french.Id, replaceExisting: true);
                     break;

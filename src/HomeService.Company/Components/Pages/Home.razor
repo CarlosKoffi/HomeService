@@ -100,7 +100,7 @@
             <figure class="company-phone-frame">
                 <span class="company-phone-speaker" aria-hidden="true"></span>
                 <img
-                    src="images/wele-enterprise-app-showcase.png?v=20260814-company"
+                    src="https://media.wele.africa/website/company/wele-enterprise-app-showcase.png"
                     alt="Application mobile wélé Entreprise affichant des missions d'entretien, d'installation et de dépannage de climatiseurs à Abidjan"
                     loading="lazy" />
             </figure>
@@ -170,7 +170,7 @@
     <footer class="premium-footer">
         <div class="premium-footer-brand">
             <a class="premium-footer-logo" href="#home" aria-label="Retour accueil wélé">
-                <img src="images/wele-company-logo-official.png?v=20260815" alt="Wélé entreprise" />
+                <img src="https://media.wele.africa/website/company/wele-logo-horizontal.png" alt="Wélé entreprise" />
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
@@ -257,9 +257,9 @@
         var normalizedNumber = number?.Trim().TrimStart('0');
         return normalizedNumber switch
         {
-            "1" => "images/wele-how-step-1.png?v=20260814-company",
-            "2" => "images/wele-how-step-2.png?v=20260814-company",
-            "3" => "images/wele-how-step-3.png?v=20260814-company",
+            "1" => "https://media.wele.africa/website/company/wele-how-step-1.png",
+            "2" => "https://media.wele.africa/website/company/wele-how-step-2.png",
+            "3" => "https://media.wele.africa/website/company/wele-how-step-3.png",
             _ => ResolveContentUrl(configuredUrl)
         };
     }
@@ -288,7 +288,10 @@
 
     private static string NormalizeLegacyMediaUrl(string url)
     {
-        return url.Replace("images/kaza-", "images/wele-", StringComparison.OrdinalIgnoreCase);
+        var normalized = url.Replace("images/kaza-", "images/wele-", StringComparison.OrdinalIgnoreCase);
+        return normalized.StartsWith("images/wele-", StringComparison.OrdinalIgnoreCase)
+            ? $"https://media.wele.africa/website/company/{Path.GetFileName(normalized)}"
+            : normalized;
     }
 
     private static HeroHeadlineParts SplitHeroHeadline(string headline)
@@ -317,9 +320,9 @@
                 "De l'inscription à votre première mission",
                 "Un parcours clair en trois étapes.",
                 [
-                    new CmsStepResponse("01", "Compte", "Créez votre compte entreprise", "Renseignez les informations et les pièces légales et administratives de votre entreprise.", "images/wele-how-step-1.png"),
-                    new CmsStepResponse("02", "Validation", "Validation par nos équipes", "Nous vérifions et approuvons votre dossier sous 48h.", "images/wele-how-step-2.png"),
-                    new CmsStepResponse("03", "Demandes", "Recevez des demandes", "Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.", "images/wele-how-step-3.png")
+                    new CmsStepResponse("01", "Compte", "Créez votre compte entreprise", "Renseignez les informations et les pièces légales et administratives de votre entreprise.", "website/company/wele-how-step-1.png"),
+                    new CmsStepResponse("02", "Validation", "Validation par nos équipes", "Nous vérifions et approuvons votre dossier sous 48h.", "website/company/wele-how-step-2.png"),
+                    new CmsStepResponse("03", "Demandes", "Recevez des demandes", "Ajoutez et gérez vos techniciens, recevez des demandes et suivez vos interventions.", "website/company/wele-how-step-3.png")
                 ]),
             new CompanyHomeTrustedCmsResponse(
                 "Tout ce qu'il faut pour développer votre activité",

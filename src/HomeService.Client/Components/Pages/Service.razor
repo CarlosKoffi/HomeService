@@ -31,7 +31,7 @@
 <div class="seo-service-site @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
     <header class="seo-header">
         <a class="seo-brand" href="/" aria-label="Accueil Wélé" @onclick="CloseMenu">
-            <img src="/images/wele-logo-client.png" alt="Wélé" width="732" height="216" />
+            <img src="https://media.wele.africa/website/client/wele-logo-horizontal.png" alt="Wélé" width="720" height="271" />
         </a>
         <button class="seo-menu-button" type="button" aria-label="Ouvrir le menu" aria-expanded="@mobileMenuOpen" @onclick="ToggleMenu">
             <span></span><span></span><span></span>
@@ -242,7 +242,7 @@
     }
 
     <footer class="seo-footer">
-        <a href="/" class="seo-footer-brand"><img src="/images/wele-logo-client.png" alt="Wélé" width="732" height="216" /></a>
+        <a href="/" class="seo-footer-brand"><img src="https://media.wele.africa/website/client/wele-logo-horizontal.png" alt="Wélé" width="720" height="271" /></a>
         <span>© 2026 Wélé · Abidjan, Côte d’Ivoire</span>
         <span><a href="/services">Tous les services</a> · Confiance et sécurité · Assistance · Conditions</span>
     </footer>
@@ -310,7 +310,7 @@
 
         if (value.StartsWith("/images/", StringComparison.OrdinalIgnoreCase) || value.StartsWith("images/", StringComparison.OrdinalIgnoreCase))
         {
-            return value.StartsWith('/') ? value : $"/{value}";
+            return WithServiceAssetVersion($"{PublicMediaBaseUrl}/assets/services/{Path.GetFileName(value)}");
         }
 
         if (Uri.TryCreate(value, UriKind.Absolute, out var absolute)

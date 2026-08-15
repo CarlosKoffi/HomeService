@@ -108,6 +108,35 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return await PutJsonAsync<AdminQualityChecklistTemplateResponse>($"/api/admin/quality/templates/{id:D}", request, cancellationToken);
     }
 
+    public async Task<AdminQualityChecklistTemplateResponse?> CreateQualityTemplateAsync(
+        CreateAdminQualityChecklistTemplateRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminQualityChecklistTemplateResponse>("/api/admin/quality/templates", request, cancellationToken);
+    }
+
+    public async Task<AdminQualityChecklistItemResponse?> CreateQualityTemplateItemAsync(
+        Guid templateId, CreateAdminQualityChecklistItemRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PostJsonAsync<AdminQualityChecklistItemResponse>($"/api/admin/quality/templates/{templateId:D}/items", request, cancellationToken);
+    }
+
+    public async Task<AdminQualityChecklistItemResponse?> UpdateQualityTemplateItemAsync(
+        Guid itemId, UpdateAdminQualityChecklistItemRequest request, CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await PutJsonAsync<AdminQualityChecklistItemResponse>($"/api/admin/quality/items/{itemId:D}", request, cancellationToken);
+    }
+
+    public Task<AdminQualityChecklistDeleteResponse?> DeleteQualityTemplateAsync(
+        Guid templateId, CancellationToken cancellationToken = default)
+        => DeleteJsonAsync<AdminQualityChecklistDeleteResponse>($"/api/admin/quality/templates/{templateId:D}", cancellationToken);
+
+    public Task<AdminQualityChecklistDeleteResponse?> DeleteQualityTemplateItemAsync(
+        Guid itemId, CancellationToken cancellationToken = default)
+        => DeleteJsonAsync<AdminQualityChecklistDeleteResponse>($"/api/admin/quality/items/{itemId:D}", cancellationToken);
+
     public async Task<IReadOnlyList<CompanyApplicationSummaryResponse>> GetCompanyApplicationsAsync(CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
@@ -1571,6 +1600,19 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         using var response = await httpClient.PutAsJsonAsync(path, payload, cancellationToken);
 
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<T>(cancellationToken);
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        throw CreateApiException(response, path, body);
+    }
+
+    private async Task<T?> DeleteJsonAsync<T>(string path, CancellationToken cancellationToken)
+    {
+        AddBasicAuthIfConfigured();
+        using var response = await httpClient.DeleteAsync(path, cancellationToken);
         if (response.IsSuccessStatusCode)
         {
             return await response.Content.ReadFromJsonAsync<T>(cancellationToken);

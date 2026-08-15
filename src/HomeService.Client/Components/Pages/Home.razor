@@ -23,13 +23,13 @@
     <meta name="twitter:title" content="Wélé — Le bon service, au bon moment" />
     <meta name="twitter:description" content="Des services fiables à Abidjan auprès de professionnels vérifiés." />
     <meta name="twitter:image" content="https://media.wele.africa/website/client/wele-client-hero-v2.webp" />
-    @((MarkupString)"<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Wélé\",\"url\":\"https://wele.africa/\",\"logo\":\"https://wele.africa/images/wele-logo-client.png\",\"areaServed\":{\"@type\":\"City\",\"name\":\"Abidjan\"}}</script>")
+    @((MarkupString)"<script type=\"application/ld+json\">{\"@context\":\"https://schema.org\",\"@type\":\"Organization\",\"name\":\"Wélé\",\"url\":\"https://wele.africa/\",\"logo\":\"https://media.wele.africa/website/client/wele-logo-horizontal.png\",\"areaServed\":{\"@type\":\"City\",\"name\":\"Abidjan\"}}</script>")
 </HeadContent>
 
 <div class="client-site @(mobileMenuOpen ? "menu-is-open" : string.Empty)">
     <header class="client-header">
         <a class="client-brand" href="#accueil" aria-label="Accueil Wélé" @onclick="CloseMenu">
-            <img src="images/wele-logo-client.png" alt="Wélé" width="732" height="216" />
+            <img src="https://media.wele.africa/website/client/wele-logo-horizontal.png" alt="Wélé" width="720" height="271" />
         </a>
 
         <button class="client-menu-button" type="button" aria-label="Ouvrir le menu" aria-expanded="@mobileMenuOpen" @onclick="ToggleMenu">
@@ -80,7 +80,7 @@
             </div>
         </div>
         <div class="client-hero-media">
-            <img src="@ResolveContentUrl(ClientContent.Hero.ImageUrl, HeroImageUrl)" alt="@ClientContent.Hero.ImageAlt" width="1672" height="941" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='images/wele-client-hero-v2.webp'" />
+            <img src="@ResolveContentUrl(ClientContent.Hero.ImageUrl, HeroImageUrl)" alt="@ClientContent.Hero.ImageAlt" width="1672" height="941" fetchpriority="high" decoding="async" onerror="this.onerror=null;this.src='@HeroImageUrl'" />
         </div>
     </section>
 
@@ -274,7 +274,7 @@
             <a class="client-button client-button-blue" href="@ClientContent.Confidence.PrimaryCta.Url">@ClientContent.Confidence.PrimaryCta.Label</a>
         </div>
         <div class="client-confidence-media">
-            <img src="@ResolveContentUrl(ClientContent.Confidence.ImageUrl, TrustTeamImageUrl)" alt="@ClientContent.Confidence.ImageAlt" width="972" height="1619" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='images/wele-trust-team-v2.webp'" />
+            <img src="@ResolveContentUrl(ClientContent.Confidence.ImageUrl, TrustTeamImageUrl)" alt="@ClientContent.Confidence.ImageAlt" width="972" height="1619" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='@TrustTeamImageUrl'" />
             <div class="client-rating-card"><strong>4,8/5</strong><span>★★★★★</span><small>Avis après intervention</small></div>
         </div>
     </section>
@@ -287,7 +287,7 @@
             <a class="client-button client-button-black" href="@ClientContent.Repeat.PrimaryCta.Url">@ClientContent.Repeat.PrimaryCta.Label</a>
         </div>
         <div class="client-repeat-card">
-            <img class="client-repeat-avatar" src="@WithAssetVersion(ResolveContentUrl(ClientContent.Repeat.ProfileImageUrl, "images/awa-kouame-profile.webp"), "awa-teal-20260814")" alt="@ClientContent.Repeat.ProfileImageAlt" width="384" height="384" loading="lazy" decoding="async" />
+            <img class="client-repeat-avatar" src="@WithAssetVersion(ResolveContentUrl(ClientContent.Repeat.ProfileImageUrl, $"{PublicMediaBaseUrl}/website/client/awa-kouame-profile.webp"), "awa-teal-20260815")" alt="@ClientContent.Repeat.ProfileImageAlt" width="384" height="384" loading="lazy" decoding="async" />
             <div><strong>@ClientContent.Repeat.ProfileName</strong><small>@ClientContent.Repeat.ProfileService · @ClientContent.Repeat.ProfileRating</small></div>
             <span class="client-repeat-verified">@ClientContent.Repeat.ProfileBadge</span>
         </div>
@@ -370,11 +370,11 @@
             </div>
             <div class="client-qr-grid">
                 <a class="client-qr-card" href="/telecharger/android" aria-label="Télécharger Wélé pour Android">
-                    <img src="images/qr-android.svg" alt="QR code de téléchargement Android" width="192" height="192" />
+                    <img src="@($"{PublicMediaBaseUrl}/website/client/qr-android.svg")" alt="QR code de téléchargement Android" width="192" height="192" />
                     <span><small>Scannez avec votre téléphone</small><strong>Application Android</strong><em>Disponible maintenant</em></span>
                 </a>
                 <div class="client-qr-card is-coming" aria-label="Application Wélé pour iPhone bientôt disponible">
-                    <img src="images/qr-ios.svg" alt="QR code Wélé pour iPhone" width="192" height="192" />
+                    <img src="@($"{PublicMediaBaseUrl}/website/client/qr-ios.svg")" alt="QR code Wélé pour iPhone" width="192" height="192" />
                     <span><small>Préparez votre iPhone</small><strong>Application iOS</strong><em>Bientôt disponible</em></span>
                 </div>
             </div>
@@ -396,7 +396,7 @@
     </section>
 
     <footer class="client-footer" id="aide">
-        <div class="client-footer-brand"><img src="images/wele-logo-client.png" alt="Wélé" width="732" height="216" /><p>@ClientContent.Footer.BrandText</p></div>
+        <div class="client-footer-brand"><img src="https://media.wele.africa/website/client/wele-logo-horizontal.png" alt="Wélé" width="720" height="271" /><p>@ClientContent.Footer.BrandText</p></div>
         @foreach (var column in ClientContent.Footer.Columns)
         {
             <div>
@@ -481,6 +481,12 @@
             return TrustTeamImageUrl;
         }
 
+        if (value.Contains("images/awa-kouame-profile.webp", StringComparison.OrdinalIgnoreCase)
+            || value.Contains("website/client/awa-kouame-profile.webp", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{PublicMediaBaseUrl}/website/client/awa-kouame-profile.webp";
+        }
+
         if (Uri.TryCreate(value, UriKind.Absolute, out var absoluteUri))
         {
             return absoluteUri.ToString();
@@ -500,12 +506,12 @@
 
         if (value.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
         {
-            return value;
+            return WithServiceAssetVersion($"{PublicMediaBaseUrl}/assets/services/{Path.GetFileName(value)}");
         }
 
         if (value.StartsWith("images/", StringComparison.OrdinalIgnoreCase))
         {
-            return $"/{value}";
+            return WithServiceAssetVersion($"{PublicMediaBaseUrl}/assets/services/{Path.GetFileName(value)}");
         }
 
         if (Uri.TryCreate(value, UriKind.Absolute, out var absolute)

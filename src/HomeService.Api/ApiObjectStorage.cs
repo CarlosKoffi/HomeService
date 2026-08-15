@@ -54,7 +54,6 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
     private readonly string? _publicBucket;
     private readonly string? _privateBucket;
     private readonly string? _publicBaseUrl;
-    private readonly string? _publicAssetVersion;
     private readonly bool _publicDirectDeliveryEnabled;
 
     public ApiObjectStorage(IConfiguration configuration, ILogger<ApiObjectStorage>? logger = null)
@@ -89,10 +88,6 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
             configuration["R2_PUBLIC_BASE_URL"],
             configuration["R2:PublicBaseUrl"],
             configuration["Storage:R2:PublicBaseUrl"]));
-        _publicAssetVersion = FirstConfigured(
-            configuration["R2_PUBLIC_ASSET_VERSION"],
-            configuration["R2:PublicAssetVersion"],
-            configuration["Storage:R2:PublicAssetVersion"]);
         _publicDirectDeliveryEnabled = bool.TryParse(FirstConfigured(
             configuration["R2_PUBLIC_DIRECT_DELIVERY_ENABLED"],
             configuration["R2:PublicDirectDeliveryEnabled"],
@@ -309,10 +304,7 @@ public sealed class ApiObjectStorage : IApiObjectStorage, IDisposable
         var encodedPath = string.Join('/', NormalizeObjectKey(objectKey)
             .Split('/', StringSplitOptions.RemoveEmptyEntries)
             .Select(Uri.EscapeDataString));
-        var versionSuffix = string.IsNullOrWhiteSpace(_publicAssetVersion)
-            ? string.Empty
-            : $"?v={Uri.EscapeDataString(_publicAssetVersion)}";
-        return $"{_publicBaseUrl}/{encodedPath}{versionSuffix}";
+        return $"{_publicBaseUrl}/{encodedPath}";
     }
 
     public void Dispose()

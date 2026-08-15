@@ -117,7 +117,7 @@ public static class PublicSeoEndpoints
 
         var normalized = value.TrimStart('/');
         return normalized.StartsWith("images/", StringComparison.OrdinalIgnoreCase)
-            ? $"{siteBaseUrl}/{normalized}"
+            ? $"{publicMediaBaseUrl}/assets/services/{Path.GetFileName(normalized)}"
             : $"{publicMediaBaseUrl}/{normalized}";
     }
 

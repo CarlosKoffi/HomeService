@@ -2705,7 +2705,7 @@ textarea {
 }
 
 .provider-phone-frame {
-    background: #111111;
+    background: #0C5A66;
     border-radius: 46px;
     box-shadow: 0 28px 70px rgba(17, 17, 17, .28);
     margin: 0 auto;
@@ -2724,7 +2724,7 @@ textarea {
 }
 
 .provider-phone-speaker {
-    background: #111111;
+    background: #0C5A66;
     border-radius: 0 0 16px 16px;
     height: 24px;
     left: 50%;
@@ -2760,7 +2760,7 @@ textarea {
 }
 
 .provider-phone-hero-card {
-    background: #111111;
+    background: #0C5A66;
     border-radius: 28px;
     color: #ffffff;
     display: grid;
@@ -2994,7 +2994,7 @@ textarea {
 }
 
 .provider-landing .premium-footer {
-    background: linear-gradient(135deg, #F3F7F7 0%, #E5F7EE 100%);
+    background: #9EDFBF;
     border-top: 1px solid rgba(12, 90, 102, .12);
     color: var(--premium-black);
     display: grid;
@@ -3023,7 +3023,7 @@ textarea {
 }
 
 .provider-landing .premium-footer p {
-    color: #52696D;
+    color: #0C5A66;
     font-size: .92rem;
     font-weight: 350;
     line-height: 1.55;
@@ -3045,7 +3045,7 @@ textarea {
 }
 
 .provider-landing .premium-footer a {
-    color: #52696D;
+    color: #0C5A66;
     font-size: .92rem;
     font-weight: 350;
     text-decoration: none;
@@ -3058,7 +3058,7 @@ textarea {
 
 .provider-landing .premium-footer-bottom {
     border-top: 1px solid rgba(12, 90, 102, .12);
-    color: #6F8588;
+    color: #0C5A66;
     display: flex;
     font-size: .78rem;
     gap: 1rem;

@@ -31,8 +31,19 @@
     <Content Include="..\HomeService.Client\wwwroot\images\wele-trust-team.png" Link="wwwroot\website\client\wele-trust-team.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\HomeService.Client\wwwroot\images\wele-client-hero-v2.webp" Link="wwwroot\website\client\wele-client-hero-v2.webp" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\HomeService.Client\wwwroot\images\wele-trust-team-v2.webp" Link="wwwroot\website\client\wele-trust-team-v2.webp" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Client\wwwroot\images\awa-kouame-profile.webp" Link="wwwroot\website\client\awa-kouame-profile.webp" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Client\wwwroot\images\qr-android.svg" Link="wwwroot\website\client\qr-android.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Client\wwwroot\images\qr-ios.svg" Link="wwwroot\website\client\qr-ios.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\HomeService.Provider\wwwroot\images\wele-provider-hero.png" Link="wwwroot\website\provider\wele-provider-hero.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Provider\wwwroot\images\wele-provider-app-showcase.png" Link="wwwroot\website\provider\wele-provider-app-showcase.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Provider\wwwroot\images\wele-provider-step-1.svg" Link="wwwroot\website\provider\wele-provider-step-1.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Provider\wwwroot\images\wele-provider-step-2.svg" Link="wwwroot\website\provider\wele-provider-step-2.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Provider\wwwroot\images\wele-provider-step-3.svg" Link="wwwroot\website\provider\wele-provider-step-3.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\HomeService.Company\wwwroot\images\wele-premium-hero.png" Link="wwwroot\website\company\wele-premium-hero.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Company\wwwroot\images\wele-enterprise-app-showcase.png" Link="wwwroot\website\company\wele-enterprise-app-showcase.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Company\wwwroot\images\wele-how-step-1.png" Link="wwwroot\website\company\wele-how-step-1.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Company\wwwroot\images\wele-how-step-2.png" Link="wwwroot\website\company\wele-how-step-2.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\HomeService.Company\wwwroot\images\wele-how-step-3.png" Link="wwwroot\website\company\wele-how-step-3.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

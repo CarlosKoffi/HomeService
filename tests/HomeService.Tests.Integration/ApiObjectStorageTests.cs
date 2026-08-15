@@ -91,13 +91,12 @@ public sealed class ApiObjectStorageTests
             ["R2:PublicBucket"] = "public",
             ["R2:PrivateBucket"] = "private",
             ["R2:PublicBaseUrl"] = "https://media.wele.africa/",
-            ["R2:PublicAssetVersion"] = "mobile-optimized",
             ["R2:PublicDirectDeliveryEnabled"] = "true"
         });
         using var storage = new ApiObjectStorage(configuration);
 
         Assert.Equal(
-            "https://media.wele.africa/cms/mon%20image.jpg?v=mobile-optimized",
+            "https://media.wele.africa/cms/mon%20image.jpg",
             storage.GetPublicUrl("cms/mon image.jpg"));
     }
 

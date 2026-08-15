@@ -54,7 +54,8 @@ public sealed class QualityChecklistItem : AuditableEntity
         QualityChecklistResponseType responseType,
         bool isRequired,
         bool requiresEvidenceOnIssue,
-        int sortOrder)
+        int sortOrder,
+        Guid? serviceOptionId = null)
     {
         Label = CleanRequired(label, 240);
         Guidance = Clean(guidance, 600);
@@ -63,6 +64,7 @@ public sealed class QualityChecklistItem : AuditableEntity
         IsRequired = isRequired;
         RequiresEvidenceOnIssue = requiresEvidenceOnIssue;
         SortOrder = Math.Max(0, sortOrder);
+        ServiceOptionId = serviceOptionId;
         Touch();
     }
 

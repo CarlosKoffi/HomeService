@@ -75,9 +75,9 @@ public sealed class ProviderHomeCmsQueryService(IAppDbContext db)
                 GetText(steps, "headline", "Trois étapes pour démarrer."),
                 GetText(steps, "subtitle", "Un parcours simple pour proposer votre profil en intérim à une entreprise partenaire."),
                 GetJsonList(steps, "steps", [
-                    new CmsStepResponse("01", "Formulaire", "Créez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/wele-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.", "images/wele-provider-step-2.svg"),
-                    new CmsStepResponse("03", "Validation", "L'entreprise étudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/wele-provider-step-3.svg")
+                    new CmsStepResponse("01", "Formulaire", "Créez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "website/provider/wele-provider-step-1.svg"),
+                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.", "website/provider/wele-provider-step-2.svg"),
+                    new CmsStepResponse("03", "Validation", "L'entreprise étudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "website/provider/wele-provider-step-3.svg")
                 ])),
             new CompanyHomeTrustedCmsResponse(
                 GetText(trusted, "headline", "Pourquoi rejoindre wélé ?"),

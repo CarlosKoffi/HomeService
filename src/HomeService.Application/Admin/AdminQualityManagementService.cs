@@ -48,6 +48,13 @@ public sealed class AdminQualityManagementService(IAppDbContext db, QualityScori
             .MaxAsync(item => (int?)item.Version, cancellationToken) ?? 0) + 1;
         var template = new QualityChecklistTemplate(request.ServiceId, request.ServicePrestationId, request.Name, request.Description, version);
         db.QualityChecklistTemplates.Add(template);
+        var supersededTemplates = await db.QualityChecklistTemplates
+            .Where(item => item.Id != template.Id
+                && item.ServiceId == request.ServiceId
+                && item.ServicePrestationId == request.ServicePrestationId
+                && item.IsActive)
+            .ToListAsync(cancellationToken);
+        foreach (var superseded in supersededTemplates) superseded.Deactivate();
 
         if (request.CopyFromServiceDefault && request.ServicePrestationId.HasValue)
         {
@@ -70,7 +77,18 @@ public sealed class AdminQualityManagementService(IAppDbContext db, QualityScori
         var template = await db.QualityChecklistTemplates.FirstOrDefaultAsync(item => item.Id == id, cancellationToken);
         if (template is null) return null;
         template.Update(request.Name, request.Description);
-        if (request.IsActive) template.Activate(); else template.Deactivate();
+        if (request.IsActive)
+        {
+            var supersededTemplates = await db.QualityChecklistTemplates
+                .Where(item => item.Id != id
+                    && item.ServiceId == template.ServiceId
+                    && item.ServicePrestationId == template.ServicePrestationId
+                    && item.IsActive)
+                .ToListAsync(cancellationToken);
+            foreach (var superseded in supersededTemplates) superseded.Deactivate();
+            template.Activate();
+        }
+        else template.Deactivate();
         await db.SaveChangesAsync(cancellationToken);
         return (await ListTemplatesAsync(cancellationToken)).First(item => item.Id == id);
     }
@@ -79,10 +97,22 @@ public sealed class AdminQualityManagementService(IAppDbContext db, QualityScori
     {
         if (!Enum.TryParse<QualityChecklistStage>(request.Stage, true, out var stage)) throw new ArgumentException("Etape de checklist invalide.");
         if (!Enum.TryParse<QualityChecklistResponseType>(request.ResponseType, true, out var responseType)) throw new ArgumentException("Type de reponse invalide.");
-        if (!await db.QualityChecklistTemplates.AnyAsync(item => item.Id == templateId, cancellationToken)) return null;
-        if (await db.QualityChecklistItems.AnyAsync(item => item.TemplateId == templateId && item.Code == request.Code.Trim().ToLower(), cancellationToken))
-            throw new InvalidOperationException("Ce code de controle existe deja dans la checklist.");
-        var entity = new QualityChecklistItem(templateId, request.Code, request.Label, stage, responseType, request.IsRequired, request.SortOrder, request.Guidance, request.ServiceOptionId, request.RequiresEvidenceOnIssue);
+        var template = await db.QualityChecklistTemplates.FirstOrDefaultAsync(item => item.Id == templateId, cancellationToken);
+        if (template is null) return null;
+        if (request.ServiceOptionId.HasValue
+            && !await db.ServiceOptions.AnyAsync(item => item.Id == request.ServiceOptionId
+                && item.ServicePrestationId == template.ServicePrestationId, cancellationToken))
+        {
+            throw new ArgumentException("L'option choisie n'appartient pas a cette prestation.");
+        }
+
+        var code = await GenerateUniqueItemCodeAsync(templateId, request.Code, request.Label, cancellationToken);
+        var nextSortOrder = request.SortOrder > 0
+            ? request.SortOrder
+            : (await db.QualityChecklistItems
+                .Where(item => item.TemplateId == templateId)
+                .MaxAsync(item => (int?)item.SortOrder, cancellationToken) ?? 0) + 10;
+        var entity = new QualityChecklistItem(templateId, code, request.Label, stage, responseType, request.IsRequired, nextSortOrder, request.Guidance, request.ServiceOptionId, request.RequiresEvidenceOnIssue);
         db.QualityChecklistItems.Add(entity);
         await db.SaveChangesAsync(cancellationToken);
         return (await ListTemplatesAsync(cancellationToken)).SelectMany(item => item.Items).First(item => item.Id == entity.Id);
@@ -94,10 +124,79 @@ public sealed class AdminQualityManagementService(IAppDbContext db, QualityScori
         if (!Enum.TryParse<QualityChecklistResponseType>(request.ResponseType, true, out var responseType)) throw new ArgumentException("Type de reponse invalide.");
         var item = await db.QualityChecklistItems.FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
         if (item is null) return null;
-        item.Update(request.Label, request.Guidance, stage, responseType, request.IsRequired, request.RequiresEvidenceOnIssue, request.SortOrder);
+        var template = await db.QualityChecklistTemplates.AsNoTracking().FirstAsync(candidate => candidate.Id == item.TemplateId, cancellationToken);
+        if (request.ServiceOptionId.HasValue
+            && !await db.ServiceOptions.AnyAsync(candidate => candidate.Id == request.ServiceOptionId
+                && candidate.ServicePrestationId == template.ServicePrestationId, cancellationToken))
+        {
+            throw new ArgumentException("L'option choisie n'appartient pas a cette prestation.");
+        }
+        item.Update(request.Label, request.Guidance, stage, responseType, request.IsRequired, request.RequiresEvidenceOnIssue, request.SortOrder, request.ServiceOptionId);
         item.SetActive(request.IsActive);
         await db.SaveChangesAsync(cancellationToken);
         return (await ListTemplatesAsync(cancellationToken)).SelectMany(template => template.Items).First(candidate => candidate.Id == itemId);
+    }
+
+    public async Task<AdminQualityChecklistDeleteResponse?> DeleteItemAsync(Guid itemId, CancellationToken cancellationToken)
+    {
+        var item = await db.QualityChecklistItems.FirstOrDefaultAsync(candidate => candidate.Id == itemId, cancellationToken);
+        if (item is null) return null;
+
+        // Mission items are snapshots, so removing a source rule never alters an existing mission.
+        db.QualityChecklistItems.Remove(item);
+        await db.SaveChangesAsync(cancellationToken);
+        return new AdminQualityChecklistDeleteResponse(itemId, true, false, "Consigne supprimee. Les missions existantes conservent leur historique.");
+    }
+
+    public async Task<AdminQualityChecklistDeleteResponse?> DeleteTemplateAsync(Guid templateId, CancellationToken cancellationToken)
+    {
+        var template = await db.QualityChecklistTemplates
+            .Include(item => item.Items)
+            .FirstOrDefaultAsync(item => item.Id == templateId, cancellationToken);
+        if (template is null) return null;
+
+        var isUsed = await db.MissionQualityControls.AnyAsync(item => item.TemplateId == templateId, cancellationToken);
+        if (isUsed)
+        {
+            template.Deactivate();
+            await db.SaveChangesAsync(cancellationToken);
+            return new AdminQualityChecklistDeleteResponse(
+                templateId,
+                false,
+                true,
+                "Checklist archivee car elle a deja servi. Son historique est conserve et elle ne sera plus proposee.");
+        }
+
+        db.QualityChecklistTemplates.Remove(template);
+        await db.SaveChangesAsync(cancellationToken);
+        return new AdminQualityChecklistDeleteResponse(templateId, true, false, "Checklist supprimee.");
+    }
+
+    private async Task<string> GenerateUniqueItemCodeAsync(
+        Guid templateId,
+        string? requestedCode,
+        string label,
+        CancellationToken cancellationToken)
+    {
+        var raw = string.IsNullOrWhiteSpace(requestedCode) ? label : requestedCode;
+        var normalized = new string(raw.Trim().ToLowerInvariant()
+            .Select(character => char.IsLetterOrDigit(character) ? character : '-')
+            .ToArray());
+        while (normalized.Contains("--", StringComparison.Ordinal)) normalized = normalized.Replace("--", "-", StringComparison.Ordinal);
+        normalized = normalized.Trim('-');
+        if (normalized.Length == 0) normalized = "controle";
+        if (normalized.Length > 64) normalized = normalized[..64].TrimEnd('-');
+
+        var candidate = normalized;
+        var suffix = 2;
+        while (await db.QualityChecklistItems.AnyAsync(
+            item => item.TemplateId == templateId && item.Code == candidate,
+            cancellationToken))
+        {
+            candidate = $"{normalized[..Math.Min(normalized.Length, 58)]}-{suffix++}";
+        }
+
+        return candidate;
     }
 
     public async Task<IReadOnlyList<AdminProviderQualificationResponse>> ListQualificationsAsync(ProviderQualificationStatus? status, CancellationToken cancellationToken)

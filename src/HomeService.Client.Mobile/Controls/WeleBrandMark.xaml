@@ -5,7 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Name="BrandView">
     <Image
-        Source="wele_logo.png"
+        Source="https://media.wele.africa/website/client/wele-logo-horizontal.png"
         Aspect="AspectFit"
         HeightRequest="{Binding MarkHeight, Source={x:Reference BrandView}}"
         HorizontalOptions="{Binding MarkAlignment, Source={x:Reference BrandView}}" />

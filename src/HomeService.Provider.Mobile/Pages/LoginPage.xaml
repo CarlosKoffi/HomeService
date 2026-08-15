@@ -6,10 +6,11 @@
     NavigationPage.HasNavigationBar="False">
     <ScrollView>
         <VerticalStackLayout Padding="28,54,28,30" Spacing="20">
-            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
-                <Image Source="wele_logo.png" WidthRequest="178" HeightRequest="58" Aspect="AspectFit" />
-                <Label Text="pro" FontSize="20" VerticalTextAlignment="Center" Margin="-18,5,0,0" />
-            </HorizontalStackLayout>
+            <Image Source="https://media.wele.africa/website/provider/wele-logo-horizontal.png"
+                   WidthRequest="178"
+                   HeightRequest="67"
+                   Aspect="AspectFit"
+                   HorizontalOptions="Center" />
 
             <VerticalStackLayout Margin="0,28,0,6" Spacing="5">
                 <Label Text="Connexion à votre compte" Style="{StaticResource ScreenTitleLabel}" HorizontalTextAlignment="Center" />

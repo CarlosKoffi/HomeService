@@ -1,6 +1,5 @@
 using HomeService.Api;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -9,7 +8,7 @@ namespace HomeService.Tests.Integration;
 public sealed class R2PublicAssetSeederTests
 {
     [Fact]
-    public async Task Seeder_uploads_expected_public_assets_once()
+    public async Task Seeder_synchronizes_expected_public_assets_on_each_run()
     {
         var webRoot = Path.Combine(Path.GetTempPath(), "homeservice-r2-seed-tests", Guid.NewGuid().ToString("N"));
         WriteAsset(webRoot, "assets/services/plomberie.png", [1, 2, 3]);
@@ -20,12 +19,6 @@ public sealed class R2PublicAssetSeederTests
         var storage = new RecordingObjectStorage();
         var seeder = new R2PublicAssetSeeder(
             new TestWebHostEnvironment(webRoot),
-            new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["R2_SYNC_PUBLIC_ASSETS_ON_STARTUP"] = "false"
-                })
-                .Build(),
             storage,
             NullLogger<R2PublicAssetSeeder>.Instance);
 
@@ -37,7 +30,7 @@ public sealed class R2PublicAssetSeederTests
         Assert.Contains("catalog/prestations/reparer-fuite.jpg", storage.SavedKeys);
         Assert.Contains("media/payment-providers/wave.svg", storage.SavedKeys);
         Assert.DoesNotContain("unrelated/ignored.png", storage.SavedKeys);
-        Assert.Equal(3, storage.SaveCount);
+        Assert.Equal(6, storage.SaveCount);
     }
 
     private static void WriteAsset(string webRoot, string relativePath, byte[] content)

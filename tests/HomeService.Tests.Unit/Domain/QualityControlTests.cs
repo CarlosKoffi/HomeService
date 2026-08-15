@@ -37,6 +37,27 @@ public sealed class QualityControlTests
     }
 
     [Fact]
+    public void Editing_a_template_item_does_not_change_the_mission_snapshot()
+    {
+        var template = new QualityChecklistTemplate(Guid.NewGuid(), Guid.NewGuid(), "Controle", null);
+        var source = new QualityChecklistItem(template.Id, "initial-check", "Consigne initiale", QualityChecklistStage.DuringMission, QualityChecklistResponseType.Confirmation, true, 10);
+        var missionItem = new MissionQualityItem(Guid.NewGuid(), source);
+
+        source.Update(
+            "Nouvelle consigne",
+            "Nouvelle aide",
+            QualityChecklistStage.BeforeCompletion,
+            QualityChecklistResponseType.ShortText,
+            true,
+            false,
+            20);
+
+        Assert.Equal("Consigne initiale", missionItem.Label);
+        Assert.Equal(QualityChecklistStage.DuringMission, missionItem.Stage);
+        Assert.Equal(QualityChecklistResponseType.Confirmation, missionItem.ResponseType);
+    }
+
+    [Fact]
     public void Expired_qualification_is_not_eligible()
     {
         var qualification = new ProviderPrestationQualification(Guid.NewGuid(), Guid.NewGuid());

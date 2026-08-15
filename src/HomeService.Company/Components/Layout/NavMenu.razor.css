@@ -329,3 +329,60 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
         min-height: 46px;
     }
 }
+
+/* Brand 2026: the enterprise wordmark is white and must stay on petroleum. */
+.site-header.theme-premium,
+body:has(.premium-b2b) .site-header.theme-premium.is-transparent,
+body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
+    background: rgba(12, 90, 102, .98);
+    border-bottom-color: rgba(158, 223, 191, .28);
+    color: #ffffff;
+}
+
+.site-header.theme-premium .brand-logo img {
+    height: 42px;
+    width: 148px;
+}
+
+.site-header.theme-premium .brand,
+.site-header.theme-premium .site-nav a,
+.site-header.theme-premium .site-nav ::deep a,
+.site-header.theme-premium .header-secondary {
+    color: #ffffff !important;
+}
+
+.site-header.theme-premium .site-nav a:hover,
+.site-header.theme-premium .site-nav a.section-active,
+.site-header.theme-premium .site-nav ::deep a:hover,
+.site-header.theme-premium .site-nav ::deep a.active {
+    background: rgba(158, 223, 191, .18);
+    color: #ffffff;
+}
+
+.site-header.theme-premium .header-primary {
+    background: #9EDFBF;
+    color: #0C5A66 !important;
+}
+
+@media (max-width: 980px) {
+    .site-header.theme-premium .menu-button span {
+        background: #ffffff;
+    }
+
+    .site-header.theme-premium .site-nav {
+        background: #0C5A66;
+        border-color: rgba(158, 223, 191, .22);
+    }
+
+    body:has(.premium-b2b) .site-header.theme-premium:has(.menu-toggle:checked) {
+        background: #0C5A66;
+        border-bottom-color: rgba(158, 223, 191, .28);
+    }
+}
+
+@media (max-width: 620px) {
+    .site-header.theme-premium .brand-logo img {
+        height: 36px;
+        width: 128px;
+    }
+}

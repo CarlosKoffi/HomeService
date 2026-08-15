@@ -2847,6 +2847,12 @@ public static class AdminEndpoints
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("UpdateAdminQualityTemplate");
 
+        admin.MapDelete("/quality/templates/{id:guid}", async (Guid id, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            var result = await service.DeleteTemplateAsync(id, cancellationToken);
+            return result is null ? Results.NotFound() : Results.Ok(result);
+        }).WithName("DeleteAdminQualityTemplate");
+
         admin.MapPost("/quality/templates/{id:guid}/items", async (Guid id, CreateAdminQualityChecklistItemRequest request, AdminQualityManagementService service, CancellationToken cancellationToken) =>
         {
             try
@@ -2867,6 +2873,12 @@ public static class AdminEndpoints
             }
             catch (ArgumentException ex) { return Results.BadRequest(new { message = ex.Message }); }
         }).WithName("UpdateAdminQualityTemplateItem");
+
+        admin.MapDelete("/quality/items/{id:guid}", async (Guid id, AdminQualityManagementService service, CancellationToken cancellationToken) =>
+        {
+            var result = await service.DeleteItemAsync(id, cancellationToken);
+            return result is null ? Results.NotFound() : Results.Ok(result);
+        }).WithName("DeleteAdminQualityTemplateItem");
 
         admin.MapGet("/quality/qualifications", async (string? status, AdminQualityManagementService service, CancellationToken cancellationToken) =>
         {

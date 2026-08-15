@@ -100,7 +100,7 @@
                 <div class="provider-phone-speaker"></div>
                 <img
                     class="provider-app-showcase-image"
-                    src="images/wele-provider-app-showcase.png"
+                    src="https://media.wele.africa/website/provider/wele-provider-app-showcase.png"
                     alt="Application mobile wélé Prestataire avec disponibilité, prochaine mission et planning à Abidjan"
                     loading="lazy" />
             </div>
@@ -161,7 +161,7 @@
     <footer class="premium-footer">
         <div class="premium-footer-brand">
             <a class="premium-footer-logo" href="#home" aria-label="Retour accueil wélé">
-                <img src="images/wele-provider-logo-final.png?v=20260814" alt="Wélé prestataire" />
+                <img src="https://media.wele.africa/website/provider/wele-logo-horizontal.png" alt="Wélé prestataire" />
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
@@ -286,7 +286,10 @@
 
     private static string NormalizeLegacyMediaUrl(string url)
     {
-        return url.Replace("images/kaza-", "images/wele-", StringComparison.OrdinalIgnoreCase);
+        var normalized = url.Replace("images/kaza-", "images/wele-", StringComparison.OrdinalIgnoreCase);
+        return normalized.StartsWith("images/wele-provider-", StringComparison.OrdinalIgnoreCase)
+            ? $"https://media.wele.africa/website/provider/{Path.GetFileName(normalized)}"
+            : normalized;
     }
 
     private static HeroHeadlineParts SplitHeroHeadline(string headline)
@@ -323,9 +326,9 @@
                 "Trois étapes pour démarrer.",
                 "Un parcours simple pour proposer votre profil en intérim à une entreprise partenaire.",
                 [
-                    new CmsStepResponse("01", "Formulaire", "Créez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "images/wele-provider-step-1.svg"),
-                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.", "images/wele-provider-step-2.svg"),
-                    new CmsStepResponse("03", "Validation", "L'entreprise étudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "images/wele-provider-step-3.svg")
+                    new CmsStepResponse("01", "Formulaire", "Créez votre compte en ligne", "Renseignez vos informations, votre service principal et votre zone.", "website/provider/wele-provider-step-1.svg"),
+                    new CmsStepResponse("02", "Entreprise", "Choisissez une entreprise", "wélé vous propose des entreprises qui acceptent les profils intérimaires dans votre domaine.", "website/provider/wele-provider-step-2.svg"),
+                    new CmsStepResponse("03", "Validation", "L'entreprise étudie votre demande", "Si elle vous valide, vous pourrez recevoir des missions dans l'application mobile.", "website/provider/wele-provider-step-3.svg")
                 ]),
             new CompanyHomeTrustedCmsResponse(
                 "Pourquoi rejoindre wélé ?",
