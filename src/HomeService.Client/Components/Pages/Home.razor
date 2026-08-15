@@ -453,7 +453,7 @@
     private PublicServiceAvailabilityResponse? availability;
     private CancellationTokenSource? addressSearchCancellation;
     private readonly string placesSessionToken = Guid.NewGuid().ToString("N");
-    private const string ServiceAssetVersion = "20260815-illustrations";
+    private const string ServiceAssetVersion = "20260815-pure-illustrations";
 
     private string MinimumDate => DateTime.Today.ToString("yyyy-MM-dd");
     private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"]

@@ -146,7 +146,7 @@
     private IReadOnlyList<ServiceGroup> ServiceGroups { get; set; } = [];
     private bool isLoading = true;
     private bool mobileMenuOpen;
-    private const string ServiceAssetVersion = "20260815-illustrations";
+    private const string ServiceAssetVersion = "20260815-pure-illustrations";
 
     private string SiteBaseUrl => (Configuration["Site:BaseUrl"] ?? "https://wele.africa").TrimEnd('/');
     private string PublicMediaBaseUrl => (Configuration["R2_PUBLIC_BASE_URL"] ?? Configuration["Media:PublicBaseUrl"] ?? "https://media.wele.africa").TrimEnd('/');
