@@ -445,6 +445,43 @@ body:has(.premium-b2b) .site-header.theme-premium.is-scrolled {
     color: #ffffff !important;
 }
 
+/* Keep action labels readable: generic navigation colors must not override buttons. */
+.site-header.theme-premium .site-nav a.header-primary,
+.site-header.theme-premium .site-nav ::deep a.header-primary {
+    background: #0C5A66;
+    border: 1px solid #0C5A66;
+    color: #ffffff !important;
+}
+
+.site-header.theme-premium .site-nav a.header-primary:hover,
+.site-header.theme-premium .site-nav ::deep a.header-primary:hover {
+    background: #084A53 !important;
+    border-color: #084A53;
+    color: #ffffff !important;
+}
+
+.site-header.theme-premium .site-nav a.header-secondary,
+.site-header.theme-premium .site-nav ::deep a.header-secondary {
+    background: #ffffff;
+    border: 1px solid rgba(12, 90, 102, .24);
+    color: #0C5A66 !important;
+}
+
+.site-header.theme-premium .site-nav a.header-secondary:hover,
+.site-header.theme-premium .site-nav ::deep a.header-secondary:hover {
+    background: #F4FBF7 !important;
+    border-color: rgba(12, 90, 102, .42);
+    color: #0C5A66 !important;
+}
+
+.site-header.theme-premium .site-nav a.header-primary:focus-visible,
+.site-header.theme-premium .site-nav a.header-secondary:focus-visible,
+.site-header.theme-premium .site-nav ::deep a.header-primary:focus-visible,
+.site-header.theme-premium .site-nav ::deep a.header-secondary:focus-visible {
+    outline: 3px solid rgba(12, 90, 102, .28);
+    outline-offset: 2px;
+}
+
 @media (max-width: 980px) {
     .site-header.theme-premium .menu-button span {
         background: #0C5A66;
