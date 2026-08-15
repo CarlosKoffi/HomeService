@@ -34,9 +34,9 @@ public sealed class PublicMediaResponseMapperTests
 
         var mapped = PublicMediaResponseMapper.Map(new CdnStorage(), service);
 
-        Assert.Equal("https://media.wele.africa/assets/services/menage.png", mapped.IconUrl);
+        Assert.Equal("https://media.wele.africa/assets/services/menage.png?brand=20260815", mapped.IconUrl);
         Assert.Equal(
-            "https://media.wele.africa/catalog/prestations/menage-regulier.jpg",
+            "https://media.wele.africa/catalog/prestations/menage-regulier.jpg?brand=20260815",
             mapped.Prestations[0].IllustrationUrl);
     }
 
