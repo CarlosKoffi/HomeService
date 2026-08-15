@@ -7579,20 +7579,22 @@ h3 {
 
 .portal-sidebar-logo {
     align-items: center;
-    border-bottom: 1px solid var(--portal-border);
-    color: #111111;
+    background: #0c5a66;
+    border-bottom: 1px solid rgba(255, 255, 255, .14);
     display: flex;
-    gap: 10px;
-    padding: 24px;
+    min-height: 88px;
+    padding: 18px 24px;
     text-decoration: none;
 }
 
 .portal-sidebar-logo img {
     display: block;
-    height: 40px;
+    filter: brightness(0) invert(1);
+    height: auto;
+    max-height: 48px;
     object-fit: contain;
     object-position: left center;
-    width: 140px;
+    width: 154px;
 }
 
 .portal-sidebar-nav {
@@ -8471,8 +8473,10 @@ h3 {
 
 .portal-mission-banner {
     align-items: center;
-    background: #111111;
+    background: linear-gradient(135deg, #0c5a66 0%, #084a53 100%);
+    border: 1px solid rgba(158, 223, 159, .26);
     border-radius: 24px;
+    box-shadow: 0 18px 44px rgba(12, 90, 102, .18);
     color: #ffffff;
     display: flex;
     justify-content: space-between;
@@ -8484,7 +8488,7 @@ h3 {
 }
 
 .portal-mission-banner::after {
-    background: radial-gradient(circle, rgba(12, 90, 102, .42), transparent 62%);
+    background: radial-gradient(circle, rgba(158, 223, 159, .38), transparent 62%);
     content: "";
     height: 220px;
     position: absolute;
@@ -8560,10 +8564,28 @@ h3 {
 }
 
 .figma-dashboard-icon-blue {
-    background: #EAF7F1;
-    color: var(--portal-blue);
-    height: 38px;
-    width: 38px;
+    background: linear-gradient(145deg, #f2fbf7, #def3e9);
+    border: 1px solid rgba(12, 90, 102, .08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 8px 20px rgba(12, 90, 102, .08);
+    color: #0c5a66;
+    height: 42px;
+    width: 42px;
+}
+
+.figma-dashboard-icon-employees {
+    background: linear-gradient(145deg, #f5fcf8, #dff5e9);
+}
+
+.figma-dashboard-icon-live-missions {
+    background: linear-gradient(145deg, #e8f7f4, #ccece3);
+}
+
+.figma-dashboard-icon-completed {
+    background: linear-gradient(145deg, #f3fbf5, #daf2df);
+}
+
+.figma-dashboard-icon-payments {
+    background: linear-gradient(145deg, #effaf7, #d5efe9);
 }
 
 .figma-dashboard-icon-light {
@@ -8581,7 +8603,8 @@ h3 {
 .portal-mission-banner a {
     background: #ffffff;
     border-radius: 999px;
-    color: #111111;
+    color: #0c5a66;
+    font-weight: 700;
     padding: 10px 14px;
 }
 
@@ -8614,8 +8637,8 @@ h3 {
 
 .portal-stat-head .platform-icon {
     border-radius: 12px;
-    height: 38px;
-    width: 38px;
+    height: 42px;
+    width: 42px;
 }
 
 .portal-stat-head .platform-icon svg {
