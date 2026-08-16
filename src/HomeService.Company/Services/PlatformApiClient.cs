@@ -16,7 +16,7 @@ namespace HomeService.Company.Services;
 
 public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration configuration)
 {
-    private const long MaxUploadSize = 10 * 1024 * 1024;
+    private const long MaxUploadSize = 25 * 1024 * 1024;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     public string ToApiUrl(string? relativeUrl)

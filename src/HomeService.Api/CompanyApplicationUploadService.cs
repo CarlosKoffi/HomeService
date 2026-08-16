@@ -4,7 +4,7 @@ namespace HomeService.Api;
 
 public sealed class CompanyApplicationUploadService
 {
-    private const long MaxFileSize = 10 * 1024 * 1024;
+    private const long MaxFileSize = 25 * 1024 * 1024;
 
     private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -70,7 +70,7 @@ public sealed class CompanyApplicationUploadService
 
             if (file.Length > MaxFileSize)
             {
-                throw new InvalidOperationException($"Le fichier {file.FileName} depasse la limite de 10 Mo.");
+                throw new InvalidOperationException($"Le fichier {file.FileName} depasse la limite de 25 Mo.");
             }
 
             var originalFileName = Path.GetFileName(file.FileName);
@@ -112,7 +112,7 @@ public sealed class CompanyApplicationUploadService
 
         if (file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException($"Le fichier {file.FileName} depasse la limite de 10 Mo.");
+            throw new InvalidOperationException($"Le fichier {file.FileName} depasse la limite de 25 Mo.");
         }
 
         var originalFileName = Path.GetFileName(file.FileName);

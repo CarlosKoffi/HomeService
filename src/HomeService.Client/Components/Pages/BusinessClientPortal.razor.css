@@ -203,6 +203,60 @@
     grid-column: 1 / -1;
 }
 
+.address-field {
+    position: relative;
+}
+
+.address-input-wrap {
+    position: relative;
+}
+
+.address-input-wrap svg {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 15px;
+    width: 20px;
+    fill: none;
+    stroke: #0c5a66;
+    stroke-width: 1.8;
+    transform: translateY(-50%);
+}
+
+.form-grid .address-input-wrap input {
+    padding-left: 46px;
+}
+
+.address-suggestions {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% - 18px);
+    right: 0;
+    left: 0;
+    overflow: hidden;
+    border: 1px solid #cfe0dc;
+    border-radius: 15px;
+    background: #fff;
+    box-shadow: 0 18px 45px rgba(12, 90, 102, .15);
+}
+
+.address-suggestions button {
+    display: grid;
+    width: 100%;
+    gap: 3px;
+    padding: 13px 16px;
+    border: 0;
+    border-bottom: 1px solid #edf3f1;
+    color: #14252c;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+}
+
+.address-suggestions button:last-child { border-bottom: 0; }
+.address-suggestions button:hover { background: #f0faf6; }
+.address-suggestions small, .field-hint { color: #738287; font-size: .78rem; }
+
 .primary-button {
     min-height: 50px;
     padding: 0 24px;
@@ -284,6 +338,7 @@
     font: inherit;
     font-weight: 800;
     text-align: left;
+    cursor: pointer;
 }
 
 .business-sidebar nav button span {
@@ -295,10 +350,108 @@
     background: #edf4f3;
 }
 
+.business-sidebar nav button span svg {
+    width: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.7;
+}
+
+.business-sidebar nav button small {
+    margin-left: auto;
+    color: #718187;
+    font-size: .62rem;
+    font-weight: 800;
+}
+
 .business-sidebar nav button.active {
     color: #0c5a66;
     background: #e7f5f1;
 }
+
+.portal-welcome {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 32px;
+    margin-bottom: 26px;
+}
+
+.portal-welcome h1,
+.portal-list-heading h1 {
+    margin: 10px 0 12px;
+    color: #10202c;
+    font-size: clamp(2.7rem, 5vw, 4.8rem);
+    line-height: .95;
+    letter-spacing: -.055em;
+}
+
+.portal-welcome p,
+.portal-section-heading p {
+    max-width: 700px;
+    margin: 0;
+    color: #607078;
+    line-height: 1.65;
+}
+
+.account-status-banner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 42px;
+    padding: 24px;
+    border: 1px solid #bfe4d9;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #e9f8f3, #f8fcfb);
+}
+
+.account-status-banner h2 { margin: 10px 0 5px; font-size: 1.35rem; }
+.account-status-banner p { margin: 0; color: #607078; line-height: 1.55; }
+.status-visual { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 17px; color: #0c5a66; background: #9edfcf; }
+.status-visual svg, .empty-requests svg { width: 28px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+
+.secondary-button,
+.text-button {
+    border: 0;
+    color: #0c5a66;
+    background: transparent;
+    font: inherit;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.secondary-button { min-height: 44px; padding: 0 17px; border: 1px solid #9ccfc2; border-radius: 13px; background: #fff; }
+.portal-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+.portal-section-heading h2 { margin: 8px 0; font-size: clamp(1.8rem, 3vw, 2.7rem); letter-spacing: -.035em; }
+
+.business-service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.business-service-grid.compact { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.business-mobile-nav {
+    display: none;
+}
+.business-service-card { overflow: hidden; border: 1px solid #dce8e6; border-radius: 22px; background: #fff; box-shadow: 0 14px 38px rgba(12, 90, 102, .06); }
+.business-service-card img { display: block; width: 100%; aspect-ratio: 1.55; object-fit: contain; padding: 14px; background: #f5fbf9; }
+.business-service-card > div { padding: 18px; }
+.business-service-card h2, .business-service-card h3 { margin: 0 0 8px; color: #10202c; }
+.business-service-card p { display: -webkit-box; min-height: 43px; margin: 0 0 14px; overflow: hidden; color: #66767c; font-size: .86rem; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.business-service-card small { color: #0c5a66; font-weight: 800; }
+.locked-action { width: 100%; min-height: 42px; margin-top: 16px; border: 0; border-radius: 12px; color: #617076; background: #edf3f2; font-weight: 800; }
+.catalog-loading { padding: 50px; border: 1px solid #dce8e6; border-radius: 22px; color: #66767c; background: #fff; text-align: center; }
+.portal-list-heading { margin-bottom: 28px; }
+
+.empty-requests { display: grid; place-items: center; min-height: 430px; padding: 48px; border: 1px solid #dce8e6; border-radius: 28px; background: #fff; text-align: center; }
+.empty-requests > div { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 22px; color: #0c5a66; background: #dff5ee; }
+.empty-requests h2 { margin: 22px 0 8px; }
+.empty-requests p { max-width: 520px; margin: 0 0 24px; color: #66767c; line-height: 1.6; }
 
 .sidebar-help {
     margin-top: auto;
@@ -453,11 +606,12 @@
     grid-template-columns: 48px minmax(0, 1fr) auto;
     align-items: center;
     gap: 13px;
-    min-height: 108px;
-    padding: 16px;
-    border: 1px dashed #bfd3cf;
-    border-radius: 17px;
-    background: #fbfdfd;
+    min-height: 132px;
+    padding: 20px;
+    border: 1px solid #d7e5e2;
+    border-radius: 19px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(12, 90, 102, .045);
 }
 
 .document-card.uploaded {
@@ -499,17 +653,43 @@
 }
 
 .upload-button {
-    padding: 9px 12px;
-    border-radius: 10px;
-    color: #0c5a66;
-    background: #e2f5ef;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 42px;
+    padding: 9px 14px;
+    border: 1px solid #b7ddd2;
+    border-radius: 12px;
+    color: #fff;
+    background: #0c5a66;
     font-size: .8rem;
     font-weight: 900;
     cursor: pointer;
 }
 
-.upload-button input {
-    display: none;
+.upload-button:hover {
+    background: #084b55;
+}
+
+.upload-button svg {
+    width: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.upload-button ::deep input.visually-hidden-file {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
 
 .delete-button {
@@ -554,6 +734,11 @@
     background: #fff;
 }
 
+.submit-card .primary-button:hover:not(:disabled) {
+    color: #fff;
+    background: #073f47;
+}
+
 @media (max-width: 900px) {
     .business-auth-shell {
         grid-template-columns: 1fr;
@@ -581,6 +766,39 @@
         width: min(100% - 28px, 720px);
         padding-top: 28px;
     }
+
+    .business-mobile-nav {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        margin-bottom: 20px;
+        padding: 6px;
+        overflow-x: auto;
+        border: 1px solid #dce8e6;
+        border-radius: 16px;
+        background: #fff;
+    }
+
+    .business-mobile-nav button {
+        min-width: 86px;
+        padding: 10px 8px;
+        border: 0;
+        border-radius: 11px;
+        color: #526361;
+        background: transparent;
+        font: inherit;
+        font-size: .78rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .business-mobile-nav button.active {
+        color: #075f69;
+        background: #e4f5ef;
+    }
+
+    .business-service-grid,
+    .business-service-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
@@ -632,4 +850,12 @@
     .submit-card .primary-button {
         width: 100%;
     }
+
+    .portal-welcome,
+    .portal-section-heading { display: grid; align-items: start; }
+    .portal-welcome .primary-button { width: 100%; }
+    .account-status-banner { grid-template-columns: auto 1fr; }
+    .account-status-banner .secondary-button { grid-column: 1 / -1; width: 100%; }
+    .business-service-grid,
+    .business-service-grid.compact { grid-template-columns: 1fr; }
 }

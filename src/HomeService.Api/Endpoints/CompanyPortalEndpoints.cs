@@ -732,7 +732,11 @@ public static class CompanyPortalEndpoints
             }
 
             var form = await httpRequest.ReadFormAsync(cancellationToken);
-            var errors = CompanyProviderValidator.Validate(ToCompanyProviderFormData(form));
+            var requestedServices = GetEmployeeServiceSelections(form);
+            var derivedYearsOfExperience = requestedServices.Count == 0
+                ? 0
+                : requestedServices.Max(service => Math.Clamp(service.YearsOfExperience, 0, 60));
+            var errors = CompanyProviderValidator.Validate(ToCompanyProviderFormData(form, derivedYearsOfExperience));
             if (errors.Count > 0)
             {
                 return Results.BadRequest(new { message = "Le formulaire employe contient des erreurs.", errors });
@@ -748,12 +752,11 @@ public static class CompanyPortalEndpoints
                 GetFormValue(form, "address"),
                 ParseProviderGender(GetOptionalFormValue(form, "gender")),
                 ParseProviderEmploymentType(GetOptionalFormValue(form, "employmentType")),
-                GetOptionalInt(form, "yearsOfExperience") ?? 0,
-                GetOptionalDecimal(form, "missionLatitude"),
-                GetOptionalDecimal(form, "missionLongitude"),
+                derivedYearsOfExperience,
+                null,
+                null,
                 GetOptionalInt(form, "missionRadiusKm") ?? 5);
 
-            var requestedServices = GetEmployeeServiceSelections(form);
             var requestedServiceIds = requestedServices.Select(service => service.ServiceId).Distinct().ToList();
             var services = await db.Services
                 .Where(service => requestedServiceIds.Contains(service.Id) && service.IsActive)
@@ -1577,7 +1580,7 @@ public static class CompanyPortalEndpoints
             : ProviderServicePriceTier.Normal;
     }
 
-    private static CompanyProviderFormData ToCompanyProviderFormData(IFormCollection form)
+    private static CompanyProviderFormData ToCompanyProviderFormData(IFormCollection form, int? yearsOfExperience = null)
     {
         return new CompanyProviderFormData(
             GetFormValue(form, "firstName"),
@@ -1586,7 +1589,7 @@ public static class CompanyPortalEndpoints
             GetOptionalFormValue(form, "email"),
             DateOnly.TryParse(GetFormValue(form, "dateOfBirth"), out var birthDate) ? birthDate : null,
             GetFormValue(form, "address"),
-            GetOptionalInt(form, "yearsOfExperience"),
+            yearsOfExperience ?? GetOptionalInt(form, "yearsOfExperience"),
             GetOptionalInt(form, "missionRadiusKm"),
             GetGuidValues(form, "serviceIds"),
             form.Files.GetFile("photo") is not null,

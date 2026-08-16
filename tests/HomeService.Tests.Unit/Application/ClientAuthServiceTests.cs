@@ -1,6 +1,7 @@
 using HomeService.Application.Clients;
 using HomeService.Contracts.Clients;
 using HomeService.Infrastructure.Data;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Tests.Unit.Application;
@@ -84,6 +85,31 @@ public sealed class ClientAuthServiceTests
 
         Assert.False(result.IsSuccess);
         Assert.NotEmpty(result.Errors);
+    }
+
+    [Fact]
+    public async Task Same_phone_can_register_one_personal_and_one_business_account()
+    {
+        await using var db = CreateDbContext();
+        var sut = new ClientAuthService(db);
+        var request = new RegisterClientRequest(
+            "Aya",
+            "Kone",
+            "+2250700000000",
+            "aya@wele.ci",
+            "Testeur123",
+            true);
+
+        var personal = await sut.RegisterAsync(request, CancellationToken.None);
+        var business = await sut.RegisterAsync(request, CancellationToken.None, CustomerAccountType.Business);
+        var duplicateBusiness = await sut.RegisterAsync(request, CancellationToken.None, CustomerAccountType.Business);
+
+        Assert.True(personal.IsSuccess);
+        Assert.True(business.IsSuccess);
+        Assert.False(duplicateBusiness.IsSuccess);
+        Assert.Equal(2, await db.Customers.CountAsync());
+        Assert.Contains(await db.Customers.ToListAsync(), item => item.AccountType == CustomerAccountType.Personal);
+        Assert.Contains(await db.Customers.ToListAsync(), item => item.AccountType == CustomerAccountType.Business);
     }
 
     private static HomeServiceDbContext CreateDbContext()

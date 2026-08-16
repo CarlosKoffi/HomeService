@@ -2,13 +2,17 @@ using HomeService.Application.Abstractions;
 using HomeService.Application.Security;
 using HomeService.Contracts.Clients;
 using HomeService.Domain.Entities;
+using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.Clients;
 
 public sealed class ClientAuthService(IAppDbContext db)
 {
-    public async Task<ClientAuthResult> RegisterAsync(RegisterClientRequest request, CancellationToken cancellationToken)
+    public async Task<ClientAuthResult> RegisterAsync(
+        RegisterClientRequest request,
+        CancellationToken cancellationToken,
+        CustomerAccountType accountType = CustomerAccountType.Personal)
     {
         var errors = ValidateRegistration(request);
         if (errors.Count > 0)
@@ -17,13 +21,15 @@ public sealed class ClientAuthService(IAppDbContext db)
         }
 
         var phone = NormalizePhone(request.PhoneNumber);
-        var existing = await db.Customers.FirstOrDefaultAsync(customer => customer.PhoneNumber == phone, cancellationToken);
+        var existing = await db.Customers.FirstOrDefaultAsync(
+            customer => customer.PhoneNumber == phone && customer.AccountType == accountType,
+            cancellationToken);
         if (existing is not null)
         {
             return ClientAuthResult.Invalid(["Ce numero est deja rattache a un compte client."]);
         }
 
-        var customer = new CustomerProfile(request.FirstName, request.LastName, phone);
+        var customer = new CustomerProfile(request.FirstName, request.LastName, phone, accountType);
         customer.UpdateProfile(request.FirstName, request.LastName, request.Email);
         customer.SetPasswordHash(Sha256PasswordHasher.Hash(request.Password));
         db.Customers.Add(customer);
@@ -35,7 +41,10 @@ public sealed class ClientAuthService(IAppDbContext db)
         return ClientAuthResult.Ok(ToAuthResponse(customer, session.Token, session.Session.ExpiresAt));
     }
 
-    public async Task<ClientAuthResult> LoginAsync(LoginClientRequest request, CancellationToken cancellationToken)
+    public async Task<ClientAuthResult> LoginAsync(
+        LoginClientRequest request,
+        CancellationToken cancellationToken,
+        CustomerAccountType accountType = CustomerAccountType.Personal)
     {
         if (string.IsNullOrWhiteSpace(request.PhoneNumber) || string.IsNullOrWhiteSpace(request.Password))
         {
@@ -43,7 +52,9 @@ public sealed class ClientAuthService(IAppDbContext db)
         }
 
         var phone = NormalizePhone(request.PhoneNumber);
-        var customer = await db.Customers.FirstOrDefaultAsync(item => item.PhoneNumber == phone, cancellationToken);
+        var customer = await db.Customers.FirstOrDefaultAsync(
+            item => item.PhoneNumber == phone && item.AccountType == accountType,
+            cancellationToken);
         if (customer is null
             || string.IsNullOrWhiteSpace(customer.PasswordHash)
             || !Sha256PasswordHasher.Verify(request.Password, customer.PasswordHash))
@@ -63,7 +74,10 @@ public sealed class ClientAuthService(IAppDbContext db)
         return ClientAuthResult.Ok(ToAuthResponse(customer, session.Token, session.Session.ExpiresAt));
     }
 
-    public async Task<CustomerProfile?> GetSessionCustomerAsync(string? authorizationHeader, CancellationToken cancellationToken)
+    public async Task<CustomerProfile?> GetSessionCustomerAsync(
+        string? authorizationHeader,
+        CancellationToken cancellationToken,
+        CustomerAccountType? expectedAccountType = null)
     {
         var token = ExtractBearerToken(authorizationHeader);
         if (token is null)
@@ -76,7 +90,10 @@ public sealed class ClientAuthService(IAppDbContext db)
             .Include(item => item.Customer)
             .FirstOrDefaultAsync(item => item.TokenHash == tokenHash && item.RevokedAt == null && item.ExpiresAt > DateTimeOffset.UtcNow, cancellationToken);
 
-        return session?.Customer;
+        return session?.Customer is { } customer
+            && (expectedAccountType is null || customer.AccountType == expectedAccountType)
+                ? customer
+                : null;
     }
 
     public async Task<bool> LogoutAsync(string? authorizationHeader, CancellationToken cancellationToken)

@@ -15,12 +15,12 @@ public sealed class BusinessClientApiClient(HttpClient httpClient, ILogger<Busin
     public Task<BusinessClientApiResult<ClientAuthResponse>> RegisterAsync(
         RegisterClientRequest request,
         CancellationToken cancellationToken = default) =>
-        SendAsync<ClientAuthResponse>(HttpMethod.Post, "api/client/auth/register", null, request, cancellationToken);
+        SendAsync<ClientAuthResponse>(HttpMethod.Post, "api/client/business/auth/register", null, request, cancellationToken);
 
     public Task<BusinessClientApiResult<ClientAuthResponse>> LoginAsync(
         LoginClientRequest request,
         CancellationToken cancellationToken = default) =>
-        SendAsync<ClientAuthResponse>(HttpMethod.Post, "api/client/auth/login", null, request, cancellationToken);
+        SendAsync<ClientAuthResponse>(HttpMethod.Post, "api/client/business/auth/login", null, request, cancellationToken);
 
     public Task<BusinessClientApiResult<BusinessClientProfileResponse>> GetProfileAsync(
         string token,
@@ -48,7 +48,7 @@ public sealed class BusinessClientApiClient(HttpClient httpClient, ILogger<Busin
         {
             using var form = new MultipartFormDataContent();
             form.Add(new StringContent(documentType), "documentType");
-            var stream = file.OpenReadStream(10 * 1024 * 1024, cancellationToken);
+            var stream = file.OpenReadStream(25 * 1024 * 1024, cancellationToken);
             using var fileContent = new StreamContent(stream);
             fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(
                 string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);

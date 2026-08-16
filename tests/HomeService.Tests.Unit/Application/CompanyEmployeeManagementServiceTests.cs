@@ -42,9 +42,44 @@ public sealed class CompanyEmployeeManagementServiceTests
         Assert.True(providerService.IsActive);
         Assert.Equal(ExperienceLevel.Confirmed, providerService.ExperienceLevel);
         Assert.Equal(6, providerService.YearsOfExperience);
+        Assert.Equal(6, provider.YearsOfExperience);
         var providerPrestation = Assert.Single(providerService.Prestations);
         Assert.Equal(prestation.Id, providerPrestation.ServicePrestationId);
         Assert.True(providerPrestation.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateProfileAsync_PreservesDerivedExperienceAndTechnicalCoordinates()
+    {
+        await using var db = CreateDbContext();
+        var companyId = Guid.NewGuid();
+        var provider = CreateProvider(companyId);
+        db.Providers.Add(provider);
+        await db.SaveChangesAsync();
+
+        var result = await new CompanyEmployeeManagementService(db).UpdateProfileAsync(
+            companyId,
+            provider.Id,
+            new UpdateCompanyEmployeeRequest(
+                "Awa",
+                "Konate",
+                "+2250700000000",
+                "awa.konate@example.ci",
+                new DateOnly(1995, 4, 12),
+                "Marcory",
+                nameof(ProviderGender.Female),
+                nameof(ProviderEmploymentType.CompanyEmployee),
+                42,
+                0m,
+                0m,
+                12),
+            CancellationToken.None);
+
+        Assert.Equal(CompanyEmployeeOperationStatus.Ok, result.Status);
+        Assert.Equal("Marcory", provider.Address);
+        Assert.Equal(4, provider.YearsOfExperience);
+        Assert.Equal(5.348850m, provider.MissionLatitude);
+        Assert.Equal(-4.003150m, provider.MissionLongitude);
     }
 
     [Fact]

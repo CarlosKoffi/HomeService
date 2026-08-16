@@ -2479,6 +2479,9 @@ namespace HomeService.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AccountType")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2516,7 +2519,8 @@ namespace HomeService.Infrastructure.Data.Migrations
 
                     b.HasIndex("Email");
 
-                    b.HasIndex("PhoneNumber");
+                    b.HasIndex("PhoneNumber", "AccountType")
+                        .IsUnique();
 
                     b.ToTable("Customers");
                 });

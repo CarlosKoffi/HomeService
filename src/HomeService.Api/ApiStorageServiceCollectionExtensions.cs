@@ -8,7 +8,8 @@ public static class ApiStorageServiceCollectionExtensions
     {
         services.Configure<FormOptions>(options =>
         {
-            options.MultipartBodyLengthLimit = 30L * 1024 * 1024;
+            // Un dossier peut contenir plusieurs pieces de 25 Mo.
+            options.MultipartBodyLengthLimit = 100L * 1024 * 1024;
         });
 
         services.AddSingleton<IApiObjectStorage, ApiObjectStorage>();

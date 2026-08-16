@@ -1,4 +1,5 @@
 using HomeService.Domain.Common;
+using HomeService.Domain.Enums;
 
 namespace HomeService.Domain.Entities;
 
@@ -8,16 +9,22 @@ public sealed class CustomerProfile : AuditableEntity
     {
     }
 
-    public CustomerProfile(string firstName, string lastName, string phoneNumber)
+    public CustomerProfile(
+        string firstName,
+        string lastName,
+        string phoneNumber,
+        CustomerAccountType accountType = CustomerAccountType.Personal)
     {
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         PhoneNumber = phoneNumber.Trim();
+        AccountType = accountType;
     }
 
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public string PhoneNumber { get; private set; } = string.Empty;
+    public CustomerAccountType AccountType { get; private set; }
     public string? Email { get; private set; }
     public string? PasswordHash { get; private set; }
     public string? ProfilePhotoPath { get; private set; }

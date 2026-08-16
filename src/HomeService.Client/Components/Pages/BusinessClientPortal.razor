@@ -1,10 +1,13 @@
 @page "/entreprises/espace"
+@implements IDisposable
 @using System.Text.Json
 @using HomeService.Client.Services
 @using HomeService.Contracts.BusinessClients
 @using HomeService.Contracts.Clients
+@using HomeService.Contracts.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject BusinessClientApiClient ApiClient
+@inject PublicWebsiteApiClient PlacesApiClient
 @inject IJSRuntime JsRuntime
 
 <PageTitle>Espace client entreprise — Wélé</PageTitle>
@@ -89,10 +92,11 @@
                     <span class="sidebar-caption">ESPACE ENTREPRISE</span>
                     <strong>@(Profile?.TradeName ?? Profile?.LegalName ?? "Votre société")</strong>
                 </div>
-                <nav aria-label="Étapes du dossier">
-                    <button type="button" class="active"><span>1</span> Dossier société</button>
-                    <button type="button"><span>2</span> Justificatifs</button>
-                    <button type="button"><span>3</span> Validation</button>
+                <nav aria-label="Navigation de l’espace entreprise">
+                    <button type="button" class="@(CurrentSection == "home" ? "active" : null)" @onclick='() => SelectSectionAsync("home")'><span><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg></span> Accueil</button>
+                    <button type="button" class="@(CurrentSection == "services" ? "active" : null)" @onclick='() => SelectSectionAsync("services")'><span><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4zM8 9h8M8 13h5"/></svg></span> Services</button>
+                    <button type="button" class="@(CurrentSection == "requests" ? "active" : null)" @onclick='() => SelectSectionAsync("requests")'><span><svg viewBox="0 0 24 24"><path d="M6 3.5h12v17H6zM9 8h6M9 12h6M9 16h4"/></svg></span> Mes demandes</button>
+                    <button type="button" class="@(CurrentSection == "dossier" ? "active" : null)" @onclick='() => SelectSectionAsync("dossier")'><span><svg viewBox="0 0 24 24"><path d="M4 6.5h6l2 2h8v11H4z"/></svg></span> Dossier société <small>@GetStatusLabel(Profile?.Status ?? "Draft")</small></button>
                 </nav>
                 <div class="sidebar-help">
                     <strong>Besoin d’aide ?</strong>
@@ -102,6 +106,56 @@
             </aside>
 
             <main class="business-main">
+                <nav class="business-mobile-nav" aria-label="Navigation mobile de l’espace entreprise">
+                    <button type="button" class="@(CurrentSection == "home" ? "active" : null)" @onclick='() => SelectSectionAsync("home")'>Accueil</button>
+                    <button type="button" class="@(CurrentSection == "services" ? "active" : null)" @onclick='() => SelectSectionAsync("services")'>Services</button>
+                    <button type="button" class="@(CurrentSection == "requests" ? "active" : null)" @onclick='() => SelectSectionAsync("requests")'>Demandes</button>
+                    <button type="button" class="@(CurrentSection == "dossier" ? "active" : null)" @onclick='() => SelectSectionAsync("dossier")'>Dossier</button>
+                </nav>
+                @if (CurrentSection == "home")
+                {
+                    <section class="portal-welcome">
+                        <div><span class="eyebrow">ESPACE CLIENT ENTREPRISE</span><h1>Bonjour @Session?.FirstName</h1><p>Découvrez les services disponibles et préparez vos futures interventions pendant la vérification de votre société.</p></div>
+                        <button type="button" class="primary-button" @onclick='() => SelectSectionAsync("services")'>Explorer les services</button>
+                    </section>
+                    <section class="account-status-banner">
+                        <div class="status-visual"><svg viewBox="0 0 24 24"><path d="M12 3.5 20 7v5c0 4.7-3.2 7.5-8 9-4.8-1.5-8-4.3-8-9V7Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></div>
+                        <div><span class="status-pill @GetStatusClass(Profile?.Status ?? "Draft")">@GetStatusLabel(Profile?.Status ?? "Draft")</span><h2>@GetActivationTitle()</h2><p>@GetActivationHelp()</p></div>
+                        <button type="button" class="secondary-button" @onclick='() => SelectSectionAsync("dossier")'>Voir mon dossier</button>
+                    </section>
+                    <section class="portal-section-heading"><div><span class="eyebrow">CATALOGUE</span><h2>Services pour votre activité</h2><p>Vous pouvez déjà parcourir les univers qui seront accessibles à votre entreprise.</p></div><button type="button" class="text-button" @onclick='() => SelectSectionAsync("services")'>Tout voir →</button></section>
+                    @if (ServicesLoading) { <div class="catalog-loading">Chargement des services…</div> }
+                    else
+                    {
+                        <div class="business-service-grid compact">
+                            @foreach (var service in VisibleServices.Take(4))
+                            {
+                                <article class="business-service-card"><img src="@ServiceVisualCatalog.ServiceIllustration(service)" alt="" /><div><h3>@service.Name</h3><p>@service.Description</p><small>@GetPrestationLabel(service)</small></div></article>
+                            }
+                        </div>
+                    }
+                }
+                else if (CurrentSection == "services")
+                {
+                    <section class="business-heading portal-list-heading"><div><span class="eyebrow">CATALOGUE ENTREPRISE</span><h1>Nos services</h1><p>Explorez les services disponibles. La commande sera activée dès la validation de votre dossier.</p></div><span class="status-pill @GetStatusClass(Profile?.Status ?? "Draft")">@GetStatusLabel(Profile?.Status ?? "Draft")</span></section>
+                    @if (ServicesLoading) { <div class="catalog-loading">Chargement des services…</div> }
+                    else
+                    {
+                        <div class="business-service-grid">
+                            @foreach (var service in VisibleServices)
+                            {
+                                <article class="business-service-card detailed"><img src="@ServiceVisualCatalog.ServiceIllustration(service)" alt="Illustration @service.Name" /><div><h2>@service.Name</h2><p>@service.Description</p><small>@GetPrestationLabel(service)</small><button type="button" class="locked-action" disabled>Disponible après validation</button></div></article>
+                            }
+                        </div>
+                    }
+                }
+                else if (CurrentSection == "requests")
+                {
+                    <section class="business-heading portal-list-heading"><div><span class="eyebrow">SUIVI</span><h1>Mes demandes</h1><p>Vos interventions ponctuelles et récurrentes apparaîtront ici.</p></div></section>
+                    <section class="empty-requests"><div><svg viewBox="0 0 24 24"><path d="M6 3.5h12v17H6zM9 8h6M9 12h6M9 16h4"/></svg></div><h2>Aucune demande pour le moment</h2><p>@(IsApproved ? "Votre espace est prêt à accueillir vos premières demandes." : "Vous pourrez créer une demande dès que votre dossier entreprise aura été validé.")</p><button type="button" class="primary-button" @onclick='() => SelectSectionAsync("services")'>Découvrir les services</button></section>
+                }
+                else
+                {
                 <section class="business-heading">
                     <div>
                         <span class="eyebrow">COMPTE CLIENT ENTREPRISE</span>
@@ -132,16 +186,31 @@
                     <section class="portal-card">
                         <div class="card-title">
                             <span>01</span>
-                            <div><h2>Informations de la société</h2><p>Renseignez les informations figurant sur vos documents officiels.</p></div>
+                            <div><h2>Informations de la société</h2><p>Indiquez simplement le nom et l’adresse de votre entreprise.</p></div>
                         </div>
                         <div class="form-grid two-columns">
-                            <label><span>Raison sociale *</span><input @bind="LegalName" /></label>
-                            <label><span>Nom commercial</span><input @bind="TradeName" /></label>
-                            <label><span>Forme juridique</span><select @bind="LegalForm"><option value="">Choisir</option><option>SARL</option><option>SA</option><option>SAS</option><option>Entreprise individuelle</option><option>Association</option><option>Autre</option></select></label>
-                            <label><span>N° RCCM / registre</span><input @bind="RegistrationNumber" /></label>
-                            <label><span>N° contribuable / CC</span><input @bind="TaxIdentificationNumber" /></label>
+                            <label><span>Nom de l’entreprise *</span><input @bind="LegalName" placeholder="Ex. Ivoire Gestion" /></label>
                             <label><span>Ville *</span><input @bind="City" placeholder="Abidjan" /></label>
-                            <label class="full-row"><span>Adresse du siège *</span><input @bind="Address" /></label>
+                            <label class="full-row address-field">
+                                <span>Adresse de l’entreprise *</span>
+                                <div class="address-input-wrap">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>
+                                    <input value="@Address" placeholder="Commencez à saisir une adresse" autocomplete="off" @oninput="HandleAddressInput" @onfocus="ShowAddressSuggestions" />
+                                </div>
+                                @if (ShowAddressSuggestionList)
+                                {
+                                    <div class="address-suggestions">
+                                        @foreach (var suggestion in AddressSuggestions)
+                                        {
+                                            <button type="button" @onclick="() => SelectAddressAsync(suggestion)">
+                                                <strong>@suggestion.MainText</strong>
+                                                <small>@suggestion.SecondaryText</small>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                <small class="field-hint">Sélectionnez une proposition pour confirmer l’adresse.</small>
+                            </label>
                         </div>
                     </section>
 
@@ -162,7 +231,7 @@
                 else if (Profile is not null)
                 {
                     <section class="portal-card company-summary">
-                        <div><span>Société</span><strong>@Profile.LegalName</strong><small>@Profile.LegalForm · @Profile.City</small></div>
+                        <div><span>Société</span><strong>@Profile.LegalName</strong><small>@Profile.City · @Profile.Address</small></div>
                         <div><span>Responsable</span><strong>@Profile.RepresentativeName</strong><small>@Profile.ContactEmail</small></div>
                     </section>
                 }
@@ -172,7 +241,7 @@
                     <section class="portal-card">
                         <div class="card-title">
                             <span>03</span>
-                            <div><h2>Justificatifs de la société</h2><p>PDF, JPG, PNG ou WebP. 10 Mo maximum par fichier.</p></div>
+                            <div><h2>Justificatifs de la société</h2><p>PDF, JPG, PNG ou WebP. 25 Mo maximum par fichier.</p></div>
                         </div>
                         <div class="document-grid">
                             @foreach (var requirement in DocumentRequirements)
@@ -199,8 +268,9 @@
                                     @if (Profile.CanEdit)
                                     {
                                         <label class="upload-button">
-                                            @(document is null ? "Ajouter" : "Remplacer")
-                                            <InputFile OnChange="@(file => UploadDocumentAsync(requirement.Type, file))" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" />
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+                                            <span>@(document is null ? "Ajouter le fichier" : "Remplacer")</span>
+                                            <InputFile class="visually-hidden-file" OnChange="@(file => UploadDocumentAsync(requirement.Type, file))" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" />
                                         </label>
                                         @if (document is not null)
                                         {
@@ -223,6 +293,7 @@
                             <button type="button" class="primary-button" disabled="@(IsBusy || Profile.MissingRequiredDocuments.Count > 0)" @onclick="SubmitAsync">Soumettre le dossier</button>
                         }
                     </section>
+                }
                 }
             </main>
         </div>
@@ -267,6 +338,15 @@
     private string RepresentativeRole = string.Empty;
     private string ContactEmail = string.Empty;
     private string ContactPhone = string.Empty;
+    private readonly string AddressPlacesSessionToken = Guid.NewGuid().ToString("N");
+    private IReadOnlyList<ClientAddressSuggestionResponse> AddressSuggestions = [];
+    private CancellationTokenSource? AddressSearchCancellation;
+    private bool ShowAddressSuggestionList;
+    private string CurrentSection = "home";
+    private IReadOnlyList<ServiceSummaryResponse> Services = [];
+    private bool ServicesLoading;
+    private IEnumerable<ServiceSummaryResponse> VisibleServices => Services.Where(service => service.IsActive).OrderBy(service => service.Name);
+    private bool IsApproved => string.Equals(Profile?.Status, "Approved", StringComparison.OrdinalIgnoreCase);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -336,12 +416,38 @@
     private async Task LoadProfileAsync()
     {
         if (Session is null) return;
+        await LoadServicesAsync();
         var result = await ApiClient.GetProfileAsync(Session.Token);
         if (result.IsUnauthorized) { await LogoutAsync(); return; }
         if (result.IsNotFound) { Profile = null; return; }
         if (!result.IsSuccess || result.Value is null) { ShowError(result.ErrorMessage); return; }
         ApplyProfile(result.Value);
     }
+
+    private async Task SelectSectionAsync(string section)
+    {
+        CurrentSection = section;
+        if (section is "home" or "services") await LoadServicesAsync();
+    }
+
+    private async Task LoadServicesAsync()
+    {
+        if (Services.Count > 0 || ServicesLoading) return;
+        ServicesLoading = true;
+        try { Services = await PlacesApiClient.GetServicesAsync(); }
+        finally { ServicesLoading = false; }
+    }
+
+    private string GetActivationTitle() => IsApproved ? "Votre compte est validé" : "Votre dossier est en cours de validation";
+    private string GetActivationHelp() => IsApproved
+        ? "Votre entreprise peut accéder aux services professionnels."
+        : "Vous pouvez explorer tout le catalogue. La création d’une demande sera débloquée après la vérification de vos justificatifs.";
+    private static string GetPrestationLabel(ServiceSummaryResponse service) => service.Prestations.Count switch
+    {
+        0 => "Prestations bientôt disponibles",
+        1 => "1 prestation disponible",
+        var count => $"{count} prestations disponibles"
+    };
 
     private async Task SaveProfileAsync()
     {
@@ -351,7 +457,7 @@
             ShowError("Complétez tous les champs marqués d’un astérisque."); return;
         }
         IsBusy = true; Message = null;
-        var result = await ApiClient.SaveProfileAsync(Session.Token, new UpsertBusinessClientProfileRequest(LegalName, TradeName, LegalForm, RegistrationNumber, TaxIdentificationNumber, Address, City, "CI", RepresentativeName, RepresentativeRole, ContactEmail, ContactPhone));
+        var result = await ApiClient.SaveProfileAsync(Session.Token, new UpsertBusinessClientProfileRequest(LegalName, LegalName, LegalForm, RegistrationNumber, TaxIdentificationNumber, Address, City, "CI", RepresentativeName, RepresentativeRole, ContactEmail, ContactPhone));
         IsBusy = false;
         if (!result.IsSuccess || result.Value is null) { ShowError(result.ErrorMessage); return; }
         ApplyProfile(result.Value); ShowSuccess("Informations enregistrées. Vous pouvez maintenant ajouter les justificatifs.");
@@ -365,6 +471,41 @@
         IsBusy = false;
         if (!result.IsSuccess) { ShowError(result.ErrorMessage); return; }
         await LoadProfileAsync(); ShowSuccess("Document ajouté au dossier.");
+    }
+
+    private async Task HandleAddressInput(ChangeEventArgs args)
+    {
+        Address = args.Value?.ToString()?.TrimStart() ?? string.Empty;
+        AddressSearchCancellation?.Cancel();
+        AddressSearchCancellation?.Dispose();
+        AddressSearchCancellation = new CancellationTokenSource();
+        if (Address.Trim().Length < 3)
+        {
+            AddressSuggestions = [];
+            ShowAddressSuggestionList = false;
+            return;
+        }
+
+        var cancellationToken = AddressSearchCancellation.Token;
+        try
+        {
+            await Task.Delay(260, cancellationToken);
+            AddressSuggestions = await PlacesApiClient.SearchAddressesAsync(Address.Trim(), AddressPlacesSessionToken, cancellationToken);
+            ShowAddressSuggestionList = AddressSuggestions.Count > 0;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void ShowAddressSuggestions() => ShowAddressSuggestionList = AddressSuggestions.Count > 0;
+
+    private async Task SelectAddressAsync(ClientAddressSuggestionResponse suggestion)
+    {
+        var details = await PlacesApiClient.GetPlaceDetailsAsync(suggestion.PlaceId, AddressPlacesSessionToken);
+        Address = details?.AddressLine ?? suggestion.FullText;
+        AddressSuggestions = [];
+        ShowAddressSuggestionList = false;
     }
 
     private async Task DeleteDocumentAsync(Guid documentId)
@@ -413,5 +554,10 @@
     private string GetSubmitHelp() => Profile?.Status switch { "Submitted" or "UnderReview" => "Aucune action n’est nécessaire pour le moment.", "Approved" => "Vous pouvez désormais préparer vos futures interventions professionnelles.", "Rejected" => "Le dossier est conservé. Notre équipe peut vous renseigner sur la décision.", _ when Profile?.MissingRequiredDocuments.Count > 0 => $"Il manque {Profile.MissingRequiredDocuments.Count} justificatif(s) obligatoire(s).", _ => "Vérifiez les informations : après envoi, elles seront verrouillées pendant l’examen." };
     private static string GetDocumentStatusLabel(string status) => status switch { "Pending" => "À vérifier", "Approved" => "Validé", "NeedsReplacement" => "À remplacer", _ => status };
     private static string FormatFileSize(long size) => size >= 1024 * 1024 ? $"{size / 1024d / 1024d:0.0} Mo" : $"{Math.Max(1, size / 1024)} Ko";
+    public void Dispose()
+    {
+        AddressSearchCancellation?.Cancel();
+        AddressSearchCancellation?.Dispose();
+    }
     private sealed record DocumentRequirement(string Type, string ShortLabel, string Label, string Description, bool Required);
 }

@@ -27,12 +27,12 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             request.PhoneNumber,
             request.Email,
             request.DateOfBirth,
-            request.Address,
+            request.Address?.Trim() ?? string.Empty,
             ParseProviderGender(request.Gender),
             ParseProviderEmploymentType(request.EmploymentType),
-            request.YearsOfExperience,
-            request.MissionLatitude,
-            request.MissionLongitude,
+            provider.YearsOfExperience,
+            provider.MissionLatitude,
+            provider.MissionLongitude,
             request.MissionRadiusKm);
 
         return CompanyEmployeeOperationResult.Ok(provider, before, SnapshotProfile(provider));
@@ -140,6 +140,10 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
                 qualifiedPrestationIds.Add(prestationId);
             }
         }
+
+        provider.UpdateCompanyExperience(requestedServices.Count == 0
+            ? 0
+            : requestedServices.Max(service => Math.Clamp(service.YearsOfExperience, 0, 60)));
 
         return CompanyEmployeeOperationResult.Ok(
             provider,

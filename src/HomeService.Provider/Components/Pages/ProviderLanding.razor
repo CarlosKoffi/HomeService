@@ -22,7 +22,6 @@
         <img class="premium-hero-image provider-hero-image" src="@ResolveContentUrl(HomeContent.Hero.ImageUrl)" alt="@HomeContent.Hero.ImageAlt" />
         <div class="premium-hero-overlay"></div>
         <div class="premium-hero-content">
-            <p class="premium-label">@HomeContent.Hero.Label</p>
             <h1>
                 @HeroHeadline.Main
                 @if (!string.IsNullOrWhiteSpace(HeroHeadline.Highlight))
@@ -165,21 +164,64 @@
             </a>
             <p>@HomeContent.Footer.BrandText</p>
         </div>
-        @foreach (var column in HomeContent.Footer.Columns)
-        {
-            <nav aria-label="@column.Title">
-                <h2>@column.Title</h2>
-                @foreach (var link in column.Links)
-                {
-                    <a href="#contact">@link</a>
-                }
-            </nav>
-        }
+        <nav aria-label="Découvrir">
+            <h2>Découvrir</h2>
+            <a href="#benefits">Avantages</a>
+            <a href="#how">Fonctionnement</a>
+            <a href="#app">Application</a>
+        </nav>
+        <nav aria-label="Prestataire">
+            <h2>Prestataire</h2>
+            <a href="/onboarding?mode=register">Créer un compte</a>
+            <a href="#faq">Questions fréquentes</a>
+            <a href="#contact">Nous contacter</a>
+        </nav>
+        <nav aria-label="Informations légales">
+            <h2>Informations légales</h2>
+            <button type="button" class="premium-footer-link" @onclick="OpenTerms">Conditions générales</button>
+            <a href="#contact">Confidentialité et données</a>
+        </nav>
         <div class="premium-footer-bottom">
             <span>@HomeContent.Footer.Copyright</span>
             <span>@HomeContent.Footer.Baseline</span>
         </div>
     </footer>
+
+    @if (ShowTerms)
+    {
+        <div class="legal-modal-backdrop" @onclick="CloseTerms">
+            <section class="legal-modal" role="dialog" aria-modal="true" aria-labelledby="provider-terms-title" @onclick:stopPropagation>
+                <header>
+                    <div>
+                        <span>Version provisoire · 17 août 2026</span>
+                        <h2 id="provider-terms-title">Conditions générales d’utilisation</h2>
+                    </div>
+                    <button type="button" class="legal-modal-close" aria-label="Fermer les conditions générales" @onclick="CloseTerms">×</button>
+                </header>
+                <div class="legal-modal-content">
+                    <p class="legal-notice"><strong>Document provisoire.</strong> Cette base doit être relue et validée par un conseil juridique ivoirien avant l’ouverture commerciale.</p>
+                    <h3>1. Objet et acceptation</h3>
+                    <p>Les présentes conditions encadrent l’accès aux services numériques Wélé et leur utilisation. La création d’un compte ou l’utilisation de la plateforme implique leur acceptation.</p>
+                    <h3>2. Rôle de Wélé</h3>
+                    <p>Wélé fournit une technologie de mise en relation, de réservation, de suivi et de paiement. Sauf mention contraire affichée avant la commande, les prestations sont exécutées par des entreprises partenaires ou des prestataires indépendants, qui restent responsables de leurs actes, de leurs employés et de la qualité de leur intervention. Lorsqu’une prestation est expressément réalisée par une équipe Wélé, Wélé assume les obligations attachées à cette qualité.</p>
+                    <h3>3. Obligations du prestataire</h3>
+                    <p>Le prestataire fournit des informations exactes, maintient ses autorisations et compétences à jour, respecte les règles de sécurité, la confidentialité, les horaires, les consignes de mission et la législation applicable. Il ne peut confier une mission à une personne non déclarée ou non autorisée.</p>
+                    <h3>4. Missions, prix et paiement</h3>
+                    <p>Les caractéristiques de la mission, le prix, les frais et les conditions applicables sont présentés dans la plateforme. Toute modification ou prestation complémentaire doit suivre le parcours prévu et obtenir les validations requises. Les paiements et reversements sont traités selon les délais et moyens affichés.</p>
+                    <h3>5. Annulation, incident et réclamation</h3>
+                    <p>Les règles d’annulation et de remboursement affichées lors de la commande s’appliquent. Tout incident, dommage, retard ou comportement inapproprié doit être signalé rapidement avec les éléments utiles. Wélé peut suspendre une mission ou un compte pendant son analyse.</p>
+                    <h3>6. Responsabilité</h3>
+                    <p>Chaque utilisateur répond de ses propres actes et omissions. Dans les limites autorisées par la loi, Wélé ne répond pas des fautes commises par un prestataire ou une entreprise partenaire indépendante. Cette limitation ne couvre ni une faute propre à Wélé, ni la fraude, ni les obligations qui ne peuvent légalement être exclues ou limitées.</p>
+                    <h3>7. Comptes, avis et sécurité</h3>
+                    <p>Les accès sont personnels. Wélé peut vérifier les informations, modérer les contenus et avis, refuser ou suspendre un compte en cas de risque, fraude, information fausse, contournement de la plateforme ou manquement aux présentes conditions.</p>
+                    <h3>8. Données personnelles</h3>
+                    <p>Les données sont utilisées pour gérer les comptes, missions, paiements, communications, contrôles et obligations légales, conformément à la réglementation ivoirienne relative à la protection des données. Les demandes d’accès, de rectification ou de suppression peuvent être adressées via la rubrique Contact.</p>
+                    <h3>9. Droit applicable et litiges</h3>
+                    <p>Les présentes conditions sont soumises au droit ivoirien. Les parties recherchent d’abord une solution amiable. À défaut, les juridictions ivoiriennes compétentes peuvent être saisies, sous réserve des règles impératives protégeant notamment les consommateurs.</p>
+                </div>
+            </section>
+        </div>
+    }
 </div>
 
 @code {
@@ -192,6 +234,10 @@
     private string ContactBody { get; set; } = string.Empty;
     private string? ContactMessage { get; set; }
     private bool ShowCandidateSubmitted { get; set; }
+    private bool ShowTerms { get; set; }
+
+    private void OpenTerms() => ShowTerms = true;
+    private void CloseTerms() => ShowTerms = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -313,7 +359,7 @@
     {
         return new CompanyHomeCmsResponse(
             new CompanyHomeHeroCmsResponse(
-                "wélé prestataire",
+                string.Empty,
                 "Rejoignez notre réseau de professionnels à Abidjan",
                 "Recevez des demandes de clients et développez votre activité.",
                 new CmsLinkResponse("Créer un compte", "/onboarding?mode=register"),

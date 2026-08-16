@@ -151,7 +151,7 @@ else
                             <div class="form-grid contact-grid">
                                 <label class="wide-field">
                                     Zone d'intervention
-                                    <InputText @bind-Value="Form.Address" placeholder="Cocody, Abidjan" />
+                                    <InputText @bind-Value="Form.Address" placeholder="Adresse ou zone d'intervention" />
                                 </label>
                 <label class="wide-field">
                                     Telephone
@@ -184,8 +184,9 @@ else
                                     </InputSelect>
                                 </label>
                                 <label>
-                                    Experience
-                                    <InputNumber @bind-Value="Form.YearsOfExperience" />
+                                    Experience maximale
+                                    <input value="@GetFormMaxYearsOfExperience()" readonly aria-readonly="true" />
+                                    <small>Calculee depuis les services et prestations.</small>
                                 </label>
                                 <label>
                                     Perimetre km
@@ -200,25 +201,26 @@ else
                         <option value="Expert">Expert</option>
                     </InputSelect>
                 </label>
-                <label>
-                    Latitude mission
-                    <InputNumber @bind-Value="Form.MissionLatitude" />
-                </label>
-                <label>
-                    Longitude mission
-                    <InputNumber @bind-Value="Form.MissionLongitude" />
-                </label>
             </div>
 
             <div class="service-picker employee-skill-picker">
                 <strong>@T("company.employees.services.title", "Services maitrises")</strong>
-                <p>@T("company.employees.services.description", "Selectionnez les services puis les prestations que ce prestataire peut realiser. Les prix affiches sont les fourchettes plateforme.")</p>
+                @{ var createServicesHelp = T("company.employees.services.description", "Selectionnez les services puis les prestations que ce prestataire peut realiser. Les prix affiches sont les fourchettes plateforme."); }
+                <div class="employee-clamped-help">
+                    <p>@createServicesHelp</p>
+                    @if (IsLongExplanation(createServicesHelp))
+                    {
+                        <button type="button" class="employee-help-info" aria-label="Afficher toute l'explication">
+                            i
+                            <span role="tooltip">@createServicesHelp</span>
+                        </button>
+                    }
+                </div>
                 <div class="service-tile-grid">
                     @foreach (var service in Services)
                     {
                         var selection = Form.Services.FirstOrDefault(item => item.ServiceId == service.Id);
-                        var activePrestations = GetActivePrestations(service.Id);
-                        <article class="@($"service-check {(selection is not null ? "selected expanded" : string.Empty)}")">
+                        <article class="@($"service-check {(selection is not null ? "selected" : string.Empty)}")">
                             <label class="service-check-toggle">
                                 <input type="checkbox" checked="@(selection is not null)" @onchange="eventArgs => ToggleService(service.Id, eventArgs)" />
                                 <span class="service-check-emoji">@GetServiceEmoji(service.Name)</span>
@@ -236,59 +238,10 @@ else
 
                             @if (selection is not null)
                             {
-                                <div class="service-check-details figma-service-details">
-                                    <label>
-                                        Niveau
-                                        <select @bind="selection.ExperienceLevel">
-                                            <option value="Junior">Junior</option>
-                                            <option value="Confirmed">Confirme</option>
-                                            <option value="Senior">Senior</option>
-                                            <option value="Expert">Expert</option>
-                                        </select>
-                                    </label>
-                                    <label>
-                                        Experience
-                                        <InputNumber @bind-Value="selection.YearsOfExperience" />
-                                    </label>
-                                    <label class="service-premium-toggle">
-                                        <input type="checkbox"
-                                               checked="@(selection.PriceTier == "Premium")"
-                                               @onchange="eventArgs => ToggleFormPremium(selection, eventArgs)" />
-                                        <span>Profil premium</span>
-                                    </label>
+                                <div class="service-selection-summary">
+                                    <span>@GetServiceSelectionSummary(selection)</span>
+                                    <button type="button" class="service-configure-action" @onclick="() => OpenServiceEditor(selection, false)">Configurer</button>
                                 </div>
-
-                                @if (activePrestations.Count > 0)
-                                {
-                                    <div class="service-prestation-picker figma-prestation-picker">
-                                        <label>
-                                            Prestations
-                                            <input list="@GetPrestationDatalistId("form", selection.ServiceId)"
-                                                   @bind="selection.PrestationSearchTerm"
-                                                   @bind:event="oninput"
-                                                   placeholder="Rechercher une prestation" />
-                                        </label>
-                                        <datalist id="@GetPrestationDatalistId("form", selection.ServiceId)">
-                                            @foreach (var prestation in activePrestations)
-                                            {
-                                                <option value="@prestation.Name">@FormatPriceRange(prestation.PriceMinAmount ?? prestation.NormalPriceAmount, prestation.PriceMaxAmount ?? prestation.PremiumPriceAmount, prestation.Currency)</option>
-                                            }
-                                        </datalist>
-                                        <button type="button" @onclick="() => AddFormPrestation(selection)">Ajouter</button>
-                                        @if (selection.ServicePrestationIds.Count > 0)
-                                        {
-                                            <div class="selected-prestation-list">
-                                                @foreach (var prestation in GetSelectedPrestations(selection.ServiceId, selection.ServicePrestationIds))
-                                                {
-                                                    <span>
-                                                        @prestation.Name
-                                                        <button type="button" @onclick="() => RemoveFormPrestation(selection, prestation.Id)" aria-label="Retirer la prestation">x</button>
-                                                    </span>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                }
                             }
                         </article>
                     }
@@ -334,6 +287,95 @@ else
                         </button>
                     </footer>
                 </EditForm>
+            </section>
+        </div>
+    }
+
+    @if (EditingService is not null && EditingServiceSummary is not null)
+    {
+        var editorPrestations = GetActivePrestations(EditingService.ServiceId);
+        <div class="modal-backdrop employee-service-editor-backdrop" @onclick="CancelServiceEditor">
+            <section class="employee-service-editor" role="dialog" aria-modal="true" aria-labelledby="employee-service-editor-title" @onclick:stopPropagation>
+                <header class="employee-service-editor-header">
+                    <div>
+                        <span class="service-check-emoji">@GetServiceEmoji(EditingServiceSummary.Name)</span>
+                        <span>
+                            <small>Configuration du service</small>
+                            <strong id="employee-service-editor-title">@EditingServiceSummary.Name</strong>
+                        </span>
+                    </div>
+                    <button type="button" class="modal-close" aria-label="Fermer" @onclick="CancelServiceEditor">x</button>
+                </header>
+
+                <div class="employee-service-editor-body">
+                    <div class="employee-service-editor-fields">
+                        <label>
+                            Niveau
+                            <select @bind="EditingService.ExperienceLevel">
+                                <option value="Junior">Junior</option>
+                                <option value="Confirmed">Confirme</option>
+                                <option value="Senior">Senior</option>
+                                <option value="Expert">Expert</option>
+                            </select>
+                        </label>
+                        <label>
+                            Annees d'experience
+                            <InputNumber @bind-Value="EditingService.YearsOfExperience" min="0" max="60" />
+                        </label>
+                        <label class="employee-service-editor-premium">
+                            <input type="checkbox"
+                                   checked="@(EditingService.PriceTier == "Premium")"
+                                   @onchange="eventArgs => ToggleFormPremium(EditingService, eventArgs)" />
+                            <span>
+                                <strong>Profil premium</strong>
+                                <small>Activez uniquement si ce prestataire repond aux criteres premium.</small>
+                            </span>
+                        </label>
+                    </div>
+
+                    @if (editorPrestations.Count > 0)
+                    {
+                        <section class="employee-service-editor-prestations">
+                            <div>
+                                <strong>Prestations maitrisees</strong>
+                                <small>Ajoutez uniquement celles que l'employe peut reellement assurer.</small>
+                            </div>
+                            <div class="employee-service-editor-search">
+                                <label>
+                                    Rechercher une prestation
+                                    <input list="@GetPrestationDatalistId("editor", EditingService.ServiceId)"
+                                           @bind="EditingService.PrestationSearchTerm"
+                                           @bind:event="oninput"
+                                           placeholder="Saisissez un nom" />
+                                </label>
+                                <datalist id="@GetPrestationDatalistId("editor", EditingService.ServiceId)">
+                                    @foreach (var prestation in editorPrestations)
+                                    {
+                                        <option value="@prestation.Name"></option>
+                                    }
+                                </datalist>
+                                <button type="button" class="secondary-action" @onclick="() => AddFormPrestation(EditingService)">Ajouter</button>
+                            </div>
+                            @if (EditingService.ServicePrestationIds.Count > 0)
+                            {
+                                <div class="selected-prestation-list employee-service-editor-selected">
+                                    @foreach (var prestation in GetSelectedPrestations(EditingService.ServiceId, EditingService.ServicePrestationIds))
+                                    {
+                                        <span>
+                                            @prestation.Name
+                                            <button type="button" @onclick="() => RemoveFormPrestation(EditingService, prestation.Id)" aria-label="Retirer la prestation">x</button>
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        </section>
+                    }
+                </div>
+
+                <footer class="employee-service-editor-footer">
+                    <button type="button" class="secondary-action" @onclick="CancelServiceEditor">Annuler</button>
+                    <button type="button" class="primary-action" @onclick="SaveServiceEditor">Enregistrer le service</button>
+                </footer>
             </section>
         </div>
     }
@@ -547,7 +589,7 @@ else
                             <div class="form-grid contact-grid">
                                 <label class="wide-field">
                                     Zone d'intervention
-                                    <InputText @bind-Value="EditModel.Address" placeholder="Cocody, Abidjan" />
+                                    <InputText @bind-Value="EditModel.Address" placeholder="Adresse ou zone d'intervention" />
                                 </label>
                                 <label class="wide-field">
                                     Telephone
@@ -580,8 +622,9 @@ else
                                     </InputSelect>
                                 </label>
                                 <label>
-                                    Experience
-                                    <InputNumber @bind-Value="EditModel.YearsOfExperience" />
+                                    Experience maximale
+                                    <input value="@GetEditMaxYearsOfExperience()" readonly aria-readonly="true" />
+                                    <small>Calculee depuis les services et prestations.</small>
                                 </label>
                                 <label>
                                     Perimetre km
@@ -596,20 +639,22 @@ else
                                         <option value="Expert">Expert</option>
                                     </InputSelect>
                                 </label>
-                                <label>
-                                    Latitude mission
-                                    <InputNumber @bind-Value="EditModel.MissionLatitude" />
-                                </label>
-                                <label>
-                                    Longitude mission
-                                    <InputNumber @bind-Value="EditModel.MissionLongitude" />
-                                </label>
                             </div>
 
                             <div class="service-picker employee-skill-picker clean-skill-picker">
                                 <div class="skill-picker-heading">
                                     <strong>Services et prestations</strong>
-                                    <p>Ajoutez un service puis, si besoin, les prestations que ce prestataire peut assurer.</p>
+                                    @{ const string editServicesHelp = "Ajoutez un service puis, si besoin, les prestations que ce prestataire peut assurer. L'experience generale est calculee automatiquement sur l'experience la plus elevee renseignee ici."; }
+                                    <div class="employee-clamped-help">
+                                        <p>@editServicesHelp</p>
+                                        @if (IsLongExplanation(editServicesHelp))
+                                        {
+                                            <button type="button" class="employee-help-info" aria-label="Afficher toute l'explication">
+                                                i
+                                                <span role="tooltip">@editServicesHelp</span>
+                                            </button>
+                                        }
+                                    </div>
                                 </div>
                                 <div class="service-editor-toolbar figma-service-toolbar clean-service-toolbar">
                                     <label>
@@ -851,6 +896,10 @@ else
     private IReadOnlyList<CompanyEmployeeResponse> EmployeeRows { get; set; } = [];
     private IReadOnlyList<ServiceSummaryResponse> Services { get; set; } = [];
     private CompanyEmployeeFormModel Form { get; set; } = new();
+    private CompanyEmployeeServiceFormModel? EditingService { get; set; }
+    private ServiceSummaryResponse? EditingServiceSummary { get; set; }
+    private ServiceEditorSnapshot? EditingServiceSnapshot { get; set; }
+    private bool EditingServiceWasNew { get; set; }
     private DateTime? BirthDate { get; set; }
     private bool ShowForm { get; set; }
     private bool IsSaving { get; set; }
@@ -969,6 +1018,7 @@ else
 
     private void ToggleForm()
     {
+        CloseServiceEditor();
         ShowForm = !ShowForm;
         Message = null;
     }
@@ -1084,6 +1134,9 @@ else
         {
             return;
         }
+
+        EditModel.YearsOfExperience = GetEditMaxYearsOfExperience();
+        EditModel.Address = NormalizeOptionalText(EditModel.Address);
 
         var updated = SelectedEmployee with
         {
@@ -1361,19 +1414,99 @@ else
         if (isChecked && !Form.ServiceIds.Contains(serviceId))
         {
             Form.ServiceIds.Add(serviceId);
-            Form.Services.Add(new CompanyEmployeeServiceFormModel
+            var selection = new CompanyEmployeeServiceFormModel
             {
                 ServiceId = serviceId,
                 ExperienceLevel = Form.ExperienceLevel,
-                YearsOfExperience = Form.YearsOfExperience,
+                YearsOfExperience = 0,
                 PriceTier = "Normal"
-            });
+            };
+            Form.Services.Add(selection);
+            OpenServiceEditor(selection, true);
         }
         else if (!isChecked)
         {
+            if (EditingService?.ServiceId == serviceId)
+            {
+                CloseServiceEditor();
+            }
+
             Form.ServiceIds.Remove(serviceId);
             Form.Services.RemoveAll(service => service.ServiceId == serviceId);
         }
+    }
+
+    private void OpenServiceEditor(CompanyEmployeeServiceFormModel service, bool isNew)
+    {
+        var summary = Services.FirstOrDefault(item => item.Id == service.ServiceId);
+        if (summary is null)
+        {
+            return;
+        }
+
+        EditingService = service;
+        EditingServiceSummary = summary;
+        EditingServiceWasNew = isNew;
+        EditingServiceSnapshot = new ServiceEditorSnapshot(
+            service.ExperienceLevel,
+            service.YearsOfExperience,
+            service.PriceTier,
+            [.. service.ServicePrestationIds],
+            service.PrestationSearchTerm);
+    }
+
+    private void SaveServiceEditor()
+    {
+        if (EditingService is not null)
+        {
+            EditingService.YearsOfExperience = Math.Clamp(EditingService.YearsOfExperience, 0, 60);
+        }
+
+        CloseServiceEditor();
+    }
+
+    private void CancelServiceEditor()
+    {
+        if (EditingService is not null)
+        {
+            if (EditingServiceWasNew)
+            {
+                Form.ServiceIds.Remove(EditingService.ServiceId);
+                Form.Services.Remove(EditingService);
+            }
+            else if (EditingServiceSnapshot is not null)
+            {
+                EditingService.ExperienceLevel = EditingServiceSnapshot.ExperienceLevel;
+                EditingService.YearsOfExperience = EditingServiceSnapshot.YearsOfExperience;
+                EditingService.PriceTier = EditingServiceSnapshot.PriceTier;
+                EditingService.ServicePrestationIds = [.. EditingServiceSnapshot.ServicePrestationIds];
+                EditingService.PrestationSearchTerm = EditingServiceSnapshot.PrestationSearchTerm;
+            }
+        }
+
+        CloseServiceEditor();
+    }
+
+    private void CloseServiceEditor()
+    {
+        EditingService = null;
+        EditingServiceSummary = null;
+        EditingServiceSnapshot = null;
+        EditingServiceWasNew = false;
+    }
+
+    private string GetServiceSelectionSummary(CompanyEmployeeServiceFormModel selection)
+    {
+        var level = selection.ExperienceLevel switch
+        {
+            "Junior" => "Junior",
+            "Senior" => "Senior",
+            "Expert" => "Expert",
+            _ => "Confirme"
+        };
+        var prestationCount = selection.ServicePrestationIds.Count;
+        var prestations = prestationCount == 0 ? "aucune prestation" : $"{prestationCount} prestation{(prestationCount > 1 ? "s" : string.Empty)}";
+        return $"{level} · {selection.YearsOfExperience} an(s) · {prestations}";
     }
 
     private static void ToggleFormPrestation(CompanyEmployeeServiceFormModel service, Guid prestationId, ChangeEventArgs eventArgs)
@@ -1448,6 +1581,10 @@ else
 
         Message = null;
         Form.DateOfBirth = BirthDate is null ? null : DateOnly.FromDateTime(BirthDate.Value);
+        Form.YearsOfExperience = GetFormMaxYearsOfExperience();
+        Form.Address = NormalizeOptionalText(Form.Address);
+        Form.MissionLatitude = null;
+        Form.MissionLongitude = null;
         IsSaving = true;
 
         var result = await ApiClient.CreateCompanyEmployeeAsync(Session.CompanyId, Form);
@@ -1467,6 +1604,22 @@ else
         ShowForm = false;
         await LoadAsync();
     }
+
+    private int GetFormMaxYearsOfExperience()
+        => Form.Services.Count == 0
+            ? 0
+            : Form.Services.Max(service => Math.Clamp(service.YearsOfExperience, 0, 60));
+
+    private int GetEditMaxYearsOfExperience()
+        => EditableServices.Count == 0
+            ? 0
+            : EditableServices.Max(service => Math.Clamp(service.YearsOfExperience, 0, 60));
+
+    private static bool IsLongExplanation(string? text)
+        => !string.IsNullOrWhiteSpace(text) && text.Trim().Length > 140;
+
+    private static string NormalizeOptionalText(string? value)
+        => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
 
     private async Task SuspendEmployeeAsync(Guid employeeId)
     {
@@ -2513,4 +2666,11 @@ else
         string? ContentType,
         bool IsInlineImagePreview,
         string StatusClass);
+
+    private sealed record ServiceEditorSnapshot(
+        string ExperienceLevel,
+        int YearsOfExperience,
+        string PriceTier,
+        List<Guid> ServicePrestationIds,
+        string? PrestationSearchTerm);
 }

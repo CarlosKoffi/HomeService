@@ -174,6 +174,12 @@ public sealed class ProviderProfile : AuditableEntity
         Touch();
     }
 
+    public void UpdateCompanyExperience(int yearsOfExperience)
+    {
+        YearsOfExperience = Math.Clamp(yearsOfExperience, 0, 60);
+        Touch();
+    }
+
     public void AttachDocument(ProviderDocument document)
     {
         _documents.Add(document);

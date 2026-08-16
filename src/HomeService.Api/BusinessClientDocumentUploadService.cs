@@ -6,7 +6,7 @@ public sealed class BusinessClientDocumentUploadService(
     IConfiguration configuration,
     IApiObjectStorage objectStorage)
 {
-    private const long MaxFileSize = 10 * 1024 * 1024;
+    private const long MaxFileSize = 25 * 1024 * 1024;
 
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -32,7 +32,7 @@ public sealed class BusinessClientDocumentUploadService(
 
         if (file.Length > MaxFileSize)
         {
-            throw new InvalidOperationException("Le fichier depasse la limite de 10 Mo.");
+            throw new InvalidOperationException("Le fichier depasse la limite de 25 Mo.");
         }
 
         var originalFileName = Path.GetFileName(file.FileName);

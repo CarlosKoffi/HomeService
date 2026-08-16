@@ -402,6 +402,42 @@ public static class PublicEndpoints
         .Produces<ClientMeResponse>()
         .Produces(StatusCodes.Status401Unauthorized);
 
+        client.MapPost("/business/auth/register", async (
+            RegisterClientRequest request,
+            ClientAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await authService.RegisterAsync(
+                request,
+                cancellationToken,
+                CustomerAccountType.Business);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = "Inscription client entreprise invalide.", errors = result.Errors });
+        })
+        .WithName("RegisterBusinessClient")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName)
+        .Produces<ClientAuthResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
+
+        client.MapPost("/business/auth/login", async (
+            LoginClientRequest request,
+            ClientAuthService authService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await authService.LoginAsync(
+                request,
+                cancellationToken,
+                CustomerAccountType.Business);
+            return result.IsSuccess
+                ? Results.Ok(result.Response)
+                : Results.BadRequest(new { message = "Connexion client entreprise impossible.", errors = result.Errors });
+        })
+        .WithName("LoginBusinessClient")
+        .RequireRateLimiting(AuthenticationRateLimitingExtensions.PolicyName)
+        .Produces<ClientAuthResponse>()
+        .Produces(StatusCodes.Status400BadRequest);
+
         client.MapGet("/business/profile", async (
             HttpRequest httpRequest,
             ClientAuthService authService,
@@ -410,7 +446,8 @@ public static class PublicEndpoints
         {
             var customer = await authService.GetSessionCustomerAsync(
                 httpRequest.Headers.Authorization.ToString(),
-                cancellationToken);
+                cancellationToken,
+                CustomerAccountType.Business);
             if (customer is null)
             {
                 return Results.Unauthorized();
@@ -433,7 +470,8 @@ public static class PublicEndpoints
         {
             var customer = await authService.GetSessionCustomerAsync(
                 httpRequest.Headers.Authorization.ToString(),
-                cancellationToken);
+                cancellationToken,
+                CustomerAccountType.Business);
             if (customer is null)
             {
                 return Results.Unauthorized();
@@ -462,7 +500,8 @@ public static class PublicEndpoints
         {
             var customer = await authService.GetSessionCustomerAsync(
                 httpRequest.Headers.Authorization.ToString(),
-                cancellationToken);
+                cancellationToken,
+                CustomerAccountType.Business);
             if (customer is null)
             {
                 return Results.Unauthorized();
@@ -530,7 +569,8 @@ public static class PublicEndpoints
         {
             var customer = await authService.GetSessionCustomerAsync(
                 httpRequest.Headers.Authorization.ToString(),
-                cancellationToken);
+                cancellationToken,
+                CustomerAccountType.Business);
             if (customer is null)
             {
                 return Results.Unauthorized();
@@ -567,7 +607,8 @@ public static class PublicEndpoints
         {
             var customer = await authService.GetSessionCustomerAsync(
                 httpRequest.Headers.Authorization.ToString(),
-                cancellationToken);
+                cancellationToken,
+                CustomerAccountType.Business);
             if (customer is null)
             {
                 return Results.Unauthorized();
@@ -603,7 +644,8 @@ public static class PublicEndpoints
         {
             var customer = await authService.GetSessionCustomerAsync(
                 httpRequest.Headers.Authorization.ToString(),
-                cancellationToken);
+                cancellationToken,
+                CustomerAccountType.Business);
             if (customer is null)
             {
                 return Results.Unauthorized();
