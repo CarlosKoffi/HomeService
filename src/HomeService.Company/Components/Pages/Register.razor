@@ -8,6 +8,7 @@
 @using System.Globalization
 @using System.Text
 @using System.Text.RegularExpressions
+@implements IDisposable
 @inject PlatformApiClient ApiClient
 @inject NavigationManager Navigation
 
@@ -48,13 +49,14 @@
                 <input name="address"
                        id="company-address"
                        type="text"
-                       value="@Address"
                        placeholder="Commencez a saisir une adresse"
                        autocomplete="off"
                        autocorrect="off"
                        autocapitalize="off"
                        spellcheck="false"
-                       @oninput="HandleAddressInputAsync"
+                       @bind="Address"
+                       @bind:event="oninput"
+                       @bind:after="HandleAddressInputAsync"
                        @onfocus="OpenAddressSuggestions" />
                 @if (IsAddressSuggestionOpen)
                 {
@@ -245,6 +247,7 @@
     private IReadOnlyList<ClientAddressSuggestionResponse> AddressSuggestions { get; set; } = [];
     private readonly string AddressSessionToken = Guid.NewGuid().ToString("N");
     private CancellationTokenSource? AddressSearchCancellation { get; set; }
+    private long AddressSearchVersion { get; set; }
     private bool IsAddressSuggestionOpen { get; set; }
     private bool IsAddressSearching { get; set; }
     private string? AddressMessage { get; set; }
@@ -364,15 +367,17 @@
         AddTypedService();
     }
 
-    private async Task HandleAddressInputAsync(ChangeEventArgs args)
+    private async Task HandleAddressInputAsync()
     {
-        Address = args.Value?.ToString() ?? string.Empty;
+        Address = Address?.TrimStart() ?? string.Empty;
         AddressMessage = null;
         AddressSuggestions = [];
 
         AddressSearchCancellation?.Cancel();
+        AddressSearchCancellation?.Dispose();
         AddressSearchCancellation = new CancellationTokenSource();
         var cancellationToken = AddressSearchCancellation.Token;
+        var searchVersion = ++AddressSearchVersion;
         var query = Address.Trim();
 
         if (query.Length < 3)
@@ -384,11 +389,18 @@
 
         IsAddressSearching = true;
         IsAddressSuggestionOpen = true;
+        await InvokeAsync(StateHasChanged);
 
         try
         {
-            await Task.Delay(250, cancellationToken);
-            AddressSuggestions = await ApiClient.AutocompletePublicAddressAsync(query, AddressSessionToken, cancellationToken);
+            await Task.Delay(260, cancellationToken);
+            var suggestions = await ApiClient.AutocompletePublicAddressAsync(query, AddressSessionToken, cancellationToken);
+
+            if (searchVersion == AddressSearchVersion && !cancellationToken.IsCancellationRequested)
+            {
+                AddressSuggestions = suggestions;
+                IsAddressSuggestionOpen = true;
+            }
         }
         catch (OperationCanceledException)
         {
@@ -400,16 +412,17 @@
         }
         finally
         {
-            if (!cancellationToken.IsCancellationRequested)
+            if (searchVersion == AddressSearchVersion && !cancellationToken.IsCancellationRequested)
             {
                 IsAddressSearching = false;
+                await InvokeAsync(StateHasChanged);
             }
         }
     }
 
     private void OpenAddressSuggestions()
     {
-        IsAddressSuggestionOpen = (Address?.Trim().Length ?? 0) >= 3;
+        IsAddressSuggestionOpen = IsAddressSearching || AddressSuggestions.Count > 0;
     }
 
     private async Task SelectAddressSuggestionAsync(ClientAddressSuggestionResponse suggestion)
@@ -439,6 +452,12 @@
             IsAddressSuggestionOpen = false;
             IsAddressSearching = false;
         }
+    }
+
+    public void Dispose()
+    {
+        AddressSearchCancellation?.Cancel();
+        AddressSearchCancellation?.Dispose();
     }
 
     private async Task PrimaryActionAsync()
