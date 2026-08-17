@@ -847,9 +847,134 @@ h3 {
     color: #9a3412;
 }
 
+.document-readiness.status-incomplete {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
 .document-readiness.status-done {
     background: #dcfce7;
     color: #166534;
+}
+
+.document-progress {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    display: grid;
+    gap: .55rem;
+    padding: .85rem 1rem;
+}
+
+.document-progress p {
+    color: #64748b;
+    font-size: .86rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.document-progress-track {
+    background: #e5e7eb;
+    border-radius: 999px;
+    height: .7rem;
+    overflow: hidden;
+}
+
+.document-progress-track span {
+    display: block;
+    height: 100%;
+    min-width: 0;
+    transition: width .25s ease;
+}
+
+.document-progress-track .status-incomplete {
+    background: #dc2626;
+}
+
+.document-progress-track .status-review {
+    background: #f59e0b;
+}
+
+.document-progress-track .status-done {
+    background: #16a34a;
+}
+
+.provider-document-readiness {
+    margin: .75rem 0 1rem;
+    padding: .9rem 1rem;
+    border: 1px solid;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.provider-document-readiness > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.provider-document-readiness strong {
+    font-size: 1rem;
+}
+
+.provider-document-readiness small {
+    display: block;
+    margin-top: .45rem;
+    font-weight: 750;
+}
+
+.provider-document-progress {
+    height: 10px;
+    margin-top: .65rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e7edef;
+}
+
+.provider-document-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    transition: width .25s ease;
+}
+
+.provider-document-readiness.incomplete {
+    border-color: #fecaca;
+    background: #fff7f7;
+    color: #b91c1c;
+}
+
+.provider-document-readiness.incomplete .provider-document-progress > span {
+    background: #ef4444;
+}
+
+.provider-document-readiness.complete-pending {
+    border-color: #fde3a7;
+    background: #fffaf0;
+    color: #9a5b00;
+}
+
+.provider-document-readiness.complete-pending .provider-document-progress > span {
+    background: #f59e0b;
+}
+
+.provider-document-readiness.verified {
+    border-color: #bbebcf;
+    background: #f1fbf5;
+    color: #167149;
+}
+
+.provider-document-readiness.verified .provider-document-progress > span {
+    background: #22c55e;
+}
+
+.provider-document-blocking-note {
+    display: block;
+    margin-top: .65rem;
+    color: #b91c1c;
+    font-weight: 750;
+    line-height: 1.45;
 }
 
 .document-list article {

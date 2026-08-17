@@ -785,6 +785,17 @@ else
                                 </div>
                             </div>
 
+                            <div class="employee-document-readiness @GetProviderDocumentProgressClass(SelectedEmployee)">
+                                <div>
+                                    <span>Dossier obligatoire</span>
+                                    <strong>@GetProviderDocumentProgress(SelectedEmployee)%</strong>
+                                </div>
+                                <div class="employee-document-progress" role="progressbar" aria-label="Progression du dossier prestataire" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@GetProviderDocumentProgress(SelectedEmployee)">
+                                    <span style="width: @GetProviderDocumentProgress(SelectedEmployee)%"></span>
+                                </div>
+                                <small>@GetProviderDocumentProgressCaption(SelectedEmployee)</small>
+                            </div>
+
                             <div class="document-manager">
                                 @foreach (var slot in GetDocumentSlots(SelectedEmployee))
                                 {
@@ -870,7 +881,7 @@ else
                         <button type="button" class="secondary-action" @onclick="ClearSelectedEmployee">Annuler</button>
                         @if (CanApproveEmployee(SelectedEmployee))
                         {
-                            <button type="button" class="secondary-action employee-footer-validation" disabled="@IsSaving" @onclick="() => ApproveEmployeeAsync(SelectedEmployee.Id)">
+                            <button type="button" class="secondary-action employee-footer-validation" disabled="@(IsSaving || !AreProviderDocumentsComplete(SelectedEmployee))" title="@(!AreProviderDocumentsComplete(SelectedEmployee) ? "Ajoutez la photo, la piece d'identite et le diplome avant validation." : null)" @onclick="() => ApproveEmployeeAsync(SelectedEmployee.Id)">
                                 Valider pour mission
                             </button>
                         }
@@ -2235,11 +2246,32 @@ else
     {
         return
         [
-            ToDocumentSlot(employee, "Photo", "Photo", "Photo", false),
+            ToDocumentSlot(employee, "Photo", "Photo", "Photo", true),
             ToDocumentSlot(employee, "IdentityDocument", "ID", "Piece d'identite", true),
-            ToDocumentSlot(employee, "Diploma", "DIP", "Diplome ou certificat", false)
+            ToDocumentSlot(employee, "Diploma", "DIP", "Diplome ou certificat", true)
         ];
     }
+
+    private int GetProviderDocumentProgress(CompanyEmployeeResponse employee)
+    {
+        var readyCount = GetDocumentSlots(employee).Count(slot => !string.IsNullOrWhiteSpace(slot.PreviewUrl));
+        return (int)Math.Round(readyCount * 100d / 3d, MidpointRounding.AwayFromZero);
+    }
+
+    private bool AreProviderDocumentsComplete(CompanyEmployeeResponse employee)
+        => GetProviderDocumentProgress(employee) == 100;
+
+    private string GetProviderDocumentProgressClass(CompanyEmployeeResponse employee)
+        => employee.Status == "Approved" && AreProviderDocumentsComplete(employee)
+            ? "verified"
+            : AreProviderDocumentsComplete(employee) ? "complete-pending" : "incomplete";
+
+    private string GetProviderDocumentProgressCaption(CompanyEmployeeResponse employee)
+        => employee.Status == "Approved" && AreProviderDocumentsComplete(employee)
+            ? "100% verifie : le prestataire est autorise pour les missions."
+            : AreProviderDocumentsComplete(employee)
+                ? "100% du dossier depose : verification en attente."
+                : "Photo, piece d'identite et diplome sont obligatoires avant validation.";
 
     private EmployeeDocumentSlot ToDocumentSlot(CompanyEmployeeResponse employee, string documentType, string shortCode, string label, bool isRequired)
     {

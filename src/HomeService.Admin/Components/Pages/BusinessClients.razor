@@ -135,8 +135,12 @@
             <div class="documents-block">
                 <div class="section-title">
                     <div><span class="eyebrow">Justificatifs</span><h3>Pièces transmises</h3></div>
-                    <strong>@profile.Documents.Count</strong>
+                    <strong class="business-document-percent @GetBusinessDocumentProgressClass()">@GetBusinessDocumentProgress() %</strong>
                 </div>
+                <div class="business-document-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@GetBusinessDocumentProgress()">
+                    <span class="@GetBusinessDocumentProgressClass()" style="width: @GetBusinessDocumentProgress()%;"></span>
+                </div>
+                <p class="business-document-caption @GetBusinessDocumentProgressClass()">@GetBusinessDocumentProgressCaption()</p>
                 @if (profile.Documents.Count == 0)
                 {
                     <p class="empty-state">Aucun justificatif transmis.</p>
@@ -168,11 +172,11 @@
             <div class="review-actions">
                 @if (profile.Status == "Submitted")
                 {
-                    <button type="button" class="secondary" @onclick="MarkUnderReviewAsync" disabled="@IsBusy">Commencer la vérification</button>
+                    <button type="button" class="secondary" @onclick="MarkUnderReviewAsync" disabled="@(IsBusy || !IsBusinessDossierComplete())">Commencer la vérification</button>
                 }
                 <button type="button" class="secondary" @onclick="RequestInformationAsync" disabled="@IsBusy">Demander un complément</button>
                 <button type="button" class="danger" @onclick="RejectAsync" disabled="@IsBusy">Refuser</button>
-                <button type="button" class="primary" @onclick="ApproveAsync" disabled="@(IsBusy || profile.Status == "Approved")">Valider le client</button>
+                <button type="button" class="primary" @onclick="ApproveAsync" disabled="@(IsBusy || profile.Status == "Approved" || !IsBusinessDossierComplete())">Valider le client</button>
             </div>
         }
     </section>
@@ -201,6 +205,40 @@
     private int PendingCount => Items.Count(item => item.Status is "Submitted" or "UnderReview");
     private int MoreInformationCount => Items.Count(item => item.Status == "MoreInformationRequested");
     private int ApprovedCount => Items.Count(item => item.Status == "Approved");
+
+    private const int RequiredBusinessDocumentCount = 4;
+
+    private int GetBusinessDocumentProgress()
+    {
+        var missingCount = Selected?.Profile.MissingRequiredDocuments.Count ?? RequiredBusinessDocumentCount;
+        var submittedCount = Math.Clamp(RequiredBusinessDocumentCount - missingCount, 0, RequiredBusinessDocumentCount);
+        return (int)Math.Round(submittedCount * 100d / RequiredBusinessDocumentCount);
+    }
+
+    private bool IsBusinessDossierComplete()
+        => Selected?.Profile.MissingRequiredDocuments.Count == 0;
+
+    private string GetBusinessDocumentProgressClass()
+        => Selected?.Profile.Status == "Approved"
+            ? "verified"
+            : IsBusinessDossierComplete()
+                ? "ready"
+                : "incomplete";
+
+    private string GetBusinessDocumentProgressCaption()
+    {
+        if (Selected?.Profile.Status == "Approved")
+        {
+            return "100 % vérifié : le dossier client entreprise est validé.";
+        }
+
+        if (IsBusinessDossierComplete())
+        {
+            return "100 % dossier complet : la vérification peut commencer.";
+        }
+
+        return $"Dossier incomplet : {GetBusinessDocumentProgress()} % des justificatifs obligatoires reçus. La vérification reste verrouillée.";
+    }
 
     protected override Task OnInitializedAsync() => LoadAsync();
 

@@ -349,6 +349,18 @@ else
                         <span class="info-status-badge @GetDocumentBadgeClass()">@GetDocumentProgress()</span>
                     </header>
 
+                    <div class="info-document-progress @GetDocumentProgressClass()"
+                         role="progressbar"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-valuenow="@GetRequiredDocumentProgress()">
+                        <div>
+                            <strong>@GetRequiredDocumentProgress()%</strong>
+                            <span>@GetDocumentProgressCaption()</span>
+                        </div>
+                        <span class="info-document-progress-track"><i style="width: @GetRequiredDocumentProgress()%"></i></span>
+                    </div>
+
                     <div class="info-documents-grid">
                         @foreach (var slot in DocumentSlots)
                         {
@@ -646,11 +658,17 @@ else
 
     private string GetStatusBadgeClass() => IsCompanyApproved() ? "info-badge-green" : "info-badge-amber";
 
-    private string GetDocumentBadgeClass() => AreRequiredDocumentsApproved() ? "info-badge-green" : "info-badge-amber";
+    private string GetDocumentBadgeClass() => AreRequiredDocumentsApproved()
+        ? "info-badge-green"
+        : AreRequiredDocumentsSubmitted() ? "info-badge-amber" : "info-badge-red";
 
-    private string GetDocumentsCardClass() => AreRequiredDocumentsApproved() ? "info-documents-complete" : "info-documents-pending";
+    private string GetDocumentsCardClass() => AreRequiredDocumentsApproved()
+        ? "info-documents-complete"
+        : AreRequiredDocumentsSubmitted() ? "info-documents-pending" : "info-documents-incomplete";
 
-    private string GetDocumentsIconClass() => AreRequiredDocumentsApproved() ? "info-green" : "info-amber";
+    private string GetDocumentsIconClass() => AreRequiredDocumentsApproved()
+        ? "info-green"
+        : AreRequiredDocumentsSubmitted() ? "info-amber" : "info-red";
 
     private string GetDocumentToneClass() => AreRequiredDocumentsApproved() ? "info-tone-green" : "info-tone-amber";
 
@@ -665,6 +683,33 @@ else
         var (approved, total) = GetRequiredDocumentCounts();
         return total > 0 && approved == total;
     }
+
+    private bool AreRequiredDocumentsSubmitted()
+    {
+        var (submitted, total) = GetRequiredSubmittedDocumentCounts();
+        return total > 0 && submitted == total;
+    }
+
+    private (int Submitted, int Total) GetRequiredSubmittedDocumentCounts()
+    {
+        var required = DocumentSlots.Where(slot => !slot.Optional).ToList();
+        var submitted = required.Count(slot => FindDocument(slot.Key)?.ReviewStatus is "Pending" or "Approved");
+        return (submitted, required.Count);
+    }
+
+    private int GetRequiredDocumentProgress()
+    {
+        var (submitted, total) = GetRequiredSubmittedDocumentCounts();
+        return total == 0 ? 0 : (int)Math.Round(submitted * 100d / total);
+    }
+
+    private string GetDocumentProgressClass() => AreRequiredDocumentsApproved()
+        ? "is-approved"
+        : AreRequiredDocumentsSubmitted() ? "is-review" : "is-incomplete";
+
+    private string GetDocumentProgressCaption() => AreRequiredDocumentsApproved()
+        ? "Dossier valide"
+        : AreRequiredDocumentsSubmitted() ? "Dossier complet, verification en cours" : "Pieces obligatoires deposees";
 
     private (int Approved, int Total) GetRequiredDocumentCounts()
     {
@@ -750,9 +795,7 @@ else
 
     private string GetDocumentProgress()
     {
-        var required = DocumentSlots.Where(slot => !slot.Optional).ToList();
-        var approved = required.Count(slot => FindDocument(slot.Key)?.ReviewStatus == "Approved");
-        return $"{approved}/{required.Count} obligatoires valides";
+        return $"{GetRequiredDocumentProgress()}% complete";
     }
 
     private bool HasAnySubmittedDocument()
@@ -799,7 +842,9 @@ else
 
         if (HasPendingDocuments() || HasAnySubmittedDocument())
         {
-            return "Nous verifions vos documents. Vous pouvez remplacer une piece si besoin.";
+            return AreRequiredDocumentsSubmitted()
+                ? "Votre dossier est complet. Nous verifions maintenant les pieces deposees."
+                : "Ajoutez toutes les pieces obligatoires pour transmettre un dossier complet a notre equipe.";
         }
 
         return "Depot possible en ligne ou dans nos bureaux si vous preferez nous remettre les pieces en main propre.";

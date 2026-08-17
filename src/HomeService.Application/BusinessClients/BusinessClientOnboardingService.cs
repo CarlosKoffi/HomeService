@@ -183,10 +183,10 @@ public sealed class BusinessClientOnboardingService(IAppDbContext db)
             document.ReviewNote,
             document.CreatedAt);
 
-    private static IReadOnlyList<string> GetMissingRequiredDocuments(IEnumerable<BusinessClientDocument> documents)
+    public static IReadOnlyList<string> GetMissingRequiredDocuments(IEnumerable<BusinessClientDocument> documents)
     {
         var presentTypes = documents
-            .Where(item => item.ReviewStatus != DocumentReviewStatus.NeedsReplacement)
+            .Where(item => item.ReviewStatus is DocumentReviewStatus.Pending or DocumentReviewStatus.Approved)
             .Select(item => item.DocumentType)
             .ToHashSet();
         return RequiredDocumentTypes
@@ -194,4 +194,7 @@ public sealed class BusinessClientOnboardingService(IAppDbContext db)
             .Select(type => type.ToString())
             .ToArray();
     }
+
+    public static bool HasAllRequiredDocuments(IEnumerable<BusinessClientDocument> documents)
+        => GetMissingRequiredDocuments(documents).Count == 0;
 }

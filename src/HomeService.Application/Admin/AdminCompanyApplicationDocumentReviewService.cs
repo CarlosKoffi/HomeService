@@ -1,6 +1,7 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
 using HomeService.Application.CompanyPortal;
+using HomeService.Application.Companies;
 using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -28,6 +29,12 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         if (document is null)
         {
             return AdminCompanyApplicationDocumentReviewResult.NotFound();
+        }
+
+        var incompleteResult = await EnsureCompleteDossierAsync(document.CompanyApplicationId, cancellationToken);
+        if (incompleteResult is not null)
+        {
+            return incompleteResult;
         }
 
         var previousStatus = document.ReviewStatus;
@@ -78,6 +85,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
             auditContext,
             "AdminCompanyApplicationDocumentRejected",
             "Piece entreprise refusee.",
+            true,
             cancellationToken);
     }
 
@@ -103,6 +111,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
             auditContext,
             "AdminCompanyApplicationDocumentReplacementRequested",
             "Remplacement de piece entreprise demande.",
+            true,
             cancellationToken);
     }
 
@@ -128,6 +137,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
             auditContext,
             "AdminCompanyApplicationDocumentReopened",
             "Piece entreprise reouverte.",
+            false,
             cancellationToken);
     }
 
@@ -143,6 +153,7 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         AuditRequestContext? auditContext,
         string auditAction,
         string auditSummary,
+        bool requireCompleteDossier,
         CancellationToken cancellationToken)
     {
         var reviewComment = ReviewNoteValidator.GetRequired(comment, requiredMessage);
@@ -157,6 +168,16 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         if (document is null)
         {
             return AdminCompanyApplicationDocumentReviewResult.NotFound();
+        }
+
+
+        if (requireCompleteDossier)
+        {
+            var incompleteResult = await EnsureCompleteDossierAsync(document.CompanyApplicationId, cancellationToken);
+            if (incompleteResult is not null)
+            {
+                return incompleteResult;
+            }
         }
 
         var previousStatus = document.ReviewStatus;
@@ -191,6 +212,21 @@ public sealed class AdminCompanyApplicationDocumentReviewService(
         await db.SaveChangesAsync(cancellationToken);
 
         return AdminCompanyApplicationDocumentReviewResult.Ok(document, previousStatus);
+    }
+
+    private async Task<AdminCompanyApplicationDocumentReviewResult?> EnsureCompleteDossierAsync(
+        Guid companyApplicationId,
+        CancellationToken cancellationToken)
+    {
+        var documents = await db.CompanyApplicationDocuments
+            .AsNoTracking()
+            .Where(document => document.CompanyApplicationId == companyApplicationId)
+            .ToListAsync(cancellationToken);
+        var missing = RequiredCompanyDocumentsPolicy.GetMissingSubmittedDocumentTypes(documents);
+        return missing.Count == 0
+            ? null
+            : AdminCompanyApplicationDocumentReviewResult.ValidationFailed(
+                $"Le controle est bloque tant que le depot obligatoire n'est pas complet. Pieces manquantes : {string.Join(", ", missing)}.");
     }
 
     private async Task QueueDocumentNotificationAsync(

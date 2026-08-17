@@ -1,0 +1,24 @@
+.nav-group {
+    border-top: 1px solid #edf1f3;
+    padding: .9rem .78rem .28rem;
+}
+
+.nav-group:first-child {
+    border-top: 0;
+    padding-top: .6rem;
+}
+
+.nav-section-label {
+    color: #8a989e;
+    font-size: .61rem;
+    font-weight: 800;
+    letter-spacing: .11em;
+    line-height: 1.2;
+    margin: 0 .65rem .44rem;
+    text-transform: uppercase;
+}
+
+.nav-group-items {
+    display: grid;
+    gap: .18rem;
+}

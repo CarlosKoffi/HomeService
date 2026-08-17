@@ -145,9 +145,13 @@ else
                         <span>Note de validation</span>
                         <textarea rows="3" @bind="ApproveNote" placeholder="Ex: identite controlee, test metier valide, reactiver apres verification..."></textarea>
                     </label>
-                    <button type="button" class="primary-action" disabled="@IsActionRunning" @onclick="ApproveProviderAsync">
+                    <button type="button" class="primary-action" disabled="@(IsActionRunning || !AreProviderDocumentsComplete(Provider))" title="@(!AreProviderDocumentsComplete(Provider) ? "La photo, la piece d'identite et le diplome sont obligatoires avant validation." : null)" @onclick="ApproveProviderAsync">
                         @(IsActionRunning ? "Validation..." : GetApproveButtonLabel(Provider))
                     </button>
+                    @if (!AreProviderDocumentsComplete(Provider))
+                    {
+                        <small class="provider-document-blocking-note">Validation bloquee tant que les trois pieces obligatoires ne sont pas presentes.</small>
+                    }
                 }
                 else
                 {
@@ -227,6 +231,16 @@ else
                     <p>@Provider.Documents.Count document(s)</p>
                 </div>
             </header>
+            <div class="provider-document-readiness @GetProviderDocumentProgressClass(Provider)">
+                <div>
+                    <span>Dossier obligatoire</span>
+                    <strong>@GetProviderDocumentProgress(Provider)%</strong>
+                </div>
+                <div class="provider-document-progress" role="progressbar" aria-label="Progression du dossier prestataire" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@GetProviderDocumentProgress(Provider)">
+                    <span style="width: @GetProviderDocumentProgress(Provider)%"></span>
+                </div>
+                <small>@GetProviderDocumentProgressCaption(Provider)</small>
+            </div>
             @if (Provider.Documents.Count == 0)
             {
                 <article class="admin-empty-row">
@@ -454,6 +468,39 @@ else
     private static string TranslateInterimStatus(string status) => status switch { "Pending" => "A evaluer", "Approved" => "Validee", "Rejected" => "Refusee", "Cancelled" => "Annulee", _ => status };
     private static string TranslateAssignmentStatus(string status) => status switch { "Offered" => "Proposee", "Accepted" => "Acceptee", "Refused" => "Refusee", "Expired" => "Expiree", "Started" => "En cours", "Completed" => "Terminee", "Cancelled" => "Annulee", _ => status };
     private static string TranslateLocationStatus(string status) => status switch { "Verified" => "Arrivee verifiee", "OutsideTolerance" => "Hors zone", "MissingProviderLocation" => "Position manquante", "MissingMissionLocation" => "Mission sans position", "LowAccuracy" => "Precision faible", "InvalidProviderLocation" => "Position invalide", _ => "Non verifiee" };
+
+    private static readonly string[] RequiredProviderDocumentTypes = ["Photo", "IdentityDocument", "Diploma"];
+
+    private static int GetProviderDocumentProgress(AdminProviderDetailResponse provider)
+    {
+        var submittedCount = RequiredProviderDocumentTypes.Count(requiredType =>
+            provider.Documents.Any(document => NormalizeProviderDocumentType(document.DocumentType) == requiredType));
+        return (int)Math.Round(submittedCount * 100d / RequiredProviderDocumentTypes.Length, MidpointRounding.AwayFromZero);
+    }
+
+    private static bool AreProviderDocumentsComplete(AdminProviderDetailResponse provider)
+        => GetProviderDocumentProgress(provider) == 100;
+
+    private static string GetProviderDocumentProgressClass(AdminProviderDetailResponse provider)
+        => provider.Status == "Approved" && AreProviderDocumentsComplete(provider)
+            ? "verified"
+            : AreProviderDocumentsComplete(provider) ? "complete-pending" : "incomplete";
+
+    private static string GetProviderDocumentProgressCaption(AdminProviderDetailResponse provider)
+        => provider.Status == "Approved" && AreProviderDocumentsComplete(provider)
+            ? "100 % verifie : le prestataire est valide."
+            : AreProviderDocumentsComplete(provider)
+                ? "100 % complet : le dossier attend le controle de l'administration."
+                : "Dossier incomplet : photo, piece d'identite et diplome sont obligatoires.";
+
+    private static string NormalizeProviderDocumentType(string value)
+        => value.Trim().ToLowerInvariant() switch
+        {
+            "photo" or "profilephoto" or "profile_photo" => "Photo",
+            "identitydocument" or "identity_document" or "identity" or "id" => "IdentityDocument",
+            "diploma" or "diplome" or "certificate" => "Diploma",
+            _ => value.Trim()
+        };
 
     private static string GetProviderStatusClass(string status) => status switch { "Approved" => "status-pill ok", "SuspendedByCompany" or "SuspendedByPlatform" or "Inactive" => "status-pill danger", _ => "status-pill pending" };
     private static string GetInterimStatusClass(string status) => status switch { "Approved" => "status-pill ok", "Rejected" or "Cancelled" => "status-pill danger", _ => "status-pill pending" };

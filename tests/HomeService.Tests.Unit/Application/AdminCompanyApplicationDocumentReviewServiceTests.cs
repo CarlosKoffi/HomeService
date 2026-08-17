@@ -1,5 +1,6 @@
 using HomeService.Application.Admin;
 using HomeService.Application.Auditing;
+using HomeService.Application.Companies;
 using HomeService.Application.CompanyPortal;
 using HomeService.Application.Notifications;
 using HomeService.Domain.Entities;
@@ -38,6 +39,7 @@ public sealed class AdminCompanyApplicationDocumentReviewServiceTests
         db.Companies.Add(company);
         db.CompanyApplications.Add(application);
         db.CompanyApplicationDocuments.Add(document);
+        AddRemainingRequiredDocuments(db, application.Id, document.DocumentType);
         await db.SaveChangesAsync();
         var sut = new AdminCompanyApplicationDocumentReviewService(
             db,
@@ -147,8 +149,26 @@ public sealed class AdminCompanyApplicationDocumentReviewServiceTests
 
         db.CompanyApplications.Add(application);
         db.CompanyApplicationDocuments.Add(document);
+        AddRemainingRequiredDocuments(db, application.Id, document.DocumentType);
 
         return document;
+    }
+
+    private static void AddRemainingRequiredDocuments(
+        HomeServiceDbContext db,
+        Guid applicationId,
+        CompanyDocumentType documentTypeAlreadyAdded)
+    {
+        foreach (var documentType in RequiredCompanyDocumentsPolicy.RequiredDocumentTypes
+                     .Where(documentType => documentType != documentTypeAlreadyAdded))
+        {
+            db.CompanyApplicationDocuments.Add(new CompanyApplicationDocument(
+                applicationId,
+                documentType,
+                $"{documentType}.png",
+                $"company-applications/app/{documentType}.png",
+                "image/png"));
+        }
     }
 
     private static AdminCompanyApplicationDocumentReviewService CreateService(HomeServiceDbContext db)

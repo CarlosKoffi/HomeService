@@ -67,16 +67,16 @@ public sealed class AdminBusinessClientReviewService(IAppDbContext db)
     }
 
     public Task<BusinessClientProfileResponse> MarkUnderReviewAsync(Guid profileId, CancellationToken cancellationToken = default)
-        => MutateAsync(profileId, profile => profile.MarkUnderReview(), cancellationToken);
+        => MutateAsync(profileId, profile => profile.MarkUnderReview(), true, cancellationToken);
 
     public Task<BusinessClientProfileResponse> RequestMoreInformationAsync(Guid profileId, string? note, CancellationToken cancellationToken = default)
-        => MutateAsync(profileId, profile => profile.RequestMoreInformation(RequireNote(note)), cancellationToken);
+        => MutateAsync(profileId, profile => profile.RequestMoreInformation(RequireNote(note)), false, cancellationToken);
 
     public Task<BusinessClientProfileResponse> ApproveAsync(Guid profileId, string? note, CancellationToken cancellationToken = default)
-        => MutateAsync(profileId, profile => profile.Approve(note), cancellationToken);
+        => MutateAsync(profileId, profile => profile.Approve(note), true, cancellationToken);
 
     public Task<BusinessClientProfileResponse> RejectAsync(Guid profileId, string? note, CancellationToken cancellationToken = default)
-        => MutateAsync(profileId, profile => profile.Reject(RequireNote(note)), cancellationToken);
+        => MutateAsync(profileId, profile => profile.Reject(RequireNote(note)), false, cancellationToken);
 
     public async Task<(string StoragePath, string ContentType, string FileName)?> GetDocumentAsync(
         Guid profileId,
@@ -94,12 +94,17 @@ public sealed class AdminBusinessClientReviewService(IAppDbContext db)
     private async Task<BusinessClientProfileResponse> MutateAsync(
         Guid profileId,
         Action<BusinessClientProfile> mutation,
+        bool requireCompleteDossier,
         CancellationToken cancellationToken)
     {
         var profile = await db.BusinessClientProfiles
             .Include(item => item.Documents)
             .FirstOrDefaultAsync(item => item.Id == profileId, cancellationToken)
             ?? throw new KeyNotFoundException("Le dossier client entreprise est introuvable.");
+        if (requireCompleteDossier && !BusinessClientOnboardingService.HasAllRequiredDocuments(profile.Documents))
+        {
+            throw new InvalidOperationException("Le dossier ne peut pas etre examine ou valide avant le depot de 100 % des justificatifs obligatoires.");
+        }
         mutation(profile);
         await db.SaveChangesAsync(cancellationToken);
         return BusinessClientOnboardingService.ToResponse(profile);

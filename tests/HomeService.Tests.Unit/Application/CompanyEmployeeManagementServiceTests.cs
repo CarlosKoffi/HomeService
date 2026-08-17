@@ -223,6 +223,18 @@ public sealed class CompanyEmployeeManagementServiceTests
             "id.png",
             "providers/company/provider/id.png",
             "image/png"));
+        db.ProviderDocuments.Add(new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.Photo,
+            "photo.png",
+            "providers/company/provider/photo.png",
+            "image/png"));
+        db.ProviderDocuments.Add(new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.Diploma,
+            "diplome.png",
+            "providers/company/provider/diplome.png",
+            "image/png"));
         await db.SaveChangesAsync();
 
         var result = await new CompanyEmployeeManagementService(db).ApproveAsync(companyId, provider.Id, CancellationToken.None);

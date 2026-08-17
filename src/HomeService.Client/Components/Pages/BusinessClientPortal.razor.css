@@ -611,11 +611,15 @@
     align-items: baseline;
     gap: 2px 7px;
     min-width: 180px;
-    color: #0c5a66;
+    color: #b42318;
+    background: #fff4f2;
+    border: 1px solid #fecdca;
+    border-radius: 14px;
+    padding: 10px 12px;
 }
 
 .document-progress strong { font-size: 1.05rem; }
-.document-progress small { color: #667579; font-size: .76rem; }
+.document-progress small { color: #912018; font-size: .76rem; }
 .document-progress > span {
     grid-column: 1 / -1;
     height: 6px;
@@ -623,7 +627,13 @@
     border-radius: 999px;
     background: #e4eeec;
 }
-.document-progress i { display: block; height: 100%; border-radius: inherit; background: #8edfc0; transition: width .25s ease; }
+.document-progress i { display: block; height: 100%; border-radius: inherit; background: #f04438; transition: width .25s ease; }
+.document-progress.is-review { color: #b54708; background: #fffaeb; border-color: #fedf89; }
+.document-progress.is-review small { color: #93370d; }
+.document-progress.is-review i { background: #f79009; }
+.document-progress.is-approved { color: #067647; background: #ecfdf3; border-color: #abefc6; }
+.document-progress.is-approved small { color: #05603a; }
+.document-progress.is-approved i { background: #17b26a; }
 
 .document-card {
     position: relative;

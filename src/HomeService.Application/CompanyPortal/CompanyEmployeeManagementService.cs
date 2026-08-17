@@ -1,4 +1,5 @@
 using HomeService.Application.Abstractions;
+using HomeService.Application.Providers;
 using HomeService.Contracts.CompanyPortal;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
@@ -216,9 +217,12 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             return CompanyEmployeeOperationResult.ValidationFailed(provider, "Ajoutez au moins un service actif avant de valider ce prestataire.");
         }
 
-        if (!provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.IdentityDocument))
+        var missingDocuments = RequiredProviderDocumentsPolicy.GetMissingDocumentTypes(provider.Documents);
+        if (missingDocuments.Count > 0)
         {
-            return CompanyEmployeeOperationResult.ValidationFailed(provider, "Ajoutez une piece d'identite avant de valider ce prestataire.");
+            return CompanyEmployeeOperationResult.ValidationFailed(
+                provider,
+                $"Le dossier est incomplet. Pieces manquantes : {string.Join(", ", missingDocuments)}.");
         }
 
         var before = new { provider.Status, provider.IsAvailable };

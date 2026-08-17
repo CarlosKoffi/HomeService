@@ -245,9 +245,14 @@
                                 <h2>Justificatifs de la société</h2>
                                 <p>Ajoutez une photo nette ou un PDF. 25 Mo maximum par fichier.</p>
                             </div>
-                            <div class="document-progress" aria-label="Progression des justificatifs obligatoires">
-                                <strong>@UploadedRequiredDocumentCount/@RequiredDocumentCount</strong>
-                                <small>obligatoires ajoutés</small>
+                            <div class="document-progress @GetRequiredDocumentProgressClass()"
+                                 role="progressbar"
+                                 aria-label="Progression des justificatifs obligatoires"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
+                                 aria-valuenow="@RequiredDocumentProgress">
+                                <strong>@RequiredDocumentProgress%</strong>
+                                <small>@GetRequiredDocumentProgressLabel()</small>
                                 <span><i style="width: @RequiredDocumentProgress%"></i></span>
                             </div>
                         </div>
@@ -371,8 +376,15 @@
     private bool ShowAddressSuggestionList;
     private string CurrentSection = "home";
     private int RequiredDocumentCount => DocumentRequirements.Count(requirement => requirement.Required);
-    private int UploadedRequiredDocumentCount => DocumentRequirements.Count(requirement => requirement.Required && FindDocument(requirement.Type) is not null);
+    private int UploadedRequiredDocumentCount => DocumentRequirements.Count(requirement =>
+        requirement.Required && FindDocument(requirement.Type)?.ReviewStatus is "Pending" or "Approved");
     private int RequiredDocumentProgress => RequiredDocumentCount == 0 ? 0 : (int)Math.Round(UploadedRequiredDocumentCount * 100d / RequiredDocumentCount);
+    private string GetRequiredDocumentProgressClass() => Profile?.Status == "Approved"
+        ? "is-approved"
+        : RequiredDocumentProgress == 100 ? "is-review" : "is-incomplete";
+    private string GetRequiredDocumentProgressLabel() => Profile?.Status == "Approved"
+        ? "Dossier validé"
+        : RequiredDocumentProgress == 100 ? "Complet, prêt à vérifier" : "Pièces obligatoires déposées";
     private string GetDocumentInputKey(string documentType) => $"{documentType}-{DocumentInputVersion}";
     private IReadOnlyList<ServiceSummaryResponse> Services = [];
     private bool ServicesLoading;

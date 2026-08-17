@@ -149,6 +149,13 @@ else if (Application is not null)
             <span class="document-readiness @GetRequiredDocumentsReadinessClass()">@GetRequiredDocumentsReadinessLabel()</span>
         </div>
 
+        <div class="document-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@GetRequiredDocumentsProgress()">
+            <div class="document-progress-track">
+                <span class="@GetRequiredDocumentsReadinessClass()" style="width: @GetRequiredDocumentsProgress()%;"></span>
+            </div>
+            <p>@GetRequiredDocumentsReadinessCaption()</p>
+        </div>
+
         @foreach (var slot in RequiredDocumentSlots)
         {
             var document = FindLatestDocument(slot.Type);
@@ -214,9 +221,9 @@ else if (Application is not null)
                                   @bind="DocumentNotes[document.Id]"></textarea>
                         <div class="easy-actions">
                             <a href="@ApiClient.GetCompanyApplicationDocumentUrl(document.Id)" target="_blank" rel="noopener">Ouvrir</a>
-                            <button type="button" disabled="@IsBusy" @onclick="() => ApproveDocumentAsync(document.Id)">Valider piece</button>
-                            <button type="button" disabled="@IsBusy" @onclick="() => RequestDocumentReplacementAsync(document.Id)">Complement piece</button>
-                            <button type="button" disabled="@IsBusy" @onclick="() => RejectDocumentAsync(document.Id)">Refuser piece</button>
+                            <button type="button" disabled="@(IsBusy || !AreAllRequiredDocumentsSubmitted())" @onclick="() => ApproveDocumentAsync(document.Id)">Valider piece</button>
+                            <button type="button" disabled="@(IsBusy || !AreAllRequiredDocumentsSubmitted())" @onclick="() => RequestDocumentReplacementAsync(document.Id)">Complement piece</button>
+                            <button type="button" disabled="@(IsBusy || !AreAllRequiredDocumentsSubmitted())" @onclick="() => RejectDocumentAsync(document.Id)">Refuser piece</button>
                             @if (document.ReviewStatus == "Rejected")
                             {
                                 <button type="button" disabled="@IsBusy" @onclick="() => ReopenDocumentAsync(document.Id)">Reouvrir piece</button>
@@ -287,9 +294,9 @@ else if (Application is not null)
                               @bind="DocumentNotes[document.Id]"></textarea>
                     <div class="easy-actions">
                         <a href="@ApiClient.GetCompanyApplicationDocumentUrl(document.Id)" target="_blank" rel="noopener">Ouvrir</a>
-                        <button type="button" disabled="@IsBusy" @onclick="() => ApproveDocumentAsync(document.Id)">Valider piece</button>
-                        <button type="button" disabled="@IsBusy" @onclick="() => RequestDocumentReplacementAsync(document.Id)">Complement piece</button>
-                        <button type="button" disabled="@IsBusy" @onclick="() => RejectDocumentAsync(document.Id)">Refuser piece</button>
+                        <button type="button" disabled="@(IsBusy || !AreAllRequiredDocumentsSubmitted())" @onclick="() => ApproveDocumentAsync(document.Id)">Valider piece</button>
+                        <button type="button" disabled="@(IsBusy || !AreAllRequiredDocumentsSubmitted())" @onclick="() => RequestDocumentReplacementAsync(document.Id)">Complement piece</button>
+                        <button type="button" disabled="@(IsBusy || !AreAllRequiredDocumentsSubmitted())" @onclick="() => RejectDocumentAsync(document.Id)">Refuser piece</button>
                     </div>
                 </div>
             </article>
@@ -671,13 +678,44 @@ else if (Application is not null)
 
     private string GetRequiredDocumentsReadinessLabel()
     {
-        var approved = RequiredDocumentSlots.Count(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
-        return $"{approved}/{RequiredDocumentSlots.Count} pieces obligatoires validees";
+        return $"{GetRequiredDocumentsProgress()} %";
+    }
+
+    private int GetRequiredDocumentsProgress()
+        => RequiredDocumentSlots.Count == 0
+            ? 0
+            : (int)Math.Round(GetSubmittedRequiredDocumentCount() * 100d / RequiredDocumentSlots.Count);
+
+    private int GetSubmittedRequiredDocumentCount()
+        => RequiredDocumentSlots.Count(slot => IsSubmittedDocument(FindLatestDocument(slot.Type)));
+
+    private bool AreAllRequiredDocumentsSubmitted()
+        => RequiredDocumentSlots.All(slot => IsSubmittedDocument(FindLatestDocument(slot.Type)));
+
+    private bool AreAllRequiredDocumentsApproved()
+        => RequiredDocumentSlots.All(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
+
+    private static bool IsSubmittedDocument(CompanyApplicationDocumentResponse? document)
+        => document?.ReviewStatus is "Pending" or "Approved";
+
+    private string GetRequiredDocumentsReadinessCaption()
+    {
+        if (AreAllRequiredDocumentsApproved())
+        {
+            return "100 % vérifié : toutes les pièces obligatoires sont validées.";
+        }
+
+        if (AreAllRequiredDocumentsSubmitted())
+        {
+            return "100 % dossier complet : la vérification peut commencer.";
+        }
+
+        return $"Dossier incomplet : {GetSubmittedRequiredDocumentCount()} pièce(s) obligatoire(s) reçue(s) sur {RequiredDocumentSlots.Count}. La revue est verrouillée.";
     }
 
     private bool CanApproveApplication()
     {
-        return RequiredDocumentSlots.All(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
+        return AreAllRequiredDocumentsApproved();
     }
 
     private string GetApprovalBlockerMessage()
@@ -694,8 +732,11 @@ else if (Application is not null)
 
     private string GetRequiredDocumentsReadinessClass()
     {
-        var approved = RequiredDocumentSlots.Count(slot => FindLatestDocument(slot.Type)?.ReviewStatus == "Approved");
-        return approved == RequiredDocumentSlots.Count ? "status-done" : "status-review";
+        return AreAllRequiredDocumentsApproved()
+            ? "status-done"
+            : AreAllRequiredDocumentsSubmitted()
+                ? "status-review"
+                : "status-incomplete";
     }
 
     private static string GetAssignmentModeHelp(string assignmentMode)

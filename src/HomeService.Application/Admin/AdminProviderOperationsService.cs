@@ -1,5 +1,6 @@
 using HomeService.Application.Abstractions;
 using HomeService.Application.Auditing;
+using HomeService.Application.Providers;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -42,9 +43,12 @@ public sealed class AdminProviderOperationsService(IAppDbContext db)
             return AdminProviderOperationResult.ValidationFailed(provider, "Ajoutez au moins un service actif avant validation.");
         }
 
-        if (!provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.IdentityDocument))
+        var missingDocuments = RequiredProviderDocumentsPolicy.GetMissingDocumentTypes(provider.Documents);
+        if (missingDocuments.Count > 0)
         {
-            return AdminProviderOperationResult.ValidationFailed(provider, "Ajoutez une piece d'identite avant validation.");
+            return AdminProviderOperationResult.ValidationFailed(
+                provider,
+                $"Le dossier est incomplet. Pieces manquantes : {string.Join(", ", missingDocuments)}.");
         }
 
         var previousStatus = provider.Status;

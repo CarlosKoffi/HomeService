@@ -11,188 +11,139 @@
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<input type="checkbox" title="Ouvrir le menu" aria-label="Ouvrir le menu" class="navbar-toggler" />
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <p class="nav-section-label">Operations</p>
+    <nav class="nav flex-column" aria-label="Navigation principale">
         @if (CanView(AdminModuleKey.Dashboard))
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                    <span class="nav-icon nav-icon-dashboard" aria-hidden="true"></span>
-                    <span class="nav-label">Tableau de bord</span>
-                </NavLink>
-            </div>
-        }
-
-        @if (CanView(AdminModuleKey.CompanyApplications))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="company-applications">
-                    <span class="nav-icon nav-icon-applications" aria-hidden="true"></span>
-                    <span class="nav-label">Demandes entreprises</span>
-                </NavLink>
-            </div>
-        }
-
-        @if (CanView(AdminModuleKey.CompanyManagement))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="companies">
-                    <span class="nav-icon nav-icon-companies" aria-hidden="true"></span>
-                    <span class="nav-label">Entreprises</span>
-                </NavLink>
-            </div>
-        }
-
-        @if (CanView(AdminModuleKey.ProviderReview))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="providers">
-                    <span class="nav-icon nav-icon-providers" aria-hidden="true"></span>
-                    <span class="nav-label">Prestataires</span>
-                </NavLink>
-            </div>
+            <NavGroup Title="Pilotage">
+                <NavItem Href="" Label="Tableau de bord" Icon="dashboard" Match="NavLinkMatch.All" />
+            </NavGroup>
         }
 
         @if (CanView(AdminModuleKey.Clients))
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="clients">
-                    <span class="nav-icon nav-icon-clients" aria-hidden="true"></span>
-                    <span class="nav-label">Clients</span>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="business-clients">
-                    <span class="nav-icon nav-icon-clients" aria-hidden="true"></span>
-                    <span class="nav-label">Clients entreprises</span>
-                </NavLink>
-            </div>
+            <NavGroup Title="Clients">
+                <NavItem Href="clients" Label="Clients particuliers" Icon="clients" />
+                <NavItem Href="business-clients" Label="Clients entreprises" Icon="business-clients" />
+            </NavGroup>
         }
 
-        @if (CanView(AdminModuleKey.Missions))
+        @if (CanViewCompaniesGroup)
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="missions">
-                    <span class="nav-icon nav-icon-missions" aria-hidden="true"></span>
-                    <span class="nav-label">Missions</span>
-                </NavLink>
-            </div>
+            <NavGroup Title="Entreprises partenaires">
+                @if (CanView(AdminModuleKey.CompanyApplications))
+                {
+                    <NavItem Href="company-applications" Label="Dossiers à valider" Icon="applications" />
+                }
+                @if (CanView(AdminModuleKey.CompanyManagement))
+                {
+                    <NavItem Href="companies" Label="Entreprises actives" Icon="companies" />
+                }
+            </NavGroup>
         }
 
-        @if (CanView(AdminModuleKey.MissionSettings))
+        @if (CanViewProvidersGroup)
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="quality">
-                    <span class="nav-icon nav-icon-providers" aria-hidden="true"></span>
-                    <span class="nav-label">Qualite terrain</span>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="mission-settings">
-                    <span class="nav-icon nav-icon-settings" aria-hidden="true"></span>
-                    <span class="nav-label">Parametres missions</span>
-                </NavLink>
-            </div>
+            <NavGroup Title="Prestataires & qualité">
+                @if (CanView(AdminModuleKey.ProviderReview))
+                {
+                    <NavItem Href="providers" Label="Prestataires" Icon="providers" />
+                }
+                @if (CanView(AdminModuleKey.MissionSettings))
+                {
+                    <NavItem Href="quality" Label="Contrôle qualité" Icon="quality" />
+                }
+                @if (CanView(AdminModuleKey.Services))
+                {
+                    <NavItem Href="mission-test" Label="Test prestataire" Icon="test" />
+                }
+            </NavGroup>
         }
 
-        @if (CanView(AdminModuleKey.Payments))
+        @if (CanViewOperationsGroup)
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="payments">
-                    <span class="nav-icon nav-icon-payments" aria-hidden="true"></span>
-                    <span class="nav-label">Encaissements</span>
-                </NavLink>
-            </div>
+            <NavGroup Title="Opérations">
+                @if (CanView(AdminModuleKey.Missions))
+                {
+                    <NavItem Href="missions" Label="Missions" Icon="missions" />
+                }
+                @if (CanView(AdminModuleKey.Payments))
+                {
+                    <NavItem Href="payments" Label="Encaissements" Icon="payments" />
+                }
+                @if (CanView(AdminModuleKey.Notifications))
+                {
+                    <NavItem Href="notifications" Label="Notifications" Icon="notifications" />
+                }
+                @if (CanView(AdminModuleKey.ContactRequests))
+                {
+                    <NavItem Href="contact-requests" Label="Demandes de contact" Icon="contact" />
+                }
+            </NavGroup>
         }
 
-        <p class="nav-section-label">Catalogue et contenu</p>
-        @if (CanView(AdminModuleKey.Localization))
+        @if (CanViewCatalogGroup)
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="localization">
-                    <span class="nav-icon nav-icon-translations" aria-hidden="true"></span>
-                    <span class="nav-label">Traductions</span>
-                </NavLink>
-            </div>
+            <NavGroup Title="Catalogue & contenu">
+                @if (CanView(AdminModuleKey.Services))
+                {
+                    <NavItem Href="service-proposals" Label="Services & prestations" Icon="services" />
+                }
+                @if (CanView(AdminModuleKey.Cms))
+                {
+                    <NavItem Href="cms" Label="Pages & contenus" Icon="cms" />
+                }
+                @if (CanView(AdminModuleKey.Localization))
+                {
+                    <NavItem Href="localization" Label="Traductions" Icon="translations" />
+                }
+            </NavGroup>
         }
 
-        @if (CanView(AdminModuleKey.Cms))
+        @if (CanViewAdministrationGroup)
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="cms">
-                    <span class="nav-icon nav-icon-cms" aria-hidden="true"></span>
-                    <span class="nav-label">CMS</span>
-                </NavLink>
-            </div>
-        }
-
-        @if (CanView(AdminModuleKey.Services))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="service-proposals">
-                    <span class="nav-icon nav-icon-services" aria-hidden="true"></span>
-                    <span class="nav-label">Catalogue services</span>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="payment-providers">
-                    <span class="nav-icon nav-icon-payments" aria-hidden="true"></span>
-                    <span class="nav-label">Moyens de paiement</span>
-                </NavLink>
-                <NavLink class="nav-link nav-link-secondary" href="mission-test">
-                    <span class="nav-icon nav-icon-missions" aria-hidden="true"></span>
-                    <span class="nav-label">Test prestataire</span>
-                </NavLink>
-            </div>
-        }
-
-        <p class="nav-section-label">Administration</p>
-        @if (CanView(AdminModuleKey.AdminAccess))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="access-control">
-                    <span class="nav-icon nav-icon-access" aria-hidden="true"></span>
-                    <span class="nav-label">Admins et roles</span>
-                </NavLink>
-            </div>
-        }
-
-        @if (CanView(AdminModuleKey.Notifications))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="notifications">
-                    <span class="nav-icon nav-icon-notifications" aria-hidden="true"></span>
-                    <span class="nav-label">Notifications</span>
-                </NavLink>
-            </div>
-        }
-
-        @if (CanView(AdminModuleKey.ContactRequests))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="contact-requests">
-                    <span class="nav-icon nav-icon-contact" aria-hidden="true"></span>
-                    <span class="nav-label">Contacts</span>
-                </NavLink>
-            </div>
-        }
-
-        @if (CanView(AdminModuleKey.Audit))
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="audit-logs">
-                    <span class="nav-icon nav-icon-logs" aria-hidden="true"></span>
-                    <span class="nav-label">Logs</span>
-                </NavLink>
-            </div>
+            <NavGroup Title="Configuration & sécurité">
+                @if (CanView(AdminModuleKey.MissionSettings))
+                {
+                    <NavItem Href="mission-settings" Label="Paramètres missions" Icon="settings" />
+                }
+                @if (CanView(AdminModuleKey.Services))
+                {
+                    <NavItem Href="payment-providers" Label="Moyens de paiement" Icon="payment-providers" />
+                }
+                @if (CanView(AdminModuleKey.AdminAccess))
+                {
+                    <NavItem Href="access-control" Label="Admins & rôles" Icon="access" />
+                }
+                @if (CanView(AdminModuleKey.Audit))
+                {
+                    <NavItem Href="audit-logs" Label="Journal d’audit" Icon="logs" />
+                }
+            </NavGroup>
         }
     </nav>
 </div>
 
 @code {
+    private bool CanViewCompaniesGroup =>
+        CanView(AdminModuleKey.CompanyApplications) || CanView(AdminModuleKey.CompanyManagement);
+
+    private bool CanViewProvidersGroup =>
+        CanView(AdminModuleKey.ProviderReview) || CanView(AdminModuleKey.MissionSettings) || CanView(AdminModuleKey.Services);
+
+    private bool CanViewOperationsGroup =>
+        CanView(AdminModuleKey.Missions) || CanView(AdminModuleKey.Payments) ||
+        CanView(AdminModuleKey.Notifications) || CanView(AdminModuleKey.ContactRequests);
+
+    private bool CanViewCatalogGroup =>
+        CanView(AdminModuleKey.Services) || CanView(AdminModuleKey.Cms) || CanView(AdminModuleKey.Localization);
+
+    private bool CanViewAdministrationGroup =>
+        CanView(AdminModuleKey.MissionSettings) || CanView(AdminModuleKey.Services) ||
+        CanView(AdminModuleKey.AdminAccess) || CanView(AdminModuleKey.Audit);
+
     private bool CanView(AdminModuleKey moduleKey)
     {
         if (SessionState.CurrentUser?.IsSuperAdmin == true)

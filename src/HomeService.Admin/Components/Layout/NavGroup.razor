@@ -1,0 +1,14 @@
+<section class="nav-group">
+    <h2 class="nav-section-label">@Title</h2>
+    <div class="nav-group-items">
+        @ChildContent
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+}

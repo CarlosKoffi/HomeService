@@ -167,6 +167,18 @@ public sealed class AdminProviderOperationsServiceTests
             null,
             5);
         provider.AddService(service.Id, ExperienceLevel.Confirmed);
+        provider.AttachDocument(new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.Photo,
+            "photo.png",
+            "providers/awa/photo.png",
+            "image/png"));
+        provider.AttachDocument(new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.Diploma,
+            "diplome.png",
+            "providers/awa/diplome.png",
+            "image/png"));
         db.Companies.Add(company);
         db.Services.Add(service);
         db.Providers.Add(provider);
@@ -180,7 +192,7 @@ public sealed class AdminProviderOperationsServiceTests
             CancellationToken.None);
 
         Assert.Equal(AdminProviderOperationStatus.ValidationFailed, result.Status);
-        Assert.Equal("Ajoutez une piece d'identite avant validation.", result.Message);
+        Assert.Equal("Le dossier est incomplet. Pieces manquantes : IdentityDocument.", result.Message);
         Assert.Empty(db.AuditLogEntries);
     }
 
@@ -311,6 +323,18 @@ public sealed class AdminProviderOperationsServiceTests
             ProviderDocumentType.IdentityDocument,
             "cni.png",
             "providers/awa/cni.png",
+            "image/png"));
+        provider.AttachDocument(new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.Photo,
+            "photo.png",
+            "providers/awa/photo.png",
+            "image/png"));
+        provider.AttachDocument(new ProviderDocument(
+            provider.Id,
+            ProviderDocumentType.Diploma,
+            "diplome.png",
+            "providers/awa/diplome.png",
             "image/png"));
 
         return new ProviderScenario(company, service, provider);
