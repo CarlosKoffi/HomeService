@@ -54,10 +54,11 @@
                         <input name="serviceEntry"
                                id="company-service-entry"
                                type="text"
-                               list="company-service-options"
                                placeholder="Ex: Jardinage, tondre le gazon, ou Jardinage: taille de palmiers"
                                @bind="ServiceEntry"
                                @bind:event="oninput"
+                               @bind:after="RefreshServiceSuggestions"
+                               @onfocus="OpenServiceSuggestions"
                                @onkeyup="HandleServiceEntryKeyUp" />
                         <button type="button"
                                 class="service-entry-add"
@@ -66,32 +67,33 @@
                             Ajouter
                         </button>
                     </div>
-                    <small>Choisissez une suggestion, puis touchez « Ajouter ».</small>
-                </div>
-                <datalist id="company-service-options">
-                    @foreach (var option in CatalogOptions)
+                    @if (IsServiceSuggestionOpen && !string.IsNullOrWhiteSpace(ServiceEntry))
                     {
-                        <option value="@option.InputValue">@option.Helper</option>
-                    }
-                </datalist>
-                <div class="service-dropdown-entry">
-                    <label for="company-service-select">Ou choisissez directement dans la liste</label>
-                    <div class="service-entry-row">
-                        <select id="company-service-select" @bind="SelectedCatalogOption">
-                            <option value="">Selectionner un service ou une prestation</option>
-                            @foreach (var option in CatalogOptions)
+                        var visibleOptions = GetVisibleCatalogOptions();
+                        <div class="service-suggestion-list" role="listbox" aria-label="Services et prestations disponibles">
+                            @if (visibleOptions.Count > 0)
                             {
-                                <option value="@option.InputValue">@option.InputValue</option>
+                                @foreach (var option in visibleOptions)
+                                {
+                                    <button type="button"
+                                            role="option"
+                                            @onmousedown:preventDefault="true"
+                                            @onclick="() => SelectCatalogOption(option.InputValue)">
+                                        <strong>@option.InputValue</strong>
+                                        @if (!string.IsNullOrWhiteSpace(option.Helper))
+                                        {
+                                            <small>@option.Helper</small>
+                                        }
+                                    </button>
+                                }
                             }
-                        </select>
-                        <button type="button"
-                                class="service-entry-add"
-                                disabled="@string.IsNullOrWhiteSpace(SelectedCatalogOption)"
-                                @onclick="AddCatalogService">
-                            Ajouter
-                        </button>
-                    </div>
-                    <small>La liste reste visible sur mobile, sans utiliser les suggestions du clavier.</small>
+                            else
+                            {
+                                <p>Aucun resultat exact. Vous pouvez proposer ce service avec « Ajouter ».</p>
+                            }
+                        </div>
+                    }
+                    <small>Tapez quelques lettres, puis touchez un resultat dans la liste.</small>
                 </div>
             </div>
 
@@ -190,7 +192,7 @@
     private IReadOnlyList<ServiceCatalogOption> CatalogOptions { get; set; } = [];
     private readonly List<ServiceSelection> SelectedServices = [];
     private string ServiceEntry { get; set; } = string.Empty;
-    private string SelectedCatalogOption { get; set; } = string.Empty;
+    private bool IsServiceSuggestionOpen { get; set; }
     private string? ServiceMessage { get; set; }
     private string? FormMessage { get; set; }
     private bool IsSubmitting { get; set; }
@@ -272,18 +274,34 @@
 
         SelectedServices.Add(selection);
         ServiceEntry = string.Empty;
+        IsServiceSuggestionOpen = false;
     }
 
-    private void AddCatalogService()
+    private void OpenServiceSuggestions()
     {
-        if (string.IsNullOrWhiteSpace(SelectedCatalogOption))
-        {
-            return;
-        }
+        IsServiceSuggestionOpen = !string.IsNullOrWhiteSpace(ServiceEntry);
+    }
 
-        ServiceEntry = SelectedCatalogOption;
+    private void RefreshServiceSuggestions()
+    {
+        IsServiceSuggestionOpen = !string.IsNullOrWhiteSpace(ServiceEntry);
+        ServiceMessage = null;
+    }
+
+    private IReadOnlyList<ServiceCatalogOption> GetVisibleCatalogOptions()
+    {
+        var query = Normalize(ServiceEntry);
+        return CatalogOptions
+            .Where(option => Normalize($"{option.InputValue} {option.Helper}").Contains(query, StringComparison.Ordinal))
+            .DistinctBy(option => Normalize(option.InputValue))
+            .Take(12)
+            .ToList();
+    }
+
+    private void SelectCatalogOption(string inputValue)
+    {
+        ServiceEntry = inputValue;
         AddTypedService();
-        SelectedCatalogOption = string.Empty;
     }
 
     private async Task PrimaryActionAsync()
