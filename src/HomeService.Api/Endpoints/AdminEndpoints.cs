@@ -482,6 +482,61 @@ public static class AdminEndpoints
         .WithName("GetAdminCompany")
         .Produces<AdminCompanyDetailResponse>();
 
+        admin.MapGet("/companies/{companyId:guid}/application-documents/{documentId:guid}/preview", async (
+            Guid companyId,
+            Guid documentId,
+            AdminQueryService queryService,
+            CompanyApplicationUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var document = await queryService.GetCompanyApplicationDocumentFileAsync(
+                companyId,
+                documentId,
+                cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound(new { message = "Document entreprise introuvable." });
+            }
+
+            Stream? stream;
+            try
+            {
+                stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
+            }
+            catch (InvalidOperationException)
+            {
+                return Results.BadRequest(new { message = "Chemin de document invalide." });
+            }
+
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier n'existe plus dans le stockage." })
+                : Results.Stream(stream, document.ContentType);
+        })
+        .WithName("PreviewAdminCompanyApplicationDocument");
+
+        admin.MapGet("/companies/{companyId:guid}/provider-documents/{documentId:guid}/preview", async (
+            Guid companyId,
+            Guid documentId,
+            AdminQueryService queryService,
+            CompanyProviderUploadService uploadService,
+            CancellationToken cancellationToken) =>
+        {
+            var document = await queryService.GetCompanyProviderDocumentFileAsync(
+                companyId,
+                documentId,
+                cancellationToken);
+            if (document is null)
+            {
+                return Results.NotFound(new { message = "Document prestataire introuvable pour cette entreprise." });
+            }
+
+            var stream = await uploadService.OpenReadAsync(document.StoragePath, cancellationToken);
+            return stream is null
+                ? Results.NotFound(new { message = "Le fichier prestataire n'existe plus dans le stockage." })
+                : Results.Stream(stream, document.ContentType);
+        })
+        .WithName("PreviewAdminCompanyProviderDocument");
+
         admin.MapGet("/clients", async (
             string? search,
             AdminClientQueryService queryService,

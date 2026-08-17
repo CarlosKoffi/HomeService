@@ -1275,6 +1275,23 @@ public sealed class AdminQueryService(IAppDbContext db)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<AdminProviderDocumentFile?> GetCompanyProviderDocumentFileAsync(
+        Guid companyId,
+        Guid documentId,
+        CancellationToken cancellationToken)
+    {
+        return await db.ProviderDocuments
+            .AsNoTracking()
+            .Where(document => document.Id == documentId
+                && document.Provider != null
+                && document.Provider.CompanyId == companyId)
+            .Select(document => new AdminProviderDocumentFile(
+                document.OriginalFileName,
+                document.StoragePath,
+                document.ContentType))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     private static DateTimeOffset GetPaymentPeriodStart(string? period)
     {
         var now = DateTimeOffset.UtcNow;
@@ -1752,6 +1769,23 @@ public sealed class AdminQueryService(IAppDbContext db)
         return await db.CompanyApplicationDocuments
             .AsNoTracking()
             .Where(document => document.Id == id)
+            .Select(document => new AdminCompanyApplicationDocumentFile(
+                document.OriginalFileName,
+                document.StoragePath,
+                document.ContentType))
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<AdminCompanyApplicationDocumentFile?> GetCompanyApplicationDocumentFileAsync(
+        Guid companyId,
+        Guid documentId,
+        CancellationToken cancellationToken)
+    {
+        return await db.CompanyApplicationDocuments
+            .AsNoTracking()
+            .Where(document => document.Id == documentId
+                && document.CompanyApplication != null
+                && document.CompanyApplication.CompanyId == companyId)
             .Select(document => new AdminCompanyApplicationDocumentFile(
                 document.OriginalFileName,
                 document.StoragePath,

@@ -316,7 +316,7 @@ else
                             <span class="@GetDocumentStatusClass(document.ReviewStatus)">@TranslateDocumentStatus(document.ReviewStatus)</span>
                         </div>
                         <div class="operator-actions">
-                            <a href="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">Voir la piece</a>
+                            <a href="@ApiClient.GetCompanyApplicationDocumentPreviewUrl(Company.Id, document.Id)" target="_blank" rel="noopener">Voir la piece</a>
                         </div>
                     </article>
                 }
@@ -343,7 +343,7 @@ else
                             <p>@TranslateDocumentType(document.DocumentType) - @document.OriginalFileName</p>
                         </div>
                         <div class="operator-actions">
-                            <a href="@ApiClient.GetProviderDocumentPreviewUrl(document.Id)" target="_blank" rel="noopener">Voir la piece</a>
+                            <a href="@ApiClient.GetCompanyProviderDocumentPreviewUrl(Company.Id, document.Id)" target="_blank" rel="noopener">Voir la piece</a>
                             <button type="button" @onclick="() => OpenProvider(document.ProviderId)">Voir prestataire</button>
                         </div>
                     </article>

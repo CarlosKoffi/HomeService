@@ -289,6 +289,8 @@ public sealed class AdminEndpointContractTests
     [InlineData("PUT", "/api/admin/notification-templates/11111111-1111-1111-1111-111111111111", AdminModuleKey.Notifications, AdminPermissionAction.Edit)]
     [InlineData("PUT", "/api/admin/notification-delivery-rules/11111111-1111-1111-1111-111111111111", AdminModuleKey.Notifications, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/companies/11111111-1111-1111-1111-111111111111/suspend", AdminModuleKey.CompanyManagement, AdminPermissionAction.Suspend)]
+    [InlineData("GET", "/api/admin/companies/11111111-1111-1111-1111-111111111111/application-documents/22222222-2222-2222-2222-222222222222/preview", AdminModuleKey.CompanyManagement, AdminPermissionAction.View)]
+    [InlineData("GET", "/api/admin/companies/11111111-1111-1111-1111-111111111111/provider-documents/22222222-2222-2222-2222-222222222222/preview", AdminModuleKey.CompanyManagement, AdminPermissionAction.View)]
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/dispatch-offers", AdminModuleKey.Missions, AdminPermissionAction.Resend)]
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/mark-disputed", AdminModuleKey.Missions, AdminPermissionAction.Edit)]
     [InlineData("POST", "/api/admin/missions/11111111-1111-1111-1111-111111111111/resolve-dispute", AdminModuleKey.Missions, AdminPermissionAction.Approve)]

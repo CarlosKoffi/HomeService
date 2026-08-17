@@ -1555,9 +1555,19 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         return $"/admin-documents/{documentId}/preview";
     }
 
+    public string GetCompanyApplicationDocumentPreviewUrl(Guid companyId, Guid documentId)
+    {
+        return $"/admin-company-application-documents/{companyId:D}/{documentId:D}/preview";
+    }
+
     public string GetProviderDocumentPreviewUrl(Guid documentId)
     {
         return $"/admin-provider-documents/{documentId}/preview";
+    }
+
+    public string GetCompanyProviderDocumentPreviewUrl(Guid companyId, Guid documentId)
+    {
+        return $"/admin-company-provider-documents/{companyId:D}/{documentId:D}/preview";
     }
 
     public string GetBusinessClientDocumentPreviewUrl(Guid profileId, Guid documentId)
@@ -1584,6 +1594,16 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             ?? "document";
 
         return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
+    }
+
+    public async Task<CompanyApplicationDocumentFile> GetCompanyApplicationDocumentFileAsync(
+        Guid companyId,
+        Guid documentId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/admin/companies/{companyId:D}/application-documents/{documentId:D}/preview";
+        return await GetDocumentFileAsync(path, "document-entreprise", cancellationToken);
     }
 
     public async Task<CompanyApplicationDocumentFile> GetBusinessClientDocumentFileAsync(
@@ -1627,6 +1647,38 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
             ?? response.Content.Headers.ContentDisposition?.FileName
             ?? "document-prestataire";
+
+        return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
+    }
+
+    public async Task<CompanyApplicationDocumentFile> GetCompanyProviderDocumentFileAsync(
+        Guid companyId,
+        Guid documentId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var path = $"/api/admin/companies/{companyId:D}/provider-documents/{documentId:D}/preview";
+        return await GetDocumentFileAsync(path, "document-prestataire", cancellationToken);
+    }
+
+    private async Task<CompanyApplicationDocumentFile> GetDocumentFileAsync(
+        string path,
+        string fallbackFileName,
+        CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.GetAsync(path, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw CreateApiException(response, path, body);
+        }
+
+        var content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+        var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+            ?? response.Content.Headers.ContentDisposition?.FileName
+            ?? fallbackFileName;
 
         return new CompanyApplicationDocumentFile(content, contentType, fileName.Trim('"'));
     }
