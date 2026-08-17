@@ -543,7 +543,7 @@ public static class PublicEndpoints
 
                 return Results.Ok(document);
             }
-            catch (Exception exception) when (exception is InvalidOperationException or InvalidDataException or BadHttpRequestException)
+            catch (Exception exception) when (exception is InvalidOperationException or InvalidDataException or BadHttpRequestException or ApiObjectStorageException)
             {
                 if (!string.IsNullOrWhiteSpace(uploadedStoragePath))
                 {

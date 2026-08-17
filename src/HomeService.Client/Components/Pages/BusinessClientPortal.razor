@@ -239,18 +239,29 @@
                 @if (Profile is not null)
                 {
                     <section class="portal-card">
-                        <div class="card-title">
+                        <div class="card-title document-section-title">
                             <span>03</span>
-                            <div><h2>Justificatifs de la société</h2><p>PDF, JPG, PNG ou WebP. 25 Mo maximum par fichier.</p></div>
+                            <div>
+                                <h2>Justificatifs de la société</h2>
+                                <p>Ajoutez une photo nette ou un PDF. 25 Mo maximum par fichier.</p>
+                            </div>
+                            <div class="document-progress" aria-label="Progression des justificatifs obligatoires">
+                                <strong>@UploadedRequiredDocumentCount/@RequiredDocumentCount</strong>
+                                <small>obligatoires ajoutés</small>
+                                <span><i style="width: @RequiredDocumentProgress%"></i></span>
+                            </div>
                         </div>
                         <div class="document-grid">
                             @foreach (var requirement in DocumentRequirements)
                             {
                                 var document = FindDocument(requirement.Type);
-                                <article class="document-card @(document is not null ? "uploaded" : null)">
-                                    <div class="document-icon">@requirement.ShortLabel</div>
-                                    <div class="document-copy">
-                                        <strong>@requirement.Label @(requirement.Required ? "*" : null)</strong>
+                                var isUploading = UploadingDocumentType == requirement.Type;
+                                <article class="document-card @(document is not null ? "uploaded" : null) @(isUploading ? "uploading" : null)">
+                                    <div class="document-card-heading">
+                                        <div class="document-icon">@requirement.ShortLabel</div>
+                                        <div class="document-copy">
+                                            <strong>@requirement.Label</strong>
+                                            <span class="requirement-badge @(requirement.Required ? "required" : "optional")">@(requirement.Required ? "Obligatoire" : "Optionnel")</span>
                                         @if (document is null)
                                         {
                                             <small>@requirement.Description</small>
@@ -264,18 +275,32 @@
                                                 <em>@document.ReviewNote</em>
                                             }
                                         }
+                                        </div>
                                     </div>
                                     @if (Profile.CanEdit)
                                     {
-                                        <label class="upload-button">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
-                                            <span>@(document is null ? "Ajouter le fichier" : "Remplacer")</span>
-                                            <InputFile class="visually-hidden-file" OnChange="@(file => UploadDocumentAsync(requirement.Type, file))" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" />
-                                        </label>
-                                        @if (document is not null)
-                                        {
-                                            <button type="button" class="delete-button" title="Supprimer" @onclick="() => DeleteDocumentAsync(document.Id)">×</button>
-                                        }
+                                        <div class="document-actions">
+                                            <label class="upload-button @(isUploading ? "disabled" : null)" aria-busy="@isUploading">
+                                                @if (isUploading)
+                                                {
+                                                    <span class="upload-spinner" aria-hidden="true"></span>
+                                                    <span>Envoi en cours…</span>
+                                                }
+                                                else
+                                                {
+                                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+                                                    <span>@(document is null ? "Ajouter" : "Remplacer")</span>
+                                                }
+                                                <InputFile @key="GetDocumentInputKey(requirement.Type)" class="visually-hidden-file" disabled="@isUploading" OnChange="@(file => UploadDocumentAsync(requirement.Type, file))" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" />
+                                            </label>
+                                            @if (document is not null)
+                                            {
+                                                <button type="button" class="delete-button" disabled="@isUploading" @onclick="() => DeleteDocumentAsync(document.Id)">
+                                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg>
+                                                    <span>Supprimer</span>
+                                                </button>
+                                            }
+                                        </div>
                                     }
                                 </article>
                             }
@@ -315,6 +340,8 @@
     private BusinessClientProfileResponse? Profile;
     private bool IsReady;
     private bool IsBusy;
+    private string? UploadingDocumentType;
+    private int DocumentInputVersion;
     private string AuthMode = "register";
     private string? Message;
     private bool MessageIsSuccess;
@@ -343,6 +370,10 @@
     private CancellationTokenSource? AddressSearchCancellation;
     private bool ShowAddressSuggestionList;
     private string CurrentSection = "home";
+    private int RequiredDocumentCount => DocumentRequirements.Count(requirement => requirement.Required);
+    private int UploadedRequiredDocumentCount => DocumentRequirements.Count(requirement => requirement.Required && FindDocument(requirement.Type) is not null);
+    private int RequiredDocumentProgress => RequiredDocumentCount == 0 ? 0 : (int)Math.Round(UploadedRequiredDocumentCount * 100d / RequiredDocumentCount);
+    private string GetDocumentInputKey(string documentType) => $"{documentType}-{DocumentInputVersion}";
     private IReadOnlyList<ServiceSummaryResponse> Services = [];
     private bool ServicesLoading;
     private IEnumerable<ServiceSummaryResponse> VisibleServices => Services.Where(service => service.IsActive).OrderBy(service => service.Name);
@@ -466,11 +497,46 @@
     private async Task UploadDocumentAsync(string documentType, InputFileChangeEventArgs args)
     {
         if (Session is null || Profile is null) return;
-        IsBusy = true; Message = null;
-        var result = await ApiClient.UploadDocumentAsync(Session.Token, documentType, args.File);
-        IsBusy = false;
-        if (!result.IsSuccess) { ShowError(result.ErrorMessage); return; }
-        await LoadProfileAsync(); ShowSuccess("Document ajouté au dossier.");
+        var file = args.File;
+        if (file.Size <= 0)
+        {
+            ShowError("Le fichier sélectionné est vide.");
+            return;
+        }
+
+        if (file.Size > MaxDocumentFileSize)
+        {
+            ShowError("Le fichier dépasse la limite de 25 Mo.");
+            return;
+        }
+
+        var extension = Path.GetExtension(file.Name);
+        if (!AllowedDocumentExtensions.Contains(extension))
+        {
+            ShowError("Format non accepté. Utilisez un PDF ou une image JPG, PNG, WebP, HEIC ou HEIF.");
+            return;
+        }
+
+        UploadingDocumentType = documentType;
+        IsBusy = true;
+        Message = null;
+        try
+        {
+            var result = await ApiClient.UploadDocumentAsync(Session.Token, documentType, file);
+            if (!result.IsSuccess) { ShowError(result.ErrorMessage); return; }
+            await LoadProfileAsync();
+            DocumentInputVersion++;
+            ShowSuccess("Document ajouté au dossier.");
+        }
+        catch (Exception exception) when (exception is IOException or InvalidOperationException)
+        {
+            ShowError("Le document n’a pas pu être envoyé. Vérifiez le fichier puis réessayez.");
+        }
+        finally
+        {
+            UploadingDocumentType = null;
+            IsBusy = false;
+        }
     }
 
     private async Task HandleAddressInput(ChangeEventArgs args)
@@ -560,4 +626,10 @@
         AddressSearchCancellation?.Dispose();
     }
     private sealed record DocumentRequirement(string Type, string ShortLabel, string Label, string Description, bool Required);
+
+    private const long MaxDocumentFileSize = 25L * 1024 * 1024;
+    private static readonly HashSet<string> AllowedDocumentExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"
+    };
 }

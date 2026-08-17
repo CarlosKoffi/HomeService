@@ -8226,6 +8226,44 @@ h3 {
     max-width: none;
 }
 
+.tag-entry > label {
+    display: block;
+    font-weight: 800;
+    margin-bottom: .45rem;
+}
+
+.service-entry-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .65rem;
+    align-items: stretch;
+}
+
+.service-entry-add {
+    min-width: 118px;
+    min-height: 52px;
+    padding: .8rem 1.2rem;
+    border: 0;
+    border-radius: 14px;
+    background: var(--teal);
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 850;
+    transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease;
+}
+
+.service-entry-add:hover:not(:disabled),
+.service-entry-add:focus-visible:not(:disabled) {
+    box-shadow: 0 10px 22px rgba(12, 90, 102, .22);
+    transform: translateY(-1px);
+}
+
+.service-entry-add:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+}
+
 .tag-entry input[list] {
     background: #ffffff;
     border-color: #d8dde8;
@@ -8243,6 +8281,17 @@ h3 {
     color: #000000;
     font-weight: 650;
     line-height: 1.45;
+}
+
+@media (max-width: 640px) {
+    .service-entry-row {
+        grid-template-columns: 1fr;
+    }
+
+    .service-entry-add {
+        width: 100%;
+        min-height: 50px;
+    }
 }
 
 .field-message {

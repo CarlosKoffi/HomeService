@@ -48,17 +48,26 @@
             </label>
 
             <div class="service-autocomplete">
-                <label class="tag-entry">
-                    Service ou prestation proposee
-                    <input name="serviceEntry"
-                           type="text"
-                           list="company-service-options"
-                           placeholder="Ex: Jardinage, tondre le gazon, ou Jardinage: taille de palmiers"
-                           @bind="ServiceEntry"
-                           @bind:event="oninput"
-                           @onkeyup="HandleServiceEntryKeyUp" />
-                    <small>Choisissez une suggestion ou appuyez sur Entree pour ajouter votre saisie.</small>
-                </label>
+                <div class="tag-entry">
+                    <label for="company-service-entry">Service ou prestation proposee</label>
+                    <div class="service-entry-row">
+                        <input name="serviceEntry"
+                               id="company-service-entry"
+                               type="text"
+                               list="company-service-options"
+                               placeholder="Ex: Jardinage, tondre le gazon, ou Jardinage: taille de palmiers"
+                               @bind="ServiceEntry"
+                               @bind:event="oninput"
+                               @onkeyup="HandleServiceEntryKeyUp" />
+                        <button type="button"
+                                class="service-entry-add"
+                                disabled="@string.IsNullOrWhiteSpace(ServiceEntry)"
+                                @onclick="AddTypedService">
+                            Ajouter
+                        </button>
+                    </div>
+                    <small>Choisissez une suggestion, puis touchez « Ajouter ».</small>
+                </div>
                 <datalist id="company-service-options">
                     @foreach (var option in CatalogOptions)
                     {

@@ -600,11 +600,36 @@
     gap: 14px;
 }
 
+.document-section-title {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+}
+
+.document-progress {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: baseline;
+    gap: 2px 7px;
+    min-width: 180px;
+    color: #0c5a66;
+}
+
+.document-progress strong { font-size: 1.05rem; }
+.document-progress small { color: #667579; font-size: .76rem; }
+.document-progress > span {
+    grid-column: 1 / -1;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e4eeec;
+}
+.document-progress i { display: block; height: 100%; border-radius: inherit; background: #8edfc0; transition: width .25s ease; }
+
 .document-card {
     position: relative;
     display: grid;
-    grid-template-columns: 48px minmax(0, 1fr) auto;
-    align-items: center;
+    grid-template-columns: 1fr;
+    align-content: space-between;
     gap: 13px;
     min-height: 132px;
     padding: 20px;
@@ -612,6 +637,13 @@
     border-radius: 19px;
     background: #fff;
     box-shadow: 0 8px 24px rgba(12, 90, 102, .045);
+}
+
+.document-card-heading {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: start;
+    gap: 13px;
 }
 
 .document-card.uploaded {
@@ -637,6 +669,16 @@
     min-width: 0;
     gap: 5px;
 }
+
+.requirement-badge {
+    justify-self: start;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: .66rem;
+    font-weight: 800;
+}
+.requirement-badge.required { color: #075f69; background: #dff5ee; }
+.requirement-badge.optional { color: #6b797e; background: #eef3f2; }
 
 .document-copy small,
 .document-copy em {
@@ -668,6 +710,20 @@
     cursor: pointer;
 }
 
+.document-actions { display: flex; gap: 9px; padding-top: 4px; }
+.document-actions .upload-button { flex: 1 1 auto; }
+.upload-button.disabled { pointer-events: none; opacity: .72; }
+
+.upload-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.45);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: document-spin .75s linear infinite;
+}
+@keyframes document-spin { to { transform: rotate(360deg); } }
+
 .upload-button:hover {
     background: #084b55;
 }
@@ -693,15 +749,23 @@
 }
 
 .delete-button {
-    position: absolute;
-    top: 6px;
-    right: 7px;
-    border: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 42px;
+    padding: 9px 12px;
+    border: 1px solid #ead6d3;
+    border-radius: 12px;
     color: #9b3f38;
-    background: none;
-    font-size: 1.1rem;
+    background: #fff;
+    font: inherit;
+    font-size: .77rem;
+    font-weight: 800;
     cursor: pointer;
 }
+.delete-button svg { width: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.delete-button:disabled { cursor: wait; opacity: .5; }
 
 .submit-card {
     display: flex;
@@ -834,14 +898,16 @@
         border-radius: 20px;
     }
 
-    .document-card {
-        grid-template-columns: 46px minmax(0, 1fr);
-    }
-
-    .upload-button {
-        grid-column: 1 / -1;
-        text-align: center;
-    }
+    .document-section-title { grid-template-columns: auto minmax(0, 1fr); }
+    .document-progress { grid-column: 1 / -1; width: 100%; min-width: 0; margin-top: 4px; }
+    .document-card { min-height: 0; padding: 17px; gap: 15px; }
+    .document-card-heading { grid-template-columns: 42px minmax(0, 1fr); gap: 11px; }
+    .document-icon { width: 42px; height: 42px; border-radius: 12px; }
+    .document-copy small, .document-copy em { white-space: normal; overflow-wrap: anywhere; }
+    .document-actions { width: 100%; }
+    .upload-button, .delete-button { min-height: 48px; }
+    .delete-button span { display: none; }
+    .delete-button { flex: 0 0 48px; padding: 0; }
 
     .submit-card {
         display: grid;
