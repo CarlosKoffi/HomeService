@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using HomeService.Contracts.Branding;
+using HomeService.Contracts.Clients;
 using HomeService.Contracts.Cms;
 using HomeService.Contracts.Companies;
 using HomeService.Contracts.CompanyPortal;
@@ -71,6 +72,56 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
     {
         AddBasicAuthIfConfigured();
         return await httpClient.GetFromJsonAsync<IReadOnlyList<ServiceSummaryResponse>>("/api/services", cancellationToken) ?? [];
+    }
+
+    public async Task<IReadOnlyList<ClientAddressSuggestionResponse>> AutocompletePublicAddressAsync(
+        string query,
+        string? sessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query) || query.Trim().Length < 3)
+        {
+            return [];
+        }
+
+        AddBasicAuthIfConfigured();
+        var requestUrl = $"/api/public/addresses/autocomplete?query={Uri.EscapeDataString(query.Trim())}";
+        if (!string.IsNullOrWhiteSpace(sessionToken))
+        {
+            requestUrl += $"&sessionToken={Uri.EscapeDataString(sessionToken)}";
+        }
+
+        return await httpClient.GetFromJsonAsync<IReadOnlyList<ClientAddressSuggestionResponse>>(
+            requestUrl,
+            JsonOptions,
+            cancellationToken) ?? [];
+    }
+
+    public async Task<ClientPlaceDetailsResponse?> GetPublicPlaceDetailsAsync(
+        string placeId,
+        string? sessionToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(placeId))
+        {
+            return null;
+        }
+
+        AddBasicAuthIfConfigured();
+        var requestUrl = $"/api/public/addresses/places/{Uri.EscapeDataString(placeId)}";
+        if (!string.IsNullOrWhiteSpace(sessionToken))
+        {
+            requestUrl += $"?sessionToken={Uri.EscapeDataString(sessionToken)}";
+        }
+
+        using var response = await httpClient.GetAsync(requestUrl, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<ClientPlaceDetailsResponse>(JsonOptions, cancellationToken);
     }
 
     public async Task<CountryBrandingResponse?> GetCountryBrandingAsync(string countryCode = "CI", CancellationToken cancellationToken = default)

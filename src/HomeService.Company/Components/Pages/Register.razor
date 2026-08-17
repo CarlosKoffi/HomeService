@@ -1,5 +1,6 @@
 @page "/register"
 @using HomeService.Company.Services
+@using HomeService.Contracts.Clients
 @using HomeService.Contracts.Companies
 @using HomeService.Contracts.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -42,31 +43,71 @@
                 Ville
                 <input name="city" type="text" autocomplete="address-level2" placeholder="Ex: Abidjan" @bind="City" />
             </label>
-            <label>
-                Adresse ou zone principale
-                <input name="address" type="text" autocomplete="street-address" placeholder="Ex: Cocody Angre, 7e tranche" @bind="Address" />
-            </label>
+            <div class="address-autocomplete">
+                <label for="company-address">Adresse ou zone principale</label>
+                <input name="address"
+                       id="company-address"
+                       type="text"
+                       value="@Address"
+                       placeholder="Commencez a saisir une adresse"
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false"
+                       @oninput="HandleAddressInputAsync"
+                       @onfocus="OpenAddressSuggestions" />
+                @if (IsAddressSuggestionOpen)
+                {
+                    <div class="address-suggestion-list" role="listbox" aria-label="Adresses proposees par Google Places">
+                        @if (IsAddressSearching)
+                        {
+                            <p>Recherche de l'adresse...</p>
+                        }
+                        else if (AddressSuggestions.Count > 0)
+                        {
+                            @foreach (var suggestion in AddressSuggestions)
+                            {
+                                <button type="button"
+                                        role="option"
+                                        @onmousedown:preventDefault="true"
+                                        @onclick="() => SelectAddressSuggestionAsync(suggestion)">
+                                    <strong>@suggestion.MainText</strong>
+                                    @if (!string.IsNullOrWhiteSpace(suggestion.SecondaryText))
+                                    {
+                                        <small>@suggestion.SecondaryText</small>
+                                    }
+                                </button>
+                            }
+                        }
+                        else if ((Address?.Trim().Length ?? 0) >= 3)
+                        {
+                            <p>Aucune adresse trouvee. Verifiez la saisie ou continuez avec cette adresse.</p>
+                        }
+                    </div>
+                }
+                <small>Saisissez au moins 3 caracteres, puis touchez l'adresse correspondante dans la liste.</small>
+                @if (!string.IsNullOrWhiteSpace(AddressMessage))
+                {
+                    <p class="field-message">@AddressMessage</p>
+                }
+            </div>
 
             <div class="service-autocomplete">
                 <div class="tag-entry">
                     <label for="company-service-entry">Service ou prestation proposee</label>
-                    <div class="service-entry-row">
-                        <input name="serviceEntry"
-                               id="company-service-entry"
-                               type="text"
-                               placeholder="Ex: Jardinage, tondre le gazon, ou Jardinage: taille de palmiers"
-                               @bind="ServiceEntry"
-                               @bind:event="oninput"
-                               @bind:after="RefreshServiceSuggestions"
-                               @onfocus="OpenServiceSuggestions"
-                               @onkeyup="HandleServiceEntryKeyUp" />
-                        <button type="button"
-                                class="service-entry-add"
-                                disabled="@string.IsNullOrWhiteSpace(ServiceEntry)"
-                                @onclick="AddTypedService">
-                            Ajouter
-                        </button>
-                    </div>
+                    <input name="serviceEntry"
+                           id="company-service-entry"
+                           type="search"
+                           placeholder="Commencez a saisir un service ou une prestation"
+                           autocomplete="off"
+                           autocorrect="off"
+                           autocapitalize="off"
+                           spellcheck="false"
+                           @bind="ServiceEntry"
+                           @bind:event="oninput"
+                           @bind:after="RefreshServiceSuggestions"
+                           @onfocus="OpenServiceSuggestions"
+                           @onkeyup="HandleServiceEntryKeyUp" />
                     @if (IsServiceSuggestionOpen && !string.IsNullOrWhiteSpace(ServiceEntry))
                     {
                         var visibleOptions = GetVisibleCatalogOptions();
@@ -87,9 +128,16 @@
                                     </button>
                                 }
                             }
-                            else
+                            @if (CanProposeTypedService())
                             {
-                                <p>Aucun resultat exact. Vous pouvez proposer ce service avec « Ajouter ».</p>
+                                <button type="button"
+                                        class="service-suggestion-custom"
+                                        role="option"
+                                        @onmousedown:preventDefault="true"
+                                        @onclick="AddTypedService">
+                                    <strong>Proposer « @ServiceEntry.Trim() »</strong>
+                                    <small>Nouveau service soumis a validation par l'equipe Wele</small>
+                                </button>
                             }
                         </div>
                     }
@@ -194,6 +242,12 @@
     private string ServiceEntry { get; set; } = string.Empty;
     private bool IsServiceSuggestionOpen { get; set; }
     private string? ServiceMessage { get; set; }
+    private IReadOnlyList<ClientAddressSuggestionResponse> AddressSuggestions { get; set; } = [];
+    private readonly string AddressSessionToken = Guid.NewGuid().ToString("N");
+    private CancellationTokenSource? AddressSearchCancellation { get; set; }
+    private bool IsAddressSuggestionOpen { get; set; }
+    private bool IsAddressSearching { get; set; }
+    private string? AddressMessage { get; set; }
     private string? FormMessage { get; set; }
     private bool IsSubmitting { get; set; }
     private int Step { get; set; } = 1;
@@ -298,10 +352,93 @@
             .ToList();
     }
 
+    private bool CanProposeTypedService()
+    {
+        var input = ServiceEntry.Trim();
+        return input.Length >= 3 && !CatalogOptions.Any(option => option.Matches(input));
+    }
+
     private void SelectCatalogOption(string inputValue)
     {
         ServiceEntry = inputValue;
         AddTypedService();
+    }
+
+    private async Task HandleAddressInputAsync(ChangeEventArgs args)
+    {
+        Address = args.Value?.ToString() ?? string.Empty;
+        AddressMessage = null;
+        AddressSuggestions = [];
+
+        AddressSearchCancellation?.Cancel();
+        AddressSearchCancellation = new CancellationTokenSource();
+        var cancellationToken = AddressSearchCancellation.Token;
+        var query = Address.Trim();
+
+        if (query.Length < 3)
+        {
+            IsAddressSearching = false;
+            IsAddressSuggestionOpen = false;
+            return;
+        }
+
+        IsAddressSearching = true;
+        IsAddressSuggestionOpen = true;
+
+        try
+        {
+            await Task.Delay(250, cancellationToken);
+            AddressSuggestions = await ApiClient.AutocompletePublicAddressAsync(query, AddressSessionToken, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch
+        {
+            AddressMessage = "La recherche d'adresse est momentanement indisponible. Vous pouvez continuer avec l'adresse saisie.";
+        }
+        finally
+        {
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                IsAddressSearching = false;
+            }
+        }
+    }
+
+    private void OpenAddressSuggestions()
+    {
+        IsAddressSuggestionOpen = (Address?.Trim().Length ?? 0) >= 3;
+    }
+
+    private async Task SelectAddressSuggestionAsync(ClientAddressSuggestionResponse suggestion)
+    {
+        AddressMessage = null;
+        IsAddressSearching = true;
+
+        try
+        {
+            var details = await ApiClient.GetPublicPlaceDetailsAsync(suggestion.PlaceId, AddressSessionToken);
+            Address = details?.AddressLine ?? suggestion.FullText;
+
+            if (string.IsNullOrWhiteSpace(City) && !string.IsNullOrWhiteSpace(suggestion.SecondaryText))
+            {
+                City = suggestion.SecondaryText.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                    ?? City;
+            }
+        }
+        catch
+        {
+            Address = suggestion.FullText;
+            AddressMessage = "L'adresse a ete selectionnee, mais ses coordonnees detaillees n'ont pas pu etre chargees.";
+        }
+        finally
+        {
+            AddressSuggestions = [];
+            IsAddressSuggestionOpen = false;
+            IsAddressSearching = false;
+        }
     }
 
     private async Task PrimaryActionAsync()

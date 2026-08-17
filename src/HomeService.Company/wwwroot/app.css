@@ -8159,9 +8159,11 @@ h3 {
     gap: 1.1rem;
 }
 
-.service-autocomplete {
+.service-autocomplete,
+.address-autocomplete {
     display: grid;
     gap: .6rem;
+    position: relative;
 }
 
 .service-picker {
@@ -8232,14 +8234,13 @@ h3 {
     margin-bottom: .45rem;
 }
 
-.service-entry-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: .65rem;
-    align-items: stretch;
+.address-autocomplete > label {
+    display: block;
+    font-weight: 800;
 }
 
-.service-suggestion-list {
+.service-suggestion-list,
+.address-suggestion-list {
     display: grid;
     max-height: 320px;
     margin-top: .55rem;
@@ -8251,7 +8252,8 @@ h3 {
     box-shadow: 0 16px 32px rgba(15, 23, 42, .12);
 }
 
-.service-suggestion-list button {
+.service-suggestion-list button,
+.address-suggestion-list button {
     display: grid;
     gap: .2rem;
     min-height: 58px;
@@ -8265,51 +8267,36 @@ h3 {
     text-align: left;
 }
 
-.service-suggestion-list button:last-child {
+.service-suggestion-list button:last-child,
+.address-suggestion-list button:last-child {
     border-bottom: 0;
 }
 
 .service-suggestion-list button:hover,
-.service-suggestion-list button:focus-visible {
+.service-suggestion-list button:focus-visible,
+.address-suggestion-list button:hover,
+.address-suggestion-list button:focus-visible {
     background: #eaf8f3;
     outline: none;
 }
 
-.service-suggestion-list button small {
+.service-suggestion-list button small,
+.address-suggestion-list button small {
     margin: 0;
     color: #667085;
     font-weight: 600;
 }
 
-.service-suggestion-list p {
+.service-suggestion-list p,
+.address-suggestion-list p {
     margin: 0;
     padding: .9rem 1rem;
     color: #667085;
 }
 
-.service-entry-add {
-    min-width: 118px;
-    min-height: 52px;
-    padding: .8rem 1.2rem;
-    border: 0;
-    border-radius: 14px;
-    background: var(--teal);
-    color: #ffffff;
-    cursor: pointer;
-    font: inherit;
-    font-weight: 850;
-    transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease;
-}
-
-.service-entry-add:hover:not(:disabled),
-.service-entry-add:focus-visible:not(:disabled) {
-    box-shadow: 0 10px 22px rgba(12, 90, 102, .22);
-    transform: translateY(-1px);
-}
-
-.service-entry-add:disabled {
-    cursor: not-allowed;
-    opacity: .45;
+.service-suggestion-list button.service-suggestion-custom {
+    background: #eaf8f3;
+    color: var(--teal);
 }
 
 .tag-entry input[list] {
@@ -8324,22 +8311,12 @@ h3 {
 }
 
 .tag-entry small,
+.address-autocomplete > small,
 .field-hint,
 .field-message {
     color: #000000;
     font-weight: 650;
     line-height: 1.45;
-}
-
-@media (max-width: 640px) {
-    .service-entry-row {
-        grid-template-columns: 1fr;
-    }
-
-    .service-entry-add {
-        width: 100%;
-        min-height: 50px;
-    }
 }
 
 .field-message {
