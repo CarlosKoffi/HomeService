@@ -8239,6 +8239,36 @@ h3 {
     align-items: stretch;
 }
 
+.service-dropdown-entry {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(10, 101, 115, .14);
+}
+
+.service-dropdown-entry label {
+    display: block;
+    margin-bottom: .5rem;
+    font-weight: 800;
+}
+
+.service-dropdown-entry select {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 0 2.75rem 0 1rem;
+    border: 1px solid #d8dde8;
+    border-radius: 14px;
+    background-color: #ffffff;
+    color: #102032;
+    font: inherit;
+}
+
+.service-dropdown-entry small {
+    display: block;
+    margin-top: .45rem;
+    color: #667085;
+}
+
 .service-entry-add {
     min-width: 118px;
     min-height: 52px;
@@ -10566,10 +10596,18 @@ h3 {
     position: relative;
 }
 
+.info-document-actions label.is-disabled {
+    cursor: wait;
+    opacity: .7;
+    pointer-events: none;
+}
+
 .info-document-actions input {
+    cursor: pointer;
     inset: 0;
     opacity: 0;
     position: absolute;
+    width: 100%;
 }
 
 .info-documents-footer {

@@ -49,7 +49,7 @@ else
                             <strong>Compte en attente de conformite</strong>
                             <span>Vous pouvez consulter les missions et preparer votre equipe. L'affectation sera disponible apres validation.</span>
                         </div>
-                        <a href="@PortalLink("company-profile")">Finaliser la conformite</a>
+                        <a href="@PortalSectionLink("company-profile", "documents")">Finaliser la conformite</a>
                     </section>
                 }
 
@@ -951,6 +951,8 @@ else
     }
 
     private string PortalLink(string path) => IsPreviewMode() ? $"{path}?preview=1" : path;
+
+    private string PortalSectionLink(string path, string section) => $"/{PortalLink(path)}#{section}";
 
     private async Task LogoutAsync()
     {

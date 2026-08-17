@@ -95,7 +95,7 @@ else
                     <strong>Compte en attente de conformite</strong>
                     <span>Vous pouvez preparer votre equipe. Les affectations seront ouvertes apres validation.</span>
                 </div>
-                <a href="@PortalLink("company-profile")">Finaliser</a>
+                <a href="@PortalSectionLink("company-profile", "documents")">Finaliser</a>
             </section>
         }
 
@@ -387,6 +387,11 @@ else
         return Environment.IsDevelopment() && Navigation.ToAbsoluteUri(Navigation.Uri).Query.Contains("preview=1", StringComparison.OrdinalIgnoreCase)
             ? $"{path}?preview=1"
             : path;
+    }
+
+    private string PortalSectionLink(string path, string section)
+    {
+        return $"/{PortalLink(path)}#{section}";
     }
 
     private async Task OpenDashboardNotificationAsync(CompanyPortalNotificationResponse notification)

@@ -74,6 +74,25 @@
                         <option value="@option.InputValue">@option.Helper</option>
                     }
                 </datalist>
+                <div class="service-dropdown-entry">
+                    <label for="company-service-select">Ou choisissez directement dans la liste</label>
+                    <div class="service-entry-row">
+                        <select id="company-service-select" @bind="SelectedCatalogOption">
+                            <option value="">Selectionner un service ou une prestation</option>
+                            @foreach (var option in CatalogOptions)
+                            {
+                                <option value="@option.InputValue">@option.InputValue</option>
+                            }
+                        </select>
+                        <button type="button"
+                                class="service-entry-add"
+                                disabled="@string.IsNullOrWhiteSpace(SelectedCatalogOption)"
+                                @onclick="AddCatalogService">
+                            Ajouter
+                        </button>
+                    </div>
+                    <small>La liste reste visible sur mobile, sans utiliser les suggestions du clavier.</small>
+                </div>
             </div>
 
         @if (!string.IsNullOrWhiteSpace(ServiceMessage))
@@ -171,6 +190,7 @@
     private IReadOnlyList<ServiceCatalogOption> CatalogOptions { get; set; } = [];
     private readonly List<ServiceSelection> SelectedServices = [];
     private string ServiceEntry { get; set; } = string.Empty;
+    private string SelectedCatalogOption { get; set; } = string.Empty;
     private string? ServiceMessage { get; set; }
     private string? FormMessage { get; set; }
     private bool IsSubmitting { get; set; }
@@ -252,6 +272,18 @@
 
         SelectedServices.Add(selection);
         ServiceEntry = string.Empty;
+    }
+
+    private void AddCatalogService()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedCatalogOption))
+        {
+            return;
+        }
+
+        ServiceEntry = SelectedCatalogOption;
+        AddTypedService();
+        SelectedCatalogOption = string.Empty;
     }
 
     private async Task PrimaryActionAsync()

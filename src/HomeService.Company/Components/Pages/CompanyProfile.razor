@@ -43,7 +43,7 @@ else
                     <strong>Compte en attente de conformite</strong>
                     <span>Votre profil est cree. Les affectations et fonctions sensibles seront ouvertes apres validation des pieces.</span>
                 </div>
-                <a href="#documents">Finaliser</a>
+                <a href="@PortalSectionLink("company-profile", "documents")">Finaliser</a>
             </section>
         }
 
@@ -65,7 +65,7 @@ else
                             <strong class="@GetStatusToneClass()">@GetShortStatusLabel()</strong>
                             <span>Statut</span>
                         </div>
-                        <a href="#documents">
+                        <a href="@PortalSectionLink("company-profile", "documents")">
                             <strong class="@GetDocumentToneClass()">@GetDocumentCounter()</strong>
                             <span>Documents</span>
                         </a>
@@ -353,16 +353,11 @@ else
                         @foreach (var slot in DocumentSlots)
                         {
                             var document = FindDocument(slot.Key);
-                            var selectedFileName = GetSelectedFileName(slot.UploadKey);
                             <article class="info-document-row @GetDocumentRowClass(document?.ReviewStatus)">
                                 <span class="info-document-code @GetDocumentStatusClass(document?.ReviewStatus)">@slot.ShortLabel</span>
                                 <div>
                                     <strong>@slot.Label</strong>
                                     <small>@(document?.OriginalFileName ?? slot.Description)</small>
-                                    @if (!string.IsNullOrWhiteSpace(selectedFileName))
-                                    {
-                                        <em>@selectedFileName</em>
-                                    }
                                     @if (!string.IsNullOrWhiteSpace(document?.ReviewNote))
                                     {
                                         <small>@document.ReviewNote</small>
@@ -373,9 +368,11 @@ else
                                     {
                                         <a href="@ApiClient.ToApiUrl(document.PreviewUrl)" target="_blank" title="Voir">Voir</a>
                                     }
-                                    <label>
-                                        @(document is null ? "Ajouter" : "Remplacer")
-                                        <InputFile OnChange="@((InputFileChangeEventArgs args) => SetDocument(slot.UploadKey, args))" accept=".pdf,.jpg,.jpeg,.png" />
+                                    <label class="@(IsUploading ? "is-disabled" : null)">
+                                        @(UploadingDocumentKey == slot.UploadKey ? "Envoi..." : document is null ? "Ajouter" : "Remplacer")
+                                        <InputFile disabled="@IsUploading"
+                                                   OnChange="@((InputFileChangeEventArgs args) => UploadDocumentAsync(slot.UploadKey, args))"
+                                                   accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif,application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" />
                                     </label>
                                 </div>
                             </article>
@@ -384,9 +381,6 @@ else
 
                     <footer class="info-documents-footer @GetDocumentFooterClass()">
                         <span>@GetDocumentFooterMessage()</span>
-                        <button type="button" class="info-send-button" disabled="@IsUploadButtonDisabled()" @onclick="UploadAsync">
-                            @GetUploadButtonText()
-                        </button>
                     </footer>
                     @if (!string.IsNullOrWhiteSpace(Message))
                     {
@@ -411,6 +405,7 @@ else
     private CompanyPortalProfileResponse? Profile { get; set; }
     private bool IsLoading { get; set; }
     private bool IsUploading { get; set; }
+    private string? UploadingDocumentKey { get; set; }
     private bool IsSaving { get; set; }
     private bool IsSessionLoading { get; set; } = true;
     private string? Message { get; set; }
@@ -431,7 +426,6 @@ else
     private bool UseOrangeMoneyDraft { get; set; }
     private bool UseMtnMoneyDraft { get; set; }
     private bool UseMoovMoneyDraft { get; set; }
-    private readonly Dictionary<string, IBrowserFile?> Documents = new(StringComparer.OrdinalIgnoreCase);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -713,6 +707,11 @@ else
             : path;
     }
 
+    private string PortalSectionLink(string path, string section)
+    {
+        return $"/{PortalLink(path)}#{section}";
+    }
+
     private bool HasMobileMoneyAccount() => GetMobileMoneyNumberOrNull() is not null;
 
     private string GetMobileMoneyNumber() => GetMobileMoneyNumberOrNull() ?? "A completer";
@@ -806,31 +805,6 @@ else
         return "Depot possible en ligne ou dans nos bureaux si vous preferez nous remettre les pieces en main propre.";
     }
 
-    private bool IsUploadButtonDisabled()
-    {
-        return IsUploading || Documents.Values.All(file => file is null) && HasAnySubmittedDocument() && !HasDocumentNeedingAction();
-    }
-
-    private string GetUploadButtonText()
-    {
-        if (IsUploading)
-        {
-            return "Envoi...";
-        }
-
-        if (HasDocumentNeedingAction())
-        {
-            return "Renvoyer les pieces corrigees";
-        }
-
-        if (HasPendingDocuments() || HasAnySubmittedDocument())
-        {
-            return "Nous verifions vos documents";
-        }
-
-        return "Envoyer les pieces";
-    }
-
     private static string GetDocumentStatusClass(string? status) => status switch
     {
         "Approved" => "status-ok",
@@ -856,46 +830,49 @@ else
         _ => "A fournir"
     };
 
-    private void SetDocument(string key, InputFileChangeEventArgs args)
+    private async Task UploadDocumentAsync(string key, InputFileChangeEventArgs args)
     {
-        Documents[key] = args.File;
-        Message = null;
-    }
-
-    private string? GetSelectedFileName(string key)
-    {
-        return Documents.TryGetValue(key, out var file) && file is not null ? file.Name : null;
-    }
-
-    private async Task UploadAsync()
-    {
-        if (Session is null)
+        if (Session is null || IsUploading)
         {
             return;
         }
 
-        if (Documents.Values.All(file => file is null))
+        var file = args.File;
+        if (file.Size == 0)
         {
-            Message = "Ajoutez au moins un document avant l'envoi.";
+            Message = "Le fichier selectionne est vide.";
+            return;
+        }
+
+        const long maxUploadSize = 25 * 1024 * 1024;
+        if (file.Size > maxUploadSize)
+        {
+            Message = $"Le fichier {file.Name} depasse la limite de 25 Mo.";
             return;
         }
 
         IsUploading = true;
+        UploadingDocumentKey = key;
+        Message = $"Envoi de {file.Name} en cours...";
         try
         {
-            var result = await ApiClient.UploadCompanyComplianceDocumentsAsync(Session.CompanyId, Documents);
+            var documents = new Dictionary<string, IBrowserFile?>(StringComparer.OrdinalIgnoreCase)
+            {
+                [key] = file
+            };
+            var result = await ApiClient.UploadCompanyComplianceDocumentsAsync(Session.CompanyId, documents);
             Message = result.IsSuccess
-                ? "Documents recus. Notre equipe va les verifier."
+                ? $"{file.Name} a bien ete recu. Notre equipe va le verifier."
                 : $"Envoi impossible: {result.ErrorMessage}";
             if (result.IsSuccess)
             {
-                Documents.Clear();
                 await LoadProfileAsync();
             }
         }
         finally
         {
             IsUploading = false;
+            UploadingDocumentKey = null;
         }
     }
 
