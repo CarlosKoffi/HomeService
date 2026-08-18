@@ -337,24 +337,36 @@ else
                     {
                         <section class="employee-service-editor-prestations">
                             <div>
-                                <strong>Prestations maitrisees</strong>
-                                <small>Ajoutez uniquement celles que l'employe peut reellement assurer.</small>
+                                <strong>Prestations maîtrisées</strong>
+                                <small>Cochez une ou plusieurs prestations, puis ajoutez toute la sélection en une fois.</small>
                             </div>
-                            <div class="employee-service-editor-search">
-                                <label>
-                                    Rechercher une prestation
-                                    <input list="@GetPrestationDatalistId("editor", EditingService.ServiceId)"
-                                           @bind="EditingService.PrestationSearchTerm"
-                                           @bind:event="oninput"
-                                           placeholder="Saisissez un nom" />
-                                </label>
-                                <datalist id="@GetPrestationDatalistId("editor", EditingService.ServiceId)">
-                                    @foreach (var prestation in editorPrestations)
-                                    {
-                                        <option value="@prestation.Name"></option>
-                                    }
-                                </datalist>
-                                <button type="button" class="secondary-action" @onclick="() => AddFormPrestation(EditingService)">Ajouter</button>
+                            <div class="employee-service-editor-options" role="group" aria-label="Prestations disponibles">
+                                @foreach (var prestation in editorPrestations)
+                                {
+                                    var isAdded = EditingService.ServicePrestationIds.Contains(prestation.Id);
+                                    var isPending = EditorPendingPrestationIds.Contains(prestation.Id);
+                                    <label class="@GetEditorPrestationOptionClass(isAdded, isPending)">
+                                        <input type="checkbox"
+                                               checked="@(isAdded || isPending)"
+                                               disabled="@isAdded"
+                                               @onchange="eventArgs => ToggleEditorPendingPrestation(prestation.Id, eventArgs)" />
+                                        <span>
+                                            <strong>@prestation.Name</strong>
+                                            <small>@(isAdded ? "Déjà ajoutée" : isPending ? "Sélectionnée" : "Disponible")</small>
+                                        </span>
+                                    </label>
+                                }
+                            </div>
+                            <div class="employee-service-editor-add-row">
+                                <small>@GetEditorPrestationSelectionText()</small>
+                                <button type="button"
+                                        class="primary-action"
+                                        disabled="@(EditorPendingPrestationIds.Count == 0)"
+                                        @onclick="AddSelectedEditorPrestations">
+                                    @(EditorPendingPrestationIds.Count == 0
+                                        ? "Sélectionnez les prestations"
+                                        : $"Ajouter la sélection ({EditorPendingPrestationIds.Count})")
+                                </button>
                             </div>
                             @if (EditingService.ServicePrestationIds.Count > 0)
                             {
@@ -911,6 +923,7 @@ else
     private ServiceSummaryResponse? EditingServiceSummary { get; set; }
     private ServiceEditorSnapshot? EditingServiceSnapshot { get; set; }
     private bool EditingServiceWasNew { get; set; }
+    private HashSet<Guid> EditorPendingPrestationIds { get; } = [];
     private DateTime? BirthDate { get; set; }
     private bool ShowForm { get; set; }
     private bool IsSaving { get; set; }
@@ -1458,6 +1471,7 @@ else
         EditingService = service;
         EditingServiceSummary = summary;
         EditingServiceWasNew = isNew;
+        EditorPendingPrestationIds.Clear();
         EditingServiceSnapshot = new ServiceEditorSnapshot(
             service.ExperienceLevel,
             service.YearsOfExperience,
@@ -1504,6 +1518,7 @@ else
         EditingServiceSummary = null;
         EditingServiceSnapshot = null;
         EditingServiceWasNew = false;
+        EditorPendingPrestationIds.Clear();
     }
 
     private string GetServiceSelectionSummary(CompanyEmployeeServiceFormModel selection)
@@ -1546,6 +1561,58 @@ else
 
         service.ServicePrestationIds.Add(prestation.Id);
         service.PrestationSearchTerm = null;
+    }
+
+    private void ToggleEditorPendingPrestation(Guid prestationId, ChangeEventArgs eventArgs)
+    {
+        var isChecked = eventArgs.Value is bool value && value;
+        if (isChecked)
+        {
+            EditorPendingPrestationIds.Add(prestationId);
+            return;
+        }
+
+        EditorPendingPrestationIds.Remove(prestationId);
+    }
+
+    private void AddSelectedEditorPrestations()
+    {
+        if (EditingService is null || EditorPendingPrestationIds.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var prestationId in EditorPendingPrestationIds)
+        {
+            if (!EditingService.ServicePrestationIds.Contains(prestationId))
+            {
+                EditingService.ServicePrestationIds.Add(prestationId);
+            }
+        }
+
+        EditorPendingPrestationIds.Clear();
+    }
+
+    private string GetEditorPrestationSelectionText()
+    {
+        return EditorPendingPrestationIds.Count switch
+        {
+            0 => "Aucune nouvelle prestation sélectionnée",
+            1 => "1 prestation prête à être ajoutée",
+            _ => $"{EditorPendingPrestationIds.Count} prestations prêtes à être ajoutées"
+        };
+    }
+
+    private static string GetEditorPrestationOptionClass(bool isAdded, bool isPending)
+    {
+        if (isAdded)
+        {
+            return "employee-service-editor-option is-added";
+        }
+
+        return isPending
+            ? "employee-service-editor-option is-selected"
+            : "employee-service-editor-option";
     }
 
     private static void RemoveFormPrestation(CompanyEmployeeServiceFormModel service, Guid prestationId)
