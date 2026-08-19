@@ -25,11 +25,11 @@ public sealed class ProviderMobileApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
-    public Task<ApiCallResult<ProviderPortalLoginResponse>> ActivateAsync(
+    public Task<ApiCallResult<ProviderInvitationActivationResponse>> ActivateAsync(
         ProviderInvitationActivationRequest request,
         CancellationToken cancellationToken = default)
     {
-        return SendAsync<ProviderPortalLoginResponse>(
+        return SendAsync<ProviderInvitationActivationResponse>(
             HttpMethod.Post,
             "api/provider-portal/activate",
             bearerToken: null,

@@ -39,14 +39,14 @@ public sealed class ProviderPortalAuthService(IAppDbContext db)
             invitation.ExpiresAt);
     }
 
-    public async Task<ProviderPortalAuthResult> ActivateInvitationAsync(
+    public async Task<ProviderInvitationActivationResult> ActivateInvitationAsync(
         ProviderInvitationActivationRequest request,
         CancellationToken cancellationToken)
     {
         var validationError = ValidatePassword(request.Password, request.ConfirmPassword);
         if (validationError is not null)
         {
-            return ProviderPortalAuthResult.Failed(validationError);
+            return ProviderInvitationActivationResult.Failed(validationError);
         }
 
         var normalizedCode = NormalizeCode(request.Code);
@@ -57,18 +57,26 @@ public sealed class ProviderPortalAuthService(IAppDbContext db)
 
         if (invitation?.Provider is null)
         {
-            return ProviderPortalAuthResult.Failed("Code de preinscription introuvable.");
+            return ProviderInvitationActivationResult.Failed("Code de preinscription introuvable.");
         }
 
         if (!invitation.IsActive)
         {
-            return ProviderPortalAuthResult.Failed("Ce code est expire ou deja utilise.");
+            return ProviderInvitationActivationResult.Failed("Ce code est expire ou deja utilise.");
         }
 
         invitation.Provider.ActivateFromCompanyInvitation(Sha256PasswordHasher.Hash(request.Password));
         invitation.Accept();
 
-        return await CreateSessionAsync(invitation.Provider, request.RememberMe, cancellationToken);
+        return ProviderInvitationActivationResult.Ok(
+            new ProviderInvitationActivationResponse(
+                invitation.Provider.Id,
+                invitation.Code,
+                invitation.Provider.FullName,
+                invitation.Provider.PhoneNumber,
+                invitation.Provider.Company?.Name ?? "Entreprise partenaire",
+                true),
+            invitation.Provider);
     }
 
     public async Task<ProviderPortalAuthResult> LoginAsync(
@@ -157,6 +165,21 @@ public sealed class ProviderPortalAuthService(IAppDbContext db)
 
         return null;
     }
+}
+
+public sealed record ProviderInvitationActivationResult(
+    bool IsSuccess,
+    ProviderInvitationActivationResponse? Response,
+    ProviderProfile? Provider,
+    string? ErrorMessage)
+{
+    public static ProviderInvitationActivationResult Ok(
+        ProviderInvitationActivationResponse response,
+        ProviderProfile provider)
+        => new(true, response, provider, null);
+
+    public static ProviderInvitationActivationResult Failed(string message)
+        => new(false, null, null, message);
 }
 
 public sealed record ProviderPortalAuthResult(

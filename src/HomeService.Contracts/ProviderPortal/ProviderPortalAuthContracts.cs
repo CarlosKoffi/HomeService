@@ -16,6 +16,14 @@ public sealed record ProviderInvitationActivationRequest(
     string ConfirmPassword,
     bool RememberMe);
 
+public sealed record ProviderInvitationActivationResponse(
+    Guid ProviderId,
+    string Code,
+    string ProviderName,
+    string PhoneNumber,
+    string CompanyName,
+    bool IsActivated);
+
 public sealed record ProviderPortalLoginRequest(
     string PhoneNumber,
     string Password,

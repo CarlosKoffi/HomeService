@@ -129,11 +129,11 @@ public sealed class ProviderApiClient(HttpClient httpClient)
             cancellationToken);
     }
 
-    public async Task<ApiResult<ProviderPortalLoginResponse>> ActivateAsync(
+    public async Task<ApiResult<ProviderInvitationActivationResponse>> ActivateAsync(
         ProviderInvitationActivationRequest request,
         CancellationToken cancellationToken = default)
     {
-        return await SendAsync<ProviderPortalLoginResponse>(
+        return await SendAsync<ProviderInvitationActivationResponse>(
             () => httpClient.PostAsJsonAsync("/api/provider-portal/activate", request, JsonOptions, cancellationToken),
             cancellationToken);
     }

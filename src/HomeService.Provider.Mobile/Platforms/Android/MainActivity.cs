@@ -16,11 +16,29 @@ namespace HomeService.Provider.Mobile;
         | ConfigChanges.ScreenLayout
         | ConfigChanges.SmallestScreenSize
         | ConfigChanges.Density)]
+[IntentFilter(
+    [Intent.ActionView],
+    Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "wele-provider",
+    DataHost = "activation")]
+[IntentFilter(
+    [Intent.ActionView],
+    Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "wele-provider",
+    DataHost = "login")]
+[IntentFilter(
+    [Intent.ActionView],
+    Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "https",
+    DataHost = "pro.wele.africa",
+    DataPathPrefix = "/activation",
+    AutoVerify = true)]
 public class MainActivity : MauiAppCompatActivity
 {
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         AppCompatDelegate.DefaultNightMode = AppCompatDelegate.ModeNightNo;
+        CaptureDeepLinkIntent(Intent);
         base.OnCreate(savedInstanceState);
         CaptureNotificationIntent(Intent);
         WeleProviderNotificationChannel.EnsureCreated(this);
@@ -36,7 +54,9 @@ public class MainActivity : MauiAppCompatActivity
     {
         base.OnNewIntent(intent);
         Intent = intent;
+        CaptureDeepLinkIntent(intent);
         CaptureNotificationIntent(intent);
+        _ = ProviderDeepLinkNavigationService.TryNavigateAsync();
         _ = ProviderNotificationNavigationService.TryNavigateAsync();
     }
 
@@ -56,5 +76,14 @@ public class MainActivity : MauiAppCompatActivity
             .Where(item => !string.IsNullOrWhiteSpace(item.value))
             .ToDictionary(item => item.key, item => item.value!);
         ProviderNotificationNavigationService.Store(data);
+    }
+
+    private static void CaptureDeepLinkIntent(Intent? intent)
+    {
+        var rawUri = intent?.Data?.ToString();
+        if (System.Uri.TryCreate(rawUri, UriKind.Absolute, out var uri))
+        {
+            ProviderDeepLinkNavigationService.Store(uri);
+        }
     }
 }

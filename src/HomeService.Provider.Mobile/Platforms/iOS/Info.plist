@@ -10,5 +10,16 @@
   <string>Wélé Pro accède à vos photos pour vos documents, votre portfolio et les preuves de mission.</string>
   <key>NSCameraUsageDescription</key>
   <string>Wélé Pro utilise l’appareil photo pour vos justificatifs et les preuves d’intervention.</string>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>ci.wele.provider</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>wele-provider</string>
+      </array>
+    </dict>
+  </array>
 </dict>
 </plist>

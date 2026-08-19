@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="HomeService.Provider.Mobile.Pages.ProviderActivationPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    NavigationPage.HasNavigationBar="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="26,42,26,32" Spacing="18">
+            <Image Source="https://media.wele.africa/website/provider/wele-logo-horizontal.png"
+                   WidthRequest="178"
+                   HeightRequest="67"
+                   Aspect="AspectFit"
+                   HorizontalOptions="Center" />
+
+            <VerticalStackLayout Margin="0,16,0,4" Spacing="6">
+                <Label Text="Activez votre compte Wélé Pro"
+                       Style="{StaticResource ScreenTitleLabel}"
+                       HorizontalTextAlignment="Center" />
+                <Label Text="Votre entreprise vous a déjà inscrit. Créez simplement votre mot de passe."
+                       Style="{StaticResource MutedLabel}"
+                       HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+
+            <Border x:Name="MessageBanner"
+                    IsVisible="False"
+                    BackgroundColor="{StaticResource BlueWash}"
+                    Stroke="{StaticResource Line}"
+                    StrokeShape="RoundRectangle 14"
+                    Padding="13">
+                <Label x:Name="MessageLabel" Style="{StaticResource BodyLabel}" />
+            </Border>
+
+            <VerticalStackLayout x:Name="ActivationForm" Spacing="16">
+                <Border Style="{StaticResource PremiumCard}">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="13" RowSpacing="5">
+                        <Border Grid.RowSpan="3"
+                                WidthRequest="48"
+                                HeightRequest="48"
+                                BackgroundColor="{StaticResource BlueWash}"
+                                Stroke="{StaticResource Line}"
+                                StrokeShape="RoundRectangle 16"
+                                Padding="0">
+                            <Label Text="W" FontSize="21" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                        </Border>
+                        <Label x:Name="ProviderNameLabel" Grid.Column="1" Text="Invitation en cours de vérification" FontAttributes="Bold" FontSize="16" />
+                        <Label x:Name="CompanyNameLabel" Grid.Row="1" Grid.Column="1" Text="Entreprise partenaire" Style="{StaticResource MutedLabel}" />
+                        <Label x:Name="PhoneLabel" Grid.Row="2" Grid.Column="1" Text="Téléphone professionnel" Style="{StaticResource MutedLabel}" />
+                    </Grid>
+                </Border>
+
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Code d’invitation" FontAttributes="Bold" FontSize="13" />
+                    <Border Style="{StaticResource FieldBorder}" BackgroundColor="{StaticResource BlueWash}">
+                        <Entry x:Name="CodeEntry" IsReadOnly="True" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Nouveau mot de passe" FontAttributes="Bold" FontSize="13" />
+                    <Border Style="{StaticResource FieldBorder}">
+                        <Entry x:Name="PasswordEntry" Placeholder="8 caractères minimum" IsPassword="True" ReturnType="Next" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="Confirmer le mot de passe" FontAttributes="Bold" FontSize="13" />
+                    <Border Style="{StaticResource FieldBorder}">
+                        <Entry x:Name="ConfirmPasswordEntry" Placeholder="Saisissez-le une seconde fois" IsPassword="True" ReturnType="Done" Completed="OnActivationCompleted" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <Button x:Name="ActivateButton" Text="Créer mon mot de passe" Clicked="OnActivateClicked" Margin="0,6,0,0" IsEnabled="False" />
+                <ActivityIndicator x:Name="LoadingIndicator" IsVisible="False" IsRunning="False" Color="{StaticResource WeleBlue}" />
+            </VerticalStackLayout>
+
+            <Border x:Name="SuccessPanel" IsVisible="False" Style="{StaticResource PremiumCard}" Padding="20">
+                <VerticalStackLayout Spacing="13">
+                    <Border WidthRequest="62" HeightRequest="62" BackgroundColor="#EAFBF1" Stroke="#B7EBCB" StrokeShape="RoundRectangle 31" HorizontalOptions="Center" Padding="0">
+                        <Label Text="✓" TextColor="{StaticResource Success}" FontAttributes="Bold" FontSize="30" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" />
+                    </Border>
+                    <Label Text="Votre compte est activé" Style="{StaticResource CardTitleLabel}" HorizontalTextAlignment="Center" />
+                    <Label Text="Votre numéro professionnel est déjà rempli. Vous pouvez maintenant accéder à Wélé Pro."
+                           Style="{StaticResource MutedLabel}"
+                           HorizontalTextAlignment="Center" />
+                    <Button Text="Continuer vers Wélé Pro" Clicked="OnContinueClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="J’ai déjà activé mon compte"
+                    Style="{StaticResource SecondaryButton}"
+                    Clicked="OnOpenLoginClicked" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -26,7 +26,7 @@ public sealed class CompanyEmployeeInvitationService(IAppDbContext db)
 
         if (!string.IsNullOrWhiteSpace(providerPortalBaseUrl))
         {
-            invitation.SetInvitationLink($"{providerPortalBaseUrl.TrimEnd('/')}/onboarding?code={Uri.EscapeDataString(invitation.Code)}");
+            invitation.SetInvitationLink($"{providerPortalBaseUrl.TrimEnd('/')}/activation?code={Uri.EscapeDataString(invitation.Code)}");
         }
 
         db.ProviderInvitations.Add(invitation);

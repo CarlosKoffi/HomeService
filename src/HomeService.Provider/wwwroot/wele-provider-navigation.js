@@ -124,5 +124,19 @@ window.weleProviderNavigation = (() => {
         update();
     };
 
-    return { init, closeMobileMenu };
+    const tryOpenProviderApp = (appUrl, invitationCode) => {
+        if (!appUrl || !invitationCode || !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            return;
+        }
+
+        const attemptKey = `wele-provider-activation:${invitationCode}`;
+        if (window.sessionStorage.getItem(attemptKey) === "1") {
+            return;
+        }
+
+        window.sessionStorage.setItem(attemptKey, "1");
+        window.location.assign(appUrl);
+    };
+
+    return { init, closeMobileMenu, tryOpenProviderApp };
 })();

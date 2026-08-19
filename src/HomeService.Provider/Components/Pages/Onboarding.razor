@@ -146,6 +146,9 @@
 </main>
 
 @code {
+    [SupplyParameterFromQuery(Name = "code")]
+    public string? LegacyInvitationCode { get; set; }
+
     private string PageHeadline => "Creer votre compte interimaire";
     private string PageSubtitle => "Renseignez vos informations, choisissez une entreprise compatible et envoyez votre candidature.";
     private string RegisterFirstName { get; set; } = string.Empty;
@@ -198,6 +201,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (!string.IsNullOrWhiteSpace(LegacyInvitationCode))
+        {
+            Navigation.NavigateTo($"/activation?code={Uri.EscapeDataString(LegacyInvitationCode.Trim())}", replace: true);
+            return;
+        }
+
         AllOnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
         OnboardingOptions = AllOnboardingOptions;
     }

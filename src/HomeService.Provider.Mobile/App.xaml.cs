@@ -13,11 +13,9 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var window = new Window(new NavigationPage(new LoginPage())
-        {
-            BarBackgroundColor = Colors.White,
-            BarTextColor = Color.FromArgb("#0F172A")
-        });
+        var window = new Window(
+            ProviderDeepLinkNavigationService.Wrap(
+                ProviderDeepLinkNavigationService.CreateInitialPage()));
         window.Resumed += OnWindowResumed;
         return window;
     }
@@ -26,17 +24,34 @@ public partial class App : Application
     {
         try
         {
+            await ProviderDeepLinkNavigationService.TryNavigateAsync();
+        }
+        catch
+        {
+            // A malformed external link must never block reopening the app.
+        }
+
+        try
+        {
             var services = Current?.Handler?.MauiContext?.Services;
             if (services is not null)
             {
                 await services.GetRequiredService<ProviderDeviceRegistrationService>()
                     .RegisterCurrentDeviceAsync();
-                await ProviderNotificationNavigationService.TryNavigateAsync();
             }
         }
         catch
         {
-            // A notification registration failure must never block reopening the app.
+            // Device registration is retried later.
+        }
+
+        try
+        {
+            await ProviderNotificationNavigationService.TryNavigateAsync();
+        }
+        catch
+        {
+            // Notification navigation must never block reopening the app.
         }
     }
 }

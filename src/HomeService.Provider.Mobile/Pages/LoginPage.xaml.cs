@@ -9,11 +9,19 @@ public partial class LoginPage : ContentPage
     private readonly ProviderSessionService? sessionService;
     private bool sessionChecked;
 
-    public LoginPage()
+    public LoginPage() : this(null)
+    {
+    }
+
+    public LoginPage(string? phoneNumber)
     {
         InitializeComponent();
         apiClient = IPlatformApplication.Current?.Services.GetService<ProviderMobileApiClient>();
         sessionService = IPlatformApplication.Current?.Services.GetService<ProviderSessionService>();
+        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            PhoneEntry.Text = phoneNumber.Trim();
+        }
     }
 
     protected override async void OnAppearing()
