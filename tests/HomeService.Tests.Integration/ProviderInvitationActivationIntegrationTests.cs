@@ -18,6 +18,24 @@ public sealed class ProviderInvitationActivationIntegrationTests
         company.Approve();
         db.Companies.Add(company);
 
+        // Reproduit une ancienne fiche en doublon qui ne doit pas masquer le
+        // prestataire réellement activé avec son nouveau mot de passe.
+        var staleProvider = new ProviderProfile(
+            company.Id,
+            "Ancien",
+            "Compte",
+            "+225 01 02 03 04 05",
+            "ancien@example.test",
+            new DateOnly(1990, 1, 1),
+            "Abidjan",
+            ProviderGender.Female,
+            ProviderEmploymentType.CompanyEmployee,
+            1,
+            5.348m,
+            -3.986m,
+            10);
+        db.Providers.Add(staleProvider);
+
         var provider = new ProviderProfile(
             company.Id,
             "Awa",
@@ -64,10 +82,22 @@ public sealed class ProviderInvitationActivationIntegrationTests
         Assert.Equal(ProviderInvitationStatus.Accepted, savedInvitation.Status);
 
         var login = await new ProviderPortalAuthService(db).LoginAsync(
-            new ProviderPortalLoginRequest(provider.PhoneNumber, "testeur12345", true),
+            new ProviderPortalLoginRequest("01 02 03 04 05", "testeur12345", true),
             CancellationToken.None);
 
         Assert.True(login.IsSuccess, login.ErrorMessage);
+
+        var loginWithCountryCode = await new ProviderPortalAuthService(db).LoginAsync(
+            new ProviderPortalLoginRequest("2250102030405", "testeur12345", true),
+            CancellationToken.None);
+
+        Assert.True(loginWithCountryCode.IsSuccess, loginWithCountryCode.ErrorMessage);
+
+        var loginWithWrongPassword = await new ProviderPortalAuthService(db).LoginAsync(
+            new ProviderPortalLoginRequest("+225 01 02 03 04 05", "mauvais-mot-de-passe", true),
+            CancellationToken.None);
+
+        Assert.False(loginWithWrongPassword.IsSuccess);
     }
 
     private static HomeServiceDbContext CreateDbContext()

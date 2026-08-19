@@ -88,22 +88,45 @@ public sealed class ProviderPortalAuthService(IAppDbContext db)
             return ProviderPortalAuthResult.Failed("Telephone et mot de passe obligatoires.");
         }
 
-        var phone = NormalizePhone(request.PhoneNumber);
-        var provider = await db.Providers
-            .Include(provider => provider.Company)
-            .FirstOrDefaultAsync(provider => provider.PhoneNumber == phone, cancellationToken);
-
-        if (provider is null || string.IsNullOrWhiteSpace(provider.PasswordHash) || !Sha256PasswordHasher.Verify(request.Password, provider.PasswordHash))
+        var phoneCandidates = BuildPhoneCandidates(request.PhoneNumber);
+        if (phoneCandidates.Length == 0)
         {
             return ProviderPortalAuthResult.Failed("Identifiants prestataire invalides.");
         }
 
-        if (Sha256PasswordHasher.NeedsRehash(provider.PasswordHash))
+        var matchingProviders = await db.Providers
+            .Include(provider => provider.Company)
+            .Where(provider => phoneCandidates.Contains(
+                provider.PhoneNumber
+                    .Replace(" ", string.Empty)
+                    .Replace("+", string.Empty)
+                    .Replace("-", string.Empty)
+                    .Replace("(", string.Empty)
+                    .Replace(")", string.Empty)
+                    .Replace(".", string.Empty)))
+            .ToListAsync(cancellationToken);
+
+        // Historical imports can contain the same phone number in different formats.
+        // Verify the submitted password against every matching profile instead of
+        // letting an older duplicate shadow the profile activated by the invitation.
+        var provider = matchingProviders
+            .Where(candidate =>
+                !string.IsNullOrWhiteSpace(candidate.PasswordHash)
+                && Sha256PasswordHasher.Verify(request.Password, candidate.PasswordHash))
+            .OrderByDescending(candidate => candidate.Status == ProviderStatus.Approved)
+            .FirstOrDefault();
+
+        if (provider is null)
+        {
+            return ProviderPortalAuthResult.Failed("Identifiants prestataire invalides.");
+        }
+
+        if (Sha256PasswordHasher.NeedsRehash(provider.PasswordHash!))
         {
             provider.SetPortalPassword(Sha256PasswordHasher.Hash(request.Password));
         }
 
-        if (provider.Status is ProviderStatus.Inactive or ProviderStatus.SuspendedByCompany)
+        if (provider.Status is ProviderStatus.Inactive or ProviderStatus.SuspendedByCompany or ProviderStatus.SuspendedByPlatform)
         {
             return ProviderPortalAuthResult.Failed("Votre acces prestataire est suspendu.");
         }
@@ -146,9 +169,38 @@ public sealed class ProviderPortalAuthService(IAppDbContext db)
         return (code ?? string.Empty).Trim().ToUpperInvariant().Replace(" ", string.Empty);
     }
 
-    private static string NormalizePhone(string phoneNumber)
+    private static string[] BuildPhoneCandidates(string phoneNumber)
     {
-        return phoneNumber.Trim();
+        var digits = new string(phoneNumber.Where(char.IsDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(digits))
+        {
+            return [];
+        }
+
+        var candidates = new HashSet<string>(StringComparer.Ordinal)
+        {
+            digits
+        };
+
+        if (digits.StartsWith("00225", StringComparison.Ordinal) && digits.Length > 5)
+        {
+            digits = digits[2..];
+            candidates.Add(digits);
+        }
+
+        if (digits.StartsWith("225", StringComparison.Ordinal) && digits.Length == 13)
+        {
+            var localNumber = digits[3..];
+            candidates.Add(localNumber);
+            candidates.Add($"00225{localNumber}");
+        }
+        else if (digits.Length == 10)
+        {
+            candidates.Add($"225{digits}");
+            candidates.Add($"00225{digits}");
+        }
+
+        return [.. candidates];
     }
 
     private static string? ValidatePassword(string password, string confirmPassword)
