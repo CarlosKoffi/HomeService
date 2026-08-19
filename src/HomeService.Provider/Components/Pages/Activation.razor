@@ -1,7 +1,5 @@
 @page "/activation"
-@rendermode InteractiveServer
 @inject ProviderApiClient Api
-@inject IJSRuntime Js
 
 <PageTitle>Activer mon compte - wélé Prestataire</PageTitle>
 
@@ -21,22 +19,22 @@
                     <strong>Vérification de votre invitation…</strong>
                 </div>
             }
-            else if (Preview is null)
-            {
-                <div class="provider-activation-state provider-activation-error">
-                    <span>Invitation indisponible</span>
-                    <strong>@(Message ?? "Ce lien est invalide ou a expiré. Demandez une nouvelle invitation à votre entreprise.")</strong>
-                </div>
-            }
             else if (IsActivated)
             {
                 <div class="provider-activation-success">
                     <span class="provider-activation-success-icon" aria-hidden="true">✓</span>
                     <p class="eyebrow">Compte activé</p>
                     <h2>Votre mot de passe est créé.</h2>
-                    <p>Téléchargez ou ouvrez Wélé Pro, puis connectez-vous avec le numéro <strong>@Preview.PhoneNumber</strong> et le mot de passe que vous venez de choisir.</p>
+                    <p>Téléchargez ou ouvrez Wélé Pro, puis connectez-vous avec le numéro <strong>@ActivatedPhone</strong> et le mot de passe que vous venez de choisir.</p>
                     <a class="primary-action" href="@LoginAppUrl">Ouvrir Wélé Pro</a>
                     <p class="provider-activation-footnote">L’espace prestataire et les missions sont disponibles dans l’application mobile, pas sur ce site.</p>
+                </div>
+            }
+            else if (Preview is null)
+            {
+                <div class="provider-activation-state provider-activation-error">
+                    <span>Invitation indisponible</span>
+                    <strong>@(Message ?? "Ce lien est invalide ou a expiré. Demandez une nouvelle invitation à votre entreprise.")</strong>
                 </div>
             }
             else
@@ -50,23 +48,23 @@
                     </span>
                 </div>
 
-                <a class="provider-open-app" href="@ActivationAppUrl">
-                    <span>Vous avez déjà Wélé Pro ?</span>
-                    <strong>Continuer dans l’application →</strong>
-                </a>
+                <div class="provider-open-app">
+                    <span>Première étape</span>
+                    <strong>Créez votre mot de passe ici avant d’ouvrir l’application.</strong>
+                </div>
 
-                <div class="provider-activation-form">
+                <form class="provider-activation-form" method="post" action="/activation/submit">
                     <label>
                         Code d’invitation
-                        <input value="@Preview.Code" readonly aria-readonly="true" />
+                        <input name="code" value="@Preview.Code" readonly aria-readonly="true" />
                     </label>
                     <label>
                         Créez votre mot de passe
-                        <input type="password" autocomplete="new-password" placeholder="8 caractères minimum" @bind="Password" />
+                        <input name="password" type="password" autocomplete="new-password" placeholder="8 caractères minimum" minlength="8" required />
                     </label>
                     <label>
                         Confirmez le mot de passe
-                        <input type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" @bind="ConfirmPassword" />
+                        <input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Retapez le mot de passe" minlength="8" required />
                     </label>
 
                     @if (!string.IsNullOrWhiteSpace(Message))
@@ -74,10 +72,10 @@
                         <p class="provider-activation-message">@Message</p>
                     }
 
-                    <button type="button" class="primary-action" @onclick="ActivateAsync" disabled="@IsBusy">
-                        @(IsBusy ? "Activation en cours…" : "Créer mon mot de passe")
+                    <button type="submit" class="primary-action">
+                        Créer mon mot de passe
                     </button>
-                </div>
+                </form>
             }
         </div>
     </section>
@@ -87,23 +85,27 @@
     [SupplyParameterFromQuery(Name = "code")]
     public string? Code { get; set; }
 
+    [SupplyParameterFromQuery(Name = "activated")]
+    public bool Activated { get; set; }
+
+    [SupplyParameterFromQuery(Name = "phone")]
+    public string? ActivatedPhone { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ActivationError { get; set; }
+
     private ProviderInvitationPreviewResponse? Preview { get; set; }
-    private string Password { get; set; } = string.Empty;
-    private string ConfirmPassword { get; set; } = string.Empty;
     private string? Message { get; set; }
     private string? LoadedCode { get; set; }
     private bool IsLoading { get; set; }
-    private bool IsBusy { get; set; }
     private bool IsActivated { get; set; }
-    private bool AppOpeningAttempted { get; set; }
 
     private string Initials => string.Join(string.Empty, (Preview?.ProviderName ?? "W")
         .Split(' ', StringSplitOptions.RemoveEmptyEntries)
         .Take(2)
         .Select(part => char.ToUpperInvariant(part[0])));
 
-    private string ActivationAppUrl => $"wele-provider://activation?code={Uri.EscapeDataString(Preview?.Code ?? Code ?? string.Empty)}";
-    private string LoginAppUrl => $"wele-provider://login?phone={Uri.EscapeDataString(Preview?.PhoneNumber ?? string.Empty)}";
+    private string LoginAppUrl => $"wele-provider://login?phone={Uri.EscapeDataString(ActivatedPhone ?? string.Empty)}";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -114,13 +116,17 @@
         }
 
         LoadedCode = normalizedCode;
-        AppOpeningAttempted = false;
         Preview = null;
-        IsActivated = false;
-        Message = null;
+        IsActivated = Activated;
+        Message = ActivationError;
+        if (IsActivated)
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(normalizedCode))
         {
-            Message = "Le code d’invitation manque dans ce lien.";
+            Message ??= "Le code d’invitation manque dans ce lien.";
             return;
         }
 
@@ -134,63 +140,5 @@
         }
 
         Preview = result.Value;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (AppOpeningAttempted || Preview is null || IsActivated)
-        {
-            return;
-        }
-
-        AppOpeningAttempted = true;
-        await Js.InvokeVoidAsync(
-            "weleProviderNavigation.tryOpenProviderApp",
-            ActivationAppUrl,
-            Preview.Code);
-    }
-
-    private async Task ActivateAsync()
-    {
-        Message = null;
-        if (Preview is null)
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(Password) || Password.Length < 8)
-        {
-            Message = "Choisissez un mot de passe d’au moins 8 caractères.";
-            return;
-        }
-
-        if (!string.Equals(Password, ConfirmPassword, StringComparison.Ordinal))
-        {
-            Message = "Les deux mots de passe ne correspondent pas.";
-            return;
-        }
-
-        IsBusy = true;
-        var result = await Api.ActivateAsync(new ProviderInvitationActivationRequest(
-            Preview.Code,
-            Password,
-            ConfirmPassword,
-            false));
-        IsBusy = false;
-        if (!result.IsSuccess || result.Value is null)
-        {
-            Message = result.ErrorMessage ?? "L’activation n’a pas pu être finalisée.";
-            return;
-        }
-
-        Preview = Preview with
-        {
-            ProviderName = result.Value.ProviderName,
-            PhoneNumber = result.Value.PhoneNumber,
-            CompanyName = result.Value.CompanyName
-        };
-        Password = string.Empty;
-        ConfirmPassword = string.Empty;
-        IsActivated = true;
     }
 }

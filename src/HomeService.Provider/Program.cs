@@ -1,6 +1,7 @@
 using HomeService.Provider.Components;
 using HomeService.Provider;
 using HomeService.Provider.Services;
+using HomeService.Contracts.ProviderPortal;
 
 var builder = WebApplication.CreateBuilder(args);
 if (OperatingSystem.IsWindows())
@@ -42,6 +43,54 @@ app.UseSiteAccessGate();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+
+app.MapPost("/activation/submit", async (
+    HttpRequest request,
+    ProviderApiClient api,
+    CancellationToken cancellationToken) =>
+{
+    if (!request.HasFormContentType)
+    {
+        return Results.Redirect("/activation?error=" + Uri.EscapeDataString("Le formulaire d'activation est invalide."));
+    }
+
+    var form = await request.ReadFormAsync(cancellationToken);
+    var code = form["code"].ToString().Trim();
+    var password = form["password"].ToString();
+    var confirmPassword = form["confirmPassword"].ToString();
+    var activationUrl = "/activation?code=" + Uri.EscapeDataString(code);
+
+    if (string.IsNullOrWhiteSpace(code))
+    {
+        return Results.Redirect(activationUrl + "&error=" + Uri.EscapeDataString("Le code d'invitation manque dans ce lien."));
+    }
+
+    if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+    {
+        return Results.Redirect(activationUrl + "&error=" + Uri.EscapeDataString("Choisissez un mot de passe d'au moins 8 caracteres."));
+    }
+
+    if (!string.Equals(password, confirmPassword, StringComparison.Ordinal))
+    {
+        return Results.Redirect(activationUrl + "&error=" + Uri.EscapeDataString("Les deux mots de passe ne correspondent pas."));
+    }
+
+    var result = await api.ActivateAsync(
+        new ProviderInvitationActivationRequest(code, password, confirmPassword, false),
+        cancellationToken);
+    if (!result.IsSuccess || result.Value is null)
+    {
+        return Results.Redirect(activationUrl + "&error=" + Uri.EscapeDataString(
+            result.ErrorMessage ?? "L'activation n'a pas pu etre finalisee."));
+    }
+
+    var successUrl = activationUrl
+        + "&activated=true"
+        + "&phone=" + Uri.EscapeDataString(result.Value.PhoneNumber);
+    return Results.Redirect(successUrl);
+})
+.DisableAntiforgery();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
