@@ -109,7 +109,12 @@ public sealed class CompanyInterimCandidateService(
                         otherRequest.RequestedAt,
                         otherRequest.ReviewedAt,
                         otherRequest.CompanyId == companyId))
-                    .ToList()))
+                    .ToList(),
+                request.CandidateMetAndTestedByCompany,
+                request.CompetencyValidatedByCompany,
+                request.SeriousnessValidatedByCompany,
+                request.PunctualityValidatedByCompany,
+                request.CompanyValidationAttestedAt))
             .ToListAsync(cancellationToken);
     }
 
@@ -117,7 +122,10 @@ public sealed class CompanyInterimCandidateService(
         Guid companyId,
         Guid requestId,
         string? note,
+        bool candidateMetAndTestedByCompany,
         bool competencyValidatedByCompany,
+        bool seriousnessValidatedByCompany,
+        bool punctualityValidatedByCompany,
         CancellationToken cancellationToken)
     {
         var request = await db.ProviderAffiliationRequests
@@ -141,9 +149,13 @@ public sealed class CompanyInterimCandidateService(
             return CompanyInterimCandidateReviewResult.Blocked("Cette candidature a deja ete traitee.");
         }
 
-        if (!competencyValidatedByCompany)
+        if (!candidateMetAndTestedByCompany
+            || !competencyValidatedByCompany
+            || !seriousnessValidatedByCompany
+            || !punctualityValidatedByCompany)
         {
-            return CompanyInterimCandidateReviewResult.Blocked("Confirmez que l'entreprise a rencontre le candidat et valide ses competences avant de l'ajouter.");
+            return CompanyInterimCandidateReviewResult.Blocked(
+                "Confirmez avoir recu et teste le candidat, puis verifie ses competences, son serieux et sa ponctualite avant de l'ajouter.");
         }
 
         var provider = request.Provider;
@@ -155,7 +167,12 @@ public sealed class CompanyInterimCandidateService(
 
         try
         {
-            request.Approve(note);
+            request.Approve(
+                note,
+                candidateMetAndTestedByCompany,
+                competencyValidatedByCompany,
+                seriousnessValidatedByCompany,
+                punctualityValidatedByCompany);
             provider.AttachToCompanyAsTemporaryWorker(companyId);
         }
         catch (InvalidOperationException exception)

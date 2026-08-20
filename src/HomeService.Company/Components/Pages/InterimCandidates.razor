@@ -25,7 +25,11 @@ else
                         Email="@Session.Email"
                         ProfileCompletionPercent="@(Session.IsCompanyApproved ? 75 : 35)">
         <section class="interim-workspace">
-            <section class="interim-hero-panel">
+            <section class="interim-hero-panel"
+                     data-coachmark-key="interim.overview"
+                     data-coachmark-order="510"
+                     data-coachmark-title="Gérez les candidatures intérim"
+                     data-coachmark-body="Consultez les profils reçus ici. Une validation doit toujours être précédée d'une rencontre et d'un test réel du candidat.">
                 <div>
                     <span>Viviers candidats</span>
                     <strong>@PendingCandidates.Count demande(s) a evaluer</strong>
@@ -78,7 +82,11 @@ else
                 </div>
             </section>
 
-            <section class="interim-modern-table">
+            <section class="interim-modern-table"
+                     data-coachmark-key="interim.open-profile"
+                     data-coachmark-order="520"
+                     data-coachmark-title="Ouvrez une fiche"
+                     data-coachmark-body="Vérifiez les informations et les services, puis convoquez le candidat avant de prendre votre décision.">
                 <div class="interim-table-head">
                     <span>Candidat</span>
                     <span>Services</span>
@@ -232,27 +240,74 @@ else
                             </div>
                         </article>
 
-                        <article class="interim-profile-card">
+                        <article class="interim-profile-card"
+                                 data-coachmark-key="interim.verify-candidate"
+                                 data-coachmark-order="530"
+                                 data-coachmark-title="Recevez et testez le candidat"
+                                 data-coachmark-body="Faites une rencontre et une mise en situation, puis confirmez les compétences, le sérieux et la ponctualité. Cette attestation sera conservée.">
                             <div class="interim-card-title">
-                                <span>Decision</span>
-                                <strong>Validation entreprise</strong>
+                                <span>Décision</span>
+                                <strong>Contrôle avant validation</strong>
                             </div>
                             <p class="interim-profile-note">@GetCandidateMessage(SelectedCandidate)</p>
                             @if (!string.IsNullOrWhiteSpace(SelectedCandidate.ReviewNote))
                             {
                                 <p class="interim-profile-note">@SelectedCandidate.ReviewNote</p>
                             }
-                            <label class="interim-review-field">
-                                Note interne
-                                <textarea @bind="ReviewNotes[SelectedCandidate.RequestId]" placeholder="Ex: Recu au bureau, test pratique OK, piece verifiee."></textarea>
-                            </label>
-                            <label class="interim-competency-check">
-                                <input type="checkbox" @bind="CompetencyChecks[SelectedCandidate.RequestId]" />
-                                <span>
-                                    <strong>J'ai rencontre ce candidat et je valide ses competences.</strong>
-                                    <small>Il sera ajoute dans vos employes comme interimaire, avec un profil a completer avant activation.</small>
-                                </span>
-                            </label>
+                            @if (SelectedCandidate.Status == "Approved" && SelectedCandidate.CompanyValidationAttestedAt is not null)
+                            {
+                                <div class="interim-attestation-trace">
+                                    <strong>Contrôle confirmé le @SelectedCandidate.CompanyValidationAttestedAt.Value.ToLocalTime().ToString("dd/MM/yyyy à HH:mm")</strong>
+                                    <span>L'entreprise a attesté avoir reçu et testé ce prestataire avant sa validation.</span>
+                                    <ul>
+                                        <li class="@(SelectedCandidate.CandidateMetAndTestedByCompany ? "checked" : string.Empty)">Rencontre et test réalisés</li>
+                                        <li class="@(SelectedCandidate.CompetencyValidatedByCompany ? "checked" : string.Empty)">Compétences vérifiées</li>
+                                        <li class="@(SelectedCandidate.SeriousnessValidatedByCompany ? "checked" : string.Empty)">Sérieux vérifié</li>
+                                        <li class="@(SelectedCandidate.PunctualityValidatedByCompany ? "checked" : string.Empty)">Ponctualité vérifiée</li>
+                                    </ul>
+                                </div>
+                            }
+                            else if (!IsClosed(SelectedCandidate.Status))
+                            {
+                                <p class="interim-validation-intro">
+                                    Ne validez pas uniquement sur dossier. Recevez le candidat et faites un test ou une mise en situation réelle.
+                                </p>
+                                <label class="interim-review-field">
+                                    Note interne
+                                    <textarea @bind="ReviewNotes[SelectedCandidate.RequestId]" placeholder="Ex : reçu au bureau, test pratique concluant, comportement professionnel."></textarea>
+                                </label>
+                                <div class="interim-validation-checklist">
+                                    <label class="interim-competency-check">
+                                        <input type="checkbox" @bind="ValidationChecklists[SelectedCandidate.RequestId].MetAndTested" />
+                                        <span>
+                                            <strong>J'ai reçu le candidat et réalisé un test.</strong>
+                                            <small>Entretien, essai pratique ou mise en situation réelle.</small>
+                                        </span>
+                                    </label>
+                                    <label class="interim-competency-check">
+                                        <input type="checkbox" @bind="ValidationChecklists[SelectedCandidate.RequestId].Skills" />
+                                        <span>
+                                            <strong>J'ai vérifié ses compétences.</strong>
+                                            <small>Le candidat maîtrise les services présentés dans son dossier.</small>
+                                        </span>
+                                    </label>
+                                    <label class="interim-competency-check">
+                                        <input type="checkbox" @bind="ValidationChecklists[SelectedCandidate.RequestId].Seriousness" />
+                                        <span>
+                                            <strong>J'ai vérifié son sérieux.</strong>
+                                            <small>Son attitude et son comportement professionnel sont satisfaisants.</small>
+                                        </span>
+                                    </label>
+                                    <label class="interim-competency-check">
+                                        <input type="checkbox" @bind="ValidationChecklists[SelectedCandidate.RequestId].Punctuality" />
+                                        <span>
+                                            <strong>J'ai vérifié sa ponctualité.</strong>
+                                            <small>Il s'est présenté à l'heure au rendez-vous ou au test.</small>
+                                        </span>
+                                    </label>
+                                </div>
+                                <p class="interim-attestation-copy">Ces quatre confirmations seront datées et conservées dans le dossier du prestataire.</p>
+                            }
                         </article>
 
                         <article class="interim-profile-card">
@@ -278,7 +333,14 @@ else
                     <footer class="interim-profile-footer">
                         <button type="button" class="secondary-action" @onclick="CloseCandidate">Fermer</button>
                         <button type="button" class="secondary-action danger-action" disabled="@(!CanManageInterimCandidates || IsClosed(SelectedCandidate.Status))" @onclick="() => RejectAsync(SelectedCandidate.RequestId)">Refuser</button>
-                        <button type="button" class="primary-action" disabled="@(!CanApproveSelectedCandidate(SelectedCandidate))" @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme interimaire</button>
+                        <button type="button"
+                                class="primary-action"
+                                disabled="@(!CanApproveSelectedCandidate(SelectedCandidate))"
+                                data-coachmark-key="interim.approve-candidate"
+                                data-coachmark-order="540"
+                                data-coachmark-title="Validez après contrôle"
+                                data-coachmark-body="Le bouton s'active lorsque les quatre vérifications sont confirmées. La validation est datée et conservée."
+                                @onclick="() => ApproveAsync(SelectedCandidate.RequestId)">Valider comme intérimaire</button>
                     </footer>
                 </section>
             </div>
@@ -292,7 +354,7 @@ else
     private CompanyPortalSessionResponse? Session { get; set; }
     private IReadOnlyList<CompanyInterimCandidateResponse> Candidates { get; set; } = [];
     private Dictionary<Guid, string?> ReviewNotes { get; } = [];
-    private Dictionary<Guid, bool> CompetencyChecks { get; } = [];
+    private Dictionary<Guid, InterimValidationChecklist> ValidationChecklists { get; } = [];
     private string? Message { get; set; }
     private string Search { get; set; } = string.Empty;
     private string ActiveFilter { get; set; } = "Tous";
@@ -350,7 +412,7 @@ else
         foreach (var candidate in Candidates)
         {
             ReviewNotes.TryAdd(candidate.RequestId, null);
-            CompetencyChecks.TryAdd(candidate.RequestId, false);
+            EnsureValidationChecklist(candidate);
         }
     }
 
@@ -395,10 +457,10 @@ else
         }
 
         var note = ReviewNotes.GetValueOrDefault(requestId);
-        var competencyValidated = CompetencyChecks.GetValueOrDefault(requestId);
-        if (!competencyValidated)
+        var checklist = ValidationChecklists.GetValueOrDefault(requestId);
+        if (checklist is null || !checklist.IsComplete)
         {
-            Message = "Cochez la confirmation de competence dans la fiche avant de valider l'interimaire.";
+            Message = "Confirmez la rencontre, le test, les compétences, le sérieux et la ponctualité avant de valider l'intérimaire.";
             return;
         }
 
@@ -411,7 +473,14 @@ else
             return;
         }
 
-        var result = await ApiClient.ApproveInterimCandidateAsync(Session.CompanyId, requestId, note, competencyValidated);
+        var result = await ApiClient.ApproveInterimCandidateAsync(
+            Session.CompanyId,
+            requestId,
+            note,
+            checklist.MetAndTested,
+            checklist.Skills,
+            checklist.Seriousness,
+            checklist.Punctuality);
         if (!result.IsSuccess)
         {
             Message = result.ErrorMessage ?? "Validation impossible.";
@@ -464,7 +533,7 @@ else
 
         SelectedCandidate = candidate;
         ReviewNotes.TryAdd(candidate.RequestId, null);
-        CompetencyChecks.TryAdd(candidate.RequestId, false);
+        EnsureValidationChecklist(candidate);
     }
 
     private void CloseCandidate()
@@ -711,7 +780,29 @@ else
     {
         return CanManageInterimCandidates
             && !IsClosed(candidate.Status)
-            && CompetencyChecks.GetValueOrDefault(candidate.RequestId);
+            && ValidationChecklists.GetValueOrDefault(candidate.RequestId)?.IsComplete == true;
+    }
+
+    private void EnsureValidationChecklist(CompanyInterimCandidateResponse candidate)
+    {
+        ValidationChecklists.TryAdd(
+            candidate.RequestId,
+            new InterimValidationChecklist
+            {
+                MetAndTested = candidate.CandidateMetAndTestedByCompany,
+                Skills = candidate.CompetencyValidatedByCompany,
+                Seriousness = candidate.SeriousnessValidatedByCompany,
+                Punctuality = candidate.PunctualityValidatedByCompany
+            });
+    }
+
+    private sealed class InterimValidationChecklist
+    {
+        public bool MetAndTested { get; set; }
+        public bool Skills { get; set; }
+        public bool Seriousness { get; set; }
+        public bool Punctuality { get; set; }
+        public bool IsComplete => MetAndTested && Skills && Seriousness && Punctuality;
     }
 
     private string GetCandidateActionTitle()

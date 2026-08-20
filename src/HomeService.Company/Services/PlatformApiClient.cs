@@ -484,13 +484,21 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         Guid companyId,
         Guid requestId,
         string? note,
+        bool candidateMetAndTestedByCompany,
         bool competencyValidatedByCompany,
+        bool seriousnessValidatedByCompany,
+        bool punctualityValidatedByCompany,
         CancellationToken cancellationToken = default)
     {
         AddBasicAuthIfConfigured();
         var response = await httpClient.PostAsJsonAsync(
             $"/api/company-portal/{companyId:D}/interim-candidates/{requestId:D}/approve",
-            new CompanyReviewInterimCandidateRequest(note, competencyValidatedByCompany),
+            new CompanyReviewInterimCandidateRequest(
+                note,
+                candidateMetAndTestedByCompany,
+                competencyValidatedByCompany,
+                seriousnessValidatedByCompany,
+                punctualityValidatedByCompany),
             cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         return response.IsSuccessStatusCode
@@ -507,7 +515,7 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
         AddBasicAuthIfConfigured();
         var response = await httpClient.PostAsJsonAsync(
             $"/api/company-portal/{companyId:D}/interim-candidates/{requestId:D}/reject",
-            new CompanyReviewInterimCandidateRequest(note, false),
+            new CompanyReviewInterimCandidateRequest(note, false, false, false, false),
             cancellationToken);
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
         return response.IsSuccessStatusCode

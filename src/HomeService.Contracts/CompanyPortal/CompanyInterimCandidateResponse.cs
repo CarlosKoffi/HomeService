@@ -27,7 +27,12 @@ public sealed record CompanyInterimCandidateResponse(
     string? PhotoUrl,
     IReadOnlyList<CompanyInterimCandidateServiceResponse> Services,
     IReadOnlyList<CompanyEmployeeDocumentResponse> Documents,
-    IReadOnlyList<CompanyInterimCandidateAffiliationResponse> Applications);
+    IReadOnlyList<CompanyInterimCandidateAffiliationResponse> Applications,
+    bool CandidateMetAndTestedByCompany = false,
+    bool CompetencyValidatedByCompany = false,
+    bool SeriousnessValidatedByCompany = false,
+    bool PunctualityValidatedByCompany = false,
+    DateTimeOffset? CompanyValidationAttestedAt = null);
 
 public sealed record CompanyInterimCandidateServiceResponse(
     Guid ServiceId,
@@ -44,4 +49,9 @@ public sealed record CompanyInterimCandidateAffiliationResponse(
     DateTimeOffset? ReviewedAt,
     bool IsCurrentCompany);
 
-public sealed record CompanyReviewInterimCandidateRequest(string? Note, bool CompetencyValidatedByCompany);
+public sealed record CompanyReviewInterimCandidateRequest(
+    string? Note,
+    bool CandidateMetAndTestedByCompany,
+    bool CompetencyValidatedByCompany,
+    bool SeriousnessValidatedByCompany,
+    bool PunctualityValidatedByCompany);

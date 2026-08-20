@@ -21,8 +21,32 @@ public sealed class ProviderAffiliationRequestTests
     public void Cancel_Throws_WhenRequestIsAlreadyApproved()
     {
         var request = new ProviderAffiliationRequest(Guid.NewGuid(), Guid.NewGuid(), null);
-        request.Approve("OK");
+        request.Approve("OK", true, true, true, true);
 
         Assert.Throws<InvalidOperationException>(() => request.Cancel("Trop tard."));
+    }
+
+    [Fact]
+    public void Approve_StoresCompanyValidationAttestation()
+    {
+        var request = new ProviderAffiliationRequest(Guid.NewGuid(), Guid.NewGuid(), null);
+
+        request.Approve("Test pratique concluant.", true, true, true, true);
+
+        Assert.Equal(ProviderAffiliationRequestStatus.Approved, request.Status);
+        Assert.True(request.CandidateMetAndTestedByCompany);
+        Assert.True(request.CompetencyValidatedByCompany);
+        Assert.True(request.SeriousnessValidatedByCompany);
+        Assert.True(request.PunctualityValidatedByCompany);
+        Assert.NotNull(request.CompanyValidationAttestedAt);
+    }
+
+    [Fact]
+    public void Approve_Throws_WhenACompanyCheckIsMissing()
+    {
+        var request = new ProviderAffiliationRequest(Guid.NewGuid(), Guid.NewGuid(), null);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            request.Approve("Test incomplet.", true, true, true, false));
     }
 }

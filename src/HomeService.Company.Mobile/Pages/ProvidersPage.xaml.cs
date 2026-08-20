@@ -107,7 +107,7 @@ public partial class ProvidersPage : ContentPage
 
         var confirmed = await DisplayAlert(
             "Accepter ce prestataire ?",
-            $"Vous confirmez avoir vérifié le profil, les pièces et les compétences de {row.FullName}. Il rejoindra ensuite votre équipe.",
+            $"Confirmez avoir reçu et testé {row.FullName}, puis vérifié ses compétences, son sérieux et sa ponctualité. Cette attestation sera conservée.",
             "Accepter",
             "Annuler");
         if (!confirmed)
@@ -115,7 +115,7 @@ public partial class ProvidersPage : ContentPage
             return;
         }
 
-        await ReviewCandidateAsync(row, approve: true, note: "Profil et compétences validés depuis l’application Entreprise.");
+        await ReviewCandidateAsync(row, approve: true, note: "Candidat reçu et testé. Compétences, sérieux et ponctualité vérifiés depuis l’application Entreprise.");
     }
 
     private async void OnCandidateDetailClicked(object? sender, EventArgs e)
@@ -167,7 +167,7 @@ public partial class ProvidersPage : ContentPage
             ApiCallResult<bool> result;
             if (row.IsAffiliationRequest)
             {
-                var request = new CompanyReviewInterimCandidateRequest(note, approve);
+                var request = new CompanyReviewInterimCandidateRequest(note, approve, approve, approve, approve);
                 result = approve
                     ? await apiClient.ApproveInterimCandidateAsync(token, companyId.Value, row.RequestId!.Value, request)
                     : await apiClient.RejectInterimCandidateAsync(token, companyId.Value, row.RequestId!.Value, request);

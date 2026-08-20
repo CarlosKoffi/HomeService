@@ -12,6 +12,10 @@ public sealed class ProviderAffiliationRequestConfiguration : IEntityTypeConfigu
         builder.Property(request => request.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(request => request.Message).HasMaxLength(800);
         builder.Property(request => request.ReviewNote).HasMaxLength(800);
+        builder.Property(request => request.CandidateMetAndTestedByCompany).HasDefaultValue(false);
+        builder.Property(request => request.CompetencyValidatedByCompany).HasDefaultValue(false);
+        builder.Property(request => request.SeriousnessValidatedByCompany).HasDefaultValue(false);
+        builder.Property(request => request.PunctualityValidatedByCompany).HasDefaultValue(false);
         builder.HasOne(request => request.Provider)
             .WithMany()
             .HasForeignKey(request => request.ProviderId);

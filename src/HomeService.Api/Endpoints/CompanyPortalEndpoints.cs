@@ -220,7 +220,10 @@ public static class CompanyPortalEndpoints
                 companyId,
                 requestId,
                 request.Note,
+                request.CandidateMetAndTestedByCompany,
                 request.CompetencyValidatedByCompany,
+                request.SeriousnessValidatedByCompany,
+                request.PunctualityValidatedByCompany,
                 cancellationToken);
             if (result.IsNotFound)
             {
@@ -238,7 +241,16 @@ public static class CompanyPortalEndpoints
                 requestId,
                 "Demandeur d'interim valide par l'entreprise.",
                 HttpAuditContextFactory.Create(httpRequest),
-                after: new { companyId, requestId, request.Note }));
+                after: new
+                {
+                    companyId,
+                    requestId,
+                    request.Note,
+                    request.CandidateMetAndTestedByCompany,
+                    request.CompetencyValidatedByCompany,
+                    request.SeriousnessValidatedByCompany,
+                    request.PunctualityValidatedByCompany
+                }));
             await db.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(new { message = "Candidat ajoute comme interimaire. Completez ses informations et ses documents avant activation." });

@@ -25,17 +25,42 @@ public sealed class ProviderAffiliationRequest : AuditableEntity
     public string? ReviewNote { get; private set; }
     public DateTimeOffset RequestedAt { get; private set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? ReviewedAt { get; private set; }
+    public bool CandidateMetAndTestedByCompany { get; private set; }
+    public bool CompetencyValidatedByCompany { get; private set; }
+    public bool SeriousnessValidatedByCompany { get; private set; }
+    public bool PunctualityValidatedByCompany { get; private set; }
+    public DateTimeOffset? CompanyValidationAttestedAt { get; private set; }
 
-    public void Approve(string? reviewNote)
+    public void Approve(
+        string? reviewNote,
+        bool candidateMetAndTestedByCompany,
+        bool competencyValidatedByCompany,
+        bool seriousnessValidatedByCompany,
+        bool punctualityValidatedByCompany)
     {
         if (Status != ProviderAffiliationRequestStatus.Pending)
         {
             throw new InvalidOperationException("Only pending affiliation requests can be approved.");
         }
 
+        if (!candidateMetAndTestedByCompany
+            || !competencyValidatedByCompany
+            || !seriousnessValidatedByCompany
+            || !punctualityValidatedByCompany)
+        {
+            throw new InvalidOperationException(
+                "L'entreprise doit confirmer avoir recu et teste le candidat, puis verifie ses competences, son serieux et sa ponctualite.");
+        }
+
+        var now = DateTimeOffset.UtcNow;
         Status = ProviderAffiliationRequestStatus.Approved;
         ReviewNote = reviewNote?.Trim();
-        ReviewedAt = DateTimeOffset.UtcNow;
+        ReviewedAt = now;
+        CandidateMetAndTestedByCompany = true;
+        CompetencyValidatedByCompany = true;
+        SeriousnessValidatedByCompany = true;
+        PunctualityValidatedByCompany = true;
+        CompanyValidationAttestedAt = now;
         Touch();
     }
 
