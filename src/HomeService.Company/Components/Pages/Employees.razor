@@ -732,9 +732,9 @@ else
                                             <div class="employee-zone-commune">
                                                 <label title="Sélectionner tous les quartiers de @group.Commune">
                                                     <input type="checkbox"
+                                                           aria-label="Sélectionner tous les quartiers de @group.Commune"
                                                            checked="@IsCommuneSelected(group.Zones)"
                                                            @onchange="eventArgs => ToggleCommune(group.Zones, eventArgs)" />
-                                                    <span class="sr-only">Sélectionner @group.Commune</span>
                                                 </label>
                                                 <button type="button" class="employee-zone-commune-toggle" @onclick="() => ToggleZoneCommuneExpanded(group.Commune)">
                                                     <span>

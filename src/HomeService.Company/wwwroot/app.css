@@ -8748,7 +8748,10 @@ h3 {
 }
 
 .employee-zone-search input {
+    box-sizing: border-box;
     min-height: 48px;
+    min-width: 0;
+    width: 100%;
 }
 
 .employee-zone-select-all,
@@ -8768,6 +8771,7 @@ h3 {
     gap: .55rem;
     min-height: 48px;
     padding: .65rem .85rem;
+    white-space: nowrap;
 }
 
 .employee-zone-select-all input,
@@ -8797,6 +8801,8 @@ h3 {
     display: grid;
     grid-template-columns: 44px minmax(0, 1fr);
     min-height: 56px;
+    overflow: hidden;
+    width: 100%;
 }
 
 .employee-zone-commune > label {
@@ -8805,6 +8811,16 @@ h3 {
     cursor: pointer;
     display: flex;
     justify-content: center;
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    width: 44px;
+}
+
+.employee-zone-commune > label input {
+    display: block;
+    flex: 0 0 18px;
+    max-width: 18px;
 }
 
 .employee-zone-commune-toggle {
@@ -8818,8 +8834,10 @@ h3 {
     gap: .75rem;
     justify-content: space-between;
     min-width: 0;
+    overflow: hidden;
     padding: .65rem .85rem;
     text-align: left;
+    width: 100%;
 }
 
 .employee-zone-commune-toggle > span {
@@ -8831,12 +8849,18 @@ h3 {
 .employee-zone-commune-toggle strong {
     color: #123b40;
     font-size: .88rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .employee-zone-commune-toggle small {
     color: #557176;
     font-size: .72rem;
     font-weight: 750;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .employee-zone-commune-toggle svg {
