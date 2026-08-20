@@ -296,7 +296,7 @@ public sealed class CompanyMissionAssignmentNotificationTests
         var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
         var missionService = new Service("Blanchisserie", "Entretien du linge", null);
         missionService.UpdatePriceRange(10_000, 30_000, "XOF");
-        var legacyProviderService = new Service("Blanchisserie", "Ancienne fiche catalogue", null);
+        var legacyProviderService = new Service("  BLANCHISSÉRIE  ", "Ancienne fiche catalogue", null);
         legacyProviderService.UpdatePriceRange(10_000, 30_000, "XOF");
         var provider = CreateProvider(company.Id, "Mikel", "+2250700000002");
         provider.SyncCompanyServices([(legacyProviderService.Id, ExperienceLevel.Expert, 11, ProviderServicePriceTier.Normal)]);
@@ -317,6 +317,14 @@ public sealed class CompanyMissionAssignmentNotificationTests
 
         db.AddRange(company, customer, missionService, legacyProviderService, provider, mission);
         await db.SaveChangesAsync();
+
+        // Reproduit une ancienne fiche dont la valeur technique n'a pas été remise à jour,
+        // alors que son libellé désigne bien le même service.
+        db.Entry(legacyProviderService)
+            .Property(nameof(Service.NormalizedName))
+            .CurrentValue = "ancien-catalogue-blanchisserie";
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
 
         var assignmentService = CreateAssignmentService(db);
         var candidates = await assignmentService.ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);

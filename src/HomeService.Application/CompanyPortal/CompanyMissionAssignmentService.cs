@@ -2,6 +2,7 @@ using HomeService.Application.Abstractions;
 using HomeService.Application.Notifications;
 using HomeService.Application.Missions;
 using HomeService.Contracts.CompanyPortal;
+using HomeService.Domain.Common;
 using HomeService.Domain.Entities;
 using HomeService.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -354,22 +355,58 @@ public sealed class CompanyMissionAssignmentService(
 
     private async Task<List<Guid>> ResolveMatchingServiceIdsAsync(Guid serviceId, CancellationToken cancellationToken)
     {
-        var normalizedName = await db.Services
+        var missionService = await db.Services
             .AsNoTracking()
             .Where(service => service.Id == serviceId)
-            .Select(service => service.NormalizedName)
+            .Select(service => new
+            {
+                service.Id,
+                service.Name,
+                service.NormalizedName
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(normalizedName))
+        if (missionService is null)
         {
             return [serviceId];
         }
 
-        return await db.Services
+        var targetNormalizedName = CatalogNameNormalizer.Normalize(missionService.Name);
+        if (string.IsNullOrWhiteSpace(targetNormalizedName))
+        {
+            targetNormalizedName = CatalogNameNormalizer.Normalize(missionService.NormalizedName);
+        }
+
+        if (string.IsNullOrWhiteSpace(targetNormalizedName))
+        {
+            return [serviceId];
+        }
+
+        // Les anciens doublons du catalogue peuvent conserver une valeur NormalizedName
+        // obsolète. Le libellé réel reste donc la source de vérité pour l'affectation.
+        var catalogServices = await db.Services
             .AsNoTracking()
-            .Where(service => service.Id == serviceId || service.NormalizedName == normalizedName)
-            .Select(service => service.Id)
+            .Select(service => new
+            {
+                service.Id,
+                service.Name,
+                service.NormalizedName
+            })
             .ToListAsync(cancellationToken);
+
+        return catalogServices
+            .Where(service =>
+                service.Id == serviceId
+                || string.Equals(
+                    CatalogNameNormalizer.Normalize(
+                        string.IsNullOrWhiteSpace(service.Name)
+                            ? service.NormalizedName
+                            : service.Name),
+                    targetNormalizedName,
+                    StringComparison.Ordinal))
+            .Select(service => service.Id)
+            .Distinct()
+            .ToList();
     }
 
     private async Task<int> ResolveBlockingRoundFloorAsync(int currentRound, CancellationToken cancellationToken)
