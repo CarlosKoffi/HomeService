@@ -34,6 +34,7 @@ public sealed class CompanyMissionAssignmentService(
             return CompanyAssignableProvidersResult.Ok([]);
         }
 
+        var matchingServiceIds = await ResolveMatchingServiceIdsAsync(mission.ServiceId, cancellationToken);
         var pricing = await ResolveMissionPricingAsync(mission, cancellationToken);
         var now = DateTimeOffset.UtcNow;
 
@@ -85,30 +86,35 @@ public sealed class CompanyMissionAssignmentService(
                 Provider = provider,
                 CoversMission = provider.Services.Any(service =>
                     service.IsActive
-                    && service.ServiceId == mission.ServiceId
+                    && matchingServiceIds.Contains(service.ServiceId)
                     && (mission.ServicePrestationId == null
                         || !service.Prestations.Any()
                         || service.Prestations.Any(prestation =>
                             prestation.IsActive
                             && prestation.ServicePrestationId == mission.ServicePrestationId))),
                 ExperienceLevel = provider.Services
-                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
+                    .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                     .Select(service => service.ExperienceLevel.ToString())
                     .FirstOrDefault(),
                 PriceTier = provider.Services
-                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
+                    .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                     .Select(service => service.PriceTier.ToString())
                     .FirstOrDefault(),
                 NormalPriceAmount = provider.Services
-                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
+                    .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.NormalPriceAmount)
                     .FirstOrDefault(),
                 PremiumPriceAmount = provider.Services
-                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
+                    .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PremiumPriceAmount)
                     .FirstOrDefault(),
                 Currency = provider.Services
-                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
+                    .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.Currency)
                     .FirstOrDefault(),
                 HasDiploma = provider.Documents.Any(document => document.DocumentType == ProviderDocumentType.Diploma),
@@ -118,11 +124,13 @@ public sealed class CompanyMissionAssignmentService(
                     .Select(document => $"/api/company-portal/provider-documents/{document.Id}/preview")
                     .FirstOrDefault(),
                 ServicePriceMinAmount = provider.Services
-                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
+                    .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PriceMinAmount)
                     .FirstOrDefault(),
                 ServicePriceMaxAmount = provider.Services
-                    .Where(service => service.IsActive && service.ServiceId == mission.ServiceId)
+                    .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
+                    .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                     .Select(service => service.Service!.PriceMaxAmount)
                     .FirstOrDefault()
             })
@@ -211,16 +219,22 @@ public sealed class CompanyMissionAssignmentService(
                 || assignment.Status == ProviderMissionAssignmentStatus.Expired),
             cancellationToken);
 
+        var matchingServiceIds = mission is null
+            ? []
+            : await ResolveMatchingServiceIdsAsync(mission.ServiceId, cancellationToken);
         var providerService = mission is null || provider is null
             ? null
-            : provider.Services.FirstOrDefault(service =>
-                service.IsActive
-                && service.ServiceId == mission.ServiceId
-                && (mission.ServicePrestationId == null
-                    || service.Prestations.Count == 0
-                    || service.Prestations.Any(prestation =>
-                        prestation.IsActive
-                        && prestation.ServicePrestationId == mission.ServicePrestationId)));
+            : provider.Services
+                .Where(service =>
+                    service.IsActive
+                    && matchingServiceIds.Contains(service.ServiceId)
+                    && (mission.ServicePrestationId == null
+                        || service.Prestations.Count == 0
+                        || service.Prestations.Any(prestation =>
+                            prestation.IsActive
+                            && prestation.ServicePrestationId == mission.ServicePrestationId)))
+                .OrderByDescending(service => service.ServiceId == mission.ServiceId)
+                .FirstOrDefault();
         if (providerService is not null && mission?.ServicePrestationId is Guid prestationId)
         {
             var qualification = await db.ProviderPrestationQualifications.AsNoTracking()
@@ -336,6 +350,26 @@ public sealed class CompanyMissionAssignmentService(
                 service.IsFixedPrice,
                 service.Currency))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private async Task<List<Guid>> ResolveMatchingServiceIdsAsync(Guid serviceId, CancellationToken cancellationToken)
+    {
+        var normalizedName = await db.Services
+            .AsNoTracking()
+            .Where(service => service.Id == serviceId)
+            .Select(service => service.NormalizedName)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrWhiteSpace(normalizedName))
+        {
+            return [serviceId];
+        }
+
+        return await db.Services
+            .AsNoTracking()
+            .Where(service => service.Id == serviceId || service.NormalizedName == normalizedName)
+            .Select(service => service.Id)
+            .ToListAsync(cancellationToken);
     }
 
     private async Task<int> ResolveBlockingRoundFloorAsync(int currentRound, CancellationToken cancellationToken)

@@ -287,6 +287,52 @@ public sealed class CompanyMissionAssignmentNotificationTests
         Assert.True(result.IsSuccess, result.Message);
     }
 
+    [Fact]
+    public async Task AssignAsync_WhenMissionOnlySpecifiesService_AcceptsProviderLinkedToEquivalentLegacyService()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("CI Home Service", "+2250700000000", "contact@cihome.ci");
+        company.Approve();
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var missionService = new Service("Blanchisserie", "Entretien du linge", null);
+        missionService.UpdatePriceRange(10_000, 30_000, "XOF");
+        var legacyProviderService = new Service("Blanchisserie", "Ancienne fiche catalogue", null);
+        legacyProviderService.UpdatePriceRange(10_000, 30_000, "XOF");
+        var provider = CreateProvider(company.Id, "Mikel", "+2250700000002");
+        provider.SyncCompanyServices([(legacyProviderService.Id, ExperienceLevel.Expert, 11, ProviderServicePriceTier.Normal)]);
+        provider.Approve();
+        provider.SetAvailability(true, 5.35m, -4.02m);
+        var mission = new Mission(
+            customer.Id,
+            missionService.Id,
+            MissionMode.Scheduled,
+            PaymentMethod.MobileMoney,
+            DateTimeOffset.UtcNow.AddDays(1),
+            90,
+            description: "Blanchisserie sans prestation specifique",
+            requiresCompanyQuote: true);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+
+        db.AddRange(company, customer, missionService, legacyProviderService, provider, mission);
+        await db.SaveChangesAsync();
+
+        var assignmentService = CreateAssignmentService(db);
+        var candidates = await assignmentService.ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);
+        var candidate = Assert.Single(candidates.Providers, item => item.Id == provider.Id);
+
+        Assert.True(candidate.CanAssign, candidate.BlockingReason);
+        var result = await assignmentService.AssignAsync(
+            company.Id,
+            mission.Id,
+            provider.Id,
+            quotedAmount: 20_000,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.True(result.IsSuccess, result.Message);
+    }
+
     private static CompanyMissionAssignmentService CreateAssignmentService(HomeServiceDbContext db)
     {
         return new CompanyMissionAssignmentService(
