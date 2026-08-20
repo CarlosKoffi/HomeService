@@ -1,0 +1,148 @@
+@implements IDisposable
+@inject PlatformApiClient ApiClient
+
+<div class="address-autocomplete employee-address-autocomplete">
+    <label for="@InputId">@Label</label>
+    <div class="address-autocomplete-field">
+        <input id="@InputId"
+               value="@Value"
+               @oninput="HandleInputAsync"
+               @onfocus="OpenSuggestions"
+               autocomplete="off"
+               autocapitalize="off"
+               spellcheck="false"
+               placeholder="@Placeholder" />
+        @if (IsSearching)
+        {
+            <span class="address-searching" aria-label="Recherche en cours"></span>
+        }
+    </div>
+    @if (IsSuggestionOpen)
+    {
+        <div class="address-suggestion-list" role="listbox" aria-label="Adresses proposées par Google Places">
+            @foreach (var suggestion in Suggestions)
+            {
+                <button type="button" class="address-suggestion" @onclick="() => SelectSuggestionAsync(suggestion)">
+                    <strong>@suggestion.MainText</strong>
+                    <small>@suggestion.SecondaryText</small>
+                </button>
+            }
+            @if (!IsSearching && Suggestions.Count == 0)
+            {
+                <p class="address-suggestion-empty">Continuez à saisir l’adresse.</p>
+            }
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <small class="field-message">@Message</small>
+    }
+</div>
+
+@code {
+    [Parameter] public string InputId { get; set; } = $"address-{Guid.NewGuid():N}";
+    [Parameter] public string Label { get; set; } = "Adresse de l’employé";
+    [Parameter] public string Placeholder { get; set; } = "Commencez à saisir une adresse";
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public decimal? Latitude { get; set; }
+    [Parameter] public EventCallback<decimal?> LatitudeChanged { get; set; }
+    [Parameter] public decimal? Longitude { get; set; }
+    [Parameter] public EventCallback<decimal?> LongitudeChanged { get; set; }
+
+    private IReadOnlyList<ClientAddressSuggestionResponse> Suggestions { get; set; } = [];
+    private CancellationTokenSource? SearchCancellation { get; set; }
+    private string SessionToken { get; set; } = Guid.NewGuid().ToString("N");
+    private string? Message { get; set; }
+    private bool IsSearching { get; set; }
+    private bool IsSuggestionOpen { get; set; }
+    private long SearchVersion { get; set; }
+
+    private async Task HandleInputAsync(ChangeEventArgs eventArgs)
+    {
+        var nextValue = eventArgs.Value?.ToString()?.TrimStart() ?? string.Empty;
+        await ValueChanged.InvokeAsync(nextValue);
+        await LatitudeChanged.InvokeAsync(null);
+        await LongitudeChanged.InvokeAsync(null);
+        Message = null;
+
+        SearchCancellation?.Cancel();
+        SearchCancellation?.Dispose();
+        SearchCancellation = null;
+
+        if (nextValue.Length < 3)
+        {
+            Suggestions = [];
+            IsSearching = false;
+            IsSuggestionOpen = nextValue.Length > 0;
+            return;
+        }
+
+        SearchCancellation = new CancellationTokenSource();
+        var cancellationToken = SearchCancellation.Token;
+        var searchVersion = ++SearchVersion;
+        IsSearching = true;
+        IsSuggestionOpen = true;
+
+        try
+        {
+            await Task.Delay(260, cancellationToken);
+            var suggestions = await ApiClient.AutocompletePublicAddressAsync(nextValue, SessionToken, cancellationToken);
+            if (searchVersion == SearchVersion && !cancellationToken.IsCancellationRequested)
+            {
+                Suggestions = suggestions;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch
+        {
+            Message = "La recherche d’adresse est momentanément indisponible. Vous pouvez conserver l’adresse saisie.";
+        }
+        finally
+        {
+            if (searchVersion == SearchVersion && !cancellationToken.IsCancellationRequested)
+            {
+                IsSearching = false;
+            }
+        }
+    }
+
+    private void OpenSuggestions()
+    {
+        IsSuggestionOpen = IsSearching || Suggestions.Count > 0;
+    }
+
+    private async Task SelectSuggestionAsync(ClientAddressSuggestionResponse suggestion)
+    {
+        Message = null;
+        IsSearching = true;
+        try
+        {
+            var details = await ApiClient.GetPublicPlaceDetailsAsync(suggestion.PlaceId, SessionToken);
+            await ValueChanged.InvokeAsync(details?.AddressLine ?? suggestion.FullText);
+            await LatitudeChanged.InvokeAsync(details?.Latitude);
+            await LongitudeChanged.InvokeAsync(details?.Longitude);
+        }
+        catch
+        {
+            await ValueChanged.InvokeAsync(suggestion.FullText);
+            Message = "Adresse sélectionnée ; les coordonnées n’ont pas pu être chargées.";
+        }
+        finally
+        {
+            Suggestions = [];
+            IsSuggestionOpen = false;
+            IsSearching = false;
+            SessionToken = Guid.NewGuid().ToString("N");
+        }
+    }
+
+    public void Dispose()
+    {
+        SearchCancellation?.Cancel();
+        SearchCancellation?.Dispose();
+    }
+}

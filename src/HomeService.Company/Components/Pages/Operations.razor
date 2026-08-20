@@ -364,7 +364,11 @@ else
                                                         <textarea rows="2" maxlength="500" @bind="AssignmentOverMaxJustification" placeholder="Expliquez clairement pourquoi ce montant depasse le maximum."></textarea>
                                                     </label>
                                                 }
-                                                <button type="button" class="mission-quote-submit" disabled="@(!CanSubmitAssignment(candidate))" @onclick="() => AssignMissionAsync(candidate)">Affecter et envoyer le prix</button>
+                                                <button type="button" class="mission-quote-submit" disabled="@(!CanSubmitAssignment(candidate))" @onclick="() => AssignMissionAsync(candidate)"
+                                                        data-coachmark-key="first-mission-assignment"
+                                                        data-coachmark-order="50"
+                                                        data-coachmark-title="Affectez la mission"
+                                                        data-coachmark-body="Choisissez le prestataire puis confirmez l’affectation.">Affecter et envoyer le prix</button>
                                             </div>
                                         }
                                         else

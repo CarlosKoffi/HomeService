@@ -56,7 +56,11 @@ else
                             <h2>Quand souhaitez-vous être payé ?</h2>
                             <p>Le choix s’applique aux prochaines missions. Aucun retrait anticipé n’est possible.</p>
                         </div>
-                        <div class="frequency-options">
+                        <div class="frequency-options"
+                             data-coachmark-key="payout-frequency"
+                             data-coachmark-order="60"
+                             data-coachmark-title="Choisissez votre rythme"
+                             data-coachmark-body="Sélectionnez un reversement toutes les deux semaines ou une fois par mois.">
                             <button class="@(Snapshot.SettlementFrequency == "Fortnightly" ? "active" : null)"
                                     @onclick='() => ChangeFrequencyAsync("Fortnightly")'>
                                 <strong>Toutes les 2 semaines</strong>
@@ -74,7 +78,11 @@ else
                         <article class="wallet-panel">
                             <header>
                                 <div><span class="wallet-eyebrow">MODE DE REVERSEMENT</span><h2>Où recevoir l’argent ?</h2></div>
-                                <button class="wallet-text-button" @onclick="ToggleDestinationForm">
+                                <button class="wallet-text-button" @onclick="ToggleDestinationForm"
+                                        data-coachmark-key="payout-method"
+                                        data-coachmark-order="70"
+                                        data-coachmark-title="Choisissez où recevoir l’argent"
+                                        data-coachmark-body="Configurez une seule destination : Mobile Money, banque ou retrait en agence.">
                                     @(ShowDestinationForm ? "Fermer" : CurrentDestination is null ? "Configurer" : "Modifier")
                                 </button>
                             </header>

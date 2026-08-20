@@ -69,7 +69,11 @@ else
                     <button type="button" class="@GetFilterTabClass(filter)" @onclick="@(() => SetEmployeeFilter(filter))">@filter</button>
                 }
             </div>
-            <button type="button" class="employee-add-button" @onclick="ToggleForm">
+            <button type="button" class="employee-add-button" @onclick="ToggleForm"
+                    data-coachmark-key="first-employee"
+                    data-coachmark-order="20"
+                    data-coachmark-title="Ajoutez votre premier employé"
+                    data-coachmark-body="Commencez par enregistrer la personne qui pourra recevoir vos missions.">
                 <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
                 @(ShowForm ? "Fermer" : "Ajouter un employe")
             </button>
@@ -149,10 +153,13 @@ else
                             </div>
 
                             <div class="form-grid contact-grid">
-                                <label class="wide-field">
-                                    Zone d'intervention
-                                    <InputText @bind-Value="Form.Address" placeholder="Adresse ou zone d'intervention" />
-                                </label>
+                                <div class="wide-field">
+                                    <CompanyAddressAutocomplete InputId="create-employee-address"
+                                                                Label="Adresse de l'employé"
+                                                                @bind-Value="Form.Address"
+                                                                @bind-Latitude="Form.MissionLatitude"
+                                                                @bind-Longitude="Form.MissionLongitude" />
+                                </div>
                 <label class="wide-field">
                                     Telephone
                                     <InputText @bind-Value="Form.PhoneNumber" placeholder="+225 07 00 00 00 00" />
@@ -188,10 +195,6 @@ else
                                     <input value="@GetFormMaxYearsOfExperience()" readonly aria-readonly="true" />
                                     <small>Calculee depuis les services et prestations.</small>
                                 </label>
-                                <label>
-                                    Perimetre km
-                                    <InputNumber @bind-Value="Form.MissionRadiusKm" />
-                                </label>
                 <label>
                     Niveau
                     <InputSelect @bind-Value="Form.ExperienceLevel">
@@ -203,7 +206,11 @@ else
                 </label>
             </div>
 
-            <div class="service-picker employee-skill-picker">
+            <div class="service-picker employee-skill-picker"
+                 data-coachmark-key="first-service"
+                 data-coachmark-order="30"
+                 data-coachmark-title="Ajoutez ses compétences"
+                 data-coachmark-body="Sélectionnez un service, puis les prestations que cet employé maîtrise réellement.">
                 <strong>@T("company.employees.services.title", "Services maitrises")</strong>
                 @{ var createServicesHelp = T("company.employees.services.description", "Selectionnez les services puis les prestations que ce prestataire peut realiser. Les prix affiches sont les fourchettes plateforme."); }
                 <div class="employee-clamped-help">
@@ -599,10 +606,13 @@ else
                             </div>
 
                             <div class="form-grid contact-grid">
-                                <label class="wide-field">
-                                    Zone d'intervention
-                                    <InputText @bind-Value="EditModel.Address" placeholder="Adresse ou zone d'intervention" />
-                                </label>
+                                <div class="wide-field">
+                                    <CompanyAddressAutocomplete InputId="edit-employee-address"
+                                                                Label="Adresse de l'employé"
+                                                                @bind-Value="EditModel.Address"
+                                                                @bind-Latitude="EditModel.MissionLatitude"
+                                                                @bind-Longitude="EditModel.MissionLongitude" />
+                                </div>
                                 <label class="wide-field">
                                     Telephone
                                     <InputText @bind-Value="EditModel.PhoneNumber" placeholder="+225 07 00 00 00 00" />
@@ -612,6 +622,80 @@ else
                                     <InputText @bind-Value="EditModel.Email" placeholder="awa@exemple.com" />
                                 </label>
                             </div>
+                        </article>
+
+                        <article class="employee-profile-card employee-zone-card"
+                                 data-tour="employee-zones"
+                                 data-coachmark-key="employee-zones"
+                                 data-coachmark-order="40"
+                                 data-coachmark-title="Vérifiez les zones proposées"
+                                 data-coachmark-body="Elles sont calculées autour de l’entreprise et de l’employé. Ajustez-les si nécessaire.">
+                            <div class="employee-card-title-row">
+                                <div>
+                                    <span class="employee-section-icon green">
+                                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4.5 8-12a8 8 0 1 0-16 0c0 7.5 8 12 8 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                                    </span>
+                                    <strong>Zones d'intervention</strong>
+                                </div>
+                                @if (EmployeeZoneCatalog is not null)
+                                {
+                                    <span class="employee-zone-count">@SelectedEmployeeZoneCodes.Count sélectionnée(s)</span>
+                                }
+                            </div>
+
+                            <p class="employee-zone-explanation">
+                                @(EmployeeZoneCatalog?.Explanation ?? "Les zones proposées sont calculées autour de l’adresse de l’entreprise et de celle de cet employé (rayon de 8 km). Vous pouvez les modifier.")
+                            </p>
+
+                            @if (IsEmployeeZoneLoading)
+                            {
+                                <div class="employee-zone-loading">Calcul des zones proposées…</div>
+                            }
+                            else if (EmployeeZoneCatalog is not null)
+                            {
+                                <div class="employee-zone-toolbar">
+                                    <label class="employee-zone-search">
+                                        <span>Rechercher</span>
+                                        <input value="@EmployeeZoneSearch" @oninput="OnEmployeeZoneSearchChanged" placeholder="Commune ou quartier" />
+                                    </label>
+                                    <label class="employee-zone-select-all">
+                                        <input type="checkbox"
+                                               checked="@AreAllVisibleZonesSelected()"
+                                               @onchange="ToggleAllVisibleZones" />
+                                        <span>Tout Abidjan</span>
+                                    </label>
+                                </div>
+
+                                <div class="employee-zone-groups">
+                                    @foreach (var group in GetFilteredZoneGroups())
+                                    {
+                                        <section class="employee-zone-group">
+                                            <label class="employee-zone-commune">
+                                                <input type="checkbox"
+                                                       checked="@IsCommuneSelected(group.Zones)"
+                                                       @onchange="eventArgs => ToggleCommune(group.Zones, eventArgs)" />
+                                                <strong>@group.Commune</strong>
+                                                <small>@group.Zones.Count quartier(s)</small>
+                                            </label>
+                                            <div class="employee-zone-options">
+                                                @foreach (var zone in group.Zones)
+                                                {
+                                                    <label class="@GetZoneOptionClass(zone.Code)">
+                                                        <input type="checkbox"
+                                                               checked="@SelectedEmployeeZoneCodes.Contains(zone.Code)"
+                                                               @onchange="eventArgs => ToggleZone(zone.Code, eventArgs)" />
+                                                        <span>@zone.Name</span>
+                                                        @if (EmployeeZoneCatalog.SuggestedZoneCodes.Contains(zone.Code, StringComparer.OrdinalIgnoreCase))
+                                                        {
+                                                            <small>Proposée</small>
+                                                        }
+                                                    </label>
+                                                }
+                                            </div>
+                                        </section>
+                                    }
+                                </div>
+                            }
                         </article>
 
                         <article class="employee-profile-card">
@@ -639,10 +723,6 @@ else
                                     <small>Calculee depuis les services et prestations.</small>
                                 </label>
                                 <label>
-                                    Perimetre km
-                                    <InputNumber @bind-Value="EditModel.MissionRadiusKm" />
-                                </label>
-                                <label>
                                     Niveau
                                     <InputSelect @bind-Value="EditModel.ExperienceLevel">
                                         <option value="Junior">Junior</option>
@@ -653,7 +733,11 @@ else
                                 </label>
                             </div>
 
-                            <div class="service-picker employee-skill-picker clean-skill-picker">
+                            <div class="service-picker employee-skill-picker clean-skill-picker"
+                                 data-coachmark-key="first-service"
+                                 data-coachmark-order="30"
+                                 data-coachmark-title="Ajoutez ses compétences"
+                                 data-coachmark-body="Sélectionnez un service, puis les prestations que cet employé maîtrise réellement.">
                                 <div class="skill-picker-heading">
                                     <strong>Services et prestations</strong>
                                     @{ const string editServicesHelp = "Ajoutez un service puis, si besoin, les prestations que ce prestataire peut assurer. L'experience generale est calculee automatiquement sur l'experience la plus elevee renseignee ici."; }
@@ -938,6 +1022,11 @@ else
     private DateTime? EditBirthDate { get; set; }
     private List<CompanyEmployeeServiceEditModel> EditableServices { get; set; } = [];
     private string? ServiceToAddId { get; set; }
+    private InterventionZoneCatalogResponse? EmployeeZoneCatalog { get; set; }
+    private HashSet<string> SelectedEmployeeZoneCodes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    private string EmployeeZoneSearch { get; set; } = string.Empty;
+    private bool IsEmployeeZoneLoading { get; set; }
+    private bool EmployeeZoneSelectionChanged { get; set; }
     private IReadOnlyDictionary<string, string> Texts { get; set; } = new Dictionary<string, string>();
     private string EmployeeSearch { get; set; } = string.Empty;
     private string ActiveEmployeeFilter { get; set; } = "Tous";
@@ -1108,7 +1197,7 @@ else
             MissionLatitude = employee.CurrentLatitude,
             MissionLongitude = employee.CurrentLongitude,
             ExperienceLevel = employee.Services.FirstOrDefault()?.ExperienceLevel ?? "Confirmed",
-            MissionRadiusKm = (int)(employee.ServiceRadiusKm ?? 5)
+            MissionRadiusKm = 8
         };
         EditableServices = employee.Services
             .Where(service => service.IsActive)
@@ -1132,6 +1221,11 @@ else
             .ToList();
         ServiceToAddId = null;
         EditBirthDate = employee.BirthDate?.ToDateTime(TimeOnly.MinValue);
+        EmployeeZoneCatalog = null;
+        SelectedEmployeeZoneCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        EmployeeZoneSearch = string.Empty;
+        EmployeeZoneSelectionChanged = false;
+        _ = LoadEmployeeZonesAsync(employee.Id);
     }
 
     private void ClearSelectedEmployee()
@@ -1139,6 +1233,136 @@ else
         SelectedEmployee = null;
         EditableServices = [];
         ServiceToAddId = null;
+        EmployeeZoneCatalog = null;
+        SelectedEmployeeZoneCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        EmployeeZoneSearch = string.Empty;
+        EmployeeZoneSelectionChanged = false;
+    }
+
+    private async Task LoadEmployeeZonesAsync(Guid employeeId)
+    {
+        if (Session is null)
+        {
+            return;
+        }
+
+        IsEmployeeZoneLoading = true;
+        try
+        {
+            var catalog = await ApiClient.GetCompanyEmployeeInterventionZonesAsync(Session.CompanyId, employeeId);
+            if (SelectedEmployee?.Id != employeeId || catalog is null)
+            {
+                return;
+            }
+
+            EmployeeZoneCatalog = catalog;
+            SelectedEmployeeZoneCodes = new HashSet<string>(catalog.SelectedZoneCodes, StringComparer.OrdinalIgnoreCase);
+            EmployeeZoneSelectionChanged = false;
+        }
+        catch
+        {
+            if (SelectedEmployee?.Id == employeeId)
+            {
+                Message = "Les zones d'intervention n'ont pas pu être chargées. Les autres informations restent modifiables.";
+            }
+        }
+        finally
+        {
+            if (SelectedEmployee?.Id == employeeId)
+            {
+                IsEmployeeZoneLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+    }
+
+    private IReadOnlyList<EmployeeZoneGroup> GetFilteredZoneGroups()
+    {
+        if (EmployeeZoneCatalog is null)
+        {
+            return [];
+        }
+
+        var search = EmployeeZoneSearch.Trim();
+        return EmployeeZoneCatalog.Zones
+            .Where(zone => string.IsNullOrWhiteSpace(search)
+                || zone.Commune.Contains(search, StringComparison.OrdinalIgnoreCase)
+                || zone.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .GroupBy(zone => zone.Commune)
+            .OrderBy(group => group.Key)
+            .Select(group => new EmployeeZoneGroup(group.Key, group.OrderBy(zone => zone.Name).ToList()))
+            .ToList();
+    }
+
+    private void OnEmployeeZoneSearchChanged(ChangeEventArgs eventArgs)
+    {
+        EmployeeZoneSearch = eventArgs.Value?.ToString() ?? string.Empty;
+    }
+
+    private bool AreAllVisibleZonesSelected()
+    {
+        var visibleCodes = GetFilteredZoneGroups().SelectMany(group => group.Zones).Select(zone => zone.Code).ToList();
+        return visibleCodes.Count > 0 && visibleCodes.All(SelectedEmployeeZoneCodes.Contains);
+    }
+
+    private bool IsCommuneSelected(IReadOnlyList<InterventionZoneOptionResponse> zones)
+    {
+        return zones.Count > 0 && zones.All(zone => SelectedEmployeeZoneCodes.Contains(zone.Code));
+    }
+
+    private void ToggleAllVisibleZones(ChangeEventArgs eventArgs)
+    {
+        SetZoneSelection(
+            GetFilteredZoneGroups().SelectMany(group => group.Zones).Select(zone => zone.Code),
+            IsChecked(eventArgs));
+    }
+
+    private void ToggleCommune(IReadOnlyList<InterventionZoneOptionResponse> zones, ChangeEventArgs eventArgs)
+    {
+        SetZoneSelection(zones.Select(zone => zone.Code), IsChecked(eventArgs));
+    }
+
+    private void ToggleZone(string zoneCode, ChangeEventArgs eventArgs)
+    {
+        SetZoneSelection([zoneCode], IsChecked(eventArgs));
+    }
+
+    private void SetZoneSelection(IEnumerable<string> zoneCodes, bool isSelected)
+    {
+        foreach (var zoneCode in zoneCodes)
+        {
+            if (isSelected)
+            {
+                SelectedEmployeeZoneCodes.Add(zoneCode);
+            }
+            else
+            {
+                SelectedEmployeeZoneCodes.Remove(zoneCode);
+            }
+        }
+
+        EmployeeZoneSelectionChanged = true;
+    }
+
+    private static bool IsChecked(ChangeEventArgs eventArgs)
+    {
+        return eventArgs.Value is bool value && value;
+    }
+
+    private string GetZoneOptionClass(string zoneCode)
+    {
+        var classes = new List<string> { "employee-zone-option" };
+        if (SelectedEmployeeZoneCodes.Contains(zoneCode))
+        {
+            classes.Add("selected");
+        }
+
+        if (EmployeeZoneCatalog?.SuggestedZoneCodes.Contains(zoneCode, StringComparer.OrdinalIgnoreCase) == true)
+        {
+            classes.Add("suggested");
+        }
+
+        return string.Join(' ', classes);
     }
 
     private void ToggleEmployeeActionMenu(Guid employeeId)
@@ -1252,8 +1476,32 @@ else
             return;
         }
 
+        if (EmployeeZoneSelectionChanged)
+        {
+            var zonesResult = await ApiClient.UpdateCompanyEmployeeInterventionZonesAsync(
+                Session.CompanyId,
+                SelectedEmployee.Id,
+                new UpdateCompanyEmployeeZonesRequest(
+                    SelectedEmployeeZoneCodes.OrderBy(code => code).ToList(),
+                    8));
+
+            if (!zonesResult.IsSuccess)
+            {
+                Message = zonesResult.ErrorMessage;
+                return;
+            }
+        }
+
         await LoadAsync();
-        SelectedEmployee = EmployeeRows.FirstOrDefault(employee => employee.Id == updated.Id);
+        var refreshedEmployee = EmployeeRows.FirstOrDefault(employee => employee.Id == updated.Id);
+        if (refreshedEmployee is not null)
+        {
+            SelectEmployee(refreshedEmployee);
+        }
+        else
+        {
+            ClearSelectedEmployee();
+        }
     }
 
     private async Task GenerateInvitationCodeAsync()
@@ -1661,8 +1909,6 @@ else
         Form.DateOfBirth = BirthDate is null ? null : DateOnly.FromDateTime(BirthDate.Value);
         Form.YearsOfExperience = GetFormMaxYearsOfExperience();
         Form.Address = NormalizeOptionalText(Form.Address);
-        Form.MissionLatitude = null;
-        Form.MissionLongitude = null;
         IsSaving = true;
 
         var result = await ApiClient.CreateCompanyEmployeeAsync(Session.CompanyId, Form);
@@ -2736,7 +2982,7 @@ else
         public string ExperienceLevel { get; set; } = "Confirmed";
         public decimal? MissionLatitude { get; set; }
         public decimal? MissionLongitude { get; set; }
-        public int MissionRadiusKm { get; set; } = 5;
+        public int MissionRadiusKm { get; set; } = 8;
     }
 
     private sealed class CompanyEmployeeServiceEditModel
@@ -2772,4 +3018,8 @@ else
         string PriceTier,
         List<Guid> ServicePrestationIds,
         string? PrestationSearchTerm);
+
+    private sealed record EmployeeZoneGroup(
+        string Commune,
+        IReadOnlyList<InterventionZoneOptionResponse> Zones);
 }

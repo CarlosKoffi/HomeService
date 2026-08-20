@@ -614,6 +614,34 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Modification des services impossible.");
     }
 
+    public async Task<InterventionZoneCatalogResponse?> GetCompanyEmployeeInterventionZonesAsync(
+        Guid companyId,
+        Guid employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        return await httpClient.GetFromJsonAsync<InterventionZoneCatalogResponse>(
+            $"/api/company-portal/{companyId:D}/employees/{employeeId:D}/intervention-zones",
+            cancellationToken);
+    }
+
+    public async Task<EmployeeSaveResult> UpdateCompanyEmployeeInterventionZonesAsync(
+        Guid companyId,
+        Guid employeeId,
+        UpdateCompanyEmployeeZonesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AddBasicAuthIfConfigured();
+        var response = await httpClient.PutAsJsonAsync(
+            $"/api/company-portal/{companyId:D}/employees/{employeeId:D}/intervention-zones",
+            request,
+            cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return response.IsSuccessStatusCode
+            ? new EmployeeSaveResult(true, null)
+            : new EmployeeSaveResult(false, ExtractErrorMessage(body) ?? response.ReasonPhrase ?? "Modification des zones impossible.");
+    }
+
     public async Task<EmployeeSaveResult> UploadCompanyEmployeeDocumentAsync(
         Guid companyId,
         Guid employeeId,
@@ -1025,7 +1053,7 @@ public sealed class CompanyEmployeeFormModel
     public int YearsOfExperience { get; set; }
     public decimal? MissionLatitude { get; set; }
     public decimal? MissionLongitude { get; set; }
-    public int MissionRadiusKm { get; set; } = 5;
+    public int MissionRadiusKm { get; set; } = 8;
     public string ExperienceLevel { get; set; } = "Confirmed";
     public List<Guid> ServiceIds { get; } = [];
     public List<CompanyEmployeeServiceFormModel> Services { get; } = [];
