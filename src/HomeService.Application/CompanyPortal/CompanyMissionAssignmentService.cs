@@ -36,6 +36,9 @@ public sealed class CompanyMissionAssignmentService(
         }
 
         var matchingServiceIds = await ResolveMatchingServiceIdsAsync(mission.ServiceId, cancellationToken);
+        var matchingPrestationIds = mission.ServicePrestationId is Guid servicePrestationId
+            ? await ResolveMatchingPrestationIdsAsync(servicePrestationId, matchingServiceIds, cancellationToken)
+            : [];
         var pricing = await ResolveMissionPricingAsync(mission, cancellationToken);
         var now = DateTimeOffset.UtcNow;
 
@@ -66,19 +69,6 @@ public sealed class CompanyMissionAssignmentService(
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        var qualifiedProviderIds = mission.ServicePrestationId.HasValue
-            ? await db.ProviderPrestationQualifications.AsNoTracking()
-                .Where(item => item.ServicePrestationId == mission.ServicePrestationId
-                    && item.Status == ProviderQualificationStatus.Approved
-                    && (item.ExpiresAt == null || item.ExpiresAt > now))
-                .Select(item => item.ProviderId).ToListAsync(cancellationToken)
-            : [];
-        var providersWithQualificationRecord = mission.ServicePrestationId.HasValue
-            ? await db.ProviderPrestationQualifications.AsNoTracking()
-                .Where(item => item.ServicePrestationId == mission.ServicePrestationId)
-                .Select(item => item.ProviderId).ToListAsync(cancellationToken)
-            : [];
-
         var providerCandidates = await db.Providers
             .AsNoTracking()
             .Where(provider => provider.CompanyId == companyId)
@@ -89,10 +79,11 @@ public sealed class CompanyMissionAssignmentService(
                     service.IsActive
                     && matchingServiceIds.Contains(service.ServiceId)
                     && (mission.ServicePrestationId == null
+                        || matchingPrestationIds.Count == 0
                         || !service.Prestations.Any()
                         || service.Prestations.Any(prestation =>
                             prestation.IsActive
-                            && prestation.ServicePrestationId == mission.ServicePrestationId))),
+                            && matchingPrestationIds.Contains(prestation.ServicePrestationId)))),
                 ExperienceLevel = provider.Services
                     .Where(service => service.IsActive && matchingServiceIds.Contains(service.ServiceId))
                     .OrderByDescending(service => service.ServiceId == mission.ServiceId)
@@ -145,7 +136,7 @@ public sealed class CompanyMissionAssignmentService(
                     true,
                     true,
                     provider.Status == ProviderStatus.Approved,
-                    candidate.CoversMission && (!providersWithQualificationRecord.Contains(provider.Id) || qualifiedProviderIds.Contains(provider.Id)),
+                    candidate.CoversMission,
                     busyProviderIds.Contains(provider.Id),
                     unavailableForThisMissionProviderIds.Contains(provider.Id),
                     mission.Status,
@@ -223,6 +214,9 @@ public sealed class CompanyMissionAssignmentService(
         var matchingServiceIds = mission is null
             ? []
             : await ResolveMatchingServiceIdsAsync(mission.ServiceId, cancellationToken);
+        var matchingPrestationIds = mission?.ServicePrestationId is Guid servicePrestationId
+            ? await ResolveMatchingPrestationIdsAsync(servicePrestationId, matchingServiceIds, cancellationToken)
+            : [];
         var providerService = mission is null || provider is null
             ? null
             : provider.Services
@@ -230,18 +224,13 @@ public sealed class CompanyMissionAssignmentService(
                     service.IsActive
                     && matchingServiceIds.Contains(service.ServiceId)
                     && (mission.ServicePrestationId == null
+                        || matchingPrestationIds.Count == 0
                         || service.Prestations.Count == 0
                         || service.Prestations.Any(prestation =>
                             prestation.IsActive
-                            && prestation.ServicePrestationId == mission.ServicePrestationId)))
+                            && matchingPrestationIds.Contains(prestation.ServicePrestationId))))
                 .OrderByDescending(service => service.ServiceId == mission.ServiceId)
                 .FirstOrDefault();
-        if (providerService is not null && mission?.ServicePrestationId is Guid prestationId)
-        {
-            var qualification = await db.ProviderPrestationQualifications.AsNoTracking()
-                .FirstOrDefaultAsync(item => item.ProviderId == providerId && item.ServicePrestationId == prestationId, cancellationToken);
-            if (qualification is not null && !qualification.IsEligible(now)) providerService = null;
-        }
         var policy = CompanyMissionAssignmentPolicy.Validate(
             mission is not null,
             provider is not null,
@@ -405,6 +394,69 @@ public sealed class CompanyMissionAssignmentService(
                     targetNormalizedName,
                     StringComparison.Ordinal))
             .Select(service => service.Id)
+            .Distinct()
+            .ToList();
+    }
+
+    private async Task<List<Guid>> ResolveMatchingPrestationIdsAsync(
+        Guid servicePrestationId,
+        IReadOnlyCollection<Guid> matchingServiceIds,
+        CancellationToken cancellationToken)
+    {
+        var missionPrestation = await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => prestation.Id == servicePrestationId)
+            .Select(prestation => new
+            {
+                prestation.Id,
+                prestation.Name,
+                prestation.NormalizedName
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (missionPrestation is null)
+        {
+            // Certaines anciennes missions conservent une référence technique supprimée.
+            // Elles doivent alors être traitées comme des demandes au niveau du service.
+            return [];
+        }
+
+        var targetNormalizedName = CatalogNameNormalizer.Normalize(missionPrestation.Name);
+        if (string.IsNullOrWhiteSpace(targetNormalizedName))
+        {
+            targetNormalizedName = CatalogNameNormalizer.Normalize(missionPrestation.NormalizedName);
+        }
+
+        if (string.IsNullOrWhiteSpace(targetNormalizedName))
+        {
+            return [];
+        }
+
+        // Une prestation peut exister plusieurs fois sous des services historiques
+        // équivalents. Le libellé réel reste la source de vérité, comme pour le service.
+        var catalogPrestations = await db.ServicePrestations
+            .AsNoTracking()
+            .Where(prestation => matchingServiceIds.Contains(prestation.ServiceId))
+            .Select(prestation => new
+            {
+                prestation.Id,
+                prestation.Name,
+                prestation.NormalizedName
+            })
+            .ToListAsync(cancellationToken);
+
+        return catalogPrestations
+            .Where(prestation =>
+                prestation.Id == servicePrestationId
+                || string.Equals(
+                    CatalogNameNormalizer.Normalize(
+                        string.IsNullOrWhiteSpace(prestation.Name)
+                            ? prestation.NormalizedName
+                            : prestation.Name),
+                    targetNormalizedName,
+                    StringComparison.Ordinal))
+            .Select(prestation => prestation.Id)
+            .Append(servicePrestationId)
             .Distinct()
             .ToList();
     }

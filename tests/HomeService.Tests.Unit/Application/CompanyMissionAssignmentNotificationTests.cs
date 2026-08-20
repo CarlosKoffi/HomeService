@@ -341,6 +341,179 @@ public sealed class CompanyMissionAssignmentNotificationTests
         Assert.True(result.IsSuccess, result.Message);
     }
 
+    [Fact]
+    public async Task AssignAsync_WhenPrestationUsesEquivalentLegacyCatalogEntry_AcceptsProvider()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("CI Home Service", "+2250700000000", "contact@cihome.ci");
+        company.Approve();
+        var customer = new CustomerProfile("Awa", "Kone", "+2250700000001");
+        var missionService = new Service("Blanchisserie", "Entretien du linge", null);
+        missionService.UpdatePriceRange(10_000, 30_000, "XOF");
+        var legacyProviderService = new Service("  BLANCHISSÉRIE  ", "Ancienne fiche catalogue", null);
+        legacyProviderService.UpdatePriceRange(10_000, 30_000, "XOF");
+        var missionPrestation = new ServicePrestation(
+            missionService.Id,
+            "Lavage et pliage",
+            null,
+            0,
+            17_000,
+            27_000,
+            "XOF");
+        var legacyProviderPrestation = new ServicePrestation(
+            legacyProviderService.Id,
+            "  LAVAGÉ   ET PLIAGE  ",
+            null,
+            0,
+            17_000,
+            27_000,
+            "XOF");
+        var provider = CreateProvider(company.Id, "Mikel", "+2250700000002");
+        provider.SyncCompanyServices([(legacyProviderService.Id, ExperienceLevel.Expert, 11, ProviderServicePriceTier.Normal)]);
+        provider.Services.Single().SyncPrestations([legacyProviderPrestation.Id]);
+        provider.Approve();
+        provider.SetAvailability(true, 5.35m, -4.02m);
+        var mission = new Mission(
+            customer.Id,
+            missionService.Id,
+            MissionMode.Scheduled,
+            PaymentMethod.MobileMoney,
+            DateTimeOffset.UtcNow.AddDays(1),
+            90,
+            servicePrestationId: missionPrestation.Id,
+            description: "Blanchisserie avec prestation issue d'un doublon catalogue",
+            requiresCompanyQuote: true);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+
+        db.AddRange(
+            company,
+            customer,
+            missionService,
+            legacyProviderService,
+            missionPrestation,
+            legacyProviderPrestation,
+            provider,
+            mission);
+        await db.SaveChangesAsync();
+
+        // Reproduit les anciens doublons dont les colonnes techniques ne correspondent plus,
+        // bien que les libellés visibles désignent le même service et la même prestation.
+        db.Entry(legacyProviderService)
+            .Property(nameof(Service.NormalizedName))
+            .CurrentValue = "ancien-catalogue-blanchisserie";
+        db.Entry(legacyProviderPrestation)
+            .Property(nameof(ServicePrestation.NormalizedName))
+            .CurrentValue = "ancienne-prestation-lavage-pliage";
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var assignmentService = CreateAssignmentService(db);
+        var candidates = await assignmentService.ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);
+        var candidate = Assert.Single(candidates.Providers, item => item.Id == provider.Id);
+
+        Assert.True(candidate.CanAssign, candidate.BlockingReason);
+        var result = await assignmentService.AssignAsync(
+            company.Id,
+            mission.Id,
+            provider.Id,
+            quotedAmount: 20_000,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.True(result.IsSuccess, result.Message);
+    }
+
+    [Fact]
+    public async Task AssignAsync_WhenApprovedCompanyProviderQualificationIsPending_AllowsAssignment()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("CI Home Service", "+2250700000000", "contact@cihome.ci");
+        company.Approve();
+        var customer = new CustomerProfile("William", "Anthony", "+2250700000001");
+        var service = new Service("Blanchisserie", "Entretien du linge", null);
+        service.UpdatePriceRange(10_000, 30_000, "XOF");
+        var prestation = service.AddPrestation("Lavage et pliage", null, 0, 17_000, 27_000, "XOF");
+        var provider = CreateProvider(company.Id, "Mikel", "+2250700000002");
+        provider.SyncCompanyServices([(service.Id, ExperienceLevel.Expert, 11, ProviderServicePriceTier.Normal)]);
+        provider.Services.Single().SyncPrestations([prestation.Id]);
+        provider.Approve();
+        provider.SetAvailability(true, 5.35m, -4.02m);
+        var mission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Scheduled,
+            PaymentMethod.MobileMoney,
+            DateTimeOffset.UtcNow.AddDays(1),
+            90,
+            servicePrestationId: prestation.Id,
+            description: "Blanchisserie Mikel",
+            requiresCompanyQuote: true);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+
+        db.AddRange(company, customer, service, provider, mission);
+        // La sélection d'une prestation depuis le portail crée cette ligne en attente.
+        // Elle sert au suivi qualité global, pas à bloquer une affectation interne
+        // après validation du prestataire par sa propre entreprise.
+        db.ProviderPrestationQualifications.Add(new ProviderPrestationQualification(provider.Id, prestation.Id));
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var assignmentService = CreateAssignmentService(db);
+        var candidates = await assignmentService.ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);
+        var candidate = Assert.Single(candidates.Providers, item => item.Id == provider.Id);
+
+        Assert.True(candidate.CanAssign, candidate.BlockingReason);
+        var result = await assignmentService.AssignAsync(
+            company.Id,
+            mission.Id,
+            provider.Id,
+            quotedAmount: 20_000,
+            overMaxJustification: null,
+            CancellationToken.None);
+        Assert.True(result.IsSuccess, result.Message);
+    }
+
+    [Fact]
+    public async Task AssignAsync_WhenMissionReferencesDeletedPrestation_FallsBackToServiceCoverage()
+    {
+        await using var db = CreateDbContext();
+        var company = new Company("CI Home Service", "+2250700000000", "contact@cihome.ci");
+        company.Approve();
+        var customer = new CustomerProfile("William", "Anthony", "+2250700000001");
+        var service = new Service("Blanchisserie", "Entretien du linge", null);
+        service.UpdatePriceRange(10_000, 30_000, "XOF");
+        var provider = CreateProvider(company.Id, "Mikel", "+2250700000002");
+        provider.SyncCompanyServices([(service.Id, ExperienceLevel.Expert, 11, ProviderServicePriceTier.Normal)]);
+        provider.Approve();
+        provider.SetAvailability(true, 5.35m, -4.02m);
+        var mission = new Mission(
+            customer.Id,
+            service.Id,
+            MissionMode.Scheduled,
+            PaymentMethod.MobileMoney,
+            DateTimeOffset.UtcNow.AddDays(1),
+            90,
+            servicePrestationId: Guid.NewGuid(),
+            description: "Ancienne demande blanchisserie",
+            requiresCompanyQuote: true);
+        mission.StartCompanySearch();
+        mission.MarkCompanyOffersSent();
+        mission.AcceptCompanyOffer(company.Id, DateTimeOffset.UtcNow.AddMinutes(10));
+
+        db.AddRange(company, customer, service, provider, mission);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var assignmentService = CreateAssignmentService(db);
+        var candidates = await assignmentService.ListAssignableProvidersAsync(company.Id, mission.Id, CancellationToken.None);
+        var candidate = Assert.Single(candidates.Providers, item => item.Id == provider.Id);
+
+        Assert.True(candidate.CanAssign, candidate.BlockingReason);
+    }
+
     private static CompanyMissionAssignmentService CreateAssignmentService(HomeServiceDbContext db)
     {
         return new CompanyMissionAssignmentService(
