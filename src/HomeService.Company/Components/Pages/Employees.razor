@@ -553,7 +553,33 @@ else
                         </button>
                     </header>
 
+                    <nav class="employee-profile-tabs" aria-label="Sections du profil prestataire">
+                        <button type="button"
+                                class="@(ActiveEmployeeEditTab == EmployeeProfileTab ? "active" : string.Empty)"
+                                @onclick="() => SetEmployeeEditTab(EmployeeProfileTab)">
+                            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span>Profil et compétences</span>
+                        </button>
+                        <button type="button"
+                                class="@(ActiveEmployeeEditTab == EmployeeZonesTab ? "active" : string.Empty)"
+                                data-tour="employee-zones"
+                                data-coachmark-key="employee-zones"
+                                data-coachmark-order="40"
+                                data-coachmark-title="Vérifiez les zones proposées"
+                                data-coachmark-body="Elles sont calculées autour de l’entreprise et de l’employé. Ajustez-les si nécessaire."
+                                @onclick="() => SetEmployeeEditTab(EmployeeZonesTab)">
+                            <svg viewBox="0 0 24 24"><path d="M12 22s8-4.5 8-12a8 8 0 1 0-16 0c0 7.5 8 12 8 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                            <span>Zones d'intervention</span>
+                            @if (EmployeeZoneCatalog is not null)
+                            {
+                                <em>@SelectedEmployeeZoneCodes.Count</em>
+                            }
+                        </button>
+                    </nav>
+
                     <div class="employee-upsert-body">
+                        @if (ActiveEmployeeEditTab == EmployeeProfileTab)
+                        {
                         <article class="employee-profile-card identity-card">
                             <div class="employee-card-title-row">
                                 <div>
@@ -624,12 +650,11 @@ else
                             </div>
                         </article>
 
-                        <article class="employee-profile-card employee-zone-card"
-                                 data-tour="employee-zones"
-                                 data-coachmark-key="employee-zones"
-                                 data-coachmark-order="40"
-                                 data-coachmark-title="Vérifiez les zones proposées"
-                                 data-coachmark-body="Elles sont calculées autour de l’entreprise et de l’employé. Ajustez-les si nécessaire.">
+                        }
+
+                        @if (ActiveEmployeeEditTab == EmployeeZonesTab)
+                        {
+                        <article class="employee-profile-card employee-zone-card">
                             <div class="employee-card-title-row">
                                 <div>
                                     <span class="employee-section-icon green">
@@ -653,6 +678,40 @@ else
                             }
                             else if (EmployeeZoneCatalog is not null)
                             {
+                                var selectedZones = GetSelectedEmployeeZones();
+                                <section class="employee-zone-selection-summary" aria-label="Zones actuellement sélectionnées">
+                                    <div class="employee-zone-selection-heading">
+                                        <div>
+                                            <span>Sélection actuelle</span>
+                                            <strong>@GetSelectedCommuneCount() commune(s), @selectedZones.Count quartier(s)</strong>
+                                        </div>
+                                        @if (selectedZones.Count > SelectedZonePreviewLimit)
+                                        {
+                                            <button type="button" @onclick="ToggleSelectedEmployeeZonesPreview">
+                                                @(ShowAllSelectedEmployeeZones ? "Réduire" : $"Voir les {selectedZones.Count - SelectedZonePreviewLimit} autres")
+                                            </button>
+                                        }
+                                    </div>
+
+                                    @if (selectedZones.Count == 0)
+                                    {
+                                        <p class="employee-zone-selection-empty">Aucune zone sélectionnée pour cet employé.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="employee-zone-selected-list">
+                                            @foreach (var zone in GetVisibleSelectedEmployeeZones(selectedZones))
+                                            {
+                                                <button type="button" title="Retirer @zone.Name" @onclick="() => RemoveSelectedEmployeeZone(zone.Code)">
+                                                    <span>@zone.Name</span>
+                                                    <small>@zone.Commune</small>
+                                                    <svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </section>
+
                                 <div class="employee-zone-toolbar">
                                     <label class="employee-zone-search">
                                         <span>Rechercher</span>
@@ -662,7 +721,7 @@ else
                                         <input type="checkbox"
                                                checked="@AreAllVisibleZonesSelected()"
                                                @onchange="ToggleAllVisibleZones" />
-                                        <span>Tout Abidjan</span>
+                                        <span>Tout sélectionner</span>
                                     </label>
                                 </div>
 
@@ -670,34 +729,48 @@ else
                                     @foreach (var group in GetFilteredZoneGroups())
                                     {
                                         <section class="employee-zone-group">
-                                            <label class="employee-zone-commune">
-                                                <input type="checkbox"
-                                                       checked="@IsCommuneSelected(group.Zones)"
-                                                       @onchange="eventArgs => ToggleCommune(group.Zones, eventArgs)" />
-                                                <strong>@group.Commune</strong>
-                                                <small>@group.Zones.Count quartier(s)</small>
-                                            </label>
-                                            <div class="employee-zone-options">
-                                                @foreach (var zone in group.Zones)
-                                                {
-                                                    <label class="@GetZoneOptionClass(zone.Code)">
-                                                        <input type="checkbox"
-                                                               checked="@SelectedEmployeeZoneCodes.Contains(zone.Code)"
-                                                               @onchange="eventArgs => ToggleZone(zone.Code, eventArgs)" />
-                                                        <span>@zone.Name</span>
-                                                        @if (EmployeeZoneCatalog.SuggestedZoneCodes.Contains(zone.Code, StringComparer.OrdinalIgnoreCase))
-                                                        {
-                                                            <small>Proposée</small>
-                                                        }
-                                                    </label>
-                                                }
+                                            <div class="employee-zone-commune">
+                                                <label title="Sélectionner tous les quartiers de @group.Commune">
+                                                    <input type="checkbox"
+                                                           checked="@IsCommuneSelected(group.Zones)"
+                                                           @onchange="eventArgs => ToggleCommune(group.Zones, eventArgs)" />
+                                                    <span class="sr-only">Sélectionner @group.Commune</span>
+                                                </label>
+                                                <button type="button" class="employee-zone-commune-toggle" @onclick="() => ToggleZoneCommuneExpanded(group.Commune)">
+                                                    <span>
+                                                        <strong>@group.Commune</strong>
+                                                        <small>@GetSelectedZoneCount(group.Zones) sélectionné(s) sur @group.Zones.Count</small>
+                                                    </span>
+                                                    <svg class="@(IsZoneCommuneExpanded(group.Commune) ? "expanded" : string.Empty)" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                                                </button>
                                             </div>
+                                            @if (IsZoneCommuneExpanded(group.Commune))
+                                            {
+                                                <div class="employee-zone-options">
+                                                    @foreach (var zone in group.Zones)
+                                                    {
+                                                        <label class="@GetZoneOptionClass(zone.Code)">
+                                                            <input type="checkbox"
+                                                                   checked="@SelectedEmployeeZoneCodes.Contains(zone.Code)"
+                                                                   @onchange="eventArgs => ToggleZone(zone.Code, eventArgs)" />
+                                                            <span>@zone.Name</span>
+                                                            @if (EmployeeZoneCatalog.SuggestedZoneCodes.Contains(zone.Code, StringComparer.OrdinalIgnoreCase))
+                                                            {
+                                                                <small>Proposée</small>
+                                                            }
+                                                        </label>
+                                                    }
+                                                </div>
+                                            }
                                         </section>
                                     }
                                 </div>
                             }
                         </article>
+                        }
 
+                        @if (ActiveEmployeeEditTab == EmployeeProfileTab)
+                        {
                         <article class="employee-profile-card">
                             <div class="employee-card-title-row">
                                 <div>
@@ -971,6 +1044,7 @@ else
                         {
                             <p class="field-message">@Message</p>
                         }
+                        }
                     </div>
 
                     <footer class="employee-upsert-footer">
@@ -1024,6 +1098,12 @@ else
     private string? ServiceToAddId { get; set; }
     private InterventionZoneCatalogResponse? EmployeeZoneCatalog { get; set; }
     private HashSet<string> SelectedEmployeeZoneCodes { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    private const string EmployeeProfileTab = "profile";
+    private const string EmployeeZonesTab = "zones";
+    private const int SelectedZonePreviewLimit = 6;
+    private string ActiveEmployeeEditTab { get; set; } = EmployeeProfileTab;
+    private bool ShowAllSelectedEmployeeZones { get; set; }
+    private HashSet<string> ExpandedEmployeeZoneCommunes { get; } = new(StringComparer.OrdinalIgnoreCase);
     private string EmployeeZoneSearch { get; set; } = string.Empty;
     private bool IsEmployeeZoneLoading { get; set; }
     private bool EmployeeZoneSelectionChanged { get; set; }
@@ -1223,6 +1303,9 @@ else
         EditBirthDate = employee.BirthDate?.ToDateTime(TimeOnly.MinValue);
         EmployeeZoneCatalog = null;
         SelectedEmployeeZoneCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        ActiveEmployeeEditTab = EmployeeProfileTab;
+        ShowAllSelectedEmployeeZones = false;
+        ExpandedEmployeeZoneCommunes.Clear();
         EmployeeZoneSearch = string.Empty;
         EmployeeZoneSelectionChanged = false;
         _ = LoadEmployeeZonesAsync(employee.Id);
@@ -1235,6 +1318,9 @@ else
         ServiceToAddId = null;
         EmployeeZoneCatalog = null;
         SelectedEmployeeZoneCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        ActiveEmployeeEditTab = EmployeeProfileTab;
+        ShowAllSelectedEmployeeZones = false;
+        ExpandedEmployeeZoneCommunes.Clear();
         EmployeeZoneSearch = string.Empty;
         EmployeeZoneSelectionChanged = false;
     }
@@ -1292,6 +1378,66 @@ else
             .OrderBy(group => group.Key)
             .Select(group => new EmployeeZoneGroup(group.Key, group.OrderBy(zone => zone.Name).ToList()))
             .ToList();
+    }
+
+    private void SetEmployeeEditTab(string tab)
+    {
+        ActiveEmployeeEditTab = tab == EmployeeZonesTab ? EmployeeZonesTab : EmployeeProfileTab;
+    }
+
+    private IReadOnlyList<InterventionZoneOptionResponse> GetSelectedEmployeeZones()
+    {
+        return EmployeeZoneCatalog?.Zones
+            .Where(zone => SelectedEmployeeZoneCodes.Contains(zone.Code))
+            .OrderBy(zone => zone.Commune)
+            .ThenBy(zone => zone.Name)
+            .ToList()
+            ?? [];
+    }
+
+    private IReadOnlyList<InterventionZoneOptionResponse> GetVisibleSelectedEmployeeZones(
+        IReadOnlyList<InterventionZoneOptionResponse> zones)
+    {
+        return ShowAllSelectedEmployeeZones
+            ? zones
+            : zones.Take(SelectedZonePreviewLimit).ToList();
+    }
+
+    private int GetSelectedCommuneCount()
+    {
+        return GetSelectedEmployeeZones()
+            .Select(zone => zone.Commune)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+    }
+
+    private int GetSelectedZoneCount(IReadOnlyList<InterventionZoneOptionResponse> zones)
+    {
+        return zones.Count(zone => SelectedEmployeeZoneCodes.Contains(zone.Code));
+    }
+
+    private void ToggleSelectedEmployeeZonesPreview()
+    {
+        ShowAllSelectedEmployeeZones = !ShowAllSelectedEmployeeZones;
+    }
+
+    private void RemoveSelectedEmployeeZone(string zoneCode)
+    {
+        SetZoneSelection([zoneCode], false);
+    }
+
+    private void ToggleZoneCommuneExpanded(string commune)
+    {
+        if (!ExpandedEmployeeZoneCommunes.Add(commune))
+        {
+            ExpandedEmployeeZoneCommunes.Remove(commune);
+        }
+    }
+
+    private bool IsZoneCommuneExpanded(string commune)
+    {
+        return !string.IsNullOrWhiteSpace(EmployeeZoneSearch)
+            || ExpandedEmployeeZoneCommunes.Contains(commune);
     }
 
     private void OnEmployeeZoneSearchChanged(ChangeEventArgs eventArgs)
