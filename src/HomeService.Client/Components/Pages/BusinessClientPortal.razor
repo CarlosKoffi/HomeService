@@ -93,7 +93,10 @@
                     <strong>@(Profile?.TradeName ?? Profile?.LegalName ?? "Votre société")</strong>
                 </div>
                 <nav aria-label="Navigation de l’espace entreprise">
-                    <button type="button" class="@(CurrentSection == "home" ? "active" : null)" @onclick='() => SelectSectionAsync("home")'><span><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg></span> Accueil</button>
+                    <button type="button" class="@(CurrentSection == "home" ? "active" : null)" @onclick='() => SelectSectionAsync("home")'
+                            data-coachmark-key="business-portal-navigation" data-coachmark-order="10"
+                            data-coachmark-title="Votre espace entreprise"
+                            data-coachmark-body="Retrouvez ici vos services, vos demandes et le suivi de votre dossier."><span><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5v8a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg></span> Accueil</button>
                     <button type="button" class="@(CurrentSection == "services" ? "active" : null)" @onclick='() => SelectSectionAsync("services")'><span><svg viewBox="0 0 24 24"><path d="M4 5.5h16v13H4zM8 9h8M8 13h5"/></svg></span> Services</button>
                     <button type="button" class="@(CurrentSection == "requests" ? "active" : null)" @onclick='() => SelectSectionAsync("requests")'><span><svg viewBox="0 0 24 24"><path d="M6 3.5h12v17H6zM9 8h6M9 12h6M9 16h4"/></svg></span> Mes demandes</button>
                     <button type="button" class="@(CurrentSection == "dossier" ? "active" : null)" @onclick='() => SelectSectionAsync("dossier")'><span><svg viewBox="0 0 24 24"><path d="M4 6.5h6l2 2h8v11H4z"/></svg></span> Dossier société <small>@GetStatusLabel(Profile?.Status ?? "Draft")</small></button>
@@ -107,7 +110,10 @@
 
             <main class="business-main">
                 <nav class="business-mobile-nav" aria-label="Navigation mobile de l’espace entreprise">
-                    <button type="button" class="@(CurrentSection == "home" ? "active" : null)" @onclick='() => SelectSectionAsync("home")'>Accueil</button>
+                    <button type="button" class="@(CurrentSection == "home" ? "active" : null)" @onclick='() => SelectSectionAsync("home")'
+                            data-coachmark-key="business-portal-navigation" data-coachmark-order="10"
+                            data-coachmark-title="Votre espace entreprise"
+                            data-coachmark-body="Retrouvez ici vos services, vos demandes et le suivi de votre dossier.">Accueil</button>
                     <button type="button" class="@(CurrentSection == "services" ? "active" : null)" @onclick='() => SelectSectionAsync("services")'>Services</button>
                     <button type="button" class="@(CurrentSection == "requests" ? "active" : null)" @onclick='() => SelectSectionAsync("requests")'>Demandes</button>
                     <button type="button" class="@(CurrentSection == "dossier" ? "active" : null)" @onclick='() => SelectSectionAsync("dossier")'>Dossier</button>
@@ -116,12 +122,18 @@
                 {
                     <section class="portal-welcome">
                         <div><span class="eyebrow">ESPACE CLIENT ENTREPRISE</span><h1>Bonjour @Session?.FirstName</h1><p>Découvrez les services disponibles et préparez vos futures interventions pendant la vérification de votre société.</p></div>
-                        <button type="button" class="primary-button" @onclick='() => SelectSectionAsync("services")'>Explorer les services</button>
+                        <button type="button" class="primary-button" @onclick='() => SelectSectionAsync("services")'
+                                data-coachmark-key="business-portal-services" data-coachmark-order="20"
+                                data-coachmark-title="Découvrez le catalogue"
+                                data-coachmark-body="Parcourez les services disponibles pour votre activité.">Explorer les services</button>
                     </section>
                     <section class="account-status-banner">
                         <div class="status-visual"><svg viewBox="0 0 24 24"><path d="M12 3.5 20 7v5c0 4.7-3.2 7.5-8 9-4.8-1.5-8-4.3-8-9V7Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></div>
                         <div><span class="status-pill @GetStatusClass(Profile?.Status ?? "Draft")">@GetStatusLabel(Profile?.Status ?? "Draft")</span><h2>@GetActivationTitle()</h2><p>@GetActivationHelp()</p></div>
-                        <button type="button" class="secondary-button" @onclick='() => SelectSectionAsync("dossier")'>Voir mon dossier</button>
+                        <button type="button" class="secondary-button" @onclick='() => SelectSectionAsync("dossier")'
+                                data-coachmark-key="business-portal-dossier" data-coachmark-order="30"
+                                data-coachmark-title="Complétez votre dossier"
+                                data-coachmark-body="Ajoutez les informations et justificatifs nécessaires à la validation.">Voir mon dossier</button>
                     </section>
                     <section class="portal-section-heading"><div><span class="eyebrow">CATALOGUE</span><h2>Services pour votre activité</h2><p>Vous pouvez déjà parcourir les univers qui seront accessibles à votre entreprise.</p></div><button type="button" class="text-button" @onclick='() => SelectSectionAsync("services")'>Tout voir →</button></section>
                     @if (ServicesLoading) { <div class="catalog-loading">Chargement des services…</div> }
@@ -191,7 +203,10 @@
                         <div class="form-grid two-columns">
                             <label><span>Nom de l’entreprise *</span><input @bind="LegalName" placeholder="Ex. Ivoire Gestion" /></label>
                             <label><span>Ville *</span><input @bind="City" placeholder="Abidjan" /></label>
-                            <label class="full-row address-field">
+                            <label class="full-row address-field"
+                                   data-coachmark-key="business-portal-address" data-coachmark-order="40"
+                                   data-coachmark-title="Confirmez l’adresse"
+                                   data-coachmark-body="Saisissez puis choisissez une proposition Google pour enregistrer l’adresse exacte.">
                                 <span>Adresse de l’entreprise *</span>
                                 <div class="address-input-wrap">
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>
@@ -225,7 +240,10 @@
                             <label><span>Email professionnel *</span><input @bind="ContactEmail" type="email" /></label>
                             <label><span>Téléphone *</span><input @bind="ContactPhone" inputmode="tel" /></label>
                         </div>
-                        <div class="card-actions"><button type="button" class="primary-button" disabled="@IsBusy" @onclick="SaveProfileAsync">Enregistrer et continuer</button></div>
+                        <div class="card-actions"><button type="button" class="primary-button" disabled="@IsBusy" @onclick="SaveProfileAsync"
+                                                                  data-coachmark-key="business-portal-save-profile" data-coachmark-order="50"
+                                                                  data-coachmark-title="Enregistrez les informations"
+                                                                  data-coachmark-body="Validez cette étape pour ouvrir l’ajout des justificatifs.">Enregistrer et continuer</button></div>
                     </section>
                 }
                 else if (Profile is not null)
@@ -256,7 +274,10 @@
                                 <span><i style="width: @RequiredDocumentProgress%"></i></span>
                             </div>
                         </div>
-                        <div class="document-grid">
+                        <div class="document-grid"
+                             data-coachmark-key="business-portal-documents" data-coachmark-order="60"
+                             data-coachmark-title="Ajoutez les justificatifs"
+                             data-coachmark-body="Déposez chaque pièce obligatoire. La progression se met à jour automatiquement.">
                             @foreach (var requirement in DocumentRequirements)
                             {
                                 var document = FindDocument(requirement.Type);
@@ -320,7 +341,10 @@
                         </div>
                         @if (Profile.CanEdit)
                         {
-                            <button type="button" class="primary-button" disabled="@(IsBusy || Profile.MissingRequiredDocuments.Count > 0)" @onclick="SubmitAsync">Soumettre le dossier</button>
+                            <button type="button" class="primary-button" disabled="@(IsBusy || Profile.MissingRequiredDocuments.Count > 0)" @onclick="SubmitAsync"
+                                    data-coachmark-key="business-portal-submit" data-coachmark-order="70"
+                                    data-coachmark-title="Soumettez le dossier"
+                                    data-coachmark-body="Envoyez le dossier complet à l’équipe Wélé pour vérification.">Soumettre le dossier</button>
                         }
                     </section>
                 }
