@@ -1,9 +1,50 @@
 @page "/onboarding"
 @inject ProviderApiClient Api
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <PageTitle>wélé Prestataire - Interim</PageTitle>
 
+@if (IsRegistrationComplete)
+{
+    <main class="provider-application-success-page" aria-labelledby="provider-success-title">
+        <section class="provider-application-success-card" role="status">
+            <div class="provider-success-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
+            </div>
+
+            <p class="provider-success-eyebrow">Candidature envoyée</p>
+            <h1 id="provider-success-title">Merci @RegisterFirstName, votre candidature est bien partie.</h1>
+            <p class="provider-success-lead">
+                L’entreprise <strong>@SubmittedCompanyName</strong> a reçu votre candidature et vous recontactera très bientôt.
+            </p>
+            <p class="provider-success-thanks">Merci pour votre candidature et à très bientôt sur Wélé.</p>
+
+            <div class="provider-success-app-card">
+                <div class="provider-success-app-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5" /><path d="M10 6h4M11 18h2" /></svg>
+                </div>
+                <div>
+                    <span>Votre prochaine étape</span>
+                    <strong>Connectez-vous à l’application Wélé Pro</strong>
+                    <p>Utilisez le numéro <b>@RegisterPhoneNumber</b> et le mot de passe choisis lors de votre inscription.</p>
+                </div>
+            </div>
+
+            <div class="provider-success-actions">
+                <a class="provider-success-primary" href="@ProviderAppUrl">
+                    Ouvrir Wélé Pro
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                </a>
+                <a class="provider-success-secondary" href="/">Retour à l’accueil</a>
+            </div>
+
+            <small class="provider-success-note">L’application Wélé Pro doit être installée sur ce téléphone pour s’ouvrir directement.</small>
+        </section>
+    </main>
+}
+else
+{
 <main class="provider-onboarding-page">
     <section class="registration-header onboarding-hero-copy">
         <p class="eyebrow">wélé prestataire</p>
@@ -25,34 +66,82 @@
             </div>
 
             <div class="register-fieldset">
-                <span>Competence</span>
-                <label>
-                    Service propose
-                    <input list="provider-services"
-                           placeholder="Ex: Menage, tondre gazon, repassage"
+                <span>Competences</span>
+                <div class="provider-service-autocomplete">
+                    <label for="provider-service-search">Services ou prestations proposes</label>
+                    <input id="provider-service-search"
+                           type="search"
+                           autocomplete="off"
+                           placeholder="Commencez a taper un service"
                            value="@ServiceEntry"
-                           @oninput="OnServiceEntryChanged" />
-                    <datalist id="provider-services">
-                        @foreach (var option in OnboardingOptions)
-                        {
-                            <option value="@option.Label"></option>
-                        }
-                    </datalist>
-                    <small>Choisissez un service ou une prestation. Si cela n'existe pas encore, le service sera propose a wélé.</small>
-                </label>
-                <label>Annee d'experience<input type="number" min="0" placeholder="Ex: 3" @bind="RegisterYearsOfExperience" /></label>
-                @if (!string.IsNullOrWhiteSpace(ServiceEntry))
+                           @oninput="OnServiceEntryChanged"
+                           @onfocus="OpenServiceSuggestions"
+                           @onkeyup="HandleServiceEntryKeyUp" />
+
+                    @if (IsServiceSuggestionOpen && !string.IsNullOrWhiteSpace(ServiceEntry))
+                    {
+                        var visibleOptions = GetVisibleOnboardingOptions();
+                        <div class="provider-service-suggestion-list" role="listbox" aria-label="Services et prestations proposes">
+                            @foreach (var option in visibleOptions)
+                            {
+                                <button type="button" role="option" @onclick="@(() => SelectOnboardingOptionAsync(option))">
+                                    <span class="provider-option-copy">
+                                        <strong>@option.Label</strong>
+                                        <small>@GetOptionKindLabel(option)</small>
+                                    </span>
+                                    <span aria-hidden="true">+</span>
+                                </button>
+                            }
+                            @if (CanProposeTypedService())
+                            {
+                                <button type="button" class="proposed-option" @onclick="AddTypedServiceAsync">
+                                    <span class="provider-option-copy">
+                                        <strong>Proposer « @ServiceEntry.Trim() »</strong>
+                                        <small>Nouveau service soumis a validation</small>
+                                    </span>
+                                    <span aria-hidden="true">+</span>
+                                </button>
+                            }
+                            @if (visibleOptions.Count == 0 && !CanProposeTypedService())
+                            {
+                                <p class="provider-service-no-result">Tapez au moins 3 caracteres.</p>
+                            }
+                        </div>
+                    }
+                    <small>Tapez quelques lettres, puis touchez un resultat. Vous pouvez ajouter plusieurs services ou prestations.</small>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(ServiceMessage))
                 {
-                    <div class="service-autocomplete-preview">
-                        @if (FindSelectedOption(ServiceEntry) is not null)
+                    <p class="provider-service-message">@ServiceMessage</p>
+                }
+
+                @if (SelectedCompetencies.Count > 0)
+                {
+                    <div class="selected-competency-list">
+                        @foreach (var competency in SelectedCompetencies)
                         {
-                            <span>@FindSelectedOption(ServiceEntry)!.Type existant</span>
-                            <strong>@FindSelectedOption(ServiceEntry)!.Label</strong>
-                        }
-                        else
-                        {
-                            <span>Nouveau service</span>
-                            <strong>@ServiceEntry.Trim()</strong>
+                            <article class="selected-competency-card">
+                                <div class="selected-competency-heading">
+                                    <div>
+                                        <span>@(competency.IsProposed ? "Nouveau service" : GetOptionKindLabel(competency.Option!))</span>
+                                        <strong>@competency.Label</strong>
+                                    </div>
+                                    <button type="button"
+                                            class="remove-competency-button"
+                                            title="Retirer cette competence"
+                                            aria-label="Retirer @competency.Label"
+                                            @onclick="@(() => RemoveCompetencyAsync(competency.Key))">×</button>
+                                </div>
+                                <label>
+                                    Annees d'experience
+                                    <input type="number"
+                                           min="0"
+                                           max="60"
+                                           value="@competency.YearsOfExperience"
+                                           @onchange="@(args => UpdateCompetencyYears(competency.Key, args))" />
+                                </label>
+                            </article>
                         }
                     </div>
                 }
@@ -97,9 +186,9 @@
                 {
                     <div class="opportunity-empty">Recherche des entreprises compatibles...</div>
                 }
-                else if (SelectedOption is null)
+                else if (SelectedCompetencies.Count == 0)
                 {
-                    <div class="opportunity-empty">Choisissez d'abord un service ou une prestation.</div>
+                    <div class="opportunity-empty">Ajoutez d'abord au moins un service ou une prestation.</div>
                 }
                 else if (CompanyOpportunities.Count == 0)
                 {
@@ -144,6 +233,7 @@
     </section>
 
 </main>
+}
 
 @code {
     [SupplyParameterFromQuery(Name = "code")]
@@ -157,15 +247,15 @@
     private DateTime? RegisterBirthDate { get; set; }
     private string RegisterAddress { get; set; } = string.Empty;
     private string RegisterGender { get; set; } = string.Empty;
-    private int RegisterYearsOfExperience { get; set; }
     private string RegisterPassword { get; set; } = string.Empty;
     private string RegisterConfirmPassword { get; set; } = string.Empty;
-    private IReadOnlyList<ProviderOnboardingOptionResponse> OnboardingOptions { get; set; } = [];
     private IReadOnlyList<ProviderOnboardingOptionResponse> AllOnboardingOptions { get; set; } = [];
     private IReadOnlyList<ProviderCompanyOpportunityResponse> CompanyOpportunities { get; set; } = [];
-    private ProviderOnboardingOptionResponse? SelectedOption { get; set; }
+    private List<SelectedCompetency> SelectedCompetencies { get; } = [];
     private HashSet<Guid> SelectedOpportunityCompanyIds { get; } = [];
     private bool IsLoadingOpportunities { get; set; }
+    private bool IsServiceSuggestionOpen { get; set; }
+    private string? ServiceMessage { get; set; }
     private static readonly string[] AbidjanAreas =
     [
         "Abobo - Abobo Baoule",
@@ -197,7 +287,10 @@
     ];
     private string ServiceEntry { get; set; } = string.Empty;
     private bool IsBusy { get; set; }
+    private bool IsRegistrationComplete { get; set; }
+    private string SubmittedCompanyName { get; set; } = "l’entreprise sélectionnée";
     private string? RegisterMessage { get; set; }
+    private string ProviderAppUrl => $"wele-provider://login?phone={Uri.EscapeDataString(RegisterPhoneNumber.Trim())}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -208,7 +301,6 @@
         }
 
         AllOnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
-        OnboardingOptions = AllOnboardingOptions;
     }
 
     private async Task RegisterAsync()
@@ -220,9 +312,9 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(ServiceEntry.Trim()) || ServiceEntry.Trim().Length < 3)
+        if (SelectedCompetencies.Count == 0)
         {
-            RegisterMessage = "Selectionnez ou saisissez un service.";
+            RegisterMessage = "Ajoutez au moins un service ou une prestation.";
             return;
         }
 
@@ -239,6 +331,8 @@
         }
 
         IsBusy = true;
+        var selectedCompany = CompanyOpportunities.FirstOrDefault(opportunity =>
+            SelectedOpportunityCompanyIds.Contains(opportunity.CompanyId));
         var request = new ProviderSelfRegistrationRequest(
             RegisterFirstName,
             RegisterLastName,
@@ -246,7 +340,7 @@
             DateOnly.FromDateTime(RegisterBirthDate.Value),
             RegisterAddress,
             RegisterGender,
-            RegisterYearsOfExperience,
+            SelectedCompetencies.Max(competency => competency.YearsOfExperience),
             null,
             null,
             5,
@@ -264,22 +358,130 @@
             return;
         }
 
-        Navigation.NavigateTo("/?candidate=submitted");
+        SubmittedCompanyName = selectedCompany?.CompanyName ?? "l’entreprise sélectionnée";
+        IsRegistrationComplete = true;
+        await InvokeAsync(StateHasChanged);
+        await JS.InvokeVoidAsync("window.scrollTo", 0, 0);
     }
 
-    private async Task OnServiceEntryChanged(ChangeEventArgs args)
+    private void OnServiceEntryChanged(ChangeEventArgs args)
     {
         ServiceEntry = args.Value?.ToString() ?? string.Empty;
-        OnboardingOptions = await Api.GetOnboardingOptionsAsync(ServiceEntry);
-        SelectedOption = FindSelectedOption(ServiceEntry);
-        if (SelectedOption is null && AllOnboardingOptions.Count == 0)
+        IsServiceSuggestionOpen = true;
+        ServiceMessage = null;
+    }
+
+    private void OpenServiceSuggestions() => IsServiceSuggestionOpen = true;
+
+    private async Task HandleServiceEntryKeyUp(KeyboardEventArgs args)
+    {
+        if (args.Key is "Enter" or ",")
         {
-            AllOnboardingOptions = await Api.GetOnboardingOptionsAsync(null);
-            SelectedOption = FindSelectedOption(ServiceEntry);
+            await AddTypedServiceAsync();
+        }
+    }
+
+    private IReadOnlyList<ProviderOnboardingOptionResponse> GetVisibleOnboardingOptions()
+    {
+        var normalizedQuery = NormalizeCompletionValue(ServiceEntry);
+        if (string.IsNullOrWhiteSpace(normalizedQuery))
+        {
+            return [];
         }
 
+        return AllOnboardingOptions
+            .Where(option => !SelectedCompetencies.Any(selected => selected.Key == BuildOptionKey(option)))
+            .Where(option =>
+                NormalizeCompletionValue(option.Label).Contains(normalizedQuery, StringComparison.Ordinal)
+                || NormalizeCompletionValue(option.ServiceName).Contains(normalizedQuery, StringComparison.Ordinal)
+                || (!string.IsNullOrWhiteSpace(option.PrestationName)
+                    && NormalizeCompletionValue(option.PrestationName).Contains(normalizedQuery, StringComparison.Ordinal)))
+            .GroupBy(option => BuildOptionKey(option), StringComparer.Ordinal)
+            .Select(group => group.First())
+            .Take(12)
+            .ToList();
+    }
+
+    private bool CanProposeTypedService()
+    {
+        var entry = ServiceEntry.Trim();
+        return entry.Length >= 3 && FindExactOption(entry) is null;
+    }
+
+    private async Task SelectOnboardingOptionAsync(ProviderOnboardingOptionResponse option)
+    {
+        await AddCompetencyAsync(new SelectedCompetency
+        {
+            Key = BuildOptionKey(option),
+            Label = option.Label,
+            Option = option
+        });
+    }
+
+    private async Task AddTypedServiceAsync()
+    {
+        var entry = ServiceEntry.Trim();
+        if (entry.Length < 3)
+        {
+            ServiceMessage = "Tapez au moins 3 caracteres.";
+            return;
+        }
+
+        var exactOption = FindExactOption(entry);
+        if (exactOption is not null)
+        {
+            await SelectOnboardingOptionAsync(exactOption);
+            return;
+        }
+
+        await AddCompetencyAsync(new SelectedCompetency
+        {
+            Key = $"proposed:{NormalizeCompletionValue(entry)}",
+            Label = entry,
+            IsProposed = true
+        });
+    }
+
+    private async Task AddCompetencyAsync(SelectedCompetency competency)
+    {
+        if (SelectedCompetencies.Count >= 10)
+        {
+            ServiceMessage = "Vous pouvez ajouter jusqu'a 10 competences.";
+            return;
+        }
+
+        if (SelectedCompetencies.Any(selected => selected.Key == competency.Key))
+        {
+            ServiceMessage = "Cette competence est deja ajoutee.";
+            return;
+        }
+
+        SelectedCompetencies.Add(competency);
+        ServiceEntry = string.Empty;
+        IsServiceSuggestionOpen = false;
+        ServiceMessage = null;
         SelectedOpportunityCompanyIds.Clear();
         await LoadOpportunitiesAsync();
+    }
+
+    private async Task RemoveCompetencyAsync(string key)
+    {
+        SelectedCompetencies.RemoveAll(competency => competency.Key == key);
+        SelectedOpportunityCompanyIds.Clear();
+        await LoadOpportunitiesAsync();
+    }
+
+    private void UpdateCompetencyYears(string key, ChangeEventArgs args)
+    {
+        var competency = SelectedCompetencies.FirstOrDefault(item => item.Key == key);
+        if (competency is null)
+        {
+            return;
+        }
+
+        competency.YearsOfExperience = int.TryParse(args.Value?.ToString(), out var years)
+            ? Math.Clamp(years, 0, 60)
+            : 0;
     }
 
     private async Task OnAddressChanged(ChangeEventArgs args)
@@ -292,18 +494,50 @@
     private async Task LoadOpportunitiesAsync()
     {
         CompanyOpportunities = [];
-        if (SelectedOption is null && string.IsNullOrWhiteSpace(ServiceEntry))
+        if (SelectedCompetencies.Count == 0)
         {
             return;
         }
 
         IsLoadingOpportunities = true;
-        CompanyOpportunities = await Api.GetOnboardingOpportunitiesAsync(
-            SelectedOption?.Type,
-            SelectedOption?.Id ?? Guid.Empty,
-            ServiceEntry,
-            RegisterAddress);
-        IsLoadingOpportunities = false;
+        try
+        {
+            var requests = SelectedCompetencies.Select(competency =>
+                Api.GetOnboardingOpportunitiesAsync(
+                    competency.Option?.Type,
+                    competency.Option?.Id ?? Guid.Empty,
+                    competency.Label,
+                    RegisterAddress));
+
+            var results = await Task.WhenAll(requests);
+            CompanyOpportunities = results
+                .SelectMany(opportunities => opportunities)
+                .GroupBy(opportunity => opportunity.CompanyId)
+                .Select(group =>
+                {
+                    var first = group.First();
+                    return new ProviderCompanyOpportunityResponse(
+                        first.CompanyId,
+                        first.CompanyName,
+                        first.City,
+                        first.Address,
+                        group.SelectMany(item => item.MatchingServices)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToList(),
+                        group.SelectMany(item => item.MatchingPrestations)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToList(),
+                        first.ProximityLabel,
+                        first.Status);
+                })
+                .Take(5)
+                .ToList();
+        }
+        finally
+        {
+            IsLoadingOpportunities = false;
+        }
+
         if (CompanyOpportunities.Count > 0)
         {
             SelectedOpportunityCompanyIds.Add(CompanyOpportunities[0].CompanyId);
@@ -316,7 +550,7 @@
         SelectedOpportunityCompanyIds.Add(companyId);
     }
 
-    private ProviderOnboardingOptionResponse? FindSelectedOption(string entry)
+    private ProviderOnboardingOptionResponse? FindExactOption(string entry)
     {
         if (string.IsNullOrWhiteSpace(entry))
         {
@@ -324,20 +558,12 @@
         }
 
         var normalizedEntry = NormalizeCompletionValue(entry);
-        return OnboardingOptions.Concat(AllOnboardingOptions).FirstOrDefault(option =>
+        return AllOnboardingOptions.FirstOrDefault(option =>
                 NormalizeCompletionValue(option.Label) == normalizedEntry
                 || NormalizeCompletionValue(option.ServiceName) == normalizedEntry
                 || IsSameServicePrestationLabel(option, normalizedEntry)
-                || (!string.IsNullOrWhiteSpace(option.PrestationName) && NormalizeCompletionValue(option.PrestationName) == normalizedEntry))
-            ?? OnboardingOptions.Concat(AllOnboardingOptions).FirstOrDefault(option =>
-                NormalizeCompletionValue(option.Label).Contains(normalizedEntry, StringComparison.Ordinal)
-                || normalizedEntry.Contains(NormalizeCompletionValue(option.Label), StringComparison.Ordinal)
-                || NormalizeCompletionValue(option.ServiceName).Contains(normalizedEntry, StringComparison.Ordinal)
-                || normalizedEntry.Contains(NormalizeCompletionValue(option.ServiceName), StringComparison.Ordinal)
-                || IsSameServicePrestationLabel(option, normalizedEntry)
                 || (!string.IsNullOrWhiteSpace(option.PrestationName)
-                    && (NormalizeCompletionValue(option.PrestationName).Contains(normalizedEntry, StringComparison.Ordinal)
-                        || normalizedEntry.Contains(NormalizeCompletionValue(option.PrestationName), StringComparison.Ordinal))));
+                    && NormalizeCompletionValue(option.PrestationName) == normalizedEntry));
     }
 
     private static bool IsSameServicePrestationLabel(ProviderOnboardingOptionResponse option, string normalizedEntry)
@@ -353,26 +579,50 @@
 
     private IReadOnlyList<ProviderCandidateServiceRequest> BuildSelectedServiceRequests()
     {
-        var selected = SelectedOption ?? FindSelectedOption(ServiceEntry);
-        return selected is null
-            ? []
-            : [new ProviderCandidateServiceRequest(selected.ServiceId, "Confirmed", RegisterYearsOfExperience)];
+        return SelectedCompetencies
+            .Where(competency => competency.Option is not null)
+            .GroupBy(competency => competency.Option!.ServiceId)
+            .Select(group => new ProviderCandidateServiceRequest(
+                group.Key,
+                "Confirmed",
+                group.Max(competency => competency.YearsOfExperience)))
+            .ToList();
     }
 
     private IReadOnlyList<ProviderCandidateSelectionRequest> BuildSelectedCandidateSelections()
     {
-        var selected = SelectedOption ?? FindSelectedOption(ServiceEntry);
-        return selected is null
-            ? []
-            : [new ProviderCandidateSelectionRequest(selected.Type, selected.Id, "Confirmed", RegisterYearsOfExperience)];
+        return SelectedCompetencies
+            .Where(competency => competency.Option is not null)
+            .GroupBy(competency => BuildOptionKey(competency.Option!), StringComparer.Ordinal)
+            .Select(group =>
+            {
+                var first = group.First();
+                return new ProviderCandidateSelectionRequest(
+                    first.Option!.Type,
+                    first.Option.Id,
+                    "Confirmed",
+                    group.Max(competency => competency.YearsOfExperience));
+            })
+            .ToList();
     }
 
     private IReadOnlyList<string> BuildProposedServiceNames()
     {
-        return (SelectedOption ?? FindSelectedOption(ServiceEntry)) is null
-            ? [ServiceEntry.Trim()]
-            : [];
+        return SelectedCompetencies
+            .Where(competency => competency.IsProposed)
+            .Select(competency => competency.Label.Trim())
+            .Where(label => !string.IsNullOrWhiteSpace(label))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
+
+    private static string BuildOptionKey(ProviderOnboardingOptionResponse option) =>
+        $"{option.Type}:{option.Id:N}";
+
+    private static string GetOptionKindLabel(ProviderOnboardingOptionResponse option) =>
+        string.Equals(option.Type, "Prestation", StringComparison.OrdinalIgnoreCase)
+            ? $"Prestation - {option.ServiceName}"
+            : "Service";
 
     private static bool IsSameService(string left, string right)
     {
@@ -406,5 +656,14 @@
             .ToString()
             .Normalize(System.Text.NormalizationForm.FormC)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+    }
+
+    private sealed class SelectedCompetency
+    {
+        public string Key { get; init; } = string.Empty;
+        public string Label { get; init; } = string.Empty;
+        public bool IsProposed { get; init; }
+        public ProviderOnboardingOptionResponse? Option { get; init; }
+        public int YearsOfExperience { get; set; }
     }
 }

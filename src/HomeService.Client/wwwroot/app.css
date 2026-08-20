@@ -50,6 +50,12 @@ a {
     text-decoration: none;
 }
 
+/* FocusOnNavigate targets page titles after a route change. Keep the
+   accessibility focus behavior without displaying a decorative browser frame. */
+h1:focus {
+    outline: none;
+}
+
 img {
     display: block;
     max-width: 100%;
