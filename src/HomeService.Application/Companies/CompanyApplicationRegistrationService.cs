@@ -38,6 +38,7 @@ public sealed class CompanyApplicationRegistrationService(IAppDbContext db)
             plan.ServiceNames.Count > 0 ? string.Join(", ", plan.ServiceNames) : null,
             request.EstimatedProviderCount,
             applicationId);
+        application.UpdateLocationCoordinates(request.Latitude, request.Longitude);
 
         var company = new Company(
             request.CompanyName,
@@ -49,7 +50,9 @@ public sealed class CompanyApplicationRegistrationService(IAppDbContext db)
             request.RegistrationNumber,
             null,
             request.City,
-            request.Address);
+            request.Address,
+            request.Latitude,
+            request.Longitude);
         company.UpdateOperations(null, plan.ServiceNames.Count > 0 ? string.Join(", ", plan.ServiceNames) : null);
 
         db.CompanyApplications.Add(application);

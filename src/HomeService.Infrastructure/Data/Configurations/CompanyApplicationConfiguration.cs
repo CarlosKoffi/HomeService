@@ -16,6 +16,8 @@ public sealed class CompanyApplicationConfiguration : IEntityTypeConfiguration<C
         builder.Property(application => application.TaxIdentificationNumber).HasMaxLength(80);
         builder.Property(application => application.City).HasMaxLength(120).IsRequired();
         builder.Property(application => application.Address).HasMaxLength(240);
+        builder.Property(application => application.Latitude).HasPrecision(9, 6);
+        builder.Property(application => application.Longitude).HasPrecision(9, 6);
         builder.Property(application => application.ContactName).HasMaxLength(160).IsRequired();
         builder.Property(application => application.Email).HasMaxLength(256).IsRequired();
         builder.Property(application => application.PhoneNumber).HasMaxLength(32).IsRequired();

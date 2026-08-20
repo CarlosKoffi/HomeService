@@ -1870,7 +1870,9 @@ public static class PublicEndpoints
                     GetFormValue(form, "password"),
                     GetFormValue(form, "confirmPassword"),
                     GetServices(form),
-                    GetOptionalInt(form, "estimatedProviderCount"));
+                    GetOptionalInt(form, "estimatedProviderCount"),
+                    GetOptionalDecimal(form, "latitude"),
+                    GetOptionalDecimal(form, "longitude"));
 
                 var applicationId = Guid.NewGuid();
                 var documents = await uploadService.SaveAsync(applicationId, form.Files, cancellationToken);
@@ -1963,6 +1965,18 @@ public static class PublicEndpoints
     private static int? GetOptionalInt(IFormCollection form, string key)
     {
         return int.TryParse(GetFormValue(form, key), out var value) ? value : null;
+    }
+
+    private static decimal? GetOptionalDecimal(IFormCollection form, string key)
+    {
+        var value = GetOptionalFormValue(form, key);
+        return decimal.TryParse(
+            value,
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var parsed)
+            ? parsed
+            : null;
     }
 
     private static IReadOnlyList<string> GetServices(IFormCollection form)

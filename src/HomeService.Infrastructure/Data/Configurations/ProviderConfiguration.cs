@@ -23,6 +23,8 @@ public sealed class ProviderConfiguration : IEntityTypeConfiguration<ProviderPro
         builder.Property(provider => provider.PasswordHash).HasMaxLength(256);
         builder.Property(provider => provider.MissionLatitude).HasPrecision(9, 6);
         builder.Property(provider => provider.MissionLongitude).HasPrecision(9, 6);
+        builder.Property(provider => provider.InterventionZoneCodes).HasMaxLength(4000).HasDefaultValue(string.Empty);
+        builder.Property(provider => provider.InterventionZonesCustomized).HasDefaultValue(false);
         builder.Property(provider => provider.CurrentLatitude).HasPrecision(9, 6);
         builder.Property(provider => provider.CurrentLongitude).HasPrecision(9, 6);
         builder.Property(provider => provider.EmploymentType).HasConversion<string>().HasMaxLength(32);

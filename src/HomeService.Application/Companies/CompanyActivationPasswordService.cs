@@ -72,7 +72,9 @@ public sealed class CompanyActivationPasswordService(IAppDbContext db)
             application.RegistrationNumber,
             application.TaxIdentificationNumber,
             application.City,
-            application.Address);
+            application.Address,
+            application.Latitude,
+            application.Longitude);
         company.UpdateOperations(application.InterventionZones, application.PlannedServices);
         company.UpdatePayment(
             application.WavePaymentNumber,

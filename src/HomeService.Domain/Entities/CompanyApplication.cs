@@ -50,6 +50,8 @@ public sealed class CompanyApplication : AuditableEntity
     public string? TaxIdentificationNumber { get; private set; }
     public string City { get; private set; } = string.Empty;
     public string? Address { get; private set; }
+    public decimal? Latitude { get; private set; }
+    public decimal? Longitude { get; private set; }
     public string ContactName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
     public string PhoneNumber { get; private set; } = string.Empty;
@@ -187,7 +189,9 @@ public sealed class CompanyApplication : AuditableEntity
         string? registrationNumber,
         string? taxIdentificationNumber,
         string city,
-        string? address)
+        string? address,
+        decimal? latitude = null,
+        decimal? longitude = null)
     {
         CompanyName = CleanRequired(companyName);
         LegalForm = Clean(legalForm);
@@ -195,6 +199,24 @@ public sealed class CompanyApplication : AuditableEntity
         TaxIdentificationNumber = Clean(taxIdentificationNumber);
         City = CleanRequired(city);
         Address = Clean(address);
+        UpdateLocationCoordinates(latitude, longitude);
+        Touch();
+    }
+
+    public void UpdateLocationCoordinates(decimal? latitude, decimal? longitude)
+    {
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            throw new ArgumentException("Les coordonnées de l'adresse de l'entreprise sont incomplètes.");
+        }
+
+        if (latitude is < -90 or > 90 || longitude is < -180 or > 180)
+        {
+            throw new ArgumentException("Les coordonnées de l'entreprise sont invalides.");
+        }
+
+        Latitude = latitude;
+        Longitude = longitude;
         Touch();
     }
 

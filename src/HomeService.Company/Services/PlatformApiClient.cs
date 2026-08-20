@@ -181,6 +181,8 @@ public sealed class PlatformApiClient(HttpClient httpClient, IConfiguration conf
             AddString(content, "password", request.Password);
             AddString(content, "confirmPassword", request.ConfirmPassword);
             AddString(content, "estimatedProviderCount", request.EstimatedProviderCount?.ToString());
+            AddString(content, "latitude", request.Latitude?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            AddString(content, "longitude", request.Longitude?.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
             foreach (var service in request.Services)
             {

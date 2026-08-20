@@ -9,8 +9,11 @@ namespace HomeService.Application.CompanyPortal;
 
 public sealed class CompanyPortalQueryService(
     IAppDbContext db,
+    EmployeeInterventionZoneService? interventionZones = null,
     MobileNavigationBadgeService? navigationBadges = null)
 {
+    private readonly EmployeeInterventionZoneService _interventionZones = interventionZones ?? new EmployeeInterventionZoneService();
+
     public async Task<CompanyPortalProfileResult> GetProfileAsync(Guid companyId, CancellationToken cancellationToken)
     {
         var company = await db.Companies
@@ -324,6 +327,26 @@ public sealed class CompanyPortalQueryService(
         if (!await CompanyExistsAsync(companyId, cancellationToken))
         {
             return CompanyPortalEmployeesResult.NotFound();
+        }
+
+        // Rattrapage non destructif : les profils historiques reçoivent une suggestion
+        // calculée une seule fois. Toute sélection manuelle reste prioritaire.
+        var company = await db.Companies
+            .FirstAsync(company => company.Id == companyId, cancellationToken);
+        var employeesToBackfill = await db.Providers
+            .Where(provider => provider.CompanyId == companyId
+                               && provider.Status != ProviderStatus.Inactive
+                               && !provider.InterventionZonesCustomized
+                               && provider.InterventionZoneCodes == string.Empty)
+            .ToListAsync(cancellationToken);
+        if (employeesToBackfill.Count > 0)
+        {
+            foreach (var employee in employeesToBackfill)
+            {
+                _interventionZones.ApplySuggestion(company, employee);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
         }
 
         var employees = await db.Providers

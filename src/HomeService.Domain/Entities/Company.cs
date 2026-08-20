@@ -27,6 +27,8 @@ public sealed class Company : AuditableEntity
     public string? TaxIdentificationNumber { get; private set; }
     public string? City { get; private set; }
     public string? Address { get; private set; }
+    public decimal? Latitude { get; private set; }
+    public decimal? Longitude { get; private set; }
     public string? InterventionZones { get; private set; }
     public string? PlannedServices { get; private set; }
     public string? WavePaymentNumber { get; private set; }
@@ -96,7 +98,9 @@ public sealed class Company : AuditableEntity
         string? registrationNumber,
         string? taxIdentificationNumber,
         string? city,
-        string? address)
+        string? address,
+        decimal? latitude = null,
+        decimal? longitude = null)
     {
         Name = CleanRequired(name);
         LegalForm = Clean(legalForm);
@@ -104,6 +108,18 @@ public sealed class Company : AuditableEntity
         TaxIdentificationNumber = Clean(taxIdentificationNumber);
         City = Clean(city);
         Address = Clean(address);
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            throw new ArgumentException("Les coordonnées de l'adresse de l'entreprise sont incomplètes.");
+        }
+
+        if (latitude is < -90 or > 90 || longitude is < -180 or > 180)
+        {
+            throw new ArgumentException("Les coordonnées de l'entreprise sont invalides.");
+        }
+
+        Latitude = latitude;
+        Longitude = longitude;
         Touch();
     }
 

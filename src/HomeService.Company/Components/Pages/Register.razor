@@ -257,6 +257,8 @@
     private string CompanyName { get; set; } = string.Empty;
     private string City { get; set; } = string.Empty;
     private string? Address { get; set; }
+    private decimal? AddressLatitude { get; set; }
+    private decimal? AddressLongitude { get; set; }
     private string ContactName { get; set; } = string.Empty;
     private string Email { get; set; } = string.Empty;
     private string PhoneNumber { get; set; } = string.Empty;
@@ -370,6 +372,8 @@
     private async Task HandleAddressInputAsync()
     {
         Address = Address?.TrimStart() ?? string.Empty;
+        AddressLatitude = null;
+        AddressLongitude = null;
         AddressMessage = null;
         AddressSuggestions = [];
 
@@ -434,6 +438,8 @@
         {
             var details = await ApiClient.GetPublicPlaceDetailsAsync(suggestion.PlaceId, AddressSessionToken);
             Address = details?.AddressLine ?? suggestion.FullText;
+            AddressLatitude = details?.Latitude;
+            AddressLongitude = details?.Longitude;
 
             if (string.IsNullOrWhiteSpace(City) && !string.IsNullOrWhiteSpace(suggestion.SecondaryText))
             {
@@ -510,7 +516,9 @@
                 Password,
                 ConfirmPassword,
                 SelectedServices.Select(service => service.SubmittedName).Distinct(StringComparer.OrdinalIgnoreCase).ToList(),
-                EstimatedProviderCount);
+                EstimatedProviderCount,
+                AddressLatitude,
+                AddressLongitude);
 
             var result = await ApiClient.RegisterCompanyAsync(request);
             if (result.IsSuccess)

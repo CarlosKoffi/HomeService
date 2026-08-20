@@ -17,6 +17,8 @@ public sealed class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.Property(company => company.TaxIdentificationNumber).HasMaxLength(80);
         builder.Property(company => company.City).HasMaxLength(120);
         builder.Property(company => company.Address).HasMaxLength(240);
+        builder.Property(company => company.Latitude).HasPrecision(9, 6);
+        builder.Property(company => company.Longitude).HasPrecision(9, 6);
         builder.Property(company => company.InterventionZones).HasMaxLength(1000);
         builder.Property(company => company.PlannedServices).HasMaxLength(1000);
         builder.Property(company => company.WavePaymentNumber).HasMaxLength(32);

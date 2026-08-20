@@ -717,6 +717,7 @@ public static class CompanyPortalEndpoints
             IAppDbContext db,
             CompanyProviderUploadService uploadService,
             CompanyEmployeeInvitationService invitationService,
+            EmployeeInterventionZoneService interventionZones,
             IConfiguration configuration,
             CancellationToken cancellationToken) =>
         {
@@ -753,9 +754,11 @@ public static class CompanyPortalEndpoints
                 ParseProviderGender(GetOptionalFormValue(form, "gender")),
                 ParseProviderEmploymentType(GetOptionalFormValue(form, "employmentType")),
                 derivedYearsOfExperience,
-                null,
-                null,
-                GetOptionalInt(form, "missionRadiusKm") ?? 5);
+                GetOptionalDecimal(form, "missionLatitude"),
+                GetOptionalDecimal(form, "missionLongitude"),
+                GetOptionalInt(form, "missionRadiusKm") ?? EmployeeInterventionZoneService.DefaultRadiusKm);
+
+            interventionZones.ApplySuggestion(company, provider);
 
             var requestedServiceIds = requestedServices.Select(service => service.ServiceId).Distinct().ToList();
             var services = await db.Services
@@ -851,6 +854,80 @@ public static class CompanyPortalEndpoints
                 new CreateCompanyEmployeeResult(provider.Id, invitation.Code, invitation.InvitationLink, invitation.ExpiresAt));
         })
         .WithName("CreateCompanyPortalEmployee");
+
+        group.MapGet("/{companyId:guid}/employees/{employeeId:guid}/intervention-zones", async (
+            Guid companyId,
+            Guid employeeId,
+            IAppDbContext db,
+            EmployeeInterventionZoneService interventionZones,
+            CancellationToken cancellationToken) =>
+        {
+            var company = await db.Companies
+                .AsNoTracking()
+                .FirstOrDefaultAsync(company => company.Id == companyId && company.Status != CompanyStatus.Suspended, cancellationToken);
+            var provider = await db.Providers
+                .AsNoTracking()
+                .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+            if (company is null || provider is null)
+            {
+                return Results.NotFound(new { message = "Employe introuvable." });
+            }
+
+            var suggestedCodes = interventionZones.BuildSuggestedZoneCodes(company, provider, provider.MissionRadiusKm);
+            return Results.Ok(new InterventionZoneCatalogResponse(
+                interventionZones.Zones
+                    .Select(zone => new InterventionZoneOptionResponse(
+                        zone.Code,
+                        zone.Commune,
+                        zone.Name,
+                        zone.Latitude,
+                        zone.Longitude))
+                    .ToList(),
+                suggestedCodes,
+                provider.InterventionZones,
+                provider.MissionRadiusKm,
+                provider.InterventionZonesCustomized,
+                EmployeeInterventionZoneService.Explanation));
+        })
+        .WithName("GetCompanyEmployeeInterventionZones");
+
+        group.MapPut("/{companyId:guid}/employees/{employeeId:guid}/intervention-zones", async (
+            Guid companyId,
+            Guid employeeId,
+            UpdateCompanyEmployeeZonesRequest request,
+            HttpRequest httpRequest,
+            IAppDbContext db,
+            CompanyEmployeeManagementService employeeManagementService,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await employeeManagementService.UpdateInterventionZonesAsync(
+                companyId,
+                employeeId,
+                request,
+                cancellationToken);
+            if (result.Status == CompanyEmployeeOperationStatus.NotFound)
+            {
+                return Results.NotFound(new { message = result.Message });
+            }
+
+            if (result.Status == CompanyEmployeeOperationStatus.ValidationFailed)
+            {
+                return Results.BadRequest(new { message = result.Message });
+            }
+
+            AddCompanyEmployeeAudit(
+                db,
+                httpRequest,
+                companyId,
+                "CompanyEmployeeInterventionZonesUpdated",
+                employeeId,
+                "Zones d'intervention du prestataire modifiees depuis le portail entreprise.",
+                result.Before,
+                result.After);
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        })
+        .WithName("UpdateCompanyEmployeeInterventionZones");
 
         group.MapPut("/{companyId:guid}/employees/{employeeId:guid}", async (
             Guid companyId,

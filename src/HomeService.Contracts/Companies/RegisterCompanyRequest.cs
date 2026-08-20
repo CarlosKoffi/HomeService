@@ -11,4 +11,6 @@ public sealed record RegisterCompanyRequest(
     string Password,
     string ConfirmPassword,
     IReadOnlyList<string> Services,
-    int? EstimatedProviderCount);
+    int? EstimatedProviderCount,
+    decimal? Latitude = null,
+    decimal? Longitude = null);

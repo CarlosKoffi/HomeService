@@ -7,8 +7,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HomeService.Application.CompanyPortal;
 
-public sealed class CompanyEmployeeManagementService(IAppDbContext db)
+public sealed class CompanyEmployeeManagementService(
+    IAppDbContext db,
+    EmployeeInterventionZoneService? interventionZones = null)
 {
+    private readonly EmployeeInterventionZoneService _interventionZones = interventionZones ?? new EmployeeInterventionZoneService();
+
     public async Task<CompanyEmployeeOperationResult> UpdateProfileAsync(
         Guid companyId,
         Guid employeeId,
@@ -22,6 +26,10 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
         }
 
         var before = SnapshotProfile(provider);
+        // Older portal clients used (0, 0) as a technical placeholder. Keep the
+        // last verified Places coordinates instead of moving the employee into
+        // the Gulf of Guinea when such a payload is received.
+        var usesLegacyCoordinatePlaceholder = request.MissionLatitude == 0m && request.MissionLongitude == 0m;
         provider.UpdateCompanyProfile(
             request.FirstName,
             request.LastName,
@@ -32,10 +40,48 @@ public sealed class CompanyEmployeeManagementService(IAppDbContext db)
             ParseProviderGender(request.Gender),
             ParseProviderEmploymentType(request.EmploymentType),
             provider.YearsOfExperience,
-            provider.MissionLatitude,
-            provider.MissionLongitude,
+            usesLegacyCoordinatePlaceholder ? provider.MissionLatitude : request.MissionLatitude,
+            usesLegacyCoordinatePlaceholder ? provider.MissionLongitude : request.MissionLongitude,
             request.MissionRadiusKm);
 
+        var company = await db.Companies
+            .FirstOrDefaultAsync(company => company.Id == companyId, cancellationToken);
+        if (company is not null)
+        {
+            _interventionZones.ApplySuggestion(company, provider);
+        }
+
+        return CompanyEmployeeOperationResult.Ok(provider, before, SnapshotProfile(provider));
+    }
+
+    public async Task<CompanyEmployeeOperationResult> UpdateInterventionZonesAsync(
+        Guid companyId,
+        Guid employeeId,
+        UpdateCompanyEmployeeZonesRequest request,
+        CancellationToken cancellationToken)
+    {
+        var provider = await db.Providers
+            .FirstOrDefaultAsync(provider => provider.Id == employeeId && provider.CompanyId == companyId, cancellationToken);
+        if (provider is null)
+        {
+            return CompanyEmployeeOperationResult.NotFound();
+        }
+
+        var allowedCodes = _interventionZones.Zones
+            .Select(zone => zone.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var requestedCodes = request.ZoneCodes
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .Select(code => code.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (requestedCodes.Any(code => !allowedCodes.Contains(code)))
+        {
+            return CompanyEmployeeOperationResult.ValidationFailed(provider, "Une ou plusieurs zones d'intervention sont invalides.");
+        }
+
+        var before = SnapshotProfile(provider);
+        provider.UpdateInterventionZones(requestedCodes, request.RadiusKm);
         return CompanyEmployeeOperationResult.Ok(provider, before, SnapshotProfile(provider));
     }
 

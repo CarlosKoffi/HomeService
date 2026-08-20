@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<CompanyComplianceDocumentService>();
         services.AddScoped<CompanyEmployeeInvitationService>();
         services.AddScoped<CompanyEmployeeManagementService>();
+        services.AddScoped<EmployeeInterventionZoneService>();
         services.AddScoped<CompanyInterimCandidateService>();
         services.AddScoped<CompanyMissionAssignmentService>();
         services.AddScoped<CompanyMissionOfferService>();

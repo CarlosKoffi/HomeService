@@ -85,7 +85,9 @@ public sealed class ProviderProfile : AuditableEntity
     public int YearsOfExperience { get; private set; }
     public decimal? MissionLatitude { get; private set; }
     public decimal? MissionLongitude { get; private set; }
-    public int MissionRadiusKm { get; private set; } = 5;
+    public int MissionRadiusKm { get; private set; } = 8;
+    public string InterventionZoneCodes { get; private set; } = string.Empty;
+    public bool InterventionZonesCustomized { get; private set; }
     public ProviderStatus Status { get; private set; } = ProviderStatus.Invited;
     public ProviderRegistrationSource RegistrationSource { get; private set; } = ProviderRegistrationSource.CompanyInvitation;
     public string? PasswordHash { get; private set; }
@@ -96,6 +98,7 @@ public sealed class ProviderProfile : AuditableEntity
     public IReadOnlyCollection<ProviderDocument> Documents => _documents;
     public IReadOnlyCollection<ProviderCandidateService> CandidateServices => _candidateServices;
     public string FullName => $"{FirstName} {LastName}".Trim();
+    public IReadOnlyList<string> InterventionZones => ParseInterventionZones(InterventionZoneCodes);
 
     public void UpdateEmploymentType(ProviderEmploymentType employmentType)
     {
@@ -159,6 +162,16 @@ public sealed class ProviderProfile : AuditableEntity
         decimal? missionLongitude,
         int missionRadiusKm)
     {
+        if (missionLatitude.HasValue != missionLongitude.HasValue)
+        {
+            throw new ArgumentException("Sélectionnez une adresse complète proposée par Google.");
+        }
+
+        if (missionLatitude is < -90 or > 90 || missionLongitude is < -180 or > 180)
+        {
+            throw new ArgumentException("Les coordonnées de l'adresse sont invalides.");
+        }
+
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         PhoneNumber = phoneNumber.Trim();
@@ -170,7 +183,27 @@ public sealed class ProviderProfile : AuditableEntity
         YearsOfExperience = yearsOfExperience;
         MissionLatitude = missionLatitude;
         MissionLongitude = missionLongitude;
-        MissionRadiusKm = missionRadiusKm;
+        MissionRadiusKm = Math.Clamp(missionRadiusKm, 1, 100);
+        Touch();
+    }
+
+    public void ApplySuggestedInterventionZones(IEnumerable<string> zoneCodes, int radiusKm = 8)
+    {
+        if (InterventionZonesCustomized)
+        {
+            return;
+        }
+
+        InterventionZoneCodes = SerializeInterventionZones(zoneCodes);
+        MissionRadiusKm = Math.Clamp(radiusKm, 1, 100);
+        Touch();
+    }
+
+    public void UpdateInterventionZones(IEnumerable<string> zoneCodes, int radiusKm = 8)
+    {
+        InterventionZoneCodes = SerializeInterventionZones(zoneCodes);
+        InterventionZonesCustomized = true;
+        MissionRadiusKm = Math.Clamp(radiusKm, 1, 100);
         Touch();
     }
 
@@ -178,6 +211,22 @@ public sealed class ProviderProfile : AuditableEntity
     {
         YearsOfExperience = Math.Clamp(yearsOfExperience, 0, 60);
         Touch();
+    }
+
+    private static string SerializeInterventionZones(IEnumerable<string> zoneCodes)
+    {
+        return string.Join(';', zoneCodes
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .Select(code => code.Trim().ToLowerInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(code => code, StringComparer.OrdinalIgnoreCase));
+    }
+
+    private static IReadOnlyList<string> ParseInterventionZones(string? serialized)
+    {
+        return string.IsNullOrWhiteSpace(serialized)
+            ? []
+            : serialized.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 
     public void AttachDocument(ProviderDocument document)
