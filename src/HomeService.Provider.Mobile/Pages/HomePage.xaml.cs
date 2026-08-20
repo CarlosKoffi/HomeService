@@ -193,17 +193,37 @@ public partial class HomePage : ContentPage
             return;
         }
 
+        var assignmentId = currentLiveOffer.AssignmentId;
         offerActionInProgress = true;
         SetBusy(true);
-        var location = await TryGetLocationAsync();
-        var result = await apiClient.AcceptMissionAsync(accessToken, currentLiveOffer.AssignmentId, new ProviderAcceptMissionRequest(
-            location is null ? null : (decimal)location.Latitude,
-            location is null ? null : (decimal)location.Longitude,
-            location?.Accuracy is null ? null : (int)Math.Round(location.Accuracy.Value)));
-        offerActionInProgress = false;
-        SetBusy(false);
-        if (!result.IsSuccess) ShowMessage(result.ErrorMessage ?? "Acceptation impossible.");
-        else await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?assignmentId={currentLiveOffer.AssignmentId:D}");
+        AcceptButton.Text = "Acceptation…";
+        ShowMessage("Acceptation de la mission en cours…");
+        try
+        {
+            var location = await TryGetLocationAsync();
+            var result = await apiClient.AcceptMissionAsync(accessToken, assignmentId, new ProviderAcceptMissionRequest(
+                location is null ? null : (decimal)location.Latitude,
+                location is null ? null : (decimal)location.Longitude,
+                location?.Accuracy is null ? null : (int)Math.Round(location.Accuracy.Value)));
+            if (!result.IsSuccess)
+            {
+                ShowMessage(result.ErrorMessage ?? "Acceptation impossible.");
+                return;
+            }
+
+            ShowMessage("Mission acceptée.");
+            await Shell.Current.GoToAsync($"{nameof(MissionDetailPage)}?assignmentId={assignmentId:D}");
+        }
+        catch
+        {
+            ShowMessage("La mission n'a pas pu être acceptée. Vérifiez votre connexion puis réessayez.");
+        }
+        finally
+        {
+            offerActionInProgress = false;
+            AcceptButton.Text = "Accepter";
+            SetBusy(false);
+        }
     }
 
     private async void OnRefuseClicked(object? sender, EventArgs e)

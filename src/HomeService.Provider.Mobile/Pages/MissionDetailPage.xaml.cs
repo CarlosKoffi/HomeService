@@ -626,13 +626,29 @@ public partial class MissionDetailPage : ContentPage
 
         offerActionInProgress = true;
         SetActionsEnabled(false);
-        var location = await TryGetLocationAsync();
-        var result = await apiClient!.AcceptMissionAsync(accessToken!, assignmentId!.Value, new ProviderAcceptMissionRequest(
-            location is null ? null : (decimal)location.Latitude,
-            location is null ? null : (decimal)location.Longitude,
-            location?.Accuracy is null ? null : (int)Math.Round(location.Accuracy.Value)));
-        offerActionInProgress = false;
-        await CompleteActionAsync(result.IsSuccess, result.ErrorMessage, "Mission acceptée.");
+        AcceptButton.Text = "Acceptation…";
+        ShowMessage("Acceptation de la mission en cours…");
+        try
+        {
+            // La position n'est pas bloquante pour accepter une mission. Une position GPS
+            // précise sera demandée uniquement pour les étapes terrain qui l'exigent.
+            var location = await TryGetLastKnownLocationAsync();
+            var result = await apiClient!.AcceptMissionAsync(accessToken!, assignmentId!.Value, new ProviderAcceptMissionRequest(
+                location is null ? null : (decimal)location.Latitude,
+                location is null ? null : (decimal)location.Longitude,
+                location?.Accuracy is null ? null : (int)Math.Round(location.Accuracy.Value)));
+            await CompleteActionAsync(result.IsSuccess, result.ErrorMessage, "Mission acceptée.");
+        }
+        catch
+        {
+            ShowMessage("La mission n'a pas pu être acceptée. Vérifiez votre connexion puis réessayez.");
+            SetActionsEnabled(true);
+        }
+        finally
+        {
+            offerActionInProgress = false;
+            AcceptButton.Text = "Accepter";
+        }
     }
 
     private async void OnRefuseClicked(object? sender, EventArgs e)
@@ -899,6 +915,12 @@ public partial class MissionDetailPage : ContentPage
                 ?? await Geolocation.Default.GetLastKnownLocationAsync();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch { return null; }
+    }
+
+    private static async Task<Location?> TryGetLastKnownLocationAsync()
+    {
+        try { return await Geolocation.Default.GetLastKnownLocationAsync(); }
         catch { return null; }
     }
 

@@ -1247,6 +1247,7 @@ public static class ProviderPortalEndpoints
             IAppDbContext db,
             ProviderMissionWorkflowService workflow,
             ProviderMissionNotificationService notifications,
+            ILogger<ProviderMissionNotificationService> logger,
             CancellationToken cancellationToken) =>
         {
             var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -1304,16 +1305,30 @@ public static class ProviderPortalEndpoints
                     assignment.Mission.ContactDetailsReleasedAt
                 });
 
+            // La transition métier doit être durable avant les notifications : un incident
+            // Firebase ou un modèle de notification absent ne doit jamais annuler l'acceptation.
+            await db.SaveChangesAsync(cancellationToken);
+
             if (previousStatus != ProviderMissionAssignmentStatus.Accepted)
             {
-                await notifications.NotifyAcceptedAsync(
-                    assignment.Mission,
-                    session.Provider,
-                    assignment,
-                    cancellationToken);
+                try
+                {
+                    await notifications.NotifyAcceptedAsync(
+                        assignment.Mission,
+                        session.Provider,
+                        assignment,
+                        cancellationToken);
+                    await db.SaveChangesAsync(cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError(
+                        exception,
+                        "Mission {MissionId} accepted by provider {ProviderId}, but accepted notifications failed.",
+                        assignment.MissionId,
+                        session.ProviderId);
+                }
             }
-
-            await db.SaveChangesAsync(cancellationToken);
             return ToProviderMissionHttpResult(result);
         })
         .WithName("AcceptProviderMission");
@@ -1660,6 +1675,7 @@ public static class ProviderPortalEndpoints
         IAppDbContext db,
         ProviderMissionWorkflowService workflow,
         ProviderMissionNotificationService notifications,
+        ILogger<ProviderMissionNotificationService> logger,
         CancellationToken cancellationToken)
     {
         var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -1717,12 +1733,25 @@ public static class ProviderPortalEndpoints
                 assignment.Mission.ContactDetailsReleasedAt
             });
 
+        // Persist the acceptance independently from secondary notification delivery.
+        await db.SaveChangesAsync(cancellationToken);
+
         if (previousStatus != ProviderMissionAssignmentStatus.Accepted)
         {
-            await notifications.NotifyAcceptedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
+            try
+            {
+                await notifications.NotifyAcceptedAsync(assignment.Mission, session.Provider, assignment, cancellationToken);
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "Mission {MissionId} accepted by provider {ProviderId}, but accepted notifications failed.",
+                    assignment.MissionId,
+                    session.ProviderId);
+            }
         }
-
-        await db.SaveChangesAsync(cancellationToken);
 
         return ToProviderMissionHttpResult(result);
     }
