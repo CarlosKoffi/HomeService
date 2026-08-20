@@ -1168,6 +1168,8 @@ public static class ProviderPortalEndpoints
             var assignment = await db.ProviderMissionAssignments.Include(item => item.Mission)
                 .FirstOrDefaultAsync(item => item.Id == assignmentId && item.ProviderId == session.ProviderId, cancellationToken);
             if (assignment?.Mission is null) return Results.NotFound(new { message = "Mission introuvable." });
+            if (assignment.Mission.Status != MissionStatus.Started)
+                return Results.BadRequest(new { message = "Les preuves de la checklist sont disponibles uniquement pendant la mission." });
             var form = await httpRequest.ReadFormAsync(cancellationToken);
             var file = form.Files.GetFile("file") ?? form.Files.FirstOrDefault();
             if (file is null) return Results.BadRequest(new { message = "Aucune photo recue." });
@@ -1989,7 +1991,6 @@ public static class ProviderPortalEndpoints
         ProviderMissionWorkflowService workflow,
         ProviderMissionNotificationService notifications,
         MissionPaymentMilestoneService milestoneService,
-        MissionQualityChecklistService qualityService,
         CancellationToken cancellationToken)
     {
         var session = await GetProviderPortalSessionAsync(httpRequest, db, cancellationToken);
@@ -2009,10 +2010,6 @@ public static class ProviderPortalEndpoints
         {
             return Results.NotFound(new { message = "Mission introuvable pour ce prestataire." });
         }
-
-        var qualityGate = await qualityService.ValidateCanStartAsync(session.ProviderId, assignmentId, cancellationToken);
-        if (!qualityGate.IsAllowed)
-            return Results.BadRequest(new { message = qualityGate.Message, missingItems = qualityGate.MissingItems });
 
         var previousStatus = assignment.Status;
         var result = workflow.StartMission(session.Provider, assignment, request);

@@ -29,6 +29,7 @@ public partial class MissionDetailPage : ContentPage
     private CancellationTokenSource? departureCountdownCancellation;
     private bool loading;
     private bool offerActionInProgress;
+    private bool isPreparingCompletion;
     private readonly HashSet<Guid> qualityUpdatesInProgress = [];
 
     public string AssignmentId
@@ -102,8 +103,16 @@ public partial class MissionDetailPage : ContentPage
         }
 
         detail = result.Response;
-        var qualityResult = await apiClient.GetMissionQualityAsync(accessToken, assignmentId.Value);
-        qualityChecklist = qualityResult.IsSuccess ? qualityResult.Response : null;
+        if (detail.MissionStatus == "Started")
+        {
+            var qualityResult = await apiClient.GetMissionQualityAsync(accessToken, assignmentId.Value);
+            qualityChecklist = qualityResult.IsSuccess ? qualityResult.Response : null;
+        }
+        else
+        {
+            qualityChecklist = null;
+            isPreparingCompletion = false;
+        }
         await RenderAsync(detail);
         FinishLoading();
     }
@@ -187,6 +196,8 @@ public partial class MissionDetailPage : ContentPage
         StartButton.IsVisible = mission.Actions.CanStart;
         AdditionalQuoteButton.IsVisible = !isClosed && mission.MissionStatus == "Started" && blockingQuote is null;
         CompleteButton.IsVisible = mission.Actions.CanComplete;
+        if (!mission.Actions.CanComplete) isPreparingCompletion = false;
+        CompleteButton.Text = isPreparingCompletion ? "Confirmer la fin de mission" : "Terminer la mission";
         await RenderQualityChecklistAsync(isClosed);
         RestartLocationUpdates(mission);
     }
@@ -194,24 +205,53 @@ public partial class MissionDetailPage : ContentPage
     private async Task RenderQualityChecklistAsync(bool isClosed)
     {
         QualityStagesHost.Children.Clear();
-        QualityCard.IsVisible = !isClosed && qualityChecklist is { RequiredItemCount: > 0 };
+        QualityCard.IsVisible = !isClosed
+            && detail?.MissionStatus == "Started"
+            && qualityChecklist?.Stages.Any(stage => stage.Items.Count > 0) == true;
         if (!QualityCard.IsVisible || qualityChecklist is null) return;
-        QualityProgressLabel.Text = $"{qualityChecklist.CompletionPercentage} %";
-        QualityProgressBar.Progress = qualityChecklist.RequiredItemCount == 0 ? 1 : qualityChecklist.CompletedRequiredItemCount / (double)qualityChecklist.RequiredItemCount;
-        QualityRequirementLabel.Text = $"{qualityChecklist.CompletedRequiredItemCount} contrôle(s) sur {qualityChecklist.RequiredItemCount} · minimum {qualityChecklist.MinimumCompletionPercentage} % pour terminer";
-        QualityExceptionPanel.IsVisible = !qualityChecklist.CanComplete;
-        QualityBlockingLabel.Text = qualityChecklist.CanComplete
-            ? qualityChecklist.CompletionPercentage == 100
-                ? "Checklist complète. Merci pour la qualité du suivi."
-                : $"Vous pouvez terminer la mission. Continuez si possible jusqu'à 100 % : la qualité du suivi compte pour la réputation de l'entreprise."
-            : $"Encore {Math.Max(0, qualityChecklist.MinimumCompletionPercentage - qualityChecklist.CompletionPercentage)} point(s) pour atteindre le minimum. Sinon, renseignez un motif exceptionnel detaille ci-dessous.";
-        QualityBlockingLabel.TextColor = qualityChecklist.CanComplete
-            ? Color.FromArgb("#067647")
-            : Color.FromArgb("#B54708");
+
+        var visibleStages = qualityChecklist.Stages
+            .Where(stage => isPreparingCompletion
+                ? string.Equals(stage.Stage, "BeforeCompletion", StringComparison.OrdinalIgnoreCase)
+                : !string.Equals(stage.Stage, "BeforeCompletion", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var visibleItems = visibleStages.SelectMany(stage => stage.Items).ToList();
+        var visibleRequiredCount = visibleItems.Count(item => item.IsRequired);
+        var visibleCompletedCount = visibleItems.Count(item => item.IsRequired && item.IsCompleted);
+        var visiblePercentage = visibleRequiredCount == 0
+            ? 100
+            : (int)Math.Floor(visibleCompletedCount * 100d / visibleRequiredCount);
+
+        QualityTitleLabel.Text = isPreparingCompletion ? "Contrôles de fin" : "Contrôles de début et de suivi";
+        QualityProgressLabel.Text = $"{visiblePercentage} %";
+        QualityProgressBar.Progress = visibleRequiredCount == 0
+            ? 1
+            : visibleCompletedCount / (double)visibleRequiredCount;
+
+        if (isPreparingCompletion)
+        {
+            QualityRequirementLabel.Text = $"{qualityChecklist.CompletedRequiredItemCount} contrôle(s) sur {qualityChecklist.RequiredItemCount} · minimum {qualityChecklist.MinimumCompletionPercentage} % pour clôturer";
+            QualityExceptionPanel.IsVisible = !qualityChecklist.CanComplete;
+            QualityBlockingLabel.Text = qualityChecklist.CanComplete
+                ? qualityChecklist.CompletionPercentage == 100
+                    ? "Tous les contrôles sont renseignés. Vous pouvez confirmer la fin de mission."
+                    : "Le minimum est atteint. Vérifiez les derniers points puis confirmez la fin de mission."
+                : $"Encore {Math.Max(0, qualityChecklist.MinimumCompletionPercentage - qualityChecklist.CompletionPercentage)} point(s) pour atteindre le minimum. Sinon, renseignez un motif exceptionnel détaillé ci-dessous.";
+            QualityBlockingLabel.TextColor = qualityChecklist.CanComplete
+                ? Color.FromArgb("#067647")
+                : Color.FromArgb("#B54708");
+        }
+        else
+        {
+            QualityRequirementLabel.Text = $"{visibleCompletedCount} contrôle(s) sur {visibleRequiredCount} · à renseigner pendant l’intervention";
+            QualityExceptionPanel.IsVisible = false;
+            QualityBlockingLabel.Text = "Ces contrôles accompagnent l’intervention sans bloquer les actions de la mission.";
+            QualityBlockingLabel.TextColor = Color.FromArgb("#067647");
+        }
 
         var previewTasks = new List<Task>();
 
-        foreach (var stage in qualityChecklist.Stages)
+        foreach (var stage in visibleStages)
         {
             var stageHeader = new Grid
             {
@@ -448,7 +488,6 @@ public partial class MissionDetailPage : ContentPage
             }
         }
 
-        StartButton.IsEnabled = StartButton.IsEnabled && qualityChecklist.CanStart;
         await Task.WhenAll(previewTasks);
     }
 
@@ -630,6 +669,22 @@ public partial class MissionDetailPage : ContentPage
             return;
         }
 
+        var hasClosingControls = qualityChecklist?.Stages.Any(stage =>
+            string.Equals(stage.Stage, "BeforeCompletion", StringComparison.OrdinalIgnoreCase)
+            && stage.Items.Count > 0) == true;
+        if (!isPreparingCompletion && hasClosingControls)
+        {
+            isPreparingCompletion = true;
+            CompleteButton.Text = "Confirmer la fin de mission";
+            await RenderQualityChecklistAsync(false);
+            await DisplayAlert(
+                "Contrôles de fin",
+                "La mission reste en cours. Renseignez maintenant les contrôles de fin, puis confirmez sa clôture.",
+                "Compris");
+            await DetailScrollView.ScrollToAsync(QualityCard, ScrollToPosition.Start, true);
+            return;
+        }
+
         string? qualityExceptionReason = null;
         if (qualityChecklist is { CanComplete: false })
         {
@@ -661,6 +716,7 @@ public partial class MissionDetailPage : ContentPage
                 qualityExceptionReason));
         if (result.IsSuccess)
         {
+            isPreparingCompletion = false;
             ApplyClosedVisualState();
         }
 

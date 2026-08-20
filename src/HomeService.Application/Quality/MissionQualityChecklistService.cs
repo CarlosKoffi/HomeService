@@ -20,6 +20,7 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
             .Include(item => item.Mission)
             .FirstOrDefaultAsync(item => item.Id == assignmentId && item.ProviderId == providerId, cancellationToken);
         if (assignment?.Mission is null) return null;
+        if (assignment.Mission.Status != MissionStatus.Started) return EmptyChecklist();
 
         var control = await EnsureControlAsync(assignment.Mission, cancellationToken);
         if (control is null)
@@ -51,6 +52,11 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
             return QualityChecklistOperationResult.Invalid("La checklist est verrouillee car la mission est fermee.");
         }
 
+        if (assignment.Mission.Status != MissionStatus.Started)
+        {
+            return QualityChecklistOperationResult.Invalid("La checklist est disponible uniquement pendant la mission.");
+        }
+
         var control = await EnsureControlAsync(assignment.Mission, cancellationToken);
         if (control is null)
         {
@@ -67,12 +73,6 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         if (item.ResponseType == QualityChecklistResponseType.Automatic)
         {
             return QualityChecklistOperationResult.Invalid("Ce controle est renseigne automatiquement par la plateforme.");
-        }
-
-        if (item.Stage != QualityChecklistStage.BeforeStart
-            && assignment.Mission.Status != MissionStatus.Started)
-        {
-            return QualityChecklistOperationResult.Invalid("Ce controle sera disponible apres le demarrage de la mission.");
         }
 
         if (request.EvidenceAttachmentId.HasValue)
@@ -95,17 +95,14 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
         return QualityChecklistOperationResult.Ok(Map(control, assignment));
     }
 
-    public async Task<QualityGateResult> ValidateCanStartAsync(
+    public Task<QualityGateResult> ValidateCanStartAsync(
         Guid providerId,
         Guid assignmentId,
         CancellationToken cancellationToken)
     {
-        return await ValidateGateAsync(
-            providerId,
-            assignmentId,
-            beforeCompletion: false,
-            exceptionReason: null,
-            cancellationToken);
+        // La checklist accompagne l'intervention une fois celle-ci demarree.
+        // Elle ne doit jamais bloquer l'acceptation, l'affectation ou le demarrage.
+        return Task.FromResult(QualityGateResult.Allowed());
     }
 
     public async Task<QualityGateResult> ValidateCanCompleteAsync(
@@ -279,8 +276,7 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
                             ? $"api/provider-portal/mobile/mission-assignments/{assignment.Id:D}/quality/items/{item.Id:D}/photo"
                             : null,
                         item.ResponseType != QualityChecklistResponseType.Automatic
-                            && (item.Stage == QualityChecklistStage.BeforeStart
-                                || assignment.Mission?.Status == MissionStatus.Started))).ToList());
+                            && assignment.Mission?.Status == MissionStatus.Started)).ToList());
             })
             .Where(stage => stage.Items.Count > 0)
             .ToList();
@@ -292,7 +288,7 @@ public sealed class MissionQualityChecklistService(IAppDbContext db)
             control.Status.ToString(),
             required.Count,
             completedRequired,
-            items.Where(item => item.IsRequired && item.Stage == QualityChecklistStage.BeforeStart).All(item => item.IsCompleted),
+            true,
             completionPercentage >= MinimumCompletionPercentage,
             stages,
             completionPercentage,

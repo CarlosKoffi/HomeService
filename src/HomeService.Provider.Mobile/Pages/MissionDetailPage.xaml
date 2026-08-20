@@ -6,7 +6,7 @@
     xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
     Shell.NavBarIsVisible="False">
     <RefreshView x:Name="RefreshHost" Refreshing="OnRefreshing">
-        <ScrollView>
+        <ScrollView x:Name="DetailScrollView">
             <VerticalStackLayout Padding="18,16,18,32" Spacing="14">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="7">
                     <ImageButton Source="icon_back.svg" Clicked="OnBackClicked" />
@@ -116,7 +116,7 @@
                             <Grid ColumnDefinitions="*,Auto">
                                 <VerticalStackLayout Spacing="2">
                                     <Label Text="QUALITÉ WÉLÉ" Style="{StaticResource EyebrowLabel}" />
-                                    <Label Text="Checklist de l'intervention" Style="{StaticResource CardTitleLabel}" />
+                                    <Label x:Name="QualityTitleLabel" Text="Contrôles de l’intervention" Style="{StaticResource CardTitleLabel}" />
                                 </VerticalStackLayout>
                                 <Border Grid.Column="1" BackgroundColor="{StaticResource BlueWash}" Stroke="Transparent" StrokeShape="RoundRectangle 12" Padding="9,5">
                                     <Label x:Name="QualityProgressLabel" Text="0 / 0" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource WeleBlue}" />
